@@ -1,0 +1,1649 @@
+{
+  "first": {
+    "key": "49NUE2G7",
+    "identity": {
+      "old": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 6,
+        "unique_ids": 6,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_001": "figure_001_p003_b4",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_006": "figure_006",
+        "figure_reserved_004": "figure_figure_p006_b6"
+      },
+      "renamed": [
+        [
+          "figure_001",
+          "figure_001_p003_b4"
+        ],
+        [
+          "figure_reserved_004",
+          "figure_figure_p006_b6"
+        ]
+      ],
+      "unmapped_old_ids": [],
+      "claims_changed": []
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_001_p003_b4",
+          "figure_003",
+          "figure_004",
+          "figure_006",
+          "figure_figure_p006_b6"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 23,
+      "new_render_files": 32,
+      "render_added": [
+        "assets/figures/figure_001_p003_b4.jpg",
+        "assets/figures/figure_figure_p006_b6.jpg",
+        "assets/orphans/orphan_008.jpg",
+        "assets/orphans/orphan_009.jpg",
+        "assets/orphans/orphan_010.jpg",
+        "render/figures/figure_001_p003_b4.md",
+        "render/figures/figure_figure_p006_b6.md",
+        "render/figures/orphan_008.md",
+        "render/figures/orphan_009.md",
+        "render/figures/orphan_010.md"
+      ],
+      "render_removed": [
+        "render/figures/figure_reserved_004.md"
+      ],
+      "embeds": 4,
+      "embeds_retargeted": 1,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 0,
+      "new_tables": 0,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 219,
+      "new_rows": 219,
+      "role_removed": {
+        "media_asset": 1,
+        "footnote": 1,
+        "figure_caption_candidate": 1
+      },
+      "role_added": {
+        "figure_asset": 1,
+        "figure_caption": 2
+      },
+      "old_body_chars": 34155,
+      "new_body_chars": 34155,
+      "old_text_chars": 57013,
+      "new_text_chars": 57013,
+      "old_fulltext_chars": 51230
+    },
+    "new_manifest": {
+      "figures": 6,
+      "tables": 0,
+      "orphans": 10
+    },
+    "new_orphans": 2,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "49NUE2G7",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_001",
+          "new_id": "figure_001_p003_b4",
+          "candidates": [
+            "figure_001_p003_b4"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 3,
+              "legend_block_id": "4",
+              "text": "Fig. 1\nFlow diagram outlining the study selection process for the narrative review. A total of 4842 records were identified through database searches, with 990 duplicates removed and 262 studies assessed as eligible. Of these, 26 studies were included and categorized into five imaging themes: bone (n = 6), muscle (n = 5), fat pad (n = 5), effusion-synovitis (n = 5), and subcutaneous fat (n = 5).",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 3,
+                  "bbox": [
+                    141,
+                    136,
+                    1018,
+                    1261
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_001.jpg",
+            "render/figures/figure_001.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 5,
+              "legend_block_id": "5",
+              "text": "Fig. 3\nUltrasound-Based Measurement of Infrapatellar Fat Pad Morphology. Schematic representation (left) highlighting the anatomical location of the infrapatellar fat pad relative to the patellar tendon and tibia. Ultrasound image (right) shows the measurement of infrapatellar fat pad thickness, defined as the perpendicular distance from the undersurface of the patellar tendon to the tibial cortex, 10 mm proximal to the tendon insertion, guided by dotted lines to ensure consistent anatomical landmarking. Reproduced from Sugimoto et al., 2025, Journal of Medical Ultrasonics [11], under the terms of the Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/). No changes were made to the original figure.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 5,
+                  "bbox": [
+                    255,
+                    141,
+                    910,
+                    755
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_003.jpg",
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "5",
+              "text": "Fig. 4",
+              "asset_blocks": [
+                {
+                  "block_id": 3,
+                  "page": 6,
+                  "bbox": [
+                    95,
+                    170,
+                    1113,
+                    846
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_004.jpg",
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_006",
+          "new_id": "figure_006",
+          "candidates": [
+            "figure_006"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 8,
+              "legend_block_id": "3",
+              "text": "Fig. 6\nMRI-Based Measurement of Knee Subcutaneous Fat Thickness. A coronal reformation of the DESS sequence showing subcutaneous fat thickness measurements at the medial femur, medial tibia, lateral femur, and lateral tibia. The tip of the medial tibial spine is used to define the axial slice level where medial and lateral measurements are taken. Reprinted from Osteoarthritis and Cartilage, Vol. 31, Joseph, G.B et al., Associations between weight change, knee subcutaneous fat and cartilage thickness in overweight and obese individuals: 4-Year data from the Osteoarthritis Initiative, pp. 1515–1523 [53], Copyright (2023), with permission from Elsevier. No changes were made to the original figure.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 8,
+                  "bbox": [
+                    249,
+                    139,
+                    965,
+                    556
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_006.jpg",
+            "render/figures/figure_006.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_reserved_004",
+          "new_id": "figure_figure_p006_b6",
+          "candidates": [
+            "figure_figure_p006_b6"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "6",
+              "text": "Al-Based CT Segmentation and 3D Reconstruction of Lower Limb Muscles. (A) Cross-sectional CT image at the mid-thigh level with AI-based segmentation of individual muscle groups, allowing for quantification of muscle volume and composition. (B) Three-dimensional reconstruction of segmented lower limb muscles from CT data, providing volumetric visualization of muscle morphology across the thigh and lower leg. Reproduced from Kono et al., 2024, International Journal of Computer Assisted Radiology and Surgery  $ [16] $, under the terms of the Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/). No changes were made to the original figure.",
+              "asset_blocks": []
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_reserved_004.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_001_p003_b4",
+          "old_id": "figure_001",
+          "old_path": "assets/figures/figure_001.jpg",
+          "new_path": "assets/figures/figure_001_p003_b4.jpg",
+          "old_sha256": "be7b54b6323228c9a3653b40fb4dd0814e5a2b6190dc54c2e08e0f4703a459af",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_001_p003_b4",
+          "old_id": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001_p003_b4.md",
+          "old_sha256": "bdf3786a15be07e1bf46a16f66a7c46025b7761ee71346186a7bfa10d99e0949",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "assets/figures/figure_003.jpg",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "badc277b05b7d5b3562d54e2ee7dcd4e1f3f54864a919d35bf0029abff5ada2b",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "9566fdf86e002aafbef6859d87153b1929ba00d96339b73f4e2cf48d9005d14e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "assets/figures/figure_004.jpg",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "87abe96b951ed81ffbe802ed4da59be8a57031b859c85ca924c92494f94e36da",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "7f460118a43042966d7a6b7993fe25c1befc41b9c7e6aeaa3265fe502c2df200",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_id": "figure_006",
+          "old_path": "assets/figures/figure_006.jpg",
+          "new_path": "assets/figures/figure_006.jpg",
+          "old_sha256": "4fb02c22ecf6cb3d5e0a4dbda453f3b6b30c9457f152b4b0b2b7887381d9f467",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_id": "figure_006",
+          "old_path": "render/figures/figure_006.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "929b1c1a0d5a7d563a661b886096354aad8cbadd349436e3731724e7a2142714",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_figure_p006_b6",
+          "old_id": "figure_reserved_004",
+          "old_path": "render/figures/figure_reserved_004.md",
+          "new_path": "render/figures/figure_figure_p006_b6.md",
+          "old_sha256": "a7cb5f0e6580448fbe68e0a405b04e2b361dc89ce9dd6ca26c21afe5cf62d6d7",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "assets/orphans/orphan_001.jpg",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "b516a97bbc1bae93f8eb2e23087980d499f78678921d461158ae445a04ee0572",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "a1c91261a4e4b6bd26a26cb6fa2379bbf39f334dc798b1b8faf37f65ff59977f",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "assets/orphans/orphan_002.jpg",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "7fa2712f3f740cb20c2bfd1bdfb9813f4d09ebc3b48887a125c63acddb26772e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "7fe66b03241dc3ec8aed1d7bf048ffe8899b0392af152792a245c6b3d70f869e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "assets/orphans/orphan_003.jpg",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "f974fd11805811f58304002fdc4fcdc6856d140c69478cb85ae1c2e6e2a225d1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "e2f501f580f1980090018fb0c2444480c05309027dd2add630de5ff5cbade819",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "assets/orphans/orphan_004.jpg",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "b516a97bbc1bae93f8eb2e23087980d499f78678921d461158ae445a04ee0572",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "e4a18130c09eee273ed34220057caa489a0d6ad2f641bbf062d1e894f6e48d55",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "assets/orphans/orphan_005.jpg",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "7fa2712f3f740cb20c2bfd1bdfb9813f4d09ebc3b48887a125c63acddb26772e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "04ec29124e51a740ac01407c7b71dbddeebdbd3f103cbca151acd17849c0bcad",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "assets/orphans/orphan_006.jpg",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "f974fd11805811f58304002fdc4fcdc6856d140c69478cb85ae1c2e6e2a225d1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "f1b0c02557c6b42e279a2b5807af392fcff430cb9c33ad0130bc402ff6ffa0ee",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "assets/orphans/orphan_007.jpg",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "7f44862c89d5265c65c554a4ef8756b2b839d4311951acb16be81584458cc1c9",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "8e9324469dba7ced69a7c2167e06719e11565f40c2f24143b90bbc5241629538",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_figure_p006_b6",
+          "old_path": "",
+          "new_path": "assets/figures/figure_figure_p006_b6.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_008",
+          "old_path": "",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_009",
+          "old_path": "",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_010",
+          "old_path": "",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_001_p003_b4",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001_p003_b4.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            69
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            109
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            129
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_006",
+          "old_path": "render/figures/figure_006.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            178
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "decb8d101e646db2d285e13429909578913de07a95b0975e05604e70a81cd79e",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "6c46bcc2afd5e825172496880d9d9c23187d1545ca9a67beac727477f629dbc7",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "61f648a4cb62c0feea6becdd489fd874dcbec5fa16fdf065f5ebeb468987e6c4",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "2aeb89b6d4428a339228543faa0446b8a2f5dd5c78d121428740ed0448c0f306",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "a7f7fd4a5b68ccf7117ed5a85e0c25d8264989970085d5f8ccb9bbb029afd990",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "b7d6874b7fcff3fd9181ad5aa4f309831d2390d2c35e7ab36635026bd9865b0c",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_001.md",
+          "object_id": "figure_001",
+          "line": 69,
+          "candidates": [
+            "figure_001_p003_b4"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_001_p003_b4.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 109,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 129,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_006.md",
+          "object_id": "figure_006",
+          "line": 178,
+          "candidates": [
+            "figure_006"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_006.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/49NUE2G7/",
+        "files": [
+          {
+            "path": "assets/figures/figure_001.jpg",
+            "sha256": "be7b54b6323228c9a3653b40fb4dd0814e5a2b6190dc54c2e08e0f4703a459af",
+            "bytes": 79756
+          },
+          {
+            "path": "fulltext.md",
+            "sha256": "a7f7fd4a5b68ccf7117ed5a85e0c25d8264989970085d5f8ccb9bbb029afd990",
+            "bytes": 51367
+          },
+          {
+            "path": "render/figures/figure_001.md",
+            "sha256": "bdf3786a15be07e1bf46a16f66a7c46025b7761ee71346186a7bfa10d99e0949",
+            "bytes": 489
+          },
+          {
+            "path": "render/figures/figure_reserved_004.md",
+            "sha256": "a7cb5f0e6580448fbe68e0a405b04e2b361dc89ce9dd6ca26c21afe5cf62d6d7",
+            "bytes": 736
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "b7d6874b7fcff3fd9181ad5aa4f309831d2390d2c35e7ab36635026bd9865b0c",
+            "bytes": 51709
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "decb8d101e646db2d285e13429909578913de07a95b0975e05604e70a81cd79e",
+            "bytes": 746000
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "2aeb89b6d4428a339228543faa0446b8a2f5dd5c78d121428740ed0448c0f306",
+            "bytes": 417550
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "6c46bcc2afd5e825172496880d9d9c23187d1545ca9a67beac727477f629dbc7",
+            "bytes": 38732
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "61f648a4cb62c0feea6becdd489fd874dcbec5fa16fdf065f5ebeb468987e6c4",
+            "bytes": 23708
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "second": {
+    "key": "49NUE2G7",
+    "identity": {
+      "old": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 6,
+        "unique_ids": 6,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_001": "figure_001_p003_b4",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_006": "figure_006",
+        "figure_reserved_004": "figure_figure_p006_b6"
+      },
+      "renamed": [
+        [
+          "figure_001",
+          "figure_001_p003_b4"
+        ],
+        [
+          "figure_reserved_004",
+          "figure_figure_p006_b6"
+        ]
+      ],
+      "unmapped_old_ids": [],
+      "claims_changed": []
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_001_p003_b4",
+          "figure_003",
+          "figure_004",
+          "figure_006",
+          "figure_figure_p006_b6"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 23,
+      "new_render_files": 32,
+      "render_added": [
+        "assets/figures/figure_001_p003_b4.jpg",
+        "assets/figures/figure_figure_p006_b6.jpg",
+        "assets/orphans/orphan_008.jpg",
+        "assets/orphans/orphan_009.jpg",
+        "assets/orphans/orphan_010.jpg",
+        "render/figures/figure_001_p003_b4.md",
+        "render/figures/figure_figure_p006_b6.md",
+        "render/figures/orphan_008.md",
+        "render/figures/orphan_009.md",
+        "render/figures/orphan_010.md"
+      ],
+      "render_removed": [
+        "render/figures/figure_reserved_004.md"
+      ],
+      "embeds": 4,
+      "embeds_retargeted": 1,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 0,
+      "new_tables": 0,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 219,
+      "new_rows": 219,
+      "role_removed": {
+        "media_asset": 1,
+        "footnote": 1,
+        "figure_caption_candidate": 1
+      },
+      "role_added": {
+        "figure_asset": 1,
+        "figure_caption": 2
+      },
+      "old_body_chars": 34155,
+      "new_body_chars": 34155,
+      "old_text_chars": 57013,
+      "new_text_chars": 57013,
+      "old_fulltext_chars": 51230
+    },
+    "new_manifest": {
+      "figures": 6,
+      "tables": 0,
+      "orphans": 10
+    },
+    "new_orphans": 2,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "49NUE2G7",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_001",
+          "new_id": "figure_001_p003_b4",
+          "candidates": [
+            "figure_001_p003_b4"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 3,
+              "legend_block_id": "4",
+              "text": "Fig. 1\nFlow diagram outlining the study selection process for the narrative review. A total of 4842 records were identified through database searches, with 990 duplicates removed and 262 studies assessed as eligible. Of these, 26 studies were included and categorized into five imaging themes: bone (n = 6), muscle (n = 5), fat pad (n = 5), effusion-synovitis (n = 5), and subcutaneous fat (n = 5).",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 3,
+                  "bbox": [
+                    141,
+                    136,
+                    1018,
+                    1261
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_001.jpg",
+            "render/figures/figure_001.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 5,
+              "legend_block_id": "5",
+              "text": "Fig. 3\nUltrasound-Based Measurement of Infrapatellar Fat Pad Morphology. Schematic representation (left) highlighting the anatomical location of the infrapatellar fat pad relative to the patellar tendon and tibia. Ultrasound image (right) shows the measurement of infrapatellar fat pad thickness, defined as the perpendicular distance from the undersurface of the patellar tendon to the tibial cortex, 10 mm proximal to the tendon insertion, guided by dotted lines to ensure consistent anatomical landmarking. Reproduced from Sugimoto et al., 2025, Journal of Medical Ultrasonics [11], under the terms of the Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/). No changes were made to the original figure.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 5,
+                  "bbox": [
+                    255,
+                    141,
+                    910,
+                    755
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_003.jpg",
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "5",
+              "text": "Fig. 4",
+              "asset_blocks": [
+                {
+                  "block_id": 3,
+                  "page": 6,
+                  "bbox": [
+                    95,
+                    170,
+                    1113,
+                    846
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_004.jpg",
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_006",
+          "new_id": "figure_006",
+          "candidates": [
+            "figure_006"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 8,
+              "legend_block_id": "3",
+              "text": "Fig. 6\nMRI-Based Measurement of Knee Subcutaneous Fat Thickness. A coronal reformation of the DESS sequence showing subcutaneous fat thickness measurements at the medial femur, medial tibia, lateral femur, and lateral tibia. The tip of the medial tibial spine is used to define the axial slice level where medial and lateral measurements are taken. Reprinted from Osteoarthritis and Cartilage, Vol. 31, Joseph, G.B et al., Associations between weight change, knee subcutaneous fat and cartilage thickness in overweight and obese individuals: 4-Year data from the Osteoarthritis Initiative, pp. 1515–1523 [53], Copyright (2023), with permission from Elsevier. No changes were made to the original figure.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 8,
+                  "bbox": [
+                    249,
+                    139,
+                    965,
+                    556
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_006.jpg",
+            "render/figures/figure_006.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_reserved_004",
+          "new_id": "figure_figure_p006_b6",
+          "candidates": [
+            "figure_figure_p006_b6"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "6",
+              "text": "Al-Based CT Segmentation and 3D Reconstruction of Lower Limb Muscles. (A) Cross-sectional CT image at the mid-thigh level with AI-based segmentation of individual muscle groups, allowing for quantification of muscle volume and composition. (B) Three-dimensional reconstruction of segmented lower limb muscles from CT data, providing volumetric visualization of muscle morphology across the thigh and lower leg. Reproduced from Kono et al., 2024, International Journal of Computer Assisted Radiology and Surgery  $ [16] $, under the terms of the Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/). No changes were made to the original figure.",
+              "asset_blocks": []
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_reserved_004.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_001_p003_b4",
+          "old_id": "figure_001",
+          "old_path": "assets/figures/figure_001.jpg",
+          "new_path": "assets/figures/figure_001_p003_b4.jpg",
+          "old_sha256": "be7b54b6323228c9a3653b40fb4dd0814e5a2b6190dc54c2e08e0f4703a459af",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_001_p003_b4",
+          "old_id": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001_p003_b4.md",
+          "old_sha256": "bdf3786a15be07e1bf46a16f66a7c46025b7761ee71346186a7bfa10d99e0949",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "assets/figures/figure_003.jpg",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "badc277b05b7d5b3562d54e2ee7dcd4e1f3f54864a919d35bf0029abff5ada2b",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "9566fdf86e002aafbef6859d87153b1929ba00d96339b73f4e2cf48d9005d14e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "assets/figures/figure_004.jpg",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "87abe96b951ed81ffbe802ed4da59be8a57031b859c85ca924c92494f94e36da",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "7f460118a43042966d7a6b7993fe25c1befc41b9c7e6aeaa3265fe502c2df200",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_id": "figure_006",
+          "old_path": "assets/figures/figure_006.jpg",
+          "new_path": "assets/figures/figure_006.jpg",
+          "old_sha256": "4fb02c22ecf6cb3d5e0a4dbda453f3b6b30c9457f152b4b0b2b7887381d9f467",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_id": "figure_006",
+          "old_path": "render/figures/figure_006.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "929b1c1a0d5a7d563a661b886096354aad8cbadd349436e3731724e7a2142714",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_figure_p006_b6",
+          "old_id": "figure_reserved_004",
+          "old_path": "render/figures/figure_reserved_004.md",
+          "new_path": "render/figures/figure_figure_p006_b6.md",
+          "old_sha256": "a7cb5f0e6580448fbe68e0a405b04e2b361dc89ce9dd6ca26c21afe5cf62d6d7",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "assets/orphans/orphan_001.jpg",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "b516a97bbc1bae93f8eb2e23087980d499f78678921d461158ae445a04ee0572",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "a1c91261a4e4b6bd26a26cb6fa2379bbf39f334dc798b1b8faf37f65ff59977f",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "assets/orphans/orphan_002.jpg",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "7fa2712f3f740cb20c2bfd1bdfb9813f4d09ebc3b48887a125c63acddb26772e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "7fe66b03241dc3ec8aed1d7bf048ffe8899b0392af152792a245c6b3d70f869e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "assets/orphans/orphan_003.jpg",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "f974fd11805811f58304002fdc4fcdc6856d140c69478cb85ae1c2e6e2a225d1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "e2f501f580f1980090018fb0c2444480c05309027dd2add630de5ff5cbade819",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "assets/orphans/orphan_004.jpg",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "b516a97bbc1bae93f8eb2e23087980d499f78678921d461158ae445a04ee0572",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "e4a18130c09eee273ed34220057caa489a0d6ad2f641bbf062d1e894f6e48d55",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "assets/orphans/orphan_005.jpg",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "7fa2712f3f740cb20c2bfd1bdfb9813f4d09ebc3b48887a125c63acddb26772e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "04ec29124e51a740ac01407c7b71dbddeebdbd3f103cbca151acd17849c0bcad",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "assets/orphans/orphan_006.jpg",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "f974fd11805811f58304002fdc4fcdc6856d140c69478cb85ae1c2e6e2a225d1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "f1b0c02557c6b42e279a2b5807af392fcff430cb9c33ad0130bc402ff6ffa0ee",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "assets/orphans/orphan_007.jpg",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "7f44862c89d5265c65c554a4ef8756b2b839d4311951acb16be81584458cc1c9",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "8e9324469dba7ced69a7c2167e06719e11565f40c2f24143b90bbc5241629538",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_figure_p006_b6",
+          "old_path": "",
+          "new_path": "assets/figures/figure_figure_p006_b6.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_008",
+          "old_path": "",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_009",
+          "old_path": "",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_010",
+          "old_path": "",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_001_p003_b4",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001_p003_b4.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            69
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            109
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            129
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_006",
+          "old_path": "render/figures/figure_006.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            178
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "decb8d101e646db2d285e13429909578913de07a95b0975e05604e70a81cd79e",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "6c46bcc2afd5e825172496880d9d9c23187d1545ca9a67beac727477f629dbc7",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "61f648a4cb62c0feea6becdd489fd874dcbec5fa16fdf065f5ebeb468987e6c4",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "2aeb89b6d4428a339228543faa0446b8a2f5dd5c78d121428740ed0448c0f306",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "a7f7fd4a5b68ccf7117ed5a85e0c25d8264989970085d5f8ccb9bbb029afd990",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "b7d6874b7fcff3fd9181ad5aa4f309831d2390d2c35e7ab36635026bd9865b0c",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_001.md",
+          "object_id": "figure_001",
+          "line": 69,
+          "candidates": [
+            "figure_001_p003_b4"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_001_p003_b4.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 109,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 129,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_006.md",
+          "object_id": "figure_006",
+          "line": 178,
+          "candidates": [
+            "figure_006"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_006.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/49NUE2G7/",
+        "files": [
+          {
+            "path": "assets/figures/figure_001.jpg",
+            "sha256": "be7b54b6323228c9a3653b40fb4dd0814e5a2b6190dc54c2e08e0f4703a459af",
+            "bytes": 79756
+          },
+          {
+            "path": "fulltext.md",
+            "sha256": "a7f7fd4a5b68ccf7117ed5a85e0c25d8264989970085d5f8ccb9bbb029afd990",
+            "bytes": 51367
+          },
+          {
+            "path": "render/figures/figure_001.md",
+            "sha256": "bdf3786a15be07e1bf46a16f66a7c46025b7761ee71346186a7bfa10d99e0949",
+            "bytes": 489
+          },
+          {
+            "path": "render/figures/figure_reserved_004.md",
+            "sha256": "a7cb5f0e6580448fbe68e0a405b04e2b361dc89ce9dd6ca26c21afe5cf62d6d7",
+            "bytes": 736
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "b7d6874b7fcff3fd9181ad5aa4f309831d2390d2c35e7ab36635026bd9865b0c",
+            "bytes": 51709
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "decb8d101e646db2d285e13429909578913de07a95b0975e05604e70a81cd79e",
+            "bytes": 746000
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "2aeb89b6d4428a339228543faa0446b8a2f5dd5c78d121428740ed0448c0f306",
+            "bytes": 417550
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "6c46bcc2afd5e825172496880d9d9c23187d1545ca9a67beac727477f629dbc7",
+            "bytes": 38732
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "61f648a4cb62c0feea6becdd489fd874dcbec5fa16fdf065f5ebeb468987e6c4",
+            "bytes": 23708
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "plan_mismatch": false
+}

@@ -17,7 +17,6 @@ _SPEC.loader.exec_module(module)
 
 import hashlib
 import json
-import tempfile
 from pathlib import Path
 
 
@@ -195,3 +194,45 @@ def test_identity_diff_maps_by_page_and_legend_anchor() -> None:
     assert diff["new"]["duplicate_extra"] == 0
     assert ["figure_002", "figure_002_10"] in diff["renamed"]
     assert diff["claims_changed"][0]["new_assets"] == ["4"]
+
+
+def test_rebuild_replay_stages_isolated_and_does_not_touch_source(tmp_path):
+    import scripts.dev.object_migration_dry_run as m
+
+    vault = tmp_path / "vault"
+    ocr = vault / "System" / "PaperForge" / "ocr"
+    key = "K1"
+    paper = ocr / key
+    paper.mkdir(parents=True)
+    (paper / "canonical").mkdir()
+    (paper / "raw").mkdir()
+    (paper / "canonical" / "blocks.raw.jsonl").write_text("{}\n", encoding="utf-8")
+    (paper / "raw" / "source_metadata.json").write_text("{}", encoding="utf-8")
+    (paper / "meta.json").write_text(json.dumps({"source_pdf": ""}), encoding="utf-8")
+    src_hash_before = (paper / "canonical" / "blocks.raw.jsonl").read_bytes()
+
+    import paperforge.worker.ocr_rebuild as rr
+
+    def fake_rebuild(v, k):
+        pp = v / "System" / "PaperForge" / "ocr" / k
+        (pp / "structure").mkdir(parents=True, exist_ok=True)
+        (pp / "structure" / "figure_inventory.json").write_text(
+            json.dumps({"matched_figures": [{"figure_id": "f1", "page": 1}]}), encoding="utf-8"
+        )
+        (pp / "structure" / "table_inventory.json").write_text(
+            json.dumps({"tables": [{"page": 1, "caption_block_id": "c"}]}), encoding="utf-8"
+        )
+        (pp / "structure" / "blocks.structured.jsonl").write_text(
+            json.dumps({"block_id": "b1"}) + "\n", encoding="utf-8"
+        )
+        (pp / "assets" / "figures").mkdir(parents=True, exist_ok=True)
+        (pp / "assets" / "figures" / "f1.jpg").write_bytes(b"x")
+        return {"status": "ok"}
+
+    rr._rebuild_one_paper = fake_rebuild
+    result = m._rebuild_replay(vault, ocr, key)
+    assert result["figures"][0]["figure_id"] == "f1"
+    assert result["manifest"]["figures"] == ["f1"]
+    # source unchanged
+    assert (paper / "canonical" / "blocks.raw.jsonl").read_bytes() == src_hash_before
+    assert not (paper / "structure").exists()

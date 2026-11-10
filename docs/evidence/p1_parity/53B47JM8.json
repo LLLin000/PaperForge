@@ -1,0 +1,3203 @@
+{
+  "first": {
+    "key": "53B47JM8",
+    "identity": {
+      "old": {
+        "entries": 4,
+        "unique_ids": 4,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_002": "figure_002",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_005": "figure_005"
+      },
+      "renamed": [],
+      "unmapped_old_ids": [],
+      "claims_changed": []
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_002",
+          "figure_003",
+          "figure_004",
+          "figure_005"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 32,
+      "new_render_files": 92,
+      "render_added": [
+        "assets/figures/figure_001.jpg",
+        "assets/orphans/orphan_013.jpg",
+        "assets/orphans/orphan_014.jpg",
+        "assets/orphans/orphan_015.jpg",
+        "assets/orphans/orphan_016.jpg",
+        "assets/orphans/orphan_017.jpg",
+        "assets/orphans/orphan_018.jpg",
+        "assets/orphans/orphan_019.jpg",
+        "assets/orphans/orphan_020.jpg",
+        "assets/orphans/orphan_021.jpg",
+        "assets/orphans/orphan_022.jpg",
+        "assets/orphans/orphan_023.jpg",
+        "assets/orphans/orphan_024.jpg",
+        "assets/orphans/orphan_025.jpg",
+        "assets/orphans/orphan_026.jpg",
+        "assets/orphans/orphan_027.jpg",
+        "assets/orphans/orphan_028.jpg",
+        "assets/orphans/orphan_029.jpg",
+        "assets/orphans/orphan_030.jpg",
+        "assets/orphans/orphan_031.jpg",
+        "assets/orphans/orphan_032.jpg",
+        "assets/orphans/orphan_033.jpg",
+        "assets/orphans/orphan_034.jpg",
+        "assets/orphans/orphan_035.jpg",
+        "assets/orphans/orphan_036.jpg",
+        "assets/orphans/orphan_037.jpg",
+        "assets/orphans/orphan_038.jpg",
+        "assets/orphans/orphan_039.jpg",
+        "assets/orphans/orphan_040.jpg",
+        "assets/orphans/orphan_041.jpg",
+        "render/figures/figure_001.md",
+        "render/figures/orphan_013.md",
+        "render/figures/orphan_014.md",
+        "render/figures/orphan_015.md",
+        "render/figures/orphan_016.md",
+        "render/figures/orphan_017.md",
+        "render/figures/orphan_018.md",
+        "render/figures/orphan_019.md",
+        "render/figures/orphan_020.md",
+        "render/figures/orphan_021.md",
+        "render/figures/orphan_022.md",
+        "render/figures/orphan_023.md",
+        "render/figures/orphan_024.md",
+        "render/figures/orphan_025.md",
+        "render/figures/orphan_026.md",
+        "render/figures/orphan_027.md",
+        "render/figures/orphan_028.md",
+        "render/figures/orphan_029.md",
+        "render/figures/orphan_030.md",
+        "render/figures/orphan_031.md",
+        "render/figures/orphan_032.md",
+        "render/figures/orphan_033.md",
+        "render/figures/orphan_034.md",
+        "render/figures/orphan_035.md",
+        "render/figures/orphan_036.md",
+        "render/figures/orphan_037.md",
+        "render/figures/orphan_038.md",
+        "render/figures/orphan_039.md",
+        "render/figures/orphan_040.md",
+        "render/figures/orphan_041.md"
+      ],
+      "render_removed": [],
+      "embeds": 4,
+      "embeds_retargeted": 0,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 0,
+      "new_tables": 0,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 273,
+      "new_rows": 273,
+      "role_removed": {
+        "media_asset": 1
+      },
+      "role_added": {
+        "figure_asset": 1
+      },
+      "old_body_chars": 46718,
+      "new_body_chars": 46718,
+      "old_text_chars": 68369,
+      "new_text_chars": 68369,
+      "old_fulltext_chars": 59789
+    },
+    "new_manifest": {
+      "figures": 5,
+      "tables": 0,
+      "orphans": 41
+    },
+    "new_orphans": 5,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "53B47JM8",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_002",
+          "new_id": "figure_002",
+          "candidates": [
+            "figure_002"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "6",
+              "text": "Fig. 2. Characterization of the microstructure and piezoelectric performance of the PLLA nanofiber mats under applied ultrasound (US). a. Schematic of the electrospinning setup used to fabricate the PLLA films and scanning electron microscope (SEM) images showing PLLA nanofiber alignment with different collection speeds. Scale bars are 20 μm. b. Simplified schematic showing the setup used for measuring the open circuit voltage of the films using a water bath and ultrasound produced at 40 kHz. c. Open circuit output voltage from PLLA sensors fabricated using films at different collector speeds under applied 40 kHz ultrasound. d. Peak output voltages from the PLLA sensors fabricated with 3000 rpm films under the same applied US over the course of 26 days. Films were conditioned in standard cell media solution at 37 °C, 5% CO₂ and measurements were taken every 2 days.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 6,
+                  "bbox": [
+                    155,
+                    109,
+                    487,
+                    439
+                  ]
+                },
+                {
+                  "block_id": 3,
+                  "page": 6,
+                  "bbox": [
+                    158,
+                    442,
+                    490,
+                    578
+                  ]
+                },
+                {
+                  "block_id": 4,
+                  "page": 6,
+                  "bbox": [
+                    157,
+                    580,
+                    498,
+                    818
+                  ]
+                },
+                {
+                  "block_id": 5,
+                  "page": 6,
+                  "bbox": [
+                    157,
+                    819,
+                    491,
+                    1068
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_002.jpg",
+            "render/figures/figure_002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "17",
+              "text": "Fig. 3. Osteogenic differentiation of stem cells, grown on the piezoelectric PLLA nanofiber scaffold under applied US in vitro. a. A simple schematic demonstrates our setup for seeding adipose stem cells (ADCs) onto the scaffolds and treating them with US. The applied US induces controllable acoustic pressure, allowing the PLLA nanofiber films to generate electrical surface charge, which enhances osteogenesis from cultured cells. b. A quantitative comparison of ALP production by the cells in different treatment groups. c. Quantification of mineral formation levels from cells measured with an alizarin red assay. d and e are qPCR results illustrating expression levels of osteocalcin and osterix genes for different treatment groups, respectively. We used the two tailed t-test for statistical analysis. In the figure,  $ ^{*} $represents a significance level of 0.01,  $ ^{**} $represents a significance level of 0.001 and  $ ^{***} $represents a significance level of 0.0001.",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 6,
+                  "bbox": [
+                    617,
+                    658,
+                    1100,
+                    835
+                  ]
+                },
+                {
+                  "block_id": 13,
+                  "page": 6,
+                  "bbox": [
+                    619,
+                    844,
+                    856,
+                    1039
+                  ]
+                },
+                {
+                  "block_id": 14,
+                  "page": 6,
+                  "bbox": [
+                    860,
+                    856,
+                    1112,
+                    1036
+                  ]
+                },
+                {
+                  "block_id": 15,
+                  "page": 6,
+                  "bbox": [
+                    619,
+                    1041,
+                    858,
+                    1221
+                  ]
+                },
+                {
+                  "block_id": 16,
+                  "page": 6,
+                  "bbox": [
+                    860,
+                    1043,
+                    1113,
+                    1221
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_003.jpg",
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "8",
+              "text": "Fig. 4. Osteogenic activity of reporter bone marrow stem cells (BMSCs) when grown on the electrospun PLLA scaffolds with US treatment. a. Schematic to demonstrate the progressive expression from BSP to DMP and changes in fluorescence that accompany this transition. b. Fluorescent microscope images of the cells seeded on different scaffolds after being subjected to different treatments as observed under the GFP channel (exposure time 100 ms) and cherry red channel (exposure time 1000 ms). c. and d. represent the fluorescent expressions quantitatively and provide a graphical comparison between each group. We used the two tailed t-test for statistical analysis. In the figure, * represents a significance level of 0.01, ** represents a significance level of 0.001 and *** represents a significance level of 0.0001.",
+              "asset_blocks": [
+                {
+                  "block_id": 5,
+                  "page": 7,
+                  "bbox": [
+                    75,
+                    679,
+                    783,
+                    1468
+                  ]
+                },
+                {
+                  "block_id": 6,
+                  "page": 7,
+                  "bbox": [
+                    80,
+                    1143,
+                    409,
+                    1464
+                  ]
+                },
+                {
+                  "block_id": 7,
+                  "page": 7,
+                  "bbox": [
+                    425,
+                    1133,
+                    784,
+                    1466
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_004.jpg",
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_005",
+          "new_id": "figure_005",
+          "candidates": [
+            "figure_005"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 8,
+              "legend_block_id": "14",
+              "text": "Fig. 5. Representative histology sections of the mouse calvarial bone showing details of bone formation and cell migration into the defects for the groups of piezo-scaffold (3000 rpm) and non-piezo. scaffold (300 rpm) under the same application of US. a is a simplified schematic of our in vivo experiment. b shows the sequence of the different steps involved in the surgery. We created a critical sized calvarial defect in mice and implanted our nanofiber film into it to observe bone formation on the film. This is followed by treating the animals with US at the site of implantation to mimic the in-vitro system. The experiment was performed at n = 5 animals per group. c.i. Aperture contrast images comparing the mineral formation in the defect between the four animal groups. Yellow arrows indicate the new bone formation, clearly seen in the first group while it cannot be seen in the other groups. c.ii. Fluorescent images comparing the presence of ALP producing cells in the defect between the four groups using vector blue ALP staining. c.iii. Microscopic fluorescent images comparing the migration of Collagen 3.6 gene positive cells in the defect between the four groups. c.iv. Microscopic optical images comparing the bone formation in the defect between the four groups using Toludene blue staining. All scale bars are 1 mm.",
+              "asset_blocks": [
+                {
+                  "block_id": 6,
+                  "page": 8,
+                  "bbox": [
+                    127,
+                    781,
+                    362,
+                    947
+                  ]
+                },
+                {
+                  "block_id": 7,
+                  "page": 8,
+                  "bbox": [
+                    364,
+                    789,
+                    585,
+                    951
+                  ]
+                },
+                {
+                  "block_id": 8,
+                  "page": 8,
+                  "bbox": [
+                    618,
+                    791,
+                    811,
+                    951
+                  ]
+                },
+                {
+                  "block_id": 9,
+                  "page": 8,
+                  "bbox": [
+                    834,
+                    791,
+                    1063,
+                    950
+                  ]
+                },
+                {
+                  "block_id": 10,
+                  "page": 8,
+                  "bbox": [
+                    125,
+                    993,
+                    357,
+                    1297
+                  ]
+                },
+                {
+                  "block_id": 11,
+                  "page": 8,
+                  "bbox": [
+                    359,
+                    993,
+                    594,
+                    1299
+                  ]
+                },
+                {
+                  "block_id": 12,
+                  "page": 8,
+                  "bbox": [
+                    595,
+                    983,
+                    827,
+                    1298
+                  ]
+                },
+                {
+                  "block_id": 13,
+                  "page": 8,
+                  "bbox": [
+                    831,
+                    980,
+                    1066,
+                    1299
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_005.jpg",
+            "render/figures/figure_005.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "assets/figures/figure_002.jpg",
+          "new_path": "assets/figures/figure_002.jpg",
+          "old_sha256": "d80046148253fe551fc2c6607d3bcd85de5200a2bddb41d6df33ce6b72ef26ed",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "70a61440b1cd9627935e34e692003a98678c63e609bb946bffe9111e899b7c23",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "assets/figures/figure_003.jpg",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "60ec3f405a81d215411a883e5dafdb8e5a99f89503cdbcdfb9afef11fea95c5c",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "bb0f2ef6bd8bd244d7fdbc1f9d061847fcd34ba080e5a05d74425ee7020bfaff",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "assets/figures/figure_004.jpg",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "8af391eafeeda7f91f48535eced9e47a40a8053a70d28fb86b9a0bd9e0748609",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "15c4673e2d34deee9c5d6a26f6740312c95dcd6160faa047bc56f308fd346997",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "assets/figures/figure_005.jpg",
+          "new_path": "assets/figures/figure_005.jpg",
+          "old_sha256": "f8d6f3372c750cd6074349f16f1ddb71f18183a7a44b76cc105f3d352ceb847a",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "ee39ee9e4d7fe065fe2a156250d5321203eab565931c594c0c005f1662057d0e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "assets/orphans/orphan_001.jpg",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "b98d1f8e8ba7fd0740ded0c21a0e6cc43e63394a17a1f95b9d159f119ab43f73",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "a1c91261a4e4b6bd26a26cb6fa2379bbf39f334dc798b1b8faf37f65ff59977f",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "assets/orphans/orphan_002.jpg",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "96be5097aa888099f51a412f537efba2de2c93afff3909cd186ea7d67fca737d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "a7adcf0fd296191b619a08ae83d350c014c46b0ad95ed70ce52db93242a3c643",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "assets/orphans/orphan_003.jpg",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "78fd98c9d1cc3072490e5a3e578517628d2ba4698d723e2d8efec6753bc583a6",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "fdb89cb81cda8553eca8dd391081a2ea4202743bd0b9ee1601a3ed1b7fd97d1e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "assets/orphans/orphan_004.jpg",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "5d105a3ba1f905b6ea3b2cae62330948869238ee8a56127b79f64d95641aacfa",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "4b698aba7bd7e65c1df4e0615e10eb85c2ea34e600aec7007e294bfd3494168e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "assets/orphans/orphan_005.jpg",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "a573004402d10cbae3e4c8ae0a362c7d6f3642eb4b9f52f311f577febf440a64",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "10472c7717920ab486f0ffc08aed0a6aa80a9dd0e4775965c1fea89048f6d3b3",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "assets/orphans/orphan_006.jpg",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "7535390af850a25cc27f129ab00b90b3b82d6ec0ac42d3f7ee943f039b0a894d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "a553789a21f0b8b58d68927824184c9493a948eee472b6733a0f9f391b77855a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "assets/orphans/orphan_007.jpg",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "b98d1f8e8ba7fd0740ded0c21a0e6cc43e63394a17a1f95b9d159f119ab43f73",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "4770d5e2dc51cfdf9e4a3942a4b35d0ed15a0c9b302f0e6b09bb28043be6fedb",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "assets/orphans/orphan_008.jpg",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "96be5097aa888099f51a412f537efba2de2c93afff3909cd186ea7d67fca737d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "render/figures/orphan_008.md",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "5dab0e42bf3d24e65ce91d8cebfe72a8ede6b73043201b990092c3747a5c02cd",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "assets/orphans/orphan_009.jpg",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "78fd98c9d1cc3072490e5a3e578517628d2ba4698d723e2d8efec6753bc583a6",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "render/figures/orphan_009.md",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "4aa0b770f9f39cd885edeb5268101e367c6eee371004360f7c42d39bce5eb2cc",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "assets/orphans/orphan_010.jpg",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "5d105a3ba1f905b6ea3b2cae62330948869238ee8a56127b79f64d95641aacfa",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "render/figures/orphan_010.md",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "c1e845dabb898356f61c23f4db93636c818eac8c8fa1042d03c6f1cb65bccdd5",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "assets/orphans/orphan_011.jpg",
+          "new_path": "assets/orphans/orphan_011.jpg",
+          "old_sha256": "a573004402d10cbae3e4c8ae0a362c7d6f3642eb4b9f52f311f577febf440a64",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "render/figures/orphan_011.md",
+          "new_path": "render/figures/orphan_011.md",
+          "old_sha256": "1df7679eecd4b55a65fd4c6c3ebc91c20f250436dbd0b660ec9e545a1b3c28d7",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "assets/orphans/orphan_012.jpg",
+          "new_path": "assets/orphans/orphan_012.jpg",
+          "old_sha256": "7535390af850a25cc27f129ab00b90b3b82d6ec0ac42d3f7ee943f039b0a894d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "render/figures/orphan_012.md",
+          "new_path": "render/figures/orphan_012.md",
+          "old_sha256": "4f72ef8c5689e2983a714277ccb5eeda7cdfdc369396663ea1ef3cd2ae84e807",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_path": "",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_path": "",
+          "new_path": "assets/figures/figure_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_013",
+          "old_path": "",
+          "new_path": "render/figures/orphan_013.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_013",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_013.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_014",
+          "old_path": "",
+          "new_path": "render/figures/orphan_014.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_014",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_014.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_015",
+          "old_path": "",
+          "new_path": "render/figures/orphan_015.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_015",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_015.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_016",
+          "old_path": "",
+          "new_path": "render/figures/orphan_016.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_016",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_016.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_017",
+          "old_path": "",
+          "new_path": "render/figures/orphan_017.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_017",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_017.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_018",
+          "old_path": "",
+          "new_path": "render/figures/orphan_018.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_018",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_018.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_019",
+          "old_path": "",
+          "new_path": "render/figures/orphan_019.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_019",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_019.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_020",
+          "old_path": "",
+          "new_path": "render/figures/orphan_020.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_020",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_020.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_021",
+          "old_path": "",
+          "new_path": "render/figures/orphan_021.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_021",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_021.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_022",
+          "old_path": "",
+          "new_path": "render/figures/orphan_022.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_022",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_022.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_023",
+          "old_path": "",
+          "new_path": "render/figures/orphan_023.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_023",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_023.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_024",
+          "old_path": "",
+          "new_path": "render/figures/orphan_024.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_024",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_024.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_025",
+          "old_path": "",
+          "new_path": "render/figures/orphan_025.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_025",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_025.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_026",
+          "old_path": "",
+          "new_path": "render/figures/orphan_026.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_026",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_026.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_027",
+          "old_path": "",
+          "new_path": "render/figures/orphan_027.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_027",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_027.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_028",
+          "old_path": "",
+          "new_path": "render/figures/orphan_028.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_028",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_028.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_029",
+          "old_path": "",
+          "new_path": "render/figures/orphan_029.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_029",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_029.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_030",
+          "old_path": "",
+          "new_path": "render/figures/orphan_030.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_030",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_030.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_031",
+          "old_path": "",
+          "new_path": "render/figures/orphan_031.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_031",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_031.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_032",
+          "old_path": "",
+          "new_path": "render/figures/orphan_032.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_032",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_032.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_033",
+          "old_path": "",
+          "new_path": "render/figures/orphan_033.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_033",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_033.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_034",
+          "old_path": "",
+          "new_path": "render/figures/orphan_034.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_034",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_034.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_035",
+          "old_path": "",
+          "new_path": "render/figures/orphan_035.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_035",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_035.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_036",
+          "old_path": "",
+          "new_path": "render/figures/orphan_036.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_036",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_036.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_037",
+          "old_path": "",
+          "new_path": "render/figures/orphan_037.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_037",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_037.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_038",
+          "old_path": "",
+          "new_path": "render/figures/orphan_038.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_038",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_038.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_039",
+          "old_path": "",
+          "new_path": "render/figures/orphan_039.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_039",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_039.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_040",
+          "old_path": "",
+          "new_path": "render/figures/orphan_040.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_040",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_040.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_041",
+          "old_path": "",
+          "new_path": "render/figures/orphan_041.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_041",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_041.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            165
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            167
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            175
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            183
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "54103c7e2d5b691af41b6b0e1877033df8051566088bd49d857a10fe37a47cde",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "e3b83a7b225aeda8216ca41b71294e96d0340157329f1583ef23ce7c1154cb7f",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "d5123ca0d888cb1864ac723b141e3ced473e85e12aff3c821af9e19819f68e58",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "45ebb6742bb2a7a710268fdd096a1faebf189c6b7d2691a62b5c3d8b53530423",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "61205a6a9aef77692dfdd74bbd3c648b6d876d1421899c6468449471934cfd23",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "9d1c2927360eb12986959ea32e3ad0de05de91e20b05bd3dbd07f755cf806ea6",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 165,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_002.md",
+          "object_id": "figure_002",
+          "line": 167,
+          "candidates": [
+            "figure_002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 175,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_005.md",
+          "object_id": "figure_005",
+          "line": 183,
+          "candidates": [
+            "figure_005"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_005.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/53B47JM8/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "61205a6a9aef77692dfdd74bbd3c648b6d876d1421899c6468449471934cfd23",
+            "bytes": 59971
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "9d1c2927360eb12986959ea32e3ad0de05de91e20b05bd3dbd07f755cf806ea6",
+            "bytes": 60336
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "54103c7e2d5b691af41b6b0e1877033df8051566088bd49d857a10fe37a47cde",
+            "bytes": 970065
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "45ebb6742bb2a7a710268fdd096a1faebf189c6b7d2691a62b5c3d8b53530423",
+            "bytes": 525186
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "e3b83a7b225aeda8216ca41b71294e96d0340157329f1583ef23ce7c1154cb7f",
+            "bytes": 85637
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "d5123ca0d888cb1864ac723b141e3ced473e85e12aff3c821af9e19819f68e58",
+            "bytes": 20067
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "second": {
+    "key": "53B47JM8",
+    "identity": {
+      "old": {
+        "entries": 4,
+        "unique_ids": 4,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_002": "figure_002",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_005": "figure_005"
+      },
+      "renamed": [],
+      "unmapped_old_ids": [],
+      "claims_changed": []
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_002",
+          "figure_003",
+          "figure_004",
+          "figure_005"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 32,
+      "new_render_files": 92,
+      "render_added": [
+        "assets/figures/figure_001.jpg",
+        "assets/orphans/orphan_013.jpg",
+        "assets/orphans/orphan_014.jpg",
+        "assets/orphans/orphan_015.jpg",
+        "assets/orphans/orphan_016.jpg",
+        "assets/orphans/orphan_017.jpg",
+        "assets/orphans/orphan_018.jpg",
+        "assets/orphans/orphan_019.jpg",
+        "assets/orphans/orphan_020.jpg",
+        "assets/orphans/orphan_021.jpg",
+        "assets/orphans/orphan_022.jpg",
+        "assets/orphans/orphan_023.jpg",
+        "assets/orphans/orphan_024.jpg",
+        "assets/orphans/orphan_025.jpg",
+        "assets/orphans/orphan_026.jpg",
+        "assets/orphans/orphan_027.jpg",
+        "assets/orphans/orphan_028.jpg",
+        "assets/orphans/orphan_029.jpg",
+        "assets/orphans/orphan_030.jpg",
+        "assets/orphans/orphan_031.jpg",
+        "assets/orphans/orphan_032.jpg",
+        "assets/orphans/orphan_033.jpg",
+        "assets/orphans/orphan_034.jpg",
+        "assets/orphans/orphan_035.jpg",
+        "assets/orphans/orphan_036.jpg",
+        "assets/orphans/orphan_037.jpg",
+        "assets/orphans/orphan_038.jpg",
+        "assets/orphans/orphan_039.jpg",
+        "assets/orphans/orphan_040.jpg",
+        "assets/orphans/orphan_041.jpg",
+        "render/figures/figure_001.md",
+        "render/figures/orphan_013.md",
+        "render/figures/orphan_014.md",
+        "render/figures/orphan_015.md",
+        "render/figures/orphan_016.md",
+        "render/figures/orphan_017.md",
+        "render/figures/orphan_018.md",
+        "render/figures/orphan_019.md",
+        "render/figures/orphan_020.md",
+        "render/figures/orphan_021.md",
+        "render/figures/orphan_022.md",
+        "render/figures/orphan_023.md",
+        "render/figures/orphan_024.md",
+        "render/figures/orphan_025.md",
+        "render/figures/orphan_026.md",
+        "render/figures/orphan_027.md",
+        "render/figures/orphan_028.md",
+        "render/figures/orphan_029.md",
+        "render/figures/orphan_030.md",
+        "render/figures/orphan_031.md",
+        "render/figures/orphan_032.md",
+        "render/figures/orphan_033.md",
+        "render/figures/orphan_034.md",
+        "render/figures/orphan_035.md",
+        "render/figures/orphan_036.md",
+        "render/figures/orphan_037.md",
+        "render/figures/orphan_038.md",
+        "render/figures/orphan_039.md",
+        "render/figures/orphan_040.md",
+        "render/figures/orphan_041.md"
+      ],
+      "render_removed": [],
+      "embeds": 4,
+      "embeds_retargeted": 0,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 0,
+      "new_tables": 0,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 273,
+      "new_rows": 273,
+      "role_removed": {
+        "media_asset": 1
+      },
+      "role_added": {
+        "figure_asset": 1
+      },
+      "old_body_chars": 46718,
+      "new_body_chars": 46718,
+      "old_text_chars": 68369,
+      "new_text_chars": 68369,
+      "old_fulltext_chars": 59789
+    },
+    "new_manifest": {
+      "figures": 5,
+      "tables": 0,
+      "orphans": 41
+    },
+    "new_orphans": 5,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "53B47JM8",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_002",
+          "new_id": "figure_002",
+          "candidates": [
+            "figure_002"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "6",
+              "text": "Fig. 2. Characterization of the microstructure and piezoelectric performance of the PLLA nanofiber mats under applied ultrasound (US). a. Schematic of the electrospinning setup used to fabricate the PLLA films and scanning electron microscope (SEM) images showing PLLA nanofiber alignment with different collection speeds. Scale bars are 20 μm. b. Simplified schematic showing the setup used for measuring the open circuit voltage of the films using a water bath and ultrasound produced at 40 kHz. c. Open circuit output voltage from PLLA sensors fabricated using films at different collector speeds under applied 40 kHz ultrasound. d. Peak output voltages from the PLLA sensors fabricated with 3000 rpm films under the same applied US over the course of 26 days. Films were conditioned in standard cell media solution at 37 °C, 5% CO₂ and measurements were taken every 2 days.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 6,
+                  "bbox": [
+                    155,
+                    109,
+                    487,
+                    439
+                  ]
+                },
+                {
+                  "block_id": 3,
+                  "page": 6,
+                  "bbox": [
+                    158,
+                    442,
+                    490,
+                    578
+                  ]
+                },
+                {
+                  "block_id": 4,
+                  "page": 6,
+                  "bbox": [
+                    157,
+                    580,
+                    498,
+                    818
+                  ]
+                },
+                {
+                  "block_id": 5,
+                  "page": 6,
+                  "bbox": [
+                    157,
+                    819,
+                    491,
+                    1068
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_002.jpg",
+            "render/figures/figure_002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "17",
+              "text": "Fig. 3. Osteogenic differentiation of stem cells, grown on the piezoelectric PLLA nanofiber scaffold under applied US in vitro. a. A simple schematic demonstrates our setup for seeding adipose stem cells (ADCs) onto the scaffolds and treating them with US. The applied US induces controllable acoustic pressure, allowing the PLLA nanofiber films to generate electrical surface charge, which enhances osteogenesis from cultured cells. b. A quantitative comparison of ALP production by the cells in different treatment groups. c. Quantification of mineral formation levels from cells measured with an alizarin red assay. d and e are qPCR results illustrating expression levels of osteocalcin and osterix genes for different treatment groups, respectively. We used the two tailed t-test for statistical analysis. In the figure,  $ ^{*} $represents a significance level of 0.01,  $ ^{**} $represents a significance level of 0.001 and  $ ^{***} $represents a significance level of 0.0001.",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 6,
+                  "bbox": [
+                    617,
+                    658,
+                    1100,
+                    835
+                  ]
+                },
+                {
+                  "block_id": 13,
+                  "page": 6,
+                  "bbox": [
+                    619,
+                    844,
+                    856,
+                    1039
+                  ]
+                },
+                {
+                  "block_id": 14,
+                  "page": 6,
+                  "bbox": [
+                    860,
+                    856,
+                    1112,
+                    1036
+                  ]
+                },
+                {
+                  "block_id": 15,
+                  "page": 6,
+                  "bbox": [
+                    619,
+                    1041,
+                    858,
+                    1221
+                  ]
+                },
+                {
+                  "block_id": 16,
+                  "page": 6,
+                  "bbox": [
+                    860,
+                    1043,
+                    1113,
+                    1221
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_003.jpg",
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "8",
+              "text": "Fig. 4. Osteogenic activity of reporter bone marrow stem cells (BMSCs) when grown on the electrospun PLLA scaffolds with US treatment. a. Schematic to demonstrate the progressive expression from BSP to DMP and changes in fluorescence that accompany this transition. b. Fluorescent microscope images of the cells seeded on different scaffolds after being subjected to different treatments as observed under the GFP channel (exposure time 100 ms) and cherry red channel (exposure time 1000 ms). c. and d. represent the fluorescent expressions quantitatively and provide a graphical comparison between each group. We used the two tailed t-test for statistical analysis. In the figure, * represents a significance level of 0.01, ** represents a significance level of 0.001 and *** represents a significance level of 0.0001.",
+              "asset_blocks": [
+                {
+                  "block_id": 5,
+                  "page": 7,
+                  "bbox": [
+                    75,
+                    679,
+                    783,
+                    1468
+                  ]
+                },
+                {
+                  "block_id": 6,
+                  "page": 7,
+                  "bbox": [
+                    80,
+                    1143,
+                    409,
+                    1464
+                  ]
+                },
+                {
+                  "block_id": 7,
+                  "page": 7,
+                  "bbox": [
+                    425,
+                    1133,
+                    784,
+                    1466
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_004.jpg",
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_005",
+          "new_id": "figure_005",
+          "candidates": [
+            "figure_005"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 8,
+              "legend_block_id": "14",
+              "text": "Fig. 5. Representative histology sections of the mouse calvarial bone showing details of bone formation and cell migration into the defects for the groups of piezo-scaffold (3000 rpm) and non-piezo. scaffold (300 rpm) under the same application of US. a is a simplified schematic of our in vivo experiment. b shows the sequence of the different steps involved in the surgery. We created a critical sized calvarial defect in mice and implanted our nanofiber film into it to observe bone formation on the film. This is followed by treating the animals with US at the site of implantation to mimic the in-vitro system. The experiment was performed at n = 5 animals per group. c.i. Aperture contrast images comparing the mineral formation in the defect between the four animal groups. Yellow arrows indicate the new bone formation, clearly seen in the first group while it cannot be seen in the other groups. c.ii. Fluorescent images comparing the presence of ALP producing cells in the defect between the four groups using vector blue ALP staining. c.iii. Microscopic fluorescent images comparing the migration of Collagen 3.6 gene positive cells in the defect between the four groups. c.iv. Microscopic optical images comparing the bone formation in the defect between the four groups using Toludene blue staining. All scale bars are 1 mm.",
+              "asset_blocks": [
+                {
+                  "block_id": 6,
+                  "page": 8,
+                  "bbox": [
+                    127,
+                    781,
+                    362,
+                    947
+                  ]
+                },
+                {
+                  "block_id": 7,
+                  "page": 8,
+                  "bbox": [
+                    364,
+                    789,
+                    585,
+                    951
+                  ]
+                },
+                {
+                  "block_id": 8,
+                  "page": 8,
+                  "bbox": [
+                    618,
+                    791,
+                    811,
+                    951
+                  ]
+                },
+                {
+                  "block_id": 9,
+                  "page": 8,
+                  "bbox": [
+                    834,
+                    791,
+                    1063,
+                    950
+                  ]
+                },
+                {
+                  "block_id": 10,
+                  "page": 8,
+                  "bbox": [
+                    125,
+                    993,
+                    357,
+                    1297
+                  ]
+                },
+                {
+                  "block_id": 11,
+                  "page": 8,
+                  "bbox": [
+                    359,
+                    993,
+                    594,
+                    1299
+                  ]
+                },
+                {
+                  "block_id": 12,
+                  "page": 8,
+                  "bbox": [
+                    595,
+                    983,
+                    827,
+                    1298
+                  ]
+                },
+                {
+                  "block_id": 13,
+                  "page": 8,
+                  "bbox": [
+                    831,
+                    980,
+                    1066,
+                    1299
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_005.jpg",
+            "render/figures/figure_005.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "assets/figures/figure_002.jpg",
+          "new_path": "assets/figures/figure_002.jpg",
+          "old_sha256": "d80046148253fe551fc2c6607d3bcd85de5200a2bddb41d6df33ce6b72ef26ed",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "70a61440b1cd9627935e34e692003a98678c63e609bb946bffe9111e899b7c23",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "assets/figures/figure_003.jpg",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "60ec3f405a81d215411a883e5dafdb8e5a99f89503cdbcdfb9afef11fea95c5c",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "bb0f2ef6bd8bd244d7fdbc1f9d061847fcd34ba080e5a05d74425ee7020bfaff",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "assets/figures/figure_004.jpg",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "8af391eafeeda7f91f48535eced9e47a40a8053a70d28fb86b9a0bd9e0748609",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "15c4673e2d34deee9c5d6a26f6740312c95dcd6160faa047bc56f308fd346997",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "assets/figures/figure_005.jpg",
+          "new_path": "assets/figures/figure_005.jpg",
+          "old_sha256": "f8d6f3372c750cd6074349f16f1ddb71f18183a7a44b76cc105f3d352ceb847a",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "ee39ee9e4d7fe065fe2a156250d5321203eab565931c594c0c005f1662057d0e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "assets/orphans/orphan_001.jpg",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "b98d1f8e8ba7fd0740ded0c21a0e6cc43e63394a17a1f95b9d159f119ab43f73",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "a1c91261a4e4b6bd26a26cb6fa2379bbf39f334dc798b1b8faf37f65ff59977f",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "assets/orphans/orphan_002.jpg",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "96be5097aa888099f51a412f537efba2de2c93afff3909cd186ea7d67fca737d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "a7adcf0fd296191b619a08ae83d350c014c46b0ad95ed70ce52db93242a3c643",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "assets/orphans/orphan_003.jpg",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "78fd98c9d1cc3072490e5a3e578517628d2ba4698d723e2d8efec6753bc583a6",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "fdb89cb81cda8553eca8dd391081a2ea4202743bd0b9ee1601a3ed1b7fd97d1e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "assets/orphans/orphan_004.jpg",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "5d105a3ba1f905b6ea3b2cae62330948869238ee8a56127b79f64d95641aacfa",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "4b698aba7bd7e65c1df4e0615e10eb85c2ea34e600aec7007e294bfd3494168e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "assets/orphans/orphan_005.jpg",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "a573004402d10cbae3e4c8ae0a362c7d6f3642eb4b9f52f311f577febf440a64",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "10472c7717920ab486f0ffc08aed0a6aa80a9dd0e4775965c1fea89048f6d3b3",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "assets/orphans/orphan_006.jpg",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "7535390af850a25cc27f129ab00b90b3b82d6ec0ac42d3f7ee943f039b0a894d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "a553789a21f0b8b58d68927824184c9493a948eee472b6733a0f9f391b77855a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "assets/orphans/orphan_007.jpg",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "b98d1f8e8ba7fd0740ded0c21a0e6cc43e63394a17a1f95b9d159f119ab43f73",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "4770d5e2dc51cfdf9e4a3942a4b35d0ed15a0c9b302f0e6b09bb28043be6fedb",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "assets/orphans/orphan_008.jpg",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "96be5097aa888099f51a412f537efba2de2c93afff3909cd186ea7d67fca737d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "render/figures/orphan_008.md",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "5dab0e42bf3d24e65ce91d8cebfe72a8ede6b73043201b990092c3747a5c02cd",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "assets/orphans/orphan_009.jpg",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "78fd98c9d1cc3072490e5a3e578517628d2ba4698d723e2d8efec6753bc583a6",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "render/figures/orphan_009.md",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "4aa0b770f9f39cd885edeb5268101e367c6eee371004360f7c42d39bce5eb2cc",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "assets/orphans/orphan_010.jpg",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "5d105a3ba1f905b6ea3b2cae62330948869238ee8a56127b79f64d95641aacfa",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "render/figures/orphan_010.md",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "c1e845dabb898356f61c23f4db93636c818eac8c8fa1042d03c6f1cb65bccdd5",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "assets/orphans/orphan_011.jpg",
+          "new_path": "assets/orphans/orphan_011.jpg",
+          "old_sha256": "a573004402d10cbae3e4c8ae0a362c7d6f3642eb4b9f52f311f577febf440a64",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "render/figures/orphan_011.md",
+          "new_path": "render/figures/orphan_011.md",
+          "old_sha256": "1df7679eecd4b55a65fd4c6c3ebc91c20f250436dbd0b660ec9e545a1b3c28d7",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "assets/orphans/orphan_012.jpg",
+          "new_path": "assets/orphans/orphan_012.jpg",
+          "old_sha256": "7535390af850a25cc27f129ab00b90b3b82d6ec0ac42d3f7ee943f039b0a894d",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "render/figures/orphan_012.md",
+          "new_path": "render/figures/orphan_012.md",
+          "old_sha256": "4f72ef8c5689e2983a714277ccb5eeda7cdfdc369396663ea1ef3cd2ae84e807",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_path": "",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_path": "",
+          "new_path": "assets/figures/figure_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_013",
+          "old_path": "",
+          "new_path": "render/figures/orphan_013.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_013",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_013.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_014",
+          "old_path": "",
+          "new_path": "render/figures/orphan_014.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_014",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_014.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_015",
+          "old_path": "",
+          "new_path": "render/figures/orphan_015.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_015",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_015.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_016",
+          "old_path": "",
+          "new_path": "render/figures/orphan_016.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_016",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_016.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_017",
+          "old_path": "",
+          "new_path": "render/figures/orphan_017.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_017",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_017.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_018",
+          "old_path": "",
+          "new_path": "render/figures/orphan_018.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_018",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_018.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_019",
+          "old_path": "",
+          "new_path": "render/figures/orphan_019.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_019",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_019.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_020",
+          "old_path": "",
+          "new_path": "render/figures/orphan_020.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_020",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_020.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_021",
+          "old_path": "",
+          "new_path": "render/figures/orphan_021.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_021",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_021.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_022",
+          "old_path": "",
+          "new_path": "render/figures/orphan_022.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_022",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_022.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_023",
+          "old_path": "",
+          "new_path": "render/figures/orphan_023.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_023",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_023.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_024",
+          "old_path": "",
+          "new_path": "render/figures/orphan_024.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_024",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_024.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_025",
+          "old_path": "",
+          "new_path": "render/figures/orphan_025.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_025",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_025.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_026",
+          "old_path": "",
+          "new_path": "render/figures/orphan_026.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_026",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_026.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_027",
+          "old_path": "",
+          "new_path": "render/figures/orphan_027.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_027",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_027.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_028",
+          "old_path": "",
+          "new_path": "render/figures/orphan_028.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_028",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_028.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_029",
+          "old_path": "",
+          "new_path": "render/figures/orphan_029.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_029",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_029.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_030",
+          "old_path": "",
+          "new_path": "render/figures/orphan_030.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_030",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_030.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_031",
+          "old_path": "",
+          "new_path": "render/figures/orphan_031.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_031",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_031.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_032",
+          "old_path": "",
+          "new_path": "render/figures/orphan_032.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_032",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_032.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_033",
+          "old_path": "",
+          "new_path": "render/figures/orphan_033.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_033",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_033.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_034",
+          "old_path": "",
+          "new_path": "render/figures/orphan_034.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_034",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_034.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_035",
+          "old_path": "",
+          "new_path": "render/figures/orphan_035.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_035",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_035.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_036",
+          "old_path": "",
+          "new_path": "render/figures/orphan_036.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_036",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_036.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_037",
+          "old_path": "",
+          "new_path": "render/figures/orphan_037.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_037",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_037.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_038",
+          "old_path": "",
+          "new_path": "render/figures/orphan_038.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_038",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_038.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_039",
+          "old_path": "",
+          "new_path": "render/figures/orphan_039.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_039",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_039.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_040",
+          "old_path": "",
+          "new_path": "render/figures/orphan_040.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_040",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_040.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_041",
+          "old_path": "",
+          "new_path": "render/figures/orphan_041.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_041",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_041.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            165
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            167
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            175
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            183
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "54103c7e2d5b691af41b6b0e1877033df8051566088bd49d857a10fe37a47cde",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "e3b83a7b225aeda8216ca41b71294e96d0340157329f1583ef23ce7c1154cb7f",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "d5123ca0d888cb1864ac723b141e3ced473e85e12aff3c821af9e19819f68e58",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "45ebb6742bb2a7a710268fdd096a1faebf189c6b7d2691a62b5c3d8b53530423",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "61205a6a9aef77692dfdd74bbd3c648b6d876d1421899c6468449471934cfd23",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "9d1c2927360eb12986959ea32e3ad0de05de91e20b05bd3dbd07f755cf806ea6",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 165,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_002.md",
+          "object_id": "figure_002",
+          "line": 167,
+          "candidates": [
+            "figure_002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 175,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_005.md",
+          "object_id": "figure_005",
+          "line": 183,
+          "candidates": [
+            "figure_005"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_005.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/53B47JM8/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "61205a6a9aef77692dfdd74bbd3c648b6d876d1421899c6468449471934cfd23",
+            "bytes": 59971
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "9d1c2927360eb12986959ea32e3ad0de05de91e20b05bd3dbd07f755cf806ea6",
+            "bytes": 60336
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "54103c7e2d5b691af41b6b0e1877033df8051566088bd49d857a10fe37a47cde",
+            "bytes": 970065
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "45ebb6742bb2a7a710268fdd096a1faebf189c6b7d2691a62b5c3d8b53530423",
+            "bytes": 525186
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "e3b83a7b225aeda8216ca41b71294e96d0340157329f1583ef23ce7c1154cb7f",
+            "bytes": 85637
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "d5123ca0d888cb1864ac723b141e3ced473e85e12aff3c821af9e19819f68e58",
+            "bytes": 20067
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "plan_mismatch": false
+}
