@@ -17,6 +17,88 @@ def test_gate_refusal(tmp_path):
             gated.append(k)
     assert gated == ["A"]
     assert set(refusals) == {"B", "C", "D"}
+def test_plan_validation_reports_object_mismatches(tmp_path):
+    root = tmp_path / "paper"
+    (root / "structure").mkdir(parents=True)
+    (root / "fulltext.md").write_text("text", encoding="utf-8")
+    (root / "structure" / "figure_inventory.json").write_text(
+        json.dumps({
+            "matched_figures": [{
+                "figure_id": "figure_1",
+                "asset_block_ids": ["2"],
+                "matched_assets": [{"block_id": "2"}],
+            }]
+        }),
+        encoding="utf-8",
+    )
+    plan = {
+        "objects": [{
+            "kind": "figure", "new_id": "figure_1", "status": "planned",
+            "anchors": [{"asset_blocks": [{"block_id": 1}]}],
+        }],
+        "operations": [{
+            "op": "keep", "kind": "figure", "object_uid": "figure_1",
+            "new_path": "assets/figures/figure_1.jpg", "status": "planned",
+        }],
+        "embeds": [],
+    }
+    mismatches = h.validate_plan(root, plan)
+    assert {item["reason"] for item in mismatches} == {
+        "asset_claim_mismatch", "planned_file_missing"
+    }
+def test_plan_validation_blocks_unapproved_deletion(tmp_path):
+    root = tmp_path / "paper"
+    root.mkdir()
+    mismatch = h.validate_plan(root, {
+        "objects": [],
+        "embeds": [],
+        "operations": [{
+            "op": "delete_candidate",
+            "kind": "figure",
+            "object_uid": "figure_old",
+            "old_path": "render/figures/figure_old.md",
+            "status": "REQUIRES_APPROVAL",
+        }],
+    })
+    assert mismatch == [{
+        "object": "figure_old",
+        "reason": "unapproved_delete",
+        "path": "render/figures/figure_old.md",
+    }]
+
+
+
+def test_select_keys_defaults_to_all_ready():
+    selected, refused = h.select_keys({"B": "READY", "A": "READY", "C": "HOLD"}, None)
+    assert selected == ["A", "B"]
+    assert ("C", "HOLD") in refused
+
+
+def test_isolation_rejects_escape_and_symlink(tmp_path):
+    work = tmp_path / "isolated"
+    work.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    try:
+        (work / "escape").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        return
+    try:
+        h._reject_source_links(work)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("escaping symlink was accepted")
+def test_staged_config_does_not_reference_source_vault(tmp_path):
+    source = tmp_path / "source"
+    paper = source / "System" / "PaperForge" / "ocr" / "PAPER1"
+    paper.mkdir(parents=True)
+    isolated = tmp_path / "isolated"
+    vault = h.stage_vault(source, isolated, ["PAPER1"])
+    config = (vault / "paperforge.json").read_text(encoding="utf-8")
+    assert str(source).casefold() not in config.casefold()
+
+
 
 def test_snapshot_restore(tmp_path):
     root = tmp_path / "paper"
