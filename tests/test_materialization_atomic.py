@@ -167,3 +167,64 @@ def test_dry_run_builds_manifest_without_touching_stale_journal(tmp_path: Path) 
     assert not (tmp_path / "assets").exists()
     assert not (tmp_path / "render").exists()
     assert journal.read_bytes() == original
+
+
+def test_unmanaged_files_preserved_and_stale_managed_removed(tmp_path: Path) -> None:
+    assets = tmp_path / "assets"
+    render = tmp_path / "render"
+    _write(render / "figures" / "figure_001.md.edtz", b"plugin")
+    _write(render / "figures" / "unknown.foo", b"foo")
+    _write(render / "figures" / "figure_old.md", b"old-managed")
+    _write(assets / "figures" / "old.jpg", b"old-managed")
+    _write(assets / "figures" / "keep.txt", b"keep")
+
+    objects.extract_and_write_objects(
+        None, _figure(), {"tables": [], "unmatched_assets": []}, assets, render
+    )
+
+    assert (render / "figures" / "figure_001.md.edtz").read_bytes() == b"plugin"
+    assert (render / "figures" / "unknown.foo").read_bytes() == b"foo"
+    assert (assets / "figures" / "keep.txt").read_bytes() == b"keep"
+    assert not (render / "figures" / "figure_old.md").exists()
+    assert not (assets / "figures" / "old.jpg").exists()
+
+
+def test_commit_failure_preserves_unmanaged_originals(tmp_path: Path) -> None:
+    paper = tmp_path
+    target_a = paper / "assets" / "figures"
+    target_b = paper / "render" / "figures"
+    _write(target_a / "unmanaged.edtz", b"unmanaged")
+    _write(target_a / "figure_001.jpg", b"old-a")
+    _write(target_b / "figure_001.md", b"old-b")
+    stage = paper / ".stage"
+    staged_a = stage / "assets" / "figures"
+    staged_b = stage / "render" / "figures"
+    _write(staged_a / "figure_001.jpg", b"new-a")
+
+    with pytest.raises(objects.MaterializationCommitError):
+        objects._commit_staged_objects(
+            paper_root=paper,
+            stage_root=stage,
+            staged_targets=[(target_a, staged_a), (target_b, staged_b)],
+            provenance=None,
+        )
+
+    assert (target_a / "unmanaged.edtz").read_bytes() == b"unmanaged"
+    assert (target_a / "figure_001.jpg").read_bytes() == b"old-a"
+    assert (target_b / "figure_001.md").read_bytes() == b"old-b"
+    assert not list(paper.glob(".materialization-*"))
+
+
+def test_no_unmanaged_file_dropped(tmp_path: Path) -> None:
+    render = tmp_path / "render"
+    assets = tmp_path / "assets"
+    unmanaged = [f"keep_{i}.foo" for i in range(5)] + ["a.md.edtz"]
+    for name in unmanaged:
+        _write(render / "figures" / name, name.encode())
+
+    objects.extract_and_write_objects(
+        None, _figure(), {"tables": [], "unmanaged_assets": []}, assets, render
+    )
+
+    for name in unmanaged:
+        assert (render / "figures" / name).is_file(), name
