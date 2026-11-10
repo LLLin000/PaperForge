@@ -130,6 +130,82 @@ def _new_replay(vault: Path, ocr_root: Path, key: str) -> dict:
         "manifest": manifest or {},
         "figure_inventory": stage.figures,
     }
+def _rebuild_replay(vault: Path, ocr_root: Path, key: str) -> dict:
+    """Rebuild-based replay: stage inputs into an isolated temp vault, run the
+    real ``_rebuild_one_paper`` path, and read rebuilt artifacts.
+
+    Never writes to ``vault`` or ``ocr_root``.
+    """
+    import shutil
+    import tempfile
+
+    from paperforge.config import bootstrap_config
+    from paperforge.pdf_resolver import resolve_source_pdf
+    from paperforge.worker.ocr_rebuild import _rebuild_one_paper
+
+    source = ocr_root / key
+    if not (source / "canonical/blocks.raw.jsonl").is_file():
+        raise FileNotFoundError(f"missing raw blocks for {key}")
+
+    workdir = Path(tempfile.mkdtemp(prefix=f"rebuild-replay-{key}-"))
+    try:
+        v = workdir / "vault"
+        paper = v / "System" / "PaperForge" / "ocr" / key
+        paper.mkdir(parents=True, exist_ok=True)
+        (paper / "canonical").mkdir(exist_ok=True)
+        (paper / "raw").mkdir(exist_ok=True)
+        shutil.copy2(source / "canonical/blocks.raw.jsonl", paper / "canonical/blocks.raw.jsonl")
+        src_meta_path = source / "raw/source_metadata.json"
+        if src_meta_path.is_file():
+            shutil.copy2(src_meta_path, paper / "raw/source_metadata.json")
+        else:
+            (paper / "raw/source_metadata.json").write_text("{}", encoding="utf-8")
+
+        meta = _read_json(source / "meta.json")
+        pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
+        meta["source_pdf"] = str(pdf) if pdf is not None else ""
+        (paper / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+
+        bootstrap_config(v)
+        result = _rebuild_one_paper(v, key)
+        if result.get("status") != "ok":
+            raise RuntimeError(f"rebuild failed for {key}: {result}")
+
+        rebuilt = v / "System" / "PaperForge" / "ocr" / key
+        figure_inventory = _read_json(rebuilt / "structure/figure_inventory.json")
+        table_inventory = _read_json(rebuilt / "structure/table_inventory.json")
+        rows = _rows(rebuilt / "structure/blocks.structured.jsonl")
+        new_figures = figure_inventory.get("matched_figures", [])
+        new_tables = table_inventory.get("tables", [])
+        paper_dir = ocr_root / key
+        from paperforge.pdf_resolver import resolve_source_pdf
+        from paperforge.worker.ocr_objects import extract_and_write_objects
+
+        rebuilt_meta = _read_json(rebuilt / "meta.json")
+        pdf = resolve_source_pdf(vault, rebuilt_meta.get("source_pdf"))
+        manifest = extract_and_write_objects(
+            pdf,
+            figure_inventory,
+            table_inventory,
+            rebuilt / "assets",
+            rebuilt / "render",
+            dry_run=True,
+        ) or {}
+        # Express manifest paths relative to the original paper_dir for diffs.
+        for bucket in ("assets", "render"):
+            manifest[bucket] = [
+                str(paper_dir / Path(value).relative_to(rebuilt)) if Path(value).is_absolute() else value
+                for value in manifest.get(bucket, [])
+            ]
+        return {
+            "figures": new_figures,
+            "tables": new_tables,
+            "rows": rows,
+            "manifest": manifest,
+            "figure_inventory": figure_inventory,
+        }
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
 
 
 def _identity_diff(old: dict, new_figures: list[dict]) -> dict:
@@ -457,7 +533,6 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
     manifest = new["manifest"]
     entries = _entry_map(old, new["figures"])
     new_figure_ids = [str(f.get("figure_id", "")) for f in new["figures"]]
-    new_figure_set = set(new_figure_ids)
     new_table_ids = [str(value) for value in manifest.get("tables", [])]
     new_orphan_ids = {str(value) for value in manifest.get("orphans", [])}
     index = _manifest_index(paper_dir, manifest)
@@ -954,11 +1029,14 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
     }
 
 
-def audit_key(vault: Path, ocr_root: Path, key: str, plan: bool = False) -> dict:
+def audit_key(vault: Path, ocr_root: Path, key: str, plan: bool = False, replay_mode: str = "rebuild") -> dict:
     paper_dir = ocr_root / key
     old = _old_identity(paper_dir)
     try:
-        new = _new_replay(vault, ocr_root, key)
+        if replay_mode == "fast":
+            new = _new_replay(vault, ocr_root, key)
+        else:
+            new = _rebuild_replay(vault, ocr_root, key)
     except Exception as exc:  # noqa: BLE001 — report per paper
         return {"key": key, "error": f"{type(exc).__name__}: {exc}"}
     identity = _identity_diff(old, new["figures"])
