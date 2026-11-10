@@ -79,14 +79,27 @@ def audit_one(vault: Path, key: str) -> dict:
             ]
             roles = {str(h.get("role")) for h in old_hits}
             best = best_block(para, new_blocks)
+            best_text = str(best.get("text", ""))
+            suffix = para.replace(best_text, "", 1).strip() if best_text and best_text in para else ""
+            suffix_found = bool(suffix) and any(
+                suffix.lower() in norm(b.get("text")).lower() for b in new_blocks
+            )
             if para.startswith("<!-- page"):
                 attribution = "page_marker_noise"
+            elif para.startswith("> **Table Caption:**"):
+                remainder = para.rsplit(":", 1)[-1].strip(" *")
+                if any(remainder.lower() in norm(b.get("text")).lower() for b in new_blocks):
+                    attribution = "table_caption_markdown"
+                else:
+                    attribution = "unresolved"
             elif roles and roles <= NON_BODY_ROLES:
                 attribution = "non_body_old"
             elif best.get("coverage", 0) >= 0.8:
                 attribution = "moved_to_block"
             elif best.get("role") == "figure_inner_text" and "figure_inner_text" in roles:
                 attribution = "moved_to_figure_inner_text"
+            elif suffix_found:
+                attribution = "suffix_moved"
             else:
                 attribution = "unresolved"
             items.append({
