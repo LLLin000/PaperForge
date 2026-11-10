@@ -1,0 +1,154 @@
+{
+ "dry_run": {
+  "key": "2332GHPT",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 22,
+   "new_render_files": 27,
+   "render_added": [
+    "render/fulltext.md",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 5,
+   "new_tables": 5,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 193,
+   "new_rows": 193,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 20779,
+   "new_body_chars": 20779,
+   "old_text_chars": 42015,
+   "new_text_chars": 42015,
+   "old_fulltext_chars": 32919
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 5,
+   "orphans": 4
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "2332GHPT",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 42015,
+  "new_text_chars": 42015,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1000,
+      355,
+      1059,
+      413
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Figure 1 Classification of Hamada Grade. (A) Grade 1, the acromiohumeral interval is 6 mm or more. (B) Grade 2, the acromiohumeral interval is less than 6 mm (C) Grade 3, the acromiohumeral interval is less than 6 mm with acetabulization of the acromion. (D) Grade 4A, narrowing of the glenohumeral j"
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 2 Flowchart of patient inclusion. RCTs, rotator cuff tears."
+    },
+    {
+     "page": 5,
+     "block_id": 19,
+     "text": "Reducibility of rotator cuff tears."
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Condition of the long head of the biceps."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1000,
+     355,
+     1059,
+     413
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Figure 1 Classification of Hamada Grade. (A) Grade 1, the acromiohumeral interval is 6 mm or more. (B) Grade 2, the acromiohumeral interval is less than 6 mm (C) Grade 3, the acromiohumeral interval is less than 6 mm with acetabulization of the acromion. (D) Grade 4A, narrowing of the glenohumeral j"
+   },
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 2 Flowchart of patient inclusion. RCTs, rotator cuff tears."
+   },
+   {
+    "page": 5,
+    "block_id": 19,
+    "text": "Reducibility of rotator cuff tears."
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Condition of the long head of the biceps."
+   }
+  ]
+ }
+}

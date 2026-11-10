@@ -1,0 +1,109 @@
+{
+ "dry_run": {
+  "key": "PUP9JRFH",
+  "identity": {
+   "old": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "mapping": {},
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 4,
+   "new_render_files": 12,
+   "render_added": [
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 0,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 80,
+   "new_rows": 80,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 4381,
+   "new_body_chars": 4381,
+   "old_text_chars": 9267,
+   "new_text_chars": 9267,
+   "old_fulltext_chars": 8934
+  },
+  "new_manifest": {
+   "figures": 0,
+   "tables": 0,
+   "orphans": 2
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "PUP9JRFH",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 9267,
+  "new_text_chars": 9267,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      65,
+      155,
+      275,
+      208
+     ]
+    }
+   ],
+   "caption_candidates": []
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     65,
+     155,
+     275,
+     208
+    ]
+   }
+  ],
+  "caption_candidates": []
+ }
+}

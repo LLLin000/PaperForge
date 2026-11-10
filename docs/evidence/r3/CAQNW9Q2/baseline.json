@@ -1,0 +1,134 @@
+{
+ "dry_run": {
+  "key": "CAQNW9Q2",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 14,
+   "new_render_files": 27,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/figures/orphan_004.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 153,
+   "new_rows": 153,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 27350,
+   "new_body_chars": 27350,
+   "old_text_chars": 44207,
+   "new_text_chars": 44207,
+   "old_fulltext_chars": 39915
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 0,
+   "orphans": 4
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "CAQNW9Q2",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 44207,
+  "new_text_chars": 44207,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Figure 1 Standard radiographic appearance of osteoarthritic knee joints showing different degrees of joint space narrowing, subchondral sclerosis and osteophytosis. The antero-posterior radiographs of the knee have been taken from different patients and all show the joint in a different radio-anatom"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 2 Part of the macroradiographs of osteoarthritic knee joints with medial compartment involvement, in the weight bearing standing A) and loaded tunnel B) views. In the medial compartment the anterior and posterior margins of the joint are superimposed, the floor of the tibial plateau is the su"
+    },
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "Figure 3 Part of a macroradiograph of the metacarpo-phalangeal joints of a patient with hand OA, showing the mineralised cartilage zone extending into the existing articular cartilage space, contributing to joint space narrowing (original magnification ×5, reproduced ×3·2)."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Figure 1 Standard radiographic appearance of osteoarthritic knee joints showing different degrees of joint space narrowing, subchondral sclerosis and osteophytosis. The antero-posterior radiographs of the knee have been taken from different patients and all show the joint in a different radio-anatom"
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 2 Part of the macroradiographs of osteoarthritic knee joints with medial compartment involvement, in the weight bearing standing A) and loaded tunnel B) views. In the medial compartment the anterior and posterior margins of the joint are superimposed, the floor of the tibial plateau is the su"
+   },
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "Figure 3 Part of a macroradiograph of the metacarpo-phalangeal joints of a patient with hand OA, showing the mineralised cartilage zone extending into the existing articular cartilage space, contributing to joint space narrowing (original magnification ×5, reproduced ×3·2)."
+   }
+  ]
+ }
+}

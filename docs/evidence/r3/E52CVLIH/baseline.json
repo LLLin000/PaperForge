@@ -1,0 +1,191 @@
+{
+ "dry_run": {
+  "key": "E52CVLIH",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004",
+     "figure_005",
+     "figure_006"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 72,
+   "new_render_files": 86,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/figure_004.md.edtz",
+    "render/figures/figure_005.md.edtz",
+    "render/figures/figure_006.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 196,
+   "new_rows": 196,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 21834,
+   "new_body_chars": 21834,
+   "old_text_chars": 36345,
+   "new_text_chars": 36345,
+   "old_fulltext_chars": 31843
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 29
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "E52CVLIH",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 36345,
+  "new_text_chars": 36345,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1019,
+      220,
+      1077,
+      278
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 15,
+     "text": "Fig. 1 PEMF promoted the cell viability of IL-1 $ \\beta $-treated chondrocytes. A Illustration of PEMF device. B The results of the cell viability detected by CCK-8 assay.  $ ^{*}p<0.05 $ vs. control group.  $ ^{\\#}p<0.05 $ vs. IL-1 $ \\beta $ group. ns, no significant difference"
+    },
+    {
+     "page": 5,
+     "block_id": 12,
+     "text": "Fig. 2 PEMF inhibited IL-1 $ \\beta $-induced inflammatory response in chondrocytes. A The level of inflammatory factors in cell supernatant of chondrocytes. B, C The protein expression and quantification analysis of iNOS and Cox-2.  $ ^{*}p<0.05 $,  $ ^{**}p<0.05 $ vs. control group. # p<0.05, ## p<"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Fig. 3 PEMF promoted the balance between matrix synthesis and degradation in IL-1β-induced chondrocytes. A and B RT-qPCR results. C-E Immunofluorescence was used to evaluate MMP13 and Col2a1 expression after the treatment of PEMF or IL-1β in chondrocytes (Scale bar: 100 μm). * p < 0.05, ** p < 0.05 "
+    },
+    {
+     "page": 7,
+     "block_id": 10,
+     "text": "Fig. 4 PEMF suppressed the activation of NF- $ \\kappa $B signaling. A, B The Sirt1, P-P65, I $ \\kappa $B $ \\alpha $ and P65 protein expression and statistical analysis in IL-1 $ \\beta $-induced chondrocytes. C Immunofluorescence was used to evaluate P65 expression after the treatment of PEMF or IL-1"
+    },
+    {
+     "page": 8,
+     "block_id": 16,
+     "text": "Fig. 5 PEMF inhibited Sirt-mediated the activation of NF- $ \\kappa $B signaling. A, B The Sirt1 and P65 protein expression and statistical analysis in chondrocytes. C, D RT-qPCR was used to detect the mRNA levels of MMP13, ADAMTS5, Col2a1 and ACAN treated with IL-1 $ \\beta $ and PEMF combined with o"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Fig. 6 PEMF provided protection against OA progression in vivo. A and B H&E staining and Safranin-O staining (Scale bar: 200 μm). C Representative micro-CT images of knee joint. D Modified Mankin scores of knee joint. E Number of osteophytes. F Immunofluorescence staining (Scale bar: 20 μm). * p < 0"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1019,
+     220,
+     1077,
+     278
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 15,
+    "text": "Fig. 1 PEMF promoted the cell viability of IL-1 $ \\beta $-treated chondrocytes. A Illustration of PEMF device. B The results of the cell viability detected by CCK-8 assay.  $ ^{*}p<0.05 $ vs. control group.  $ ^{\\#}p<0.05 $ vs. IL-1 $ \\beta $ group. ns, no significant difference"
+   },
+   {
+    "page": 5,
+    "block_id": 12,
+    "text": "Fig. 2 PEMF inhibited IL-1 $ \\beta $-induced inflammatory response in chondrocytes. A The level of inflammatory factors in cell supernatant of chondrocytes. B, C The protein expression and quantification analysis of iNOS and Cox-2.  $ ^{*}p<0.05 $,  $ ^{**}p<0.05 $ vs. control group. # p<0.05, ## p<"
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Fig. 3 PEMF promoted the balance between matrix synthesis and degradation in IL-1β-induced chondrocytes. A and B RT-qPCR results. C-E Immunofluorescence was used to evaluate MMP13 and Col2a1 expression after the treatment of PEMF or IL-1β in chondrocytes (Scale bar: 100 μm). * p < 0.05, ** p < 0.05 "
+   },
+   {
+    "page": 7,
+    "block_id": 10,
+    "text": "Fig. 4 PEMF suppressed the activation of NF- $ \\kappa $B signaling. A, B The Sirt1, P-P65, I $ \\kappa $B $ \\alpha $ and P65 protein expression and statistical analysis in IL-1 $ \\beta $-induced chondrocytes. C Immunofluorescence was used to evaluate P65 expression after the treatment of PEMF or IL-1"
+   },
+   {
+    "page": 8,
+    "block_id": 16,
+    "text": "Fig. 5 PEMF inhibited Sirt-mediated the activation of NF- $ \\kappa $B signaling. A, B The Sirt1 and P65 protein expression and statistical analysis in chondrocytes. C, D RT-qPCR was used to detect the mRNA levels of MMP13, ADAMTS5, Col2a1 and ACAN treated with IL-1 $ \\beta $ and PEMF combined with o"
+   },
+   {
+    "page": 9,
+    "block_id": 3,
+    "text": "Fig. 6 PEMF provided protection against OA progression in vivo. A and B H&E staining and Safranin-O staining (Scale bar: 200 μm). C Representative micro-CT images of knee joint. D Modified Mankin scores of knee joint. E Number of osteophytes. F Immunofluorescence staining (Scale bar: 20 μm). * p < 0"
+   }
+  ]
+ }
+}

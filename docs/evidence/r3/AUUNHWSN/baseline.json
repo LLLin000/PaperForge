@@ -1,0 +1,170 @@
+{
+ "dry_run": {
+  "key": "AUUNHWSN",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_figure_p004_b2": "figure_figure_p004_b2"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_figure_p004_b2"
+    ],
+    "missing_assets": [
+     "figure_figure_p004_b2"
+    ],
+    "missing_renders": []
+   },
+   "old_render_files": 37,
+   "new_render_files": 50,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 166,
+   "new_rows": 166,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 21774,
+   "new_body_chars": 21774,
+   "old_text_chars": 39130,
+   "new_text_chars": 39130,
+   "old_fulltext_chars": 34053
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 1,
+   "orphans": 14
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "AUUNHWSN",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [
+   "figure_figure_p004_b2"
+  ],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 39130,
+  "new_text_chars": 39130,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1000,
+      296,
+      1059,
+      354
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 16,
+     "text": "Fig. 1. The work flow of this study."
+    },
+    {
+     "page": 4,
+     "block_id": 2,
+     "text": "The clinical characteristics of RCT patients in preoperative MRI."
+    },
+    {
+     "page": 4,
+     "block_id": 19,
+     "text": "Fig. 2. The figure of radiomics feature analysis. (A): AUC and the 95% confidence interval (CI) values of radiomics features which develop the RCT model; (B) the radiomics nomogram for the RCT model; (C) the number of features from different regions in Re-RCT model by 10-fold test; (D) the frequency"
+    },
+    {
+     "page": 5,
+     "block_id": 9,
+     "text": "Fig. 3. The ROC curves of the rotator cuff features-based RCT classifier in the training dataset (A) and validation dataset (B). The boxplot of AUC between different Re-RCT predictive model. (C): The boxplot of AUC between different Re-RCT predictive model based on various VOI; (D): The boxplot of A"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1000,
+     296,
+     1059,
+     354
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 16,
+    "text": "Fig. 1. The work flow of this study."
+   },
+   {
+    "page": 4,
+    "block_id": 2,
+    "text": "The clinical characteristics of RCT patients in preoperative MRI."
+   },
+   {
+    "page": 4,
+    "block_id": 19,
+    "text": "Fig. 2. The figure of radiomics feature analysis. (A): AUC and the 95% confidence interval (CI) values of radiomics features which develop the RCT model; (B) the radiomics nomogram for the RCT model; (C) the number of features from different regions in Re-RCT model by 10-fold test; (D) the frequency"
+   },
+   {
+    "page": 5,
+    "block_id": 9,
+    "text": "Fig. 3. The ROC curves of the rotator cuff features-based RCT classifier in the training dataset (A) and validation dataset (B). The boxplot of AUC between different Re-RCT predictive model. (C): The boxplot of AUC between different Re-RCT predictive model based on various VOI; (D): The boxplot of A"
+   }
+  ]
+ }
+}

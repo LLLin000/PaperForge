@@ -1,0 +1,165 @@
+{
+ "dry_run": {
+  "key": "NLKKXD5Z",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002"
+    ],
+    "missing_assets": [
+     "figure_001"
+    ],
+    "missing_renders": []
+   },
+   "old_render_files": 19,
+   "new_render_files": 33,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/figures/orphan_004.md.edtz",
+    "render/figures/orphan_005.md.edtz",
+    "render/figures/orphan_006.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 163,
+   "new_rows": 163,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 30068,
+   "new_body_chars": 30068,
+   "old_text_chars": 47795,
+   "new_text_chars": 47795,
+   "old_fulltext_chars": 45016
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 2,
+   "orphans": 6
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "NLKKXD5Z",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [
+   "figure_001"
+  ],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 47795,
+  "new_text_chars": 47795,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      933,
+      641,
+      1038,
+      678
+     ]
+    },
+    {
+     "page": 14,
+     "bbox": [
+      153,
+      302,
+      321,
+      361
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Figure 1. Different stimuli impact on high-voltage activated (HVA) voltage-operated calcium channels (VOCs). N-N-terminus of the protein (NH2), C-C-terminus of the protein (COOH)."
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Figure 2. Structure of high-voltage activated calcium channel.  $ \\alpha_{1} $—a central pore-forming subunit,  $ \\alpha_{2}\\delta $ subunit—a disulfide-linked glycoprotein dimer, an intracellular  $ \\beta $ subunit, a transmembrane glycoprotein  $ \\gamma $ subunit, and a calmodulin (CaM) bound to t"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     933,
+     641,
+     1038,
+     678
+    ]
+   },
+   {
+    "page": 14,
+    "bbox": [
+     153,
+     302,
+     321,
+     361
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Figure 1. Different stimuli impact on high-voltage activated (HVA) voltage-operated calcium channels (VOCs). N-N-terminus of the protein (NH2), C-C-terminus of the protein (COOH)."
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Figure 2. Structure of high-voltage activated calcium channel.  $ \\alpha_{1} $—a central pore-forming subunit,  $ \\alpha_{2}\\delta $ subunit—a disulfide-linked glycoprotein dimer, an intracellular  $ \\beta $ subunit, a transmembrane glycoprotein  $ \\gamma $ subunit, and a calmodulin (CaM) bound to t"
+   }
+  ]
+ }
+}

@@ -1,0 +1,279 @@
+{
+ "dry_run": {
+  "key": "24YKLTHQ",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004",
+     "figure_005",
+     "figure_006"
+    ],
+    "missing_assets": [
+     "figure_002"
+    ],
+    "missing_renders": []
+   },
+   "old_render_files": 52,
+   "new_render_files": 82,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_004.md.edtz",
+    "render/figures/figure_005.md.edtz",
+    "render/figures/figure_006.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/figures/orphan_004.md.edtz",
+    "render/figures/orphan_005.md.edtz",
+    "render/figures/orphan_006.md.edtz",
+    "render/figures/orphan_007.md.edtz",
+    "render/figures/orphan_008.md.edtz",
+    "render/figures/orphan_009.md.edtz",
+    "render/figures/orphan_010.md.edtz",
+    "render/figures/orphan_011.md.edtz",
+    "render/figures/orphan_012.md.edtz",
+    "render/figures/orphan_013.md.edtz",
+    "render/figures/orphan_014.md.edtz",
+    "render/figures/orphan_015.md.edtz",
+    "render/figures/orphan_016.md.edtz",
+    "render/figures/unresolved_cluster_001.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz",
+    "render/tables/table_002.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 182,
+   "new_rows": 182,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 25134,
+   "new_body_chars": 25134,
+   "old_text_chars": 45517,
+   "new_text_chars": 45517,
+   "old_fulltext_chars": 38290
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 2,
+   "orphans": 19
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "24YKLTHQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [
+   "figure_002"
+  ],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 45517,
+  "new_text_chars": 45517,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      831,
+      147,
+      1044,
+      272
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      114,
+      868,
+      270,
+      924
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Figure 1: Geometries used for computational simulations. A) Culture well plate used for electrical stimulations. B) Three-dimensional representative scheme of the three culture systems simulated. C) Representative scheme of the bi-dimensional axisymmetric domain."
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Source: own"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Source: own"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Source: own"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 2: Meshes of the three different culture systems simulated in the study. A) Culture system used to stimulate a single chondrocyte cultured in monolayer. B) Culture system implemented to stimulate chondrocytes of a cartilage explant cultured in vitro. C) Culture system performed to stimulate c"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Source: own"
+    },
+    {
+     "page": 5,
+     "block_id": 9,
+     "text": "Figure 3: Flowchart of the computational model implementation."
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Figure 4: Distribution of EFs in a chondrocyte cultured in monolayer. A) Electric flow diagram inside the culture well plate (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs in the cytoplasm of the chondrocyte. D) Distribution of EFs around the cell mem"
+    },
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "Source: own"
+    },
+    {
+     "page": 7,
+     "block_id": 2,
+     "text": "Figure 5: Distribution of EFs in cartilage explant cultured in vitro. A) Electric flow diagram inside the culture well plate and around the explant (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs in the entire explant. D) Distribution of EFs inside the"
+    },
+    {
+     "page": 8,
+     "block_id": 5,
+     "text": "Figure 6: Distribution of EFs in scaffold cultured in vitro. A) Electric flow diagram inside the culture well plate and around the scaffold (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs inside the scaffold. D) Distribution of EFs inside the chondrocy"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     831,
+     147,
+     1044,
+     272
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     114,
+     868,
+     270,
+     924
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Figure 1: Geometries used for computational simulations. A) Culture well plate used for electrical stimulations. B) Three-dimensional representative scheme of the three culture systems simulated. C) Representative scheme of the bi-dimensional axisymmetric domain."
+   },
+   {
+    "page": 3,
+    "block_id": 9,
+    "text": "Source: own"
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Source: own"
+   },
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "Source: own"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Figure 2: Meshes of the three different culture systems simulated in the study. A) Culture system used to stimulate a single chondrocyte cultured in monolayer. B) Culture system implemented to stimulate chondrocytes of a cartilage explant cultured in vitro. C) Culture system performed to stimulate c"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Source: own"
+   },
+   {
+    "page": 5,
+    "block_id": 9,
+    "text": "Figure 3: Flowchart of the computational model implementation."
+   },
+   {
+    "page": 6,
+    "block_id": 6,
+    "text": "Figure 4: Distribution of EFs in a chondrocyte cultured in monolayer. A) Electric flow diagram inside the culture well plate (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs in the cytoplasm of the chondrocyte. D) Distribution of EFs around the cell mem"
+   },
+   {
+    "page": 6,
+    "block_id": 11,
+    "text": "Source: own"
+   },
+   {
+    "page": 7,
+    "block_id": 2,
+    "text": "Figure 5: Distribution of EFs in cartilage explant cultured in vitro. A) Electric flow diagram inside the culture well plate and around the explant (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs in the entire explant. D) Distribution of EFs inside the"
+   },
+   {
+    "page": 8,
+    "block_id": 5,
+    "text": "Figure 6: Distribution of EFs in scaffold cultured in vitro. A) Electric flow diagram inside the culture well plate and around the scaffold (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs inside the scaffold. D) Distribution of EFs inside the chondrocy"
+   }
+  ]
+ }
+}

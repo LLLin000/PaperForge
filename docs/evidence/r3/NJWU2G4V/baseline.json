@@ -1,0 +1,252 @@
+{
+ "dry_run": {
+  "key": "NJWU2G4V",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004",
+     "figure_005",
+     "figure_006"
+    ],
+    "missing_assets": [
+     "figure_004"
+    ],
+    "missing_renders": []
+   },
+   "old_render_files": 31,
+   "new_render_files": 52,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/figure_004.md.edtz",
+    "render/figures/figure_005.md.edtz",
+    "render/figures/figure_006.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/figures/orphan_004.md.edtz",
+    "render/figures/orphan_005.md.edtz",
+    "render/figures/orphan_006.md.edtz",
+    "render/figures/orphan_007.md.edtz",
+    "render/figures/orphan_008.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 190,
+   "new_rows": 190,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 30592,
+   "new_body_chars": 30592,
+   "old_text_chars": 54699,
+   "new_text_chars": 54699,
+   "old_fulltext_chars": 47049
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 9
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "NJWU2G4V",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [
+   "figure_004"
+  ],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 54699,
+  "new_text_chars": 54699,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "Alizarin red/fast green"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Safranin O"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Alcian blue (20X)"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Alcian blue (40X)"
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "FIG. 1. Changes in tissue mineralization and glycosaminoglycan (GAG) production in response to different calcium concentrations. (A, B) Alizarin red staining (fast green counterstain) of pellet cultures of human adipose-derived stem cells cultured in chondrogenic differentiation medium (CDM) and ele"
+    },
+    {
+     "page": 5,
+     "block_id": 8,
+     "text": "Collagen I"
+    },
+    {
+     "page": 5,
+     "block_id": 9,
+     "text": "Collagen X"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Collagen II"
+    },
+    {
+     "page": 5,
+     "block_id": 13,
+     "text": "FIG. 2. Immunohistochemistry of human adipose-derived stem cell pellets cultured under different calcium concentrations. Pellets grown in CDM containing transforming growth factor- $ \\beta $1 (TGF- $ \\beta $1) and bone morphogenetic protein 6 (BMP6) at basal (1.8 mM) or elevated (8 mM) calcium conce"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "FIG. 3. Changes in gene expression of hASC pellets cultured in elevated calcium relative to pellets cultured in basal calcium conditions. Pellets grown in CDM containing TGF- $ \\beta $1 and BMP6 at elevated (8 mM) calcium concentrations exhibited increased collagen I and Runx2 mRNA expression, and d"
+    },
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "FIG. 4. Scanning electron microscopy of electrospun polylactic acid (PLA) fibers used to seed human adipose-derived stem cells. Top panel shows pure PLA fibers (0% tricalcium phosphate [TCP]) and bottom panel shows PLA fibers containing 20% TCP concentration."
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "FIG. 5. Construction of stacked osteochondral constructs. (A) Schematic image of different layers in stacked osteochondral construct showing how the electrospun PLA nanofibers (blue layers) were stacked together using collagen I gel (red layers) in between nanofibrous layers to form the stacked cons"
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "FIG. 6. Histochemical staining of stacked PLA scaffolds containing 0% or 20% TCP seeded with human adipose-derived stem cells (hASC) for 28 days. (A) Hematoxylin and eosin staining showing cells growing in all layers. Dark lines between stacks show regions of highest cell density where hASC were see"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 5,
+    "block_id": 2,
+    "text": "Alizarin red/fast green"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Safranin O"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Alcian blue (20X)"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Alcian blue (40X)"
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "FIG. 1. Changes in tissue mineralization and glycosaminoglycan (GAG) production in response to different calcium concentrations. (A, B) Alizarin red staining (fast green counterstain) of pellet cultures of human adipose-derived stem cells cultured in chondrogenic differentiation medium (CDM) and ele"
+   },
+   {
+    "page": 5,
+    "block_id": 8,
+    "text": "Collagen I"
+   },
+   {
+    "page": 5,
+    "block_id": 9,
+    "text": "Collagen X"
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Collagen II"
+   },
+   {
+    "page": 5,
+    "block_id": 13,
+    "text": "FIG. 2. Immunohistochemistry of human adipose-derived stem cell pellets cultured under different calcium concentrations. Pellets grown in CDM containing transforming growth factor- $ \\beta $1 (TGF- $ \\beta $1) and bone morphogenetic protein 6 (BMP6) at basal (1.8 mM) or elevated (8 mM) calcium conce"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "FIG. 3. Changes in gene expression of hASC pellets cultured in elevated calcium relative to pellets cultured in basal calcium conditions. Pellets grown in CDM containing TGF- $ \\beta $1 and BMP6 at elevated (8 mM) calcium concentrations exhibited increased collagen I and Runx2 mRNA expression, and d"
+   },
+   {
+    "page": 6,
+    "block_id": 11,
+    "text": "FIG. 4. Scanning electron microscopy of electrospun polylactic acid (PLA) fibers used to seed human adipose-derived stem cells. Top panel shows pure PLA fibers (0% tricalcium phosphate [TCP]) and bottom panel shows PLA fibers containing 20% TCP concentration."
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "FIG. 5. Construction of stacked osteochondral constructs. (A) Schematic image of different layers in stacked osteochondral construct showing how the electrospun PLA nanofibers (blue layers) were stacked together using collagen I gel (red layers) in between nanofibrous layers to form the stacked cons"
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "FIG. 6. Histochemical staining of stacked PLA scaffolds containing 0% or 20% TCP seeded with human adipose-derived stem cells (hASC) for 28 days. (A) Hematoxylin and eosin staining showing cells growing in all layers. Dark lines between stacks show regions of highest cell density where hASC were see"
+   }
+  ]
+ }
+}

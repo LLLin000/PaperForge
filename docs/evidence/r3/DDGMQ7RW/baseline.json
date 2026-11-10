@@ -1,0 +1,141 @@
+{
+ "dry_run": {
+  "key": "DDGMQ7RW",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 16,
+   "new_render_files": 28,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz",
+    "render/tables/table_002.md.edtz",
+    "render/tables/table_003.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 345,
+   "new_rows": 345,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 64577,
+   "new_body_chars": 64577,
+   "old_text_chars": 107584,
+   "new_text_chars": 107584,
+   "old_fulltext_chars": 97425
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 3,
+   "orphans": 3
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "DDGMQ7RW",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 107584,
+  "new_text_chars": 107584,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      71,
+      1193,
+      105,
+      1221
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Review framework of piezoelectric biomaterials in osteochondral tissue engineering: from biological basis to translational prospects. The figure summarizes the overall logic of this review, beginning with the biological basis of biopiezoelectricity across hierarchical scales, followed by t"
+    },
+    {
+     "page": 10,
+     "block_id": 5,
+     "text": "Figure 2. Schematic illustration of mechanical-to-electrical signal conversion at the osteochondral interface and its biological consequences. Physiological joint loading, including compression, shear, and motion, induces extracellular matrix deformation and interstitial fluid movement within the os"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     71,
+     1193,
+     105,
+     1221
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 1. Review framework of piezoelectric biomaterials in osteochondral tissue engineering: from biological basis to translational prospects. The figure summarizes the overall logic of this review, beginning with the biological basis of biopiezoelectricity across hierarchical scales, followed by t"
+   },
+   {
+    "page": 10,
+    "block_id": 5,
+    "text": "Figure 2. Schematic illustration of mechanical-to-electrical signal conversion at the osteochondral interface and its biological consequences. Physiological joint loading, including compression, shear, and motion, induces extracellular matrix deformation and interstitial fluid movement within the os"
+   }
+  ]
+ }
+}

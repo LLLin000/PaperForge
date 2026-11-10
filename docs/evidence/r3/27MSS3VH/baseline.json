@@ -1,0 +1,145 @@
+{
+ "dry_run": {
+  "key": "27MSS3VH",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 18,
+   "new_render_files": 30,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/figure_004.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz",
+    "render/tables/table_002.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 6,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 267,
+   "new_rows": 267,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 40946,
+   "new_body_chars": 40946,
+   "old_text_chars": 74979,
+   "new_text_chars": 74979,
+   "old_fulltext_chars": 64764
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 2,
+   "orphans": 3
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "27MSS3VH",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 74979,
+  "new_text_chars": 74979,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Potential strategies that can be used to augment the complexity and functionality of magnetic nanoparticles. The particles can be functionalized with antibodies for cell targeting and selection of specific stem cell subpopulations. Moreover, they can be coupled to specific growth factors a"
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Figure 2. Sequential magnetic fusion for the formation of a cartilage construct. (A) Sixteen spheroid aggregates were formed through the use of a network of magnetic tips, which were then placed in contact after 8 days. Spheroid fusion occurred and eight doublets were formed. At day 11, four quadrup"
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Figure 3. Endothelial cell organization in magnetic nanoparticle–alginate and alginate constructs. After the seeding into the MNP or alginate scaffold, the endothelial cells were exposed to an alternating magnetic field (magnetically stimulated) for 7 days. The control cell constructs were cultivate"
+    },
+    {
+     "page": 10,
+     "block_id": 2,
+     "text": "Figure 4. Magnet-scaffold configurations suggested by Russo et al. (A) External permanent magnetic ring (EM); (B) implanted permanent magnetic pins (PM); (C) implanted stainless steel pins in the field of external magnet (EM + SS). Although these configurations were defined aimed at scaffold fixatio"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 1. Potential strategies that can be used to augment the complexity and functionality of magnetic nanoparticles. The particles can be functionalized with antibodies for cell targeting and selection of specific stem cell subpopulations. Moreover, they can be coupled to specific growth factors a"
+   },
+   {
+    "page": 6,
+    "block_id": 7,
+    "text": "Figure 2. Sequential magnetic fusion for the formation of a cartilage construct. (A) Sixteen spheroid aggregates were formed through the use of a network of magnetic tips, which were then placed in contact after 8 days. Spheroid fusion occurred and eight doublets were formed. At day 11, four quadrup"
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Figure 3. Endothelial cell organization in magnetic nanoparticle–alginate and alginate constructs. After the seeding into the MNP or alginate scaffold, the endothelial cells were exposed to an alternating magnetic field (magnetically stimulated) for 7 days. The control cell constructs were cultivate"
+   },
+   {
+    "page": 10,
+    "block_id": 2,
+    "text": "Figure 4. Magnet-scaffold configurations suggested by Russo et al. (A) External permanent magnetic ring (EM); (B) implanted permanent magnetic pins (PM); (C) implanted stainless steel pins in the field of external magnet (EM + SS). Although these configurations were defined aimed at scaffold fixatio"
+   }
+  ]
+ }
+}

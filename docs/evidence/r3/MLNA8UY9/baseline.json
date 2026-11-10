@@ -1,0 +1,173 @@
+{
+ "dry_run": {
+  "key": "MLNA8UY9",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 18,
+   "new_render_files": 28,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 410,
+   "new_rows": 410,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 50099,
+   "new_body_chars": 50099,
+   "old_text_chars": 102403,
+   "new_text_chars": 102403,
+   "old_fulltext_chars": 97760
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 1,
+   "orphans": 5
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "MLNA8UY9",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 102403,
+  "new_text_chars": 102403,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Selected characteristics of animal models used for tendinopathy research including applicable species, damages to animals caused by modeling operations, time costs, features (A, B and D), mechanisms (C), changes in gene expression (E), and pathological patterns. Clocks are used to represent time cos"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1000,
+      334,
+      1060,
+      392
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 1. Human tendinopathy mechanisms and corresponding animal models. Grey box: The mechanisms of human tendinopathy. Green box: The methods of establishing tendinopathy models. (For interpretation of the references to colour in this figure legend, the reader is referred to the Web version of thi"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 2. The bridge between human continuum pathological model and pathological patterns for each animal model. Histopathological scores are used to establish associations between human continuum pathological model and pathological processes of each animal model. Histological scores less than 4 are"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 3. Comparison of different animal models used for tendinopathy research."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Selected characteristics of animal models used for tendinopathy research including applicable species, damages to animals caused by modeling operations, time costs, features (A, B and D), mechanisms (C), changes in gene expression (E), and pathological patterns. Clocks are used to represent time cos"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Selected characteristics of animal models used for tendinopathy research including applicable species, damages to animals caused by modeling operations, time costs, features (A, B and D), mechanisms (C), changes in gene expression (E), and pathological patterns. Clocks are used to represent time cos"
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1000,
+     334,
+     1060,
+     392
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 1. Human tendinopathy mechanisms and corresponding animal models. Grey box: The mechanisms of human tendinopathy. Green box: The methods of establishing tendinopathy models. (For interpretation of the references to colour in this figure legend, the reader is referred to the Web version of thi"
+   },
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Figure 2. The bridge between human continuum pathological model and pathological patterns for each animal model. Histopathological scores are used to establish associations between human continuum pathological model and pathological processes of each animal model. Histological scores less than 4 are"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Figure 3. Comparison of different animal models used for tendinopathy research."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Selected characteristics of animal models used for tendinopathy research including applicable species, damages to animals caused by modeling operations, time costs, features (A, B and D), mechanisms (C), changes in gene expression (E), and pathological patterns. Clocks are used to represent time cos"
+   }
+  ]
+ }
+}

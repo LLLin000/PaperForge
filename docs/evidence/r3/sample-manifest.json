@@ -1,0 +1,71 @@
+{
+  "candidate_count": 787,
+  "sample_size": 24,
+  "strata": {
+    "control": [
+      "2I7V3Y5B",
+      "J5EGBT9H",
+      "PUP9JRFH",
+      "ZARNGKY7"
+    ],
+    "figure_heavy": [
+      "24YKLTHQ",
+      "E52CVLIH",
+      "NJWU2G4V",
+      "ZXER5F2Z"
+    ],
+    "mixed_shape": [
+      "2ZBAK9VY",
+      "CAQNW9Q2",
+      "NLKKXD5Z",
+      "ZS44NM5K"
+    ],
+    "multi_asset": [
+      "25K5KZAQ",
+      "AUUNHWSN",
+      "LJ3MU9GC",
+      "ZZQSV6YW"
+    ],
+    "single_asset": [
+      "27MSS3VH",
+      "CB5NJ28R",
+      "MLNA8UY9",
+      "ZZKEYE6J"
+    ],
+    "table_heavy": [
+      "2332GHPT",
+      "DDGMQ7RW",
+      "PAJWI6DH",
+      "ZLSXVG2Y"
+    ]
+  },
+  "selected_keys": [
+    "2332GHPT",
+    "24YKLTHQ",
+    "25K5KZAQ",
+    "27MSS3VH",
+    "2I7V3Y5B",
+    "2ZBAK9VY",
+    "AUUNHWSN",
+    "CAQNW9Q2",
+    "CB5NJ28R",
+    "DDGMQ7RW",
+    "E52CVLIH",
+    "J5EGBT9H",
+    "LJ3MU9GC",
+    "MLNA8UY9",
+    "NJWU2G4V",
+    "NLKKXD5Z",
+    "PAJWI6DH",
+    "PUP9JRFH",
+    "ZARNGKY7",
+    "ZLSXVG2Y",
+    "ZS44NM5K",
+    "ZXER5F2Z",
+    "ZZKEYE6J",
+    "ZZQSV6YW"
+  ],
+  "excluded": [
+    "CHILQ4KJ"
+  ]
+}

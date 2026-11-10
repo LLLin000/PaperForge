@@ -1,0 +1,163 @@
+{
+ "dry_run": {
+  "key": "ZZKEYE6J",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 18,
+   "new_render_files": 30,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 105,
+   "new_rows": 105,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 10674,
+   "new_body_chars": 10674,
+   "old_text_chars": 22863,
+   "new_text_chars": 22863,
+   "old_fulltext_chars": 17514
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 1,
+   "orphans": 6
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "ZZKEYE6J",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 22863,
+  "new_text_chars": 22863,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 16,
+     "text": "parameters. Intra- and interobserver reliability was evaluated with the intraclass correlation coefficient test. Receiver Operating Characteristic (ROC) analysis was used to determine the cutoff values. The effect of the measurements on the distinction between with and without RCT was evaluated with"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      97,
+      1326,
+      189,
+      1360
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "Figure 1. Measurement of acromial thickness"
+    },
+    {
+     "page": 2,
+     "block_id": 16,
+     "text": "parameters. Intra- and interobserver reliability was evaluated with the intraclass correlation coefficient test. Receiver Operating Characteristic (ROC) analysis was used to determine the cutoff values. The effect of the measurements on the distinction between with and without RCT was evaluated with"
+    },
+    {
+     "page": 2,
+     "block_id": 21,
+     "text": "Figure 2. Measurement of acromiohumeral distance."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 2,
+    "block_id": 16,
+    "text": "parameters. Intra- and interobserver reliability was evaluated with the intraclass correlation coefficient test. Receiver Operating Characteristic (ROC) analysis was used to determine the cutoff values. The effect of the measurements on the distinction between with and without RCT was evaluated with"
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     97,
+     1326,
+     189,
+     1360
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 15,
+    "text": "Figure 1. Measurement of acromial thickness"
+   },
+   {
+    "page": 2,
+    "block_id": 16,
+    "text": "parameters. Intra- and interobserver reliability was evaluated with the intraclass correlation coefficient test. Receiver Operating Characteristic (ROC) analysis was used to determine the cutoff values. The effect of the measurements on the distinction between with and without RCT was evaluated with"
+   },
+   {
+    "page": 2,
+    "block_id": 21,
+    "text": "Figure 2. Measurement of acromiohumeral distance."
+   }
+  ]
+ }
+}

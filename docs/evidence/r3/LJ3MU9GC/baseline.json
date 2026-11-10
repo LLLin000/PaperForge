@@ -1,0 +1,138 @@
+{
+ "dry_run": {
+  "key": "LJ3MU9GC",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 68,
+   "new_render_files": 73,
+   "render_added": [
+    "render/fulltext.md",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 163,
+   "new_rows": 163,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 20502,
+   "new_body_chars": 20502,
+   "old_text_chars": 35988,
+   "new_text_chars": 35988,
+   "old_fulltext_chars": 28578
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 0,
+   "orphans": 30
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "LJ3MU9GC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 35988,
+  "new_text_chars": 35988,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Figure 1. a) Schematic of the direct assembly of MPN NPs and cargo-loaded MPN NPs. b) Size, as determined by DLS, and $\\zeta$-potential values of MPN NPs assembled using different concentrations of PB. Note that 0 and 0.1 mM PB did not result in MPN NP formation. Data are shown as the mean $\\pm$ sta"
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 2. a–c) Size, as determined by DLS (a),  $ \\zeta $-potential values (b), and Fe $ ^{II} $-to-QUE ratio (c) of the MPN particles assembled at various pH values. Data are shown as the mean $ \\pm $SD (n=3). d) SEM image and e) EDX elemental mapping of MPN crystals obtained at pH 4. Scale bars ar"
+    },
+    {
+     "page": 5,
+     "block_id": 16,
+     "text": "Figure 3. a) Chemical structures of the polyphenols used and their coordination modes with various metal ions (dashed box). Multimodal, catechol-based, and maltol-based polyphenol ligands are presented within the orange, green, and blue boxes, respectively. b) Library of MPN NPs with different size "
+    },
+    {
+     "page": 7,
+     "block_id": 16,
+     "text": "Figure 4. a) Schematic of the cascade reaction by GOx/HRP@MPN NPs, involving glucose oxidation and conversion of amplex red to fluorescent resorufin. b) Relative catalytic activity of HRP@MPN NPs as a function of cycle number. c) CD spectra of native RNase A and RNase A released from NPs. d) CLSM im"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "Figure 1. a) Schematic of the direct assembly of MPN NPs and cargo-loaded MPN NPs. b) Size, as determined by DLS, and $\\zeta$-potential values of MPN NPs assembled using different concentrations of PB. Note that 0 and 0.1 mM PB did not result in MPN NP formation. Data are shown as the mean $\\pm$ sta"
+   },
+   {
+    "page": 4,
+    "block_id": 13,
+    "text": "Figure 2. a–c) Size, as determined by DLS (a),  $ \\zeta $-potential values (b), and Fe $ ^{II} $-to-QUE ratio (c) of the MPN particles assembled at various pH values. Data are shown as the mean $ \\pm $SD (n=3). d) SEM image and e) EDX elemental mapping of MPN crystals obtained at pH 4. Scale bars ar"
+   },
+   {
+    "page": 5,
+    "block_id": 16,
+    "text": "Figure 3. a) Chemical structures of the polyphenols used and their coordination modes with various metal ions (dashed box). Multimodal, catechol-based, and maltol-based polyphenol ligands are presented within the orange, green, and blue boxes, respectively. b) Library of MPN NPs with different size "
+   },
+   {
+    "page": 7,
+    "block_id": 16,
+    "text": "Figure 4. a) Schematic of the cascade reaction by GOx/HRP@MPN NPs, involving glucose oxidation and conversion of amplex red to fluorescent resorufin. b) Relative catalytic activity of HRP@MPN NPs as a function of cycle number. c) CD spectra of native RNase A and RNase A released from NPs. d) CLSM im"
+   }
+  ]
+ }
+}

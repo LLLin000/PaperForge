@@ -1,0 +1,244 @@
+{
+ "dry_run": {
+  "key": "25K5KZAQ",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004",
+     "figure_005"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 108,
+   "new_render_files": 157,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/figure_004.md.edtz",
+    "render/figures/figure_005.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/figures/orphan_004.md.edtz",
+    "render/figures/orphan_005.md.edtz",
+    "render/figures/orphan_006.md.edtz",
+    "render/figures/orphan_007.md.edtz",
+    "render/figures/orphan_008.md.edtz",
+    "render/figures/orphan_009.md.edtz",
+    "render/figures/orphan_010.md.edtz",
+    "render/figures/orphan_011.md.edtz",
+    "render/figures/orphan_015.md.edtz",
+    "render/figures/orphan_016.md.edtz",
+    "render/figures/orphan_017.md.edtz",
+    "render/figures/orphan_018.md.edtz",
+    "render/figures/orphan_019.md.edtz",
+    "render/figures/orphan_020.md.edtz",
+    "render/figures/orphan_021.md.edtz",
+    "render/figures/orphan_022.md.edtz",
+    "render/figures/orphan_023.md.edtz",
+    "render/figures/orphan_024.md.edtz",
+    "render/figures/orphan_025.md.edtz",
+    "render/figures/orphan_026.md.edtz",
+    "render/figures/orphan_027.md.edtz",
+    "render/figures/orphan_028.md.edtz",
+    "render/figures/orphan_029.md.edtz",
+    "render/figures/orphan_030.md.edtz",
+    "render/figures/orphan_031.md.edtz",
+    "render/figures/orphan_032.md.edtz",
+    "render/figures/orphan_033.md.edtz",
+    "render/figures/orphan_034.md.edtz",
+    "render/figures/orphan_035.md.edtz",
+    "render/figures/orphan_036.md.edtz",
+    "render/figures/orphan_037.md.edtz",
+    "render/figures/orphan_038.md.edtz",
+    "render/figures/orphan_039.md.edtz",
+    "render/figures/unresolved_cluster_001.md.edtz",
+    "render/figures/unresolved_cluster_002.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 264,
+   "new_rows": 264,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 31418,
+   "new_body_chars": 31418,
+   "old_text_chars": 47527,
+   "new_text_chars": 47527,
+   "old_fulltext_chars": 42659
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 0,
+   "orphans": 49
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "25K5KZAQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 47527,
+  "new_text_chars": 47527,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      353
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 26,
+     "text": "Fig. 1. Fabrication and characterization of the biomimetic hydrogel. (A) Schematic illustration of the biomimetic hydrogel fabrication process. (B) Optical and Alizarin red staining images of the bilayer collagen hydrogel. Scale bar = 1 mm. (C) Thermogravimetric analysis of the mineralized collagen "
+    },
+    {
+     "page": 6,
+     "block_id": 21,
+     "text": "Fig. 2. Analysis of mineralization-induced biological changes. (A) Schematic diagram of cell-laden non-mineralized and mineralized hydrogel. (B) Representative 3D live/dead fluorescence images. Scale bar = 100  $ \\mu $m. (C) Representative fluorescence and SEM images of cell morphology. Aspect and a"
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "NMCH"
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "BMCH"
+    },
+    {
+     "page": 7,
+     "block_id": 15,
+     "text": "BMCH-TSPC"
+    },
+    {
+     "page": 7,
+     "block_id": 21,
+     "text": "Fig. 3. Cell-laden biomimetic hydrogel promoted functional recovery and new bone formation. (A) Schematic depicts the cell-laden biomimetic hydrogel for tendon-bone interface healing. (B) Running distances of rats at 2 and 4 weeks post-surgery. (C) Biomechanical tests of the repaired interface tissu"
+    },
+    {
+     "page": 8,
+     "block_id": 7,
+     "text": "Fig. 4. Cell-laden biomimetic hydrogel promoted histological structure restoration. (A) Representative histological staining images (H&E, SO-FG, TB and Masson) of different groups. Scale bar = 100 μm. (B) Representative immunofluorescence staining images for COL2 and SOX9 of different groups. Scale "
+    },
+    {
+     "page": 9,
+     "block_id": 15,
+     "text": "Fig. 5. scRNA-seq analysis of the repaired interface tissues in BMCH-TSPC group. (A) Uniform manifold approximation and projection (UMAP) plot showing the unbiased clustering results. (B) UMAP plot showing the unbiased clustering of tendon-bone cell lineages. (C) Predicted differentiation stages for"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     297,
+     1059,
+     353
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 5,
+    "block_id": 26,
+    "text": "Fig. 1. Fabrication and characterization of the biomimetic hydrogel. (A) Schematic illustration of the biomimetic hydrogel fabrication process. (B) Optical and Alizarin red staining images of the bilayer collagen hydrogel. Scale bar = 1 mm. (C) Thermogravimetric analysis of the mineralized collagen "
+   },
+   {
+    "page": 6,
+    "block_id": 21,
+    "text": "Fig. 2. Analysis of mineralization-induced biological changes. (A) Schematic diagram of cell-laden non-mineralized and mineralized hydrogel. (B) Representative 3D live/dead fluorescence images. Scale bar = 100  $ \\mu $m. (C) Representative fluorescence and SEM images of cell morphology. Aspect and a"
+   },
+   {
+    "page": 7,
+    "block_id": 11,
+    "text": "NMCH"
+   },
+   {
+    "page": 7,
+    "block_id": 14,
+    "text": "BMCH"
+   },
+   {
+    "page": 7,
+    "block_id": 15,
+    "text": "BMCH-TSPC"
+   },
+   {
+    "page": 7,
+    "block_id": 21,
+    "text": "Fig. 3. Cell-laden biomimetic hydrogel promoted functional recovery and new bone formation. (A) Schematic depicts the cell-laden biomimetic hydrogel for tendon-bone interface healing. (B) Running distances of rats at 2 and 4 weeks post-surgery. (C) Biomechanical tests of the repaired interface tissu"
+   },
+   {
+    "page": 8,
+    "block_id": 7,
+    "text": "Fig. 4. Cell-laden biomimetic hydrogel promoted histological structure restoration. (A) Representative histological staining images (H&E, SO-FG, TB and Masson) of different groups. Scale bar = 100 μm. (B) Representative immunofluorescence staining images for COL2 and SOX9 of different groups. Scale "
+   },
+   {
+    "page": 9,
+    "block_id": 15,
+    "text": "Fig. 5. scRNA-seq analysis of the repaired interface tissues in BMCH-TSPC group. (A) Uniform manifold approximation and projection (UMAP) plot showing the unbiased clustering results. (B) UMAP plot showing the unbiased clustering of tendon-bone cell lineages. (C) Predicted differentiation stages for"
+   }
+  ]
+ }
+}

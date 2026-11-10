@@ -1,0 +1,86 @@
+{
+ "dry_run": {
+  "key": "J5EGBT9H",
+  "identity": {
+   "old": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "mapping": {},
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 0,
+   "new_render_files": 5,
+   "render_added": [
+    "render/fulltext.md",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json"
+   ],
+   "render_removed": [],
+   "embeds": 0,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 133,
+   "new_rows": 133,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 5167,
+   "new_body_chars": 5167,
+   "old_text_chars": 16427,
+   "new_text_chars": 16427,
+   "old_fulltext_chars": 16049
+  },
+  "new_manifest": {
+   "figures": 0,
+   "tables": 0,
+   "orphans": 0
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "J5EGBT9H",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 16427,
+  "new_text_chars": 16427,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": []
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": []
+ }
+}

@@ -1,0 +1,243 @@
+{
+ "dry_run": {
+  "key": "CB5NJ28R",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "manifest_delivery": {
+    "figure_ids": [
+     "figure_001",
+     "figure_002",
+     "figure_003",
+     "figure_004",
+     "figure_005"
+    ],
+    "missing_assets": [],
+    "missing_renders": []
+   },
+   "old_render_files": 32,
+   "new_render_files": 48,
+   "render_added": [
+    "render/figures/figure_001.md.edtz",
+    "render/figures/figure_002.md.edtz",
+    "render/figures/figure_003.md.edtz",
+    "render/figures/figure_004.md.edtz",
+    "render/figures/figure_005.md.edtz",
+    "render/figures/orphan_001.md.edtz",
+    "render/figures/orphan_002.md.edtz",
+    "render/figures/orphan_003.md.edtz",
+    "render/figures/orphan_004.md.edtz",
+    "render/fulltext.md",
+    "render/fulltext.md.edtz",
+    "render/materialization.provenance.json",
+    "render/reconciliation.proposals.json",
+    "render/render-map.json",
+    "render/render.consistency.json",
+    "render/tables/table_001.md.edtz"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 518,
+   "new_rows": 518,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 99278,
+   "new_body_chars": 99278,
+   "old_text_chars": 171990,
+   "new_text_chars": 171990,
+   "old_fulltext_chars": 159288
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 0,
+   "orphans": 11
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "CB5NJ28R",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "missing_manifest_assets": [],
+  "missing_manifest_renders": [],
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 171990,
+  "new_text_chars": 171990,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 15,
+     "block_id": 10,
+     "text": "Overview of biomaterial applications in clinical medicine."
+    },
+    {
+     "page": 17,
+     "block_id": 2,
+     "text": "Comparison of Preclinical and Clinical-stage Bionanomaterials (BNMs) in Tissue Engineering Applications."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1002,
+      297,
+      1059,
+      353
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Fig. 1. Flowchart expressing methodology of current literature review."
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Fig. 2. Bionanomaterials: classification, biocompatibility, and functionalisation potential. The figure illustrates the classification of bionanomaterials (BNMs) into three major categories: organic (e.g., liposomes, dendrimers, polymers, micelles, emulsions, and nanogels), inorganic (e.g., gold nan"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 3. Structural perspective of bionanomaterials."
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Structural and functional perspectives of BNMs."
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "Fig. 4. Components and processes of tissue engineering. The diagram illustrates the components of tissue-engineered constructs, including scaffolds, cells, and biomarkers, and the workflow of tissue engineering, involving patient-derived cells, biomaterial scaffolds, and biological factors to create"
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Fig. 5. Schematic representation of the implantation of biomaterials for tissue regeneration. The diagram demonstrates the integration of engineered scaffolds with specific properties, such as porosity, elasticity, and controlled degradation, to support cellular attachment, proliferation, and migrat"
+    },
+    {
+     "page": 14,
+     "block_id": 2,
+     "text": "1adie 2\nTissue engineering approaches using BNMs."
+    },
+    {
+     "page": 15,
+     "block_id": 10,
+     "text": "Overview of biomaterial applications in clinical medicine."
+    },
+    {
+     "page": 17,
+     "block_id": 2,
+     "text": "Comparison of Preclinical and Clinical-stage Bionanomaterials (BNMs) in Tissue Engineering Applications."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 15,
+    "block_id": 10,
+    "text": "Overview of biomaterial applications in clinical medicine."
+   },
+   {
+    "page": 17,
+    "block_id": 2,
+    "text": "Comparison of Preclinical and Clinical-stage Bionanomaterials (BNMs) in Tissue Engineering Applications."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1002,
+     297,
+     1059,
+     353
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Fig. 1. Flowchart expressing methodology of current literature review."
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "Fig. 2. Bionanomaterials: classification, biocompatibility, and functionalisation potential. The figure illustrates the classification of bionanomaterials (BNMs) into three major categories: organic (e.g., liposomes, dendrimers, polymers, micelles, emulsions, and nanogels), inorganic (e.g., gold nan"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 3. Structural perspective of bionanomaterials."
+   },
+   {
+    "page": 6,
+    "block_id": 6,
+    "text": "Structural and functional perspectives of BNMs."
+   },
+   {
+    "page": 7,
+    "block_id": 11,
+    "text": "Fig. 4. Components and processes of tissue engineering. The diagram illustrates the components of tissue-engineered constructs, including scaffolds, cells, and biomarkers, and the workflow of tissue engineering, involving patient-derived cells, biomaterial scaffolds, and biological factors to create"
+   },
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Fig. 5. Schematic representation of the implantation of biomaterials for tissue regeneration. The diagram demonstrates the integration of engineered scaffolds with specific properties, such as porosity, elasticity, and controlled degradation, to support cellular attachment, proliferation, and migrat"
+   },
+   {
+    "page": 14,
+    "block_id": 2,
+    "text": "1adie 2\nTissue engineering approaches using BNMs."
+   },
+   {
+    "page": 15,
+    "block_id": 10,
+    "text": "Overview of biomaterial applications in clinical medicine."
+   },
+   {
+    "page": 17,
+    "block_id": 2,
+    "text": "Comparison of Preclinical and Clinical-stage Bionanomaterials (BNMs) in Tissue Engineering Applications."
+   }
+  ]
+ }
+}

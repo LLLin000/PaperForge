@@ -1,0 +1,1298 @@
+{
+ "set": "r3",
+ "keys": [
+  "2332GHPT",
+  "24YKLTHQ",
+  "25K5KZAQ",
+  "27MSS3VH",
+  "2I7V3Y5B",
+  "2ZBAK9VY",
+  "AUUNHWSN",
+  "CAQNW9Q2",
+  "CB5NJ28R",
+  "DDGMQ7RW",
+  "E52CVLIH",
+  "J5EGBT9H",
+  "LJ3MU9GC",
+  "MLNA8UY9",
+  "NJWU2G4V",
+  "NLKKXD5Z",
+  "PAJWI6DH",
+  "PUP9JRFH",
+  "ZARNGKY7",
+  "ZLSXVG2Y",
+  "ZS44NM5K",
+  "ZXER5F2Z",
+  "ZZKEYE6J",
+  "ZZQSV6YW"
+ ],
+ "cases": [
+  {
+   "key": "2332GHPT",
+   "passed": true,
+   "figures": 2,
+   "structural": {
+    "key": "2332GHPT",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 42015,
+    "new_text_chars": 42015,
+    "old_entries": 2,
+    "new_entries": 2,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1000,
+        355,
+        1059,
+        413
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 3,
+       "text": "Figure 1 Classification of Hamada Grade. (A) Grade 1, the acromiohumeral interval is 6 mm or more. (B) Grade 2, the acromiohumeral interval is less than 6 mm (C) Grade 3, the acromiohumeral interval is less than 6 mm with acetabulization of the acromion. (D) Grade 4A, narrowing of the glenohumeral j"
+      },
+      {
+       "page": 3,
+       "block_id": 3,
+       "text": "Figure 2 Flowchart of patient inclusion. RCTs, rotator cuff tears."
+      },
+      {
+       "page": 5,
+       "block_id": 19,
+       "text": "Reducibility of rotator cuff tears."
+      },
+      {
+       "page": 6,
+       "block_id": 2,
+       "text": "Condition of the long head of the biceps."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "24YKLTHQ",
+   "passed": false,
+   "figures": 6,
+   "structural": {
+    "key": "24YKLTHQ",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [
+     "figure_002"
+    ],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 45517,
+    "new_text_chars": 45517,
+    "old_entries": 6,
+    "new_entries": 6,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        831,
+        147,
+        1044,
+        272
+       ]
+      },
+      {
+       "page": 1,
+       "bbox": [
+        114,
+        868,
+        270,
+        924
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 7,
+       "text": "Figure 1: Geometries used for computational simulations. A) Culture well plate used for electrical stimulations. B) Three-dimensional representative scheme of the three culture systems simulated. C) Representative scheme of the bi-dimensional axisymmetric domain."
+      },
+      {
+       "page": 3,
+       "block_id": 9,
+       "text": "Source: own"
+      },
+      {
+       "page": 4,
+       "block_id": 4,
+       "text": "Source: own"
+      },
+      {
+       "page": 4,
+       "block_id": 7,
+       "text": "Source: own"
+      },
+      {
+       "page": 5,
+       "block_id": 3,
+       "text": "Figure 2: Meshes of the three different culture systems simulated in the study. A) Culture system used to stimulate a single chondrocyte cultured in monolayer. B) Culture system implemented to stimulate chondrocytes of a cartilage explant cultured in vitro. C) Culture system performed to stimulate c"
+      },
+      {
+       "page": 5,
+       "block_id": 5,
+       "text": "Source: own"
+      },
+      {
+       "page": 5,
+       "block_id": 9,
+       "text": "Figure 3: Flowchart of the computational model implementation."
+      },
+      {
+       "page": 6,
+       "block_id": 6,
+       "text": "Figure 4: Distribution of EFs in a chondrocyte cultured in monolayer. A) Electric flow diagram inside the culture well plate (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs in the cytoplasm of the chondrocyte. D) Distribution of EFs around the cell mem"
+      },
+      {
+       "page": 6,
+       "block_id": 11,
+       "text": "Source: own"
+      },
+      {
+       "page": 7,
+       "block_id": 2,
+       "text": "Figure 5: Distribution of EFs in cartilage explant cultured in vitro. A) Electric flow diagram inside the culture well plate and around the explant (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs in the entire explant. D) Distribution of EFs inside the"
+      },
+      {
+       "page": 8,
+       "block_id": 5,
+       "text": "Figure 6: Distribution of EFs in scaffold cultured in vitro. A) Electric flow diagram inside the culture well plate and around the scaffold (measurement in mV/cm). B) Distribution of EFs inside the culture media. C) Distribution of EFs inside the scaffold. D) Distribution of EFs inside the chondrocy"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "25K5KZAQ",
+   "passed": true,
+   "figures": 5,
+   "structural": {
+    "key": "25K5KZAQ",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 47527,
+    "new_text_chars": 47527,
+    "old_entries": 5,
+    "new_entries": 5,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1001,
+        297,
+        1059,
+        353
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 5,
+       "block_id": 26,
+       "text": "Fig. 1. Fabrication and characterization of the biomimetic hydrogel. (A) Schematic illustration of the biomimetic hydrogel fabrication process. (B) Optical and Alizarin red staining images of the bilayer collagen hydrogel. Scale bar = 1 mm. (C) Thermogravimetric analysis of the mineralized collagen "
+      },
+      {
+       "page": 6,
+       "block_id": 21,
+       "text": "Fig. 2. Analysis of mineralization-induced biological changes. (A) Schematic diagram of cell-laden non-mineralized and mineralized hydrogel. (B) Representative 3D live/dead fluorescence images. Scale bar = 100  $ \\mu $m. (C) Representative fluorescence and SEM images of cell morphology. Aspect and a"
+      },
+      {
+       "page": 7,
+       "block_id": 11,
+       "text": "NMCH"
+      },
+      {
+       "page": 7,
+       "block_id": 14,
+       "text": "BMCH"
+      },
+      {
+       "page": 7,
+       "block_id": 15,
+       "text": "BMCH-TSPC"
+      },
+      {
+       "page": 7,
+       "block_id": 21,
+       "text": "Fig. 3. Cell-laden biomimetic hydrogel promoted functional recovery and new bone formation. (A) Schematic depicts the cell-laden biomimetic hydrogel for tendon-bone interface healing. (B) Running distances of rats at 2 and 4 weeks post-surgery. (C) Biomechanical tests of the repaired interface tissu"
+      },
+      {
+       "page": 8,
+       "block_id": 7,
+       "text": "Fig. 4. Cell-laden biomimetic hydrogel promoted histological structure restoration. (A) Representative histological staining images (H&E, SO-FG, TB and Masson) of different groups. Scale bar = 100 \u03bcm. (B) Representative immunofluorescence staining images for COL2 and SOX9 of different groups. Scale "
+      },
+      {
+       "page": 9,
+       "block_id": 15,
+       "text": "Fig. 5. scRNA-seq analysis of the repaired interface tissues in BMCH-TSPC group. (A) Uniform manifold approximation and projection (UMAP) plot showing the unbiased clustering results. (B) UMAP plot showing the unbiased clustering of tendon-bone cell lineages. (C) Predicted differentiation stages for"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "27MSS3VH",
+   "passed": true,
+   "figures": 4,
+   "structural": {
+    "key": "27MSS3VH",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 74979,
+    "new_text_chars": 74979,
+    "old_entries": 4,
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 4,
+       "text": "Figure 1. Potential strategies that can be used to augment the complexity and functionality of magnetic nanoparticles. The particles can be functionalized with antibodies for cell targeting and selection of specific stem cell subpopulations. Moreover, they can be coupled to specific growth factors a"
+      },
+      {
+       "page": 6,
+       "block_id": 7,
+       "text": "Figure 2. Sequential magnetic fusion for the formation of a cartilage construct. (A) Sixteen spheroid aggregates were formed through the use of a network of magnetic tips, which were then placed in contact after 8 days. Spheroid fusion occurred and eight doublets were formed. At day 11, four quadrup"
+      },
+      {
+       "page": 8,
+       "block_id": 3,
+       "text": "Figure 3. Endothelial cell organization in magnetic nanoparticle\u2013alginate and alginate constructs. After the seeding into the MNP or alginate scaffold, the endothelial cells were exposed to an alternating magnetic field (magnetically stimulated) for 7 days. The control cell constructs were cultivate"
+      },
+      {
+       "page": 10,
+       "block_id": 2,
+       "text": "Figure 4. Magnet-scaffold configurations suggested by Russo et al. (A) External permanent magnetic ring (EM); (B) implanted permanent magnetic pins (PM); (C) implanted stainless steel pins in the field of external magnet (EM + SS). Although these configurations were defined aimed at scaffold fixatio"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "2I7V3Y5B",
+   "passed": true,
+   "figures": 0,
+   "structural": {
+    "key": "2I7V3Y5B",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 38178,
+    "new_text_chars": 38178,
+    "old_entries": 0,
+    "new_entries": 0,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": []
+    }
+   }
+  },
+  {
+   "key": "2ZBAK9VY",
+   "passed": false,
+   "figures": null,
+   "structural": {},
+   "error": "IndexError: page 8 not in document (source PDF has 8 pages; inventory references page 9)"
+  },
+  {
+   "key": "AUUNHWSN",
+   "passed": false,
+   "figures": 4,
+   "structural": {
+    "key": "AUUNHWSN",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [
+     "figure_figure_p004_b2"
+    ],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 39130,
+    "new_text_chars": 39130,
+    "old_entries": 4,
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1000,
+        296,
+        1059,
+        354
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 16,
+       "text": "Fig. 1. The work flow of this study."
+      },
+      {
+       "page": 4,
+       "block_id": 2,
+       "text": "The clinical characteristics of RCT patients in preoperative MRI."
+      },
+      {
+       "page": 4,
+       "block_id": 19,
+       "text": "Fig. 2. The figure of radiomics feature analysis. (A): AUC and the 95% confidence interval (CI) values of radiomics features which develop the RCT model; (B) the radiomics nomogram for the RCT model; (C) the number of features from different regions in Re-RCT model by 10-fold test; (D) the frequency"
+      },
+      {
+       "page": 5,
+       "block_id": 9,
+       "text": "Fig. 3. The ROC curves of the rotator cuff features-based RCT classifier in the training dataset (A) and validation dataset (B). The boxplot of AUC between different Re-RCT predictive model. (C): The boxplot of AUC between different Re-RCT predictive model based on various VOI; (D): The boxplot of A"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "CAQNW9Q2",
+   "passed": true,
+   "figures": 3,
+   "structural": {
+    "key": "CAQNW9Q2",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 44207,
+    "new_text_chars": 44207,
+    "old_entries": 3,
+    "new_entries": 3,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 3,
+       "text": "Figure 1 Standard radiographic appearance of osteoarthritic knee joints showing different degrees of joint space narrowing, subchondral sclerosis and osteophytosis. The antero-posterior radiographs of the knee have been taken from different patients and all show the joint in a different radio-anatom"
+      },
+      {
+       "page": 4,
+       "block_id": 4,
+       "text": "Figure 2 Part of the macroradiographs of osteoarthritic knee joints with medial compartment involvement, in the weight bearing standing A) and loaded tunnel B) views. In the medial compartment the anterior and posterior margins of the joint are superimposed, the floor of the tibial plateau is the su"
+      },
+      {
+       "page": 5,
+       "block_id": 11,
+       "text": "Figure 3 Part of a macroradiograph of the metacarpo-phalangeal joints of a patient with hand OA, showing the mineralised cartilage zone extending into the existing articular cartilage space, contributing to joint space narrowing (original magnification \u00d75, reproduced \u00d73\u00b72)."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "CB5NJ28R",
+   "passed": true,
+   "figures": 5,
+   "structural": {
+    "key": "CB5NJ28R",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 171990,
+    "new_text_chars": 171990,
+    "old_entries": 5,
+    "new_entries": 5,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 15,
+       "block_id": 10,
+       "text": "Overview of biomaterial applications in clinical medicine."
+      },
+      {
+       "page": 17,
+       "block_id": 2,
+       "text": "Comparison of Preclinical and Clinical-stage Bionanomaterials (BNMs) in Tissue Engineering Applications."
+      }
+     ],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1002,
+        297,
+        1059,
+        353
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 5,
+       "text": "Fig. 1. Flowchart expressing methodology of current literature review."
+      },
+      {
+       "page": 4,
+       "block_id": 11,
+       "text": "Fig. 2. Bionanomaterials: classification, biocompatibility, and functionalisation potential. The figure illustrates the classification of bionanomaterials (BNMs) into three major categories: organic (e.g., liposomes, dendrimers, polymers, micelles, emulsions, and nanogels), inorganic (e.g., gold nan"
+      },
+      {
+       "page": 6,
+       "block_id": 3,
+       "text": "Fig. 3. Structural perspective of bionanomaterials."
+      },
+      {
+       "page": 6,
+       "block_id": 6,
+       "text": "Structural and functional perspectives of BNMs."
+      },
+      {
+       "page": 7,
+       "block_id": 11,
+       "text": "Fig. 4. Components and processes of tissue engineering. The diagram illustrates the components of tissue-engineered constructs, including scaffolds, cells, and biomarkers, and the workflow of tissue engineering, involving patient-derived cells, biomaterial scaffolds, and biological factors to create"
+      },
+      {
+       "page": 11,
+       "block_id": 3,
+       "text": "Fig. 5. Schematic representation of the implantation of biomaterials for tissue regeneration. The diagram demonstrates the integration of engineered scaffolds with specific properties, such as porosity, elasticity, and controlled degradation, to support cellular attachment, proliferation, and migrat"
+      },
+      {
+       "page": 14,
+       "block_id": 2,
+       "text": "1adie 2\nTissue engineering approaches using BNMs."
+      },
+      {
+       "page": 15,
+       "block_id": 10,
+       "text": "Overview of biomaterial applications in clinical medicine."
+      },
+      {
+       "page": 17,
+       "block_id": 2,
+       "text": "Comparison of Preclinical and Clinical-stage Bionanomaterials (BNMs) in Tissue Engineering Applications."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "DDGMQ7RW",
+   "passed": true,
+   "figures": 2,
+   "structural": {
+    "key": "DDGMQ7RW",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 107584,
+    "new_text_chars": 107584,
+    "old_entries": 2,
+    "new_entries": 2,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        71,
+        1193,
+        105,
+        1221
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 4,
+       "text": "Figure 1. Review framework of piezoelectric biomaterials in osteochondral tissue engineering: from biological basis to translational prospects. The figure summarizes the overall logic of this review, beginning with the biological basis of biopiezoelectricity across hierarchical scales, followed by t"
+      },
+      {
+       "page": 10,
+       "block_id": 5,
+       "text": "Figure 2. Schematic illustration of mechanical-to-electrical signal conversion at the osteochondral interface and its biological consequences. Physiological joint loading, including compression, shear, and motion, induces extracellular matrix deformation and interstitial fluid movement within the os"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "E52CVLIH",
+   "passed": true,
+   "figures": 6,
+   "structural": {
+    "key": "E52CVLIH",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 36345,
+    "new_text_chars": 36345,
+    "old_entries": 6,
+    "new_entries": 6,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1019,
+        220,
+        1077,
+        278
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 4,
+       "block_id": 15,
+       "text": "Fig. 1 PEMF promoted the cell viability of IL-1 $ \\beta $-treated chondrocytes. A Illustration of PEMF device. B The results of the cell viability detected by CCK-8 assay.  $ ^{*}p<0.05 $ vs. control group.  $ ^{\\#}p<0.05 $ vs. IL-1 $ \\beta $ group. ns, no significant difference"
+      },
+      {
+       "page": 5,
+       "block_id": 12,
+       "text": "Fig. 2 PEMF inhibited IL-1 $ \\beta $-induced inflammatory response in chondrocytes. A The level of inflammatory factors in cell supernatant of chondrocytes. B, C The protein expression and quantification analysis of iNOS and Cox-2.  $ ^{*}p<0.05 $,  $ ^{**}p<0.05 $ vs. control group. # p<0.05, ## p<"
+      },
+      {
+       "page": 6,
+       "block_id": 4,
+       "text": "Fig. 3 PEMF promoted the balance between matrix synthesis and degradation in IL-1\u03b2-induced chondrocytes. A and B RT-qPCR results. C-E Immunofluorescence was used to evaluate MMP13 and Col2a1 expression after the treatment of PEMF or IL-1\u03b2 in chondrocytes (Scale bar: 100 \u03bcm). * p < 0.05, ** p < 0.05 "
+      },
+      {
+       "page": 7,
+       "block_id": 10,
+       "text": "Fig. 4 PEMF suppressed the activation of NF- $ \\kappa $B signaling. A, B The Sirt1, P-P65, I $ \\kappa $B $ \\alpha $ and P65 protein expression and statistical analysis in IL-1 $ \\beta $-induced chondrocytes. C Immunofluorescence was used to evaluate P65 expression after the treatment of PEMF or IL-1"
+      },
+      {
+       "page": 8,
+       "block_id": 16,
+       "text": "Fig. 5 PEMF inhibited Sirt-mediated the activation of NF- $ \\kappa $B signaling. A, B The Sirt1 and P65 protein expression and statistical analysis in chondrocytes. C, D RT-qPCR was used to detect the mRNA levels of MMP13, ADAMTS5, Col2a1 and ACAN treated with IL-1 $ \\beta $ and PEMF combined with o"
+      },
+      {
+       "page": 9,
+       "block_id": 3,
+       "text": "Fig. 6 PEMF provided protection against OA progression in vivo. A and B H&E staining and Safranin-O staining (Scale bar: 200 \u03bcm). C Representative micro-CT images of knee joint. D Modified Mankin scores of knee joint. E Number of osteophytes. F Immunofluorescence staining (Scale bar: 20 \u03bcm). * p < 0"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "J5EGBT9H",
+   "passed": true,
+   "figures": 0,
+   "structural": {
+    "key": "J5EGBT9H",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 16427,
+    "new_text_chars": 16427,
+    "old_entries": 0,
+    "new_entries": 0,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": []
+    }
+   }
+  },
+  {
+   "key": "LJ3MU9GC",
+   "passed": true,
+   "figures": 4,
+   "structural": {
+    "key": "LJ3MU9GC",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 35988,
+    "new_text_chars": 35988,
+    "old_entries": 4,
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 10,
+       "text": "Figure 1. a) Schematic of the direct assembly of MPN NPs and cargo-loaded MPN NPs. b) Size, as determined by DLS, and $\\zeta$-potential values of MPN NPs assembled using different concentrations of PB. Note that 0 and 0.1 mM PB did not result in MPN NP formation. Data are shown as the mean $\\pm$ sta"
+      },
+      {
+       "page": 4,
+       "block_id": 13,
+       "text": "Figure 2. a\u2013c) Size, as determined by DLS (a),  $ \\zeta $-potential values (b), and Fe $ ^{II} $-to-QUE ratio (c) of the MPN particles assembled at various pH values. Data are shown as the mean $ \\pm $SD (n=3). d) SEM image and e) EDX elemental mapping of MPN crystals obtained at pH 4. Scale bars ar"
+      },
+      {
+       "page": 5,
+       "block_id": 16,
+       "text": "Figure 3. a) Chemical structures of the polyphenols used and their coordination modes with various metal ions (dashed box). Multimodal, catechol-based, and maltol-based polyphenol ligands are presented within the orange, green, and blue boxes, respectively. b) Library of MPN NPs with different size "
+      },
+      {
+       "page": 7,
+       "block_id": 16,
+       "text": "Figure 4. a) Schematic of the cascade reaction by GOx/HRP@MPN NPs, involving glucose oxidation and conversion of amplex red to fluorescent resorufin. b) Relative catalytic activity of HRP@MPN NPs as a function of cycle number. c) CD spectra of native RNase A and RNase A released from NPs. d) CLSM im"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "MLNA8UY9",
+   "passed": true,
+   "figures": 3,
+   "structural": {
+    "key": "MLNA8UY9",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 102403,
+    "new_text_chars": 102403,
+    "old_entries": 3,
+    "new_entries": 3,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 5,
+       "block_id": 4,
+       "text": "Selected characteristics of animal models used for tendinopathy research including applicable species, damages to animals caused by modeling operations, time costs, features (A, B and D), mechanisms (C), changes in gene expression (E), and pathological patterns. Clocks are used to represent time cos"
+      }
+     ],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1000,
+        334,
+        1060,
+        392
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 3,
+       "text": "Figure 1. Human tendinopathy mechanisms and corresponding animal models. Grey box: The mechanisms of human tendinopathy. Green box: The methods of establishing tendinopathy models. (For interpretation of the references to colour in this figure legend, the reader is referred to the Web version of thi"
+      },
+      {
+       "page": 4,
+       "block_id": 9,
+       "text": "Figure 2. The bridge between human continuum pathological model and pathological patterns for each animal model. Histopathological scores are used to establish associations between human continuum pathological model and pathological processes of each animal model. Histological scores less than 4 are"
+      },
+      {
+       "page": 5,
+       "block_id": 3,
+       "text": "Figure 3. Comparison of different animal models used for tendinopathy research."
+      },
+      {
+       "page": 5,
+       "block_id": 4,
+       "text": "Selected characteristics of animal models used for tendinopathy research including applicable species, damages to animals caused by modeling operations, time costs, features (A, B and D), mechanisms (C), changes in gene expression (E), and pathological patterns. Clocks are used to represent time cos"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "NJWU2G4V",
+   "passed": false,
+   "figures": 6,
+   "structural": {
+    "key": "NJWU2G4V",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [
+     "figure_004"
+    ],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 54699,
+    "new_text_chars": 54699,
+    "old_entries": 6,
+    "new_entries": 6,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 5,
+       "block_id": 2,
+       "text": "Alizarin red/fast green"
+      },
+      {
+       "page": 5,
+       "block_id": 3,
+       "text": "Safranin O"
+      },
+      {
+       "page": 5,
+       "block_id": 4,
+       "text": "Alcian blue (20X)"
+      },
+      {
+       "page": 5,
+       "block_id": 5,
+       "text": "Alcian blue (40X)"
+      },
+      {
+       "page": 5,
+       "block_id": 7,
+       "text": "FIG. 1. Changes in tissue mineralization and glycosaminoglycan (GAG) production in response to different calcium concentrations. (A, B) Alizarin red staining (fast green counterstain) of pellet cultures of human adipose-derived stem cells cultured in chondrogenic differentiation medium (CDM) and ele"
+      },
+      {
+       "page": 5,
+       "block_id": 8,
+       "text": "Collagen I"
+      },
+      {
+       "page": 5,
+       "block_id": 9,
+       "text": "Collagen X"
+      },
+      {
+       "page": 5,
+       "block_id": 10,
+       "text": "Collagen II"
+      },
+      {
+       "page": 5,
+       "block_id": 13,
+       "text": "FIG. 2. Immunohistochemistry of human adipose-derived stem cell pellets cultured under different calcium concentrations. Pellets grown in CDM containing transforming growth factor- $ \\beta $1 (TGF- $ \\beta $1) and bone morphogenetic protein 6 (BMP6) at basal (1.8 mM) or elevated (8 mM) calcium conce"
+      },
+      {
+       "page": 6,
+       "block_id": 3,
+       "text": "FIG. 3. Changes in gene expression of hASC pellets cultured in elevated calcium relative to pellets cultured in basal calcium conditions. Pellets grown in CDM containing TGF- $ \\beta $1 and BMP6 at elevated (8 mM) calcium concentrations exhibited increased collagen I and Runx2 mRNA expression, and d"
+      },
+      {
+       "page": 6,
+       "block_id": 11,
+       "text": "FIG. 4. Scanning electron microscopy of electrospun polylactic acid (PLA) fibers used to seed human adipose-derived stem cells. Top panel shows pure PLA fibers (0% tricalcium phosphate [TCP]) and bottom panel shows PLA fibers containing 20% TCP concentration."
+      },
+      {
+       "page": 7,
+       "block_id": 4,
+       "text": "FIG. 5. Construction of stacked osteochondral constructs. (A) Schematic image of different layers in stacked osteochondral construct showing how the electrospun PLA nanofibers (blue layers) were stacked together using collagen I gel (red layers) in between nanofibrous layers to form the stacked cons"
+      },
+      {
+       "page": 8,
+       "block_id": 3,
+       "text": "FIG. 6. Histochemical staining of stacked PLA scaffolds containing 0% or 20% TCP seeded with human adipose-derived stem cells (hASC) for 28 days. (A) Hematoxylin and eosin staining showing cells growing in all layers. Dark lines between stacks show regions of highest cell density where hASC were see"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "NLKKXD5Z",
+   "passed": false,
+   "figures": 2,
+   "structural": {
+    "key": "NLKKXD5Z",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [
+     "figure_001"
+    ],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 47795,
+    "new_text_chars": 47795,
+    "old_entries": 2,
+    "new_entries": 2,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        933,
+        641,
+        1038,
+        678
+       ]
+      },
+      {
+       "page": 14,
+       "bbox": [
+        153,
+        302,
+        321,
+        361
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 4,
+       "block_id": 3,
+       "text": "Figure 1. Different stimuli impact on high-voltage activated (HVA) voltage-operated calcium channels (VOCs). N-N-terminus of the protein (NH2), C-C-terminus of the protein (COOH)."
+      },
+      {
+       "page": 4,
+       "block_id": 5,
+       "text": "Figure 2. Structure of high-voltage activated calcium channel.  $ \\alpha_{1} $\u2014a central pore-forming subunit,  $ \\alpha_{2}\\delta $ subunit\u2014a disulfide-linked glycoprotein dimer, an intracellular  $ \\beta $ subunit, a transmembrane glycoprotein  $ \\gamma $ subunit, and a calmodulin (CaM) bound to t"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "PAJWI6DH",
+   "passed": true,
+   "figures": 4,
+   "structural": {
+    "key": "PAJWI6DH",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 34938,
+    "new_text_chars": 34938,
+    "old_entries": 4,
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        220,
+        42,
+        367,
+        79
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 14,
+       "text": "Fig. 1 True AP view radiograph of the shoulder, showing CSA measurement. The angle is formed between two lines: one from the superior to the inferior pole of the glenoid, and other from the latter to the lateral edge of the acromion."
+      },
+      {
+       "page": 4,
+       "block_id": 3,
+       "text": "Fig. 2 True AP view radiograph of the shoulder, showing anatomical parameters required to measurement of the Al. This index is obtained dividing the distance from the glenoid surface to the most lateral edge of the acromion (GA) by the distance from the glenoid surface to the lateral cortex of the p"
+      },
+      {
+       "page": 4,
+       "block_id": 11,
+       "text": "Fig. 3 Frequently, in MRI the most lateral edge of the acromion is not in the same plane of the glenoid midline. Thus, we used the cursor to mark the lateral acromion (3A) and then scroll the images until the glenoid midline (3B), where the measurements are made."
+      },
+      {
+       "page": 6,
+       "block_id": 6,
+       "text": "Fig. 4 Bland-Altman plots showing difference vs. average distribution of AI (A, B) and CSA (C, D) indexes measured in X-rays and in MRI for observers 1 and 2, respectively."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "PUP9JRFH",
+   "passed": true,
+   "figures": 0,
+   "structural": {
+    "key": "PUP9JRFH",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 9267,
+    "new_text_chars": 9267,
+    "old_entries": 0,
+    "new_entries": 0,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        65,
+        155,
+        275,
+        208
+       ]
+      }
+     ],
+     "caption_candidates": []
+    }
+   }
+  },
+  {
+   "key": "ZARNGKY7",
+   "passed": true,
+   "figures": 0,
+   "structural": {
+    "key": "ZARNGKY7",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 9051,
+    "new_text_chars": 9051,
+    "old_entries": 0,
+    "new_entries": 0,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1049,
+        242,
+        1099,
+        292
+       ]
+      }
+     ],
+     "caption_candidates": []
+    }
+   }
+  },
+  {
+   "key": "ZLSXVG2Y",
+   "passed": true,
+   "figures": 4,
+   "structural": {
+    "key": "ZLSXVG2Y",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 103623,
+    "new_text_chars": 103623,
+    "old_entries": 4,
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        69,
+        864,
+        178,
+        901
+       ]
+      },
+      {
+       "page": 1,
+       "bbox": [
+        69,
+        1313,
+        185,
+        1354
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 3,
+       "text": "Figure 1. Schematic illustration of how proteins can be bioengineered to be used as smart materials for tissue engineering (Adapted with permission from [9] copyright 2020 Elsevier. Ltd.)."
+      },
+      {
+       "page": 10,
+       "block_id": 3,
+       "text": "Figure 2. PLMC composite scaffold SME on filling bone screw hole (modified from [92] and created using Adobe Illustrator)."
+      },
+      {
+       "page": 11,
+       "block_id": 3,
+       "text": "Figure 3. Preparation of pH-sensitive SMP with SME (created using Adobe Illustrator)."
+      },
+      {
+       "page": 15,
+       "block_id": 5,
+       "text": "Figure 4. Self-healing hydrogels process happening in circular hydrogels which has been cut into several pieces (created using Adobe Illustrator)."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "ZS44NM5K",
+   "passed": true,
+   "figures": 0,
+   "structural": {
+    "key": "ZS44NM5K",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 14911,
+    "new_text_chars": 14911,
+    "old_entries": 0,
+    "new_entries": 0,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": []
+    }
+   }
+  },
+  {
+   "key": "ZXER5F2Z",
+   "passed": true,
+   "figures": 6,
+   "structural": {
+    "key": "ZXER5F2Z",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 48161,
+    "new_text_chars": 48161,
+    "old_entries": 6,
+    "new_entries": 6,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 2,
+       "bbox": [
+        231,
+        169,
+        958,
+        429
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 6,
+       "block_id": 19,
+       "text": "Figure 1 Physiochemical characterization of KGN-MNPs. (A) Illustration of the procedures used to synthesize KGN-MNPs. (B) Size distributions of agglomerations and TEM images of KGN-MNPs and MNPs. (C) FTIR spectra of KGN-MNPs and MNPs. (D) The hysteresis loops of KGN-MNPs and MNPs at 25 \u00b0C. (E) pl va"
+      },
+      {
+       "page": 7,
+       "block_id": 24,
+       "text": "Figure 2 Cellular uptake and cytotoxicity test of KGN-MNPs. (A) Schematic illustration and images of the cell culture protocol. (B) TEM image of KGN-MNP internalization and encapsulation in MSCs (scale bar = 6 \u03bcm). (C) MSC viability after 24 h of incubation with different concentrations of KGN-MNPs."
+      },
+      {
+       "page": 9,
+       "block_id": 22,
+       "text": "swing speed"
+      },
+      {
+       "page": 9,
+       "block_id": 27,
+       "text": "Figure 3 KGN-MNPs exhibit enhanced penetration and show efficacy in improving rat movement disability caused by OA. (A) Diagram of in vivo performance. (B) KGN-MNPs not exposed to magnets primarily remained in the SZ of cartilage, whereas the application of additional magnetic force increased the pe"
+      },
+      {
+       "page": 10,
+       "block_id": 3,
+       "text": "Sham"
+      },
+      {
+       "page": 10,
+       "block_id": 4,
+       "text": "OA"
+      },
+      {
+       "page": 10,
+       "block_id": 6,
+       "text": "KGN"
+      },
+      {
+       "page": 10,
+       "block_id": 7,
+       "text": "KGN-MNPs"
+      },
+      {
+       "page": 10,
+       "block_id": 10,
+       "text": "KGN-MNPs / Mag (+)"
+      },
+      {
+       "page": 10,
+       "block_id": 26,
+       "text": "Figure 4 Articular cartilage protection of KGN-MNPs. (A) H&E and Safranin O and fast green staining of sagittal sections of the medial tibial plateau. H&E staining showed that KGN-MNPs prevented the upward movement of the tidal line. Proteoglycan (red) and bone (green). (Scale bar = 250 \u03bcm). (B) OAR"
+      },
+      {
+       "page": 11,
+       "block_id": 15,
+       "text": "Figure 5 KGN-MNPs normalize subchondral bone after anterior cruciate ligament transection. (A and B) Representative micro-CT images of longitudinal views of subchondral bone medial compartment. (Scale bar = 500 \u03bcm). Quantitative micro-CT analysis of tibial subchondral bone of BV/TV (C), Tb.pf (D), a"
+      },
+      {
+       "page": 12,
+       "block_id": 7,
+       "text": "Figure 6 Histological analyses of major organs and synovial tissues. No obvious pathological changes were observed in the lungs, heart, liver, spleen, kidneys or synovial tissues of rats treated with KGN-MNPs with or without magnets, indicating that KGN-MNPs did not lead to significant organ and joi"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "ZZKEYE6J",
+   "passed": true,
+   "figures": 2,
+   "structural": {
+    "key": "ZZKEYE6J",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 22863,
+    "new_text_chars": 22863,
+    "old_entries": 2,
+    "new_entries": 2,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 2,
+       "block_id": 16,
+       "text": "parameters. Intra- and interobserver reliability was evaluated with the intraclass correlation coefficient test. Receiver Operating Characteristic (ROC) analysis was used to determine the cutoff values. The effect of the measurements on the distinction between with and without RCT was evaluated with"
+      }
+     ],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        97,
+        1326,
+        189,
+        1360
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 15,
+       "text": "Figure 1. Measurement of acromial thickness"
+      },
+      {
+       "page": 2,
+       "block_id": 16,
+       "text": "parameters. Intra- and interobserver reliability was evaluated with the intraclass correlation coefficient test. Receiver Operating Characteristic (ROC) analysis was used to determine the cutoff values. The effect of the measurements on the distinction between with and without RCT was evaluated with"
+      },
+      {
+       "page": 2,
+       "block_id": 21,
+       "text": "Figure 2. Measurement of acromiohumeral distance."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "key": "ZZQSV6YW",
+   "passed": true,
+   "figures": 2,
+   "structural": {
+    "key": "ZZQSV6YW",
+    "unique_ids_ok": true,
+    "dangling_fulltext_targets": 0,
+    "missing_manifest_assets": [],
+    "missing_manifest_renders": [],
+    "pending_markers": 0,
+    "text_decrease": false,
+    "old_text_chars": 45832,
+    "new_text_chars": 45832,
+    "old_entries": 2,
+    "new_entries": 2,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 20,
+       "text": "Measurements on anteroposterior and axillary radiographs. The true anteroposterior radiograph of the shoulder (Fig. 1-A) depicts the measurement of HGA-SI by drawing a best-fit circle on the humeral head with a line originating from the center of the circle parallel to the glenoid center peg. The HG"
+      },
+      {
+       "page": 3,
+       "block_id": 20,
+       "text": "Grading system for the Anchor Peg Glenoid implant. Grade 1 (Fig. 2-A) indicates marked osteolysis around the center peg (inset) of the glenoid component as identified by the radiopaque marker. Grade 2 (Fig. 2-B) is defined as bone integration to the edges of the flanges of the center peg (inset), bu"
+      },
+      {
+       "page": 4,
+       "block_id": 0,
+       "text": "e82\uff084\uff09"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "totals": {
+  "papers": 24,
+  "passed": 19,
+  "failed": 5
+ }
+}
