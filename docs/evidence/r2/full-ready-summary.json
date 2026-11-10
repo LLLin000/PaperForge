@@ -1,0 +1,3651 @@
+{
+  "schema": "paperforge.r2.full_ready.v1",
+  "source_sha": "864568531c52627d4b4565c8fa3abf41114180bd",
+  "selected_ready": 793,
+  "rebuilt": 793,
+  "validation_pass": 292,
+  "validation_fail": 501,
+  "plan_mismatch_count": 3,
+  "plan_mismatch_keys": [
+    "D7XTQYV7",
+    "LSTHKPAE"
+  ],
+  "failure_classes": {
+    "historical_text_decrease": 85,
+    "json_parse": 478,
+    "structured_text_decrease": 5,
+    "historical_structured_chars_decrease": 5,
+    "plan_mismatch": 3,
+    "historical_object_missing": 1
+  },
+  "failures": [
+    {
+      "key": "2ZBAK9VY",
+      "errors": [
+        "historical_text_decrease:48099<48333"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "3YNSB8Z4",
+      "errors": [
+        "historical_text_decrease:57505<57787"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AL6C2PJ5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe4 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ALHRIEFB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ANDP8RMP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa3 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ANFJ5BJY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbc in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AT99P8YS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdd in position 0: invalid continuation byte",
+        "historical_text_decrease:40347<40658"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AUUNHWSN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf2 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AUYNML4R",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb2 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AX3TCBXU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x81 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AXDD57L3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe9 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "B43QSAJP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "B5QGAKL2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa9 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "B7SJKHIG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BAGSWM3L",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BAUEIRRM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9f in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BC95XMCB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc5 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BCSQUW2S",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xce in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BDMLFC4B",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9d in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BESW2PP2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x90 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BHLZMJZP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc6 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BKBHMB8M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa0 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BL8ABQ2A",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BP6VZC2H",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BPVR2AQM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xde in position 0: invalid continuation byte",
+        "historical_text_decrease:134571<135500"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BQZB2874",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8f in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BTKXAJWJ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe4 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BVMXNWF6",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9d in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "BZLBFRW9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9d in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "C3KHPMQ9",
+      "errors": [
+        "historical_text_decrease:36528<37719"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "C5C2SWA5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe8 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "C6ZESGTE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xde in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "C7WCW4NX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x93 in position 0: invalid start byte",
+        "historical_text_decrease:92558<92645"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CAGJA5FF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd4 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CAQNW9Q2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf7 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CATYKTHR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc7 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CB5NJ28R",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x95 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CEGHBEQ5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CGGYTEEQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CHILQ4KJ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 4: invalid start byte",
+        "structured_text_decrease:45992<45998",
+        "historical_structured_chars_decrease:45992<45998"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CIBQ2KHS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb6 in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CJAR727H",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CPKSS2DU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CPQ47TBV",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8b in position 2: invalid start byte",
+        "structured_text_decrease:41208<41209",
+        "historical_structured_chars_decrease:41208<41209"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CQAXQN4D",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe6 in position 6: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CQG5WH2Y",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xda in position 1: invalid continuation byte",
+        "historical_text_decrease:46092<46272"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CSQQ3B7J",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CW3BQFEB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfe in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "CX53XS72",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "D3FZL7JH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x95 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "D444D4S5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd9 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "D7XTQYV7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbb in position 0: invalid start byte",
+        "plan_mismatch:asset_claim_mismatch:figure_004"
+      ],
+      "plan_mismatches": [
+        {
+          "object": "figure_004",
+          "reason": "asset_claim_mismatch",
+          "expected": [
+            "2",
+            "3"
+          ],
+          "actual": [
+            "0",
+            "2",
+            "3"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "DDGMQ7RW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa8 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DJJ96MTM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd1 in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DKPT585M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xed in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DLVSVU49",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9c in position 0: invalid start byte",
+        "historical_text_decrease:28166<28168"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DLW898UK",
+      "errors": [
+        "historical_text_decrease:66205<66324"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DR3AJILH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9c in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DR6FGTCA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb4 in position 2: invalid start byte",
+        "historical_text_decrease:51165<51295"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DS2FR5FU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc4 in position 1: invalid continuation byte",
+        "historical_text_decrease:35498<35539"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DVPB7W88",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x82 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DWBH7R7C",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf9 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DWGY2F42",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbe in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DZ5BH43F",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc8 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "DZSW7CRD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcb in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "E3UEZ4YH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd1 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "E52CVLIH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9c in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "E8KM5CRS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ECUA27Y2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EGLY3SE4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EGY463YC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x96 in position 0: invalid start byte",
+        "historical_text_decrease:33732<33900"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EIAWBJJP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfd in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EQAZ2EL5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf4 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ES23M9IS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 7: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ESIQJBWT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EUXKIYZM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xde in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EWH4NKMD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EYT6JLZU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd9 in position 0: invalid continuation byte",
+        "historical_text_decrease:20592<21909"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "EZ4W2N5S",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "F27I3PJN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "F3FIP9IQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdf in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FB48C9EL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xef in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FC72S4K9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb2 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FCQ7M8U5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe7 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FFBAXFSE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x91 in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FFD4HR22",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf7 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FG62NV5H",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FHZPDCAX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf9 in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FL8APLAM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbb in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FLYEIA6G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x80 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FMCXKIX2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbc in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FPZB97GU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa3 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FRU2XUGJ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe2 in position 0: invalid continuation byte",
+        "historical_text_decrease:30512<30872"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FS7N2WVM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FVZ3YE7P",
+      "errors": [
+        "historical_text_decrease:46408<47054"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FX7PTWSK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe5 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FX9RAEHE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf6 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FYVUMBG7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf2 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FYXMGQ8U",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "FZJHEDQK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdd in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "G3IIG3AT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x83 in position 0: invalid start byte",
+        "historical_text_decrease:105400<112185"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "G46XM9U7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa3 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "G5QGQ9PB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9a in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GENCMQ2X",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd9 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GIH5IBBE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xca in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GMZPZSVA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 4-5: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GNPKTNCD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbb in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GQHHT5NF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GTBXAKBY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc5 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GTLJC2LP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GTSAYVFS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd5 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GU9R8EPE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "GZ4BNT63",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb1 in position 1: invalid start byte",
+        "historical_text_decrease:76475<77601"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H32RMBLK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H497AGMU",
+      "errors": [
+        "historical_text_decrease:43971<44043"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H4B6CQLA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xeb in position 1: invalid continuation byte",
+        "historical_text_decrease:56747<57533"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H4GURFWI",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H4VPRJLT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xba in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H4VQSH3C",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x85 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H5NLDWTJ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x99 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "H6DI4BNH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc7 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HDJE9353",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa2 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HGFWDH4S",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe4 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HGLET7VG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb9 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HIU4F3V4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xec in position 1: invalid continuation byte",
+        "historical_text_decrease:29394<29765"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HJ5E5U49",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe6 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HJ5M4YFC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa5 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HJTU2WUQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HL2FUMPM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HN4758MP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdd in position 0: invalid continuation byte",
+        "historical_text_decrease:50154<50313"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HNJA5DMR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xce in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HQAQBSBP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HRTE44P7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb3 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HUXX6KW2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x84 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HW3YVARY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x98 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HX7FMUSA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc8 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HXZHMT2Q",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xea in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HYRDQLMS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "HZTMVS5K",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfb in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "I42Y93C4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "I49J37D4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "I75SS5KU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "I7K45BFS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe9 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "I9RALI9H",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd6 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ID2NXSYY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe1 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IES8B82I",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc0 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IFYKRHV8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x90 in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IGR5PYH2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd7 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IH6K34R9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbb in position 1: invalid start byte",
+        "structured_text_decrease:125872<125873",
+        "historical_structured_chars_decrease:125872<125873"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IL2KJQCD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xad in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IN8LEK6F",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 1-2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "4CBS2KKE",
+      "errors": [
+        "historical_text_decrease:30377<30509"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IPVHC44X",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe9 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IRJ68ZUP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfc in position 2: invalid start byte",
+        "historical_text_decrease:105917<106702"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IRK7NJLZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IRS5EFHQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdd in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IS6T9ZDA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xec in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IT2ET6ZL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IVQAQ8IQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 1: invalid start byte",
+        "historical_text_decrease:46532<46583"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "IVSG7E67",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa8 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "J2U9DWNW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "J8E86Y84",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JC5AM3YP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xba in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JCXZNJJC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa9 in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JF35KF37",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x89 in position 6: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JGRQS9T9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JKNNX3W2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd3 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JLFF4L85",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+        "historical_text_decrease:173451<176529"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JLIYIK7P",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x93 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JMG23U8Q",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf6 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JMPAEY3N",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb2 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JMRH8KLX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JQMRCEXY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd8 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JSC4748V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbf in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JSXF2R54",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "JXDZ9G5D",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb8 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "K2BGG2YT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x87 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "K462DXIS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xad in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "K6ECPBLX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfd in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "K9LF39GY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf6 in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KDPAF2QL",
+      "errors": [
+        "historical_text_decrease:22509<22586"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KG7A5K5V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8c in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KGWH3G9I",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf5 in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KGZHC39M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc4 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KKV573J4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd8 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KNEBDHHT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KPYGKKHB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KQQ8LY7W",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb6 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KQVWFZKL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KT7MGHH8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KTPAGKVN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa4 in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KTZCR777",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xff in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KUR9PBJC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KWVMRYRN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc7 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KXXIADQ8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9a in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KYILQ39G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb4 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "KZP6FB4Y",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb2 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "L26ZHSAU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9d in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "L5YS7JTA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa2 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "L623PH9P",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd4 in position 2: invalid continuation byte",
+        "historical_text_decrease:52551<53208"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "L6ALWJFP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "L8A56654",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x91 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LA2NJUUG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xda in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LAEITRZT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8f in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LAS7H9GY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd3 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LCGJ6IMF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LE2AX85P",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LFCUIEIX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LGGZ9SKS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LIGD5965",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf9 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LISDYT7V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9f in position 9: invalid start byte",
+        "historical_text_decrease:146437<146677"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LJU5RQUB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LKDUIBY7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LMD5YVLP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LMHLIWB4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x85 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LNQPEIZK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdc in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LQZ2FWIW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaf in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LRSHSG28",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe5 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LSTHKPAE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 1: invalid start byte",
+        "historical_object_missing:assets/tables/table_001.png",
+        "plan_mismatch:asset_claim_mismatch:figure_s002",
+        "plan_mismatch:asset_claim_mismatch:figure_s004"
+      ],
+      "plan_mismatches": [
+        {
+          "object": "figure_s002",
+          "reason": "asset_claim_mismatch",
+          "expected": [
+            "1"
+          ],
+          "actual": [
+            "0",
+            "1"
+          ]
+        },
+        {
+          "object": "figure_s004",
+          "reason": "asset_claim_mismatch",
+          "expected": [
+            "1"
+          ],
+          "actual": [
+            "0",
+            "1"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "LW6I3KS9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdc in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LYDQ5I9G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "LZFN9S4S",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M23R849F",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc5 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M36WA39N",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M49UM5YD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M8BNQFIV",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 0: invalid start byte",
+        "historical_text_decrease:50655<50734"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M8CNKCIZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe4 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M9DLLUWN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 1-2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "M9M2RRDA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfb in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MCETYNLL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MJXA8QCR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcf in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MKCSFZPR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x99 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MLNA8UY9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8b in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MNJRQS7N",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb0 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MP8VHCLN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb7 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MS7V7R62",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf5 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MV2HVAYZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xac in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MYWRV652",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfa in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "MZC482YI",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb9 in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "N3GG9XE5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcb in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "N8FPLYZ3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 1: invalid start byte",
+        "historical_text_decrease:55501<57406"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "N9BFPD7H",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaa in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NC66N4Q3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcf in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ND2L8SXH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb8 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NDPUMMCI",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb7 in position 2: invalid start byte",
+        "historical_text_decrease:85582<85663"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NDZRXDGS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbe in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NEUVP8X3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x92 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NEW7X2HZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NJRB55TZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfe in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NJWU2G4V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb3 in position 6: invalid start byte",
+        "historical_text_decrease:46735<48912"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NLKKXD5Z",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb0 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NMDUNWVY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa0 in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NRM7TE8T",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd6 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NUNFKPRI",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd1 in position 5: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NXYBYPAH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc2 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NYWJL2T9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf0 in position 1: invalid continuation byte",
+        "historical_text_decrease:24493<29175"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "NZNCJI6D",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "P2T8IH9M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcf in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "P36H92AX",
+      "errors": [
+        "historical_text_decrease:30897<36316"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "P693AXY3",
+      "errors": [
+        "historical_text_decrease:28709<28924"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "P9D6GZ9M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 0: invalid start byte",
+        "historical_text_decrease:13775<14770"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "P9ZYVAXB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 1: invalid start byte",
+        "historical_text_decrease:90233<90596"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PAJWI6DH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PEPI5WG4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte",
+        "historical_text_decrease:36029<36157"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PHR8VMVL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xae in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PJBMGVTF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe0 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PL5FA5T3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfa in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PMFECT33",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa8 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PMWF8DBV",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb8 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PP76T2EY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8f in position 0: invalid start byte",
+        "historical_text_decrease:123013<132334"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PRI2HDPD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb4 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PU28H9A7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PUP9JRFH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfc in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PV3T4FWR",
+      "errors": [
+        "historical_text_decrease:44897<52359"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PX9XJURS",
+      "errors": [
+        "historical_text_decrease:39394<41232"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "PZ8B59K4",
+      "errors": [
+        "json_parse:chart-type-map.json:'utf-8' codec can't decode bytes in position 4-5: invalid continuation byte",
+        "json_parse:figure-map.json:'utf-8' codec can't decode byte 0xaa in position 1: invalid start byte",
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc6 in position 3: invalid continuation byte",
+        "historical_text_decrease:31521<31675"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Q2K7SJXH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QBLSSHTF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa3 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QFF2JRBM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd6 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QIZUZJNX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd6 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QJ8Y59LG",
+      "errors": [
+        "historical_text_decrease:72705<76042"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QJANCHHB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QPIJVH5G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QPT4IGLD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x85 in position 1: invalid start byte",
+        "structured_text_decrease:67884<67885",
+        "historical_structured_chars_decrease:67884<67885"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QS5CSUYB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa7 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QSIYVSBS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xde in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QU4IAZ7E",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x84 in position 0: invalid start byte",
+        "historical_text_decrease:40799<42040"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QUJ3AS6S",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe9 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QXGGVJW8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "QZXT9L27",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaa in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "R5IKNGWW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfa in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "R6BHEK75",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xca in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "R6WJ65K9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9a in position 1: invalid start byte",
+        "historical_text_decrease:124913<124925"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "R8PCX2YL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x89 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "R9B9H423",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xda in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RC54NRW7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 2-3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "5GYTWRPT",
+      "errors": [
+        "historical_text_decrease:27800<28661"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "5LTFIKGI",
+      "errors": [
+        "historical_text_decrease:59325<60052"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RJ88RTVX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 3-4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RLJJ4VMS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbb in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RNYNZF9D",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8d in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RQILSL2A",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfb in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RQSJAT8I",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x84 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RS7N87DR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xce in position 5: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RSGLUYHK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfe in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RSPCDGFT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x81 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RUEUYY5C",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "RZBG2YBT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd9 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S2Q4R8ZX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x94 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S4CE8NRR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb6 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S8IMFPAV",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe2 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S8X8CBJM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8b in position 9: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S9E6TBI2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbd in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S9GTE3IZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb1 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "S9UMIF83",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdd in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SBDQC4KP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x94 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SF6E52HK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbf in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SFMISNDE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x93 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SK2PRABH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x94 in position 2: invalid start byte",
+        "historical_text_decrease:36981<37339"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SKXTCE6M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe9 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SN2YYBIW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc9 in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SR6EDMUV",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "STAQ4KRB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd7 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SWDN9RHF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SYDIXE3H",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaa in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "SZYSZBNR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf9 in position 10: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "T3GK5A94",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "T6DW6IFG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd9 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "T8J456SQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa8 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "T9IIY9Q4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcf in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "T9YGQZD4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb4 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TA65YVWA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x81 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TA9FZKNF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf4 in position 5: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TEMG2785",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf3 in position 1: invalid continuation byte",
+        "historical_text_decrease:42961<43018"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TFI9P8KG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa7 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TGZS8W2W",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xec in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TIEF9DFJ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbf in position 2: invalid start byte",
+        "historical_text_decrease:46745<46802"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TJHT3UBI",
+      "errors": [
+        "historical_text_decrease:101476<102399"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TK9TPNLC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9f in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TLR5T8W4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8f in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TNK4V5PF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TSCKAVIS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf5 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TXMVULD7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa3 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "TZ5XX44L",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf9 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "U26YPHMW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd4 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "U2GY2XR8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "U3XAT3SD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdd in position 1: invalid continuation byte",
+        "historical_text_decrease:90308<90750"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "U746UJ7G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 0: invalid start byte",
+        "historical_text_decrease:36461<36605"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "U7LXVK35",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x81 in position 1: invalid start byte",
+        "historical_text_decrease:66152<67199"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "U8KUR7W5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xff in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "UKSL8B3R",
+      "errors": [
+        "historical_text_decrease:37019<37378"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "UREH7R2M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe2 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "URYKAMJE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf1 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "URYZ3IZJ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "US22T6CB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe2 in position 4: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "UT2WKEVN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbe in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "UVV6WCCV",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb3 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "UWXQL9PD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb4 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "V2UIKRGT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "V463BSDR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc7 in position 0: invalid continuation byte",
+        "historical_text_decrease:24704<27948"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "V4UTP5X7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x99 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VAMSAZMG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaa in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VAPIZV63",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VDU747IQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe3 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VG7ZCJGM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe4 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VK2KPR24",
+      "errors": [
+        "historical_text_decrease:89310<89422"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VK2XSGFY",
+      "errors": [
+        "historical_text_decrease:35310<40736"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VL5KKBZM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VLBARZU8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xde in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VQUR2CKD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 6: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VVIT8SVK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x95 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VY8CRKCE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xec in position 0: invalid continuation byte",
+        "historical_text_decrease:297687<299121"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "VZMMSJBS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 7: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "W2W7NUU9",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcc in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "W33NLVJ2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 4: invalid start byte",
+        "historical_text_decrease:63620<65232"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "W65RJQFC",
+      "errors": [
+        "json_parse:chart-type-map.json:'utf-8' codec can't decode byte 0xa1 in position 4: invalid start byte",
+        "json_parse:figure-map.json:'utf-8' codec can't decode byte 0xe7 in position 0: invalid continuation byte",
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xac in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WDCPZHE5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb7 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WDY4IMJB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WEBUEELY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd2 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WINN9BKP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WIXJ9YQA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe2 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WJJZAD3G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb2 in position 1: invalid start byte",
+        "historical_text_decrease:92468<92505"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WJNEHSQD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WJVB72YW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xec in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WLFKC6DA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe6 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WMAFPBED",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WML2NNFE",
+      "errors": [
+        "historical_text_decrease:46717<47302"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WNDJX4KB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb7 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WRP8UIHR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8d in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WS6T79MU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf8 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WVB9LEFM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe4 in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "WXLHDCDM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa9 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "X3NTXX4M",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe1 in position 5: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "X5FJTVGP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "X6PQAH4V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XB772KJL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xce in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XD2BPCMG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xad in position 1: invalid start byte",
+        "historical_text_decrease:108412<116667"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XEK3VB67",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf6 in position 4: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XG8R37M7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd3 in position 1: invalid continuation byte",
+        "historical_text_decrease:170911<171300"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XGT9Z257",
+      "errors": [
+        "json_parse:figure-map.json:'utf-8' codec can't decode byte 0xa9 in position 0: invalid start byte",
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8f in position 2: invalid start byte",
+        "historical_text_decrease:93973<94203"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XH2DVZPF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XIR7ZJ6F",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xce in position 0: invalid continuation byte",
+        "historical_text_decrease:83842<83955"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XJ35X62V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XM8J9JPU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x92 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XNHB6EDX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbb in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XPHBVWW3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XRBP5H8X",
+      "errors": [
+        "historical_text_decrease:27933<28375"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XSYF6UJI",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbd in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XUTJVXNN",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 0: invalid start byte",
+        "historical_text_decrease:56682<56857"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XVGX9U4V",
+      "errors": [
+        "historical_text_decrease:115295<115328"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XVZR7QAC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XW8IN24I",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb7 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XWNGKFID",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaf in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XYK89ZZG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd9 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "XYX6DHYD",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe1 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Y52UWB7A",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa1 in position 6: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Y9LDXUH7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x87 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Y9LM7XNH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8e in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Y9NEE9D2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xd6 in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YBUMIK5P",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf5 in position 7: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YEACENJ2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf5 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YFMZDQJ3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x84 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YGH7VEX6",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YHGRMZIG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YIGSIZIC",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8c in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YPQP6YSY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xae in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YQIC2RDL",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe5 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YRFELQYY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9a in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YSBJVWTA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x94 in position 0: invalid start byte",
+        "historical_text_decrease:122603<129308"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YSKXZHDZ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbc in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YTGGUL86",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x87 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YUBV24D6",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfd in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "YZGDMGA2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x89 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Z3LK9CZA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc5 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Z73N29KR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9b in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "Z75FY7KR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9d in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZAJWC3SA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xeb in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZARNGKY7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb5 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZCGCM3WH",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xee in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZFNT2XS7",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9e in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZKQII63V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf7 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZLSXVG2Y",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x89 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZS3UFYRR",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZS44NM5K",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xcf in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZTCG9CZM",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa1 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZXER5F2Z",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfe in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ZZKEYE6J",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb3 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "5PQ7DI4W",
+      "errors": [
+        "historical_text_decrease:40721<40751"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "64IUPLY7",
+      "errors": [
+        "historical_text_decrease:10633<11025"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "6A8A9TWD",
+      "errors": [
+        "historical_text_decrease:30635<31692"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7C8829BD",
+      "errors": [
+        "historical_text_decrease:124115<124598"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7M6FIW4V",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7NY8KK8P",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7Q3VTNHT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe6 in position 2: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7S5ZEVSK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 0: invalid start byte",
+        "historical_text_decrease:33901<33981"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7TAVQQG2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa4 in position 0: invalid start byte",
+        "historical_text_decrease:39553<39827"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7TG7U4U4",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xef in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7THZ5Y9G",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc4 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7VPDXE48",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa4 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7W9QLVMF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xda in position 1: invalid continuation byte",
+        "historical_text_decrease:99120<99445"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7YMNESHF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xec in position 8: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7ZHJ43VI",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8c in position 1: invalid start byte",
+        "historical_text_decrease:38847<40136"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "7ZZN6PUW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 2: invalid start byte",
+        "historical_text_decrease:31682<32238"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "82W2IJIP",
+      "errors": [
+        "json_parse:figure-map.json:'utf-8' codec can't decode byte 0x9d in position 2: invalid start byte",
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xee in position 3: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "832486Q6",
+      "errors": [
+        "historical_text_decrease:6955<7100"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "85JJNE6A",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8a in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "87K3VTEB",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xab in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "87KJHGP8",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xdf in position 1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8CCATQE3",
+      "errors": [
+        "historical_text_decrease:37605<39706"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8G3AF2PT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xfd in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8K39NHUQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x90 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8M2YFJAX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe6 in position 3: invalid continuation byte",
+        "structured_text_decrease:27730<27731",
+        "historical_structured_chars_decrease:27730<27731"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8S9LCPAE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xbd in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8UC452EE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe0 in position 1: invalid continuation byte",
+        "historical_text_decrease:39032<41692"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8V5A2XIY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8d in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "8VB9ZVQG",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf6 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "95FDVE4W",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x89 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "97M7HFCD",
+      "errors": [
+        "historical_text_decrease:41471<44073"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9DM6MCIF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9EQV3ABQ",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x86 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9QKBD38Z",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaf in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9RDDDJF6",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x9f in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9TRC4BAF",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaf in position 5: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9TSTKUZT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xaf in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9VHTXFAY",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x8f in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9Z3L37X3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa1 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "9ZIJTI6J",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A35UYJBK",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa7 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A45X769B",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x91 in position 0: invalid start byte",
+        "historical_text_decrease:53585<53598"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A4T4TRT2",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x84 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A8E7SRVS",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xa6 in position 2: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A95N278J",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A98BQ6YU",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xb8 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A9ALKPZP",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x82 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "A9NGG2EA",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x83 in position 1: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AA6P3IE5",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x94 in position 3: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ACVQ5LA3",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe6 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "ADZR7SUT",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xe5 in position 7: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AEBREGPE",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xf5 in position 0: invalid start byte"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AEQBENVW",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x97 in position 0: invalid start byte",
+        "historical_text_decrease:38991<39011"
+      ],
+      "plan_mismatches": []
+    },
+    {
+      "key": "AIICT4YX",
+      "errors": [
+        "json_parse:document_structure.json:'utf-8' codec can't decode byte 0xc5 in position 0: invalid continuation byte"
+      ],
+      "plan_mismatches": []
+    }
+  ],
+  "source_integrity": {
+    "unchanged": true,
+    "chunks": 40
+  },
+  "idempotence": {
+    "passed_chunks": 40,
+    "chunks": 40
+  }
+}

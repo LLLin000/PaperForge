@@ -1,4 +1,4 @@
-# R2 isolated rebuild — NO-GO
+# R2 isolated rebuild — plan parity GO, full acceptance NO-GO
 
 ## Decision
 
@@ -62,3 +62,51 @@ not compare plan IDs against real rebuild output.
 2. Restrict validation JSON parsing to managed `structure/*.json` (exclude
    `backups/`, `versions/`, `.edtz`), and rerun the 100 missing papers.
 3. Re-run R2 over all READY papers; only then run R3 visual/acceptance checks.
+
+---
+
+# R2 full READY rerun — 2026-11-10
+
+## Decision
+
+**Plan parity: GO.** The migration plan is now derived from the actual rebuild
+output (`_rebuild_replay` stages the paper, runs `_rebuild_one_paper`, and reads
+the artifacts it actually wrote). Across 793 READY papers the rerun produced
+**3 plan mismatches on 2 papers**; both were asset-claim unions that omitted
+`block_id 0`. The plan now unions `matched_assets` and `asset_block_ids`; a
+targeted recheck of both papers (`D7XTQYV7`, `LSTHKPAE`) reports **0 plan
+mismatches**. Residual mismatches: **0**.
+
+**Full acceptance: NO-GO.** The 501 validation failures are not plan mismatches:
+478 are `json_parse` on legacy `structure/document_structure.json` bytes, 85 are
+`historical_text_decrease`, 5 `structured_text_decrease`, 5
+`historical_structured_chars_decrease`, and 1 `historical_object_missing`.
+These need separate disposition before R3.
+
+## Coverage
+
+- Selected READY: 793 (plan status map, `C:/rtools44/tmp/p3c/status_all.json`).
+- Rebuilt: 793/793.
+- Validation pass/fail: 292/501.
+- Plan mismatches: 3 (2 papers), 0 after targeted recheck.
+- Source integrity: unchanged on 40/40 chunks.
+- Idempotence: passed on 40/40 chunks.
+- No production vault was written; isolated staging only.
+
+## Harness fixes found by the rerun
+
+- `stage_vault` excluded `backups/` and `versions/` (history is not a rebuild
+  input; it also exhausted the 20 GB temp volume at 8 workers).
+- `stage_vault` rewrites staged `meta.source_pdf` through
+  `resolve_source_pdf(source_vault, ...)`. Without it, `storage:...` PDFs were
+  unresolvable in the isolated vault and produced ~600 false plan mismatches.
+- `_rebuild_replay` uses the artifacts the rebuild actually wrote, not a
+  dry-run manifest; drops embeds the rebuild removed; plans figures present in
+  the rebuilt inventory but absent from the old→new mapping.
+
+## Evidence
+
+- `docs/evidence/r2/full-ready-summary.json` — aggregate counts, failure classes,
+  per-paper failures, plan mismatch keys.
+- `docs/evidence/r2/plan-mismatch-recheck.json` — targeted recheck of the two
+  residual mismatch papers.

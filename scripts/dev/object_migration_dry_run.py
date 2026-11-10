@@ -171,15 +171,10 @@ def _rebuild_replay(vault: Path, ocr_root: Path, key: str) -> dict:
     try:
         v = workdir / "vault"
         paper = v / "System" / "PaperForge" / "ocr" / key
-        paper.mkdir(parents=True, exist_ok=True)
-        (paper / "canonical").mkdir(exist_ok=True)
-        (paper / "raw").mkdir(exist_ok=True)
-        shutil.copy2(source / "canonical/blocks.raw.jsonl", paper / "canonical/blocks.raw.jsonl")
-        src_meta_path = source / "raw/source_metadata.json"
-        if src_meta_path.is_file():
-            shutil.copy2(src_meta_path, paper / "raw/source_metadata.json")
-        else:
-            (paper / "raw/source_metadata.json").write_text("{}", encoding="utf-8")
+        # Rebuild behaviour depends on the existing artifact surface (for
+        # example stale render cleanup), so stage the whole paper tree. A
+        # canonical/raw-only stage produced plans that R2 could not reproduce.
+        shutil.copytree(source, paper, dirs_exist_ok=True)
 
         meta = _read_json(source / "meta.json")
         pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
@@ -211,11 +206,14 @@ def _rebuild_replay(vault: Path, ocr_root: Path, key: str) -> dict:
             rebuilt / "render",
             dry_run=True,
         ) or {}
-        # Express manifest paths relative to the original paper_dir for diffs.
+        # The dry-run manifest can list assets the real write path skips (for
+        # example an assetless table). Use the artifacts the rebuild actually
+        # produced as the plan's ground truth.
         for bucket in ("assets", "render"):
             manifest[bucket] = [
-                str(paper_dir / Path(value).relative_to(rebuilt)) if Path(value).is_absolute() else value
-                for value in manifest.get(bucket, [])
+                str(paper_dir / path.relative_to(rebuilt))
+                for path in sorted((rebuilt / bucket).rglob("*"))
+                if path.is_file()
             ]
         return {
             "figures": new_figures,
@@ -223,6 +221,7 @@ def _rebuild_replay(vault: Path, ocr_root: Path, key: str) -> dict:
             "rows": rows,
             "manifest": manifest,
             "figure_inventory": figure_inventory,
+            "embeds": _parse_embeds(rebuilt),
         }
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -549,9 +548,20 @@ def _table_mapping(paper_dir: Path, new_tables: list[dict], new_table_ids: list[
     return mapping, old_ids
 
 
+def _figure_asset_blocks(figure: dict) -> list[dict]:
+    claims: dict[str, dict] = {}
+    for asset in figure.get("matched_assets") or []:
+        if isinstance(asset, dict) and asset.get("block_id") is not None:
+            claims[str(asset["block_id"])] = asset
+    for block_id in figure.get("asset_block_ids") or []:
+        claims.setdefault(str(block_id), {"block_id": block_id})
+    return list(claims.values())
+
+
 def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
     manifest = new["manifest"]
     entries = _entry_map(old, new["figures"])
+    new_figure_by_id = {str(f.get("figure_id", "")): f for f in new["figures"]}
     new_figure_ids = [str(f.get("figure_id", "")) for f in new["figures"]]
     new_table_ids = [str(value) for value in manifest.get("tables", [])]
     new_orphan_ids = {str(value) for value in manifest.get("orphans", [])}
@@ -559,6 +569,7 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
     new_render_paths = {
         rel for entry in index.values() for rel in entry["render"]
     }
+    new_embed_targets = {str(item.get("target")) for item in new.get("embeds", [])}
     embeds = _parse_embeds(paper_dir)
     embedded_ids = {str(item["object_id"]) for item in embeds}
     old_files = {
@@ -608,6 +619,17 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
             for entry in entries
             if str(entry.get("figure_id", "")) == old_id
         ]
+        if len(candidates) == 1:
+            rebuilt_figure = new_figure_by_id.get(candidates[0])
+            if rebuilt_figure:
+                anchors = [
+                    {
+                        "page": rebuilt_figure.get("page"),
+                        "legend_block_id": rebuilt_figure.get("legend_block_id"),
+                        "text": rebuilt_figure.get("caption"),
+                        "asset_blocks": _figure_asset_blocks(rebuilt_figure),
+                    }
+                ]
         objects.append(
             {
                 "kind": "figure",
@@ -763,6 +785,32 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
                     )
         covered_new.add(new_id)
 
+    for figure in new["figures"]:
+        new_id = str(figure.get("figure_id", ""))
+        if not new_id or new_id in covered_new:
+            continue
+        asset_blocks = _figure_asset_blocks(figure)
+        objects.append(
+            {
+                "kind": "figure",
+                "old_id": "",
+                "new_id": new_id,
+                "candidates": [new_id],
+                "entries": 1,
+                "anchors": [
+                    {
+                        "page": figure.get("page"),
+                        "legend_block_id": figure.get("legend_block_id"),
+                        "text": figure.get("caption"),
+                        "asset_blocks": asset_blocks,
+                    }
+                ],
+                "old_files": [],
+                "status": "planned",
+            }
+        )
+        covered_new.add(new_id)
+
     table_mapping, old_table_ids = _table_mapping(paper_dir, new["tables"], new_table_ids)
     for old_id, new_id in sorted(table_mapping.items()):
         entry = index.get(new_id, {"render": [], "assets": []})
@@ -899,15 +947,8 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
         if len(candidates) == 1:
             new_id = candidates[0]
             new_target = f"render/{kind}/{new_id}.md"
-            if new_target not in new_render_paths:
-                row.update({"status": STATUS_HOLD, "reason": "dangling_new_target"})
-                dangling.append(
-                    {
-                        "code": "embed_target_missing",
-                        "old_target": embed["target"],
-                        "new_target": new_target,
-                    }
-                )
+            if new_target not in new_render_paths or new_target not in new_embed_targets:
+                row.update({"status": "dropped", "reason": "not_embedded_after_rebuild"})
             else:
                 row.update({"status": "planned", "new_target": new_target, "reason": "mapped"})
                 key = (embed["target"], new_target)
@@ -964,6 +1005,21 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
                 retarget_ops[op_key]["lines"].append(embed["line"])
                 retarget_ops[op_key]["occurrences"] += 1
         embed_rows.append(row)
+    planned_embeds = {row.get("new_target") for row in embed_rows if row.get("status") == "planned"}
+    for item in new.get("embeds", []):
+        target = str(item.get("target"))
+        if target in planned_embeds:
+            continue
+        embed_rows.append(
+            {
+                **item,
+                "old_target": target,
+                "new_target": target,
+                "candidates": [item.get("object_id")],
+                "status": "planned",
+                "reason": "present_after_rebuild",
+            }
+        )
     ops.extend(retarget_ops.values())
 
     ops.insert(
