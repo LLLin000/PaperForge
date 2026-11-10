@@ -196,7 +196,7 @@ def test_identity_diff_maps_by_page_and_legend_anchor() -> None:
     assert diff["claims_changed"][0]["new_assets"] == ["4"]
 
 
-def test_rebuild_replay_stages_isolated_and_does_not_touch_source(tmp_path):
+def test_rebuild_replay_stages_isolated_and_does_not_touch_source(tmp_path, monkeypatch):
     import scripts.dev.object_migration_dry_run as m
 
     vault = tmp_path / "vault"
@@ -227,9 +227,9 @@ def test_rebuild_replay_stages_isolated_and_does_not_touch_source(tmp_path):
         )
         (pp / "assets" / "figures").mkdir(parents=True, exist_ok=True)
         (pp / "assets" / "figures" / "f1.jpg").write_bytes(b"x")
-        return {"status": "ok"}
+        return {"key": k, "status": "ok"}
 
-    rr._rebuild_one_paper = fake_rebuild
+    monkeypatch.setattr(rr, "_rebuild_one_paper", fake_rebuild)
     result = m._rebuild_replay(vault, ocr, key)
     assert result["figures"][0]["figure_id"] == "f1"
     assert result["manifest"]["figures"] == ["f1"]
