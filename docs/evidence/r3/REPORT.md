@@ -1,5 +1,9 @@
 # R3 Visual Acceptance Sample (24 papers)
 
+## Decision: NO-GO
+
+19/24 structural pass. Four papers have real delivery defects: cross-page reserved figures with zero matched assets, so no crop or standard render markdown is produced. One paper is a supplemental-PDF mismatch, not a stale inventory. All visual labels remain UNKNOWN; automated metrics do not establish visual acceptance. Do not start production migration.
+
 ## Sample
 - Candidate set: 787 READY keys (migration status == "READY"), excluding CHILQ4KJ, HOLD, M2_REVIEW_REQUIRED, and REQUIRES_APPROVAL. After the heading fix CHILQ4KJ is also READY (788 total), but this sample stays frozen at 787.
 - Selected 24 keys, 4 per stratum: see `sample-manifest.json`.
