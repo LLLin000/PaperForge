@@ -1,5 +1,5 @@
 {
-  "schema": "paperforge.r2f.final.v1",
+  "schema": "paperforge.r2f.final.v2",
   "r2e": {
     "audited": 91,
     "pass": 53,
@@ -7,11 +7,6 @@
   },
   "r2f": {
     "resolved": [
-      "P9D6GZ9M",
-      "XG8R37M7",
-      "XGT9Z257"
-    ],
-    "remaining_hold": [
       "5GYTWRPT",
       "5PQ7DI4W",
       "64IUPLY7",
@@ -22,7 +17,6 @@
       "8M2YFJAX",
       "C3KHPMQ9",
       "C7WCW4NX",
-      "CHILQ4KJ",
       "CPQ47TBV",
       "CQG5WH2Y",
       "DLW898UK",
@@ -35,6 +29,7 @@
       "L623PH9P",
       "NYWJL2T9",
       "P36H92AX",
+      "P9D6GZ9M",
       "P9ZYVAXB",
       "PP76T2EY",
       "PV3T4FWR",
@@ -46,76 +41,151 @@
       "U746UJ7G",
       "V463BSDR",
       "VK2XSGFY",
+      "XG8R37M7",
+      "XGT9Z257",
       "YSBJVWTA"
     ],
-    "resolved_count": 3,
-    "remaining_count": 35
+    "remaining_hold": [
+      "CHILQ4KJ"
+    ],
+    "resolved_count": 37,
+    "remaining_count": 1,
+    "fulltext_attributed": {
+      "5GYTWRPT": [
+        "moved_to_block"
+      ],
+      "5PQ7DI4W": [
+        "table_caption_markdown"
+      ],
+      "64IUPLY7": [
+        "moved_to_block"
+      ],
+      "6A8A9TWD": [
+        "suffix_moved"
+      ],
+      "7S5ZEVSK": [
+        "moved_to_block"
+      ],
+      "7W9QLVMF": [
+        "moved_to_block"
+      ],
+      "7ZZN6PUW": [
+        "moved_to_block"
+      ],
+      "C3KHPMQ9": [
+        "moved_to_block"
+      ],
+      "C7WCW4NX": [
+        "moved_to_block"
+      ],
+      "CQG5WH2Y": [
+        "moved_to_block",
+        "non_body_old"
+      ],
+      "DLW898UK": [
+        "moved_to_block"
+      ],
+      "DS2FR5FU": [
+        "table_caption_markdown"
+      ],
+      "FVZ3YE7P": [
+        "moved_to_block"
+      ],
+      "H497AGMU": [
+        "moved_to_block"
+      ],
+      "HIU4F3V4": [
+        "moved_to_block"
+      ],
+      "HN4758MP": [
+        "moved_to_block"
+      ],
+      "L623PH9P": [
+        "moved_to_block"
+      ],
+      "NYWJL2T9": [
+        "moved_to_block"
+      ],
+      "P36H92AX": [
+        "moved_to_block"
+      ],
+      "P9ZYVAXB": [
+        "moved_to_block"
+      ],
+      "PP76T2EY": [
+        "moved_to_block"
+      ],
+      "PV3T4FWR": [
+        "moved_to_block"
+      ],
+      "PX9XJURS": [
+        "moved_to_block"
+      ],
+      "QU4IAZ7E": [
+        "moved_to_block"
+      ],
+      "TJHT3UBI": [
+        "moved_to_block",
+        "suffix_moved"
+      ],
+      "U3XAT3SD": [
+        "moved_to_block"
+      ],
+      "U746UJ7G": [
+        "moved_to_block"
+      ],
+      "V463BSDR": [
+        "moved_to_block"
+      ],
+      "VK2XSGFY": [
+        "moved_to_block",
+        "table_caption_markdown"
+      ],
+      "YSBJVWTA": [
+        "moved_to_block"
+      ]
+    },
+    "block_findings": {
+      "CHILQ4KJ": {
+        "classification": "heading_truncation",
+        "clearable": false
+      },
+      "IH6K34R9": {
+        "classification": "heading_merge",
+        "clearable": true
+      },
+      "8M2YFJAX": {
+        "classification": "heading_merge",
+        "clearable": true
+      },
+      "CPQ47TBV": {
+        "classification": "heading_merge",
+        "clearable": true
+      },
+      "QPT4IGLD": {
+        "classification": "heading_merge",
+        "clearable": true
+      }
+    }
   },
   "combined": {
     "unaffected_pass": 702,
     "r2e_pass": 53,
-    "r2f_resolved": 3,
-    "pass": 758,
-    "hold": 35
+    "r2f_resolved": 37,
+    "pass": 792,
+    "hold": 1
   },
   "migration_eligibility": {
     "status_counts": {
       "HOLD": 47,
       "M2_REVIEW_REQUIRED": 7,
-      "READY": 754,
-      "REQUIRES_APPROVAL": 109,
-      "TEXT_FIDELITY_HOLD": 35
+      "READY": 787,
+      "REQUIRES_APPROVAL": 110,
+      "TEXT_FIDELITY_HOLD": 1
     },
     "text_fidelity_hold": [
-      "5GYTWRPT",
-      "5PQ7DI4W",
-      "64IUPLY7",
-      "6A8A9TWD",
-      "7S5ZEVSK",
-      "7W9QLVMF",
-      "7ZZN6PUW",
-      "8M2YFJAX",
-      "C3KHPMQ9",
-      "C7WCW4NX",
-      "CHILQ4KJ",
-      "CPQ47TBV",
-      "CQG5WH2Y",
-      "DLW898UK",
-      "DS2FR5FU",
-      "FVZ3YE7P",
-      "H497AGMU",
-      "HIU4F3V4",
-      "HN4758MP",
-      "IH6K34R9",
-      "L623PH9P",
-      "NYWJL2T9",
-      "P36H92AX",
-      "P9ZYVAXB",
-      "PP76T2EY",
-      "PV3T4FWR",
-      "PX9XJURS",
-      "QPT4IGLD",
-      "QU4IAZ7E",
-      "TJHT3UBI",
-      "U3XAT3SD",
-      "U746UJ7G",
-      "V463BSDR",
-      "VK2XSGFY",
-      "YSBJVWTA"
+      "CHILQ4KJ"
     ]
   },
-  "r2f_attribution": {
-    "XGT9Z257": [
-      "moved_to_block",
-      "moved_to_figure_inner_text",
-      "page_marker_noise"
-    ],
-    "P9D6GZ9M": [
-      "moved_to_block"
-    ],
-    "XG8R37M7": [
-      "moved_to_block"
-    ]
-  },
-  "note": "R2f resolves three fulltext-only HOLD papers by attribution; 35 remain HOLD. R1 READY is 754 after overlay."
+  "note": "Only CHILQ4KJ remains TEXT_FIDELITY_HOLD. Its headings are semantically truncated by _split_merged_heading_blocks; fix producer before clearing."
 }

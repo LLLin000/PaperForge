@@ -1,0 +1,1884 @@
+{
+  "schema": "paperforge.r2f.attribution.v1",
+  "results": [
+    {
+      "key": "5GYTWRPT",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "As a natural polysaccharide, chitosan was non-cytotoxic, pH-sensitive and antiseptic, which has shown promise in drug delivery for several years [28–32]. We were curious about the functions of this gel. We then investigated the antiseptic property as well as the conductivity of PVA and PVA-CS-5-S gels. As Fig. 8a displayed, after 15 days culture, obvious mold growth was observed at the surface of PVA gel, while nothing appeared on the surface of PVA-CS-5-S gel, indicating good antiseptic propert",
+          "coverage_in_new_fulltext": 0.787,
+          "old_roles": [
+            "section_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 7,
+              "block_id": 7,
+              "role": "section_heading",
+              "text": "Conclusion"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.994,
+            "page": 7,
+            "block_id": 5,
+            "role": "figure_inner_text",
+            "text": "As a natural polysaccharide, chitosan was non-cytotoxic, pH-sensitive and antiseptic, which has shown promise in drug delivery for several years [28–32]. We were curious about the functions of this gel. We then investigated the antiseptic property as well as the conductivity of PVA and PVA-CS-5-S ge"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "5PQ7DI4W",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "> **Table Caption:** TABLE 1",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "noise",
+            "table_caption"
+          ],
+          "old_hits": [
+            {
+              "page": 1,
+              "block_id": 17,
+              "role": "noise",
+              "text": "1"
+            },
+            {
+              "page": 2,
+              "block_id": 12,
+              "role": "table_caption",
+              "text": "TABLE 1"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.667,
+            "page": 2,
+            "block_id": 8,
+            "role": "body_paragraph",
+            "text": "An initial database search revealed 1458 references. We reviewed all identified studies independently and checked for potentially inclusive references. In the event of disagreement over whether an article should be included, the corresponding author (D.C.F.) made the final determination. Two indepen"
+          },
+          "attribution": "table_caption_markdown"
+        }
+      ]
+    },
+    {
+      "key": "64IUPLY7",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "were divided into four groups and the current was applied to three for one week periods beginning (1) the next day of culture preparation to the seventh day; (2) the eighth day to the 14th day; and (3) the 15th day to the 21st day. No current was applied to one group as control. All explants were removed on the 22nd day of culture, fixed in 10% neutral buffered formalin, stained with 0.25%",
+          "coverage_in_new_fulltext": 0.729,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 5,
+              "role": "body_paragraph",
+              "text": "were divided into four groups and the current was applied to three for one week periods beginning (1) the next day of culture preparation to the seventh day; (2) the eighth day to the 14th day; and (3"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 5,
+            "role": "figure_inner_text",
+            "text": "were divided into four groups and the current was applied to three for one week periods beginning (1) the next day of culture preparation to the seventh day; (2) the eighth day to the 14th day; and (3) the 15th day to the 21st day. No current was applied to one group as control. All explants were re"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "6A8A9TWD",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "The present study was approved by the institutional review board. Materials and Methods Patient Data",
+          "coverage_in_new_fulltext": 0.733,
+          "old_roles": [
+            "body_paragraph",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "The present study was approved by the institutional review board."
+            },
+            {
+              "page": 2,
+              "block_id": 7,
+              "role": "subsection_heading",
+              "text": "Materials and Methods Patient Data"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.667,
+            "page": 2,
+            "block_id": 6,
+            "role": "figure_inner_text",
+            "text": "The present study was approved by the institutional review board."
+          },
+          "attribution": "suffix_moved"
+        }
+      ]
+    },
+    {
+      "key": "7S5ZEVSK",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "2: partial or foci of signal hyperintensity",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 18,
+              "role": "body_paragraph",
+              "text": "2: partial or foci of signal hyperintensity"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 18,
+            "role": "non_body_insert",
+            "text": "2: partial or foci of signal hyperintensity"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "4: linear hyperintensity of the peri-articular soft tissues",
+          "coverage_in_new_fulltext": 0.625,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 20,
+              "role": "body_paragraph",
+              "text": "4: linear hyperintensity of the peri-articular soft tissues"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 20,
+            "role": "non_body_insert",
+            "text": "4: linear hyperintensity of the peri-articular soft tissues"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "7W9QLVMF",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Cite this: DOI:10.1039/x0xx00000x",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 7,
+              "role": "body_paragraph",
+              "text": "Cite this: DOI:10.1039/x0xx00000x"
+            },
+            {
+              "page": 11,
+              "block_id": 9,
+              "role": "figure_inner_text",
+              "text": "D"
+            },
+            {
+              "page": 11,
+              "block_id": 21,
+              "role": "noise",
+              "text": "9"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 7,
+            "role": "non_body_insert",
+            "text": "Cite this: DOI:10.1039/x0xx00000x"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Received 00th January 2012, Accepted 00th January 2012 T.A. Banks $^{1,2}$, P. S. B. Luckman $^{3}$, J. E. Frith $^{1}$, and J. J. Cooper-White $^{1,4,5,*}$",
+          "coverage_in_new_fulltext": 0.357,
+          "old_roles": [
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 4,
+              "block_id": 9,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 6,
+              "block_id": 14,
+              "role": "noise",
+              "text": "4"
+            },
+            {
+              "page": 7,
+              "block_id": 14,
+              "role": "noise",
+              "text": "5"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 9,
+            "role": "non_body_insert",
+            "text": "Received 00th January 2012, Accepted 00th January 2012 T.A. Banks $ ^{1,2} $, P. S. B. Luckman $ ^{3} $, J. E. Frith $ ^{1} $, and J. J. Cooper-White $ ^{1,4,5,*} $"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "7ZZN6PUW",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "E-mail: bestmost83@naver.com Disclaimers:",
+          "coverage_in_new_fulltext": 0.2,
+          "old_roles": [
+            "body_paragraph",
+            "noise",
+            "sub_subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "E-mail: bestmost83@naver.com"
+            },
+            {
+              "page": 3,
+              "block_id": 11,
+              "role": "sub_subsection_heading",
+              "text": "Disclaimers:"
+            },
+            {
+              "page": 6,
+              "block_id": 7,
+              "role": "noise",
+              "text": "3"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.8,
+            "page": 3,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "E-mail: bestmost83@naver.com"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Funding: No funding was disclosed by the author(s).",
+          "coverage_in_new_fulltext": 0.625,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 12,
+              "role": "body_paragraph",
+              "text": "Funding: No funding was disclosed by the author(s)."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 12,
+            "role": "non_body_insert",
+            "text": "Funding: No funding was disclosed by the author(s)."
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "C3KHPMQ9",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Funding: This work was supported by the Office of the Assistant Secretary of Defense for Health Affairs, through the Peer Reviewed Medical Research Program, Discovery Award under Award No. W81XWH1810203 (BL). In addition, we acknowledge the use of the WVU Shared Research Facilities, we acknowledge the support of NIH grants 2U54GM104942-02, 5P20RR016477, U57GM104942, P30GM103488, P20GM109098, Introduction",
+          "coverage_in_new_fulltext": 0.491,
+          "old_roles": [
+            "body_paragraph",
+            "section_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 1,
+              "block_id": 18,
+              "role": "body_paragraph",
+              "text": "Funding: This work was supported by the Office of the Assistant Secretary of Defense for Health Affairs, through the Peer Reviewed Medical Research Program, Discovery Award under Award No. W81XWH18102"
+            },
+            {
+              "page": 1,
+              "block_id": 20,
+              "role": "section_heading",
+              "text": "Introduction"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.982,
+            "page": 1,
+            "block_id": 18,
+            "role": "non_body_insert",
+            "text": "Funding: This work was supported by the Office of the Assistant Secretary of Defense for Health Affairs, through the Peer Reviewed Medical Research Program, Discovery Award under Award No. W81XWH1810203 (BL). In addition, we acknowledge the use of the WVU Shared Research Facilities, we acknowledge t"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "and P20GM103434. Opinions, interpretations, conclusions, and recommendations are those of the authors and are not necessarily endorsed by the funding agencies.",
+          "coverage_in_new_fulltext": 0.619,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 2,
+              "role": "body_paragraph",
+              "text": "and P20GM103434. Opinions, interpretations, conclusions, and recommendations are those of the authors and are not necessarily endorsed by the funding agencies."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 2,
+            "role": "non_body_insert",
+            "text": "and P20GM103434. Opinions, interpretations, conclusions, and recommendations are those of the authors and are not necessarily endorsed by the funding agencies."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Competing interests: The authors have declared that no competing interests exist. Staphylococcus aureus (S. aureus) is the most frequently isolated microorganism in PJI [7]. The persistence of S. aureus in PJI is attributed to many factors, which include increasing antibiotic resistance [8], intracellular survival of bacteria [9–11], and formation of biofilms [12]. In particular, biofilms are believed to have a large role in the pathogenesis of PJI, as foreign medical devices, such as prostheses",
+          "coverage_in_new_fulltext": 0.793,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 3,
+              "role": "body_paragraph",
+              "text": "Competing interests: The authors have declared that no competing interests exist. Staphylococcus aureus (S. aureus) is the most frequently isolated microorganism in PJI [7]. The persistence of S. aure"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 3,
+            "role": "non_body_insert",
+            "text": "Competing interests: The authors have declared that no competing interests exist. Staphylococcus aureus (S. aureus) is the most frequently isolated microorganism in PJI [7]. The persistence of S. aureus in PJI is attributed to many factors, which include increasing antibiotic resistance [8], intrace"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "C7WCW4NX",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Received 31 March 2025",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "Received 31 March 2025"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "Received 31 March 2025"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "CQG5WH2Y",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "IP Address: 207.162.240.147 This content was downloaded on 14/07/2017 at 09:53",
+          "coverage_in_new_fulltext": 0.588,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 1,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "IP Address: 207.162.240.147 This content was downloaded on 14/07/2017 at 09:53"
+            },
+            {
+              "page": 2,
+              "block_id": 14,
+              "role": "noise",
+              "text": "1"
+            },
+            {
+              "page": 3,
+              "block_id": 7,
+              "role": "noise",
+              "text": "2"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 1,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "IP Address: 207.162.240.147 This content was downloaded on 14/07/2017 at 09:53"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Selvakumar $^{2}$, Amitava Bhattacharyya $^{1,5}$",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 14,
+              "role": "noise",
+              "text": "1"
+            },
+            {
+              "page": 3,
+              "block_id": 7,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 6,
+              "block_id": 7,
+              "role": "noise",
+              "text": "5"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 5,
+            "role": "non_body_insert",
+            "text": "Selvakumar $ ^{2} $, Amitava Bhattacharyya $ ^{1,5} $"
+          },
+          "attribution": "non_body_old"
+        },
+        {
+          "text": "E-mail: amitbha1912@gmail.com, abh@psgias.ac.in",
+          "coverage_in_new_fulltext": 0.25,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 11,
+              "role": "body_paragraph",
+              "text": "E-mail: amitbha1912@gmail.com, abh@psgias.ac.in"
+            },
+            {
+              "page": 2,
+              "block_id": 14,
+              "role": "noise",
+              "text": "1"
+            },
+            {
+              "page": 3,
+              "block_id": 7,
+              "role": "noise",
+              "text": "2"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 11,
+            "role": "non_body_insert",
+            "text": "E-mail: amitbha1912@gmail.com, abh@psgias.ac.in"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "DLW898UK",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "E-mail: patrizia.diana@unipa.it",
+          "coverage_in_new_fulltext": 0.6,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "E-mail: patrizia.diana@unipa.it"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "E-mail: patrizia.diana@unipa.it"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "[b] Prof. E. Giovannetti",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 11,
+              "role": "body_paragraph",
+              "text": "[b] Prof. E. Giovannetti"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 11,
+            "role": "non_body_insert",
+            "text": "[b] Prof. E. Giovannetti"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "[c] Prof. E. Giovannetti",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 15,
+              "role": "body_paragraph",
+              "text": "[c] Prof. E. Giovannetti"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 11,
+            "role": "non_body_insert",
+            "text": "[b] Prof. E. Giovannetti"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Fondazione Pisana per la Scienza",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 17,
+              "role": "body_paragraph",
+              "text": "Fondazione Pisana per la Scienza"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 17,
+            "role": "non_body_insert",
+            "text": "Fondazione Pisana per la Scienza"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "DS2FR5FU",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "> **Table Caption:** Table 1 Demographics",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "table_caption"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "table_caption",
+              "text": "Table 1 Demographics"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.75,
+            "page": 5,
+            "block_id": 2,
+            "role": "table_caption",
+            "text": "Table 1 Demographics"
+          },
+          "attribution": "table_caption_markdown"
+        }
+      ]
+    },
+    {
+      "key": "FVZ3YE7P",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "where $\\mathrm{OD}_{\\mathrm{TX}-100}$,$\\mathrm{OD}_{\\mathrm{PBS}}$, and $\\mathrm{OD}_{\\mathrm{hydro}}$ represent the absorbance values of the TX-100 solution, PBS buffer, and hydrogel extracting solution. 2.9 Evaluation of antioxidant properties",
+          "coverage_in_new_fulltext": 0.794,
+          "old_roles": [
+            "figure_inner_text",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 17,
+              "role": "subsection_heading",
+              "text": "2.9 Evaluation of antioxidant properties"
+            },
+            {
+              "page": 4,
+              "block_id": 16,
+              "role": "figure_inner_text",
+              "text": "B"
+            },
+            {
+              "page": 4,
+              "block_id": 19,
+              "role": "figure_inner_text",
+              "text": "D"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.912,
+            "page": 3,
+            "block_id": 16,
+            "role": "non_body_insert",
+            "text": "where $\\mathrm{OD}_{\\mathrm{TX}-100}$, $\\mathrm{OD}_{\\mathrm{PBS}}$, and $\\mathrm{OD}_{\\mathrm{hydro}}$ represent the absorbance values of the TX-100 solution, PBS buffer, and hydrogel extracting solution."
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "H497AGMU",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "REVISED 12 April 2016",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "REVISED 12 April 2016"
+            },
+            {
+              "page": 3,
+              "block_id": 15,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 7,
+              "block_id": 19,
+              "role": "noise",
+              "text": "6"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "REVISED 12 April 2016"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "PUBLISHED 12 May 2016",
+          "coverage_in_new_fulltext": 0.75,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 8,
+              "role": "body_paragraph",
+              "text": "PUBLISHED 12 May 2016"
+            },
+            {
+              "page": 3,
+              "block_id": 15,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 7,
+              "block_id": 19,
+              "role": "noise",
+              "text": "6"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 8,
+            "role": "non_body_insert",
+            "text": "PUBLISHED 12 May 2016"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "E-mail: jowalser@ethz.ch",
+          "coverage_in_new_fulltext": 0.25,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 14,
+              "role": "body_paragraph",
+              "text": "E-mail: jowalser@ethz.ch"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 14,
+            "role": "non_body_insert",
+            "text": "E-mail: jowalser@ethz.ch"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "HIU4F3V4",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "E-Mail Address: chunyanj@hotmail.com",
+          "coverage_in_new_fulltext": 0.2,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "E-Mail Address: chunyanj@hotmail.com"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "E-Mail Address: chunyanj@hotmail.com"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Short Running Title: Modified Patte's Classification",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 8,
+              "role": "body_paragraph",
+              "text": "Short Running Title: Modified Patte's Classification"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 8,
+            "role": "non_body_insert",
+            "text": "Short Running Title: Modified Patte's Classification"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "IRB and RCT information: none",
+          "coverage_in_new_fulltext": 0.6,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 9,
+              "role": "body_paragraph",
+              "text": "IRB and RCT information: none"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 9,
+            "role": "non_body_insert",
+            "text": "IRB and RCT information: none"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "HN4758MP",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "$^{*}$Corresponding Author",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 15,
+              "block_id": 12,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 9,
+            "role": "non_body_insert",
+            "text": "$ ^{*} $Corresponding Author"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Dr. Govinda Kapusetti",
+          "coverage_in_new_fulltext": 0.333,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "Dr. Govinda Kapusetti"
+            },
+            {
+              "page": 15,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 15,
+              "block_id": 12,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "Dr. Govinda Kapusetti"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Gujarat, 380054, India",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 13,
+              "role": "body_paragraph",
+              "text": "Gujarat, 380054, India"
+            },
+            {
+              "page": 15,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 15,
+              "block_id": 12,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 13,
+            "role": "non_body_insert",
+            "text": "Gujarat, 380054, India"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "E-mail:$\\underline{\\text{govindphysics@gmail.com}}$",
+          "coverage_in_new_fulltext": 0.167,
+          "old_roles": [
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 15,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 15,
+              "block_id": 10,
+              "role": "figure_inner_text",
+              "text": "c"
+            },
+            {
+              "page": 15,
+              "block_id": 12,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 14,
+            "role": "non_body_insert",
+            "text": "E-mail: $ \\underline{\\text{govindphysics@gmail.com}} $"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "L623PH9P",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "where Ve is the exterior volume of each sample.",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 16,
+              "role": "body_paragraph",
+              "text": "where Ve is the exterior volume of each sample."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 16,
+            "role": "non_body_insert",
+            "text": "where Ve is the exterior volume of each sample."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Degradation ratio (\\%)=(W₀-Wₜ)/W₀ × 100\\%,",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 22,
+              "role": "body_paragraph",
+              "text": "Degradation ratio (\\%)=(W₀-Wₜ)/W₀ × 100\\%,"
+            },
+            {
+              "page": 6,
+              "block_id": 7,
+              "role": "figure_inner_text",
+              "text": "D"
+            },
+            {
+              "page": 7,
+              "block_id": 8,
+              "role": "figure_inner_text",
+              "text": "D"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 22,
+            "role": "non_body_insert",
+            "text": "Degradation ratio (\\%)=(W₀-Wₜ)/W₀ × 100\\%,"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "NYWJL2T9",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Our institutional review board does not require its approval or informed consent for the review of patient records or images. Patient rights are protected by a law that requires patients to be informed at the time of examination about the possibility that their medical records and radiographs will be reviewed for scientific purposes.",
+          "coverage_in_new_fulltext": 0.596,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "Our institutional review board does not require its approval or informed consent for the review of patient records or images. Patient rights are protected by a law that requires patients to be informe"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "Our institutional review board does not require its approval or informed consent for the review of patient records or images. Patient rights are protected by a law that requires patients to be informed at the time of examination about the possibility that their medical records and radiographs will b"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "The patients' ages ranged from 31 to 77 years (mean, 54.7 years). The age range among women was 45–77 years (mean, 61.8 years) and among men was 31–63 years (mean, 52.1 years). Five patients had no history of trauma or prior surgery, 12 patients had prior shoulder trauma, and five patients developed frozen shoulder after shoulder surgery. None of the patients had diabetes mellitus or systemic inflammatory disease. All patients underwent conservative therapy before capsulotomy. The mean duration ",
+          "coverage_in_new_fulltext": 0.789,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 11,
+              "role": "body_paragraph",
+              "text": "The patients' ages ranged from 31 to 77 years (mean, 54.7 years). The age range among women was 45–77 years (mean, 61.8 years) and among men was 31–63 years (mean, 52.1 years). Five patients had no hi"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 11,
+            "role": "non_body_insert",
+            "text": "The patients' ages ranged from 31 to 77 years (mean, 54.7 years). The age range among women was 45–77 years (mean, 61.8 years) and among men was 31–63 years (mean, 52.1 years). Five patients had no history of trauma or prior surgery, 12 patients had prior shoulder trauma, and five patients developed"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "P36H92AX",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "This study was based on the Cochrane Review Methods, and reporting was conducted in accordance with the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) statement. Controlled vocabulary and free text words (refer to Additional file 1) were used to search for articles published up until October 2019. Multiple databases, including MEDLINE, EMBASE, and the Cochrane Central Register of Controlled Trials, were searched to identify relevant studies regardless of language, pu",
+          "coverage_in_new_fulltext": 0.773,
+          "old_roles": [
+            "body_paragraph",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "This study was based on the Cochrane Review Methods, and reporting was conducted in accordance with the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) statement. Controlle"
+            },
+            {
+              "page": 2,
+              "block_id": 8,
+              "role": "subsection_heading",
+              "text": "Eligibility criteria"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.984,
+            "page": 2,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "This study was based on the Cochrane Review Methods, and reporting was conducted in accordance with the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) statement. Controlled vocabulary and free text words (refer to Additional file 1) were used to search for articles publi"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "P9ZYVAXB",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Received 1 April 2025",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 13,
+              "role": "body_paragraph",
+              "text": "Received 1 April 2025"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 13,
+            "role": "non_body_insert",
+            "text": "Received 1 April 2025"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "issues are on the rise due to factors such as trauma, tumors, various infections, osteoporosis, congenital malformations, aging, and lack of physical activity, reducing quality of life and causing worldwide disability [1,2]. Conventional treatment methods for bone defects, including autografts, allografts, and",
+          "coverage_in_new_fulltext": 0.707,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 15,
+              "role": "body_paragraph",
+              "text": "issues are on the rise due to factors such as trauma, tumors, various infections, osteoporosis, congenital malformations, aging, and lack of physical activity, reducing quality of life and causing wor"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 15,
+            "role": "non_body_insert",
+            "text": "issues are on the rise due to factors such as trauma, tumors, various infections, osteoporosis, congenital malformations, aging, and lack of physical activity, reducing quality of life and causing worldwide disability [1,2]. Conventional treatment methods for bone defects, including autografts, allo"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "PP76T2EY",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "The piezoelectric coefficient is not a scalar quantity but a third-rank tensor, reflecting the directional nature of piezoelectricity [38]. In the direct piezoelectric effect, polarization is described as a vector, while stress is represented as a symmetric second-rank tensor. In the converse effect, the electric field acts as a vector and strain as a second-rank tensor [37,38]. To simplify these relationships, the piezoelectric tensor is commonly expressed as a $3 \\times 6$ matrix ($d_{ij}$), w",
+          "coverage_in_new_fulltext": 0.759,
+          "old_roles": [
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 14,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 14,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 14,
+              "block_id": 8,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 14,
+            "role": "non_body_insert",
+            "text": "The piezoelectric coefficient is not a scalar quantity but a third-rank tensor, reflecting the directional nature of piezoelectricity [38]. In the direct piezoelectric effect, polarization is described as a vector, while stress is represented as a symmetric second-rank tensor. In the converse effect"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "PV3T4FWR",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "We searched for relevant articles written in English or Spanish (considering the linguistic capabilities of the authors). Inclusion criteria consisted of studies of any level of evidence that reported radiographic outcomes of CC stabilization procedures and met at least 1 of the following requirements: (1) reporting the proportion of cases with clavicular TW, or (2) presenting absolute or relative measurements of clavicular TW. The following articles were not considered eligible for inclusion: (",
+          "coverage_in_new_fulltext": 0.796,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 11,
+              "role": "body_paragraph",
+              "text": "We searched for relevant articles written in English or Spanish (considering the linguistic capabilities of the authors). Inclusion criteria consisted of studies of any level of evidence that reported"
+            },
+            {
+              "page": 2,
+              "block_id": 13,
+              "role": "subsection_heading",
+              "text": "Search strategy and selection process"
+            },
+            {
+              "page": 12,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "A"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.976,
+            "page": 2,
+            "block_id": 11,
+            "role": "non_body_insert",
+            "text": "We searched for relevant articles written in English or Spanish (considering the linguistic capabilities of the authors). Inclusion criteria consisted of studies of any level of evidence that reported radiographic outcomes of CC stabilization procedures and met at least 1 of the following requiremen"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "The study followed the PRISMA guidelines.$^{40,41}$The process of identifying relevant articles involved searching through electronic databases, including PubMed/Medline, Scopus, and EMBASE, using the following keywords: “acromioclavicular”, “coracoclavicular”, “tunnel”, and “widening”. Articles published from the databases’ inception until January 2023 were considered for this research. An extensive review of the existing literature was performed to identify the study eligibility criteria. Auto",
+          "coverage_in_new_fulltext": 0.745,
+          "old_roles": [
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 12,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "A"
+            },
+            {
+              "page": 12,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "B"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 14,
+            "role": "non_body_insert",
+            "text": "The study followed the PRISMA guidelines. $ ^{40,41} $ The process of identifying relevant articles involved searching through electronic databases, including PubMed/Medline, Scopus, and EMBASE, using the following keywords: “acromioclavicular”, “coracoclavicular”, “tunnel”, and “widening”. Articles"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "After removing duplicate articles, we analyzed titles and abstracts and reviewed the full text. We assessed the agreement between reviewers on study inclusion using the $\\kappa$statistic. Disagreements were resolved through consensus with the assistance of a third author, a sports medicine fellowship-trained orthopedic surgeon (L.I.M.). We grouped studies based on the timing of surgery after injury into acute (<3 weeks), chronic (>3 weeks), and mixed (reporting overlapping results of acute and c",
+          "coverage_in_new_fulltext": 0.795,
+          "old_roles": [
+            "figure_inner_text",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 16,
+              "role": "subsection_heading",
+              "text": "Data collection and items"
+            },
+            {
+              "page": 12,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "A"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.973,
+            "page": 2,
+            "block_id": 15,
+            "role": "non_body_insert",
+            "text": "After removing duplicate articles, we analyzed titles and abstracts and reviewed the full text. We assessed the agreement between reviewers on study inclusion using the $ \\kappa $ statistic. Disagreements were resolved through consensus with the assistance of a third author, a sports medicine fellow"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Two reviewers (A.V.G. and A.F.A.) extracted and input data from the included articles into a Microsoft Excel spreadsheet. Comparisons were made between the data extracted from the reviewers to guarantee coherence throughout the process. The study information collected included, but was not limited to, publication details and patient characteristics, ACJ injury classification, mean time between injury and surgery, surgical details, and the radiographic protocol for evaluating TW.",
+          "coverage_in_new_fulltext": 0.75,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 17,
+              "role": "body_paragraph",
+              "text": "Two reviewers (A.V.G. and A.F.A.) extracted and input data from the included articles into a Microsoft Excel spreadsheet. Comparisons were made between the data extracted from the reviewers to guarant"
+            },
+            {
+              "page": 12,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "A"
+            },
+            {
+              "page": 12,
+              "block_id": 10,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 17,
+            "role": "non_body_insert",
+            "text": "Two reviewers (A.V.G. and A.F.A.) extracted and input data from the included articles into a Microsoft Excel spreadsheet. Comparisons were made between the data extracted from the reviewers to guarantee coherence throughout the process. The study information collected included, but was not limited t"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "PX9XJURS",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Figure 1a shows the schematic structure of a P-TENG with an electrostatic vibrator switch. The action of P-TENG is based on the sliding mode. A polymethyl methacrylate (PMMA) sheet with a thickness of 3 mm was used as the substrate to fabricate a P-TENG. A square Al foil with a side length of 5 cm and a thickness of 25 μm was used as a triboelectric layer. Two pieces of Cu foil with a thickness of 50 μm were used as two electrodes of P-TENG. A polytetrafluoroethylene (PTFE) film was attached to ",
+          "coverage_in_new_fulltext": 0.71,
+          "old_roles": [
+            "backmatter_boundary_candidate",
+            "figure_caption_candidate",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 3,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 3,
+              "block_id": 5,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 3,
+              "block_id": 7,
+              "role": "figure_inner_text",
+              "text": "c"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 7,
+            "role": "figure_caption_candidate",
+            "text": "Figure 1a shows the schematic structure of a P-TENG with an electrostatic vibrator switch. The action of P-TENG is based on the sliding mode. A polymethyl methacrylate (PMMA) sheet with a thickness of 3 mm was used as the substrate to fabricate a P-TENG. A square Al foil with a side length of 5 cm a"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "QU4IAZ7E",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "requirement for any material intended for drug delivery in the human body [14]. In addition, the material must be biodegradable and capable of releasing the drug only when it reaches the targeted organ or tissue. In PAM hydrogels, the water content plays a central role in controlling the rate and timing of drug release [15]. These hydrogels are not only highly biocompatible but also largely inert, minimizing unwanted interactions with the encapsulated therapeutics. The gelation ratio can be adju",
+          "coverage_in_new_fulltext": 0.717,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 2,
+              "role": "body_paragraph",
+              "text": "requirement for any material intended for drug delivery in the human body [14]. In addition, the material must be biodegradable and capable of releasing the drug only when it reaches the targeted orga"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 2,
+            "role": "non_body_insert",
+            "text": "requirement for any material intended for drug delivery in the human body [14]. In addition, the material must be biodegradable and capable of releasing the drug only when it reaches the targeted organ or tissue. In PAM hydrogels, the water content plays a central role in controlling the rate and ti"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "TJHT3UBI",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Published on 04 October 2024",
+          "coverage_in_new_fulltext": 0.4,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 3,
+              "role": "body_paragraph",
+              "text": "Published on 04 October 2024"
+            },
+            {
+              "page": 12,
+              "block_id": 9,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 15,
+              "block_id": 5,
+              "role": "figure_inner_text",
+              "text": "b"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 3,
+            "role": "non_body_insert",
+            "text": "Published on 04 October 2024"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Licensed under CC-BY 4.0",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 4,
+              "role": "body_paragraph",
+              "text": "Licensed under CC-BY 4.0"
+            },
+            {
+              "page": 12,
+              "block_id": 10,
+              "role": "figure_inner_text",
+              "text": "C"
+            },
+            {
+              "page": 15,
+              "block_id": 8,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 4,
+            "role": "non_body_insert",
+            "text": "Licensed under CC-BY 4.0"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Received 4th June 2024 Key learning points",
+          "coverage_in_new_fulltext": 0.714,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "Received 4th June 2024"
+            },
+            {
+              "page": 2,
+              "block_id": 13,
+              "role": "subsection_heading",
+              "text": "Key learning points"
+            },
+            {
+              "page": 12,
+              "block_id": 7,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.571,
+            "page": 2,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "Received 4th June 2024"
+          },
+          "attribution": "suffix_moved"
+        }
+      ]
+    },
+    {
+      "key": "U3XAT3SD",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "where $\\vec{v}$ is the velocity field,$\\vec{g}$ is the gravitational acceleration,$p' = p - p_0$,$ p$is the pressure,$\\vec{\\nabla}p_0 = \\rho_0\\vec{g}$,$\\mu$is the dynamical viscosity, and $\\alpha$is the thermal diffusivity. We assumed that $\\mu$and $\\alpha$are constants.",
+          "coverage_in_new_fulltext": 0.692,
+          "old_roles": [
+            "figure_caption_candidate"
+          ],
+          "old_hits": [
+            {
+              "page": 11,
+              "block_id": 4,
+              "role": "figure_caption_candidate",
+              "text": "iv"
+            },
+            {
+              "page": 11,
+              "block_id": 14,
+              "role": "figure_caption_candidate",
+              "text": "vi"
+            },
+            {
+              "page": 13,
+              "block_id": 23,
+              "role": "figure_caption_candidate",
+              "text": "vi"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 14,
+            "role": "non_body_insert",
+            "text": "where $ \\vec{v} $ is the velocity field, $ \\vec{g} $ is the gravitational acceleration, $ p' = p - p_0 $, $ p $ is the pressure, $ \\vec{\\nabla}p_0 = \\rho_0\\vec{g} $, $ \\mu $ is the dynamical viscosity, and $ \\alpha $ is the thermal diffusivity. We assumed that $ \\mu $ and $ \\alpha $ are constants."
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "U746UJ7G",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Author affiliations and article information are listed at the end of this article.",
+          "coverage_in_new_fulltext": 0.692,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 1,
+              "block_id": 18,
+              "role": "body_paragraph",
+              "text": "Author affiliations and article information are listed at the end of this article."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 1,
+            "block_id": 18,
+            "role": "non_body_insert",
+            "text": "Author affiliations and article information are listed at the end of this article."
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "V463BSDR",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "the conversion of hMSCs to the rGO electrodes, we used two immunofluorescent staining markers, CD-44-positive and osteocalcin (OCN)-negative markers, to stain the hMSCs at different periods of time (0, 3, 6, and 9 days) during osteogenesis induction. The progressive decrease in the CD-44 fluorescence intensity and enhanced OCN fluorescence (Figure 3) confirmed the successful osteogenic differentiation on the rGO/ITO electrodes after 9 days of induction. In addition, the hMSCs became more spread ",
+          "coverage_in_new_fulltext": 0.756,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 3,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "the conversion of hMSCs to the rGO electrodes, we used two immunofluorescent staining markers, CD-44-positive and osteocalcin (OCN)-negative markers, to stain the hMSCs at different periods of time (0"
+            },
+            {
+              "page": 3,
+              "block_id": 19,
+              "role": "noise",
+              "text": "3"
+            },
+            {
+              "page": 4,
+              "block_id": 14,
+              "role": "noise",
+              "text": "4"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 3,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "the conversion of hMSCs to the rGO electrodes, we used two immunofluorescent staining markers, CD-44-positive and osteocalcin (OCN)-negative markers, to stain the hMSCs at different periods of time (0, 3, 6, and 9 days) during osteogenesis induction. The progressive decrease in the CD-44 fluorescenc"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "VK2XSGFY",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "concomitant procedures, resulting in the publishing of low-quality studies throughout the literature. This creates a dilemma for surgeons in making evidence-based decisions for rotator cuff tear (RCT) management centered on the significance of preoperative risk factors.",
+          "coverage_in_new_fulltext": 0.784,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 2,
+              "role": "body_paragraph",
+              "text": "concomitant procedures, resulting in the publishing of low-quality studies throughout the literature. This creates a dilemma for surgeons in making evidence-based decisions for rotator cuff tear (RCT)"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 2,
+            "role": "non_body_insert",
+            "text": "concomitant procedures, resulting in the publishing of low-quality studies throughout the literature. This creates a dilemma for surgeons in making evidence-based decisions for rotator cuff tear (RCT) management centered on the significance of preoperative risk factors."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "> **Table Caption:** Table 3. Continued",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "table_caption"
+          ],
+          "old_hits": [
+            {
+              "page": 11,
+              "block_id": 0,
+              "role": "table_caption",
+              "text": "Table 3. Continued"
+            },
+            {
+              "page": 12,
+              "block_id": 2,
+              "role": "table_caption",
+              "text": "Table 3. Continued"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.75,
+            "page": 4,
+            "block_id": 0,
+            "role": "table_caption",
+            "text": "Table 1. Continued"
+          },
+          "attribution": "table_caption_markdown"
+        }
+      ]
+    },
+    {
+      "key": "YSBJVWTA",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "Thick, web-like ligament that connects the heel to the front of the foot. This ligament acts as a shock absorber and supports the arch of the foot, facilitating walking.",
+          "coverage_in_new_fulltext": 0.724,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 4,
+              "role": "body_paragraph",
+              "text": "Thick, web-like ligament that connects the heel to the front of the foot. This ligament acts as a shock absorber and supports the arch of the foot, facilitating walking."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 4,
+            "role": "non_body_insert",
+            "text": "Thick, web-like ligament that connects the heel to the front of the foot. This ligament acts as a shock absorber and supports the arch of the foot, facilitating walking."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Greater trochanter The attachment site for five muscles: the gluteus medius, gluteus minimus, piriformis, obturator externus and obturator internus. Achilles tendon",
+          "coverage_in_new_fulltext": 0.476,
+          "old_roles": [
+            "body_paragraph",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 5,
+              "role": "body_paragraph",
+              "text": "Greater trochanter The attachment site for five muscles: the gluteus medius, gluteus minimus, piriformis, obturator externus and obturator internus."
+            },
+            {
+              "page": 2,
+              "block_id": 7,
+              "role": "subsection_heading",
+              "text": "Achilles tendon"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.905,
+            "page": 2,
+            "block_id": 5,
+            "role": "non_body_insert",
+            "text": "Greater trochanter The attachment site for five muscles: the gluteus medius, gluteus minimus, piriformis, obturator externus and obturator internus."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "A strong fibrous cord that connects the muscles in the back of the calf to the calcaneus bone.",
+          "coverage_in_new_fulltext": 0.765,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 8,
+              "role": "body_paragraph",
+              "text": "A strong fibrous cord that connects the muscles in the back of the calf to the calcaneus bone."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 8,
+            "role": "non_body_insert",
+            "text": "A strong fibrous cord that connects the muscles in the back of the calf to the calcaneus bone."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Patellar tendon The tendon running inferiorly from the patella bone to the tibial tuberosity.",
+          "coverage_in_new_fulltext": 0.714,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 9,
+              "role": "body_paragraph",
+              "text": "Patellar tendon The tendon running inferiorly from the patella bone to the tibial tuberosity."
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 9,
+            "role": "non_body_insert",
+            "text": "Patellar tendon The tendon running inferiorly from the patella bone to the tibial tuberosity."
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    }
+  ]
+}

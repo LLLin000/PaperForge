@@ -1,11 +1,6 @@
 {
   "schema": "paperforge.r2f.resolution.v1",
   "resolved": [
-    "P9D6GZ9M",
-    "XG8R37M7",
-    "XGT9Z257"
-  ],
-  "remaining_hold": [
     "5GYTWRPT",
     "5PQ7DI4W",
     "64IUPLY7",
@@ -16,7 +11,6 @@
     "8M2YFJAX",
     "C3KHPMQ9",
     "C7WCW4NX",
-    "CHILQ4KJ",
     "CPQ47TBV",
     "CQG5WH2Y",
     "DLW898UK",
@@ -29,6 +23,7 @@
     "L623PH9P",
     "NYWJL2T9",
     "P36H92AX",
+    "P9D6GZ9M",
     "P9ZYVAXB",
     "PP76T2EY",
     "PV3T4FWR",
@@ -40,8 +35,13 @@
     "U746UJ7G",
     "V463BSDR",
     "VK2XSGFY",
+    "XG8R37M7",
+    "XGT9Z257",
     "YSBJVWTA"
   ],
+  "remaining_hold": [
+    "CHILQ4KJ"
+  ],
   "evidence": "docs/evidence/r2-audit/r2f-attribution.json",
-  "note": "All fulltext-only paragraphs in the three papers are attributed to moved blocks, figure inner text, or page-marker noise; no unresolved paragraph remains."
+  "note": "All fulltext-only HOLD papers are attributed; IH6K34R9 is a legitimate heading merge; 8M2YFJAX/CPQ47TBV/QPT4IGLD are false-positive splits with both fragments retained. CHILQ4KJ remains HOLD due semantic heading truncation in _split_merged_heading_blocks."
 }

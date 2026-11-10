@@ -1,0 +1,80 @@
+{
+  "schema": "paperforge.r2f.block_analysis.v1",
+  "keys": [
+    "CHILQ4KJ",
+    "IH6K34R9",
+    "8M2YFJAX",
+    "CPQ47TBV",
+    "QPT4IGLD"
+  ],
+  "producer": "paperforge/worker/ocr_document.py::_split_merged_heading_blocks (called at normalize_document_structure ~line 2704)",
+  "root_cause": "heading_num regex r\"\\b(\\d+(?:\\.\\d+)*\\.?\\s+[A-Z])\" treats any mid-text number followed by a capital word (e.g. 'SCP-1 Cells', '10 Min', '16 Hz', '9 April', '15 May') as a second merged heading and splits the block there.",
+  "findings": {
+    "CHILQ4KJ": {
+      "classification": "heading_truncation",
+      "clearable_as_pure_formatting": false,
+      "blocks": [
+        {"page":5,"block_id":"5","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.1. Three 10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day","new_text":"10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day","old_sha256":"9e3e31a59cb0a46f1a8e5030832f13237c32f88ff17c4f81013b15b090eac2e9","new_sha256":"a5906b700488176dec46f3803a7782525e9cb40eee2a4023a1774aaabe0a8ec8"},
+        {"page":5,"block_id":"8","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.2. Intermittent Exposure to 16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells","new_text":"16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells","old_sha256":"eba3449487f173d9c23d26cd4cbefd4bd461c813083333a8f2f048c1208c1ca6","new_sha256":"28ef7c3c7fe3cfa1b93319ff69d76590cdee2c73addef6a751498eda44f86909"},
+        {"page":5,"block_id":"10","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.3. The 16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells","new_text":"16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells","old_sha256":"3d06b3750d249fb343bb42c0bb887f2bda4e508da9844b8ed2c7aaf716815221","new_sha256":"f2b7434b1f251f034203f88ef16fedb53dcabf30e40593e86ab7d350c28fdd13"},
+        {"page":6,"block_id":"12","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.4. Modulation of Piezo 1-Mediated $ Ca^{2+} $ Influx into SCP-1 Cells by Small Chemicals","new_text":"1 Cells by Small Chemicals","old_sha256":"7a1f600d225784fef83d9ce8e5d0f561cf270ba0dd44654b473d5a8ad193b751","new_sha256":"83701289f0f788ae8e6967ca2bd510862601a94f67d070cd071ded20d22b66e1"},
+        {"page":6,"block_id":"15","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.5. The 16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1","new_text":"16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1","old_sha256":"981d36d0979788e340ff7a862fb0b6f0ca535432e8ccd863d860fddc9dfe9db8","new_sha256":"577c4a753a57f30791847138773a29dd0e5baf37356d1eeb028d3d02f4e5a6eb"},
+        {"page":7,"block_id":"17","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.6. Pharmacological Activation of Piezo 1 Promoted Osteogenic Differentiation of SCP-1 Cells","new_text":"1 Promoted Osteogenic Differentiation of SCP-1 Cells","old_sha256":"5433461865fb3df9f1b4f37406ded39c1e175186f79f05a942b8c297d33ebd93","new_sha256":"57cc8c4dce1c4b8f917849ba106efcc74f6e27991826995e05569f4a063c84fe"},
+        {"page":9,"block_id":"2","old_role":"subsection_heading","new_role":"section_heading","old_text":"3.7. Pharmacological Inhibition of Piezo 1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells","new_text":"1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells","old_sha256":"6ccc8dece8bcf3553cbc83f7c3f3715f5cf48492152aa111fa75db04d367b003","new_sha256":"e09960f95dbde17c5503795e93e3571774d9f47e673d41539c0ab73c70a8e3d8"}
+      ],
+      "responsible_stage": "normalize_document_structure -> _split_merged_heading_blocks (paperforge/worker/ocr_document.py ~2704); regex heading_num at ~3531",
+      "recommendation": "fix producer: tighten heading_num to require a dotted heading number (e.g. \\d+\\.\\d+) so 'SCP-1 Cells', '10 Min', '16 Hz' are not treated as headings. Do not clear: semantic truncation."
+    },
+    "IH6K34R9": {
+      "classification": "heading_merge",
+      "clearable_as_pure_formatting": true,
+      "blocks": [
+        {"page":13,"block_id":"11","old_role":"subsection_heading","new_role":"subsection_heading","old_text":"2.2. Three-Dimensional Printing of Principal Animal-Derived Hydrogels for CTE 2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid","new_text":"2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid","old_sha256":"bb0d205cd75f0328087a31511780357e69970ca0bbedeffbfb209f67ab3550a0","new_sha256":"375efd866435d2f75d4af4da66d2c9d2e8e70e12ede947ad998367534cc6c24f"}
+      ],
+      "prefix_retained_as_sibling_block": "2.2. Three-Dimensional Printing of Principal Animal-Derived Hydrogels for CTE",
+      "responsible_stage": "same _split_merged_heading_blocks",
+      "recommendation": "formatting-only (both fragments retained, no fulltext loss); clearable after producer fix or accept as heading_merge."
+    },
+    "8M2YFJAX": {
+      "classification": "heading_merge",
+      "clearable_as_pure_formatting": true,
+      "attribution_label": "metadata_normalization",
+      "intentional_metadata_policy": false,
+      "blocks": [
+        {"page":4,"block_id":"9","old_role":"subsection_heading","new_role":"section_heading","old_text":"Received 13 February; accepted 15 May 2006.","new_text":"15 May 2006.","old_sha256":"2b9d6afcfce7ef2f39ac09666e834ae12697e6b56106a46e2ec2a4561434dbcd","new_sha256":"f432162f005c8deec26fb5050050651497b2978182fcd1ef44ad597daa1fecf9"}
+      ],
+      "prefix_retained_as_sibling_block": "Received 13 February; accepted",
+      "responsible_stage": "same _split_merged_heading_blocks (regex splits at '15 May')",
+      "recommendation": "not an intentional metadata policy; formatting-only split. Clearable as pure formatting; fix producer to avoid split."
+    },
+    "CPQ47TBV": {
+      "classification": "heading_merge",
+      "clearable_as_pure_formatting": true,
+      "attribution_label": "metadata_normalization",
+      "intentional_metadata_policy": false,
+      "blocks": [
+        {"page":9,"block_id":"24","old_role":"subsection_heading","new_role":"section_heading","old_text":"Received: 3 March 2025 / Accepted: 9 April 2025","new_text":"9 April 2025","old_sha256":"bd45203a4d32bdbc2ffc5ba9f2f23b7a6813536b67d2c418afce540fe689e664","new_sha256":"13bc9139acc87065cfa4f58cd6751240e2521d2818f379b80757d39d2466392e"}
+      ],
+      "prefix_retained_as_sibling_block": "Received: 3 March 2025 / Accepted:",
+      "responsible_stage": "same _split_merged_heading_blocks (regex splits at '9 April')",
+      "recommendation": "not an intentional metadata policy; formatting-only split. Clearable as pure formatting; fix producer to avoid split."
+    },
+    "QPT4IGLD": {
+      "classification": "heading_merge",
+      "clearable_as_pure_formatting": true,
+      "attribution_label": "metadata_normalization",
+      "intentional_metadata_policy": false,
+      "blocks": [
+        {"page":18,"block_id":"11","old_role":"subsection_heading","new_role":"section_heading","old_text":"Received: 24 February 2024 / Accepted: 3 July 2024","new_text":"3 July 2024","old_sha256":"7ef86774bd16952528e23cff4bf8e47c32af8e97a3a3f0b2ca2b2591382bd429","new_sha256":"77ef0e8254779991e91c9f1b28bdf8cc85bb79081934caf535329f71b539df54"}
+      ],
+      "prefix_retained_as_sibling_block": "Received: 24 February 2024 / Accepted:",
+      "responsible_stage": "same _split_merged_heading_blocks (regex splits at '3 July')",
+      "recommendation": "not an intentional metadata policy; formatting-only split. Clearable as pure formatting; fix producer to avoid split."
+    }
+  },
+  "focus_answers": {
+    "CHILQ4KJ_p6_b12": "Loses 'Modulation of Piezo 1-Mediated ...' because heading_num regex matches '1 Cells' inside 'SCP-1 Cells' and splits the block at that position (split_pos before '1 Cells'); the prefix becomes '... SCP-' and the suffix '1 Cells by Small Chemicals'. Stage: _split_merged_heading_blocks.",
+    "IH6K34R9_p13_b11": "Loses '2.2. Three-Dimensional Printing ... for CTE' prefix because the block contains two genuine heading numbers ('2.2.' and '2.2.1.') and the function legitimately splits it; prefix retained as sibling block.",
+    "metadata_blocks_intentional": "No. 8M2YFJAX/CPQ47TBV/QPT4IGLD are not intentionally normalized to the accepted date; they are split by the same _split_merged_heading_blocks false positive matching the day number before the month name. Both fragments are retained, so no semantic loss."
+  }
+}
