@@ -1,0 +1,27 @@
+{
+  "schema": "paperforge.r2.asset_audit.v1",
+  "key": "LSTHKPAE",
+  "old": {
+    "path": "assets/tables/table_001.png",
+    "bytes": 298527,
+    "sha256": "bbac380f92a91a5f96379cf3b54cabe4814b5c2ac5827f209d43f8b37b56e6d6",
+    "head_hex": "fcc76bd5b8619ddee29e81c898507861",
+    "valid_image": false,
+    "dimensions": null
+  },
+  "new": {
+    "path": "assets/tables/table_001.jpg",
+    "valid_image": true,
+    "dimensions": [
+      875,
+      348
+    ]
+  },
+  "external_references": {
+    "pattern": "table_001.png",
+    "markdown_hits": 0
+  },
+  "classification": "legacy_corrupt_unreferenced_replaced",
+  "verdict": "PASS",
+  "note": "Source .png is random binary (invalid image) and is not referenced by any Markdown note. Rebuild produces a valid .jpg from the PDF; this is a corrupt legacy artifact replacement, not a usable-asset loss."
+}

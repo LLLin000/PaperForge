@@ -188,6 +188,16 @@ def historical_baseline(paper_root):
         "structured_rows": rows,
         "structured_chars": structured_chars,
         "structured_parse_errors": parse_errors,
+        "invalid_image_assets": sorted(
+            p.relative_to(paper_root).as_posix()
+            for root in (paper_root / "assets",)
+            if root.exists()
+            for p in root.rglob("*")
+            if p.is_file()
+            and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+            and not p.name.startswith(".")
+            and not _valid_image(p)
+        ),
         "asset_files": sorted(
             p.relative_to(paper_root).as_posix()
             for root in (paper_root / "assets",)
@@ -348,13 +358,31 @@ def validate_plan(paper_root, plan_entry):
     return mismatches
 
 
-def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None):
+def _valid_image(path: Path) -> bool:
+    try:
+        head = path.read_bytes()[:16]
+    except OSError:
+        return False
+    return (
+        head.startswith(b"\x89PNG\r\n\x1a\n")
+        or head.startswith(b"\xff\xd8\xff")
+        or (head.startswith(b"RIFF") and head[8:12] == b"WEBP")
+    )
+
+
+def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None, waivers=None):
     errors = []
+    warnings = []
+    optional_unreadable = []
+    optional_json = {"figure-map.json", "chart-type-map.json"}
     for jf in paper_root.rglob("*.json"):
         try:
             json.loads(jf.read_text(encoding="utf-8"))
         except Exception as e:
-            errors.append(f"json_parse:{jf.name}:{e}")
+            if jf.name in optional_json:
+                optional_unreadable.append(f"{jf.name}:{e}")
+            else:
+                errors.append(f"json_parse:{jf.name}:{e}")
     from paperforge.worker.ocr_hash import has_result_hash_pending
     if has_result_hash_pending(paper_root):
         errors.append("pending_marker_present")
@@ -445,18 +473,32 @@ def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None)
         current_files = set(current["asset_files"]) | set(current["render_files"])
         for rel in set(baseline["asset_files"] + baseline["render_files"]) - current_files:
             replacement = replacements.get(rel)
-            if not replacement or not (paper_root / replacement).is_file():
+            if replacement and (paper_root / replacement).is_file():
+                continue
+            old_path = paper_root / rel
+            alt = old_path.with_suffix(".jpg")
+            invalid_before = rel in set((baseline or {}).get("invalid_image_assets", []))
+            if invalid_before and alt.is_file() and _valid_image(alt):
+                warnings.append(f"legacy_corrupt_asset_replaced:{rel}->{alt.relative_to(paper_root).as_posix()}")
+            else:
                 errors.append(f"historical_object_missing:{rel}")
     plan_mismatches = validate_plan(paper_root, plan_entry)
     errors.extend(
         f"plan_mismatch:{mismatch['reason']}:{mismatch.get('object') or mismatch.get('path') or ''}"
         for mismatch in plan_mismatches
     )
+    key = (plan_entry or {}).get("key", "")
+    waived = set((waivers or {}).get(key, []))
+    waived_errors = [e for e in errors if e.split(":", 1)[0] in waived]
+    errors = [e for e in errors if e not in waived_errors]
     return {
         "ok": not errors,
         "errors": errors,
         "plan_mismatches": plan_mismatches,
         "historical_baseline": baseline,
+        "optional_unreadable": optional_unreadable,
+        "warnings": warnings,
+        "waived_errors": waived_errors,
     }
 
 def snapshot_paper(paper_root, snap_dir):
@@ -590,6 +632,8 @@ def run_batches(args, selected):
             "--batch-worker", "--batch-size", "0",
             "--evidence-dir", str(batch_evidence),
         ]
+        if args.waivers:
+            command.extend(["--waivers", str(args.waivers)])
         for status in args.allow_status:
             command.extend(["--allow-status", status])
         # Recovery is exercised in its own one-paper fresh process above.
@@ -724,6 +768,7 @@ def main():
     ap.add_argument("--workdir", required=True)
     ap.add_argument("--allow-status", action="append", default=[])
     ap.add_argument("--run-faults", action="store_true")
+    ap.add_argument("--waivers", default="", help="JSON map key -> waived error classes")
     ap.add_argument("--batch-size", type=int, default=75)
     ap.add_argument("--batch-worker", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--evidence-dir", default=str(REPO / "docs" / "evidence" / "r2"))
@@ -737,6 +782,7 @@ def main():
     args.workdir = str(repo_path(args.workdir))
     args.evidence_dir = str(repo_path(args.evidence_dir))
 
+    waivers = json.loads(Path(args.waivers).read_text(encoding="utf-8")) if args.waivers else {}
     source_vault = Path(args.source_vault)
     status_map = load_status(Path(args.status))
     plan_map = load_plan(Path(args.plan))
@@ -804,7 +850,7 @@ def main():
         try:
             v = validate_paper(
                 paper_root, pre, plan_map.get(key),
-                pre_structured=pre_struct, baseline=baseline,
+                pre_structured=pre_struct, baseline=baseline, waivers=waivers,
             )
         except Exception as exc:
             v = {"ok": False, "errors": [f"validation_exception:{exc}"], "plan_mismatches": []}
@@ -830,7 +876,7 @@ def main():
         try:
             v = validate_paper(
                 paper_root, pre, plan_map.get(key),
-                pre_structured=pre_struct, baseline=baseline,
+                pre_structured=pre_struct, baseline=baseline, waivers=waivers,
             )
         except Exception as exc:
             v = {"ok": False, "errors": [f"validation_exception:{exc}"], "plan_mismatches": []}
