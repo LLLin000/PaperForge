@@ -211,3 +211,32 @@ def test_reference_zones_degrades_on_abnormal_block_count(tmp_path: Path, monkey
     ] * 20
     zones = ocr_document._detect_reference_zones(blocks, {})
     assert zones == []
+
+
+def test_seed_only_regenerates_stale_document_structure(tmp_path: Path) -> None:
+    """A stale/corrupt diagnostic must not survive a seed-only rebuild."""
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY002",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [100, 60, 700, 120],
+            "text": "Body text",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 10.0, "flags": 0, "color": 0}],
+        }
+    ]
+    out = tmp_path / "structure"
+    out.mkdir()
+    (out / "document_structure.json").write_bytes(b"\x88\x07corrupt")
+    rows, _ = build_structured_blocks(
+        raw_blocks, structure_output_dir=out, normalize_mode="seed_only"
+    )
+    assert rows
+    payload = json.loads((out / "document_structure.json").read_text(encoding="utf-8"))
+    assert payload["anchors"]["body_family_anchor"] is not None

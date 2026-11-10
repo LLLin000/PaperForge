@@ -167,11 +167,21 @@ def pre_chars(paper_root):
     for c in paper_root.rglob("fulltext.md"):
         return len(c.read_text(encoding="utf-8"))
     return 0
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(str(text).encode("utf-8")).hexdigest()
+
+
+def _norm_block_text(text: str) -> str:
+    return re.sub(r"\s+", " ", str(text or "")).strip()
+
+
 def historical_baseline(paper_root):
     fulltext = paper_root / "fulltext.md"
     text = fulltext.read_text(encoding="utf-8") if fulltext.is_file() else ""
     structured_path = paper_root / "structure" / "blocks.structured.jsonl"
     rows, structured_chars, parse_errors = 0, 0, []
+    block_hashes = {}
+    structured_texts = []
     if structured_path.is_file():
         for number, line in enumerate(structured_path.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip():
@@ -179,15 +189,32 @@ def historical_baseline(paper_root):
             try:
                 block = json.loads(line)
                 rows += 1
-                structured_chars += len(str(block.get("text", "")))
+                block_text = str(block.get("text", ""))
+                structured_chars += len(block_text)
+                structured_texts.append(block_text)
+                block_key = f"{block.get('page', 0)}:{block.get('block_id', '')}"
+                block_hashes[block_key] = _sha256_text(_norm_block_text(block_text))
             except Exception as exc:
                 parse_errors.append(f"{number}:{exc}")
     return {
         "fulltext_chars": len(text),
+        "fulltext_sha256": _sha256_text(text),
         "normalized_chars": len(re.sub(r"(?m)^\s*#{1,6}\s*", "", re.sub(r"!?\[\[[^\]]+\]\]", "", text))),
+        "structured_sha256": _sha256_text("\n".join(structured_texts)),
+        "block_hashes": block_hashes,
         "structured_rows": rows,
         "structured_chars": structured_chars,
         "structured_parse_errors": parse_errors,
+        "invalid_image_assets": sorted(
+            p.relative_to(paper_root).as_posix()
+            for root in (paper_root / "assets",)
+            if root.exists()
+            for p in root.rglob("*")
+            if p.is_file()
+            and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+            and not p.name.startswith(".")
+            and not _valid_image(p)
+        ),
         "asset_files": sorted(
             p.relative_to(paper_root).as_posix()
             for root in (paper_root / "assets",)
@@ -348,13 +375,70 @@ def validate_plan(paper_root, plan_entry):
     return mismatches
 
 
-def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None):
+def _valid_image(path: Path) -> bool:
+    try:
+        head = path.read_bytes()[:16]
+    except OSError:
+        return False
+    return (
+        head.startswith(b"\x89PNG\r\n\x1a\n")
+        or head.startswith(b"\xff\xd8\xff")
+        or (head.startswith(b"RIFF") and head[8:12] == b"WEBP")
+    )
+
+
+def _waiver_matches(spec: dict, baseline: dict | None, current: dict) -> bool:
+    if not baseline:
+        return False
+    if spec.get("verdict") != "PASS" or not str(spec.get("evidence", "")).strip():
+        return False
+    if "block_changes" not in spec:
+        return False
+    required_hashes = (
+        "old_fulltext_sha256", "new_fulltext_sha256",
+        "old_structured_sha256", "new_structured_sha256",
+    )
+    if any(not re.fullmatch(r"[0-9a-f]{64}", str(spec.get(k, ""))) for k in required_hashes):
+        return False
+    blocks = spec.get("blocks", [])
+    if spec["block_changes"] and not blocks:
+        return False
+    if not spec["block_changes"] and blocks:
+        return False
+    for old_key, new_key in (
+        ("old_fulltext_sha256", "fulltext_sha256"),
+        ("old_structured_sha256", "structured_sha256"),
+    ):
+        if spec.get(old_key) and spec[old_key] != baseline.get(new_key):
+            return False
+    for new_key, current_key in (
+        ("new_fulltext_sha256", "fulltext_sha256"),
+        ("new_structured_sha256", "structured_sha256"),
+    ):
+        if spec.get(new_key) and spec[new_key] != current.get(current_key):
+            return False
+    for block in spec.get("blocks", []):
+        block_key = f"{block.get('page', 0)}:{block.get('block_id', '')}"
+        if baseline.get("block_hashes", {}).get(block_key) != block.get("old_sha256"):
+            return False
+        if current.get("block_hashes", {}).get(block_key) != block.get("new_sha256"):
+            return False
+    return True
+
+
+def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None, waivers=None):
     errors = []
+    warnings = []
+    optional_unreadable = []
+    optional_json = {"figure-map.json", "chart-type-map.json"}
     for jf in paper_root.rglob("*.json"):
         try:
             json.loads(jf.read_text(encoding="utf-8"))
         except Exception as e:
-            errors.append(f"json_parse:{jf.name}:{e}")
+            if jf.name in optional_json:
+                optional_unreadable.append(f"{jf.name}:{e}")
+            else:
+                errors.append(f"json_parse:{jf.name}:{e}")
     from paperforge.worker.ocr_hash import has_result_hash_pending
     if has_result_hash_pending(paper_root):
         errors.append("pending_marker_present")
@@ -445,18 +529,44 @@ def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None)
         current_files = set(current["asset_files"]) | set(current["render_files"])
         for rel in set(baseline["asset_files"] + baseline["render_files"]) - current_files:
             replacement = replacements.get(rel)
-            if not replacement or not (paper_root / replacement).is_file():
+            if replacement and (paper_root / replacement).is_file():
+                continue
+            old_path = paper_root / rel
+            alt = old_path.with_suffix(".jpg")
+            invalid_before = rel in set((baseline or {}).get("invalid_image_assets", []))
+            if invalid_before and alt.is_file() and _valid_image(alt):
+                warnings.append(f"legacy_corrupt_asset_replaced:{rel}->{alt.relative_to(paper_root).as_posix()}")
+            else:
                 errors.append(f"historical_object_missing:{rel}")
     plan_mismatches = validate_plan(paper_root, plan_entry)
     errors.extend(
         f"plan_mismatch:{mismatch['reason']}:{mismatch.get('object') or mismatch.get('path') or ''}"
         for mismatch in plan_mismatches
     )
+    key = (plan_entry or {}).get("key", "")
+    waiver_entry = (waivers or {}).get(key, {})
+    current = historical_baseline(paper_root)
+    waived_errors = []
+    waiver_mismatches = []
+    for error_class in sorted({e.split(":", 1)[0] for e in errors}):
+        spec = waiver_entry.get(error_class)
+        if not spec:
+            continue
+        if not _waiver_matches(spec, baseline, current):
+            waiver_mismatches.append(error_class)
+            continue
+        waived_errors.extend(e for e in errors if e.split(":", 1)[0] == error_class)
+    errors = [e for e in errors if e not in waived_errors]
+    errors.extend(f"waiver_mismatch:{c}" for c in waiver_mismatches)
     return {
         "ok": not errors,
         "errors": errors,
         "plan_mismatches": plan_mismatches,
         "historical_baseline": baseline,
+        "optional_unreadable": optional_unreadable,
+        "warnings": warnings,
+        "waived_errors": waived_errors,
+        "waiver_mismatches": waiver_mismatches,
     }
 
 def snapshot_paper(paper_root, snap_dir):
@@ -590,6 +700,8 @@ def run_batches(args, selected):
             "--batch-worker", "--batch-size", "0",
             "--evidence-dir", str(batch_evidence),
         ]
+        if args.waivers:
+            command.extend(["--waivers", str(args.waivers)])
         for status in args.allow_status:
             command.extend(["--allow-status", status])
         # Recovery is exercised in its own one-paper fresh process above.
@@ -724,6 +836,7 @@ def main():
     ap.add_argument("--workdir", required=True)
     ap.add_argument("--allow-status", action="append", default=[])
     ap.add_argument("--run-faults", action="store_true")
+    ap.add_argument("--waivers", default="", help="JSON map key -> waived error classes")
     ap.add_argument("--batch-size", type=int, default=75)
     ap.add_argument("--batch-worker", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--evidence-dir", default=str(REPO / "docs" / "evidence" / "r2"))
@@ -737,6 +850,7 @@ def main():
     args.workdir = str(repo_path(args.workdir))
     args.evidence_dir = str(repo_path(args.evidence_dir))
 
+    waivers = json.loads(Path(args.waivers).read_text(encoding="utf-8")) if args.waivers else {}
     source_vault = Path(args.source_vault)
     status_map = load_status(Path(args.status))
     plan_map = load_plan(Path(args.plan))
@@ -804,7 +918,7 @@ def main():
         try:
             v = validate_paper(
                 paper_root, pre, plan_map.get(key),
-                pre_structured=pre_struct, baseline=baseline,
+                pre_structured=pre_struct, baseline=baseline, waivers=waivers,
             )
         except Exception as exc:
             v = {"ok": False, "errors": [f"validation_exception:{exc}"], "plan_mismatches": []}
@@ -830,7 +944,7 @@ def main():
         try:
             v = validate_paper(
                 paper_root, pre, plan_map.get(key),
-                pre_structured=pre_struct, baseline=baseline,
+                pre_structured=pre_struct, baseline=baseline, waivers=waivers,
             )
         except Exception as exc:
             v = {"ok": False, "errors": [f"validation_exception:{exc}"], "plan_mismatches": []}
