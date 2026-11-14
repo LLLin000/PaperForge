@@ -168,10 +168,26 @@ class TestCrossPageIntBlockIds:
         ]
 
         result = build_figure_inventory_vnext(blocks, 1200)
-        matched = result.get("matched_figures", [])
-        assert len(matched) == 1
-        assert matched[0]["legend_block_id"] == "1"
-        assert matched[0]["text"] == "Figure 1. Cross-page caption."
+
+        # A candidate group alone cannot create a matched figure: the reservation must be
+        # settled by real page-qualified assets first (lifecycle contract, rule 6). What this
+        # case guards is that int block ids survive the reservation lookup and keep the
+        # caption evidence for the reviewer.
+        assert result.get("matched_figures", []) == []
+        reservations = result.get("association_reservations", [])
+        assert len(reservations) == 1
+        reservation = reservations[0]
+        assert reservation["status"] == "HOLD"
+        assert reservation["delivery_allowed"] is False
+        assert reservation["legends"] == [{"page": 1, "block_id": "1"}]
+        group_assets = reservation["diagnostics"]["candidate_group"]["assets"]
+        assert group_assets == [{"page": 2, "block_id": "2", "bbox": [100, 100, 500, 400]}]
+
+        held = result.get("held_figures", [])
+        assert len(held) == 1
+        assert held[0]["legend_block_id"] == "1"
+        assert held[0]["text"] == "Figure 1. Cross-page caption."
+        assert held[0]["candidate_asset_ids"] == ["2"]
 
 
 class TestPageLocalBlockIds:
