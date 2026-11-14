@@ -65,12 +65,13 @@ class TestFixtureIntegrity:
     def test_golden_fixtures_record_revision_and_source_digests(self):
         from paperforge.architecture_audit.fixtures import load_fixture_dict
 
-        # golden_126 was re-pinned at d86a6afd when source_pdf resolution moved
-        # into pdf_resolver.resolve_source_pdf (ocr_rebuild.py changed). The
-        # #127/#129 sources were re-pinned at their live revision after later
-        # source edits.
+        # golden_126 was re-pinned at 9dcb5000 when cross-page reservations
+        # gained a delivery finalization step (ocr_rebuild.py changed); before
+        # that at d86a6afd when source_pdf resolution moved into
+        # pdf_resolver.resolve_source_pdf. The #127/#129 sources were re-pinned
+        # at their live revision after later source edits.
         expected_revisions = {
-            "golden_126_ocr_rebuild": "d86a6afd",
+            "golden_126_ocr_rebuild": "9dcb5000",
             "golden_127_sync_embed": "75c3c41d",
             "golden_129_display_restore": "1196278e",
         }
