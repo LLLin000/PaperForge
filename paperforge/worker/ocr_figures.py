@@ -353,6 +353,7 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
             block_id,
             str(item.get("figure_id", "")),
             " ".join(str(item.get("text", "") or "").split()).casefold(),
+            bool(not (item.get("matched_assets") or item.get("asset_block_ids"))),
             tuple(sorted(str(asset.get("block_id", "")) for asset in item.get("matched_assets", []))),
         )
 
@@ -434,14 +435,51 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         asset_ids = sorted({str(a.get("block_id", "")) for a in entry.get("matched_assets", []) if a.get("block_id")})
         if not asset_ids:
             asset_ids = sorted(str(b) for b in entry.get("asset_block_ids", []) if b)
-        if not asset_ids and entry.get("settlement_type") in {"sequence", "sequence_match"}:
-            entry["hold_reason"] = entry.get("hold_reason") or "assetless_sequence_match"
+        if not asset_ids:
+            duplicate = next(
+                (
+                    item
+                    for item in kept
+                    if item.get("figure_namespace") == namespace
+                    and item.get("figure_label") == label
+                    and int(item.get("legend_page", item.get("page", 0)) or 0)
+                    == int(entry.get("legend_page", entry.get("page", 0)) or 0)
+                    and str(item.get("legend_block_id", "")) == str(entry.get("legend_block_id", ""))
+                    and " ".join(str(item.get("text", "") or "").split()).casefold()
+                    == " ".join(str(entry.get("text", "") or "").split()).casefold()
+                ),
+                None,
+            )
+            if duplicate is not None:
+                claims = duplicate.setdefault(
+                    "claims",
+                    [claim_record(duplicate, [
+                        str(asset.get("block_id", ""))
+                        for asset in duplicate.get("matched_assets", [])
+                        if asset.get("block_id")
+                    ])],
+                )
+                empty_claim = claim_record(entry, [])
+                if empty_claim not in claims:
+                    claims.append(empty_claim)
+                continue
+            entry["association_status"] = "HOLD"
+            entry["hold_reason"] = entry.get("hold_reason") or (
+                "assetless_sequence_match"
+                if entry.get("settlement_type") in {"sequence", "sequence_match"}
+                else "assetless_match"
+            )
             figure_inventory.setdefault("held_figures", []).append(entry)
             unmatched = figure_inventory.setdefault("unmatched_legends", [])
-            if not any(str(item.get("block_id", "")) == str(entry.get("legend_block_id", "")) for item in unmatched):
+            entry_page = entry.get("legend_page", entry.get("page", 0))
+            if not any(
+                item.get("page", 0) == entry_page
+                and str(item.get("block_id", "")) == str(entry.get("legend_block_id", ""))
+                for item in unmatched
+            ):
                 unmatched.append({
                     "block_id": entry.get("legend_block_id", ""),
-                    "page": entry.get("legend_page", entry.get("page", 0)),
+                    "page": entry_page,
                     "text": entry.get("text", ""),
                 })
             continue
@@ -3764,11 +3802,11 @@ def build_figure_inventory_vnext(
             SidecarPass,
             LocatorBridgePass,
             CrossPageReservationPass,
-            CrossPageSettlementPass,
             LegendBundlePass,
             GroupSequentialPass,
             ClassicSequentialPass,
             UnresolvedClusterConsolidation,
+            CrossPageSettlementPass,
             FinalAccountingPass,
         ],
     )
@@ -3812,12 +3850,13 @@ def build_figure_inventory_vnext(
             )
         ],
         "unresolved_clusters": list(state.unresolved),
-        "held_figures": list(candidate_index.held_legends),
+        "held_figures": [*candidate_index.held_legends, *state.holds],
         "rejected_legends": list(candidate_index.rejected_legends),
         "page_ledger": {},
         "residual_ledger": {},
         "local_pairing_hypotheses": [],
         "pass_reports": [asdict(r) for r in reports],
+        "association_reservations": list(state.reservations),
         "completeness": state.completeness
         or {
             "total_numbered_legends": len(candidate_index.deduped_legends),

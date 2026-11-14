@@ -459,12 +459,17 @@ def test_dwqqk2yb_ownership_no_longer_mega_merges_same_page_assets(tmp_path: Pat
     assert fig4.get("page") == 41, "Fig 4 should be on page 41"
 
 
-def test_dwqqk2yb_figure2_has_continuation_across_pages(tmp_path: Path) -> None:
-    """vnext merges fig 2's page 39 content as continuation of fig 2 (same figure_number=2)."""
+def test_dwqqk2yb_does_not_guess_page39_as_figure2_continuation(tmp_path: Path) -> None:
+    """A page-38 caption with a local match must not absorb the next page by adjacency alone."""
     result = replay_production_pipeline("DWQQK2YB", tmp_path)
-    inventory = result["figure_inventory"]
-    fig2_entries = [f for f in inventory["matched_figures"] if f.get("figure_number") == 2]
-    assert len(fig2_entries) >= 2, f"Figure 2 should have at least 2 entries (pages 38 and 39), got {len(fig2_entries)}"
+    fig2_entries = [
+        figure for figure in result["figure_inventory"]["matched_figures"]
+        if figure.get("figure_number") == 2
+    ]
+    assert len(fig2_entries) == 1
+    figure = fig2_entries[0]
+    assert figure.get("page") == 38
+    assert {asset.get("page") for asset in figure.get("matched_assets", [])} == {38}
 
 
 def test_6fgdbfqn_same_page_narrow_caption_ownership(tmp_path: Path) -> None:

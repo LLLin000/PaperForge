@@ -871,6 +871,13 @@ def _build_object_tasks(
         return page_dimensions_by_page.get(page_num, (0, 0))
 
     for i, match in enumerate(figure_inventory.get("matched_figures", [])):
+        if match.get("association_status") in {"RESERVED", "HOLD"}:
+            continue
+        if (
+            match.get("settlement_type") == "cross_page_reservation"
+            and not match.get("matched_assets")
+        ):
+            continue
         fig_id = str(match.get("figure_id") or f"figure_{i + 1:03d}")
         if not _claim(
             fig_id,
@@ -997,6 +1004,149 @@ def _build_object_tasks(
         _add_orphan(asset)
 
     return tasks, collisions
+
+
+def _finalize_cross_page_delivery(
+    figure_inventory: dict[str, Any],
+    records: list[dict[str, Any]] | None = None,
+    *,
+    asset_root: Path,
+    render_root: Path,
+    fulltext_markdown: str | None = None,
+) -> bool:
+    """Require crop, object markdown, and fulltext embed before final resolution."""
+    demoted = False
+    reservations = figure_inventory.get("association_reservations", [])
+    if not reservations:
+        return demoted
+
+    materialized = {
+        str(record.get("object_id")): record
+        for record in (records or [])
+        if record.get("kind") == "figure"
+    }
+    matches = figure_inventory.setdefault("matched_figures", [])
+    held_figures = figure_inventory.setdefault("held_figures", [])
+    unmatched = figure_inventory.setdefault("unmatched_legends", [])
+
+    def hold_reservation(reservation: dict[str, Any], match: dict[str, Any] | None, reason: str) -> None:
+        nonlocal demoted
+        demoted = True
+        caption = reservation.get("resolved_caption") or reservation.get("diagnostics", {})
+        diagnostics = reservation.get("diagnostics") or {}
+        candidate_group = diagnostics.get("candidate_group")
+        candidate_groups = [candidate_group] if candidate_group else []
+        candidate_assets = list((candidate_group or {}).get("assets", []))
+        candidate_assets.extend(reservation.get("resolved_assets", []))
+        figure_id = reservation.get("resolved_figure_id")
+        hold = dict(match or {})
+        hold.update(
+            {
+                "association_status": "HOLD",
+                "delivery_status": "FAILED",
+                "page": caption.get("page", reservation.get("legends", [{}])[0].get("page")),
+                "legend_page": caption.get("page", reservation.get("legends", [{}])[0].get("page")),
+                "legend_block_id": caption.get("block_id", reservation.get("legends", [{}])[0].get("block_id")),
+                "text": caption.get("text", diagnostics.get("caption_text", "")),
+                "legend_bbox": caption.get("bbox", diagnostics.get("legend_bbox", [])),
+                "hold_reason": reason,
+                "candidate_groups": candidate_groups,
+                "candidate_assets": candidate_assets,
+                "candidate_asset_ids": list(dict.fromkeys(
+                    str(asset.get("block_id"))
+                    for asset in candidate_assets
+                    if asset.get("block_id") is not None
+                )),
+                "evidence": list(diagnostics.get("evidence") or []),
+            }
+        )
+        if figure_id:
+            hold["figure_id"] = figure_id
+        reservation.update(
+            {
+                "status": "HOLD",
+                "association_status": "HOLD",
+                "delivery_allowed": False,
+                "delivery_status": "FAILED",
+                "hold_reason": reason,
+            }
+        )
+        if match is not None:
+            matches.remove(match)
+        page = hold.get("legend_page")
+        block_id = hold.get("legend_block_id")
+        existing = next(
+            (
+                item for item in held_figures
+                if item.get("page", item.get("legend_page")) == page
+                and str(item.get("legend_block_id", item.get("block_id", ""))) == str(block_id)
+            ),
+            None,
+        )
+        if existing is None:
+            held_figures.append(hold)
+        else:
+            existing.update(hold)
+        if not any(
+            item.get("page") == page and str(item.get("block_id", "")) == str(block_id)
+            for item in unmatched
+        ):
+            unmatched.append({"block_id": block_id, "page": page, "text": hold.get("text", "")})
+        for detail in figure_inventory.get("completeness", {}).get("details", []):
+            if detail.get("page") == page and str(detail.get("legend_block_id", "")) == str(block_id):
+                detail["status"] = "unmatched"
+
+    for reservation in reservations:
+        if (
+            reservation.get("status") != "RESERVED"
+            or reservation.get("association_status") != "RESOLVED"
+        ):
+            continue
+        figure_id = str(reservation.get("resolved_figure_id") or "")
+        match = next(
+            (item for item in matches if str(item.get("figure_id", "")) == figure_id),
+            None,
+        )
+        if fulltext_markdown is not None:
+            if reservation.get("delivery_status") != "MATERIALIZED":
+                continue
+            embed = f"![[render/figures/{figure_id}.md]]"
+            if match is not None and figure_id and embed in fulltext_markdown:
+                reservation["status"] = "RESOLVED"
+                reservation["delivery_status"] = "DELIVERED"
+                reservation.setdefault("delivery_evidence", {})["fulltext_embed"] = embed
+                match["delivery_status"] = "DELIVERED"
+            else:
+                hold_reservation(reservation, match, "fulltext_embed_missing")
+            continue
+
+        record = materialized.get(figure_id)
+        asset_path = asset_root / "figures" / f"{figure_id}.jpg"
+        render_path = render_root / "figures" / f"{figure_id}.md"
+        image_ref = f"![](../../assets/figures/{figure_id}.jpg)"
+        materialized_ok = bool(
+            match is not None
+            and record
+            and record.get("status") == "materialized"
+            and asset_path.is_file()
+            and asset_path.stat().st_size > 0
+            and render_path.is_file()
+            and render_path.stat().st_size > 0
+            and image_ref in render_path.read_text(encoding="utf-8")
+        )
+        if materialized_ok:
+            reservation["delivery_status"] = "MATERIALIZED"
+            reservation["delivery_evidence"] = {
+                "asset_path": str(asset_path),
+                "render_path": str(render_path),
+                "materialization_record": record,
+            }
+            if match is not None:
+                match["delivery_status"] = "MATERIALIZED"
+        else:
+            reason = str((record or {}).get("reason") or "materialization_record_missing")
+            hold_reservation(reservation, match, reason)
+    return demoted
 
 
 def extract_and_write_objects(
@@ -1167,6 +1317,12 @@ def extract_and_write_objects(
             stage_root=stage_root,
             staged_targets=staged_targets,
             provenance=(provenance_target, provenance_stage) if provenance_stage.is_file() else None,
+        )
+        _finalize_cross_page_delivery(
+            figure_inventory,
+            records,
+            asset_root=asset_root,
+            render_root=render_root,
         )
     except MaterializationError:
         _remove_path(stage_root)

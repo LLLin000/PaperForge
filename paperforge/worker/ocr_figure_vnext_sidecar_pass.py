@@ -88,6 +88,21 @@ class SidecarPass:
                         continue
 
                 band_assets = bands.get(cid, [])
+                existing_asset_ids = {
+                    str(asset_id)
+                    for match in state.matches
+                    if str(match.get("legend_block_id", "")) == cid
+                    and (
+                        match.get("legend_page")
+                        if match.get("legend_page") is not None
+                        else match.get("page")
+                    ) == _caption_page
+                    for asset_id in match.get("asset_block_ids", [])
+                }
+                band_assets = [
+                    asset for asset in band_assets
+                    if str(asset.get("block_id", "")) not in existing_asset_ids
+                ]
                 if not band_assets:
                     continue
 
@@ -148,6 +163,9 @@ class SidecarPass:
                     "flags": ["sidecar_match"],
                     "page": page,
                     "matched_assets": [ocr_figures._project_asset_record(a) for a in band_assets],
+                    "asset_block_ids": sorted({str(a.get("block_id", "")) for a in band_assets}),
+                    "legend_page": page,
+                    "asset_pages": sorted({_resource_page(a) for a in band_assets if _resource_page(a) is not None}),
                     "evidence": [],
                     "pass_name": self.name,
                 }

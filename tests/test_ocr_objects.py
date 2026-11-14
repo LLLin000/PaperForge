@@ -246,6 +246,98 @@ def test_held_figures_do_not_emit_object_notes(tmp_path: Path) -> None:
     assert render_files == []
 
 
+
+def test_reserved_and_assetless_cross_page_matches_are_not_scheduled() -> None:
+    from paperforge.worker.ocr_objects import _build_object_tasks
+
+    figures = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_reserved",
+                "association_status": "RESERVED",
+                "matched_assets": [],
+            },
+            {
+                "figure_id": "figure_unresolved",
+                "settlement_type": "cross_page_reservation",
+                "matched_assets": [],
+            },
+        ],
+        "unmatched_assets": [],
+    }
+
+    tasks, collisions = _build_object_tasks(
+        figures,
+        {"tables": [], "unmatched_assets": []},
+        {},
+    )
+
+    assert tasks == []
+    assert collisions == []
+
+
+def test_failed_cross_page_materialization_becomes_hold(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import _finalize_cross_page_delivery
+
+    match = {
+        "figure_id": "figure_001",
+        "association_status": "RESOLVED",
+        "legend_block_id": "caption",
+        "legend_page": 2,
+        "page": 2,
+        "text": "Figure 1. Caption",
+        "matched_assets": [{"page": 2, "block_id": "asset", "bbox": [10, 20, 110, 120]}],
+        "asset_block_ids": ["asset"],
+    }
+    reservation = {
+        "status": "RESERVED",
+        "association_status": "RESOLVED",
+        "delivery_status": "PENDING",
+        "resolved_figure_id": "figure_001",
+        "resolved_caption": {
+            "page": 2,
+            "block_id": "caption",
+            "text": "Figure 1. Caption",
+            "bbox": [10, 130, 200, 160],
+        },
+        "resolved_assets": [{"page": 2, "block_id": "asset", "bbox": [10, 20, 110, 120]}],
+        "diagnostics": {
+            "candidate_group": {
+                "group_id": "group_1",
+                "page": 2,
+                "assets": [{"page": 2, "block_id": "asset", "bbox": [10, 20, 110, 120]}],
+            },
+            "evidence": ["page_gap"],
+        },
+    }
+    inventory = {
+        "matched_figures": [match],
+        "held_figures": [],
+        "unmatched_legends": [],
+        "association_reservations": [reservation],
+        "completeness": {
+            "details": [{"page": 2, "legend_block_id": "caption", "status": "matched"}],
+        },
+    }
+
+    demoted = _finalize_cross_page_delivery(
+        inventory,
+        [{"kind": "figure", "object_id": "figure_001", "status": "failed", "reason": "crop_failed"}],
+        asset_root=tmp_path / "assets",
+        render_root=tmp_path / "render",
+    )
+
+    assert demoted
+    assert reservation["status"] == "HOLD"
+    assert reservation["delivery_status"] == "FAILED"
+    assert inventory["matched_figures"] == []
+    assert inventory["held_figures"][0]["hold_reason"] == "crop_failed"
+    assert inventory["held_figures"][0]["candidate_asset_ids"] == ["asset"]
+    assert inventory["unmatched_legends"] == [
+        {"block_id": "caption", "page": 2, "text": "Figure 1. Caption"},
+    ]
+    assert inventory["completeness"]["details"][0]["status"] == "unmatched"
+
 def test_held_tables_do_not_emit_object_notes(tmp_path: Path) -> None:
     from paperforge.worker.ocr_objects import extract_and_write_objects
 

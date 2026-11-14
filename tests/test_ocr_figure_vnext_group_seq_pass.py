@@ -1,9 +1,7 @@
 """Tests for GroupSequentialPass.
 
-Three scenarios:
-1. Same-page group match with score >= 0.5
-2. Next-page fallback when no same-page group exists
-3. Previous-page guard denied (allow returns False)
+Same-page groups require unambiguous ownership; forward-page groups remain HOLD.
+Previous-page matching retains its existing boundary guard.
 """
 
 from __future__ import annotations
@@ -68,8 +66,8 @@ def test_group_sequential_same_page_match():
     assert matched_bids == {"a1", "a2"}, f"expected a1,a2, got {matched_bids}"
 
 
-def test_group_sequential_next_page_fallback():
-    """Legend on page 3, group on page 4, no same-page group → match to page 4 group."""
+def test_group_sequential_holds_unverified_next_page_group():
+    """A group on the following page is evidence, not a completed match."""
     blocks = [
         {"block_id": "c1", "page": 3, "role": "figure_caption",
          "text": "Figure 1. A test figure caption.", "bbox": [0, 100, 500, 150]},
@@ -109,17 +107,13 @@ def test_group_sequential_next_page_fallback():
     state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
     report = GroupSequentialPass().run(state)
 
-    assert len(report.accepted) == 1, f"expected 1 accepted, got {len(report.accepted)}"
-    assert len(state.matches) == 1, f"expected 1 match, got {len(state.matches)}"
-
-    match = state.matches[0]
-    assert match["settlement_type"] == "group_sequential"
-    assert match["legend_block_id"] == "c1"
-    assert match["page"] == 4
-    assert "group_sequential_match" in match["flags"]
-
-    matched_bids = {a["block_id"] for a in match.get("matched_assets", [])}
-    assert matched_bids == {"a1", "a2"}, f"expected a1,a2, got {matched_bids}"
+    assert report.accepted == []
+    assert state.matches == []
+    assert len(state.holds) == 1
+    hold = state.holds[0]
+    assert hold["association_status"] == "HOLD"
+    assert hold["hold_reason"] == "unverified_forward_group"
+    assert {asset["block_id"] for asset in hold["candidate_assets"]} == {"a1", "a2"}
 
 
 def test_group_sequential_prev_page_guard_denied(monkeypatch):
@@ -169,6 +163,69 @@ def test_group_sequential_prev_page_guard_denied(monkeypatch):
     assert len(report.accepted) == 0, f"expected 0 accepted, got {len(report.accepted)}"
     assert len(state.matches) == 0, f"expected 0 matches, got {len(state.matches)}"
 
+
+
+def test_388xi46q_previous_page_control_remains_matched(monkeypatch):
+    caption = {
+        "block_id": "caption",
+        "page": 15,
+        "role": "figure_caption",
+        "text": "Fig. 5 (a) Immunofluorescence detection of cellular inflammatory response.",
+        "bbox": [80, 40, 980, 130],
+        "page_width": 1200,
+        "page_height": 1600,
+        "zone": "display_zone",
+    }
+    asset = {
+        "block_id": "asset",
+        "page": 14,
+        "role": "figure_asset",
+        "bbox": [118, 122, 1069, 1356],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    corpus = FigureCorpus.from_blocks(
+        [caption, asset, {"block_id": "filler", "page": 1, "role": "paper_title"}],
+        page_width=1200,
+    )
+    group = {
+        "group_id": "previous_page_figure",
+        "page": 14,
+        "group_type": "single_asset",
+        "asset_block_ids": ["asset"],
+        "cluster_bbox": asset["bbox"],
+        "media_blocks": [asset],
+        "safe_auto_match": True,
+    }
+    captions = [caption]
+    index = FigureCandidateIndex(
+        formal_legends=captions,
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=captions,
+        candidate_groups=[group],
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_figures._allow_previous_page_sequential_match",
+        lambda legend, candidate_asset: True,
+    )
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+
+    report = GroupSequentialPass().run(state)
+
+    assert len(report.accepted) == 1
+    assert len(state.matches) == 1
+    match = state.matches[0]
+    assert match["figure_number"] == 5
+    assert match["legend_block_id"] == "caption"
+    assert match["legend_page"] == 15
+    assert match["page"] == 14
+    assert match["asset_block_ids"] == ["asset"]
+    assert match["matched_assets"][0]["page"] == 14
 
 def test_multi_legend_veto_two_legends_two_assets():
     """Two short numbered explicit legends, distance_cluster with 2 assets on same page.
@@ -289,9 +346,8 @@ def test_multi_legend_veto_grouped_figure_no_veto():
     assert matched_bids == {"a1", "a2"}, f"expected a1,a2, got {matched_bids}"
 
 
-def test_multi_legend_veto_ambiguous_no_veto():
-    """Two short legends but group has 3 assets (n_legends < n_assets).
-    -> no veto; first legend claims the whole group."""
+def test_multi_legend_competition_holds_when_assets_exceed_captions():
+    """Competing captions cannot claim an arbitrary multi-asset group."""
     blocks = [
         {"block_id": "c1", "page": 5, "role": "figure_caption",
          "text": "Figure 2", "bbox": [0, 100, 200, 130], "zone": "display_zone"},
@@ -335,13 +391,12 @@ def test_multi_legend_veto_ambiguous_no_veto():
     state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
     report = GroupSequentialPass().run(state)
 
-    # 2 legends < 3 assets → no veto, first legend takes all
-    assert len(report.accepted) == 1, f"expected 1 accepted, got {len(report.accepted)}"
-    assert len(state.matches) == 1, f"expected 1 match, got {len(state.matches)}"
+    assert report.accepted == []
+    assert state.matches == []
+    assert {hold["legend_block_id"] for hold in state.holds} == {"c1", "c2"}
+    assert all(
+        set(hold["candidate_asset_ids"]) == {"a1", "a2", "a3"}
+        for hold in state.holds
+    )
 
-    match = state.matches[0]
-    assert match["settlement_type"] == "group_sequential"
-    assert match["legend_block_id"] == "c1"
 
-    matched_bids = {a["block_id"] for a in match.get("matched_assets", [])}
-    assert matched_bids == {"a1", "a2", "a3"}, f"expected a1,a2,a3, got {matched_bids}"

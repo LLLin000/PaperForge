@@ -48,6 +48,11 @@ class LegendBundlePass:
             if mp is None:
                 mp = m.get("page")
             matched_legend_ids.add((mp, str(lid)))
+        matched_figure_keys = set()
+        for match in state.matches:
+            marker = ocr_figures._extract_figure_marker(str(match.get("text") or ""))
+            if marker and marker.get("number") is not None:
+                matched_figure_keys.add((marker.get("namespace"), marker["number"]))
         unmatched_legends = [
             leg for leg in state.candidate_index.deduped_legends
             if (_resource_page(leg), str(leg.get("block_id", ""))) not in matched_legend_ids
@@ -76,6 +81,10 @@ class LegendBundlePass:
                 continue
             if ocr_figures._extract_figure_number(str(leg.get("text", ""))) is None:
                 continue
+            if str(leg.get("block_id", "")) in bundle_source_ids:
+                marker = ocr_figures._extract_figure_marker(str(leg.get("text") or ""))
+                if marker and (marker.get("namespace"), marker.get("number")) in matched_figure_keys:
+                    continue
             page_captions.setdefault(cp, []).append(leg)
 
         # ----- 4. Process each caption page -----

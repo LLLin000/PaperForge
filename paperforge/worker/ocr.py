@@ -2263,7 +2263,10 @@ def postprocess_ocr_result(
     _ocr_blocks.write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
 
     # --- Phase 2: object artifacts ---
-    from paperforge.worker.ocr_objects import extract_and_write_objects
+    from paperforge.worker.ocr_objects import (
+        _finalize_cross_page_delivery,
+        extract_and_write_objects,
+    )
 
     ocr_asset_root = ocr_root / "assets"
     ocr_render_root = ocr_root / "render"
@@ -2286,6 +2289,15 @@ def postprocess_ocr_result(
         structured_blocks=structured,
     )
 
+    if any(
+        reservation.get("delivery_status") == "FAILED"
+        for reservation in figure_inventory.get("association_reservations", [])
+    ):
+        from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+        reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+        write_json(reader_figures_dir / "reader_figures.json", reader_payload)
+
     # --- Phase 3: structured renderer ---
     from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs, RenderOutput
 
@@ -2298,6 +2310,31 @@ def postprocess_ocr_result(
         document_structure=doc_structure,
         reader_payload=reader_payload,
         return_events=True,
+    )
+
+    if _finalize_cross_page_delivery(
+        figure_inventory,
+        asset_root=ocr_asset_root,
+        render_root=ocr_render_root,
+        fulltext_markdown=rendered.markdown,
+    ):
+        from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+        reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+        write_json(reader_figures_dir / "reader_figures.json", reader_payload)
+        rendered = render_fulltext_markdown(
+            structured_blocks=structured,
+            resolved_metadata=resolved,
+            figure_inventory=figure_inventory,
+            table_inventory=table_inventory,
+            page_count=page_num,
+            document_structure=doc_structure,
+            reader_payload=reader_payload,
+            return_events=True,
+        )
+    write_figure_inventory(
+        artifacts.blocks_structured.parent / "figure_inventory.json",
+        figure_inventory,
     )
     
 

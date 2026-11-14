@@ -50,6 +50,44 @@ def test_primary_same_page_pass_matches_single_safe_group():
     assert report.accepted[0].claim_type == "match"
     assert len(state.matches) == 1
 
+def test_primary_splits_shared_group_by_caption_bands(monkeypatch):
+    blocks = [
+        {"block_id": "c2", "page": 1, "role": "figure_caption", "text": "Figure 2. Left figure.", "bbox": [108, 355, 606, 525]},
+        {"block_id": "a2", "page": 1, "role": "figure_asset", "bbox": [116, 541, 596, 1069], "raw_label": "image"},
+        {"block_id": "c3", "page": 1, "role": "figure_caption", "text": "Figure 3. Right figure.", "bbox": [616, 397, 1115, 446]},
+        {"block_id": "a3", "page": 1, "role": "figure_asset", "bbox": [618, 466, 1107, 1115], "raw_label": "image"},
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+    index = FigureCandidateIndex.from_corpus(corpus)
+    index.candidate_groups = [{
+        "group_id": "shared",
+        "page": 1,
+        "asset_block_ids": ["a2", "a3"],
+        "media_blocks": [blocks[1], blocks[3]],
+        "group_type": "distance_cluster",
+        "cluster_bbox": [116, 466, 1107, 1115],
+    }]
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_figures._score_legend_to_group",
+        lambda *args, **kwargs: {"score": 0.85, "decision": "matched", "evidence": ["shared_group"]},
+    )
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_figures.score_figure_caption",
+        lambda *args, **kwargs: {"score": 0.85},
+    )
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+
+    report = PrimarySamePagePass().run(state)
+
+    assert len(report.accepted) == 2
+    assert {
+        proposal.figure_no: {str(asset.block_id) for asset in proposal.assets}
+        for proposal in report.accepted
+    } == {2: {"a2"}, 3: {"a3"}}
+    assert {
+        match["figure_number"]: set(map(str, match["asset_block_ids"]))
+        for match in state.matches
+    } == {2: {"a2"}, 3: {"a3"}}
 
 def test_primary_same_page_pass_prefers_higher_score_when_two_legends_compete_for_one_asset(monkeypatch):
     blocks = [
@@ -177,8 +215,100 @@ def test_cross_page_reservation_pass_does_not_reserve_group_already_claimed_same
 
     assert len(report.accepted) == 0
     assert len(state.reservations) == 0
-def test_cross_page_settlement_pass_claims_reserved_group_into_match_record():
-    """Reservation pass reserves, settlement pass claims and adds match record."""
+
+
+def test_cross_page_reservation_holds_competing_forward_groups():
+    caption = {
+        "block_id": "caption",
+        "page": 1,
+        "role": "figure_caption",
+        "text": "Figure 1. Caption",
+        "bbox": [0, 100, 300, 150],
+    }
+    assets = [
+        {"block_id": bid, "page": 2, "role": "figure_asset", "bbox": [0, y, 200, y + 100]}
+        for bid, y in (("a1", 200), ("a2", 400))
+    ]
+    corpus = FigureCorpus.from_blocks([caption, *assets], page_width=1200)
+    groups = [
+        {
+            "group_id": f"g{i}",
+            "page": 2,
+            "group_type": "single_asset",
+            "asset_block_ids": [asset["block_id"]],
+            "cluster_bbox": asset["bbox"],
+            "media_blocks": [asset],
+        }
+        for i, asset in enumerate(assets, start=1)
+    ]
+    index = FigureCandidateIndex(
+        formal_legends=[caption],
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=[caption],
+        candidate_groups=groups,
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+
+    report = CrossPageReservationPass().run(state)
+
+    assert report.accepted == []
+    assert state.reservations == []
+    assert state.holds[0]["hold_reason"] == "competing_forward_groups"
+    assert {group["group_id"] for group in state.holds[0]["candidate_groups"]} == {"g1", "g2"}
+    assert all(
+        state.ledger.can_claim_group(ResourceRef(kind="group", page=2, block_id=None, group_id=group["group_id"]))
+        for group in groups
+    )
+
+
+def test_cross_page_reservation_holds_competing_captions_without_claiming_group():
+    captions = [
+        {
+            "block_id": f"c{i}",
+            "page": 1,
+            "role": "figure_caption",
+            "text": f"Figure {i}. Caption",
+            "bbox": [0, 100 * i, 300, 100 * i + 40],
+        }
+        for i in (1, 2)
+    ]
+    asset = {"block_id": "a1", "page": 2, "role": "figure_asset", "bbox": [0, 200, 200, 400]}
+    corpus = FigureCorpus.from_blocks([*captions, asset], page_width=1200)
+    group = {
+        "group_id": "g1",
+        "page": 2,
+        "group_type": "single_asset",
+        "asset_block_ids": ["a1"],
+        "cluster_bbox": asset["bbox"],
+        "media_blocks": [asset],
+    }
+    index = FigureCandidateIndex(
+        formal_legends=captions,
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=captions,
+        candidate_groups=[group],
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+
+    report = CrossPageReservationPass().run(state)
+
+    assert report.accepted == []
+    assert state.reservations == []
+    assert {hold["legend_block_id"] for hold in state.holds} == {"c1", "c2"}
+    assert all(hold["hold_reason"] == "competing_caption_candidates" for hold in state.holds)
+    assert state.ledger.can_claim_group(ResourceRef(kind="group", page=2, block_id=None, group_id="g1"))
+def test_cross_page_settlement_does_not_promote_unresolved_reservation_to_match():
+    """An unverified reservation must remain non-deliverable."""
     blocks = [
         {"block_id": "l1", "page": 1, "role": "figure_caption", "text": "Figure 1. Caption", "bbox": [0, 100, 200, 150]},
         {"block_id": "a1", "page": 2, "role": "figure_asset", "bbox": [0, 0, 200, 90], "raw_label": "image"},
@@ -196,21 +326,111 @@ def test_cross_page_settlement_pass_claims_reserved_group_into_match_record():
     assert len(state.reservations) == 1
     assert len(reservation_report.accepted) == 1
 
-    # Run settlement pass to claim the reserved group
+    # No asset evidence was resolved, so settlement must not create a matched figure.
     report = CrossPageSettlementPass().run(state)
 
-    assert len(report.accepted) == 1
-    assert report.accepted[0].claim_type == "match"
-
-    # Check that a match record was added with the right settlement_type
-    new_matches = [m for m in state.matches if m.get("settlement_type") == "cross_page_reservation"]
-    assert len(new_matches) == 1
-    assert str(new_matches[0].get("legend_block_id", "")) == "l1"
-    assert new_matches[0].get("page") == 1
+    assert len(report.accepted) == 0
+    assert state.matches == []
+    assert state.reservations[0]["status"] == "HOLD"
+    hold = state.holds[0]
+    assert hold["association_status"] == "HOLD"
+    assert hold["legend_block_id"] == "l1"
+    assert hold["candidate_groups"][0]["group_id"] == index.candidate_groups[0]["group_id"]
+    assert hold["candidate_groups"][0]["assets"][0]["page"] == 2
+    assert hold["hold_reason"] == "reservation_unresolved"
 
     # Verify report contents
     assert "cross_page_settlement" in str(report.pass_name)
 
+
+def test_cross_page_settlement_keeps_duplicate_block_ids_page_qualified():
+    """A same-ID match on page 2 cannot resolve a reservation for page 1."""
+
+    caption1 = {
+        "block_id": "dup",
+        "page": 1,
+        "role": "figure_caption",
+        "text": "Figure 1. Caption without a page-one asset.",
+        "bbox": [0, 100, 200, 150],
+    }
+    caption2 = {
+        "block_id": "dup",
+        "page": 2,
+        "role": "figure_caption",
+        "text": "Figure 2. Caption with a page-two asset.",
+        "bbox": [0, 100, 200, 150],
+    }
+    asset = {
+        "block_id": "a2",
+        "page": 2,
+        "role": "figure_asset",
+        "bbox": [0, 0, 200, 90],
+    }
+    corpus = FigureCorpus.from_blocks([caption1, caption2, asset], page_width=1200)
+    group = {
+        "group_id": "page2_group",
+        "page": 2,
+        "group_type": "single_asset",
+        "asset_block_ids": ["a2"],
+        "cluster_bbox": asset["bbox"],
+        "media_blocks": [asset],
+    }
+    index = FigureCandidateIndex(
+        formal_legends=[caption1, caption2],
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=[caption1, caption2],
+        candidate_groups=[group],
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    owner = ResourceRef(kind="legend", page=2, block_id="dup")
+    state.matches.append(
+        {
+            "figure_id": "figure_002",
+            "figure_number": 2,
+            "legend_block_id": "dup",
+            "legend_page": 2,
+            "page": 2,
+            "text": caption2["text"],
+            "matched_assets": [{"block_id": "a2", "page": 2, "bbox": asset["bbox"]}],
+            "asset_block_ids": ["a2"],
+            "settlement_type": "same_page",
+        }
+    )
+    state.ledger.claim_assets(
+        [ResourceRef(kind="asset", page=2, block_id="a2")],
+        owner=owner,
+        reason="test_match",
+    )
+
+    state.reservations.append(
+        {
+            "status": "RESERVED",
+            "legends": [{"page": 1, "block_id": "dup"}],
+            "groups": [{"page": 2, "group_id": "page2_group"}],
+            "diagnostics": {
+                "evidence": ["page_gap"],
+                "candidate_group": {
+                    "group_id": "page2_group",
+                    "page": 2,
+                    "bbox": asset["bbox"],
+                    "assets": [{"page": 2, "block_id": "a2", "bbox": asset["bbox"]}],
+                },
+            },
+        }
+    )
+    reservation = state.reservations[0]
+    report = CrossPageSettlementPass().run(state)
+
+    assert report.accepted == []
+    assert state.matches[0]["legend_page"] == 2
+    assert reservation["status"] == "HOLD"
+    assert state.holds[0]["page"] == 1
+    assert state.holds[0]["legend_block_id"] == "dup"
 
 def test_cross_page_settlement_pass_keeps_same_page_matches_untouched():
     """Settlement pass with no reservations preserves existing same-page matches."""

@@ -2642,10 +2642,12 @@ def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
 
     matched = inventory.get("matched_figures", [])
     fig_numbers = {mf.get("figure_number") for mf in matched}
-    fig2 = [mf for mf in matched if mf.get("figure_number") == 2]
-    assert all(mf.get("settlement_type") == "cross_page_reservation" for mf in fig2)
-    assert all(not mf.get("matched_assets") for mf in fig2)
-    assert not any(mf.get("settlement_type") == "sequence_match" for mf in fig2)
+    assert not any(mf.get("figure_number") == 2 for mf in matched)
+    assert any(
+        held.get("association_status") == "HOLD"
+        and str(held.get("legend_block_id", "")) == "12"
+        for held in inventory.get("held_figures", [])
+    )
     # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
     assert 3 in fig_numbers
@@ -2729,10 +2731,12 @@ def test_sequence_match_requires_at_least_one_asset_block_id() -> None:
 
     matched = inventory.get("matched_figures", [])
     fig_numbers = {mf.get("figure_number") for mf in matched}
-    fig2 = [mf for mf in matched if mf.get("figure_number") == 2]
-    assert all(mf.get("settlement_type") == "cross_page_reservation" for mf in fig2)
-    assert all(not mf.get("matched_assets") for mf in fig2)
-    assert not any(mf.get("settlement_type") == "sequence_match" for mf in fig2)
+    assert not any(mf.get("figure_number") == 2 for mf in matched)
+    assert any(
+        held.get("association_status") == "HOLD"
+        and str(held.get("legend_block_id", "")) == "12"
+        for held in inventory.get("held_figures", [])
+    )
     # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
     assert 3 in fig_numbers
@@ -4409,12 +4413,13 @@ def test_legacy_fallback_does_not_consume_grouped_asset() -> None:
         {"block_id": "a2", "page": 11, "role": "figure_asset", "text": "", "bbox": [100, 500, 500, 800]},
     ]
     inv = build_figure_inventory(blocks)
-    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
-    assert len(fig1) <= 1
-    if fig1:
-        assert fig1[0]["settlement_type"] == "cross_page_reservation"
-        assert not fig1[0]["matched_assets"]
-        assert {"a1", "a2"} <= {str(asset.get("block_id", "")) for asset in inv["unmatched_assets"]}
+    assert not any(m.get("figure_number") == 1 for m in inv["matched_figures"])
+    assert any(
+        held.get("association_status") == "HOLD"
+        and str(held.get("legend_block_id", "")) == "c1"
+        for held in inv.get("held_figures", [])
+    )
+    assert {"a1", "a2"} <= {str(asset.get("block_id", "")) for asset in inv["unmatched_assets"]}
 
 
 def test_legend_bundle_fallback_does_not_consume_grouped_assets() -> None:
@@ -4744,12 +4749,13 @@ def test_final_unmatched_assets_recomputed_after_late_fallback_match() -> None:
 
     inv = build_figure_inventory(blocks)
 
-    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
-    assert len(fig1) <= 1
-    if fig1:
-        assert fig1[0]["settlement_type"] == "cross_page_reservation"
-        assert not fig1[0]["matched_assets"]
-        assert any(a.get("block_id") == "a2" for a in inv.get("unmatched_assets", []))
+    assert not any(m.get("figure_number") == 1 for m in inv["matched_figures"])
+    assert any(
+        held.get("association_status") == "HOLD"
+        and str(held.get("legend_block_id", "")) == "c1"
+        for held in inv.get("held_figures", [])
+    )
+    assert any(a.get("block_id") == "a2" for a in inv.get("unmatched_assets", []))
 
 
 def test_bundle_only_source_legends_remain_eligible_for_legend_bundle_fallback() -> None:

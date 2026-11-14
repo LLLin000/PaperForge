@@ -100,12 +100,17 @@ def test_empty_duplicate_claim_does_not_displace_asset_evidence() -> None:
 
 
 
-def test_only_assetless_sequence_matches_are_held() -> None:
+def test_28alpcy7_assetless_figure_is_held() -> None:
     sequence = _entry("Figure 5", "sequence-caption", "")
     sequence["matched_assets"] = []
     sequence["asset_block_ids"] = []
     sequence["settlement_type"] = "sequence_match"
-    reservation = _entry("Figure 6", "reservation-caption", "")
+    reservation = _entry(
+        "Figure 6. Genuine assetless figure.",
+        "figure_reserved_009",
+        "",
+        page=20,
+    )
     reservation["matched_assets"] = []
     reservation["asset_block_ids"] = []
     reservation["settlement_type"] = "cross_page_reservation"
@@ -113,8 +118,14 @@ def test_only_assetless_sequence_matches_are_held() -> None:
 
     _finalize_figure_identities(inventory)
 
-    assert [entry["settlement_type"] for entry in inventory["matched_figures"]] == ["cross_page_reservation"]
-    assert inventory["held_figures"][0]["hold_reason"] == "assetless_sequence_match"
+    assert inventory["matched_figures"] == []
+    held = {entry["settlement_type"]: entry for entry in inventory["held_figures"]}
+    assert set(held) == {"sequence_match", "cross_page_reservation"}
+    assert all(entry["association_status"] == "HOLD" for entry in held.values())
+    assert held["sequence_match"]["hold_reason"] == "assetless_sequence_match"
+    assert held["cross_page_reservation"]["hold_reason"] == "assetless_match"
+    assert held["cross_page_reservation"]["page"] == 20
+    assert held["cross_page_reservation"]["figure_number"] == 6
 
 def test_strict_superset_asset_claim_keeps_specific_claim_and_records_overclaim() -> None:
     broad = _entry("Figure 4: same caption", "caption", "asset-a")

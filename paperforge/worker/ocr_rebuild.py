@@ -471,6 +471,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         """Extract object artifacts, render fulltext markdown, build health report.
         Returns (RenderOutput, health_overall) tuple."""
         from paperforge.worker.ocr_objects import (
+            _finalize_cross_page_delivery,
             extract_and_write_objects,
             _resolve_object_crop_pdf_path,
         )
@@ -496,6 +497,19 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             use_disk_page_cache=False,
         )
 
+        if any(
+            reservation.get("delivery_status") == "FAILED"
+            for reservation in figure_inventory.get("association_reservations", [])
+        ):
+            from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+            reader_payload = synthesize_reader_figures(
+                figure_inventory,
+                structured_blocks=structured,
+                document_structure=doc_structure,
+            )
+            write_json(paper_root / "structure" / "reader_figures.json", reader_payload)
+
         from paperforge.worker.ocr_render import RenderOutput, render_fulltext_markdown, write_render_outputs
 
         rebuild_page_count = ocr_meta.get("page_count", 0) or 0
@@ -512,6 +526,34 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             reader_payload=reader_payload,
             return_events=True,
         )
+
+        if _finalize_cross_page_delivery(
+            figure_inventory,
+            asset_root=paper_root / "assets",
+            render_root=paper_root / "render",
+            fulltext_markdown=rendered.markdown,
+        ):
+            from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+            reader_payload = synthesize_reader_figures(
+                figure_inventory,
+                structured_blocks=structured,
+                document_structure=doc_structure,
+            )
+            write_json(paper_root / "structure" / "reader_figures.json", reader_payload)
+            rendered = render_fulltext_markdown(
+                structured_blocks=structured,
+                resolved_metadata=resolved,
+                figure_inventory=figure_inventory,
+                table_inventory=table_inventory,
+                page_count=rebuild_page_count,
+                document_structure=doc_structure,
+                reader_payload=reader_payload,
+                return_events=True,
+            )
+        from paperforge.worker.ocr_figures import write_figure_inventory
+
+        write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
         from paperforge.worker.ocr_health import build_ocr_health, build_ocr_raw_integrity_health, write_ocr_health
 
         health_report = build_ocr_health(

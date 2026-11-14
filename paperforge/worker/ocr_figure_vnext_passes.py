@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from .ocr_pairing_types import ClaimProposal, PassReport, ResourceRef
 
 
@@ -46,10 +48,8 @@ class PrimarySamePagePass:
                 continue
             page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
             for group in page_groups:
-                # VETO: When multiple explicit short numbered legends share a page,
-                # no single legend may claim an entire multi-asset distance_cluster
-                # group.  Such groups should be distributed by downstream passes
-                # (GroupSequentialPass) which handle per-asset splitting.
+                # Multiple short numbered captions cannot claim an entire shared
+                # multi-asset cluster; let GroupSequentialPass split it by asset.
                 _gt = group.get("group_type", "")
                 _n_assets = len(group.get("media_blocks", []))
                 if (
@@ -148,12 +148,211 @@ class PrimarySamePagePass:
         }
 
     def run(self, state):
+        from . import ocr_figures
+
         report = PassReport(pass_name=self.name)
         proposals = self._collect_proposals(state)
-        report.proposals.extend(proposals)
+        sidecar_candidates = state.candidate_index.sidecar_candidates or {}
+        for page, captions in sidecar_candidates.items():
+            page = int(page)
+            caption_ids = {str(caption.get("block_id", "")) for caption in captions}
+            numbered_ids = {
+                str(legend.get("block_id", ""))
+                for legend in state.candidate_index.deduped_legends
+                if _resource_page(legend) == page
+                and ocr_figures._extract_figure_number(str(legend.get("text") or "")) is not None
+            }
+            if len(caption_ids) < 2 or caption_ids != numbered_ids:
+                continue
 
+            best_by_caption = {}
+            for proposal in proposals:
+                legend = proposal.legends[0]
+                key = (legend.page, str(legend.block_id))
+                if legend.page == page and str(legend.block_id) in caption_ids:
+                    current = best_by_caption.get(key)
+                    if current is None or proposal.confidence > current.confidence:
+                        best_by_caption[key] = proposal
+            if not best_by_caption:
+                continue
+
+            best_score = max(proposal.confidence for proposal in best_by_caption.values())
+            # ponytail: near-equal scores use page order; tune the margin against reviewed PDFs.
+            near_best = [
+                (key, proposal)
+                for key, proposal in best_by_caption.items()
+                if best_score - proposal.confidence < 0.15
+            ]
+            caption_by_id = {str(caption.get("block_id", "")): caption for caption in captions}
+            chosen_key, chosen = min(
+                near_best,
+                key=lambda item: (
+                    (caption_by_id[item[0][1]].get("bbox") or [0, 0, 0, 0])[1],
+                    item[0][1],
+                ),
+            )
+            ordered_captions = sorted(
+                captions,
+                key=lambda caption: (caption.get("bbox") or [0, 0, 0, 0])[1],
+            )
+            page_assets = [
+                asset for asset in state.corpus.raw_assets if _resource_page(asset) == page
+            ]
+            bands = ocr_figures._partition_assets_by_caption_bands(
+                ordered_captions,
+                page_assets,
+                max(
+                    (
+                        float((block.get("bbox") or [0, 0, 0, 0])[3])
+                        for block in state.corpus.blocks
+                        if _resource_page(block) == page
+                    ),
+                    default=1200.0,
+                ),
+                page_width=state.corpus.page_width,
+            )
+            band_assets = bands.get(chosen_key[1], [])
+            asset_refs = [
+                ResourceRef(kind="asset", page=page, block_id=asset.get("block_id"))
+                for asset in band_assets
+                if asset.get("block_id") is not None
+            ]
+            if not asset_refs:
+                continue
+
+            diagnostics = dict(chosen.diagnostics)
+            diagnostics["evidence"] = list(diagnostics.get("evidence") or []) + [
+                "sidecar_band_ownership"
+            ]
+            band_proposal = ClaimProposal(
+                pass_name=chosen.pass_name,
+                figure_no=chosen.figure_no,
+                claim_type=chosen.claim_type,
+                legends=chosen.legends,
+                assets=asset_refs,
+                groups=chosen.groups,
+                confidence=chosen.confidence,
+                evidence_rank=chosen.evidence_rank,
+                reason="same_page_sidecar_band",
+                diagnostics=diagnostics,
+            )
+            proposals = [
+                proposal
+                for proposal in proposals
+                if not (
+                    proposal.legends[0].page == page
+                    and str(proposal.legends[0].block_id) in caption_ids
+                )
+            ]
+            proposals.append(band_proposal)
+
+        shared_groups = {}
+        for proposal in proposals:
+            if proposal.claim_type != "match" or len(proposal.legends) != 1:
+                continue
+            group_refs = [group for group in proposal.groups if group.group_id]
+            if len(group_refs) == 1:
+                key = (proposal.legends[0].page, group_refs[0].group_id)
+                shared_groups.setdefault(key, []).append(proposal)
+
+        replaced = set()
+        band_proposals = []
+        for (page, group_id), group_proposals in shared_groups.items():
+            by_caption = {}
+            for proposal in group_proposals:
+                if proposal.figure_no is None:
+                    continue
+                caption_id = str(proposal.legends[0].block_id)
+                current = by_caption.get(caption_id)
+                if current is None or proposal.confidence > current.confidence:
+                    by_caption[caption_id] = proposal
+            if len(by_caption) < 2:
+                continue
+
+            asset_sets = {
+                frozenset(str(asset.block_id) for asset in proposal.assets)
+                for proposal in by_caption.values()
+            }
+            if len(asset_sets) != 1 or not next(iter(asset_sets)):
+                continue
+            group_asset_ids = next(iter(asset_sets))
+            captions = {
+                str(caption.get("block_id")): caption
+                for caption in state.candidate_index.deduped_legends
+                if _resource_page(caption) == page
+                and str(caption.get("block_id")) in by_caption
+            }
+            if len(captions) != len(by_caption):
+                continue
+            page_assets = [
+                asset for asset in state.corpus.raw_assets if _resource_page(asset) == page
+            ]
+            page_height = max(
+                (
+                    float((block.get("bbox") or [0, 0, 0, 0])[3])
+                    for block in state.corpus.blocks
+                    if _resource_page(block) == page
+                ),
+                default=1200.0,
+            )
+            bands = ocr_figures._partition_assets_by_caption_bands(
+                sorted(captions.values(), key=lambda caption: (caption.get("bbox") or [0, 0, 0, 0])[1]),
+                page_assets,
+                page_height,
+                page_width=state.corpus.page_width,
+            )
+            partitioned = {
+                caption_id: [
+                    str(asset.get("block_id"))
+                    for asset in bands.get(caption_id, [])
+                    if asset.get("block_id") is not None
+                ]
+                for caption_id in by_caption
+            }
+            assigned_ids = [
+                asset_id for asset_ids in partitioned.values() for asset_id in asset_ids
+            ]
+            if (
+                any(not asset_ids or not set(asset_ids).issubset(group_asset_ids) for asset_ids in partitioned.values())
+                or set(assigned_ids) != group_asset_ids
+                or len(assigned_ids) != len(set(assigned_ids))
+            ):
+                continue
+
+            for caption_id, proposal in by_caption.items():
+                diagnostics = dict(proposal.diagnostics)
+                diagnostics["evidence"] = list(diagnostics.get("evidence") or []) + [
+                    "shared_group_caption_band_ownership"
+                ]
+                band_proposals.append(
+                    ClaimProposal(
+                        pass_name=proposal.pass_name,
+                        figure_no=proposal.figure_no,
+                        claim_type=proposal.claim_type,
+                        legends=proposal.legends,
+                        assets=[
+                            ResourceRef(kind="asset", page=page, block_id=asset_id)
+                            for asset_id in partitioned[caption_id]
+                        ],
+                        groups=proposal.groups,
+                        confidence=proposal.confidence,
+                        evidence_rank=proposal.evidence_rank,
+                        reason="same_page_shared_group_band",
+                        diagnostics=diagnostics,
+                    )
+                )
+            replaced.update(id(proposal) for proposal in group_proposals)
+
+        if replaced:
+            proposals = [
+                proposal for proposal in proposals if id(proposal) not in replaced
+            ] + band_proposals
+
+        report.proposals.extend(proposals)
         for proposal in sorted(proposals, key=lambda p: (p.evidence_rank, -p.confidence, -(p.figure_no or -1))):
-            conflict = state.ledger.try_claim_assets(proposal.assets, owner=proposal.legends[0], reason=proposal.reason)
+            conflict = state.ledger.try_claim_assets(
+                proposal.assets, owner=proposal.legends[0], reason=proposal.reason
+            )
             if conflict is not None:
                 report.conflicts.append(conflict)
                 report.rejected.append(proposal)
@@ -169,47 +368,142 @@ class CrossPageReservationPass:
 
     def run(self, state):
         report = PassReport(pass_name=self.name)
-        for legend in state.candidate_index.deduped_legends:
+        unmatched_legends = [
+            legend
+            for legend in state.candidate_index.deduped_legends
+            if not any(
+                str(match.get("legend_block_id", "")) == str(legend.get("block_id", ""))
+                and (
+                    match.get("legend_page")
+                    if match.get("legend_page") is not None
+                    else match.get("page")
+                ) == _resource_page(legend)
+                for match in state.matches
+            )
+        ]
+
+        def group_evidence(group: dict) -> dict:
+            group_page = _resource_page(group)
+            assets = [
+                {
+                    "page": _resource_page(asset) or group_page,
+                    "block_id": str(asset.get("block_id")),
+                    "bbox": list(asset.get("bbox") or []),
+                }
+                for asset in group.get("media_blocks", [])
+                if asset.get("block_id") is not None
+            ]
+            return {
+                "group_id": group.get("group_id"),
+                "page": group_page,
+                "bbox": list(group.get("cluster_bbox") or []),
+                "assets": assets,
+            }
+
+        def hold(legend: dict, groups: list[dict], reason: str) -> None:
+            candidate_groups = [group_evidence(group) for group in groups]
+            candidate_assets = [
+                asset for candidate in candidate_groups for asset in candidate["assets"]
+            ]
+            state.hold_legend({
+                "page": _resource_page(legend),
+                "legend_page": _resource_page(legend),
+                "legend_block_id": str(legend.get("block_id", "")),
+                "text": str(legend.get("text") or ""),
+                "legend_bbox": list(legend.get("bbox") or []),
+                "association_status": "HOLD",
+                "hold_reason": reason,
+                "candidate_groups": candidate_groups,
+                "candidate_assets": candidate_assets,
+                "candidate_asset_ids": [
+                    asset["block_id"] for asset in candidate_assets
+                ],
+                "evidence": ["page_gap", reason],
+            })
+
+        def group_is_unclaimed(group: dict) -> bool:
+            group_page = _resource_page(group)
+            asset_ids = group.get("asset_block_ids") or [
+                asset.get("block_id") for asset in group.get("media_blocks", [])
+            ]
+            return not any(
+                block_id is not None
+                and state.ledger.owner_of_asset(
+                    page=int(_resource_page(group) or 0), block_id=str(block_id)
+                )
+                is not None
+                for block_id in asset_ids
+            )
+        for legend in unmatched_legends:
             page = _resource_page(legend)
             if page is None:
                 continue
-            # Skip legends already matched by same-page primary
-            _legend_page = _resource_page(legend)
-            if any(
-                str(m.get("legend_block_id", "")) == str(legend.get("block_id", ""))
-                and (m.get("legend_page") if m.get("legend_page") is not None else m.get("page")) == _legend_page
-                for m in state.matches
-            ):
-                continue
-            # Find forward groups (page > legend page)
             forward_groups = [
-                g
-                for g in state.candidate_index.candidate_groups
-                if _resource_page(g) is not None and _resource_page(g) > page
+                group
+                for group in state.candidate_index.candidate_groups
+                if _resource_page(group) == page + 1
+                and state.ledger.can_claim_group(ResourceRef(
+                    kind="group",
+                    page=_resource_page(group),
+                    block_id=None,
+                    group_id=group.get("group_id"),
+                ))
             ]
-            for group in forward_groups[:1]:
-                group_ref = ResourceRef(
-                    kind="group", page=_resource_page(group), block_id=None, group_id=group.get("group_id")
-                )
-                if not state.ledger.can_claim_group(group_ref):
-                    continue
-                proposal = ClaimProposal(
-                    pass_name=self.name,
-                    figure_no=None,
-                    claim_type="reserve",
-                    legends=[ResourceRef(kind="legend", page=page, block_id=legend.get("block_id"), figure_no=None)],
-                    assets=[],
-                    groups=[group_ref],
-                    confidence=0.6,
-                    evidence_rank=2,
-                    reason="forward_cross_page_candidate",
-                    diagnostics={"evidence": ["page_gap", "same_page_miss"]},
-                )
-                report.proposals.append(proposal)
-                state.ledger.reserve_group(group_ref, reason=proposal.reason)
-                state.accept_reservation(proposal)
-                report.accepted.append(proposal)
-                break
+            if not forward_groups:
+                continue
+
+            if len(forward_groups) > 1:
+                hold(legend, forward_groups, "competing_forward_groups")
+                continue
+            group = forward_groups[0]
+            if not group_is_unclaimed(group):
+                hold(legend, [group], "forward_group_assets_already_owned")
+                continue
+            group_page = _resource_page(group)
+            competing_captions = [
+                candidate
+                for candidate in unmatched_legends
+                if _resource_page(candidate) == page
+                and str(candidate.get("block_id", "")) != str(legend.get("block_id", ""))
+            ]
+            local_captions = [
+                candidate
+                for candidate in unmatched_legends
+                if _resource_page(candidate) == group_page
+            ]
+            if competing_captions or local_captions:
+                hold(legend, [group], "competing_caption_candidates")
+                continue
+
+            group_ref = ResourceRef(
+                kind="group", page=group_page, block_id=None, group_id=group.get("group_id")
+            )
+            candidate_group = group_evidence(group)
+            proposal = ClaimProposal(
+                pass_name=self.name,
+                figure_no=None,
+                claim_type="reserve",
+                legends=[
+                    ResourceRef(
+                        kind="legend", page=page, block_id=legend.get("block_id"), figure_no=None
+                    )
+                ],
+                assets=[],
+                groups=[group_ref],
+                confidence=0.6,
+                evidence_rank=2,
+                reason="forward_cross_page_candidate",
+                diagnostics={
+                    "evidence": ["page_gap", "same_page_miss"],
+                    "caption_text": str(legend.get("text") or ""),
+                    "legend_bbox": list(legend.get("bbox") or []),
+                    "candidate_group": candidate_group,
+                },
+            )
+            report.proposals.append(proposal)
+            state.ledger.reserve_group(group_ref, reason=proposal.reason)
+            state.accept_reservation(proposal)
+            report.accepted.append(proposal)
         return report
 
 
@@ -217,78 +511,201 @@ class CrossPageSettlementPass:
     name = "cross_page_settlement"
 
     def run(self, state):
-        from . import ocr_figures
-
         report = PassReport(pass_name=self.name)
         for reservation in state.reservations:
-            legend = reservation["legends"][0]
-            group = reservation["groups"][0]
-            # Skip settlement for legends whose block_id is already matched on
-            # another page (page-blind duplicate guard for cross-page fallback).
-            if any(
-                str(m.get("legend_block_id", "")) == str(legend.block_id)
-                for m in state.matches
+            if (
+                reservation.get("status") != "RESERVED"
+                or reservation.get("association_status") == "RESOLVED"
             ):
                 continue
-            state.ledger.transition_reserved_group_to_claimed(group, owner=legend, reason="cross_page_settlement")
 
-            # Look up the actual legend block to extract namespace/number/alpha_prefix
-            legend_text = ""
-            for leg in state.candidate_index.deduped_legends:
-                if str(leg.get("block_id", "")) == str(legend.block_id) and _resource_page(leg) == legend.page:
-                    legend_text = str(leg.get("text", ""))
-                    break
-            if not legend_text:
-                for leg in state.candidate_index.deduped_legends:
-                    if str(leg.get("block_id", "")) == str(legend.block_id):
-                        legend_text = str(leg.get("text", ""))
-                        break
-            marker = ocr_figures._extract_figure_marker(legend_text)
-            if marker["number"] is not None and marker["namespace"] == "appendix":
-                # Appendix: use schema-derived ID (no collision risk with main).
-                figure_id = ocr_figures._format_figure_id(
-                    marker["namespace"], marker["number"], alpha_prefix=marker["alpha_prefix"]
+            legend = reservation["legends"][0]
+            group = reservation["groups"][0]
+            legend_page = int(legend["page"])
+            legend_id = str(legend["block_id"])
+            legend_block = next(
+                (
+                    item
+                    for item in state.candidate_index.deduped_legends
+                    if _resource_page(item) == legend_page
+                    and str(item.get("block_id", "")) == legend_id
+                ),
+                {},
+            )
+            caption_text = str(legend_block.get("text") or "").strip()
+            caption_bbox = legend_block.get("bbox") or []
+            from . import ocr_figures
+
+            def valid_bbox(bbox):
+                try:
+                    if len(bbox) < 4:
+                        return False
+                    x1, y1, x2, y2 = (float(value) for value in bbox[:4])
+                except (TypeError, ValueError):
+                    return False
+                return (
+                    all(math.isfinite(value) for value in (x1, y1, x2, y2))
+                    and x2 > x1
+                    and y2 > y1
                 )
-                figure_namespace = marker["namespace"]
-                figure_number = marker["number"]
+
+            caption_verified = bool(
+                caption_text
+                and ocr_figures._extract_figure_number(caption_text) is not None
+                and valid_bbox(caption_bbox)
+            )
+
+            def match_caption_page(match):
+                page = match.get("legend_page")
+                if page is None:
+                    page = match.get("page")
+                try:
+                    return int(page) if page is not None else None
+                except (TypeError, ValueError):
+                    return None
+
+            matches = [
+                match
+                for match in state.matches
+                if str(match.get("legend_block_id", "")) == legend_id
+                and match_caption_page(match) == legend_page
+            ]
+
+            def has_resolved_assets(match):
+                assets = match.get("matched_assets") or []
+                declared_ids = {
+                    str(block_id)
+                    for block_id in match.get("asset_block_ids", [])
+                    if block_id not in (None, "")
+                }
+                asset_ids = set()
+                asset_keys = set()
+                if not assets or not match.get("figure_id") or not declared_ids:
+                    return False
+                for asset in assets:
+                    page = asset.get("page")
+                    block_id = asset.get("block_id")
+                    bbox = asset.get("bbox") or []
+                    if page is None or block_id in (None, "") or not valid_bbox(bbox):
+                        return False
+                    try:
+                        page = int(page)
+                    except (TypeError, ValueError):
+                        return False
+                    if page < 1 or (page, str(block_id)) in asset_keys:
+                        return False
+                    asset_keys.add((page, str(block_id)))
+                    asset_ids.add(str(block_id))
+                return declared_ids == asset_ids
+
+            resolved_matches = [
+                match for match in matches if caption_verified and has_resolved_assets(match)
+            ]
+            resolved_match_ids = {id(match) for match in resolved_matches}
+            invalid_matches = [match for match in matches if id(match) not in resolved_match_ids]
+            if not caption_verified:
+                hold_reason = "caption_not_verified"
+            elif len({match.get("figure_id") for match in resolved_matches}) > 1:
+                invalid_matches.extend(resolved_matches)
+                resolved_matches = []
+                hold_reason = "multiple_matches_for_caption"
+            elif resolved_matches:
+                hold_reason = ""
             else:
-                # Main/supplementary/unnumbered: keep reserved ID to avoid
-                # duplication with same-page match AND keep figure_number=None
-                # so figure_number filter queries exclude this synthetic match.
-                figure_id = f"figure_reserved_{len(state.matches):03d}"
-                figure_namespace = marker["namespace"] if marker["number"] else "figure"
-                figure_number = reservation["figure_no"]
-            proposal = ClaimProposal(
-                pass_name=self.name,
-                figure_no=reservation["figure_no"],
-                claim_type="match",
-                legends=[legend],
-                assets=[],
-                groups=[group],
-                confidence=0.6,
-                evidence_rank=2,
-                reason="cross_page_settlement",
-                diagnostics={"evidence": ["reservation_claimed"]},
+                hold_reason = "asset_evidence_invalid" if matches else "reservation_unresolved"
+
+            invalid_match_ids = {id(match) for match in invalid_matches}
+            if invalid_match_ids:
+                state.matches[:] = [match for match in state.matches if id(match) not in invalid_match_ids]
+
+            if resolved_matches:
+                for match in resolved_matches:
+                    match["association_status"] = "RESOLVED"
+                    match["delivery_status"] = "PENDING"
+                reservation.update(
+                    {
+                        "status": "RESERVED",
+                        "association_status": "RESOLVED",
+                        "delivery_allowed": True,
+                        "delivery_status": "PENDING",
+                        "resolved_by": list(dict.fromkeys(
+                            str(match.get("settlement_type") or "") for match in resolved_matches
+                        )),
+                        "resolved_figure_id": resolved_matches[0].get("figure_id"),
+                        "resolved_caption": {
+                            "page": legend_page,
+                            "block_id": legend_id,
+                            "text": caption_text,
+                            "bbox": [float(value) for value in caption_bbox[:4]],
+                        },
+                        "resolved_assets": [
+                            {
+                                "page": int(asset["page"]),
+                                "block_id": str(asset["block_id"]),
+                                "bbox": [float(value) for value in asset["bbox"][:4]],
+                            }
+                            for match in resolved_matches
+                            for asset in match.get("matched_assets", [])
+                        ],
+                    }
+                )
+            else:
+                diagnostics = reservation.get("diagnostics") or {}
+                candidate_group = diagnostics.get("candidate_group") or {
+                    "group_id": group.get("group_id"),
+                    "page": group.get("page"),
+                    "bbox": None,
+                    "assets": [],
+                }
+                reservation.update(
+                    {
+                        "status": "HOLD",
+                        "association_status": "HOLD",
+                        "delivery_allowed": False,
+                        "delivery_status": "NOT_DELIVERABLE",
+                        "hold_reason": hold_reason,
+                    }
+                )
+                state.hold_legend(
+                    {
+                        "association_status": "HOLD",
+                        "page": legend_page,
+                        "legend_page": legend_page,
+                        "legend_block_id": legend_id,
+                        "text": str(legend_block.get("text") or diagnostics.get("caption_text") or ""),
+                        "legend_bbox": list(legend_block.get("bbox") or diagnostics.get("legend_bbox") or []),
+                        "hold_reason": hold_reason,
+                        "candidate_groups": [candidate_group],
+                        "candidate_asset_ids": [
+                            asset.get("block_id")
+                            for asset in candidate_group.get("assets", [])
+                            if asset.get("block_id") is not None
+                        ],
+                        "evidence": list(diagnostics.get("evidence") or []),
+                    }
+                )
+
+            group_ref = ResourceRef(
+                kind="group",
+                page=int(group["page"]),
+                block_id=None,
+                group_id=group.get("group_id"),
             )
-            state.accept_match(
-                proposal,
+            state.ledger.release_group_reservation(
+                group_ref,
+                reason=f"cross_page_settlement_{reservation.get('association_status', reservation['status']).lower()}",
+            )
+            state.diagnostics.append(
                 {
-                    "figure_id": figure_id,
-                    "figure_namespace": figure_namespace,
-                    "figure_number": figure_number,
-                    "legend_block_id": legend.block_id,
-                    "page": legend.page,
-                    "text": legend_text,
-                    "matched_assets": [],
-                    "asset_block_ids": [],
-                    "settlement_type": "cross_page_reservation",
-                    "confidence": 0.6,
-                    "match_score": {"score": 0.6, "decision": "matched", "evidence": ["reservation_claimed"]},
-                    "flags": ["cross_page_reserved"],
-                    "bridge_block_ids": [],
-                },
+                    "event": "reservation_settled",
+                    "status": reservation.get("association_status", reservation["status"]),
+                    "reservation_status": reservation["status"],
+                    "legend_page": legend_page,
+                    "legend_block_id": legend_id,
+                    "group_page": group.get("page"),
+                    "group_id": group.get("group_id"),
+                }
             )
-            report.accepted.append(proposal)
         return report
 
 

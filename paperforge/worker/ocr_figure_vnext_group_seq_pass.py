@@ -2,8 +2,8 @@
 
 Port of legacy ocr_figures.py:4589-4716 group-aware sequential fallback.
 Consumes unmatched distance_cluster and single_asset groups that no same-page
-legend claimed.  Matches unmatched numbered legends in same-page (scored),
-next-page, then previous-page (with guard) order.
+legend claimed. Same-page matches require unambiguous ownership. Forward-page
+groups are retained as HOLD evidence; previous-page matches require the guard.
 """
 
 from __future__ import annotations
@@ -18,11 +18,65 @@ def _resource_page(block: dict) -> int | None:
     return int(page) if page is not None else None
 
 
+
+def _center_distance(block: dict, other: dict) -> float:
+    a = block.get("bbox") or block.get("block_bbox") or []
+    b = other.get("bbox") or other.get("cluster_bbox") or []
+    if len(a) < 4 or len(b) < 4:
+        return float("inf")
+    return abs((a[0] + a[2] - b[0] - b[2]) / 2) + abs((a[1] + a[3] - b[1] - b[3]) / 2)
+
+
+def _group_evidence(group: dict, assets_by_page_id: dict) -> dict:
+    page = _resource_page(group)
+    assets = [
+        {
+            "page": page,
+            "block_id": str(asset["block_id"]),
+            "bbox": list(asset.get("bbox") or []),
+        }
+        for bid in (group.get("asset_block_ids") or [])
+        if (asset := assets_by_page_id.get((page, str(bid)))) is not None
+    ]
+    return {
+        "group_id": group.get("group_id"),
+        "page": page,
+        "bbox": list(group.get("cluster_bbox") or []),
+        "assets": assets,
+    }
+
+
+def _record_group_hold(state, legend: dict, groups: list[dict], assets_by_page_id: dict, reason: str) -> None:
+    page = _resource_page(legend)
+    evidence = [_group_evidence(group, assets_by_page_id) for group in groups]
+    candidate_assets = {
+        (asset["page"], asset["block_id"]): asset
+        for group in evidence
+        for asset in group["assets"]
+    }
+    state.hold_legend(
+        {
+            "association_status": "HOLD",
+            "page": page,
+            "legend_page": page,
+            "legend_block_id": str(legend.get("block_id", "")),
+            "text": str(legend.get("text") or ""),
+            "legend_bbox": list(legend.get("bbox") or []),
+            "hold_reason": reason,
+            "candidate_groups": evidence,
+            "candidate_assets": list(candidate_assets.values()),
+            "candidate_asset_ids": [asset["block_id"] for asset in candidate_assets.values()],
+            "evidence": [reason],
+        }
+    )
+
+
 class GroupSequentialPass:
     """Match unmatched numbered legends to distance_cluster/single_asset groups.
 
-    Prefers same-page (scored via _score_legend_to_group, requires >= 0.5),
-    then first next-page group, then previous-page with guard check.
+    Prefers same-page matches scored via `_score_legend_to_group` (>= 0.5).
+    Ambiguous ownership and unverified forward-page groups remain on HOLD;
+    previous-page matches retain their boundary guard.
     """
 
     name = "group_sequential"
@@ -101,6 +155,33 @@ class GroupSequentialPass:
             if ap is not None:
                 assets_by_page_id[(ap, str(ast.get("block_id", "")))] = ast
 
+
+        def _unowned_group_assets(group):
+            group_page = _resource_page(group)
+            return [
+                asset
+                for bid in (group.get("asset_block_ids") or [])
+                if (asset := assets_by_page_id.get((group_page, str(bid)))) is not None
+                and state.ledger.owner_of_asset(page=group_page, block_id=str(bid)) is None
+            ]
+
+        def _score_same_page(legend, group):
+            page = _resource_page(legend)
+            return ocr_figures._score_legend_to_group(
+                legend,
+                group,
+                caption_score=ocr_figures.score_figure_caption(
+                    legend,
+                    nearby_media=True,
+                    caption_style_match=False,
+                    body_prose_likelihood=False,
+                ),
+                page_width=page_width,
+                page_blocks=page_blocks_map.get(page, []),
+                page_height=page_height_map.get(page, 0.0),
+                page_numbered_legend_count=per_page_legend_count.get(page, 0),
+            )
+
         # ----- 4. Track already-matched legend ids (page-qualified) -----
         matched_legend_ids: set[tuple] = set()
         for m in state.matches:
@@ -135,57 +216,134 @@ class GroupSequentialPass:
             same_page = [g for g in unmatched_groups if g.get("page") == lg_page]
             next_page = [g for g in unmatched_groups if g.get("page") == lg_page + 1]
             prev_page = [g for g in unmatched_groups if g.get("page") == lg_page - 1]
+            margin = max(page_width, page_height_map.get(lg_page, 0.0)) * 0.05
 
             best_group = None
+            same_page_candidates = []
+            same_page_competition = False
 
-            # (a) Same-page: score each candidate, take best with score >= 0.5
+            # (a) Same-page candidates: geometry resolves close scores; weak
+            # margins stay on HOLD instead of taking whichever group sorts first.
             if same_page:
-                caption_score = ocr_figures.score_figure_caption(
-                    legend,
-                    nearby_media=True,
-                    caption_style_match=False,
-                    body_prose_likelihood=False,
-                )
                 scored = []
                 for sg in same_page:
-                    sg_result = ocr_figures._score_legend_to_group(
-                        legend,
-                        sg,
-                        caption_score=caption_score,
-                        page_width=page_width,
-                        page_blocks=page_blocks_map.get(lg_page, []),
-                        page_height=page_height_map.get(lg_page, 0.0),
-                        page_numbered_legend_count=per_page_legend_count.get(lg_page, 0),
-                    )
+                    sg_result = _score_same_page(legend, sg)
                     if sg_result.get("decision") == "matched" and sg_result.get("score", 0.0) >= 0.5:
-                        scored.append((sg, sg_result.get("score", 0.0)))
+                        scored.append(
+                            (sg, float(sg_result.get("score", 0.0)), _center_distance(legend, sg))
+                        )
+                same_page_candidates = [item[0] for item in scored]
                 if scored:
-                    scored.sort(key=lambda x: x[1], reverse=True)
-                    best_group = scored[0][0]
+                    page_legends = [
+                        item
+                        for item in deduped_legends
+                        if _resource_page(item) == lg_page
+                        and (lg_page, str(item.get("block_id", ""))) not in matched_legend_ids
+                        and ocr_figures._extract_figure_number(str(item.get("text", "") or "")) is not None
+                    ]
+                    # ponytail: fixed 0.15 score / 5% page-scale margins; tune against reviewed PDFs.
+                    ordered = sorted(scored, key=lambda item: (item[2], -item[1]))
+                    if len(ordered) > 1:
+                        by_score = sorted(scored, key=lambda item: item[1], reverse=True)
+                        if by_score[0][1] - by_score[1][1] >= 0.15:
+                            ordered = by_score
+                        elif ordered[1][2] - ordered[0][2] < margin:
+                            same_page_competition = True
 
-            # (a') Multi-legend multi-asset fallback: if same-page scoring
-            # rejected but the page has a multi-asset distance_cluster group
-            # with multiple short numbered legends, still select it so
-            # section 6b can do per-asset splitting.
-            if best_group is None and same_page:
-                _page_short_legends = [
-                    l for l in deduped_legends
-                    if _resource_page(l) == lg_page
-                    and ocr_figures._extract_figure_number(str(l.get("text", "") or "")) is not None
-                    and ocr_figures._is_short_numbered_figure_caption(l)
-                ]
-                if len(_page_short_legends) >= 2:
-                    for sg in same_page:
-                        if sg.get("group_type") == "distance_cluster" and len(sg.get("media_blocks", [])) >= 2:
-                            best_group = sg
+                    if not same_page_competition:
+                        for group, score, _ in ordered:
+                            group_assets = _unowned_group_assets(group)
+                            split_group = (
+                                len(group_assets) >= 2
+                                and len(page_legends) >= len(group_assets)
+                            )
+                            target = (
+                                min(group_assets, key=lambda asset: _center_distance(legend, asset))
+                                if split_group
+                                else group
+                            )
+                            competing = []
+                            for other in page_legends:
+                                if str(other.get("block_id", "")) == lid:
+                                    continue
+                                other_result = _score_same_page(other, group)
+                                if (
+                                    other_result.get("decision") == "matched"
+                                    and other_result.get("score", 0.0) >= 0.5
+                                ):
+                                    competing.append(
+                                        (
+                                            float(other_result.get("score", 0.0)),
+                                            _center_distance(other, target),
+                                        )
+                                    )
+                            if competing:
+                                current_distance = _center_distance(legend, target)
+                                other_distance = min(distance for _, distance in competing)
+                                strongest_other_score = max(score for score, _ in competing)
+                                if (
+                                    current_distance + margin >= other_distance
+                                    and score < strongest_other_score + 0.15
+                                ):
+                                    same_page_competition = True
+                                    continue
+                            best_group = group
                             break
 
-            # (b) Next-page fallback: first group on next page
-            if best_group is None and next_page:
-                best_group = next_page[0]
+            # A unique multi-asset group can still be split when full captions
+            # were too weak for the primary score. Never guess between groups.
+            if best_group is None and same_page and not same_page_competition:
+                page_legends = [
+                    item
+                    for item in deduped_legends
+                    if _resource_page(item) == lg_page
+                    and (lg_page, str(item.get("block_id", ""))) not in matched_legend_ids
+                    and ocr_figures._extract_figure_number(str(item.get("text", "") or "")) is not None
+                ]
+                fallback_groups = [
+                    group
+                    for group in same_page
+                    if group.get("group_type") == "distance_cluster"
+                    and len(_unowned_group_assets(group)) >= 2
+                    and len(page_legends) >= len(_unowned_group_assets(group))
+                ]
+                if len(fallback_groups) == 1:
+                    best_group = fallback_groups[0]
+                elif len(fallback_groups) > 1:
+                    same_page_competition = True
 
-            # (c) Previous-page match, requiring the existing guard or a unique
-            # high-confidence caption and one substantial preceding asset.
+            if best_group is None and same_page_competition:
+                _record_group_hold(
+                    state,
+                    legend,
+                    same_page_candidates or same_page,
+                    assets_by_page_id,
+                    "ambiguous_same_page_group_competition",
+                )
+                continue
+
+            if best_group is None and same_page:
+                _record_group_hold(
+                    state,
+                    legend,
+                    same_page,
+                    assets_by_page_id,
+                    "unresolved_same_page_group",
+                )
+                continue
+
+            # A following-page group is candidate evidence only; ownership and crop are unresolved.
+            if best_group is None and next_page:
+                _record_group_hold(
+                    state,
+                    legend,
+                    next_page,
+                    assets_by_page_id,
+                    "unverified_forward_group",
+                )
+                continue
+
+            # Previous-page matching remains gated by the existing boundary checks.
             if best_group is None and prev_page:
                 first_bid = (
                     str(prev_page[0]["asset_block_ids"][0])
@@ -223,62 +381,59 @@ class GroupSequentialPass:
             if best_group is None:
                 continue
 
-            # Flag: when set, the group stays in pool for sibling legends
-            # (multi-legend multi-asset restriction).
-            _keep_group_in_pool = False
-
-            # ----- 6. Collect group assets -----
+            # ----- 6. Collect still-unowned assets from the selected group -----
             group_page = int(best_group.get("page", 0) or 0)
-            group_assets = []
-            for bid in (best_group.get("asset_block_ids") or []):
-                if bid is None:
-                    continue
-                asset = assets_by_page_id.get((group_page, str(bid)))
-                if asset:
-                    group_assets.append(asset)
-
+            group_assets = _unowned_group_assets(best_group)
             if not group_assets:
+                _record_group_hold(
+                    state,
+                    legend,
+                    [best_group],
+                    assets_by_page_id,
+                    "candidate_group_already_claimed",
+                )
                 continue
 
-            # ----- 6a. Filter already-owned assets for idempotent group re-access -----
-            group_assets = [
-                a for a in group_assets
-                if state.ledger.owner_of_asset(
-                    page=group_page,
-                    block_id=str(a.get("block_id", "")),
-                ) is None
-            ]
-            if not group_assets:
-                continue
-
-            # ----- 6b. Multi-legend multi-asset veto -----
-            # When n explicit numbered legends share the same page as a group
-            # with n unowned assets, block the whole-group claim and restrict
-            # this legend to the geometrically closest single asset, keeping
-            # the group in the pool for sibling legends.
+            # If captions and assets form a one-to-one group, keep the group
+            # available and give each caption only its nearest actual asset.
+            _keep_group_in_pool = False
             if len(group_assets) >= 2:
                 _page_legends = [
-                    l for l in deduped_legends
-                    if str(l.get("block_id", "")) not in matched_legend_ids
-                    and _resource_page(l) == lg_page
-                    and ocr_figures._extract_figure_number(str(l.get("text", "") or "")) is not None
+                    item
+                    for item in deduped_legends
+                    if (lg_page, str(item.get("block_id", ""))) not in matched_legend_ids
+                    and _resource_page(item) == lg_page
+                    and ocr_figures._extract_figure_number(str(item.get("text", "") or "")) is not None
                 ]
-                if len(_page_legends) >= len(group_assets):
-                    _all_explicit = all(
-                        ocr_figures._is_short_numbered_figure_caption(l)
-                        for l in _page_legends
+                if len(_page_legends) > 1 and len(group_assets) > len(_page_legends):
+                    _record_group_hold(
+                        state,
+                        legend,
+                        [best_group],
+                        assets_by_page_id,
+                        "competing_captions_for_group",
                     )
-                    if _all_explicit:
-                        # Manhattan center distance to find the single closest asset
-                        l_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
-                        l_cx = (l_bbox[0] + l_bbox[2]) / 2
-                        l_cy = (l_bbox[1] + l_bbox[3]) / 2
-                        def _mdist(a):
-                            ab = a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0]
-                            return abs(l_cx - (ab[0] + ab[2]) / 2) + abs(l_cy - (ab[1] + ab[3]) / 2)
-                        group_assets = [min(group_assets, key=_mdist)]
-                        _keep_group_in_pool = True
-
+                    continue
+                if len(_page_legends) >= len(group_assets):
+                    closest_asset = min(group_assets, key=lambda asset: _center_distance(legend, asset))
+                    current_distance = _center_distance(legend, closest_asset)
+                    margin = max(page_width, page_height_map.get(lg_page, 0.0)) * 0.05
+                    other_distances = [
+                        _center_distance(other, closest_asset)
+                        for other in _page_legends
+                        if str(other.get("block_id", "")) != lid
+                    ]
+                    if other_distances and current_distance + margin >= min(other_distances):
+                        _record_group_hold(
+                            state,
+                            legend,
+                            [best_group],
+                            assets_by_page_id,
+                            "ambiguous_asset_split",
+                        )
+                        continue
+                    group_assets = [closest_asset]
+                    _keep_group_in_pool = True
             # ----- 7. Build proposal and match record -----
             asset_refs = [
                 ResourceRef(kind="asset", page=group_page, block_id=str(a.get("block_id", "")))
@@ -361,13 +516,18 @@ class GroupSequentialPass:
                 continue
 
             state.accept_match(proposal, match_record)
-            matched_legend_ids.add(lid)
+            matched_legend_ids.add((lg_page, lid))
             report.accepted.append(proposal)
 
-            # Remove claimed group from pool so subsequent legends don't compete
-            if not _keep_group_in_pool:
-                # When we restricted a multi-asset group to a single asset, keep
-                # the group in the pool so sibling legends can claim remaining assets.
+            # Keep a claimed group visible to later captions so losers get HOLD
+            # evidence instead of disappearing into an unclassified gap.
+            has_unmatched_sibling = any(
+                _resource_page(other) == lg_page
+                and (lg_page, str(other.get("block_id", ""))) not in matched_legend_ids
+                and ocr_figures._extract_figure_number(str(other.get("text", "") or "")) is not None
+                for other in deduped_legends
+            )
+            if not _keep_group_in_pool and not has_unmatched_sibling:
                 unmatched_groups = [g for g in unmatched_groups if g is not best_group]
 
         return report

@@ -13,6 +13,7 @@ All notable changes to PaperForge.
 - Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.
 - Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
 - Preserve uppercase alphabetic figure suffixes in caption identities, so same-page figures such as Figure 1A and Figure 1B retain separate captions and assets; parenthesized panel labels remain part of the base figure.
+- Keep cross-page figure reservations non-deliverable until page-qualified assets and crop evidence resolve; split shared same-page groups only when caption-band ownership uniquely covers every asset.
 
 
 ## 1.5.8 (2026-05-19)

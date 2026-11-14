@@ -23,8 +23,15 @@ Observation → Candidate → Association → Ownership → Identity
 
 ## Status vocabulary
 
-- `MATCHED`: one canonical object owns the asset/caption.
-- `HOLD` / `AMBIGUOUS`: evidence insufficient; asset stays unowned and visible.
+- `RESERVED`: candidate relation only. It owns no asset and is never a matched
+  figure, crop task, exact reader figure, or fulltext embed.
+- `RESOLVED`: verified caption plus page-qualified asset identities and valid
+  asset bboxes, with successful crop, render markdown, and fulltext embed evidence.
+  Only `RESOLVED` cross-page figures enter the delivered `matched_figures` set.
+- `MATCHED`: one canonical object owns the asset/caption; for cross-page objects,
+  this is the final `RESOLVED` state, not the reservation state.
+- `HOLD` / `AMBIGUOUS`: evidence insufficient; preserve caption, candidate groups,
+  reason, and evidence; never emit a normal matched crop or embed.
 - `UNMATCHED`: no acceptable association; recorded, never auto-delivered.
 - `REASSIGNED`: a later ownership stage moved a claim; the move is atomic and audited.
 - `WITHDRAWN`: a claim was removed; the reason and previous state stay in the inventory.
@@ -58,6 +65,16 @@ Observation → Candidate → Association → Ownership → Identity
 5. Figure/table cross-type competition is resolved before identity and delivery,
    atomically (asset id, bbox, segments, render bbox, match score, consumed and
    bridge sets).
+
+6. A reservation is settled only after same-page and sequential matching have
+   had the opportunity to claim real assets. Candidate-group existence alone
+   cannot create a matched figure.
+7. Every resolved cross-page claim records `(caption_page, caption_block_id)`,
+   each `(asset_page, asset_block_id, bbox)`, and materialization/fulltext
+   delivery evidence. Coordinate boxes from different pages are never unioned.
+8. If ownership, asset identity, bbox, crop, markdown, or fulltext embed cannot
+   be verified, downgrade the caption to `HOLD` and retain its candidate evidence.
+9. A same-page candidate group shared by multiple numbered captions is split only when caption-band assignments are unique, pairwise disjoint, and cover every group asset; otherwise retain the conflict for `HOLD`.
 
 ## Delivery invariants (E3)
 

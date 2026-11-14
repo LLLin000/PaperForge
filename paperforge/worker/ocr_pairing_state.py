@@ -57,15 +57,12 @@ class OwnershipLedger:
     def can_claim_group(self, group: ResourceRef) -> bool:
         return group not in self._reserved_groups
 
-    def transition_reserved_group_to_claimed(self, group: ResourceRef, *, owner: ResourceRef, reason: str) -> None:
-        self._reserved_groups.discard(group)
+    def release_group_reservation(self, group: ResourceRef, *, reason: str) -> None:
+        if group not in self._reserved_groups:
+            return
+        self._reserved_groups.remove(group)
         self._journal.append(
-            {
-                "action": "transition_to_claimed",
-                "resource": group,
-                "owner": owner,
-                "reason": reason,
-            }
+            {"action": "release_group_reservation", "resource": group, "reason": reason}
         )
 
     def snapshot(self) -> list[dict[str, object]]:
@@ -100,6 +97,7 @@ class FigurePipelineState:
     hypotheses: list[dict] = field(default_factory=list)
     diagnostics: list[dict] = field(default_factory=list)
     reservations: list[dict] = field(default_factory=list)
+    holds: list[dict] = field(default_factory=list)
     completeness: dict = field(default_factory=dict)
     # Hook set by domain code (e.g., figures) to enrich match_records before storing.
     _match_pre_enricher: Callable | None = None
@@ -128,8 +126,16 @@ class FigurePipelineState:
                 "pass_name": proposal.pass_name,
                 "figure_no": proposal.figure_no,
                 "reason": proposal.reason,
-                "legends": list(proposal.legends),
-                "groups": list(proposal.groups),
+                "status": "RESERVED",
+                "legends": [
+                    {"page": legend.page, "block_id": legend.block_id}
+                    for legend in proposal.legends
+                ],
+                "groups": [
+                    {"page": group.page, "group_id": group.group_id}
+                    for group in proposal.groups
+                ],
+                "diagnostics": dict(proposal.diagnostics),
             }
         )
         self.diagnostics.append(
@@ -141,6 +147,48 @@ class FigurePipelineState:
                 "resources": {"groups": proposal.groups},
             }
         )
+
+    def hold_legend(self, hold: dict) -> None:
+        page = hold.get("page", hold.get("legend_page"))
+        legend_id = str(hold.get("legend_block_id", hold.get("block_id", "")))
+        existing = next(
+            (
+                item
+                for item in self.holds
+                if item.get("page", item.get("legend_page")) == page
+                and str(item.get("legend_block_id", item.get("block_id", ""))) == legend_id
+            ),
+            None,
+        )
+        if existing is None:
+            recorded = dict(hold)
+            recorded["association_status"] = "HOLD"
+            reason = str(recorded.get("hold_reason") or "unresolved_association")
+            recorded["hold_reason"] = reason
+            recorded["hold_reasons"] = list(dict.fromkeys([*recorded.get("hold_reasons", []), reason]))
+            self.holds.append(recorded)
+            return
+
+        existing["association_status"] = "HOLD"
+        reasons = [*existing.get("hold_reasons", []), existing.get("hold_reason"), hold.get("hold_reason")]
+        existing["hold_reasons"] = list(dict.fromkeys(str(reason) for reason in reasons if reason))
+        existing.setdefault("hold_reason", hold.get("hold_reason") or "unresolved_association")
+        if not existing.get("text") and hold.get("text"):
+            existing["text"] = hold["text"]
+        groups = {
+            (group.get("page"), str(group.get("group_id", ""))): group
+            for group in [*existing.get("candidate_groups", []), *hold.get("candidate_groups", [])]
+        }
+        existing["candidate_groups"] = list(groups.values())
+        assets = {
+            (asset.get("page"), str(asset.get("block_id", ""))): asset
+            for group in existing["candidate_groups"]
+            for asset in group.get("assets", [])
+        }
+        existing["candidate_assets"] = list(assets.values())
+        existing["candidate_asset_ids"] = list(dict.fromkeys(
+            asset.get("block_id") for asset in assets.values() if asset.get("block_id") is not None
+        ))
 
 
 PipelineState = FigurePipelineState

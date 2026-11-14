@@ -295,6 +295,48 @@ def test_reader_payload_coverage_accounted_matches_reader_figures() -> None:
     ]
 
 
+
+
+def test_hold_with_same_number_is_not_rematerialized_beside_delivered_figure() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    payload = synthesize_reader_figures(
+        {
+            "matched_figures": [
+                {
+                    "figure_number": 4,
+                    "page": 41,
+                    "legend_block_id": "real",
+                    "text": "Figure 4. Delivered figure.",
+                    "marker_type": "figure_number",
+                    "asset_block_ids": ["a1"],
+                    "matched_assets": [{"page": 41, "block_id": "a1", "bbox": [0, 0, 10, 10]}],
+                }
+            ],
+            "held_figures": [
+                {
+                    "figure_number": 4,
+                    "page": 36,
+                    "legend_block_id": "duplicate",
+                    "text": "Figure 4. Unresolved duplicate.",
+                    "marker_type": "figure_number",
+                    "association_status": "HOLD",
+                    "candidate_asset_ids": ["a2"],
+                }
+            ],
+            "ambiguous_figures": [],
+            "unmatched_legends": [],
+            "unresolved_clusters": [],
+        },
+        structured_blocks=[],
+    )
+
+    assert [(item["figure_number"], item["strict_source"]) for item in payload["reader_figures"]] == [
+        (4, "matched_figures")
+    ]
+    held = payload["normalized_inputs"]["held_figures"][0]
+    assert held["strict_status"] == "held_figure"
+    assert held["candidate_asset_ids"] == ["a2"]
 def test_reader_figures_emit_from_matched_or_unresolved_object_inputs() -> None:
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 
