@@ -165,6 +165,27 @@ def _label_is_bound(
     return False
 
 
+def _authority(rows: list[dict[str, Any]]) -> str:
+    sources = {
+        str(row.get("review_source") or "human")
+        for row in rows if _label_is_reviewed(row)
+    }
+    if not sources:
+        return "none"
+    if sources == {"human"}:
+        return "human"
+    return "agent_visual" if sources == {"agent_visual"} else "mixed"
+
+
+def _rollup_authority(rows: list[dict[str, Any]]) -> str:
+    authorities = {row["review_authority"] for row in rows if row.get("labels_reviewed")}
+    if not authorities:
+        return "none"
+    if authorities == {"human"}:
+        return "human"
+    return "agent_visual" if authorities == {"agent_visual"} else "mixed"
+
+
 def _label_is_reviewed(label: dict[str, Any]) -> bool:
     reviewer = str(label.get("reviewer") or "").strip().lower()
     return (
@@ -181,6 +202,27 @@ def _review_status(labels: list[dict[str, Any]], bound: list[dict[str, Any]],
         return "UNKNOWN_STALE_LABELS"
     return "REVIEWED" if len(reviewed) == len(labels) else "UNKNOWN"
 
+
+
+def _row_fails_delivery(label: dict[str, Any]) -> bool:
+    """A reviewed row that proves delivery is wrong.
+
+    ``matched_figure`` rows deliver an object, so any false verdict is a delivery failure.
+    ``unmatched_legend`` rows deliver nothing: only a genuine figure left undelivered counts,
+    which shows up as ``crop_ok`` or ``delivery_ok`` false. ``caption_ok`` false there means the
+    candidate finder surfaced a non-caption block - recorded, but not a delivery failure.
+    """
+    if label.get("kind") == "matched_figure":
+        return any(label.get(field) is False for field in REVIEW_FIELDS)
+    return label.get("crop_ok") is False or label.get("delivery_ok") is False
+
+
+def _review_outcome(
+    labels: list[dict[str, Any]], bound: list[dict[str, Any]], reviewed: list[dict[str, Any]],
+) -> str:
+    if not labels or len(bound) != len(labels) or len(reviewed) != len(labels):
+        return "UNKNOWN"
+    return "FAIL" if any(_row_fails_delivery(row) for row in reviewed) else "PASS"
 
 
 def _row_markdown(
@@ -292,6 +334,8 @@ def build_pack(
             "labels_refreshed": labels_refreshed,
             "labels_reviewed": len(reviewed),
             "review_status": review_status,
+            "review_outcome": _review_outcome(labels, bound, reviewed),
+            "review_authority": _authority(reviewed),
             "review_sheet": str(pack_root / f"{key}.md"),
         })
 
@@ -302,11 +346,17 @@ def build_pack(
         "source_census_sha256": "sha256:" + hashlib.sha256(census_path.read_bytes()).hexdigest(),
         "frozen_sample_manifest": str(sample_path),
         "instructions": (
-            "A row counts as PASS only when a human reviewer fills reviewer plus all four verdict "
+            "A row counts as PASS only when a reviewer fills reviewer plus all four verdict "
             "fields as booleans. UNKNOWN, zero-label, and stale-label papers are not PASS. "
             "Synthetic crops are not acceptable evidence."
         ),
-        "human_review_conducted": any(row["labels_reviewed"] for row in rows),
+        "review_authority": _rollup_authority(rows),
+        "human_review_conducted": any(
+            row["review_authority"] == "human" and row["labels_reviewed"] for row in rows
+        ),
+        "papers_reviewed_by_agent": sum(
+            row["review_authority"] == "agent_visual" for row in rows
+        ),
         "papers": rows,
         "totals": {
             "papers": len(rows),

@@ -89,6 +89,14 @@ def derive(census_path: Path, pack_path: Path) -> dict[str, Any]:
             status[key] = "VISUAL_REVIEW_PENDING"
             reasons[key] = ["review_binding_mismatch"]
             continue
+        if review.get("review_outcome") == "FAIL":
+            status[key] = "HOLD"
+            reasons[key] = ["visual_review_failed"]
+            continue
+        if review.get("review_outcome") != "PASS":
+            status[key] = "VISUAL_REVIEW_PENDING"
+            reasons[key] = ["visual_review_incomplete"]
+            continue
         status[key] = "READY_CANDIDATE"
         reasons[key] = []
 
@@ -108,11 +116,13 @@ def derive(census_path: Path, pack_path: Path) -> dict[str, Any]:
         "gates": {
             "historical_596_hold_overlay_applied": False,
             "visual_pass_inferred_from_delivery_state": False,
-            "human_review_required_for_ready": True,
+            "review_required_for_ready": True,
+            "visual_review_authority": pack.get("review_authority", "none"),
+            "human_signoff_present": bool(pack.get("human_review_conducted")),
             "production_migration_authorized": False,
             "production_migration_blocked_reason": (
-                "Requires completed human visual review for every READY candidate, resolution of "
-                "source-identity mismatches, and separate user authorization."
+                "Requires a completed visual review bound to each READY candidate's snapshot, "
+                "resolution of source-identity mismatches, and separate user authorization."
             ),
         },
         "status": status,

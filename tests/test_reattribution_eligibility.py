@@ -98,7 +98,7 @@ def test_bound_human_review_on_clean_rebuild_becomes_candidate_not_production(tm
     )
     pack_path = tmp_path / "index.json"
     pack_path.write_text(json.dumps(_pack(census_path, [{
-        "key": "A", "review_status": "REVIEWED",
+        "key": "A", "review_status": "REVIEWED", "review_outcome": "PASS",
         "snapshot_fingerprint": "sha256:s1", "source_pdf_sha256": "sha256:p1",
     }])), encoding="utf-8")
 
@@ -108,6 +108,38 @@ def test_bound_human_review_on_clean_rebuild_becomes_candidate_not_production(tm
     assert out["ready_count"] == 1
     assert out["production_migration_ready_count"] == 0
     assert out["gates"]["production_migration_authorized"] is False
+
+
+def test_visual_review_failure_holds_even_when_delivery_is_clean(tmp_path):
+    census_path = tmp_path / "census.json"
+    census_path.write_text(
+        json.dumps(_census([_paper("A")], ["A"])), encoding="utf-8"
+    )
+    pack_path = tmp_path / "index.json"
+    pack_path.write_text(json.dumps(_pack(census_path, [{
+        "key": "A", "review_status": "REVIEWED", "review_outcome": "FAIL",
+        "snapshot_fingerprint": "sha256:s1", "source_pdf_sha256": "sha256:p1",
+    }])), encoding="utf-8")
+
+    out = ELIG.derive(census_path, pack_path)
+
+    assert out["status"]["A"] == "HOLD"
+    assert out["reasons"]["A"] == ["visual_review_failed"]
+
+
+def test_reviewed_but_incomplete_outcome_is_not_ready(tmp_path):
+    census_path = tmp_path / "census.json"
+    census_path.write_text(json.dumps(_census([_paper("A")], ["A"])), encoding="utf-8")
+    pack_path = tmp_path / "index.json"
+    pack_path.write_text(json.dumps(_pack(census_path, [{
+        "key": "A", "review_status": "REVIEWED", "review_outcome": "UNKNOWN",
+        "snapshot_fingerprint": "sha256:s1", "source_pdf_sha256": "sha256:p1",
+    }])), encoding="utf-8")
+
+    out = ELIG.derive(census_path, pack_path)
+
+    assert out["status"]["A"] == "VISUAL_REVIEW_PENDING"
+    assert out["reasons"]["A"] == ["visual_review_incomplete"]
 
 
 def test_source_mismatch_and_unplanned_papers_fail_closed(tmp_path):
@@ -313,3 +345,23 @@ def test_pack_refreshes_only_unreviewed_legends_bound_to_current_source_location
     assert rows[1]["reviewer"] == "Reviewer"
     assert rows[1]["notes"] == "checked"
     assert rows[1]["snapshot_fingerprint"] == "sha256:old"
+
+
+def test_review_outcome_separates_delivery_failure_from_caption_noise():
+    matched_bad_crop = {
+        "kind": "matched_figure", "caption_ok": True, "panels_ok": True,
+        "crop_ok": False, "delivery_ok": True,
+    }
+    legend_noise = {
+        "kind": "unmatched_legend", "caption_ok": False, "panels_ok": False,
+        "crop_ok": True, "delivery_ok": True,
+    }
+    legend_undelivered = {
+        "kind": "unmatched_legend", "caption_ok": True, "panels_ok": True,
+        "crop_ok": False, "delivery_ok": True,
+    }
+
+    assert PACK._review_outcome([matched_bad_crop], [matched_bad_crop], [matched_bad_crop]) == "FAIL"
+    assert PACK._review_outcome([legend_noise], [legend_noise], [legend_noise]) == "PASS"
+    assert PACK._review_outcome([legend_undelivered], [legend_undelivered], [legend_undelivered]) == "FAIL"
+    assert PACK._review_outcome([legend_noise], [legend_noise], []) == "UNKNOWN"

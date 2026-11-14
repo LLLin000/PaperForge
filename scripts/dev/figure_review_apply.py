@@ -75,6 +75,8 @@ def apply(census_path: Path, patches: list[Path], pack: Path, dry_run: bool = Fa
             target["reviewer"] = patch["reviewer"]
         if patch.get("reviewed_at"):
             target["reviewed_at"] = patch["reviewed_at"]
+        if patch.get("review_source") in {"human", "agent_visual"}:
+            target["review_source"] = patch["review_source"]
         if patch.get("notes") is not None:
             target["notes"] = patch["notes"]
         changes += 1
