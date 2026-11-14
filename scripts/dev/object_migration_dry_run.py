@@ -25,6 +25,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -150,34 +151,190 @@ def _new_replay(vault: Path, ocr_root: Path, key: str) -> dict:
         "manifest": manifest or {},
         "figure_inventory": stage.figures,
     }
-def _rebuild_replay(vault: Path, ocr_root: Path, key: str) -> dict:
-    """Rebuild-based replay: stage inputs into an isolated temp vault, run the
-    real ``_rebuild_one_paper`` path, and read rebuilt artifacts.
+_REBUILD_SNAPSHOT_FILES = (
+    "meta.json",
+    "fulltext.md",
+    "structure/blocks.structured.jsonl",
+    "structure/figure_inventory.json",
+    "structure/table_inventory.json",
+    "structure/document_structure.json",
+    "structure/reader_figures.json",
+    "render/fulltext.md",
+    "index/role-index.json",
+    "index/structure-tree.json",
+    "index/result-hash.txt",
+    "index/result-hash.pending",
+)
 
-    Never writes to ``vault`` or ``ocr_root``.
+
+_SNAPSHOT_VOLATILE_META_KEYS = (
+    "version_state_updated_at",
+    "structured_mtime",
+    "last_backup_at",
+    "last_backup_path",
+    "rebuild_finished_at",
+)
+
+
+def _canonical_snapshot_meta(path: Path) -> bytes | None:
+    """Meta as content, without run-clock fields.
+
+    Two identical rebuilds of the same paper differ only in timestamps, which would
+    otherwise give the same rebuild two fingerprints and break label binding.
     """
-    import shutil
-    import tempfile
+    if not path.is_file():
+        return None
+    try:
+        value = _read_json(path)
+    except ValueError:
+        # Not JSON: hash it verbatim rather than inventing a canonical form.
+        return path.read_bytes()
+    for key in _SNAPSHOT_VOLATILE_META_KEYS:
+        value.pop(key, None)
+    return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
 
-    from paperforge.config import bootstrap_config
-    from paperforge.pdf_resolver import resolve_source_pdf
-    from paperforge.worker.ocr_rebuild import _rebuild_one_paper
 
+
+def _rename_with_retry(source: Path, target: Path, attempts: int = 8) -> None:
+    """Rename a staged snapshot, retrying Windows sharing violations.
+
+    Antivirus and indexer handles close on their own schedule; a transient EACCES here is
+    not an evidence failure and must not be reported as an unassessable paper.
+    """
+    for attempt in range(attempts):
+        try:
+            source.rename(target)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.25 * (attempt + 1))
+
+def _persist_rebuild_snapshot(
+    rebuilt: Path,
+    snapshot_root: Path,
+    key: str,
+    source: Path,
+    pdf: Path | None,
+    manifest: dict,
+) -> dict:
+    paths = {rebuilt / rel for rel in _REBUILD_SNAPSHOT_FILES}
+    for folder in ("assets/figures", "assets/tables", "assets/orphans", "render/figures", "render/tables"):
+        paths.update(path for path in (rebuilt / folder).rglob("*") if path.is_file())
+    canonical_meta = _canonical_snapshot_meta(rebuilt / "meta.json")
+    files = {
+        path.relative_to(rebuilt).as_posix(): {
+            "sha256": "sha256:" + (
+                hashlib.sha256(canonical_meta).hexdigest()
+                if canonical_meta is not None and path.name == "meta.json" and path.parent == rebuilt
+                else _sha256_file(path)
+            ),
+            "bytes": (
+                len(canonical_meta)
+                if canonical_meta is not None and path.name == "meta.json" and path.parent == rebuilt
+                else path.stat().st_size
+            ),
+        }
+        for path in sorted(paths)
+        if path.is_file()
+    }
+    source_meta = _read_json(source / "meta.json")
+    source_hash_file = source / "index" / "result-hash.txt"
+    record = {
+        "schema": "paperforge.rebuild_snapshot.v1",
+        "key": key,
+        "input": {
+            "source_pdf": str(pdf.resolve()) if pdf and pdf.is_file() else None,
+            "source_pdf_sha256": "sha256:" + _sha256_file(pdf) if pdf and pdf.is_file() else None,
+            "recorded_source_pdf": source_meta.get("source_pdf"),
+            "raw_blocks_sha256": (
+                "sha256:" + _sha256_file(source / "canonical" / "blocks.raw.jsonl")
+                if (source / "canonical" / "blocks.raw.jsonl").is_file() else None
+            ),
+            "source_metadata_sha256": (
+                "sha256:" + _sha256_file(source / "raw" / "source_metadata.json")
+                if (source / "raw" / "source_metadata.json").is_file() else None
+            ),
+            "published_result_hash_before": (
+                source_hash_file.read_text(encoding="utf-8").strip()
+                if source_hash_file.is_file() else None
+            ),
+        },
+        "manifest": {
+            **{name: list(manifest.get(name, [])) for name in ("figures", "tables", "orphans")},
+            "assets": [
+                Path(path).relative_to(rebuilt).as_posix()
+                for path in manifest.get("assets", [])
+            ],
+            "render": [
+                Path(path).relative_to(rebuilt).as_posix()
+                for path in manifest.get("render", [])
+            ],
+        },
+        "files": files,
+    }
+    fingerprint = "sha256:" + hashlib.sha256(
+        json.dumps(record, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    record["fingerprint"] = fingerprint
+    snapshot_root.mkdir(parents=True, exist_ok=True)
+    target = snapshot_root / fingerprint.removeprefix("sha256:")
+    if target.exists():
+        existing = _read_json(target / "snapshot.json")
+        corrupted = any(
+            not (target / relative).is_file()
+            or "sha256:" + _sha256_file(target / relative) != row["sha256"]
+            for relative, row in files.items()
+        )
+        if existing != record or corrupted:
+            raise RuntimeError(f"snapshot content mismatch at {target}")
+        return {**record, "directory": str(target)}
+
+    staging = Path(tempfile.mkdtemp(prefix=".snapshot-", dir=snapshot_root))
+    try:
+        for relative in files:
+            destination = staging / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if canonical_meta is not None and relative == "meta.json":
+                destination.write_bytes(canonical_meta)
+            else:
+                shutil.copy2(rebuilt / relative, destination)
+        (staging / "snapshot.json").write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        _rename_with_retry(staging, target)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    return {**record, "directory": str(target)}
+
+
+def _rebuild_replay(
+    vault: Path, ocr_root: Path, key: str, source_pdf_override: Path | None = None,
+    snapshot_root: Path | None = None,
+) -> dict:
+    """Rebuild in an isolated vault and optionally persist its exact outputs."""
     source = ocr_root / key
     if not (source / "canonical/blocks.raw.jsonl").is_file():
         raise FileNotFoundError(f"missing raw blocks for {key}")
 
     workdir = Path(tempfile.mkdtemp(prefix=f"rebuild-replay-{key}-"))
     try:
+        from paperforge.config import bootstrap_config
+        from paperforge.pdf_resolver import resolve_source_pdf
+        from paperforge.worker.ocr_rebuild import _rebuild_one_paper
+        from paperforge.worker.ocr_objects import extract_and_write_objects
+
         v = workdir / "vault"
         paper = v / "System" / "PaperForge" / "ocr" / key
-        # Rebuild behaviour depends on the existing artifact surface (for
-        # example stale render cleanup), so stage the whole paper tree. A
-        # canonical/raw-only stage produced plans that R2 could not reproduce.
         shutil.copytree(source, paper, dirs_exist_ok=True)
-
         meta = _read_json(source / "meta.json")
-        pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
+        if source_pdf_override is not None:
+            pdf = Path(source_pdf_override)
+            if not pdf.is_file():
+                raise FileNotFoundError(f"missing source override PDF: {pdf}")
+        else:
+            pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
         meta["source_pdf"] = str(pdf) if pdf is not None else ""
         (paper / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
 
@@ -193,35 +350,42 @@ def _rebuild_replay(vault: Path, ocr_root: Path, key: str) -> dict:
         new_figures = figure_inventory.get("matched_figures", [])
         new_tables = table_inventory.get("tables", [])
         paper_dir = ocr_root / key
-        from paperforge.pdf_resolver import resolve_source_pdf
-        from paperforge.worker.ocr_objects import extract_and_write_objects
-
         rebuilt_meta = _read_json(rebuilt / "meta.json")
-        pdf = resolve_source_pdf(vault, rebuilt_meta.get("source_pdf"))
-        manifest = extract_and_write_objects(
-            pdf,
+        actual_pdf = resolve_source_pdf(vault, rebuilt_meta.get("source_pdf"))
+        expected_manifest = extract_and_write_objects(
+            actual_pdf,
             figure_inventory,
             table_inventory,
             rebuilt / "assets",
             rebuilt / "render",
             dry_run=True,
         ) or {}
-        # The dry-run manifest can list assets the real write path skips (for
-        # example an assetless table). Use the artifacts the rebuild actually
-        # produced as the plan's ground truth.
+        snapshot = (
+            _persist_rebuild_snapshot(rebuilt, snapshot_root, key, source, actual_pdf, expected_manifest)
+            if snapshot_root is not None else None
+        )
+        manifest = dict(expected_manifest)
         for bucket in ("assets", "render"):
-            manifest[bucket] = [
+            expected = [
+                str(paper_dir / Path(path).relative_to(rebuilt))
+                for path in expected_manifest.get(bucket, [])
+            ]
+            actual = [
                 str(paper_dir / path.relative_to(rebuilt))
                 for path in sorted((rebuilt / bucket).rglob("*"))
                 if path.is_file()
             ]
+            manifest[f"expected_{bucket}"] = expected
+            manifest[bucket] = actual
         return {
             "figures": new_figures,
             "tables": new_tables,
             "rows": rows,
             "manifest": manifest,
+            "expected_manifest": expected_manifest,
             "figure_inventory": figure_inventory,
             "embeds": _parse_embeds(rebuilt),
+            "snapshot": snapshot,
         }
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -1105,11 +1269,20 @@ def _plan_key(paper_dir: Path, old: dict, new: dict, identity: dict) -> dict:
     }
 
 
-def audit_key(vault: Path, ocr_root: Path, key: str, plan: bool = False, replay_mode: str = "rebuild") -> dict:
+def audit_key(
+    vault: Path,
+    ocr_root: Path,
+    key: str,
+    plan: bool = False,
+    replay_mode: str = "rebuild",
+    replay: dict | None = None,
+) -> dict:
     paper_dir = ocr_root / key
     old = _old_identity(paper_dir)
     try:
-        if replay_mode == "fast":
+        if replay is not None:
+            new = replay
+        elif replay_mode == "fast":
             new = _new_replay(vault, ocr_root, key)
         else:
             new = _rebuild_replay(vault, ocr_root, key)

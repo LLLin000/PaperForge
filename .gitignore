@@ -36,6 +36,9 @@ tests/sandbox/00_TestVault/
 Thumbs.db
 .worktrees/
 
+# Local scratch (rebuild snapshot payloads, probe outputs; multi-GB, never committed)
+.work/
+
 .vite/
 paperforge/plugin/node_modules/
 
