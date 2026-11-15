@@ -29,29 +29,37 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 #: Subtrees that must not exist in any published history.
 PURGE_PATHS: tuple[str, ...] = ("docs/evidence",)
 
-#: Literal replacements applied to every text blob in history.
-REPLACEMENTS: tuple[tuple[str, str], ...] = (
-    ("<home>", "<home>"),
-    ("C:\\Users\\Lin", "<home>"),
-    ("<home>", "<home>"),
-    ("c:\\users\\lin", "<home>"),
-    ("<home>", "<home>"),
-    ("<root>/", "<root>/"),
-    ("D:\\L\\", "<root>\\"),
-    ("<root>/", "<root>/"),
-    ("d:\\l\\", "<root>\\"),
+#: Literal replacements applied to every text blob in history. The left-hand
+#: sides are assembled from fragments so this file itself carries no machine
+#: path — otherwise the rewrite would rewrite its own replacement table.
+_USER = "".join(["L", "in"])
+_ROOT = "".join(["D:", "/", "L", "/"])
+_REPLACEMENTS: tuple[tuple[str, str], ...] = (
+    ("C:/Users/" + _USER, "<home>"),
+    ("C:\\Users\\" + _USER, "<home>"),
+    ("c:/users/" + _USER.lower(), "<home>"),
+    ("c:\\users\\" + _USER.lower(), "<home>"),
+    ("/Users/" + _USER, "<home>"),
+    (_ROOT, "<root>/"),
+    (_ROOT.replace("/", "\\"), "<root>\\"),
+    (_ROOT.lower(), "<root>/"),
+    (_ROOT.lower().replace("/", "\\"), "<root>\\"),
     ("<programs>/", "<programs>/"),
     ("D:\\programs\\", "<programs>\\"),
 )
+REPLACEMENTS = _REPLACEMENTS
 
-#: Same identities the repository checker looks for, used for verification.
-MARKERS: tuple[tuple[str, str], ...] = (
-    ("windows-home", "<home>"),
-    ("windows-home-bs", "C:\\Users\\Lin"),
-    ("posix-home", "<home>"),
-    ("projects-drive", "<root>/"),
-    ("projects-drive-bs", "D:\\L\\"),
+#: Same identities the repository checker looks for, assembled from the same
+#: fragments so the verification pass survives the rewrite it verifies.
+_VERIFY_USER = "".join(["L", "in"])
+_MARKER_FRAGMENTS: tuple[tuple[str, str], ...] = (
+    ("windows-home", "C:/Users/" + _VERIFY_USER),
+    ("windows-home-bs", "C:\\Users\\" + _VERIFY_USER),
+    ("posix-home", "/Users/" + _VERIFY_USER),
+    ("projects-drive", "D:" + "/L/"),
+    ("projects-drive-bs", "D:" + "\\L\\"),
 )
+MARKERS: tuple[tuple[str, str], ...] = _MARKER_FRAGMENTS
 
 
 def git(*args: str, cwd: Path) -> str:

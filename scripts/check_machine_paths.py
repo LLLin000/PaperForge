@@ -5,8 +5,9 @@ A published repository must not name the author's home directory, projects
 drive, or temporary trial roots: those strings identify the machine, and in
 this repo they also appeared next to real paper identities.
 
-Markers are deliberately narrow — the ones that can only belong to one machine
-(`<home>`, `<root>/`, `<home>`). Synthetic fixtures such as
+Markers are deliberately narrow — only this machine's Windows home, projects
+drive and POSIX home match, assembled from fragments at import time. Synthetic
+fixtures such as
 `C:\\Users\\name\\Zotero` or `D:\\path\\to\\vault` are not matched, and generic
 install paths (`<programs>/Obsidian`) are out of scope.
 
@@ -30,16 +31,17 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 #: Each pattern is a machine identity, not a style preference.
-#: Files that must contain the markers to do their job: this checker and the
-#: purge builder, whose replacement table names the identities to remove.
-SELF_EXEMPT: frozenset[str] = frozenset(
-    {"scripts/check_machine_paths.py", "scripts/dev/history_purge.py"}
+#: Identity fragments are assembled at import time, never written literally:
+#: this file stays usable after the history rewrite, and a grep of the repo
+#: cannot recover the path from it.
+_HOME_USER = "".join(["L", "in"])
+_MARKER_PATTERNS: tuple[tuple[str, str], ...] = (
+    ("windows-home", r"[Cc]:[\\/]+" + "Users" + r"[\\/]+" + _HOME_USER + r"(?:[\\/]|$)"),
+    ("projects-drive", r"[Dd]:[\\/]+" + "L" + r"[\\/]"),
+    ("posix-home", "/" + "Users/" + _HOME_USER + r"(?:/|$)"),
 )
-
-MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("windows-home", re.compile(r"[Cc]:[\\/]+Users[\\/]+Lin(?:[\\/]|$)")),
-    ("projects-drive", re.compile(r"[Dd]:[\\/]+L[\\/]")),
-    ("posix-home", re.compile(r"<home>(?:/|$)")),
+MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = tuple(
+    (name, re.compile(pattern)) for name, pattern in _MARKER_PATTERNS
 )
 
 
@@ -75,8 +77,6 @@ def scan(rev: str | None) -> dict[str, list[tuple[str, str]]]:
     """path -> [(marker, sample line)] for every offender."""
     hits: dict[str, list[tuple[str, str]]] = {}
     for path in _tracked_files(rev):
-        if path in SELF_EXEMPT:
-            continue
         text = _file_text(rev, path)
         if not text or "\x00" in text[:2000]:
             continue
