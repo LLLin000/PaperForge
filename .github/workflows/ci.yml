@@ -26,7 +26,11 @@ jobs:
     name: L0 — Static (version sync + ruff)
     runs-on: ubuntu-latest
     steps:
+      # Full history: the evidence gate walks the commits a pull request adds,
+      # which a depth-1 checkout cannot reach.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
