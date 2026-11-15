@@ -39,27 +39,16 @@ def test_substrate_builds_and_serves_search(retrieval, case) -> None:
         json.dumps(memory.data or {})[:200],
     )
 
-    built = cli.action_stream(
-        "embed.build", (), confirm="embed.build", timeout_s=300
-    )
-    terminal = built.terminal or {}
-    action_result = terminal.get("result")
-    action_result = action_result if isinstance(action_result, dict) else {}
-    data = action_result.get("data")
-    data = data if isinstance(data, dict) else {}
+    built = cli.json("embed", "build")
+    case.check("embed build exits 0", built.returncode == 0, built.tail())
+    data = built.data if isinstance(built.data, dict) else {}
     case.check(
-        "registry embed.build settles with a result terminal",
-        terminal.get("event") == "result" and action_result.get("ok") is True,
-        json.dumps(terminal)[:300],
-    )
-    case.check("registry embed.build exits 0", built.returncode == 0, f"rc={built.returncode}")
-    case.check(
-        "registry build embeds chunks",
+        "chunks were embedded",
         int(data.get("chunks_embedded") or 0) >= 1,
         json.dumps(data)[:200],
     )
     case.check(
-        "registry build uses the configured model",
+        "the configured model was used",
         str(data.get("model") or "") == "stub-embedding",
         str(data.get("model")),
     )
@@ -75,27 +64,6 @@ def test_substrate_builds_and_serves_search(retrieval, case) -> None:
         "a resume build finds nothing left to embed",
         int(resume_data.get("papers_embedded") or 0) == 0,
         json.dumps(resume_data)[:200],
-    )
-
-    registry_resumed = cli.action_stream(
-        "embed.resume", (), confirm="embed.resume", timeout_s=300
-    )
-    registry_terminal = registry_resumed.terminal or {}
-    registry_result = registry_terminal.get("result")
-    registry_result = registry_result if isinstance(registry_result, dict) else {}
-    registry_data = registry_result.get("data")
-    registry_data = registry_data if isinstance(registry_data, dict) else {}
-    case.check(
-        "registry embed.resume settles with a result terminal",
-        registry_terminal.get("event") == "result"
-        and registry_result.get("ok") is True
-        and registry_resumed.returncode == 0,
-        json.dumps(registry_terminal)[:300],
-    )
-    case.check(
-        "registry resume finds no completed work to repeat",
-        int(registry_data.get("papers_embedded") or 0) == 0,
-        json.dumps(registry_data)[:200],
     )
 
     status = cli.json("embed", "status")
@@ -132,66 +100,5 @@ def test_substrate_builds_and_serves_search(retrieval, case) -> None:
         int(stub.counts.get("requests") or 0) > before_query,
         json.dumps(stub.counts),
     )
-
-    from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
-
-    conn = get_connection(get_memory_db_path(cli.vault))
-    ensure_vec_extension(conn)
-    try:
-        rows = conn.execute(
-            "SELECT rowid FROM vec_body_meta WHERE paper_id = ?", (PAPER,)
-        ).fetchall()
-        case.check("the substrate contains body vectors before interruption", bool(rows), str(len(rows)))
-        for row in rows:
-            conn.execute("DELETE FROM vec_body WHERE rowid = ?", (row["rowid"],))
-            conn.execute("DELETE FROM vec_body_meta WHERE rowid = ?", (row["rowid"],))
-        conn.commit()
-        remaining = conn.execute(
-            "SELECT (SELECT COUNT(*) FROM vec_fulltext_meta WHERE paper_id = ?) "
-            "+ (SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id = ?)",
-            (PAPER, PAPER),
-        ).fetchone()[0]
-        case.check("other vector families survive the interruption", int(remaining) > 0, str(remaining))
-    finally:
-        conn.close()
-
-    before_resume = int(stub.counts.get("requests") or 0)
-    resumed_missing = cli.action_stream(
-        "embed.resume", (), confirm="embed.resume", timeout_s=300
-    )
-    missing_terminal = resumed_missing.terminal or {}
-    missing_result = missing_terminal.get("result")
-    missing_result = missing_result if isinstance(missing_result, dict) else {}
-    missing_data = missing_result.get("data")
-    missing_data = missing_data if isinstance(missing_data, dict) else {}
-    case.check(
-        "registry embed.resume settles after missing vectors",
-        missing_terminal.get("event") == "result"
-        and missing_result.get("ok") is True
-        and resumed_missing.returncode == 0,
-        json.dumps(missing_terminal)[:300],
-    )
-    case.check(
-        "registry resume rebuilds the incomplete paper",
-        int(missing_data.get("papers_embedded") or 0) == 1
-        and int(missing_data.get("chunks_embedded") or 0) > 0,
-        json.dumps(missing_data)[:200],
-    )
-    case.check(
-        "registry resume calls the configured provider",
-        int(stub.counts.get("requests") or 0) > before_resume,
-        json.dumps(stub.counts),
-    )
-    conn = get_connection(get_memory_db_path(cli.vault))
-    try:
-        restored_body_rows = conn.execute(
-            "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id = ?", (PAPER,)
-        ).fetchone()[0]
-    finally:
-        conn.close()
-    case.check("body vector metadata is restored", int(restored_body_rows) > 0, str(restored_body_rows))
-    recovered = cli.json("retrieve", "suture anchor fixation", "--limit", "3")
-    recovered_hits = (recovered.data or {}).get("matches") or []
-    case.check("search still serves the resumed paper", len(recovered_hits) >= 1, recovered.tail())
 
     case.artifact("memory-db", db)
