@@ -110,9 +110,10 @@ def launch(wave: str, slug: str, base: str, card: Path, args: argparse.Namespace
 
     created = run([ovnfs_bin(), "new", "--name", checkout.name, "--rev", base], cwd=REPO)
     record["ovnfs"] = (created.stdout + created.stderr).strip()[-2000:]
-    if created.returncode != 0 or not checkout.is_dir():
+    if not checkout.is_dir():
         record.update(status="checkout-failed", exit=created.returncode)
         return record
+    record["checkout_reused"] = created.returncode != 0
 
     env = worker_env(checkout)
     cmd = [
@@ -200,6 +201,17 @@ def integrate(args: argparse.Namespace) -> int:
     branches = [worker["branch"] for worker in data["workers"] if worker.get("commits")]
     if not branches:
         raise SystemExit("no worker committed anything; nothing to integrate")
+    # Worker commits live in the checkout's own git dir; import each branch into
+    # this repository before anything can merge them.
+    for worker in data["workers"]:
+        if not worker.get("commits"):
+            continue
+        imported = run(
+            [ovnfs_bin(), "apply", Path(worker["checkout"]).name, "--branch", worker["branch"]],
+            cwd=REPO,
+        )
+        detail = (imported.stdout + imported.stderr).strip()[-160:]
+        print(f"import {worker['branch']}: rc={imported.returncode} {detail}")
     checkout = checkout_path(args.wave, "integrator")
     created = run([ovnfs_bin(), "new", "--name", checkout.name, "--rev", args.base], cwd=REPO)
     if created.returncode != 0 or not checkout.is_dir():
