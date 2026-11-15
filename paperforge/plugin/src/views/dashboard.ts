@@ -47,6 +47,7 @@ interface IPluginRef {
   manifest: { version: string };
   settings?: PaperForgeSettings;
   openModuleSettings?: (module: string) => boolean;
+  openSetupJourney?: () => boolean;
   [key: string]: unknown;
 }
 
@@ -99,6 +100,8 @@ export class PaperForgeStatusView extends ItemView {
   // ── Search state ──
   _searchContainer: HTMLElement | null = null;
   _searchInput: HTMLInputElement | null = null;
+  _searchQuery = "";
+  _searchRequestInput = "";
   _searchResultsEl: HTMLElement | null = null;
   _searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
   _recordResultsEl: HTMLElement | null = null;
@@ -194,6 +197,7 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   private _resetSearchView(): void {
+    if (this._searchInput) this._searchQuery = this._searchInput.value;
     this._unbindCtrlEnterInput();
     if (this._searchTimer) clearTimeout(this._searchTimer);
     this._searchTimer = undefined;
@@ -943,18 +947,10 @@ export class PaperForgeStatusView extends ItemView {
           plugins?: { plugins?: Record<string, unknown> };
         }
       ).plugins?.plugins?.["paperforge"] as
-        | {
-            getSettingTab?: () => {
-              _startSetupJourney: (stage: number) => void;
-            };
-          }
+        | Pick<IPluginRef, "openSetupJourney">
         | undefined;
-      const tab = plugin?.getSettingTab?.();
-      if (tab) {
-        (
-          this.app as unknown as { setting: { open: () => void } }
-        ).setting.open();
-        tab._startSetupJourney(1);
+      if (!plugin?.openSetupJourney?.()) {
+        new Notice("PaperForge Setup is unavailable", 6000);
       }
     });
   }
@@ -2774,6 +2770,7 @@ export class PaperForgeStatusView extends ItemView {
         placeholder: "Search papers... (@ for deep search)",
       },
     }) as HTMLInputElement;
+    this._searchInput.value = this._searchQuery;
     this._searchContainer.createEl("h3", { text: t("record_papers") });
     this._searchResultsEl = this._searchContainer.createEl("div", {
       cls: "paperforge-search-results",
@@ -2807,6 +2804,7 @@ export class PaperForgeStatusView extends ItemView {
     // the new input. Exactly one push per focus lifetime; never stacked.
     this._bindCtrlEnterInput(this._searchInput);
     this._searchInput.addEventListener("input", () => {
+      this._searchQuery = this._searchInput?.value ?? "";
       const val = (this._searchInput?.value || "").trim();
       if (val.startsWith("@")) {
         this._searchMode = "@";
@@ -2849,6 +2847,7 @@ export class PaperForgeStatusView extends ItemView {
         e.preventDefault();
         if (this._searchInput) {
           this._searchInput.value = "";
+          this._searchQuery = "";
           this._searchInput.blur();
         }
         this._searchGeneration++;
@@ -2907,6 +2906,20 @@ export class PaperForgeStatusView extends ItemView {
         this.executeSearch();
       }
     });
+    const searchInput = this._searchInput;
+    if (searchInput && this._searchQuery.trim()) {
+      searchInput.value = this._searchQuery;
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+      if (this._searchTimer) {
+        clearTimeout(this._searchTimer);
+        this._searchTimer = undefined;
+      }
+      const replayForceDeep =
+        this._searchDeep &&
+        this._searchRequestInput === this._searchQuery.trim() &&
+        !this._searchQuery.trim().startsWith("@");
+      void this.executeSearch(replayForceDeep);
+    }
   }
 
   /**
@@ -3248,8 +3261,10 @@ export class PaperForgeStatusView extends ItemView {
 
   async executeSearch(forceDeep = false) {
     if (!this._searchInput || !this._searchResultsEl) return;
-    const raw = this._searchInput.value.trim();
+    this._searchQuery = this._searchInput.value;
+    const raw = this._searchQuery.trim();
     if (!raw) return;
+    this._searchRequestInput = raw;
 
     // Request mode is captured once: forced deep (Ctrl+Enter, one-shot, never
     // sticky), the normalized `@` input-mode prefix, or the raw `@` prefix.
@@ -3681,9 +3696,13 @@ export class PaperForgeStatusView extends ItemView {
         return;
       }
       if (a.id === "paperforge-doctor") {
-        await this._getClient()!.doctor();
-        settle("[OK] " + (a.okMsg || "Doctor complete"), "ok");
-        new Notice("[OK] " + (a.okMsg || "Doctor complete"));
+        const report = await this._getClient()!.doctor();
+        const ok = (report as { ok?: boolean })?.ok !== false;
+        const message = ok
+          ? "[OK] " + (a.okMsg || "Doctor complete")
+          : "[!!] Doctor reported issues";
+        settle(message, ok ? "ok" : "error");
+        new Notice(message, ok ? 6000 : 8000);
         // Recovery path: fresh read model + re-render (works even when the
         // initial load failed — _invalidateIndex no longer skips a null cache).
         await this._invalidateIndex();

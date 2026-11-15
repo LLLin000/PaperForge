@@ -150,6 +150,14 @@ export default class PaperForgePlugin extends Plugin {
     return found !== null && found !== undefined;
   }
 
+  /** Dashboard recovery entry: open Installation settings and start Setup. */
+  openSetupJourney(): boolean {
+    const tab = this._settingTab;
+    if (!tab || !this.openModuleSettings("installation")) return false;
+    tab.openSetupJourney();
+    return true;
+  }
+
   /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
    * .getDebugTrace()` prints the client↔backend boundary log (metadata only). */
   getDebugTrace(): string {
@@ -374,8 +382,12 @@ export default class PaperForgePlugin extends Plugin {
             }
             if (a.id === "paperforge-doctor") {
               new Notice(`PaperForge: running ${a.commandId}...`);
-              await client.doctor();
-              new Notice(`[OK] ${a.okMsg}`);
+              const report = await client.doctor();
+              const ok = (report as { ok?: boolean })?.ok !== false;
+              new Notice(
+                ok ? `[OK] ${a.okMsg}` : "[!!] Doctor reported issues",
+                ok ? 6000 : 8000
+              );
               return;
             }
             if (a.id === "paperforge-repair") {

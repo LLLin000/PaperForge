@@ -782,6 +782,56 @@ class TestSetupCancellation174:
         assert events[-1] == "cancelled", events
         assert events.count("result") + events.count("error") == 0
 
+    def test_open_cancellation_stdin_does_not_break_pip_preflight(self, tmp_path: Path) -> None:
+        """A live setup stream keeps stdin open while the checker starts pip."""
+        import json as _json
+        import os
+        import subprocess as _sp
+        import sys as _sys
+        import textwrap as _textwrap
+
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(REPO_ROOT)
+        script = _textwrap.dedent(
+            f"""
+            import json
+            from pathlib import Path
+            from paperforge.core.cancellation import make_cancellation_token
+            from paperforge.setup.checker import SetupChecker
+
+            _is_stopped, restore = make_cancellation_token()
+            try:
+                result = SetupChecker(Path({str(tmp_path)!r})).run()
+            finally:
+                restore()
+            print(json.dumps({{"ok": result.ok, "pip_found": result.details["pip_found"]}}))
+            """
+        )
+        proc = _sp.Popen(
+            [_sys.executable, "-c", script],
+            stdin=_sp.PIPE,
+            stdout=_sp.PIPE,
+            stderr=_sp.PIPE,
+            text=True,
+            encoding="utf-8",
+            env=env,
+        )
+        try:
+            returncode = proc.wait(timeout=30)
+            stdout = proc.stdout.read() if proc.stdout else ""
+            stderr = proc.stderr.read() if proc.stderr else ""
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=10)
+            if proc.stdin:
+                proc.stdin.close()
+
+        assert returncode == 0, stderr
+        result = _json.loads(stdout.splitlines()[-1])
+        assert result["pip_found"] is True, result
+        assert result["ok"] is True, result
+
 
 class TestSetupAgentPhaseCancellation:
     """Cancellation during the agent phase emits a cancelled terminal (rc 130)."""

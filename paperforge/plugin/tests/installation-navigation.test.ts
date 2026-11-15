@@ -149,7 +149,7 @@ vi.mock("obsidian", () => {
 // Mock node built-ins used by settings.ts
 vi.mock("fs", () => ({
   default: {},
-  existsSync: () => false,
+  existsSync: (path: string) => path === "python",
   readFileSync: () => "{}",
   writeFileSync: () => {},
   readdirSync: () => [],
@@ -296,6 +296,7 @@ describe("production navigation state transitions", () => {
       _selectedDetailModule: "",
       _focusTargetId: null,
       activeTab: "overview",
+      _attemptedProbes: new Set<string>(),
       display,
       _navMemory: { destination: "overview" },
       _persistNavMemory: () => {},
@@ -944,6 +945,168 @@ describe("Help→Overview focus restoration (Defect 4 fix)", () => {
 //   _renderHelpTab must display the probe envelope from _capabilityState.help
 //   (status badge, localized reason, diagnostics) instead of a hard-coded placeholder.
 
+describe("help.restore recovery through the Help tab", () => {
+  it("refreshes cached Help state on entry and routes missing help to reinstall", async () => {
+    const app = new App() as unknown as Record<string, any>;
+    app.vault = {
+      adapter: { basePath: "/test/vault" },
+      getConfig: () => "en",
+    };
+    const missingHelp = {
+      ...createUnknownEnvelope("help"),
+      capability_state: "limited",
+      severity: "warning",
+      reason: { code: "help.docs_missing", text: "Packaged help source not found" },
+      user_state: "detection_failed",
+      capability_kind: "optional",
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 300,
+      action: {
+        primary: {
+          ...probeAction("help"),
+          action_id: "help.restore",
+          verb: "setup",
+          label: "Restore help",
+          availability: "available",
+          safety_class: "safe",
+          confirmation_required: false,
+        },
+      },
+    };
+    const readyHelp = {
+      ...createUnknownEnvelope("help"),
+      capability_state: "ready",
+      severity: "ok",
+      reason: { code: "help.ready", text: "Help source is available" },
+      user_state: "ready",
+      capability_kind: "optional",
+      action: { primary: null },
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 300,
+    };
+    const client = {
+      probe: vi.fn((mod: string) =>
+        Promise.resolve(
+          mod === "help" ? missingHelp : createUnknownEnvelope(mod as any)
+        )
+      ),
+      launchRuntimeInstaller: vi.fn(() => ({ ok: true, python: "py" })),
+    };
+    const plugin = {
+      settings: { _setup_complete: true, capabilityState: { help: readyHelp } },
+      manifest: { version: "2.1.0" },
+      saveSettings: vi.fn().mockResolvedValue(undefined),
+      getClient: () => client,
+      readPaperforgeJson: () => ({}),
+      savePaperforgeJson: vi.fn(),
+    };
+    const tab = new PaperForgeSettingTab(app as App, plugin as any);
+    tab._initialDisplay = false;
+    (tab as any)._resolveRuntimeCommand = () => ({ path: "python", args: [] });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("offline")) as any;
+
+    try {
+      tab.display();
+      expect(client.probe).not.toHaveBeenCalledWith(
+        "help",
+        expect.anything()
+      );
+      const helpTab = Array.from(
+        tab.containerEl.querySelectorAll("button")
+      ).find((button) => button.textContent?.trim() === t("tab_help"));
+      expect(helpTab).toBeDefined();
+      helpTab?.click();
+
+      await vi.waitFor(() => {
+        expect(client.probe).toHaveBeenCalledWith(
+          "help",
+          expect.objectContaining({ expectedVersion: undefined })
+        );
+        expect(
+          Array.from(tab.containerEl.querySelectorAll("button")).some(
+            (button) => button.textContent?.trim() === t("action_help_restore")
+          )
+        ).toBe(true);
+      });
+
+      const restoreButton = Array.from(
+        tab.containerEl.querySelectorAll("button")
+      ).find(
+        (button) =>
+          button.textContent?.trim() === t("action_help_restore")
+      );
+      restoreButton?.click();
+      // Help content ships inside the Python distribution: restoring it is an
+      // external runtime repair, never an in-plugin install.
+      expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
+        "repair",
+        expect.anything()
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+describe("help.restore recovery through the Overview card", () => {
+  it("starts runtime reinstall from the visible Help card action", () => {
+    const app = new App() as unknown as Record<string, unknown>;
+    app.vault = { adapter: { basePath: "/test/vault" } };
+    const cardClient = {
+      probe: vi.fn(),
+      launchRuntimeInstaller: vi.fn(() => ({ ok: true, python: "py" })),
+    };
+    const plugin = {
+      settings: { _setup_complete: true, capabilityState: {} },
+      manifest: { version: "2.1.0" },
+      saveSettings: vi.fn().mockResolvedValue(undefined),
+      getClient: () => cardClient,
+      readPaperforgeJson: () => ({}),
+      savePaperforgeJson: vi.fn(),
+    };
+    const tab = new PaperForgeSettingTab(
+      app as unknown as import("obsidian").App,
+      plugin as any
+    );
+    tab._initialDisplay = false;
+    const missingHelp = {
+      ...createUnknownEnvelope("help"),
+      capability_state: "limited",
+      severity: "warning",
+      reason: { code: "help.docs_missing", text: "Packaged help source not found" },
+      user_state: "detection_failed",
+      capability_kind: "optional",
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 300,
+      action: {
+        primary: {
+          ...probeAction("help"),
+          action_id: "help.restore",
+          verb: "setup",
+          label: "Restore help",
+          availability: "available",
+          safety_class: "safe",
+          confirmation_required: false,
+        },
+      },
+    };
+    const cardRoot = document.createElement("div");
+    tab._renderCard(cardRoot, "help", missingHelp as any);
+
+    const restoreButton = cardRoot.querySelector<HTMLButtonElement>(
+      ".pf-cc-card[data-module='help'] .pf-cc-card-action"
+    );
+    expect(restoreButton).toBeTruthy();
+    restoreButton!.click();
+
+    expect(cardClient.launchRuntimeInstaller).toHaveBeenCalledWith(
+        "repair",
+        expect.anything()
+      );
+  });
+});
+
 // ── 22. Issue #77: Single Agent Platform control under Installation ──
 //   After refactor, _renderSkillsList owns the ONLY Agent Platform dropdown.
 //   _renderInstallationDetail calls _renderSkillsList, producing exactly one
@@ -1415,6 +1578,49 @@ describe("Issue #77 RED Gap 2: installation null-resolver produces setup envelop
     expect(primaryAction.verb).toBe("install");
     expect(primaryAction.action_id).toBe("installation.install_runtime");
   });
+  it("offers the Setup Wizard when the published interpreter is missing", () => {
+    const app = new App() as unknown as Record<string, unknown>;
+    app.vault = { adapter: { basePath: "/test/vault" } };
+    const plugin = createMockPlugin();
+    const probe = vi.fn(() => new Promise<never>(() => {}));
+    (plugin as any).getClient = vi.fn(() => ({ probe }));
+    const tab = new PaperForgeSettingTab(
+      app as unknown as import("obsidian").App,
+      plugin as any
+    );
+    const missingPython = "C:/isolated/runtime/missing-python.exe";
+    (tab as any)._resolveRuntimeCommand = () => ({
+      path: missingPython,
+      args: [],
+    });
+    let capturedEnvelope: Record<string, any> | null = null;
+    (tab as any)._updateCapabilityEnvelope = (
+      _mod: string,
+      envelope: Record<string, any>
+    ) => {
+      capturedEnvelope = envelope;
+    };
+    (tab as any).display = () => {};
+
+    (tab as any)._probeModule("installation");
+
+    expect((plugin as any).getClient).not.toHaveBeenCalled();
+    expect(probe).not.toHaveBeenCalled();
+    expect(capturedEnvelope?.reason?.code).toBe(
+      "installation.runtime_executable_missing"
+    );
+    expect(capturedEnvelope?.reason?.text).toContain(
+      "missing Python executable"
+    );
+    expect(capturedEnvelope?.action?.primary).toMatchObject({
+      action_id: "foundation.setup",
+      verb: "setup",
+      label: "Open Setup Wizard",
+    });
+    expect(capturedEnvelope?.user_state).toBe("setup_required");
+    expect(capturedEnvelope?.user_visible_failure).toBe(true);
+  });
+
 });
 
 // ── 31. Issue #77 Contract 1 RED: Installation detail async status re-render ──
@@ -1530,5 +1736,42 @@ describe("Issue #356 recovery: openModuleSettings lands on memory detail", () =>
     plugin.app = { setting: {} };
     plugin._settingTab = null;
     expect(plugin.openModuleSettings("memory")).toBe(false);
+  });
+});
+
+// ── Issue #356 recovery: the Dashboard Setup entry opens the real wizard. ──
+describe("Issue #356 recovery: openSetupJourney", () => {
+  it("opens the registered settings tab before starting Setup stage 1", () => {
+    const plugin = Object.create(PaperForgePlugin.prototype) as unknown as {
+      app: unknown;
+      _settingTab: {
+        _handleCardNavigation: (module: string) => void;
+        openSetupJourney: () => void;
+      };
+      openSetupJourney: () => boolean;
+    };
+    const calls: string[] = [];
+    plugin.app = {
+      setting: {
+        open(this: unknown) {
+          calls.push("open");
+        },
+        openTabById(this: unknown, id: string) {
+          calls.push(`openTabById:${id}`);
+          return { id };
+        },
+      },
+    };
+    plugin._settingTab = {
+      _handleCardNavigation: (module: string) => calls.push(`navigate:${module}`),
+      openSetupJourney: () => calls.push("setup-stage-1"),
+    };
+    expect(plugin.openSetupJourney()).toBe(true);
+    expect(calls).toEqual([
+      "openTabById:paperforge",
+      "navigate:installation",
+      "open",
+      "setup-stage-1",
+    ]);
   });
 });

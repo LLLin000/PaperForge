@@ -316,6 +316,35 @@ def test_paper_navigation_reads_structure_tree_when_present(tmp_path):
     assert result.data["route_explanation"]["fallback"] is False
 
 
+def test_paper_navigation_falls_back_to_role_index_summary(tmp_path):
+    _make_populated_db(tmp_path)
+    index = tmp_path / "System" / "PaperForge" / "ocr" / "TST001" / "index"
+    index.mkdir(parents=True)
+    (index / "role-index.json").write_text(
+        json.dumps({"headings": [{}, {}], "figure_captions": [{}]}),
+        encoding="utf-8",
+    )
+
+    result = route_gateway(tmp_path, "paper-navigation", "10.1234/delirium", json_mode=True)
+
+    assert result.ok
+    assert result.data["mode"] == "role_index_summary"
+    assert result.data["summary"] == {
+        "role_counts": {"headings": 2, "figure_captions": 1}
+    }
+    assert result.data["route_explanation"]["fallback_arm"] == "role_index"
+
+
+def test_paper_navigation_reports_no_index_for_known_paper(tmp_path):
+    _make_populated_db(tmp_path)
+
+    result = route_gateway(tmp_path, "paper-navigation", "10.1234/delirium", json_mode=True)
+
+    assert not result.ok
+    assert result.data["mode"] == "no_index"
+    assert result.data["route_explanation"]["note"] == "no index found for paper"
+
+
 def test_content_discovery_returns_body_unit_matches(tmp_path, monkeypatch):
     _mock_current_lineage(monkeypatch)
     _make_populated_db(tmp_path)

@@ -169,7 +169,9 @@ def purge_trash(vault: Path, *, older_than_days: int | None = None) -> int:
             continue
         if older_than_days is not None:
             try:
-                stamp = datetime.strptime(stamp_dir.name, "%Y%m%dT%H%M%SZ")
+                stamp = datetime.strptime(stamp_dir.name, "%Y%m%dT%H%M%SZ").replace(
+                    tzinfo=timezone.utc
+                )
                 age_days = (datetime.now(timezone.utc) - stamp).total_seconds() / 86400
                 if age_days < older_than_days:
                     continue

@@ -16,8 +16,10 @@ All notable changes to PaperForge.
 
 - Build memory retrieval units from the configured OCR directory rather than a hardcoded system directory (#356).
 - Distinguish a published runtime or completed library setup from a subsequent path refresh failure (#356).
-- Classify explicit OCR HTTP 401/403 refusals as blocked; keep ambiguous submissions without a confirmed job ID for reconciliation, with no automatic resubmission or record deletion. Retain remote job IDs after local timeouts and report rate-limit rejection separately (#356).
+- Classify explicit OCR HTTP 401/403 refusals as blocked; keep ambiguous submissions without a confirmed job ID for reconciliation, with no automatic resubmission or record deletion. On a per-paper poll timeout, release that paper's local concurrency slot while retaining the remote job ID; report provider rate-limit rejection separately (#356).
 - Check installation compatibility with the Python versioned probe even when an older runtime ignores the version in its aggregate response (#356).
+- Classify Setup failures from the complete child result while keeping command paths and raw stderr out of the user-facing message and Support Diagnostic; report unresolved package-source artifacts neutrally rather than assuming a Python/platform mismatch (#356).
+- Keep an explicit Setup reinstall request across a ready installation probe, so the action remains available until the user retries or the reinstall completes (#356).
 - Show blocked and failed paper keys from the actual OCR action result data in workspace error notices (#356).
 - Refresh the existing Python-authoritative vault paths after successful setup and library configuration, so the first-use export location and subsequent path changes do not require a plugin reload (#356).
 - Reuse the resolved source PDF throughout initial OCR postprocessing, including page rendering, span backfill and object extraction; vault-relative and wikilink locators no longer replace the resolved file mid-pipeline. Missing table source geometry can still require separate repair (#356).
@@ -31,8 +33,16 @@ All notable changes to PaperForge.
 - Treat long-task error/cancelled terminals and `result.ok:false` as failures even at exit 0; retain startup error codes and reject pending event readers rather than silently ending them. Cancel during runtime resolution prevents spawning, and plugin unload reaps streamed as well as result-mode children (#356).
 - Preserve structured sync, OCR-list and probe failures instead of reporting success or an empty library. OCR Workspace distinguishes loading, setup required, load failure and a genuine empty result, offers Retry, and drops late replies and removed paper selections (#356).
 - Stop search debounce and ignore in-flight replies after the panel closes. Setup cancellation cannot start publication after an awaited settings save; navigation cannot disguise running setup as idle. Memory backup restore reports failure and successful retry (#356).
+- Open the OCR Workspace fulltext preview in the active Obsidian leaf using the backend-provided vault-relative path; report missing and open failures without guessing a replacement file.
+- Label the OCR support-report action as an issue report in English and Chinese; restore focus to the OCR detail heading when a status refresh replaces the action while its draft is open (#356).
+- Keep setup stdin open so Stop can deliver the cooperative `PAPERFORGE_STOP` token before kill escalation.
+- Use the same prerelease-aware version comparison for interactive updates as the action path, so newer RC releases are not mistaken for the installed version (#356).
+- Convert unexpected sync service exceptions into structured `SYNC_FAILED` results so JSON clients do not receive empty stdout on phase-two failures.
+- Return exit status 1 when `sync --json` emits `ok:false`, while preserving its structured error payload (#356).
+- Parse Trash timestamp directories as UTC before age comparison, so `paperforge trash purge --older-than` applies its age gate instead of raising a naive/aware datetime `TypeError` (#356).
 
 - Metadata search without a local Memory index now shows a dedicated missing-memory recovery card (deep-retrieve PATH_NOT_FOUND stays distinct); the card navigates to the actual Memory module detail through the Plugin-owned openModuleSettings seam without dispatching builds/embeddings (#356).
+- Route the Memory missing-vector-dependencies action into the managed-runtime reinstall flow; keep the active environment immutable (#356).
 - Console ownership sweep: the shared client owns typed PFResult, probe and stream failures; local bootstrap/handshake, probe-schema validation, discussion read, external-note refresh and clipboard failures retain one redacted op/stage/code/exit diagnostic via traceConsoleError. NO_PYTHON/cancelled/empty remain quiet (#356).
 - Doctor reports the plugin execution interpreter from the published managed-runtime pointer only: missing/invalid/missing-file/stale pointers report setup/repair/update and skip target-environment probing; no python_path or ambient-Python fallback, no in-place or global pip advice (#356).
 - Search mode labels follow the dispatched request: `@`/leading-`@`/Ctrl+Enter deep retrieves render deep loading/results, and the transient input mode no longer leaks into rendered state (#356).
@@ -50,6 +60,7 @@ All notable changes to PaperForge.
 - Compare the published runtime pointer through the release spelling so an RC4 pointer stays a stale actionable mismatch under an rc5 bundle; `probe all` and read-model refresh carry the plugin version, and Setup renders reinstall on stale/mismatch instead of dead-ending (#356).
 - Classify terminal OCR batches by settlement truth: blocked credential/source rejections surface `OCR_UPLOAD_FAILED` with failed/blocked keys and no re-upload, failures surface `OCR_RESULT_INVALID`, and only genuinely pending work keeps the poll-timeout resume instruction (#356). The Workspace shows the backend machine message first with actionable blocked/failed guidance naming the bounded keys, and drops the mutation snapshot before readback so resume refresh cannot resurrect stale statuses.
 - Keep table caption/text/notes visible when no crop geometry exists: table object markdown emits no dangling image reference for unmaterialized crops, preserves provider HTML/text content with an explicit inability marker, and audit stays strict (#356). The single HTML flattener keeps header (`th`) and data (`td`) cells with matching-tag pairs.
+- Route missing managed-runtime executables to an actionable Setup Wizard reinstall state during individual and aggregate status refreshes, without spawning the missing interpreter or changing the published pointer (#356).
 
 ## 1.5.8 (2026-05-19)
 

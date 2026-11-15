@@ -41,6 +41,12 @@ vi.mock("obsidian", () => {
       load() {}
       unload() {}
     },
+    TFile: class {
+      path: string;
+      constructor(path: string) {
+        this.path = path;
+      }
+    },
     WorkspaceLeaf: class {},
     MarkdownRenderer: { render: () => {} },
     Platform: {},
@@ -49,7 +55,7 @@ vi.mock("obsidian", () => {
 
 import { OcrWorkspaceView, VersionRestoreModal } from "../src/views/ocr-workspace";
 import { PaperForgeClient } from "../src/client";
-import { WorkspaceLeaf } from "obsidian";
+import { TFile, WorkspaceLeaf } from "obsidian";
 import { MockTransport } from "./client/mock-transport";
 
 function makeView(
@@ -88,6 +94,45 @@ function descriptorResponse(
 }
 
 describe("OcrWorkspaceView PaperForgeClient cutover", () => {
+  it("activates a fulltext preview instead of leaving the previous PDF active", async () => {
+    const fulltextPath = "System/PaperForge/ocr/P1/fulltext.md";
+    const pdfPath = "System/Zotero/storage/P1/P1.pdf";
+    const file = new TFile(fulltextPath);
+    const targetLeaf: any = {
+      file: null,
+      openFile: async (opened: TFile) => {
+        targetLeaf.file = opened;
+      },
+    };
+    const previousLeaf: any = { file: { path: pdfPath } };
+    let activeLeaf = previousLeaf;
+    let visibleLeaf = previousLeaf;
+    const workspace = {
+      getLeaf: () => targetLeaf,
+      revealLeaf: async (leaf: any) => {
+        visibleLeaf = leaf;
+      },
+      setActiveLeaf: (leaf: any) => {
+        activeLeaf = leaf;
+      },
+      getActiveFile: () => activeLeaf.file,
+    };
+    const view = makeView(null);
+    (view as any).app = {
+      vault: {
+        adapter: { basePath: "/vault" },
+        getAbstractFileByPath: (path: string) =>
+          path === fulltextPath ? file : null,
+      },
+      workspace,
+    };
+    (view as any).papers = [{ key: "P1", fulltextPath }];
+
+    await (view as any)._openFulltext("P1");
+
+    expect(workspace.getActiveFile()?.path).toBe(fulltextPath);
+    expect(visibleLeaf).toBe(targetLeaf);
+  });
   it.each([true, false, undefined])(
     "keeps a restore with unconfirmed provenance visible instead of closing as success (persisted=%s)",
     async (persisted) => {
@@ -556,6 +601,66 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     expect(restoreNotices[0]).toContain("K9");
     expect(restoreNotices[0]).not.toContain("exit code");
   });
+
+describe("OCR recovery guidance", () => {
+  it.each([
+    {
+      name: "a confirmed 429 rejection",
+      code: "OCR_RESULT_INVALID",
+      message: "OCR upload rejected (429): quota",
+      data: {
+        exit_code: 1,
+        summary: { failed: 1, pending: 0 },
+        failed_keys: ["K429"],
+      },
+      expected: "429",
+      absent: "poll-timeout",
+    },
+    {
+      name: "a poll timeout",
+      code: "OCR_POLL_TIMEOUT",
+      message:
+        "OCR: some items still processing on the server — re-run to continue polling without new uploads",
+      data: {
+        exit_code: 1,
+        summary: { failed: 0, pending: 1 },
+        pending_keys: ["KWAIT"],
+      },
+      expected: "continue polling without new uploads",
+      absent: "do not resubmit",
+    },
+  ])("surfaces $name with the backend recovery guidance", async (scenario) => {
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) =>
+      argv[0] === "action" && argv[1] === "describe"
+        ? descriptorResponse(argv[2])
+        : JSON.stringify({});
+    transport.streamHandler = async () => ({
+      events: [
+        {
+          schema_version: 1,
+          event: "result",
+          operation: "ocr.run",
+          result: {
+            ok: false,
+            error: { code: scenario.code, message: scenario.message },
+            data: scenario.data,
+          },
+        },
+      ],
+      outcome: { ok: false, exitCode: 1 },
+    });
+    const view = makeView(new PaperForgeClient({ transport }));
+    (view as any)._loadPapers = vi.fn().mockResolvedValue(undefined);
+    restoreNotices.length = 0;
+
+    await (view as any)._runOcrAction("ocr.run", ["K1"], "run");
+
+    expect(restoreNotices).toHaveLength(1);
+    expect(restoreNotices[0]).toContain(scenario.expected);
+    expect(restoreNotices[0]).not.toContain(scenario.absent);
+  });
+});
 
 describe("OCR saved activity presentation", () => {
   it.each(["en", "zh"])(

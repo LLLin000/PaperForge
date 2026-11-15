@@ -557,6 +557,115 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view.containerEl.textContent).toContain("Exports detected");
     await view.onClose();
   });
+
+  it("reports a completed failing Doctor diagnosis as issues, not success", async () => {
+    const dashboardStats = vi.fn(async () => ({
+      stats: { papers: 1 },
+      permissions: { can_sync: true },
+      items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+    }));
+    const doctor = vi.fn(async () => ({ ok: false }));
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion: vi.fn(async () => "1.5.15"),
+        credentialAvailable: vi.fn(async () => false),
+        doctor,
+        resolvePaperContext: vi.fn(),
+      },
+      null
+    );
+
+    await view.onOpen();
+    await vi.waitFor(() => expect(dashboardStats).toHaveBeenCalledOnce());
+    await view._runAction(
+      { id: "paperforge-doctor", okMsg: "Doctor complete" },
+      document.createElement("div")
+    );
+
+    expect(doctor).toHaveBeenCalledOnce();
+    const message = view.containerEl.querySelector(".paperforge-message");
+    expect(message?.textContent).toContain("[!!] Doctor reported issues");
+    expect(message?.classList.contains("msg-error")).toBe(true);
+    await view.onClose();
+  });
+
+  it("keeps an active search across a same-mode leaf rerender", async () => {
+    const query = "suture";
+    const search = vi.fn(async (value: string) =>
+      value === query
+        ? [
+            {
+              title: "Suture Anchor",
+              zotero_key: "K1",
+              main_note_path: "Resources/K1.md",
+            },
+          ]
+        : []
+    );
+    const readingRecords = vi.fn(async () => ({ matches: [] }));
+    const dashboardStats = vi.fn(async () => ({
+      stats: { papers: 1 },
+      permissions: { can_sync: true },
+      items: [{ zotero_key: "K1", title: "Suture Anchor", domain: "cardio" }],
+    }));
+    let activeFile: any = null;
+    let activeLeafChanged: (() => void) | undefined;
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion: vi.fn(async () => "1.5.15"),
+        credentialAvailable: vi.fn(async () => false),
+        resolvePaperContext: vi.fn(async () => ({
+          kind: "domain",
+          domain: "cardio",
+        })),
+        search,
+        readingRecords,
+      },
+      null
+    );
+    view.app.workspace.getActiveFile = () => activeFile;
+    view.app.workspace.on = (event: string, handler: () => void) => {
+      if (event === "active-leaf-change") activeLeafChanged = handler;
+      return {};
+    };
+    view.app.workspace.off = vi.fn();
+    view._bindCtrlEnterInput = vi.fn();
+
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(dashboardStats).toHaveBeenCalledOnce();
+      expect(view._currentMode).toBe("global");
+    });
+    activeFile = { path: "Bases/Old.base", extension: "base" };
+    if (!activeLeafChanged) throw new Error("active-leaf listener was not registered");
+    activeLeafChanged();
+    await vi.waitFor(() => {
+      expect(view.containerEl.querySelector(".paperforge-search-input")).not.toBeNull();
+    });
+    const input = view.containerEl.querySelector<HTMLInputElement>(
+      ".paperforge-search-input"
+    );
+    if (!input) throw new Error("collection search input was not rendered");
+    input.value = query;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    activeFile = { path: "Bases/New.base", extension: "base" };
+    activeLeafChanged();
+
+    await vi.waitFor(() => {
+      expect(
+        view.containerEl.querySelector(".paperforge-search-results")?.textContent
+      ).toContain("Suture Anchor");
+    });
+    expect(
+      view.containerEl.querySelector<HTMLInputElement>(".paperforge-search-input")
+        ?.value
+    ).toBe(query);
+    expect(search).toHaveBeenCalledWith(query);
+    await view.onClose();
+  });
 });
 
 describe("PaperForgeStatusView note opening", () => {

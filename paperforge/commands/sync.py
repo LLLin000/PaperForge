@@ -6,7 +6,8 @@ import inspect
 import logging
 
 from paperforge import __version__
-from paperforge.core.result import PFResult
+from paperforge.core.errors import ErrorCode
+from paperforge.core.result import PFError, PFResult
 from paperforge.reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -69,8 +70,20 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.core import timing
 
     timing.reset()
-    with timing.phase("sync.service"):
-        result = svc.run(**filtered_kwargs)
+    try:
+        with timing.phase("sync.service"):
+            result = svc.run(**filtered_kwargs)
+    except Exception as exc:
+        result = PFResult(
+            ok=False,
+            command="sync",
+            version=__version__,
+            error=PFError(
+                code=ErrorCode.SYNC_FAILED,
+                message=str(exc),
+                details={"phase": "service", "exception_type": type(exc).__name__},
+            ),
+        )
 
     with timing.phase("sync.orphan_state"):
         _write_orphan_state(vault, result)
@@ -98,6 +111,9 @@ def run(args: argparse.Namespace) -> int:
         data["timing"] = {**timing.summary(), "total_ms": timing.total_ms()}
         result.data = data
         print(result.to_json())
+        # JSON mode reports the outcome in the payload (ok:false at exit 0 is
+        # the structured-rejection convention); only plain text uses the exit
+        # code, below.
         return 0
 
     if not result.ok:

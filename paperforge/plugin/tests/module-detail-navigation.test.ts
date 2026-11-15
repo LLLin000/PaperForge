@@ -158,7 +158,7 @@ vi.mock("obsidian", () => {
 // Mock node built-ins used by settings.ts
 vi.mock("fs", () => ({
   default: {},
-  existsSync: () => false,
+  existsSync: (path: string) => path === "/usr/bin/python3",
   readFileSync: () => "{}",
   writeFileSync: () => {},
   readdirSync: () => [],
@@ -662,6 +662,58 @@ it.each(["rejected", "malformed"])("fails closed when the versioned installation
   await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
     .toBe("installation.invalid_response"));
 });
+it("offers Setup instead of spawning probes when the published interpreter is missing", () => {
+  const tab = makeTab();
+  const client = {
+    invalidateCache: vi.fn(),
+    probeAll: vi.fn().mockResolvedValue({ modules: {} }),
+    probe: vi.fn().mockResolvedValue(createUnknownEnvelope("installation")),
+  };
+  (tab as any)._client = client;
+  (tab as any)._resolveRuntimeCommand = () => ({
+    path: "C:/isolated/runtime/missing-python.exe",
+    args: [],
+  });
+
+  (tab as any)._refreshAllReadModels();
+
+  expect(client.probeAll).not.toHaveBeenCalled();
+  expect(client.probe).not.toHaveBeenCalled();
+  expect((tab as any)._capabilityState.installation).toMatchObject({
+    reason: {
+      code: "installation.runtime_executable_missing",
+    },
+    action: {
+      primary: {
+        action_id: "foundation.setup",
+        verb: "setup",
+      },
+    },
+    user_state: "setup_required",
+    user_visible_failure: true,
+  });
+});
+it("does not spawn an individual module probe when the published interpreter is missing", () => {
+  const tab = makeTab();
+  const client = {
+    probe: vi.fn().mockResolvedValue(createUnknownEnvelope("ocr")),
+  };
+  (tab as any)._client = client;
+  (tab as any)._resolveRuntimeCommand = () => ({
+    path: "C:/isolated/runtime/missing-python.exe",
+    args: [],
+  });
+
+  (tab as any)._probeModule("ocr");
+
+  expect(client.probe).not.toHaveBeenCalled();
+  // A module cannot be probed before Foundation publishes a usable runtime:
+  // the envelope names that prerequisite instead of a bogus detection failure.
+  const env = (tab as any)._capabilityState.ocr;
+  expect(env?.reason.code).toBe("installation.required");
+  expect(env?.user_state).toBe("setup_required");
+  expect(env?.action?.primary?.action_id).toBe("installation.install_runtime");
+});
 
 // ════════════════════════════════ 1. Library Detail ════════════════════
 describe("Library module detail (Issue #78)", () => {
@@ -781,6 +833,36 @@ describe("OCR module detail (Issue #78)", () => {
     const idleEl = dom.window.document.createElement("div");
     (idle as any)._renderOcrDetail(idleEl);
     expect(idleEl.querySelector(".mod-warning")).toBeNull();
+  });
+  it("labels OCR issue-draft actions as support issues, not diagnostics", () => {
+    const envelope = {
+      ...createUnknownEnvelope("ocr"),
+      capability_state: "needs_action",
+      severity: "warning",
+      user_state: "action_required",
+      action: {
+        primary: {
+          action_id: "ocr.report_issue",
+          verb: "investigate",
+          label: "Report OCR issue",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "selection",
+          scope_count: 1,
+        },
+      },
+    };
+    const tab = makeTab({ capabilityState: { ocr: envelope } });
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderOcrDetail(el);
+    expect(
+      el.querySelector(".pf-module-summary .pf-action-btn")?.textContent?.trim()
+    ).toBe("Report OCR issue");
   });
 });
 

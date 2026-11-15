@@ -189,25 +189,34 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
     );
 
     it.each(["switch", "refresh"])(
-      "does not render an old paper reply after a %s and still accepts a new query",
+      "ignores an in-flight search after a %s removes the search view",
       async (transition) => {
         const response = Promise.withResolvers<string>();
-        transport.executeHandler = (argv) => argv[0] !== "search"
-          ? JSON.stringify({ ok: true, data: { matches: [] } })
-          : argv[1] === "paper A marker" ? response.promise
-          : JSON.stringify({ ok: true, data: { matches: [{ title: "Current paper result" }] } });
+        transport.executeHandler = (argv) => {
+          if (argv[0] === "search" && argv[1] === "paper A marker")
+            return response.promise;
+          return JSON.stringify({
+            ok: true, data: { matches: [{ title: "Current paper result" }] },
+          });
+        };
         const view = makeDashboard(client);
         const seam = modeLifecycle(view);
         try {
           view._searchInput.value = "paper A marker";
+          const resultElement = view._searchResultsEl;
           const pending = view.executeSearch();
-          if (transition === "switch") await seam._switchMode("paper", "B.md");
-          else await seam._refreshCurrentMode();
+          if (transition === "switch") await seam._switchMode("global", null);
+          else {
+            (seam as any)._currentMode = "global";
+            await seam._refreshCurrentMode();
+          }
           response.resolve(JSON.stringify({
             ok: true, data: { matches: [{ title: "Obsolete paper A result" }] },
           }));
           await pending;
-          expect(view._searchResultsEl.textContent).not.toContain("Obsolete paper A result");
+          expect(resultElement.textContent).not.toContain("Obsolete paper A result");
+          expect(view._searchState).toBe("idle");
+          await seam._switchMode("paper", "B.md");
           view._searchInput.value = "paper B marker";
           await view.executeSearch();
           expect(view._searchResultsEl.textContent).toContain("Current paper result");

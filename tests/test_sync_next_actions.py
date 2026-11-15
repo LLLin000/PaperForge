@@ -21,7 +21,8 @@ from typing import Any
 
 from paperforge import __version__
 from paperforge.commands import sync as sync_module
-from paperforge.core.result import PFResult
+from paperforge.core.errors import ErrorCode
+from paperforge.core.result import PFError, PFResult
 
 
 def _args(**overrides: Any) -> argparse.Namespace:
@@ -92,6 +93,28 @@ class TestJsonMode:
         payload = json.loads(capsys.readouterr().out)
         ids = [action["action_id"] for action in payload["next_actions"]]
         assert ids == ["memory.build"]
+
+    def test_json_failure_preserves_error_and_exits_nonzero(self, monkeypatch, capsys) -> None:
+        failure = PFResult(
+            ok=False,
+            command="sync",
+            version=__version__,
+            error=PFError(
+                code=ErrorCode.SYNC_FAILED,
+                message="Injected phase-2 failure",
+                details={"phase": "service"},
+            ),
+        )
+        _patch_run(monkeypatch, failure)
+
+        exit_code = sync_module.run(_args(json=True))
+        payload = json.loads(capsys.readouterr().out)
+
+        assert exit_code == 1
+        assert payload["ok"] is False
+        assert payload["error"]["code"] == "SYNC_FAILED"
+        assert payload["error"]["details"]["phase"] == "service"
+
 
     def test_json_mode_never_executes_followups(self, monkeypatch, capsys) -> None:
         builds: list[int] = []

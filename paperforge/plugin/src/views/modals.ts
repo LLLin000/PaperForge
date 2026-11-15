@@ -677,12 +677,13 @@ export class PaperForgeIssueDraftModal extends Modal {
       this.contentEl.removeEventListener("keydown", this._boundKeydown);
     }
     this.contentEl.empty();
-    if (
-      this._returnFocusEl &&
-      typeof this._returnFocusEl.focus === "function"
-    ) {
+    // A background status refresh may replace the action button while this draft is open.
+    const focusTarget = this._returnFocusEl?.isConnected
+      ? this._returnFocusEl
+      : document.getElementById("pf-ocr-detail-heading");
+    if (focusTarget && typeof focusTarget.focus === "function") {
       try {
-        this._returnFocusEl.focus();
+        focusTarget.focus();
       } catch {}
     }
   }

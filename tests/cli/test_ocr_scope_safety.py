@@ -481,6 +481,51 @@ def test_timed_out_remote_job_keeps_identity_without_new_upload(scope_vault, mon
     assert state["ocr_status"] in ("queued", "running")
 
 
+def test_timed_out_remote_job_releases_slot_for_another_paper(scope_vault, monkeypatch, capsys):
+    vault, pdfs = scope_vault
+    monkeypatch.setenv("PADDLEOCR_MAX_ITEMS", "1")
+    monkeypatch.setattr(
+        "paperforge.worker.ocr._paper_timed_out",
+        lambda meta: meta.get("ocr_job_id") == "old-job",
+    )
+    meta = pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json"
+    meta.parent.mkdir(parents=True)
+    meta.write_text(json.dumps({
+        "zotero_key": "SCOPE001",
+        "ocr_status": "queued",
+        "ocr_job_id": "old-job",
+        "submission_state": "submitted",
+    }), encoding="utf8")
+    uploads = []
+
+    def submit(request):
+        uploaded_keys = [key for key, pdf in pdfs.items() if pdf in request.body]
+        uploads.extend(uploaded_keys)
+        return 202, {"Content-Type": "application/json"}, json.dumps({"data": {"jobId": "job-SCOPE002"}})
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.get(
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/old-job",
+            json={"data": {"state": "running"}},
+        )
+        http.add_callback(
+            responses.POST,
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+            callback=submit,
+        )
+        http.get(
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/job-SCOPE002",
+            json={"data": {"state": "running"}},
+        )
+        assert main([
+            "--vault", str(vault), "action", "run", "ocr.run", "--scope", "papers",
+            "--key", "SCOPE001", "--key", "SCOPE002", "--confirm", "ocr.run", "--json",
+        ]) == 1
+
+    assert uploads == ["SCOPE002"]
+    state = json.loads(meta.read_text(encoding="utf8"))
+    assert state["ocr_job_id"] == "old-job"
+
 def test_missing_remote_result_never_resubmits_completed_job(scope_vault, capsys) -> None:
     vault, _ = scope_vault
     meta = pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json"

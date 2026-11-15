@@ -291,4 +291,27 @@ describe("PaperForgeIssueDraftModal redaction", () => {
     expect(html).not.toContain("attached diagnostic");
     expect(html).not.toContain("See attached");
   });
+  it("returns focus to OCR detail when its action is replaced while the draft is open", () => {
+    const trigger = document.createElement("button");
+    document.body.appendChild(trigger);
+    trigger.focus();
+    const heading = document.createElement("h2");
+    heading.id = "pf-ocr-detail-heading";
+    heading.tabIndex = -1;
+    document.body.appendChild(heading);
+    const modal = new PaperForgeIssueDraftModal(
+      {
+        vault: { adapter: { basePath: "/test" }, getConfig: () => "en" },
+      } as never,
+      { title: "OCR issue", body: "Safe draft", labels: ["ocr"] },
+      "https://github.com/o/r/issues/new"
+    );
+    augmentEl(modal.contentEl);
+    document.body.appendChild(modal.contentEl);
+    modal.onOpen();
+    trigger.remove();
+    modal.close();
+    expect(document.activeElement).toBe(heading);
+    modal.contentEl.remove();
+  });
 });

@@ -586,5 +586,858 @@
  },
  "tested_base": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
  "tested_source_note": "Current bounded source-integrity delta was tested from6c99f22e and committed as5aa440ed. Historical A/B2137cea9, statef6775fd1 and scope527d7960 are preserved.",
- "ui_bundle_this_fix_note": "No frontend change or new UI run. Bundle d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2 stays unchanged historical frontend support; paired new backend wheel and final release tuple remain PENDING."
+ "ui_bundle_this_fix_note": "No frontend change or new UI run. Bundle d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2 stays unchanged historical frontend support; paired new backend wheel and final release tuple remain PENDING.",
+ "functional_reliability_snapshot_2026_10_30": {
+  "issue": "#356 (parent #130), updated_at 2026-10-30T05:27:11Z; no issue mutation, release, merge, or CI dispatch in this snapshot",
+  "acceptance_matrix": "docs/research/paperforge-functional-reliability-matrix-2026-10-30.md; current worktree base a51b86ab97970e219c11261c088cf5cfd66466a3 plus uncommitted overlay",
+  "current_overlay": {
+   "source_identity": "No single immutable source SHA; current OCR worker source is an uncommitted change",
+   "worker_ocr_sha256": "86680330fb9eebd4118911a8a1e5987cb1e1cfc6bc698aeec73d0cb64d237690",
+   "plugin_bundle_sha256": "e06ef4c699a7df35cc73fe73946056b22d2a8597b1b44f86edd7024188393767",
+   "current_wheel_match": false,
+   "current_managed_runtime": "not available; no usable Obsidian host"
+  },
+  "verified_current_local": {
+   "ocr": "tests/cli/test_ocr_scope_safety.py + tests/test_ocr_state_machine.py + tests/test_ocr_control_plane.py: 69 passed; plugin tests/ocr-workspace-runtime.test.ts: 24 passed; npm run typecheck passed",
+   "research_records": "tests/cli/test_research_records.py: 15 passed; plugin tests/dashboard-runtime.test.ts: 22 passed using jsdom, disposable Vault, and the real Python CLI",
+   "provider_calls": 0
+  },
+  "artifact_reconciliation": {
+   "documented_offline_pair": {
+    "package_source_sha": "7837e8a1f6a0942f7251feef28d4e66924129096",
+    "candidate_tag_target_sha": "61faf6961b35e0ea5fa6564e8b7ebeed47bcca0a",
+    "wheel_sha256": "fba125f0b121f0c858523084fc6a57783607fff78b298fc5386b040b3f986990",
+    "embedded_bundle_sha256": "5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7",
+    "install_receipt": "fresh non-editable CPython 3.12.8; 35 runtime distributions; pip check passed; not the current overlay"
+   },
+   "hosted_h": {
+    "run_id": 41008554778,
+    "source_sha": "61faf6961b35e0ea5fa6564e8b7ebeed47bcca0a",
+    "wheel_sha256": "e0395f8eaf5202ba7cd3ed1c77a1c7a711a36479429729500b130a7c8db54fea",
+    "bundle_sha256": "5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7",
+    "host_result": "Obsidian 1.14.5 / Chrome 150; A01/GATE-01 passed; H failed at B08; X06/429 skipped"
+   },
+   "local_rc6_wheels": [
+    {
+     "path": "dist/rc6-candidate-2/paperforge-2.0.0rc6-py3-none-any.whl",
+     "wheel_sha256": "8b0f075fedfeb9f6ddd3bd19ac6e62b33effc88db4b4173f55ddec20ffdd2fdb",
+     "worker_ocr_sha256": "cce126446ed88cabd6ba0be4d308c6a77f7436db8f460f86585800cc2c9b50f0",
+     "bundle_sha256": "5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7"
+    },
+    {
+     "path": "dist/rc6-candidate-2-paired/paperforge-2.0.0rc6-py3-none-any.whl",
+     "wheel_sha256": "fba125f0b121f0c858523084fc6a57783607fff78b298fc5386b040b3f986990",
+     "worker_ocr_sha256": "cce126446ed88cabd6ba0be4d308c6a77f7436db8f460f86585800cc2c9b50f0",
+     "bundle_sha256": "5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7"
+    },
+    {
+     "path": "dist/rc6-candidate-2-final/paperforge-2.0.0rc6-py3-none-any.whl",
+     "wheel_sha256": "26d090f4ceacab6cfce0db6fbf484dac963621a8d8ed7fed16137505257514d8",
+     "worker_ocr_sha256": "cce126446ed88cabd6ba0be4d308c6a77f7436db8f460f86585800cc2c9b50f0",
+     "bundle_sha256": "bab05ecb06f9fa88906ea06c02dd897c8e95b6f225709ee6560e0916c14b6047",
+     "saved_source_provenance": "No matching hash reference in worktree research documents"
+    }
+   ],
+   "dependency_wheelhouse": "No RC6 vector dependency wheels in dist; only application wheels are present"
+  },
+  "blocked_acceptance": {
+   "current_source_full_profile_journeys": "0/2; no current Obsidian host/runtime",
+   "h_a01": "A01 run 40217042572 consumed its single authorization; GPU native fatal observed, underlying cause and product attribution unresolved; no rerun permitted",
+   "hosted_ci_h": "No new authorization; do not dispatch or wait",
+   "release": "not the objective and not performed"
+  }
+ },
+  "functional_reliability_followthrough_2026_11_02": {
+    "issue_contract": "#356 functional reliability follow-through; no release, merge, Hosted CI/H dispatch, paid Provider call, production data/pointer/credential use, or owner-record update",
+    "acceptance_matrix": "docs/research/paperforge-functional-reliability-matrix-2026-10-30.md",
+    "previous_v3_candidate": {
+      "base_commit": "a51b86ab97970e219c11261c088cf5cfd66466a3",
+      "source_tree_sha256": "a83445ffc2a1f4ff194691eea78090980bb90426c17448cb4f14b8b73da9bd94",
+      "wheel_sha256": "6536decc32be3a00d7e8a6f21ead77b00c72c1c2c1b9852ec7a3662bf3e5dd32",
+      "plugin_bundle_sha256": "15d0dd90a460e2195a750233a5888ae6e7ba7b65dc1542fab8b1a1355365e490",
+      "identity_receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\paired-current-final-followthrough-v3\\evidence\\paired-current-source-identity.json",
+      "profiles": ["journey-21", "journey-22"]
+    },
+    "current_paired_candidate": {
+      "base_commit": "a51b86ab97970e219c11261c088cf5cfd66466a3",
+      "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+      "source_files": "1045 (1042 tracked + 3 untracked); exact dirty-worktree snapshot copied and verified; v5 includes the Memory missing-vector-dependencies CTA fix.",
+      "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+      "wheel": "non-editable paperforge[vector]; 303 package entries; offline runtime wheelhouse with 34 dependencies; CPython 3.12.10 isolated install; pip check clean in live journeys and CTA install.",
+      "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678",
+      "bundle_identity": "Wheel-embedded Bundle is byte-equal; pip index disabled; offline wheelhouse only.",
+      "identity_receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\paired-current-final-followthrough-v5\\evidence\\paired-current-source-identity.json",
+      "post_build_overlay": "After v5 build, no product source changed; only temporary E2E helpers and this matrix/manifest were updated."
+    },
+    "current_source_v8_update": {
+      "base_commit": "a51b86ab97970e219c11261c088cf5cfd66466a3",
+      "source_state": "Dirty current worktree snapshot copied to clean source root; SHA binds the 1045-file manifest, and all listed files matched with zero mismatches.",
+      "source_tree_sha256": "854293510630f5323189075205973919526059b311041c8216162d2d4c5d726a",
+      "source_manifest_sha256": "da0b0351a5b81952038281f5fb512f94c5526d506ac28929158792d6124da7e6",
+      "candidate_wheel_sha256": "5c355ed3a32181a5bb7fbe354c146fcea25cfc9ceb4b527f08ffc5d0d655334a",
+      "plugin_bundle_main_js_sha256": "04c53639352f099f8290d7ea106c0e5bd90baa2d2fe4e220376fc3695958622f",
+      "wheel_and_bundle_check": "v8 wheel has 303 package entries; 235 Python files match the clean source snapshot; installed plugin main.js matches the paired Bundle hash.",
+      "update_worker_sha256": "b92adc1598afa3cce370a83b2f9a1dadd33c004e188f02f849093792660830ee",
+      "host_profile": "win11-x64-isolated-obsidian-1.14.5",
+      "runner_kind": "owner-machine",
+      "obsidian_install_gate": "PASS per Owner instruction: the existing official Obsidian 1.14.5 host was reused; no Obsidian install or reinstall was performed.",
+      "journey_wheelhouse": "Offline wheelhouse with 35 wheels: v8 RC6 candidate plus 34 declared runtime dependencies; synthetic post1 target excluded; pip index disabled.",
+      "profile": "journey-32; isolated HOME, Obsidian profile, Vault and runtime; existing Obsidian host reused, no Obsidian install performed.",
+      "foundation_update": "LIVE_PARTIAL: actual Settings UI RC6→synthetic RC6.post1 update succeeded and published Pointer; Cancel started no pip process; missing synthetic RC6.post2 Wheel produced visible Update failed: exit code 1 and preserved Pointer bytes, RC6.post1 import, and clean pip check. External version feed and Git fallback were controlled/blocked; pip index disabled.",
+      "runtime_after_success": "Pointer and imported module reported 2.0.0rc6.post1; installed update_worker SHA matched source; pip check clean; probe all exit 0 with installation.ready; Foundation UI READY.",
+      "runtime_after_failure": "No post2 artifact installed; pointer SHA stayed cdacb05cdaef518325f9c24f4beecd7dc581c23861d56dbbd0848e0f3bf6897b; runtime remained 2.0.0rc6.post1; pip check clean; UI remained ACTION REQUIRED without false success.",
+      "full_profile_journeys": "2/2 LIVE_PASS on the v8 source/Wheel/Bundle tuple. journey-34 and journey-35 used separate HOME/Profile/Vault/runtime, installed non-editably from the offline wheelhouse, passed pip check, completed BBT sync, note/PDF/local search, record save/correction/source-refusal, and restart readback. WebDriver logged stale-element and Notice click-intercept retries on record save in both; assertions and persisted results passed.",
+      "receipts": [
+        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-live.json",
+        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-cancel-failure.json",
+        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-live.webp",
+        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-failure.webp",
+        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-34\\evidence\\full-user-journey.json",
+        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-35\\evidence\\full-user-journey.json"
+      ],
+      "receipt_sha256": {
+        "success": "fce576fedc712bcff2333711f069bf56776e793a58b43c91fe4d868f2232d0af",
+        "cancel_failure": "3c4cc6cb026d28c9300e1d7a7ff6e7ad8d04864665c6505613da34a64d87f4bb",
+        "success_screenshot": "7632baa014340fab341bada47cd47fb16d6fd0a61c10f1bf02314ba035948adc",
+        "failure_screenshot": "d1a71ff5939df493676e4f61ce7637a419c6c9840afb010eba39926e0d1000f7",
+        "journey_34_full_profile": "de91095f6ea672ce9125c10ae53d4b3299d4f88c67c23cbe46fd009195e5a4f5",
+        "journey_35_full_profile": "057e99f84502ef67c728cb9d088094895465eadd38c3bdec3a369fb2d398806f"
+      }
+    },
+    "current_source_v10_dashboard_recovery": {
+      "base_commit": "a51b86ab97970e219c11261c088cf5cfd66466a3",
+      "source_tree_sha256": "e8b34fb59dfe724a8b98dde4d488907b91e871490c0339eb273a1a310692edc9",
+      "source_manifest_sha256": "a0a00ddc67fe8370c9743b4bc50f88a0a5aabfe9a53c2a1ac3768aabc8b35919",
+      "source_files": "1045; each manifest file hash verified when preparing independent journey profiles",
+      "candidate_wheel_sha256": "3b4703c49a03354a13e9936170edbba68a9e33385934edae50a660940b5eb122",
+      "plugin_bundle_main_js_sha256": "8bf6f2f0686b8146774ebeac437c7c3f023e9edf1af3bcbcd0344758038c05",
+      "wheel_and_bundle_check": "303 wheel entries; 235 Python files match source; plugin main.js and manifest assets match the paired bundle.",
+      "runtime_install": "Non-editable install from a 35-wheel offline wheelhouse; pip index disabled; pip check clean; isolated CPython 3.12.10.",
+      "host_profile": "win11-x64-isolated-obsidian-1.14.5",
+      "host": "Windows 10.0.26200 x64; Obsidian 1.14.5; Electron 43.8.3; Chromium 150.0.7871.250",
+      "obsidian_install_gate": "PASS per Owner instruction: reused the existing official Obsidian host; no Obsidian installation or reinstallation.",
+      "code_change": "settings.ts exposes openSetupJourney(); main.ts opens the existing Installation Settings route then starts Setup; Dashboard recovery CTA now invokes that route and displays an explicit Notice if unavailable. Failure guidance names managed-runtime Setup instead of asking users to install PaperForge on PATH.",
+      "focused_verification": {
+        "vitest": "tests/installation-navigation.test.ts + tests/dashboard-runtime.test.ts: 75/75 passed",
+        "build": "npm run build passed: tsc --noEmit -skipLibCheck and production esbuild bundle"
+      },
+      "live_recovery": {
+        "status": "LIVE_PASS",
+        "result": "On real Obsidian, the broken-runtime Dashboard CTA opened a visible Setup Wizard in a Settings popout. The user selected the isolated base Python; Setup installed a fresh candidate and published a different Pointer. pip check was clean, fresh import reported 2.0.0rc6, and probe all reported installation ready.",
+        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-corrupt-runtime-recovery.json",
+        "receipt_sha256": "ffdd9ba2d7cf5f897637b8977e574e17a79a9278193c971de98861538b97fc2c",
+        "wizard_screenshot": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-recovery-wizard-open.png",
+        "wizard_screenshot_sha256": "d1edd021f896bb02765b341e0eb14fe45579b7cdd023c1fac0a5b1300bff4256"
+      },
+      "settings_window_visibility": {
+        "status": "LIVE_PASS",
+        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\settings-window-visibility.json",
+        "receipt_sha256": "fee1b770968d00a3cfb803937d523e54bf46790063a07965d215aa93dd3ca46d",
+        "screenshot": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\settings-window-1.png",
+        "screenshot_sha256": "6818a82ef83b703c5037830133eb8cd6c89891c3c376ea382488a30dbd81fab8"
+      },
+      "integrated_journey_gate": {
+        "status": "LIVE_PASS 2/2",
+        "source_tree_sha256": "e8b34fb59dfe724a8b98dde4d488907b91e871490c0339eb273a1a310692edc9",
+        "source_manifest_sha256": "a0a00ddc67fe8370c9743b4bc50f88a0a5aabfe9a53c2a1ac3768aabc8b35919",
+        "candidate_wheel_sha256": "3b4703c49a03354a13e9936170edbba68a9e33385934edae50a660940b5eb122",
+        "plugin_bundle_sha256": "8bf6f2f0686b8146774ebeac437c7c3f023e9edf1af3bcbcd0344758038c05",
+        "host_profile": "win11-x64-isolated-obsidian-1.14.5",
+        "journeys": [
+          {
+            "journey": "journey-39",
+            "status": "LIVE_PASS",
+            "home": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\home",
+            "vault": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\retained-vault",
+            "core_receipt": {
+              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\full-user-journey.json",
+              "sha256": "65ba5c78f139686ccf8d5ed201edf138910038528f528b5a9c330272e94f1b4f"
+            },
+            "step7_receipt": {
+              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\foundation-update-step7-integrated.json",
+              "sha256": "1e8e305a7b96cc50d6327a655aec7f8f03ba6803d7aad5792c2bf16d458ddb03"
+            },
+            "recovery_receipt": {
+              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\foundation-update-corrupt-runtime-recovery.json",
+              "sha256": "f2b4a2b99620ee962b3d98b875fe42f4ad840c582149c106ba4104a5b9cbf6b"
+            }
+          },
+          {
+            "journey": "journey-40",
+            "status": "LIVE_PASS",
+            "home": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\home",
+            "vault": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\retained-vault",
+            "core_receipt": {
+              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\full-user-journey.json",
+              "sha256": "6d0c7d93af4e43298e032efebd33a954ddebd368e0b9f76d8eb024fc2bb83537"
+            },
+            "step7_receipt": {
+              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\foundation-update-step7-integrated.json",
+              "sha256": "8655d9be6ff6712240dbb4e820c0a315fb99a29d7b626b800a6bfe5035398f09"
+            },
+            "recovery_receipt": {
+              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\foundation-update-corrupt-runtime-recovery.json",
+              "sha256": "606c124b3baa3ca9ba640634c37d7c313d7c0fdcf7c0fd88cc02ed7735edab91"
+            }
+          }
+        ],
+        "scope": "Each journey used a separate HOME, Obsidian profile, Vault and runtime. Both completed the core flow plus cancellation, controlled offline version update and runtime-corruption recovery through Dashboard to Setup. Obsidian was already installed; no install or reinstall."
+      },
+      "native_windows_keyring_live": {
+        "status": "LIVE_PASS",
+        "backend": "keyring.backends.Windows.WinVaultKeyring",
+        "synthetic_identity": "service=paperforge; username=ocr:liveverify_21d2bd295278",
+        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\native-windows-keyring-live.json",
+        "receipt_sha256": "8f0ce883cc38776534cdaf4d42568dfedf4dd8a85d9cc6a5d6ba39e342e651e9",
+        "scope": "Verified exact-key absence before write, store/resolve/status, delete and final absence; recorded no credential value. Migration, locked-store and permission-denial branches remain unverified."
+      },
+      "repair_localization_focused": {
+        "status": "LIVE_PASS",
+        "source_file_sha256": "1b2d398fedc5858a709ec3cda29c91dd711e1744a43b6897d87eae13a86e4f90",
+        "test_file_sha256": "775d2df078ce5f920bc223bd69b7cbc14ee667a846a6740307eeba87f965626c",
+        "plugin_bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+        "candidate_wheel_sha256": "3b4703c49a03354a13e9936170edbba68a9e33385934edae50a660940b5eb122",
+        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\repair-localization-live-retry-3.json",
+        "receipt_sha256": "c4b7ac378586f458efcf43a776d258ec5125a353dafc7f20fd175322a5898bd0",
+        "scope": "Actual foundation.repair action displayed English and Chinese success Notices; an injected isolated import failure displayed Chinese failure Notice. The exact runtime file was restored; import and pip check passed. This is a focused UI check, not a new full-journey tuple or proof that repair fixes every corruption type."
+      },
+      "journey_status": "v10 journey-39/40 integrated full journeys are LIVE_PASS 2/2. The historical v8 journey-34/35 records below/above remain core-only and are not the current full-journey gate."
+    },
+    "current_source_dashboard_flag_projection_fix": {
+      "base_commit": "a51b86ab97970e219c11261c088cf5cfd66466a3",
+      "source_state": "Exact snapshot of the current dirty worktree overlay: 1042 Git-tracked + 4 non-ignored untracked files = 1046; copied snapshot verified. This is a test tuple, not a new commit or tag.",
+      "source_tree_sha256": "2b29f0907107ff153bcec44ca042fc4973db03204f8b89ca48e7e0337987c9e9",
+      "source_tree_algorithm": "SHA-256 of sorted relative-path UTF-8, NUL, per-file SHA-256 hex, LF",
+      "source_input_manifest_sha256": "091c826d3bc3ebba2aede80a5ea4428dbce7bc11e1eb258abcefebfa72d7a75d",
+      "source_identity_receipt": "PF-FunctionalAcceptance-20261101/paired-current-dashboard-flag-repair-final/evidence/paired-current-source-identity.json",
+      "source_identity_receipt_sha256": "c9d8f2c586acb880211d2af69fbdae3ca289efa1dfe2b0c07f3b62b5a081ad99",
+      "source_file_sha256": {
+        "paperforge/commands/note.py": "de7c5b6075eee908713ccf327e062b237460290c743801ed7954ab96bdad0647",
+        "paperforge/plugin/main.js": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5"
+      },
+      "candidate_wheel": "PF-FunctionalAcceptance-20261101/paired-current-dashboard-flag-repair-final/runtime-wheelhouse/paperforge-2.0.0rc6-py3-none-any.whl",
+      "candidate_wheel_sha256": "44dd8ef72d9dc056a2ec1dfebaf629441dbc18d6c30d098104bdd3f4abef83f7",
+      "plugin_bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+      "wheel_and_bundle_check": "303 Wheel entries; all 297 package files matched the staged package; embedded main.js is byte-equal to the paired Bundle.",
+      "runtime_install": "Non-editable CPython 3.12.10 install with vector extra, public dependencies acquired into a local wheelhouse and pip index disabled for execution; pip check clean; module imported from site-packages. The E2E runtime installs use the paired offline wheelhouse.",
+      "host": "win11-x64-isolated-obsidian-1.14.5; existing official Obsidian host assets reused, not installed or reinstalled. Windows 10.0.26200 x64; Electron 43.8.3; Chromium 150.0.7871.250.",
+      "root_cause": "note set-flag wrote canonical Markdown frontmatter but did not update derived formal-library.json, which Dashboard reads; fresh Dashboard loads therefore showed stale flags.",
+      "fix": "Synchronize the selected workflow flag on changed and idempotent paths; on failed index sync, restore exact prior note bytes and report the actual missing/invalid/unupdated index or exception. Legacy list indexes remain supported.",
+      "focused_verification": "The lock-failure regression was observed failing before the repair because the note changed despite PFResult(ok=false). After repair, tests/test_note_set_flag.py plus tests/test_asset_index_integration.py: 35 passed; Ruff on modified Python files passed.",
+      "dashboard_projection_repair_live": {
+        "status": "LIVE_PASS",
+        "receipt": "PF-FunctionalAcceptance-20261101/journey-41/evidence/dashboard-flag-projection-repair.json",
+        "receipt_sha256": "fe0909a8da9acef5f4705f433cc75f207c20b0b3721bf86c32dbf832e7f44388",
+        "screenshot": "PF-FunctionalAcceptance-20261101/journey-41/evidence/dashboard-flag-projection-repair.png",
+        "screenshot_sha256": "fa9366d43151c45f3bb6bbd85f36cf365effee242b8c83e51df8352d2fceef4c",
+        "observed": "Actual Dashboard repaired stale note=false/index=true via an idempotent false action; true then false kept canonical note and index aligned; other-paper flags and the runtime Pointer were unchanged."
+      },
+      "fresh_host_readback": {
+        "status": "LIVE_PASS",
+        "receipt": "PF-FunctionalAcceptance-20261101/journey-41/evidence/dashboard-flag-restart-readback.json",
+        "receipt_sha256": "f0227665f1117944e4955d94757fd1e04825b4e472c0b2dc78e96e0235c494b5",
+        "screenshot": "PF-FunctionalAcceptance-20261101/journey-41/evidence/dashboard-flag-after-restart.png",
+        "screenshot_sha256": "2d8a4742c2eaa253fd02fded063afc5a51a7bc84a81c1897cd12bf52bacc57e5",
+        "observed": "A separate Obsidian host launch read false from persisted note/index and rendered the unchecked Dashboard flag; the Pointer was unchanged."
+      },
+      "full_user_journeys": {
+        "status": "LIVE_PASS 2/2",
+        "tuple": {
+          "source_tree_sha256": "2b29f0907107ff153bcec44ca042fc4973db03204f8b89ca48e7e0337987c9e9",
+          "source_input_manifest_sha256": "091c826d3bc3ebba2aede80a5ea4428dbce7bc11e1eb258abcefebfa72d7a75d",
+          "candidate_wheel_sha256": "44dd8ef72d9dc056a2ec1dfebaf629441dbc18d6c30d098104bdd3f4abef83f7",
+          "plugin_bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5"
+        },
+        "journey_41": {
+          "core_receipt": "PF-FunctionalAcceptance-20261101/journey-41/evidence/full-user-journey.json",
+          "core_receipt_sha256": "6ac317df49f2f13764030e190fb41f35c3dd1c71ef9013e238b5a3e741f4d76e",
+          "step7_integrated_receipt": "PF-FunctionalAcceptance-20261101/journey-41/evidence/foundation-update-step7-integrated.json",
+          "step7_integrated_receipt_sha256": "91c3099d1170d6f57238c31bfe03e96602dc574dc216ca872b1aa0506cd872c6"
+        },
+        "journey_42": {
+          "core_receipt": "PF-FunctionalAcceptance-20261101/journey-42/evidence/full-user-journey.json",
+          "core_receipt_sha256": "9de55b7613a5864532883ac5e56736d4e586599cb5df8d349ce7b75369ae7be0",
+          "step7_integrated_receipt": "PF-FunctionalAcceptance-20261101/journey-42/evidence/foundation-update-step7-integrated.json",
+          "step7_integrated_receipt_sha256": "1dad231b8e77af6a3131f028681f5a95db129af5d0415485d80fd954dbaa1b7d"
+        },
+        "coverage": "Each journey used its own isolated HOME, Obsidian profile, Vault, and runtime. Both completed managed Setup, offline pip check, synthetic BBT sync, note/PDF open, local search, research-record save/correction, source checks, and restart readback; Step 7 receipts add cancellation, controlled update, damaged-runtime injection, and actual Setup recovery."
+      },
+      "step7_update_cancel_recovery": {
+        "status": "LIVE_PASS 2/2",
+        "synthetic_update_target_version": "2.0.0rc6.post1",
+        "synthetic_update_wheel_sha256": "518568f35104cf83c101ec990cc94de047871aa0da637c1ecfd27e3d40e8346b",
+        "provenance": "Built from the current 1046-file source snapshot with only paperforge.__version__ changed; embedded plugin Bundle remained byte-equal.",
+        "observed": "Cancellation left Pointer bytes unchanged and invoked foundation.update zero times. The actual Settings action updated via controlled offline feed, verified runtime version/pip check/Bundle, then an injected import corruption was repaired by a user-consented Setup candidate with a new Pointer and installation.ready."
+      },
+      "probe_isolation_incident": "One earlier probe invocation omitted environment sanitization and inherited the real USERPROFILE/keyring; it exposed status-only metadata (stale RC5 Pointer and api_key_configured=true), not a credential value. No write or provider request occurred. That output was discarded; the accepted probe was rerun under isolated HOME with NullKeyring. No later command inherited the real profile.",
+      "runner_harness_note": "An earlier Dashboard smoke completed product assertions but initially missed screenshot capture because the evidence directory had not been created; the rerun with a prepared evidence directory passed. Current receipts are bound to the exact source/Wheel/Bundle tuple above.",
+      "journey_scope": "Current-source full journeys and Step 7 are 2/2 LIVE PASS. This does not establish public update-feed availability, version-slot rollback, foundation.update_python changing the host OS interpreter, Hosted CI/H, or real paid-provider behavior."
+    },
+    "current_source_safe_gap_checks_2026_11_03": {
+      "clean_source_package_reconciliation": {
+        "status": "PASS (pre-sync-exit-fix snapshot; superseded for the patched code by sync_json_exit_contract_fix)",
+        "source_tree_sha256": "fadeb292847d636d27bd40f955629af890ebeefc585dc891c65fd76a41caf917",
+        "source_input_manifest_sha256": "ed8be9b1c194ccbf1c26edc398c080d79c8ec8d1a48fd921fd2528ed5142d190",
+        "source_file_count": 1046,
+        "fresh_wheel_sha256": "9f11c8e5fd9abf40004e48b75b045153ac505d5ed94bcedd3cb47fbd06033acc",
+        "plugin_bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+        "worktree_vector_extra": ["openai>=1.0.0", "socksio>=1.0.0", "sqlite-vec>=0.1.0"],
+        "metadata_matches_worktree_pyproject": true,
+        "chromadb_excluded_by_runtime_contract_and_tests": true,
+        "package_files": 297,
+        "source_package_byte_mismatches": 0,
+        "journey_wheel_sha256": "44dd8ef72d9dc056a2ec1dfebaf629441dbc18d6c30d098104bdd3f4abef83f7",
+        "journey_wheel_package_payload_byte_equal": true,
+        "journey_wheel_metadata_byte_equal": true,
+        "archive_sha_differs_but_package_payload_is_identical": true,
+        "embedded_bundle_byte_equal": true,
+        "receipt": "PF-FunctionalAcceptance-20261103/corrected-wheel-current-source/evidence/clean-source-wheel-identity.json",
+        "receipt_sha256": "e16ad963e22550a253806905845014f9657ec69b8a3762ee0aa74a15d3330c72"
+      },
+      "native_windows_credential_migration": {
+        "status": "LIVE_PASS",
+        "runtime": "CPython 3.12.10; paperforge 2.0.0rc6 from non-editable site-packages",
+        "backend": "keyring.backends.Windows.WinVaultKeyring",
+        "synthetic_profile": "pfm_33dea60c8c8a4e51",
+        "scope": "Isolated synthetic dotenv token migrated and read back; secret assignment removed while non-secret setting stayed; stdout/stderr contained no secret; synthetic key deleted and final status missing. No production account/value or Provider call.",
+        "receipt": "PF-FunctionalAcceptance-20261101/credential-migration-live-20261103/credential-migration-live.json",
+        "receipt_sha256": "329d4e8ae2b118b8c820766199a5b21a717af33fa440044ff5ced7ce8297122a"
+      },
+      "credential_error_mapping": {
+        "status": "CONTROLLED_PASS; actual OS locked/ACL failure injection NOT VERIFIED",
+        "locked": "Controlled LockedKeyringError -> status backend_locked, locked remediation, resolve credential.backend_locked",
+        "permission": "Controlled PermissionError(access denied) -> status permission_denied, permission remediation, resolve credential.permission_denied",
+        "receipt": "PF-FunctionalAcceptance-20261103/credential-error-mapping-live-20261103/credential-error-mapping.json",
+        "receipt_sha256": "8d461167531d47eca65cc7ddb2502b9d6307b52052ff235e9d87d3b0eafacc5a"
+      },
+      "runtime_repair_worker": {
+        "status": "LIVE_PASS for four isolated worker branches",
+        "cases": {
+          "pointer_missing": "Truthful refusal; Pointer stayed absent",
+          "healthy_pointer": "Verified; Pointer bytes unchanged",
+          "target_interpreter_missing": "Fell back to current usable runtime; Python published its Pointer; network disabled",
+          "version_mismatch": "Fail-closed; error reported; Pointer bytes unchanged"
+        },
+        "receipt": "PF-FunctionalAcceptance-20261103/runtime-repair-live-20261103/runtime-repair-live.json",
+        "receipt_sha256": "725affe8dd933f196657b24d94ee3ebccf7daddb5d921afee8e46f6094a3aa27",
+        "pytest": "tests/test_runtime_repair.py: 6 passed under host Python 3.14.0"
+      },
+      "focused_plugin_checks": {
+        "secret_storage": "paperforge/plugin/tests/secret-storage.test.ts: 10 passed",
+        "update_python": "paperforge/plugin/tests/module-detail-navigation.test.ts -t foundation.update_python: 1 passed, 96 skipped",
+        "update_python_contract": "Registry and implementation define manual install guidance only; real Obsidian displayed the guidance and re-probed without changing Pointer/runtime. No system Python install was attempted."
+      },
+      "exact_clean_wheel_install": {
+        "status": "PASS (pre-sync-exit-fix snapshot; superseded for the patched code by sync_json_exit_contract_fix)",
+        "source_tree_sha256": "fadeb292847d636d27bd40f955629af890ebeefc585dc891c65fd76a41caf917",
+        "wheel_sha256": "9f11c8e5fd9abf40004e48b75b045153ac505d5ed94bcedd3cb47fbd06033acc",
+        "bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+        "python_version": "3.12.10",
+        "module_path_is_site_packages": true,
+        "direct_url_sha256_matches_wheel": true,
+        "pip_check": "No broken requirements found.",
+        "vector_imports": ["openai 3.42.0", "sqlite_vec"],
+        "cli_version": "paperforge 2.0.0rc6",
+        "receipt": "PF-FunctionalAcceptance-20261103/clean-source-wheel-exact-install/wheel-install-receipt.json",
+        "receipt_sha256": "cddadce91db336705bf8f856d4afdfba0d49f43a4962476510717e4804ec3dcd"
+      },
+      "sync_json_exit_contract_fix": {
+        "status": "FIXED; CONTROLLED_PASS on exact installed non-editable Wheel",
+        "source_snapshot": {
+          "base_commit": "a51b86ab97970e219c11261c088cf5cfd66466a3",
+          "source_tree_sha256": "bd900780863749a3f00fd1385bd477adb70b5d69b5e4103f4f27bd7fd90c1d78",
+          "source_manifest_sha256": "8d7b769ee94e930af8ab76300f63ec140f15a75d760fef57acb97548a89341d7",
+          "file_count": 1046,
+          "sync_py_sha256": "c246f04c11a48473a7bbb4ea1ccab9dccef7cd5a5e96d54b6c5853e9e30e9182",
+          "bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+          "snapshot_timing": "Exact build input; matrix and evidence manifest were updated afterward; no product source changed after this snapshot."
+        },
+        "regression": {
+          "test": "tests/test_sync_next_actions.py::TestJsonMode.test_json_failure_preserves_error_and_exits_nonzero",
+          "test_file_sha256": "1f2c51dfebcf7839259828657a3b9aa7c2a8fa5b5d96c10c71cf6665646608ac",
+          "result": "Red before fix (expected exit 1, actual 0); tests/test_sync_next_actions.py post-fix: 11 passed.",
+          "implementation_sha256": "c246f04c11a48473a7bbb4ea1ccab9dccef7cd5a5e96d54b6c5853e9e30e9182",
+          "behavior": "JSON mode returns 0 only for PFResult.ok=true and 1 for PFResult.ok=false; structured JSON payload is preserved."
+        },
+        "pre_fix_failure": {
+          "source_tree_sha256": "fadeb292847d636d27bd40f955629af890ebeefc585dc891c65fd76a41caf917",
+          "receipt": "PF-FunctionalAcceptance-20261103/sync-phase2-retry/sync-retry-restart-worktree.json",
+          "receipt_sha256": "62332a7c2c23e11bb8050fee1fd416e0883171f100272a234284b5d78cb4a0e4",
+          "observed": "Structured SYNC_FAILED result with ok=false and phase=service exited with process status 0."
+        },
+        "wheel": {
+          "sha256": "0d1cf2ee7fc984ae7f25240275f9836b984b06907722b69f9d2e1fd548d8126b",
+          "bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+          "package_files": 297,
+          "source_package_byte_mismatches": 0,
+          "diff_from_pre_fix_wheel": ["paperforge/commands/sync.py", "paperforge-2.0.0rc6.dist-info/RECORD"],
+          "vector_extra": ["openai>=1.0.0", "socksio>=1.0.0", "sqlite-vec>=0.1.0"],
+          "metadata_matches_pyproject": true,
+          "embedded_main_js_matches_bundle": true
+        },
+        "install": {
+          "python_version": "3.12.10",
+          "editable": false,
+          "module_path_is_site_packages": true,
+          "direct_url_sha256_matches_wheel": true,
+          "pip_check": "No broken requirements found.",
+          "vector_imports": ["openai 3.42.1", "sqlite_vec"],
+          "dependency_source": "Declared dependencies resolved from public PyPI; no Provider call."
+        },
+        "smoke": {
+          "source_import_module_sha256": "c246f04c11a48473a7bbb4ea1ccab9dccef7cd5a5e96d54b6c5853e9e30e9182",
+          "source_import_smoke": "Worktree module path asserted; injected failure returned 1 with ok=false / SYNC_FAILED / phase=service; retry and Dashboard fresh-process readback returned 9.",
+          "installed_wheel_failure": "Process exit 1; JSON ok=false, code SYNC_FAILED, phase service; the real selection worker logged 9 updated items before the synthetic export corruption.",
+          "repaired_retry": "Fresh CLI process exit 0, ok=true, selection updated 9 and index updated 9.",
+          "fresh_dashboard": "Separate Dashboard process exit 0, ok=true, stats.papers=9.",
+          "receipt": "PF-FunctionalAcceptance-20261103/sync-json-exit-contract-current-source/noneditable-wheel-install/sync-json-cli-smoke.json",
+          "receipt_sha256": "1b81d5edc5f35b05e85c2caf2641261f71f7555f67b8c14212267fc9827e30c5",
+          "boundary": "Confirms the exact installed Wheel's structured error exit, repaired retry and cross-process readback. Does not prove whole-vault rollback or Obsidian autoSync lifecycle."
+        },
+        "plugin_consumer_contract": {
+          "test": "paperforge/plugin/tests/client/paperforge-client.test.ts: rc=1 + structured ok:false stdout preserves the authority reason (real machine contract)",
+          "result": "Vitest 1 passed; the shared _executePfResult path recovered validation_error from structured stdout while preserving exitCode 1.",
+          "sync_path": "PaperForgeClient.sync() calls the same _executePfResult path.",
+          "boundary": "This client contract test uses configValidate, not a current-Wheel-to-Obsidian UI round trip; no such paired UI journey was rerun."
+        },
+        "build_receipt": {
+          "path": "PF-FunctionalAcceptance-20261103/sync-json-exit-contract-current-source/evidence/wheel-build-receipt.json",
+          "sha256": "bab3bacd6b8deac0ddc3cc21405ef5627ec56e96c683a62eb3b56e677ebf662f"
+        },
+        "install_receipt": {
+          "path": "PF-FunctionalAcceptance-20261103/sync-json-exit-contract-current-source/noneditable-wheel-install/wheel-install-receipt.json",
+          "sha256": "002944a3df4d2da4d9641c5ef8bcc113604ca792eaee71368e4a3b931b094dc3"
+        },
+        "source_manifest_path": "PF-FunctionalAcceptance-20261103/sync-json-exit-contract-current-source/evidence/source-files.json",
+        "f19_source_qualification": "The controlled embed.build receipt 9814998c4ed6a33aa64355f563444ae4f4c8365c8fe02c774cc973b83bd0c515 is tied to source snapshot fadeb292... before the independent sync exit fix. The fix changed no F19 implementation; F19 remains NOT VERIFIED for real Provider quality/cost/retention, cancellation cost, partial publish and remote recovery.",
+        "full_journey_boundary": "The prior journey-41/42 tuple is superseded for current acceptance. Patched source/Wheel/Bundle bd900780… / 0d1cf2ee… / 0e27dc3a… completed two independent full journeys plus Step 7; paired receipt PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/full-journey-2of2.json SHA-256=4b25167f59cdcce88327f6326730608e8758f9516fbf945523a3d336759c76e9. Current exact-Wheel F09 failure/retry remains verified by CLI smoke; normal sync is also in both Obsidian journeys."
+      },
+      "current_source_safe_matrix_followthrough": {
+        "archive_root": "tests/evidence/functional-stability-2026-11-03/",
+        "archive_path_map": "README.md and targeted-smokes/README.md",
+        "receipt_path_semantics": "PF-FunctionalAcceptance-20261103 paths are original run locations; retained files are under archive_root.",
+        "scope": "Controlled/local subpaths only; no real Provider or Hosted run.",
+        "sync_synthetic_convergence": "tests/harness/test_b01_initial_sync.py + tests/harness/test_b02_changed_export.py: 2 passed",
+        "sync_phase2_repair_retry": {
+          "status": "CONTROLLED_PASS; service executed, selection/index/reconcile worker boundaries stubbed",
+          "receipt": "PF-FunctionalAcceptance-20261103/sync-phase2-retry/sync-retry.json",
+          "receipt_sha256": "8db579483f94131e3f4d1e020a0b9a28bf8b89cde5157c63cbc6f1d57f836140"
+        },
+        "sync_phase2_retry_restart": {
+          "status": "CONTROLLED_PASS for service retry/readback only; original exit-0 structured failure was a CLI contract defect, corrected under sync_json_exit_contract_fix",
+          "phase2_failure": "The original receipt showed ok=false / SYNC_FAILED / phase=service while the CLI returned 0; selection updated 9 and no formal notes existed at the failpoint. The incorrect exit status is fixed and the exact patched Wheel was reverified below.",
+          "retry": "After repairing the export, a fresh CLI process returned ok=true; selection updated 9 and index updated 9.",
+          "fresh_process_readback": "A separate Dashboard CLI process returned stats.papers=9; the persisted formal-library index contains 9 items.",
+          "boundary": "The pre-fix receipt proves service failure, retry and readback only; its rc=0 violated the CLI contract. Exact patched Wheel failure/retry behavior is verified under sync_json_exit_contract_fix; partial-note rollback and Obsidian autoSync lifecycle remain unverified.",
+          "receipt": "PF-FunctionalAcceptance-20261103/sync-phase2-retry/sync-retry-restart-worktree.json",
+          "receipt_sha256": "62332a7c2c23e11bb8050fee1fd416e0883171f100272a234284b5d78cb4a0e4",
+          "prior_receipt_excluded": "PF-FunctionalAcceptance-20261103/sync-phase2-retry/sync-retry-restart.json sha256=500eff59b0e71a8e99abec0e1bcbe60418fca0d9ec034b972e0034fa11fe8fb9; previous runner used Path.cwd() in the main checkout and is not current-worktree acceptance."
+        },
+        "ocr_partial_timeout_scope": "tests/cli/test_ocr_scope_safety.py -k timed_out or partial_success or rate_limit_with_pending: 4 passed",
+        "memory_scoped_build_and_recovery": "tests/test_memory_build_scoped.py + tests/harness/test_e01_client_action.py + tests/harness/test_e06_memory_schema_repair.py: 18 passed",
+        "memory_freshness_projection": {
+          "status": "CONTROLLED_PASS",
+          "states": ["memory.ready", "memory.index_stale", "memory.ready"],
+          "provider_calls": 0,
+          "keyring": "NullKeyring",
+          "receipt": "PF-FunctionalAcceptance-20261103/memory-freshness-smoke/memory-freshness-result.json",
+          "receipt_sha256": "09c1ab3a15a6ba6a9601f473b4bb2ba5ea5fc52ae7fae98e64596e30417faaf2"
+        },
+        "memory_restore": "tests/harness/test_e02_memory_restore.py + tests/test_memory_restore.py: 8 passed",
+        "vector_runtime_health": "tests/test_runtime_health.py -k vector: 4 passed",
+        "gateway_registry": "tests/test_layer4_gateway_commands.py + tests/test_action_registry.py: 89 passed",
+        "search_fallbacks": {
+          "status": "CONTROLLED_PASS",
+          "cases": ["raw FTS", "malformed query quoted-token fallback", "missing FTS table to LIKE fallback", "domain/year filters", "rank=0", "empty results"],
+          "receipt": "PF-FunctionalAcceptance-20261103/search-fallbacks/fts-fallbacks.json",
+          "receipt_sha256": "4178c718f2f113b022c22af032d811c546a41b5f14813989f0a7220b8044e632",
+          "rank_order_smoke": {
+            "status": "CONTROLLED_PASS",
+            "synthetic": true,
+            "matched_keys": ["P3", "P1", "P2"],
+            "rank_order_monotone": true,
+            "receipt": "PF-FunctionalAcceptance-20261103/search-fallbacks/fts-ranking-order.json",
+            "receipt_sha256": "b26800e22b66cf587096cfadaca4e74f20969c7b31e35fd9c709a3c44aa1fcd9",
+            "quality_boundary": "Not representative evidence for large-corpus or real-Vault relevance."
+          }
+        },
+        "search_diagnostics": "tests/test_search_command_diagnostics.py + tests/test_query_command_diagnostics.py: 11 passed",
+        "embedding_resume_identity": "tests/embedding/test_embed_resume.py + tests/embedding/test_embed_status_identity.py: 6 passed",
+        "embedding_partial_resume": "tests/embedding/test_partial_resume_proof.py: 1 passed; six synthetic papers and a 127.0.0.1 loopback stub, no paid Provider",
+        "embedding_mocked_integration": "tests/test_embed_integration.py: 28 passed; deterministic provider mocks, no real Provider",
+        "embedding_harness_batch": "Combined E03/E04 + embedding batch timed out at 900s and isolated E03 at 600s, both without pytest summaries (neither is counted as assertion pass/fail). The earlier 120s action stall receipt lacks child cwd/import path, so it remains source-unbound diagnostic only. The prior 2.77s force=true receipt used cwd=Path.cwd() and PYTHONPATH from the main checkout; a module-path probe resolved the main checkout, so it is excluded from current-worktree acceptance. Corrected current-worktree `embed.build` force=true action: 2.6s, explicit child module-path assertion, expected preparing phase, result/ok=true, 1 paper/8 chunks, 3 loopback requests/9 inputs; isolated fake keyring and DNS/socket loopback-only guard. Receipt PF-FunctionalAcceptance-20261103/e03-timeout-diagnostic/embedding-force-action-worktree-followthrough.json sha256=9814998c4ed6a33aa64355f563444ae4f4c8365c8fe02c774cc973b83bd0c515. Source-binding correction receipt PF-FunctionalAcceptance-20261103/e03-timeout-diagnostic/source-binding-correction.json sha256=05592f3a6b636f440ae0bbaae1bf8ba0e15e141dca7a1720dc0149382078ea54. The ordinary run_embedding_build control omitted force=true and is not Registry evidence. Overall F19 remains NOT VERIFIED: real Provider quality/cost/retention, cancellation cost, partial publish and remote failure recovery are not verified or authorized."
+      },
+      "scope": "One product-source fix in paperforge/commands/sync.py changes sync --json failures to exit nonzero while preserving PFResult JSON; behavior regression, fresh Wheel build and exact-wheel retry/readback smoke passed. Reused existing Obsidian; no install/reinstall, production credential/data/pointer access, paid Provider call, Hosted CI/H dispatch, release, merge or tag."
+    },
+    "current_host": {
+      "status": "LIVE; reused official Obsidian 1.14.5 host assets in isolated extracted host/profiles; everyday installation/profile untouched",
+      "host_profile": "win11-x64-isolated-obsidian-1.14.5",
+      "host": "Windows 10.0.26200 x64; Obsidian 1.14.5; Electron 43.8.3; Chromium 150.0.7871.250",
+      "python": "isolated CPython 3.12.10",
+      "profiles": [
+        "journey-26",
+        "journey-27",
+        "journey-28",
+        "journey-39",
+        "journey-40",
+        "journey-41",
+        "journey-42",
+        "journey-43",
+        "journey-44"
+      ]
+    },
+    "current_patched_source_live_acceptance_2026_11_03": {
+      "status": "LIVE PASS for the stated paths; functional acceptance only, not release certification",
+      "source_tree_sha256": "bd900780863749a3f00fd1385bd477adb70b5d69b5e4103f4f27bd7fd90c1d78",
+      "source_manifest_sha256": "8d7b769ee94e930af8ab76300f63ec140f15a75d760fef57acb97548a89341d7",
+      "wheel_sha256": "0d1cf2ee7fc984ae7f25240275f9836b984b06907722b69f9d2e1fd548d8126b",
+      "plugin_bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
+      "host": {
+        "profile": "win11-x64-isolated-obsidian-1.14.5",
+        "os": "Windows 10.0.26200 x64",
+        "obsidian": "1.14.5",
+        "electron": "43.8.3",
+        "chromium": "150.0.7871.250",
+        "python": "isolated CPython 3.12.10",
+        "host_asset_receipt": "PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/obsidian-host-assets.json",
+        "host_asset_receipt_sha256": "4d683f535332c860d8a2035d1dbf26215d35ff08d15fdc95efa5535cc26bfd24",
+        "daily_install": "<programs>/Obsidian/Obsidian.exe, version 1.9.14; left untouched because this plugin requires minAppVersion 1.11.4.",
+        "test_assets": {
+          "source": "cached official Obsidian 1.14.5 assets; no installation or reinstallation",
+          "binary_sha256": "55f75ba5fd0bb63b43d323c3d82bf3717cce8ded89453183b454cadc0ec42477",
+          "app_asar_sha256": "3a349274f789b62c5b35ad19de10311909a94e8783033569c2210a4bac491780",
+          "chromedriver_sha256": "4c40893dc3215de17c253072c2943b7b30874718d0716137a3cd0521b9471aee"
+        }
+      },
+      "paired_full_journeys": {
+        "status": "LIVE_PASS",
+        "count": "2/2",
+        "receipt": "PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/full-journey-2of2.json",
+        "receipt_sha256": "4b25167f59cdcce88327f6326730608e8758f9516fbf945523a3d336759c76e9",
+        "journeys": [
+          {
+            "id": "journey-43",
+            "status": "LIVE_PASS",
+            "home": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-43/home",
+            "vault": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-43/retained-vault",
+            "core_receipt": "journey-43/evidence/full-user-journey.json",
+            "core_receipt_sha256": "143d76612936f9c43a7ffe8aa037c3f228cf82abe581585f25e406eeb9cf4490",
+            "step7_integrated_receipt": "journey-43/evidence/full-user-journey-step7-integrated.json",
+            "step7_integrated_receipt_sha256": "11850f9b7e6e6023b502babded1cd3715d7efd67657ba639af971348c7b5e977",
+            "step7_update_receipt_sha256": "601f76bccf7291693530ece669e85e22cb0bda47ca3dd89db27e9e42d9f8e8e5",
+            "corrupt_runtime_recovery_receipt_sha256": "91120da2462a38f64589eeec0bc35d2babd8b0d864df615f1a7030437420dbac"
+          },
+          {
+            "id": "journey-44",
+            "status": "LIVE_PASS",
+            "home": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-44/home",
+            "vault": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-44/retained-vault",
+            "core_receipt": "journey-44/evidence/full-user-journey.json",
+            "core_receipt_sha256": "57ff716b13640dbd830e990de2b16305f8043877d68d68ea2b20c380d754eb79",
+            "step7_integrated_receipt": "journey-44/evidence/full-user-journey-step7-integrated.json",
+            "step7_integrated_receipt_sha256": "944bf633bdfc156e273debf21f233176cc1ad2b251efe61eddc8d61fb94a7322",
+            "step7_update_receipt_sha256": "cd1b628012a847dd3f94190ea5aa91f5dfec541f122ed2f11d3401bf91b72829",
+            "corrupt_runtime_recovery_receipt_sha256": "1773a637d191e70040fb2c8427a30ac1b4285409660081fc5d1981a6f30f2e12"
+          }
+        ],
+        "coverage": "Each isolated profile completed Setup, noneditable managed runtime and pip check, synthetic BBT sync/index, note/PDF/local search, record save/correction, exact source navigation, wrong/duplicate/invalid source refusal, restart readback, controlled update cancellation, offline RC6.post1 update and damaged-runtime Setup recovery.",
+        "synthetic_update_target_wheel_sha256": "44edde151ae1b0897f42585c9ba8a18c86590f7c3889cb2ab64673607a739908",
+        "synthetic_update_build_receipt_sha256": "c59049ffcd966eeffeb50bcd8245d6ededc2dafb450a2e131d498275dd669cb4"
+      },
+      "current_live_ui_paths": {
+        "b08_preview": {
+          "status": "LIVE_PASS 3/3",
+          "receipts": [
+            {"path": "journey-43/evidence/b08-cross-paper-preview.json", "sha256": "cbd6c840549528294a39f546f1b1ecdf0f31da29d85bd16d1c70be5110a53f8d"},
+            {"path": "journey-43/evidence/b08-missing-ocr-workspace-target.json", "sha256": "d776bbbbe7087542102e4293865fabea2534e2632762fc0c3e401b8b03747cab"},
+            {"path": "journey-43/evidence/b08-ocr-workspace-open-failure.json", "sha256": "c3063ff44d0f5e6a73dfa70a9eb37b7926b374ccd6248b097b7bf56f7877c1de"}
+          ],
+          "observed": "Canonical fulltext opened for the selected paper; another paper's PDF stayed active/unchanged; missing target and openFile rejection showed localized failure and preserved the prior active file."
+        },
+        "setup_wizard": {
+          "status": "LIVE_PASS",
+          "receipt": "journey-43/evidence/setup-wizard-live.json",
+          "receipt_sha256": "62febe962d16ce7efa48fb0db229bbe931d51ea53b4d4bd55678d19af08015f2",
+          "observed": "Version mismatch was detected; Cancel and invalid Python preserved the old Pointer; Retry published the current noneditable runtime, pip check was clean and the cancelled candidate was retired."
+        },
+        "provenance_partial_restore": {
+          "status": "LIVE_PASS",
+          "receipt": "journey-43/evidence/version-restore-provenance-partial.json",
+          "receipt_sha256": "633f903b2d0332a6c3a57491bd945f91e7bdaafe005ee86713706d267033f4f2",
+          "observed": "Body restored to v1; UI reported provenance not confirmed and showed no full-success Notice; malformed target metadata and OTHER001 sentinel remained unchanged."
+        },
+        "help_restore": {
+          "status": "LIVE_PASS",
+          "receipt": "journey-43/evidence/help-restore-v6-live.json",
+          "receipt_sha256": "fab863cae5ec6f53afa8f0eb6841ae20c8c30e30e68b90de660a9ea2d38194ac",
+          "observed": "Safe refusal and no_python failure preserved Pointer/runtime; real Retry installed a candidate, pip check passed, packaged Skill bytes matched and probe returned help.ready."
+        },
+        "ocr_workspace_lifecycle": {
+          "status": "LIVE_PARTIAL",
+          "close_reopen_receipt": "journey-43/evidence/ocr-workspace-lifecycle.json",
+          "close_reopen_receipt_sha256": "5473d71ebb06f699fed43a5ec9c86e07d1ce6121812c6bf370fdcf1b9bf85522",
+          "error_retry_receipt": "journey-44/evidence/ocr-workspace-error-retry-live-rerun.json",
+          "error_retry_receipt_sha256": "47a6de9bd6682cfab6174e6bbf60bf389391f2ebaca413d41862408059c4b9a8",
+          "boundary": "Three opens/two closes retained one loaded view; injected list-query failure showed truthful non-empty-library error; actual Retry recovered TSTONE001. Empty-filter recovery, late response after close and invalid-selection removal remain unverified in real host."
+        },
+        "autosync": {
+          "status": "LIVE_PARTIAL",
+          "receipt": "journey-44/evidence/autosync-live-controlled-retry-rerun.json",
+          "receipt_sha256": "264ecb50720547759b2c651dd1f439b9be665222202e1cbe0ee1a677c5c4eaf4",
+          "boundary": "Injected structured client failure was not reported successful; duplicate ticks were deduplicated; a real installed-runtime retry succeeded after 30003 ms. Real filesystem/network failure and partial-write recovery remain unverified."
+        }
+      },
+      "observations": [
+        "The first focused autoSync/OCR UI attempt ran while startup autoSync was still in progress and a restored Obsidian modal intercepted the OCR Retry click. The accepted rerun waits for startup idle and dismisses the modal; both focused cases then passed without those harness warnings. No product source changed.",
+        "Journey-44 WebDriver logged transient stale-element/Notice interception during record-save; the journey assertions and restart readback passed. This is retained as a UI timing observation, not attributed to a product defect."
+      ],
+      "scope": "Same exact source/Wheel/Bundle across all current receipts. Cached official Obsidian 1.14.5 reused; no Obsidian install/reinstall, production Vault/credentials/Pointer, real Provider, Hosted CI/H, release, tag or merge."
+    },
+  "previous_v1_runtime_probe": {
+      "ready": [
+        "installation",
+        "library",
+        "help",
+        "maintenance"
+      ],
+      "needs_action": {
+        "ocr": "ocr.artifacts_stale",
+        "memory": "memory.index_stale"
+      },
+      "receipt": "journey-9/evidence/probe-all-live.json"
+    },
+    "full_isolated_journeys": {
+      "status": "LIVE_PASS on the current v5 paired tuple",
+      "count": "2/2",
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      },
+      "profiles": ["journey-27", "journey-28"],
+      "verified": "Independent Setup/pointer publication and pip check; synthetic Zotero/BBT sync/index; note, PDF and local search; record save/search/correction; correct-page navigation and wrong/ambiguous-source refusal; restart persistence and pointer readback.",
+      "receipts": [
+        "journey-27/evidence/full-user-journey.json",
+        "journey-28/evidence/full-user-journey.json"
+      ],
+      "receipt_sha256": [
+        "c08d164466c5900e39e0415b91a8f1dae01bb41079a9c16ba38426c382b4ce7b",
+        "ff2169deeb8aa9e4f161aef54d8f22d509311abfdc690762d4dc6f3f9b907dbb"
+      ],
+      "transient_ui_observation": "Both runs logged an Obsidian .notice-message intercept over the research-record save click; each journey ultimately saved and read records back after restart. The notice/UI timing was not separately fixed or measured.",
+      "limitation": "These full-user-journey specs did not perform a distinct-version upgrade or install cancellation. v3 Setup lifecycle receipts separately cover mismatch/cancel/retry. The injected RC5 test Wheel has unknown source provenance, so authentic RC5 migration is not proven."
+    },
+    "b08_live": {
+      "status": "LIVE_PASS on current v5 source/Wheel/Bundle tuple (3/3 real Obsidian cases)",
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      },
+      "receipts": [
+        "journey-26/evidence/b08-cross-paper-preview.json",
+        "journey-26/evidence/b08-missing-ocr-workspace-target.json",
+        "journey-26/evidence/b08-ocr-workspace-open-failure.json"
+      ],
+      "receipt_sha256": {
+        "selected_paper": "c23145741e6b6c48e973388d2a6afabed5973dedf84e87ee928d65150f66b387",
+        "missing_target": "e8f98d7974e8353a7fbdff828d21ff403ce5beaf8a3f97a4191e02c555fc1417",
+        "open_failure": "07ed2b831c0149ed97fd8e98dc800a1d2affbb7294ce936060675ed38f955c68"
+      },
+      "observed": "Selected paper canonical fulltext became active; another paper PDF leaf and bytes stayed unchanged; missing-target and Obsidian openFile rejection each produced localized feedback and left the prior note active."
+    },
+    "setup_wizard_live": {
+      "status": "LIVE_PASS on current v5 for first install plus current-version mismatch/cancel/failure/Retry; distinct-version upgrade NOT VERIFIED",
+      "verified": "journey-27 and journey-28 each used visible Setup, installed the paired non-editable wheel, published Pointer, reached installation ready, and passed pip check. journey-26 detected injected stale Pointer, preserved it on cancel and invalid interpreter, removed the cancelled candidate, then Retry published a fresh candidate and retired the cancelled one.",
+      "receipts": [
+        "journey-27/evidence/full-user-journey.json",
+        "journey-28/evidence/full-user-journey.json",
+        "journey-26/evidence/setup-wizard-live.json"
+      ],
+      "receipt_sha256": {
+        "setup_wizard": "5f25a13b5a1ab409bef213ce5c577e1da7f76c5ff53052eb8ab0d5329ea5d1e4"
+      },
+      "not_proven": "No provenance-matched different-version Wheel is available to prove an authentic version upgrade; window-close cancellation is not separately tested."
+    },
+    "provenance_partial_success": {
+      "status": "LIVE_PASS on current v5 tuple (isolated journey-26)",
+      "observed": "Body restored while provenance remained unconfirmed; visible alert reported partial success; another paper stayed unchanged; restored body survived restart and provenance retry remained available.",
+      "receipts": ["journey-26/evidence/version-restore-provenance-partial.json"],
+      "receipt_sha256": "db9fd11f0ef62da3f5126f94c27f59ed1f2c877a774235d716f18541197ead28",
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      }
+    },
+    "help_restore": {
+      "status": "LIVE_PASS on current v5 tuple for safe refusal, classified failure, actual Retry install, and Help-ready readback",
+      "verified": "Safe refusal and no_python failure left Pointer/runtime state unchanged; localized Retry installed the managed candidate; pip check passed; restored packaged Skill hash matched the original; fresh probe returned help.ready and removed the restore action.",
+      "not_verified": "A host restart after this specific Help reinstall was not separately exercised; independent full journeys verify their own restart persistence.",
+      "receipt": "journey-26/evidence/help-restore-v5-live.json",
+      "receipt_sha256": "0bd386b500fe36d02bcf9feab309bc1eeb5c28efe421da8710af0d1fd1e332e9",
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      },
+      "historical_receipts": [
+        "journey-22/evidence/help-restore-live.json",
+        "journey-22/evidence/help-restore-ui.json",
+        "journey-8/evidence/help-restore-live.json",
+        "journey-9/evidence/help-restore-live.json"
+      ]
+    },
+    "retry_label_fix": {
+      "status": "FIXED; production-render regression and current-v5 real UI retry-install check passed",
+      "root_cause": "settings.ts requested setup_retry_btn, which is absent from both locale dictionaries; the existing install_btn_retry key already provides Retry/重试.",
+      "change": "Reused install_btn_retry; added English and Chinese production-render assertions in module-detail-navigation.test.ts.",
+      "unit_regression": "Red before fix; after fix 1 passed / 92 skipped. Plugin TypeScript check and production bundle build passed.",
+      "live_receipt": "journey-26/evidence/help-restore-v5-live.json",
+      "live_observation": "Current v5 Bundle displayed 重试 and completed the install; Pointer was published, pip check passed, and Help probe returned help.ready.",
+      "artifact_binding": {
+        "source_snapshot_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "loaded_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678",
+        "active_runtime_wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "artifact_pair_verified": true
+      }
+    },
+    "setup_wizard_prior_snapshot": {
+      "status": "LIVE_PASS on v5 for two independent first-install journeys; v3 separately covers mismatch/cancel/failure/Retry",
+      "verified": "journey-27 and journey-28 each used the visible Setup Wizard, installed the paired non-editable wheel, published Pointer, reached installation ready, and passed pip check. v5 Memory CTA separately exercises a managed reinstall.",
+      "receipts": [
+        "journey-27/evidence/full-user-journey.json",
+        "journey-28/evidence/full-user-journey.json",
+        "journey-21/evidence/setup-wizard-live.json",
+        "journey-22/evidence/help-restore-live.json"
+      ],
+      "not_proven": "A distinct-version v5 upgrade or v5 cancellation/retry sequence is not proven. v3 cancellation/retry receipts remain valid for those unchanged Setup lifecycle branches; no provenance-matched older Wheel is available to prove authentic RC5-to-RC6 migration."
+    },
+    "provenance_partial_success_v3_historical": {
+      "status": "LIVE_PASS on current v3 tuple (isolated journey-22)",
+      "observed": "Body restored while provenance remained unconfirmed; UI reported partial success; corrupted metadata and another paper's metadata remained byte-for-byte unchanged; no full-success Notice appeared.",
+      "receipts": ["journey-22/evidence/f27-restore-provenance-partial-live.json"]
+    },
+    "help_restore_v3_historical": {
+      "status": "LIVE_PASS on current v3 tuple for the full reinstall route",
+      "verified": "Missing packaged skill -> visible Help action -> Setup reinstall -> new managed-runtime Pointer -> restored skill hash equals original wheel content -> CLI help.ready.",
+      "not_verified": "A host restart after this specific Help reinstall was not separately exercised; the independent full journeys verify their own restart persistence.",
+      "elapsed_wall_time": "about 69 seconds from E2E runner start to receipt; includes Obsidian/UI and is not a pip-only duration.",
+      "receipts": [
+        "journey-22/evidence/help-restore-live.json",
+        "journey-22/evidence/help-restore-ui.json",
+        "journey-8/evidence/help-restore-live.json",
+        "journey-9/evidence/help-restore-live.json"
+      ]
+    },
+    "retry_label_fix_v3_historical": {
+      "status": "FIXED; regression and current-v3 real UI label check passed",
+      "root_cause": "settings.ts requested setup_retry_btn, which is absent from both locale dictionaries; the existing install_btn_retry key already provides Retry/重试.",
+      "change": "Reused install_btn_retry; added English and Chinese production-render assertions in module-detail-navigation.test.ts.",
+      "unit_regression": "Red before fix; after fix 1 passed / 92 skipped. Plugin TypeScript check and production bundle build passed.",
+      "live_receipt": "journey-22/evidence/help-restore-ui.json",
+      "live_observation": "Current v3 Bundle displayed 重试; invalid interpreter remained no_python; pointer/runtime set unchanged; this label-only test did not click install.",
+      "artifact_binding": {
+        "source_snapshot_sha256": "a83445ffc2a1f4ff194691eea78090980bb90426c17448cb4f14b8b73da9bd94",
+        "loaded_bundle_sha256": "15d0dd90a460e2195a750233a5888ae6e7ba7b65dc1542fab8b1a1355365e490",
+        "active_runtime_wheel_sha256": "101a5f99c43706d24d1508b25b3dc054fd186eee579a49bb1afee558c5163e3d",
+        "artifact_pair_verified": false
+      }
+    },
+    "vector_dependency_install": {
+      "status": "LIVE_PASS on the current v5 CTA→reinstall→ready path",
+      "verified": "In real Obsidian 1.14.5, a controlled missing-extras envelope exposed memory.install_vector_deps. A real UI click opened Setup stage 1 with reinstallRequested=true and a visible/topmost Reinstall button; Pointer and candidate list remained unchanged until that second UI click. The subsequent managed install published one v5 runtime Pointer, reached installation ready, passed pip check, and imported openai plus sqlite_vec.",
+      "install_elapsed_ms": 61664,
+      "receipts": [
+        "journey-26/evidence/memory-install-action-route-live.json",
+        "journey-26/evidence/memory-install-action-install-live.json",
+        "journey-26/evidence/memory-install-action-route-after-click.png",
+        "journey-26/evidence/memory-install-action-install-after-click.png"
+      ],
+      "receipt_sha256": {
+        "route": "b67217daf5d9270478473b5057c3ad2c5d7734112ec4cef5c6443d72b8c9b9d2",
+        "install": "85b019eff6dc331100eb9656eb70662f9507ae7b377293f1b29caf5e6814afef",
+        "install_screenshot": "27731800a69dd8e45d27d448e446a77ec176856156404efe81ce724dd43108a4"
+      },
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      }
+    },
+    "foundation_actions_live": {
+      "status": "LIVE_PARTIAL on current v5",
+      "repair": "Real Obsidian confirmation ran a healthy-runtime verification/repair; Pointer and runtime identity stayed unchanged, pip check passed, and unrelated Doctor findings remained reported. Success notice exposes missing locale key repair_done; real-host failure path not tested.",
+      "update_python": "UI displayed manual Python installation guidance and re-probed; Pointer/runtime set stayed unchanged. No OS Python install/upgrade or post-install discovery was attempted.",
+      "no_pointer_preflight": "foundation.update and foundation.repair were unavailable with pointer.missing and no handlers invoked.",
+      "receipts": [
+        "journey-26/evidence/foundation-actions-live-v5.json",
+        "journey-26/evidence/foundation-no-pointer-preflight-v5.json"
+      ],
+      "receipt_sha256": {
+        "actions": "09ac30a8159ba129ad5cb3ff4e187b77a94c5d41899b5174bfabd3c58c396c1d",
+        "no_pointer_preflight": "c1151fd1c85ff88185a4778a1ae74fc386d903470b88355a812ca8f92e249674"
+      },
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      }
+    },
+    "doctor_ui_live": {
+      "status": "LIVE_PASS for truthful failure feedback and no false-success in command/dashboard",
+      "observed": "Three injected/missing checks were reported as failures; command and contextual dashboard both displayed Doctor reported issues. After safe runtime repair, Doctor continued to report unrelated fixture/credential failures.",
+      "receipt": "journey-26/evidence/doctor-ui-live.json",
+      "receipt_sha256": "2706ddd67c51f5d181f7e1dc3aa311318612411adc6721f48f07de9542d64ede",
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      }
+    },
+    "ocr_actions_live": {
+      "status": "LIVE_PARTIAL with a confirmed BLOCKED diagnostic privacy defect",
+      "configure": "Stage 3 stored the synthetic credential only in the isolated E2E keyring; settings/Vault/settings JSON stayed secret-free and the password field cleared. No Provider call. Native Windows Credential Manager is not proven.",
+      "enable_and_setup": "Both actual actions opened Setup stage 3; operation stayed idle and Pointer unchanged; no Provider call.",
+      "diagnose": "One clipboard API write was intercepted inside the Renderer; it contained synthetic credential, absolute path, Zotero path and paper title. The host OS clipboard was not written. No Provider operation. UI label incorrectly says 正在运行诊断... . Treat as BLOCKED; privacy-boundary change requires Owner decision.",
+      "report_issue": "Synthetic sensitive values were redacted in the Issue Draft preview; cancel closed the modal and focus fell back to the detail heading after trigger replacement. No external page was opened, the final submission URL was not tested, and no Provider call occurred.",
+      "receipts": [
+        "journey-26/evidence/ocr-setup-config-live-v5.json",
+        "journey-26/evidence/ocr-setup-action-routes-live-v5.json",
+        "journey-26/evidence/ocr-diagnose-clipboard-live-v5.json",
+        "journey-26/evidence/ocr-issue-draft-focus-fallback-v5.json"
+      ],
+      "receipt_sha256": {
+        "configure": "14362c3730d1f76a825aaaa4339f559235d5d3ed8b4de05e010f69c25b0bf680",
+        "enable_setup": "bffa70c0d625c8c5f5cea6abfec4cb2ce67b2b1a2c3e105fc3f19bac5f172d3d",
+        "diagnose": "5b97a2346933d16f4f3686c03adecb5f3ffc1fcd3847287127193b8a6196ff30",
+        "report_issue": "cff6969b6b1f4e36e3ea6250f72e947319525131e35fd798d4c6b0854da599ae"
+      },
+      "tuple": {
+        "source_tree_sha256": "e6983db72b7ea6366e85bf42ae1a4bda6b641723183cc48149c29ab9ec278f7b",
+        "wheel_sha256": "7c5f14a4bb74b577f169d20f7c8c4b038cfecf1d20e9e14bc079f468dfa41edc",
+        "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678"
+      }
+    },
+    "remaining_not_verified_or_blocked": [
+      "foundation.update: controlled offline update/cancel/failure/recovery passed; a newer public release source was unavailable, so public-feed download is not verified. Version-slot rollback is deferred by the current lifecycle contract.",
+      "foundation.repair: missing/healthy Pointer, missing-target fallback and version-mismatch fail-closed worker branches passed; other corruption types remain PARTIAL.",
+      "Windows Credential Manager: isolated synthetic-profile migration/CRUD and controlled error mapping passed; actual Windows locked-store/ACL-denied injection is NOT VERIFIED.",
+      "F10: B01/B02 synthetic sync convergence, the earlier controlled Phase 2 retry, and the new real CLI repair/retry/third-process 9-paper index readback passed. The retry smoke had zero formal notes at the injected failure point; Obsidian autoSync lifecycle and partial-write cross-process recovery remain NOT VERIFIED.",
+      "F12: selected timeout/partial/rate-limit loopback cases passed; real Provider behavior and Hosted X06/429 remain NOT VERIFIED.",
+      "F14: automation paths pass; real Obsidian close/reopen/window lifecycle timing is NOT VERIFIED.",
+      "F15: the original degraded OCR fixture lacks table assets/geometry and cannot be reproduced; content/render integrity remains BLOCKED.",
+      "F18: current-source raw/token/LIKE fallback cases and filters passed on synthetic SQLite; large-corpus relevance/ranking and real-Vault search quality remain NOT VERIFIED.",
+      "F19: Current-worktree Registry `embed.build` force=true passed once in 2.6s with a loopback-only stub (1 paper/8 chunks); source is asserted inside the child. The earlier 2.77s force-action receipt loaded the main checkout and is excluded; the 120s stall lacks a captured cwd/import path and remains source-unbound, not an established current-worktree failure. E03/E04 combined (900s) and standalone E03 (600s) timeouts produced no pytest summaries. Real Provider quality, fees, retention, cancellation cost, partial publish and remote failure recovery remain NOT VERIFIED or unauthorized.",
+      "ocr.diagnose is BLOCKED by the reproduced sensitive-data clipboard payload; the OS clipboard was not changed; privacy-boundary repair requires Owner decision.",
+      "F22 has no Memory database backup producer; automatic backup behavior is BLOCKED pending an existing-Spec/Owner decision.",
+      "F31: static source review found ordinary unfiltered text-mode successful OCR automatically invokes `ocr_doctor(live=false)`, which POSTs the configured bearer token plus model/minimal probe to the configured endpoint and may create/delete an empty no-file job; the default path does not upload a PDF/document, while `--live` uploads the fixture PDF. No real Provider call was made; credential-probe consent/cost intent remains pending, and real model tasks still require Provider authorization.",
+      "F35 H/A01 renderer/DevTools root cause remains NOT VERIFIED; no further Hosted run is authorized.",
+      "Real OCR/Embedding/model Provider quality, fees, retention and credential behavior are not authorized.",
+      "Hosted CI/H is not rerun; no release, merge, tag, production data/pointer/credential access, or owner-modified main-tree record update."
+    ],
+    "dependency_laziness": "Import laziness does not skip pip installs. v5 Setup and the Memory CTA still install non-editable paperforge[vector]. The CTA run completed from visible click to ready Pointer in 61,664 ms on this isolated Windows/offline wheelhouse; this includes the managed install/probe flow, not pip-only time. Historical v2 62.4 s and v3 Help Restore about 69 s are unmatched end-to-end timings. No matched base-vs-vector A/B exists, so no general speedup is claimed; no dependency behavior changed. Deferring vector distributions could shorten setup for users who never use vector features, but moves latency to first use and changes the availability contract.",
+    "prohibited_lanes": "No Hosted CI/H rerun, paid Provider call, production data/pointer/credential access, release, merge, tag, or owner-modified main-tree record update",
+    "code_change": "v5 routes memory.install_vector_deps through managed-candidate Setup stage 1. v8 sets stdin=DEVNULL on update child processes after the real pip child inherited the open NDJSON stream; update lifecycle tests passed 12/12 and controlled real Obsidian Settings update/cancel/pre-install-failure paths were exercised. v10 fixes the Dashboard recovery CTA no-op by routing it to visible Setup and corrects its managed-runtime failure guidance; focused navigation/dashboard tests passed 75/75, production build passed, and a real damaged-runtime Setup recovery passed. The current focused Dashboard flag fix synchronizes canonical note flags to the formal-library projection on changed and idempotent writes; 35 focused tests plus real Dashboard repair and separate-host readback passed on its recorded Wheel/Bundle tuple. No full-journey rerun for that tuple, Release, or Hosted CI/H."
+  }
 }

@@ -464,6 +464,158 @@ class TestOrphanStateMachine:
         assert len(prune) == 1
         assert prune[0]["scope"]["kind"] == "all"
 
+    def test_library_prune_registry_scopes_to_trash_and_restores(self, tmp_path: Path) -> None:
+        import os
+        import subprocess
+        import sys
+
+        from paperforge.config import paperforge_paths
+        from paperforge.lineage import probe_lineage
+        from paperforge.memory.db import get_connection, get_memory_db_path
+        from paperforge.worker.trash import list_trash
+
+        keys = ("KEY1", "ORPHAN1", "ORPHAN2")
+        vault = _lineage_vault(tmp_path, keys=keys)
+        self._seed_zotero_exports(vault, ("KEY1",))
+        self._seed_orphan(vault, "ORPHAN1")
+        self._seed_orphan(vault, "ORPHAN2")
+        paths = paperforge_paths(vault)
+        literature, ocr_root = paths["literature"], paths["ocr"]
+        workspaces = {
+            key: literature / "骨科" / f"{key} - Active Title"
+            if key == "KEY1"
+            else literature / "骨科" / f"{key} - Orphan Title"
+            for key in keys
+        }
+        workspaces["KEY1"].mkdir(parents=True, exist_ok=True)
+        ocr_dirs = {key: ocr_root / key for key in keys}
+        workspace_markers = {key: path / "marker.md" for key, path in workspaces.items()}
+        ocr_markers = {key: path / "marker.md" for key, path in ocr_dirs.items()}
+        for key in keys:
+            workspace_markers[key].write_text(key, encoding="utf-8")
+            ocr_markers[key].write_text(key, encoding="utf-8")
+
+        # This synthetic substrate mirrors production's external-content FTS rows.
+        conn = get_connection(get_memory_db_path(vault))
+        try:
+            body_rows = conn.execute(
+                "SELECT rowid, unit_id, paper_id, section_path, unit_text "
+                "FROM body_units WHERE indexable = 1"
+            ).fetchall()
+            for row in body_rows:
+                conn.execute(
+                    "INSERT INTO body_units_fts "
+                    "(rowid, unit_id, paper_id, section_path, unit_text) VALUES (?, ?, ?, ?, ?)",
+                    tuple(row),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        action = [
+            "--vault", str(vault), "action", "run", "library.prune",
+            "--scope", "papers", "--key",
+        ]
+        rc, active_result = _run_cli(
+            *action, "KEY1", "--json", "--confirm", "library.prune",
+        )
+        assert rc == 1
+        assert active_result["data"]["availability_reason_code"] == "library.no_selected_orphans"
+        assert all(path.is_dir() for path in workspaces.values())
+        assert all(path.is_dir() for path in ocr_dirs.values())
+
+        rc, refused = _run_cli(*action, "ORPHAN1", "--json")
+        assert rc == 3
+        assert refused["error"]["code"] == "action.confirmation_required"
+        assert all(path.is_dir() for path in workspaces.values())
+        assert all(path.is_dir() for path in ocr_dirs.values())
+
+        rc, result = _run_cli(
+            *action, "ORPHAN1", "--json", "--confirm", "library.prune",
+        )
+        assert rc == 0
+        assert result["ok"] is True
+        assert result["command"] == "action run"
+        assert result["data"]["deleted"] == ["ORPHAN1"]
+        assert result["data"]["counts"]["workspace"] == 1
+        assert result["data"]["counts"]["ocr"] == 1
+        assert result["data"]["counts"]["vectors"] >= 1
+        assert result["data"]["counts"]["failed"] == 0
+        assert result["data"]["failed_keys"] == []
+        assert not workspaces["ORPHAN1"].exists()
+        assert not ocr_dirs["ORPHAN1"].exists()
+        assert workspaces["ORPHAN2"].is_dir()
+        assert ocr_dirs["ORPHAN2"].is_dir()
+        assert workspaces["KEY1"].is_dir()
+        assert ocr_dirs["KEY1"].is_dir()
+        assert probe_lineage(vault)["orphan"]["keys"] == ["ORPHAN2"]
+
+        conn = get_connection(get_memory_db_path(vault))
+        try:
+            for key, expected in (("KEY1", 1), ("ORPHAN1", 0), ("ORPHAN2", 1)):
+                for table in (
+                    "vec_fulltext_meta", "body_units", "body_units_fts",
+                    "object_units", "lineage",
+                ):
+                    count = conn.execute(
+                        f"SELECT COUNT(*) FROM {table} WHERE paper_id = ?", (key,)
+                    ).fetchone()[0]
+                    assert (count > 0) is bool(expected), (key, table, count)
+        finally:
+            conn.close()
+
+        records = list_trash(vault)
+        assert len(records) == 2
+        assert all(r["operation"] == "library.prune" and r["paper_key"] == "ORPHAN1" for r in records)
+        assert {Path(r["original_path"]).resolve() for r in records} == {
+            workspaces["ORPHAN1"].resolve(),
+            ocr_dirs["ORPHAN1"].resolve(),
+        }
+        for record in records:
+            moved_marker = Path(record["trash_path"]) / "marker.md"
+            assert moved_marker.read_text(encoding="utf-8") == "ORPHAN1"
+            restored = subprocess.run(
+                [
+                    sys.executable, "-m", "paperforge", "--vault", str(vault),
+                    "trash", "restore", record["trash_id"],
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env={**os.environ, "PYTHON_KEYRING_BACKEND": "keyring.backends.fail.Keyring"},
+            )
+            assert restored.returncode == 0, restored.stdout + restored.stderr
+        for key in keys:
+            assert workspace_markers[key].read_text(encoding="utf-8") == key
+            assert ocr_markers[key].read_text(encoding="utf-8") == key
+
+    def test_library_prune_all_scope_runs_confirmed_registry_action(
+        self, tmp_path: Path
+    ) -> None:
+        from paperforge.config import paperforge_paths
+        from paperforge.lineage import probe_lineage
+        from paperforge.worker.trash import list_trash
+
+        vault = _lineage_vault(tmp_path)
+        self._seed_zotero_exports(vault, ("KEY1",))
+        self._seed_orphan(vault, "ORPHAN1")
+        active = paperforge_paths(vault)["literature"] / "骨科" / "KEY1 - Active Title"
+        active.mkdir(parents=True, exist_ok=True)
+
+        rc, result = _run_cli(
+            "--vault", str(vault), "action", "run", "library.prune",
+            "--scope", "all", "--confirm", "library.prune", "--json",
+        )
+        assert rc == 0
+        assert result["ok"] is True
+        assert result["data"]["deleted"] == ["ORPHAN1"]
+        assert not (paperforge_paths(vault)["literature"] / "骨科" / "ORPHAN1 - Orphan Title").exists()
+        assert active.is_dir()
+        assert probe_lineage(vault)["orphan"]["count"] == 0
+        assert [(r["operation"], r["paper_key"]) for r in list_trash(vault)] == [
+            ("library.prune", "ORPHAN1"),
+        ]
+
     def test_no_orphan_emits_no_prune(self, tmp_path: Path) -> None:
         from paperforge.lineage import probe_lineage
 

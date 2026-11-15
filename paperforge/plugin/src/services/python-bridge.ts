@@ -143,13 +143,22 @@ const SETUP_FAILURE_PATTERNS: Array<[RegExp, ErrorClassification]> = [
     },
   ],
   [
+    /(?:no matching distribution found for|could not find a version that satisfies the requirement)\s*paperforge(?:\b|\[)/,
+    {
+      type: "artifact_unavailable",
+      message: "This PaperForge version is not available from the package index",
+      recoverable: true,
+      action: "check-release",
+    },
+  ],
+  [
     /no matching distribution|could not find a version|404|not available/,
     {
       type: "artifact_unavailable",
       message:
-        "This PaperForge version is not available from the package index",
+        "A required package is unavailable from the configured package source",
       recoverable: true,
-      action: "check-release",
+      action: "check-package-source",
     },
   ],
   [

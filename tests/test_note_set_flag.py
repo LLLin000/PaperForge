@@ -110,6 +110,104 @@ def test_set_flag_false_and_idempotent_noop(tmp_path: Path) -> None:
     assert fm2["do_ocr"] is False
 
 
+def test_set_flag_updates_dashboard_read_model(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    _seed(vault, "---\nzotero_key: ABCD1234\ndo_ocr: true\n---\nbody")
+    index_path = get_index_path(vault)
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["items"][0]["do_ocr"] = True
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "false", "--json"
+    )
+    assert rc == 0, err
+    assert payload["data"]["changed"] is True
+
+    from paperforge.commands.dashboard import _gather_dashboard_data
+
+    dashboard = _gather_dashboard_data(vault)
+    assert dashboard["items"][0]["do_ocr"] is False
+
+
+def test_idempotent_set_flag_repairs_stale_dashboard_read_model(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    _seed(vault, "---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody")
+    index_path = get_index_path(vault)
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["items"][0]["do_ocr"] = True
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "false", "--json"
+    )
+    assert rc == 0, err
+    assert payload["data"]["changed"] is False
+
+    from paperforge.commands.dashboard import _gather_dashboard_data
+
+    dashboard = _gather_dashboard_data(vault)
+    assert dashboard["items"][0]["do_ocr"] is False
+
+def test_set_flag_updates_legacy_list_index(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    _seed(vault, "---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody")
+    index_path = get_index_path(vault)
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index_path.write_text(json.dumps(index["items"]), encoding="utf-8")
+
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    assert rc == 0, err
+    assert payload["data"]["changed"] is True
+    updated = json.loads(index_path.read_text(encoding="utf-8"))
+    assert isinstance(updated, list)
+    assert updated[0]["do_ocr"] is True
+
+
+
+def test_set_flag_keeps_note_unchanged_when_index_lock_fails(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    from argparse import Namespace
+
+    from filelock import Timeout
+
+    import paperforge.worker.asset_index as asset_index
+    from paperforge.commands.note import run
+
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed(vault, "---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody")
+    original_note = _read_raw(note)
+    index_path = get_index_path(vault)
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["items"][0]["do_ocr"] = False
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+
+    def fail_index_mutation(_vault, _mutator):
+        raise Timeout("synthetic index lock timeout")
+
+    monkeypatch.setattr(asset_index, "mutate_index", fail_index_mutation)
+    rc = run(
+        Namespace(vault=str(vault), key="ABCD1234", field="do_ocr", value="true")
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert rc == 1
+    assert payload["ok"] is False
+    assert "synthetic index lock timeout" in payload["error"]["message"]
+    assert _read_raw(note) == original_note
+    assert (
+        json.loads(index_path.read_text(encoding="utf-8"))["items"][0]["do_ocr"]
+        is False
+    )
+
+
 def test_unknown_field_fails_closed(tmp_path: Path) -> None:
     vault = tmp_path / "v"
     vault.mkdir()

@@ -52,7 +52,7 @@ import {
   scanBbtDirectChildren,
   classifySetupFailure,
 } from "./services/python-bridge";
-import type { PythonResult } from "./services/python-bridge";
+import type { ErrorClassification, PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeClient } from "./client";
@@ -284,6 +284,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._displayInProgress = false;
       return;
     }
+    if (this.activeTab === "help" && !this._attemptedProbes.has("help")) {
+      this._attemptedProbes.add("help");
+      this._probeModule("help");
+    }
 
     // Inject tab CSS once
     if (!document.getElementById("paperforge-tab-styles")) {
@@ -424,6 +428,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       btn.addEventListener("click", () => {
         this._detailReturn = null;
         this.activeTab = tab.id;
+        if (tab.id === "help") this._attemptedProbes.delete("help");
         this._navMemory = { destination: tab.id };
         this._persistNavMemory();
         this.display();
@@ -493,7 +498,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return this._client!;
   }
 
-  private _startSetupJourney(stage: 1 | 2 | 3 | 4 = 1, reinstall = false): void {
+  /** Start stage 1 from a plugin-owned recovery entry point. */
+  openSetupJourney(): void {
+    this._startSetupJourney(1);
+  }
+
+  private _startSetupJourney(
+    stage: 1 | 2 | 3 | 4 = 1,
+    reinstall = false
+  ): void {
     this._setupStage = stage;
     this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
@@ -525,9 +538,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return bounded.length > 220 ? `${bounded.slice(0, 220)}…` : bounded;
   }
 
-  /** Classified, actionable install-failure line (#257): category hint + raw. */
-  private _formatSetupFailureWithHint(error: unknown): string {
-    const raw = this._formatSetupFailure(error);
+  /** #257: classified next step; do not echo command lines or raw stderr. */
+  private _formatSetupFailureWithHint(failure: ErrorClassification): string {
     const hints: Record<string, string> = {
       network: "setup_fail_hint_network",
       disk_full: "setup_fail_hint_disk_full",
@@ -540,9 +552,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       no_python: "setup_fail_hint_no_python",
       python_missing: "setup_fail_hint_no_python",
     };
-    const hintKey =
-      hints[classifySetupFailure(raw).type] ?? "setup_fail_hint_generic";
-    return `${t(hintKey)} · ${raw}`;
+    const hintKey = hints[failure.type] ?? "setup_fail_hint_generic";
+    return t(hintKey);
   }
 
   /** #257: bounded stage breadcrumbs (oldest first) for the diagnostic. */
@@ -2146,6 +2157,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const actionId = primary.action_id;
 
     if (verb === "setup" || verb === "set_config") {
+      if (actionId === "help.restore") {
+        // Packaged help lives inside the Python distribution, so restoring it
+        // is a runtime repair — the external installer owns that.
+        this._launchRuntimeInstaller("repair");
+        return;
+      }
       if (mod === "library") {
         this._startSetupJourney(2);
       } else {
@@ -2800,6 +2817,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         "Open the relevant module, or copy a diagnostic for support.",
     });
 
+    const helpEnvelope = this._capabilityState?.help;
+    const helpAction = helpEnvelope?.action?.primary;
+    if (
+      helpEnvelope &&
+      helpAction?.action_id === "help.restore" &&
+      helpAction.availability === "available"
+    ) {
+      const actionKey =
+        "action_" + helpAction.action_id.replace(/[.-]/g, "_");
+      const translated = t(actionKey);
+      const restore = containerEl.createDiv({ cls: "pf-help-restore" });
+      restore.createEl("p", {
+        text: t("help_restore_missing"),
+      });
+      renderActionButton(restore, {
+        label: translated !== actionKey ? translated : helpAction.label,
+        onClick: () => this._dispatchModuleAction("help", helpEnvelope),
+      });
+    }
     // Loading indicator
     const loading = containerEl.createEl("p", {
       cls: "pf-help-loading",
@@ -3079,6 +3115,45 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.plugin.saveSettings();
   }
 
+  private _setupRequiredInstallationEnvelope(
+    missingRuntimeExecutable: boolean
+  ): ProbeEnvelope {
+    return {
+      schema_version: 2,
+      module: "installation",
+      capability_state: "unknown",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "error",
+      reason: {
+        code: missingRuntimeExecutable
+          ? "installation.runtime_executable_missing"
+          : "installation.no_python",
+        text: missingRuntimeExecutable
+          ? "The published PaperForge runtime points to a missing Python executable. Run the Setup Wizard to restore it."
+          : "No Python found. Run the Setup Wizard to install the managed runtime.",
+      },
+      // A stale pointer needs the Setup Wizard (it must rebuild the runtime);
+      // a simply missing interpreter is the external installer's job.
+      action: {
+        primary: missingRuntimeExecutable
+          ? setupAction()
+          : runtimeInstallAction(t("runtime_install_btn")),
+      },
+      notices: [],
+      user_state: "setup_required",
+      capability_kind: "required",
+      maintenance_eligible: false,
+      user_visible_failure: true,
+      user_impact: missingRuntimeExecutable
+        ? "PaperForge cannot run until its managed runtime is restored."
+        : "PaperForge cannot run without Python.",
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 60,
+    };
+  }
+
   /** Call `paperforge probe <module> --json` and store the validated envelope unchanged. */
   _probeModule(mod: CapabilityModule, lastOperationExitCode?: number): void {
     if (this._probing.has(mod)) return;
@@ -3109,10 +3184,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._updateCapabilityEnvelope(mod, probing);
 
     const resolved = this._resolveRuntimeCommand();
-    if (!resolved) {
+    const missingRuntimeExecutable =
+      resolved !== null && !fs.existsSync(resolved.path);
+    if (!resolved || missingRuntimeExecutable) {
       this._probing.delete(mod);
       if (mod === "installation") {
-        this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
+        this._updateCapabilityEnvelope(
+          mod,
+          this._setupRequiredInstallationEnvelope(missingRuntimeExecutable)
+        );
       } else if (mod === "help") {
         // Help/docs do not need the runtime; keep the honest invalid state.
         this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
@@ -3400,7 +3480,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Footer: action button + diagnostics
     const footer = card.createEl("div", { cls: "pf-cc-card-footer" });
 
-    // Action button — only for real modules (installation/help); placeholders show no action
+    // Action button — route real probe actions through the shared dispatcher.
     if (isReal && env.action.primary && !isReadyEnvelope(env)) {
       const action = classifyCapabilityAction(env);
       const isCta = action.kind === "setup";
@@ -3413,11 +3493,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         attr: { "aria-label": action.label },
       });
       btn.addEventListener("click", () => {
-        if (action.kind === "setup") {
-          this._startSetupJourney(1);
-        } else {
-          this._dispatchModuleAction(mod, env);
-        }
+        this._dispatchModuleAction(mod, env);
       });
     }
 
@@ -3462,6 +3538,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _handleCardNavigation(mod: string): void {
     if (mod === "help") {
       this.activeTab = "help";
+      this._attemptedProbes.delete("help");
       this._selectedDetailModule = "";
       this._focusTargetId = "div.pf-open-module-btn[data-module=help]";
     } else {
@@ -3761,7 +3838,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * Stale actions stay disabled until fresh envelopes land (last-known kept).
    */
   _refreshAllReadModels(lastLibraryExitCode?: number): void {
-    this.getClient().invalidateCache();
+    const client = this.getClient();
+    client.invalidateCache();
     const vp =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
       "";
@@ -3770,10 +3848,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
     this._probing.clear();
+    const resolved = this._resolveRuntimeCommand();
+    const missingRuntimeExecutable =
+      resolved !== null && !fs.existsSync(resolved.path);
+    if (!resolved || missingRuntimeExecutable) {
+      this._capabilityState ??= {};
+      for (const mod of CAPABILITY_MODULES) {
+        if (mod !== "installation") {
+          this._capabilityState[mod] = createInvalidEnvelope(mod);
+        }
+      }
+      this._updateCapabilityEnvelope(
+        "installation",
+        this._setupRequiredInstallationEnvelope(missingRuntimeExecutable)
+      );
+      return;
+    }
     for (const mod of CAPABILITY_MODULES) {
       this._probing.add(mod);
     }
-    const client = this.getClient();
     // Older runtimes accept expected-version on the installation probe but
     // ignore it in probe all. Keep Python's versioned verdict authoritative.
     void Promise.all([
@@ -4854,6 +4947,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * resume the Setup Journey at the stage the user left. */
   hide(): void {
     this._setupJourneyDismissedForSession = false;
+    this._attemptedProbes.delete("help");
     super.hide();
   }
 }

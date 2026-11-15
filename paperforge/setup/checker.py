@@ -38,6 +38,11 @@ class SetupChecker:
         try:
             r = subprocess.run(
                 [sys.executable, "-m", "pip", "--version"],
+                # Never let pip block on an inherited stdin; a cold Windows
+                # interpreter (Defender) can take far longer than 10s, so the
+                # timeout stays generous and a timeout is reported as
+                # inconclusive instead of a missing pip.
+                stdin=subprocess.DEVNULL,
                 capture_output=True,
                 timeout=60,
             )

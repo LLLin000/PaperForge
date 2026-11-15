@@ -7,11 +7,13 @@ import {
   Modal,
   MarkdownRenderer,
   Component,
+  TFile,
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
+import { traceConsoleError } from "../client/trace";
 import { PaperForgeConfirmModal } from "./modals";
 import { PaperForgeStatusView } from "./dashboard";
 import {
@@ -1251,8 +1253,7 @@ export class OcrWorkspaceView extends ItemView {
    * path (step 6 item 6: the UI never constructs canonical artifact paths;
    * a missing path fails closed).
    */
-  private _openFulltext(key: string): void {
-    const vp = (this.app.vault.adapter as any).basePath as string;
+  private async _openFulltext(key: string): Promise<void> {
     const paper = this.papers.find((p) => p.key === key);
     const rel = (paper?.fulltextPath ?? "").replace(/\\/g, "/");
     if (!rel) {
@@ -1260,11 +1261,28 @@ export class OcrWorkspaceView extends ItemView {
       return;
     }
     const file = this.app.vault.getAbstractFileByPath(rel);
-    if (file) {
-      (this.app.workspace as any).getLeaf().openFile(file);
-    } else {
+    if (!(file instanceof TFile)) {
       new Notice(
         t("ocr_ws_fulltext_not_found") || "Fulltext not found in vault"
+      );
+      return;
+    }
+    const workspace = this.app.workspace;
+    const leaf = workspace.getLeaf();
+    try {
+      await leaf.openFile(file);
+      await workspace.revealLeaf(leaf);
+      workspace.setActiveLeaf(leaf, { focus: true });
+    } catch {
+      traceConsoleError({
+        op: "ocr.fulltext.open",
+        stage: "local",
+        code: "backend_error",
+        exitCode: null,
+      });
+      new Notice(
+        t("ocr_ws_fulltext_open_failed") || "Unable to open fulltext",
+        8000
       );
     }
   }

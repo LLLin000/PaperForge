@@ -270,24 +270,75 @@ def test_malformed_record_reads_and_missing_pdf_stay_unavailable(tmp_path):
 
 def test_memory_rebuild_preserves_ids_corrections_and_new_source(tmp_path):
     from paperforge.memory.permanent import get_correction_log_path, get_reading_log_path
+
     source_vault(tmp_path)
     rc, first = cli(tmp_path, "--write", "PAPER001", "--excerpt", "Rebuild marker one")
     assert rc == 0, first
-    rc, second = cli(tmp_path, "--write", "PAPER001", "--excerpt", "Rebuild marker two",
-                    "--source-json", json.dumps({"path": "Sources/paper.pdf", "physical_page": 1}))
+    rc, second = cli(
+        tmp_path, "--write", "PAPER001", "--excerpt", "Rebuild marker two",
+        "--source-json", json.dumps({"path": "Sources/paper.pdf", "physical_page": 1}),
+    )
     assert rc == 0, second
-    assert cli(tmp_path, "--correct", first["data"]["id"], "--correction", "fix")[0] == 0
+    correction_rc, correction = cli(
+        tmp_path, "--correct", first["data"]["id"], "--correction", "fix",
+        "--reason", "Rechecked source",
+    )
+    assert correction_rc == 0, correction
     before_log = get_reading_log_path(tmp_path).read_bytes()
     before_corr = get_correction_log_path(tmp_path).read_bytes()
+    env = {**os.environ, "PYTHON_KEYRING_BACKEND": "keyring.backends.fail.Keyring"}
+
     proc = subprocess.run(
         [sys.executable, "-m", "paperforge", "--vault", str(tmp_path), "memory", "build", "--json"],
-        capture_output=True, text=True, encoding="utf-8",
-        env={**os.environ, "PYTHON_KEYRING_BACKEND": "keyring.backends.fail.Keyring"},
+        capture_output=True, text=True, encoding="utf-8", env=env,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert get_reading_log_path(tmp_path).read_bytes() == before_log
     assert get_correction_log_path(tmp_path).read_bytes() == before_corr
-    assert cli(tmp_path, "--search", "Rebuild marker two")[1]["data"]["matches"][0]["source"]["path"] == "Sources/paper.pdf"
+
+    action = [
+        sys.executable, "-m", "paperforge", "--vault", str(tmp_path),
+        "action", "run", "memory.rebuild", "--json",
+    ]
+    invalid_scope = subprocess.run(
+        [*action, "--scope", "papers", "--key", "PAPER001"],
+        capture_output=True, text=True, encoding="utf-8", env=env,
+    )
+    assert invalid_scope.returncode == 2, invalid_scope.stdout + invalid_scope.stderr
+    assert json.loads(invalid_scope.stdout)["error"]["code"] == "action.scope_invalid"
+    assert get_reading_log_path(tmp_path).read_bytes() == before_log
+    assert get_correction_log_path(tmp_path).read_bytes() == before_corr
+    refused = subprocess.run(action, capture_output=True, text=True, encoding="utf-8", env=env)
+    assert refused.returncode == 3, refused.stdout + refused.stderr
+    assert json.loads(refused.stdout)["error"]["code"] == "action.confirmation_required"
+    assert get_reading_log_path(tmp_path).read_bytes() == before_log
+    assert get_correction_log_path(tmp_path).read_bytes() == before_corr
+
+    rebuilt = subprocess.run(
+        [*action, "--confirm", "memory.rebuild"],
+        capture_output=True, text=True, encoding="utf-8", env=env,
+    )
+    assert rebuilt.returncode == 0, rebuilt.stdout + rebuilt.stderr
+    result = json.loads(rebuilt.stdout)
+    assert result["ok"] is True, result
+    assert result["command"] == "action run"
+    assert get_reading_log_path(tmp_path).read_bytes() == before_log
+    assert get_correction_log_path(tmp_path).read_bytes() == before_corr
+
+    hit = cli(tmp_path, "--search", "Rebuild marker two")[1]["data"]["matches"][0]
+    assert (hit["id"], hit["source"]["path"]) == (second["data"]["id"], "Sources/paper.pdf")
+    old = cli(tmp_path, "--search", "Rebuild marker one", "--include-history")[1]["data"]["matches"][0]
+    assert (
+        old["id"],
+        old["record_status"],
+        old["corrections"][0]["id"],
+        old["corrections"][0]["reason"],
+    ) == (
+        first["data"]["id"],
+        "corrected",
+        correction["data"]["jsonl_id"],
+        "Rechecked source",
+    )
 
 
 def test_multiple_matching_records_return_each_stable_id(tmp_path):

@@ -60,6 +60,43 @@ def _resolve_note(vault: Path, entry: dict) -> tuple[Path | None, str]:
     return None, tried
 
 
+def _sync_index_flag(vault: Path, key: str, field: str, value: bool) -> bool:
+    """Keep the dashboard's index projection aligned with the canonical note."""
+    from paperforge.worker.asset_index import mutate_index
+
+    found = False
+
+    def _patch(current):
+        nonlocal found
+        if isinstance(current, dict):
+            items = current.get("items")
+            if not isinstance(items, list):
+                return None
+        elif isinstance(current, list):
+            items = current
+        else:
+            return None
+
+        for position, item in enumerate(items):
+            if not isinstance(item, dict) or str(item.get("zotero_key", "")).lower() != key.lower():
+                continue
+            found = True
+            if item.get(field) is value:
+                return None
+            updated_items = list(items)
+            updated_entry = dict(item)
+            updated_entry[field] = value
+            updated_items[position] = updated_entry
+            if isinstance(current, dict):
+                updated = dict(current)
+                updated["items"] = updated_items
+                return updated
+            return updated_items
+        return None
+
+    return mutate_index(vault, _patch) or found
+
+
 def run(args: argparse.Namespace) -> int:
     """Set a boolean workflow flag on the canonical note frontmatter."""
     from paperforge import __version__
@@ -81,7 +118,7 @@ def run(args: argparse.Namespace) -> int:
 
     try:
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
-        from paperforge.worker.asset_index import read_index
+        from paperforge.worker.asset_index import get_index_path, read_index
 
         index = read_index(vault)
         items = index.get("items", []) if isinstance(index, dict) else (
@@ -132,35 +169,68 @@ def run(args: argparse.Namespace) -> int:
             return 1
         probe_text = text[1:] if text.startswith("\ufeff") else text
         fm = read_frontmatter_dict(probe_text)
-        if fm.get(field) is value:
-            # Idempotent no-op — still authoritative, no write.
-            data = {
-                "intent": "note-set-flag",
-                "key": entry.get("zotero_key"),
-                "field": field,
-                "value": value,
-                "note_path": note_rel,
-                "changed": False,
-            }
-            from paperforge.core.result import PFResult
-
-            result = PFResult(
-                ok=True, command="note", version=__version__, data=data
+        changed = fm.get(field) is not value
+        if changed:
+            note.write_text(
+                set_frontmatter_flag(text, field, value),
+                encoding="utf-8",
+                newline="",
             )
-            print(result.to_json())
-            return 0
-        note.write_text(
-            set_frontmatter_flag(text, field, value),
-            encoding="utf-8",
-            newline="",
-        )
+        state = "was saved" if changed else "is already set"
+
+        def _index_sync_failure(reason: str) -> str:
+            message = f"dashboard index sync failed: {reason}"
+            if not changed:
+                return f"canonical note flag {state}, but {message}"
+            try:
+                note.write_text(text, encoding="utf-8", newline="")
+            except Exception as rollback_exc:
+                return (
+                    f"{message}; canonical note rollback failed: {rollback_exc}; "
+                    "the note may still contain the requested value"
+                )
+            return f"{message}; canonical note was restored"
+
+        try:
+            index_synced = _sync_index_flag(
+                vault, str(entry.get("zotero_key")), field, value
+            )
+        except Exception as exc:
+            raise RuntimeError(_index_sync_failure(str(exc))) from exc
+        if not index_synced:
+            current_index = read_index(vault)
+            index_path = get_index_path(vault)
+            if current_index is None:
+                reason = (
+                    "index file is missing"
+                    if not index_path.exists()
+                    else "index JSON is unreadable or invalid"
+                )
+            else:
+                items = (
+                    current_index.get("items")
+                    if isinstance(current_index, dict)
+                    else current_index
+                )
+                if not isinstance(items, list):
+                    reason = "index items structure is invalid"
+                elif not any(
+                    isinstance(item, dict)
+                    and str(item.get("zotero_key", "")).lower()
+                    == str(entry.get("zotero_key", "")).lower()
+                    for item in items
+                ):
+                    reason = "target index row is missing"
+                else:
+                    reason = "target index row was not updated"
+            raise RuntimeError(_index_sync_failure(reason))
         data = {
             "intent": "note-set-flag",
             "key": entry.get("zotero_key"),
             "field": field,
             "value": value,
             "note_path": note_rel,
-            "changed": True,
+            "changed": changed,
         }
         from paperforge.core.result import PFResult
 

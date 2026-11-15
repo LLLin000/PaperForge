@@ -108,9 +108,9 @@ def _paper_timeout_minutes(meta: dict | None = None) -> int:
 def _paper_timed_out(meta: dict) -> bool:
     """True when a queued/running OCR job has exceeded the per-paper timeout.
 
-    A stuck provider job must not hold its upload slot forever — the whole
-    batch would stall behind it. Timeout marks the paper retryable (not fatal),
-    so the next run re-uploads it.
+    A stuck provider job must not hold its local upload slot forever — the
+    batch would stall. Keep its job ID and poll on the next run; never blindly
+    resubmit because the remote job may still be running.
     """
     started = meta.get("ocr_started_at", "") or ""
     if not started:
@@ -3047,7 +3047,7 @@ def run_ocr(
     job_url, model = resolve_paddleocr_endpoint(vault)
     optional_payload = {"useDocOrientationClassify": False, "useDocUnwarping": False, "useChartRecognition": False}
     changed = 0
-    active_submitted = 0
+    active_submitted: set[str] = set()
     queue_changed = False
     _submitted: set[str] = set()  # keys newly uploaded in this run
     def _do_poll(job_id: str, token_val: str) -> requests.Response:
@@ -3068,7 +3068,7 @@ def run_ocr(
             queue_changed = True
             continue
         if status in {"queued", "running"} and meta.get("ocr_job_id"):
-            active_submitted += 1
+            active_submitted.add(key)
             if not token:
                 continue
             meta_path_poll = paths["ocr"] / key / "meta.json"
@@ -3101,7 +3101,7 @@ def run_ocr(
                 raw_error_dir.mkdir(parents=True, exist_ok=True)
                 write_json(raw_error_dir / "api_error_payload.json", {"raw_response": response.text[:5000]})
                 changed += 1
-                active_submitted = max(0, active_submitted - 1)
+                active_submitted.discard(key)
                 continue
             if state in {"pending", "running"}:
                 if _paper_timed_out(meta):
@@ -3109,6 +3109,9 @@ def run_ocr(
                     meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min); remote job may still run"
                     queue_row["queue_status"] = meta["ocr_status"]
                     timed_out_keys.add(key)
+                    # A timed-out remote job keeps its identity but no longer
+                    # consumes a local upload slot.
+                    active_submitted.discard(key)
                 else:
                     # Provider "pending" = job submitted, waiting in provider
                     # queue — semantically OUR "queued", never the pre-upload
@@ -3149,14 +3152,14 @@ def run_ocr(
                     apply_ocr_error_state(queue_row, meta, error_state)
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                    active_submitted = max(0, active_submitted - 1)
+                    active_submitted.discard(key)
                     continue
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
                     apply_ocr_error_state(queue_row, meta, error_state)
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                    active_submitted = max(0, active_submitted - 1)
+                    active_submitted.discard(key)
                     continue
                 health_path_poll = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_poll = read_json(health_path_poll) if health_path_poll.exists() else {}
@@ -3197,7 +3200,7 @@ def run_ocr(
                 meta["error"] = ""
                 queue_row["queue_status"] = "done"
                 queue_changed = True
-                active_submitted = max(0, active_submitted - 1)
+                active_submitted.discard(key)
             else:
                 meta["ocr_status"] = "error"
                 meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
@@ -3205,7 +3208,7 @@ def run_ocr(
                 meta["last_error"] = meta["error"]
                 meta["library_record"] = key
                 queue_row["queue_status"] = "error"
-                active_submitted = max(0, active_submitted - 1)
+                active_submitted.discard(key)
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
             _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
@@ -3275,7 +3278,7 @@ def run_ocr(
             break
         if all(str(row.get("zotero_key", "")) in (unconfirmed_keys | timed_out_keys) for row in remaining):
             break
-        available_slots = max(0, max_items - active_submitted)
+        available_slots = max(0, max_items - len(active_submitted))
         _sanitized_temp = None
         if available_slots > 0:
             upload_items = [
@@ -3480,7 +3483,7 @@ def run_ocr(
                 queue_row["queue_status"] = "queued"
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
-                active_submitted += 1
+                active_submitted.add(key)
                 _diag(f"OCR: {key} queued (job {meta['ocr_job_id']})")
             if _sanitized_temp is not None and _sanitized_temp.exists():
                 _sanitized_temp.unlink(missing_ok=True)
@@ -3552,7 +3555,7 @@ def run_ocr(
                     apply_ocr_error_state(queue_row, meta, error_state)
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                    active_submitted = max(0, active_submitted - 1)
+                    active_submitted.discard(key)
                     continue
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
@@ -3575,7 +3578,7 @@ def run_ocr(
                 meta["error"] = ""
                 queue_row["queue_status"] = "done"
                 queue_changed = True
-                active_submitted = max(0, active_submitted - 1)
+                active_submitted.discard(key)
                 _completed_count += 1
                 _diag(f"OCR: {key} completed ({page_num} pages)")
             elif state in ("error", "failed"):
@@ -3591,7 +3594,7 @@ def run_ocr(
                 meta["ocr_job_id"] = ""
                 meta["ocr_started_at"] = ""
                 meta["error_stage"] = "provider"
-                active_submitted = max(0, active_submitted - 1)
+                active_submitted.discard(key)
                 attempt = int(meta.get("job_attempt", 0) or 0) + 1
                 meta["job_attempt"] = attempt
                 meta["last_error"] = meta["error"]
@@ -3618,6 +3621,9 @@ def run_ocr(
                     meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min); remote job may still run"
                     queue_row["queue_status"] = meta["ocr_status"]
                     timed_out_keys.add(key)
+                    # Release the local slot once; the provider job ID stays
+                    # attached so later runs poll rather than resubmit it.
+                    active_submitted.discard(key)
                 else:
                     # Provider "pending" = job submitted — never downgrade to
                     # our pre-upload "pending" (breaks sleep/upload gates).
