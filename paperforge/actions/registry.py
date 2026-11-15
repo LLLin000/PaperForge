@@ -493,23 +493,133 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             data={"exit_code": rc, **settlement},
             successful_keys=successful,
         )
-    # rc == 1: some items are pending (server still processing — poll
-    # window ended) or failed.  Pending is NOT an error, it means re-run
-    # to continue polling; surface that instead of a bare 'unknown'.  The
-    # successful subset still propagates for downstream follow-ups (P0-3).
+    # rc == 1: blocked/failed/pending/busy are distinct terminals.  Explicit
+    # HTTP 401/403 upload denials, missing PDF, and missing token are blocked;
+    # only genuinely pending work keeps the poll-timeout instruction.
+    # Resuming a blocked batch would spend quota on a job the provider refused.
+    summary = settlement.get("summary", {}) if isinstance(settlement, dict) else {}
+    blocked_count = int(summary.get("blocked", 0) or 0)
+    failed_count = int(summary.get("failed", 0) or 0)
+    pending_count = int(summary.get("pending", 0) or 0)
+    failed_keys = list(sink.get("failed_keys", []) or [])
+    blocked_keys = sorted(
+        str(key)
+        for key, outcome in (outcomes or {}).items()
+        if outcome == "blocked"
+    )
+    unconfirmed = list(sink.get("unconfirmed_keys", []) or [])
+    rate_limited = list(sink.get("rate_limited_keys", []) or [])
+    if unconfirmed:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_UPLOAD_FAILED,
+                message=(
+                    f"OCR 上传结果未确认（{', '.join(unconfirmed[:3])}）：请按论文和提交时间检查服务商任务列表（如有），"
+                    "然后联系 PaperForge 支持对账；未找到任务不代表上传失败。远端状态不明时，请勿重新提交或删除本地记录。 "
+                    "OCR submission unconfirmed; the provider may have accepted it. Check its task list if available, "
+                    "then contact PaperForge support. An absent match does not prove failure; do not resubmit or delete the local record."
+                ),
+                details={"failed_keys": unconfirmed},
+            ),
+            data={"exit_code": rc, **settlement, "pending_keys": sink.get("pending_keys", []),
+                  "failed_keys": failed_keys, "blocked_keys": blocked_keys},
+            successful_keys=successful,
+        )
+    result_unavailable = list(sink.get("result_unavailable_keys", []) or [])
+    if result_unavailable:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_RESULT_INVALID,
+                message=(
+                    f"Remote OCR finished but its result could not be retrieved for {', '.join(result_unavailable[:3])}; "
+                    "check the provider before retrying. The original job identity is preserved."
+                ),
+                details={"failed_keys": result_unavailable},
+            ),
+            data={"exit_code": rc, **settlement, "pending_keys": sink.get("pending_keys", []),
+                  "failed_keys": failed_keys, "blocked_keys": blocked_keys},
+            successful_keys=successful,
+        )
+    if rate_limited and not pending_count:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_RESULT_INVALID,
+                message="OCR provider rate limit or quota rejected the upload; check quota before retrying",
+                details={"failed_keys": rate_limited},
+            ),
+            data={"exit_code": rc, **settlement, "pending_keys": sink.get("pending_keys", []),
+                  "failed_keys": failed_keys, "blocked_keys": blocked_keys},
+            successful_keys=successful,
+        )
+    if blocked_count and not pending_count:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_UPLOAD_FAILED,
+                message=(
+                    "OCR is blocked and needs credentials or source files before retry — "
+                    "check the failed keys, fix auth/PDF access, then re-run; "
+                    "nothing was re-uploaded by this result"
+                ),
+                details={"blocked_keys": blocked_keys, "failed_keys": failed_keys},
+            ),
+            data={
+                "exit_code": rc,
+                **settlement,
+                "pending_keys": sink.get("pending_keys", []),
+                "failed_keys": failed_keys,
+                "blocked_keys": blocked_keys,
+            },
+            successful_keys=successful,
+        )
+    if failed_count and not pending_count:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_RESULT_INVALID,
+                message="OCR failed for some papers — fix the failed keys before re-running",
+                details={"failed_keys": failed_keys},
+            ),
+            data={
+                "exit_code": rc,
+                **settlement,
+                "pending_keys": sink.get("pending_keys", []),
+                "failed_keys": failed_keys,
+            },
+            successful_keys=successful,
+        )
     return PFResult(
         ok=False,
         command="action run",
         version=PF_VERSION,
         error=PFError(
             code=ErrorCode.OCR_POLL_TIMEOUT,
-            message="OCR: some items still processing on the server or failed — re-run to continue polling",
+            message=(
+                f"OCR has pending jobs and quota-rejected papers ({', '.join(rate_limited[:3])}); check status and quota before retrying"
+                if rate_limited else
+                f"OCR has pending jobs and failed or blocked papers ({', '.join(failed_keys[:3])}); check status and fix failures before retrying"
+                if failed_count or blocked_count else
+                "OCR: some items still processing on the server — re-run to continue polling without new uploads"
+            ),
         ),
         data={
             "exit_code": rc,
             **settlement,
             "pending_keys": sink.get("pending_keys", []),
-            "failed_keys": sink.get("failed_keys", []),
+            "failed_keys": failed_keys,
         },
         successful_keys=successful,
     )
@@ -757,6 +867,115 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
 
 # ── the registry ───────────────────────────────────────────────────────────
 
+def _foundation_update_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """foundation.update (#174): refresh the installed distribution via the
+    pure lifecycle service (no prompts, no stdout, fresh-child verified,
+    pointer published with the OBSERVED version).  Zero arbitrary args."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+    from paperforge.worker.update import perform_update
+
+    result = perform_update(ctx.vault)
+    if result.get("cancelled"):
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            data={"cancelled": True},
+            error=PFError(
+                code=ErrorCode.ACTION_CANCELLED,
+                message="update cancelled",
+            ),
+        )
+    return PFResult(
+        ok=result["ok"],
+        command="action run",
+        version=PF_VERSION,
+        data={k: v for k, v in result.items() if k != "ok"},
+        error=(
+            PFError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message=result.get("error", "update failed"),
+            )
+            if not result["ok"]
+            else None
+        ),
+    )
+
+
+def _foundation_update_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    # #174: update is a POST-bootstrap lifecycle operation — no published
+    # pointer means the runtime was never set up, so install/setup is the
+    # correct next action, not update (symmetric with foundation.repair).
+    from paperforge.runtime_pointer import read_pointer
+
+    if read_pointer() is None:
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="pointer.missing",
+            availability_reason="No runtime pointer published — run bootstrap install + paperforge setup",
+        )
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="ok",
+        availability_reason="Update is available on demand",
+    )
+
+
+def _foundation_repair_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """foundation.repair (#174): runtime LIFECYCLE repair — re-ensure deps
+    and re-publish the pointer after fresh-child verification.  Distinct
+    from the literature/OCR repair; zero arbitrary args."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+    from paperforge.worker.runtime_repair import perform_runtime_repair
+
+    result = perform_runtime_repair()
+    if result.get("cancelled"):
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            data={"cancelled": True},
+            error=PFError(
+                code=ErrorCode.ACTION_CANCELLED,
+                message="runtime repair cancelled",
+            ),
+        )
+    return PFResult(
+        ok=result["ok"],
+        command="action run",
+        version=PF_VERSION,
+        data={k: v for k, v in result.items() if k != "ok"},
+        error=(
+            PFError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message=result.get("error", "runtime repair failed"),
+            )
+            if not result["ok"]
+            else None
+        ),
+    )
+
+
+def _foundation_repair_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    from paperforge.runtime_pointer import read_pointer
+
+    if read_pointer() is None:
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="pointer.missing",
+            availability_reason="No runtime pointer published — run bootstrap install + paperforge setup",
+        )
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="ok",
+        availability_reason="Runtime repair can verify and re-publish the pointer",
+    )
+
+
 def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[str]:
     """Registry invariant audit; empty list = valid."""
     problems: list[str] = []
@@ -797,6 +1016,34 @@ def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[
 
 
 _SPECS: tuple[ActionSpec, ...] = (
+    ActionSpec(
+        action_id="foundation.update",
+        label_code="action.foundation.update",
+        description_code="action.foundation.update.description",
+        handler=_foundation_update_handler,
+        preflight=_foundation_update_preflight,
+        scope_kinds=("all",),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+        execution_mode="stream",
+    ),
+    ActionSpec(
+        action_id="foundation.repair",
+        label_code="action.foundation.repair",
+        description_code="action.foundation.repair.description",
+        handler=_foundation_repair_handler,
+        preflight=_foundation_repair_preflight,
+        scope_kinds=("all",),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+        execution_mode="result",
+    ),
     ActionSpec(
         # The memory builder also invalidates vector rows when OCR-derived
         # units change. Vector ownership stays with the embed layer, so this
@@ -917,7 +1164,6 @@ _SPECS: tuple[ActionSpec, ...] = (
 NON_REGISTRY_ACTIONS: Mapping[str, str] = {
     "foundation.setup": "setup journey (verb 'setup')",
     "foundation.update_python": "manual Python-install guidance (verb 'update')",
-    "foundation.update": "external runtime updater guidance (paperforge runtime update)",
     "installation.probe": "installation re-probe after detection failure (verb 'probe')",
     "help.probe": "help re-probe after detection failure (verb 'probe')",
     "help.restore": "help/skill redeploy flow (verb 'setup')",
@@ -928,7 +1174,7 @@ NON_REGISTRY_ACTIONS: Mapping[str, str] = {
     "memory.probe": "re-probe (verb 'probe')",
     "memory.restore_backup": "client.memoryRestoreBackup (verb 'restore_backup')",
     "memory.upgrade_backend": "client.embedMigrate (verb 'rebuild_index')",
-    "memory.install_vector_deps": "external runtime repair guidance (paperforge runtime repair)",
+    "memory.install_vector_deps": "external runtime repair guidance (verb 'install') — paperforge runtime repair",
     "ocr.probe": "re-probe (verb 'probe')",
     "ocr.enable": "setup guide at the module config step (verb 'set_config')",
     "ocr.configure": "setup guide at the module config step (verb 'set_config')",

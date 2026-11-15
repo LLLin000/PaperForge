@@ -59,15 +59,31 @@ def test_rendered_table_markdown_does_not_emit_html_or_structured_table() -> Non
     from paperforge.worker.ocr_objects import render_table_object_markdown
     from scripts.dev.table_structure_audit import _MD_TABLE_ROW, _TAG
 
-    markdown = render_table_object_markdown({
+    # A crop that was materialized keeps its image.
+    cropped = render_table_object_markdown({
         "table_id": "table_001",
         "caption": "Table 1. Results.",
         "image_relpath": "assets/tables/table_001.jpg",
+        "was_cropped": True,
     })
-    assert "Table 1. Results." in markdown
-    assert "![](../../assets/tables/table_001.jpg)" in markdown
-    assert _TAG.search(markdown) is None
-    assert _MD_TABLE_ROW.search(markdown) is None
+    assert "Table 1. Results." in cropped
+    assert "![](../../assets/tables/table_001.jpg)" in cropped
+    assert _TAG.search(cropped) is None
+    assert _MD_TABLE_ROW.search(cropped) is None
+
+    # No crop geometry: never emit a dangling image link, keep the provider
+    # text and name the inability to crop instead of hiding it.
+    uncropped = render_table_object_markdown({
+        "table_id": "table_001",
+        "caption": "Table 1. Results.",
+        "image_relpath": "assets/tables/table_001.jpg",
+        "assistive_text": "<table><tr><td>7.4</td></tr></table>",
+    })
+    assert "Table 1. Results." in uncropped
+    assert "![](../../assets/tables/table_001.jpg)" not in uncropped
+    assert "Table image unavailable" in uncropped
+    assert "7.4" in uncropped
+    assert _MD_TABLE_ROW.search(uncropped) is None
 
 
 def test_audit_paper_compares_rendered_markdown(tmp_path: Path) -> None:
