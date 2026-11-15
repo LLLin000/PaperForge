@@ -7,6 +7,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+from paperforge.config import paperforge_paths
 from paperforge.core.io import read_json, read_jsonl
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
@@ -232,7 +233,7 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
 
     ``reading_log`` is deleted from memory DB only; JSONL is the permanent store.
     """
-    from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+    from paperforge.embedding.vectors import delete_paper_vectors_in_conn
 
     # 0. Vector invalidation (same transaction — P0)
     try:
@@ -332,7 +333,7 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         migration_action = migrate_schema(conn, stored_version, CURRENT_SCHEMA_VERSION)
         ensure_schema(conn)
 
-        ocr_root = vault / "System" / "PaperForge" / "ocr"
+        ocr_root = paperforge_paths(vault)["ocr"]
 
         # ── 2. Fresh or destructive → full rebuild ────────────────────────
         if migration_action in ("fresh", "destructive"):
@@ -781,7 +782,7 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         ).fetchone()
         if not tree_path.exists() or not blocks_path.exists():
             if has_derived_state:
-                from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+                from paperforge.embedding.vectors import delete_paper_vectors_in_conn
                 try:
                     delete_paper_vectors_in_conn(conn, key)
                 except Exception:
@@ -832,7 +833,7 @@ def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
     """
     # Invalidate vectors first (same transaction)
     if vault is not None:
-        from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+        from paperforge.embedding.vectors import delete_paper_vectors_in_conn
         try:
             delete_paper_vectors_in_conn(conn, key)
         except Exception:

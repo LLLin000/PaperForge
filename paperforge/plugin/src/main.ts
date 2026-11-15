@@ -48,8 +48,7 @@ import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
 import {
-  resolveVaultPaths,
-  setPathConfigSource,
+  applyPathConfigFromList,
   isConfigHydrated,
 } from "./services/runtime-paths";
 import { PaperForgeClient, NodeProcessTransport } from "./client";
@@ -102,6 +101,53 @@ export default class PaperForgePlugin extends Plugin {
   _getPythonCommand(): { path: string; args: string[] } | null {
     const run = resolveRuntimeCommand(readRuntimePointer());
     return run ? { path: run.command, args: [...run.args] } : null;
+  }
+
+  /**
+   * Small Plugin-owned module-navigation entrypoint (#356 recovery seam).
+   * Opens the PaperForge settings tab, then reuses the settings tab's own
+   * `_handleCardNavigation` so cards land on the real module detail — never
+   * the settings homepage. The private `_settingTab` stays private: Views
+   * reach navigation only through this method. No action is dispatched, no
+   * build/embedding runs. Returns false when navigation is unavailable so
+   * callers show an explicit "unavailable" message instead of silently
+   * doing nothing.
+   */
+  openModuleSettings(module: string): boolean {
+    const tab = this._settingTab;
+    // this.app.setting is Obsidian-internal (absent from the public App
+    // type): narrow through unknown so narrowing, not `any`, governs.
+    const settingApp = this.app as unknown as {
+      setting?: {
+        open?: unknown;
+        openTabById?: unknown;
+      };
+    };
+    const setting = settingApp.setting;
+    // Obsidian 1.14: Setting.open() crashes when no settings tab has ever
+    // been registered (openTabById finds the tab AND parents the modal, so
+    // open() must come second). Order: tab → detail → open.
+    const openSettings =
+      typeof setting?.open === "function"
+        ? setting.open.bind(setting)
+        : undefined;
+    const openTab =
+      typeof setting?.openTabById === "function"
+        ? (setting.openTabById as (id: string) => void).bind(setting)
+        : undefined;
+    if (
+      !tab ||
+      typeof tab._handleCardNavigation !== "function" ||
+      !openSettings ||
+      !openTab
+    ) {
+      new Notice("PaperForge settings navigation is unavailable", 6000);
+      return false;
+    }
+    const found = openTab("paperforge");
+    tab._handleCardNavigation(module);
+    openSettings();
+    return found !== null && found !== undefined;
   }
 
   /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
@@ -429,31 +475,15 @@ export default class PaperForgePlugin extends Plugin {
         // legacy domain values from data.json (#142 §12 step 4/5).
         try {
           const list = await this.getClient().configList();
+          applyPathConfigFromList(this.settings, list.fields);
           const pick = (key: string) =>
             list.fields.find((f) => f.key === key)?.value;
-          const systemDir = String(pick("system_dir") ?? "");
-          const resourcesDir = String(pick("resources_dir") ?? "");
-          const literatureDir = String(pick("literature_dir") ?? "");
-          const baseDir = String(pick("base_dir") ?? "");
-          const zoteroDir = String(pick("zotero_data_dir") ?? "");
           const apiBase = String(pick("vector_db_api_base") ?? "");
           const apiModel = String(pick("vector_db_api_model") ?? "");
           const agentPlatform = String(pick("agent_platform") ?? "");
-          if (systemDir) this.settings.system_dir = systemDir;
-          if (resourcesDir) this.settings.resources_dir = resourcesDir;
-          if (literatureDir) this.settings.literature_dir = literatureDir;
-          if (baseDir) this.settings.base_dir = baseDir;
-          if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
           if (apiBase) this.settings.vector_db_api_base = apiBase;
           if (apiModel) this.settings.vector_db_api_model = apiModel;
           if (agentPlatform) this.settings.agent_platform = agentPlatform;
-          setPathConfigSource({
-            system_dir: systemDir || "System",
-            resources_dir: resourcesDir || "Resources",
-            literature_dir: literatureDir || "Literature",
-            base_dir: baseDir || "Bases",
-            _warning: null,
-          });
         } catch {
           /* mirrors keep prior values; canonical file is authoritative */
         }
@@ -533,10 +563,8 @@ export default class PaperForgePlugin extends Plugin {
 
   savePaperforgeJson(_pathConfig: Record<string, string | undefined>): void {
     // #142 / C0: removed — the plugin never writes paperforge.json. Mutations
-    // route through `paperforge config set/unset` (config-client).
-    console.warn(
-      "PaperForge: savePaperforgeJson is retired; use paperforge config set"
-    );
+    // route through `paperforge config set/unset` (config-client). Retired
+    // stub: no Console noise, no behavior change.
   }
 
   onunload() {
@@ -589,18 +617,9 @@ export default class PaperForgePlugin extends Plugin {
     if (vaultPath) {
       try {
         const list = await this.getClient().configList();
+        applyPathConfigFromList(this.settings, list.fields);
         const pick = (key: string) =>
           list.fields.find((f) => f.key === key)?.value;
-        const systemDir = String(pick("system_dir") ?? "");
-        const resourcesDir = String(pick("resources_dir") ?? "");
-        const literatureDir = String(pick("literature_dir") ?? "");
-        const baseDir = String(pick("base_dir") ?? "");
-        const zoteroDir = String(pick("zotero_data_dir") ?? "");
-        if (systemDir) this.settings.system_dir = systemDir;
-        if (resourcesDir) this.settings.resources_dir = resourcesDir;
-        if (literatureDir) this.settings.literature_dir = literatureDir;
-        if (baseDir) this.settings.base_dir = baseDir;
-        if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
         // Provider fields are canonical config: mirrors hydrated for display,
         // mutations route through config set (#142).
         const apiBase = String(pick("vector_db_api_base") ?? "");
@@ -614,13 +633,6 @@ export default class PaperForgePlugin extends Plugin {
           (f) => f.key === "agent_platform"
         );
         this.agentPlatformChoices = platformField?.choices ?? [];
-        setPathConfigSource({
-          system_dir: systemDir || "System",
-          resources_dir: resourcesDir || "Resources",
-          literature_dir: literatureDir || "Literature",
-          base_dir: baseDir || "Bases",
-          _warning: null,
-        });
       } catch {
         // Display mirrors keep defaults until Python is reachable; actions
         // stay disabled until a fresh probe/config response (#144).

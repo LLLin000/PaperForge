@@ -35,11 +35,10 @@ export async function orchestrateFromSync(
   // consent-required work stays pending in the Python read model. The module
   // card is the durable place to review and start it; a 120 s convergence
   // tick must never reopen a modal.
-  const runnable = actions.filter((action) => {
-    if (action.automatic) return true;
+  const runnable = actions.filter((action) => action.automatic);
+  if (runnable.length !== actions.length) {
     new Notice(t("next_action_pending"), 8000);
-    return false;
-  });
+  }
   if (runnable.length === 0) return 0;
 
   return orchestrateNextActions(runnable, {

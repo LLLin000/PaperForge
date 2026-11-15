@@ -96,9 +96,15 @@ def test_partial_batch_settles_per_paper(ocr_cli, vault, case, ocr_stub) -> None
         json.dumps(by_key)[:400],
     )
     case.check(
-        "the untargeted paper is absent from the scoped table",
-        BYSTANDER not in by_key,
-        json.dumps(sorted(by_key))[:300],
+        "the unprocessed bystander stays visible without PDF or OCR evidence",
+        by_key.get(BYSTANDER) == "nopdf" and not bystander_dir.exists(),
+        json.dumps(by_key)[:400],
+    )
+    submitted = [request["key"] for request in stub.requests if request["method"] == "POST"]
+    case.check(
+        "only the two requested papers reach the provider",
+        set(submitted) == {HEALTHY, FAILING},
+        json.dumps(submitted),
     )
 
     case.artifact("ocr-dir-healthy", vault / "System" / "PaperForge" / "ocr" / HEALTHY)

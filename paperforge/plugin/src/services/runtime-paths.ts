@@ -12,6 +12,8 @@
  */
 
 import * as path from "path";
+import type { PaperForgeSettings } from "../constants";
+import type { ConfigField } from "../client/paperforge-client";
 
 export interface PathConfig {
   system_dir: string;
@@ -37,6 +39,29 @@ let _pathConfigSource: PathConfig | null = null;
 
 export function setPathConfigSource(cfg: PathConfig | null): void {
   _pathConfigSource = cfg;
+}
+
+/** Refresh both UI mirrors and path consumers from the same Python readback. */
+export function applyPathConfigFromList(
+  settings: Pick<
+    PaperForgeSettings,
+    "system_dir" | "resources_dir" | "literature_dir" | "base_dir" | "zotero_data_dir"
+  >,
+  fields: ReadonlyArray<Pick<ConfigField, "key" | "value">>
+): void {
+  const value = (key: string) =>
+    String(fields.find((field) => field.key === key)?.value ?? "");
+  const paths = {
+    system_dir: value("system_dir"),
+    resources_dir: value("resources_dir"),
+    literature_dir: value("literature_dir"),
+    base_dir: value("base_dir"),
+  };
+  if (Object.values(paths).some((value) => !value.trim())) {
+    throw new Error("Incomplete canonical vault paths");
+  }
+  Object.assign(settings, paths, { zotero_data_dir: value("zotero_data_dir") });
+  setPathConfigSource({ ...paths, _warning: null });
 }
 
 export function isConfigHydrated(): boolean {

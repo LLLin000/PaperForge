@@ -6,6 +6,7 @@ import {
   App,
   TFile,
   Platform,
+  Scope,
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
@@ -32,7 +33,12 @@ import {
 } from "../client/paperforge-client";
 import { diffFulltext } from "../services/version-diff";
 import { VersionRestoreModal } from "./ocr-workspace";
+import { rejectionCode, rejectionData, traceConsoleError } from "../client/trace";
 import type { PaperForgeClient } from "../client";
+import {
+  ResearchRecordCaptureModal,
+  ResearchRecordModal,
+} from "./research-record";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -40,6 +46,7 @@ interface IPluginRef {
   app: App;
   manifest: { version: string };
   settings?: PaperForgeSettings;
+  openModuleSettings?: (module: string) => boolean;
   [key: string]: unknown;
 }
 
@@ -86,6 +93,7 @@ export class PaperForgeStatusView extends ItemView {
   // ── Search state ──
   // ── Version state ──
   _versionPapers: PaperVersionInfoDTO[] | null = null;
+  private _versionRestoreFeedback = new Map<string, string>();
   _versionsLoadError: string | null = null;
   _versionFilter: string = "";
   // ── Search state ──
@@ -93,11 +101,25 @@ export class PaperForgeStatusView extends ItemView {
   _searchInput: HTMLInputElement | null = null;
   _searchResultsEl: HTMLElement | null = null;
   _searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  _recordResultsEl: HTMLElement | null = null;
+  _recordHistory = false;
+  _searchGeneration = 0;
   _searchState: string = "idle";
   _searchMode: "M" | "@" = "M";
   _searchResults: unknown[] | null = null;
   _searchActiveIndex: number = -1;
+  _searchDeep = false;
   _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+  // ── Scoped Ctrl+Enter (#356): one Scope for the life of this view.
+  // The global keymap owns Ctrl+Enter (editor:open-link-in-new-leaf) and
+  // stops it before the search input's keydown listener, so the input
+  // handler alone can never see the gesture. The pushed Scope is the ONLY
+  // Ctrl+Enter owner: focus pushes it, blur/close/re-render pops it.
+  // Registered chord is ["Ctrl"]+Enter only (the documented contract is
+  // ctrlKey); plain Enter and every other shortcut are never registered.
+  _ctrlEnterScope: Scope | null = null;
+  _ctrlEnterActive = false;
+  _ctrlEnterBoundInput: HTMLInputElement | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -163,13 +185,26 @@ export class PaperForgeStatusView extends ItemView {
       document.removeEventListener("keydown", this._onKeyDown);
       this._onKeyDown = null;
     }
-    // Reset search state
+    // Release the scoped Ctrl+Enter (focus-pushed; blur may never fire on
+    // close, so pop unconditionally — never leaks a global chord). Also
+    // detach the focus/blur listeners so a dead input cannot re-push.
+    this._resetSearchView();
+    this._cachedItems = null;
+    this._cachedStats = null;
+  }
+
+  private _resetSearchView(): void {
+    this._unbindCtrlEnterInput();
+    if (this._searchTimer) clearTimeout(this._searchTimer);
+    this._searchTimer = undefined;
+    this._searchGeneration++;
+    this._searchContainer = null;
+    this._searchInput = null;
+    this._searchResultsEl = null;
+    this._recordResultsEl = null;
     this._searchState = "idle";
     this._searchResults = null;
     this._searchActiveIndex = -1;
-    this._searchTimer = undefined;
-    this._cachedItems = null;
-    this._cachedStats = null;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -632,6 +667,7 @@ export class PaperForgeStatusView extends ItemView {
     this._currentFilePath = filePath;
     this._techDetailsExpanded = false;
     if (!this._contentEl) return;
+    this._resetSearchView();
     this._contentEl.empty();
     this._contentEl.removeClass("switching");
     this._renderModeHeader(mode);
@@ -1034,6 +1070,31 @@ export class PaperForgeStatusView extends ItemView {
       pill.createEl("span", { cls: "paperforge-status-pill-icon", text: icon });
       pill.createEl("span", { text: " " + item.label });
     }
+    const saveRecord = stripRight.createEl("button", {
+      text: t("record_save"),
+      attr: { "data-pf-testid": "save-research-record" },
+    });
+    saveRecord.onclick = () => {
+      const client = this._getClient();
+      if (!client) {
+        new Notice(t("runtime_not_available"));
+        return;
+      }
+      // Capture the canonical paper and PDF now, not when the asynchronous form submits.
+      let pdf = typeof entry.pdf_path === "string" ? entry.pdf_path : "";
+      if (pdf.startsWith("[[") && pdf.endsWith("]]")) pdf = pdf.slice(2, -2);
+      if (path.isAbsolute(pdf)) {
+        const base = this.app.vault?.adapter;
+        const root =
+          base && "basePath" in base && typeof base.basePath === "string"
+            ? base.basePath
+            : "";
+        pdf = root ? path.relative(root, pdf).replace(/\\/g, "/") : "";
+      }
+      new ResearchRecordCaptureModal(this.app, client, key, pdf, () => {
+        if (this._searchInput?.value.trim()) void this.executeSearch();
+      }).open();
+    };
     if (entry.pdf_path) {
       const pdfBtn = stripRight.createEl("button", {
         cls: "paperforge-contextual-btn",
@@ -1120,7 +1181,7 @@ export class PaperForgeStatusView extends ItemView {
               show.versions,
               show.current_label,
               show.current_path,
-              (label) => client.versionsRestore(k, label).then(() => undefined)
+              (label) => client.versionsRestore(k, label)
             ).open();
             return;
           }
@@ -1132,7 +1193,7 @@ export class PaperForgeStatusView extends ItemView {
               backups,
               "",
               show.current_path,
-              (label) => client.versionsRestore(k, label).then(() => undefined)
+              (label) => client.versionsRestore(k, label)
             ).open();
           }
         } catch (err: any) {
@@ -1155,10 +1216,14 @@ export class PaperForgeStatusView extends ItemView {
     }
     this._renderRecentDiscussionCard(view, entry);
     this._renderPaperTechnicalDetails(view, entry);
+    this.renderSearchSection(view);
   }
 
   /* ── Paper Overview Card: read from formal note body ── */
-  _renderPaperOverviewCard(container: HTMLElement, entry: any) {
+  _renderPaperOverviewCard(
+    container: HTMLElement,
+    entry: { main_note_path?: string; note_path?: string }
+  ) {
     const card = container.createEl("div", {
       cls: "paperforge-paper-overview",
     });
@@ -1176,52 +1241,56 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-paper-overview-excerpt",
       text: "\u52A0\u8F7D\u4E2D...",
     });
-    if (entry.note_path) {
-      const noteFile = this.app.vault.getAbstractFileByPath(entry.note_path);
-      if (noteFile) {
-        this.app.vault
-          .read(noteFile as TFile)
-          .then((content: string) => {
-            const extracted = this._extractOverviewFromNote(content);
-            if (extracted) {
-              const truncated =
-                extracted.length > 200
-                  ? extracted.slice(0, 200) + "..."
-                  : extracted;
-              excerptEl.setText(truncated);
-              if (extracted.length > 200) {
-                const expandContainer = body.createEl("div", {
-                  cls: "paperforge-expand-container",
-                });
-                const expandBtn = expandContainer.createEl("button", {
-                  cls: "paperforge-expand-icon",
-                  title: "\u5C55\u5F00/\u6536\u8D77",
-                });
-                expandBtn.innerHTML =
-                  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                let expanded = false;
-                expandContainer.addEventListener("click", () => {
-                  excerptEl.setText(expanded ? truncated : extracted);
-                  expandBtn.innerHTML = expanded
-                    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
-                    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
-                  expanded = !expanded;
-                });
-              }
-            } else {
-              excerptEl.setText(
-                "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
-              );
+    const notePath = entry.main_note_path || entry.note_path;
+    if (notePath) {
+      const readNote = async (): Promise<string | null> => {
+        if (!(await this.app.vault.adapter.exists(notePath))) return null;
+        const noteFile = this.app.vault.getAbstractFileByPath(notePath);
+        return noteFile instanceof TFile
+          ? this.app.vault.read(noteFile)
+          : this.app.vault.adapter.read(notePath);
+      };
+      void readNote()
+        .then((content: string | null) => {
+          if (content === null) {
+            excerptEl.setText(t("paper_note_missing"));
+            return;
+          }
+          const extracted = this._extractOverviewFromNote(content);
+          if (extracted) {
+            const truncated =
+              extracted.length > 200
+                ? extracted.slice(0, 200) + "..."
+                : extracted;
+            excerptEl.setText(truncated);
+            if (extracted.length > 200) {
+              const expandContainer = body.createEl("div", {
+                cls: "paperforge-expand-container",
+              });
+              const expandBtn = expandContainer.createEl("button", {
+                cls: "paperforge-expand-icon",
+                title: "\u5C55\u5F00/\u6536\u8D77",
+              });
+              expandBtn.innerHTML =
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+              let expanded = false;
+              expandContainer.addEventListener("click", () => {
+                excerptEl.setText(expanded ? truncated : extracted);
+                expandBtn.innerHTML = expanded
+                  ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+                  : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+                expanded = !expanded;
+              });
             }
-          })
-          .catch(() => {
+          } else {
             excerptEl.setText(
-              "\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9"
+              "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
             );
-          });
-      } else {
-        excerptEl.setText("\u7B14\u8BB0\u6587\u4EF6\u4E0D\u5B58\u5728");
-      }
+          }
+        })
+        .catch(() => {
+          excerptEl.setText("\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9");
+        });
     } else {
       excerptEl.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8");
     }
@@ -1358,12 +1427,15 @@ export class PaperForgeStatusView extends ItemView {
           }
         });
       })
-      .catch((e: any) => {
-        console.error(
-          "PaperForge: discussion.md read error",
-          mdPath,
-          e.message
-        );
+      .catch(() => {
+        // Ownership: local vault read with no client terminal — one fixed
+        // diagnostic, never the path or the Error payload.
+        traceConsoleError({
+          op: "discussion.read",
+          stage: "local",
+          code: "backend_error",
+          exitCode: null,
+        });
       });
   }
 
@@ -1984,49 +2056,41 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
-  private async _materializeExternalNote(
-    notePath: string
-  ): Promise<TFile | null> {
+  private async _registerExternalNote(notePath: string): Promise<TFile | null> {
     if (!(await this.app.vault.adapter.exists(notePath))) return null;
-    try {
-      const parentPath = notePath.slice(0, notePath.lastIndexOf("/"));
-      if (parentPath && !this.app.vault.getAbstractFileByPath(parentPath)) {
-        try {
-          await this.app.vault.createFolder(parentPath);
-        } catch (error) {
-          if (!(await this.app.vault.adapter.exists(parentPath))) throw error;
-        }
-      }
-      const existing = this.app.vault.getAbstractFileByPath(notePath);
-      if (existing instanceof TFile) return existing;
-      const content = await this.app.vault.adapter.read(notePath);
-      await this.app.vault.adapter.remove(notePath);
+    // Desktop watcher reconciliation registers external files without the
+    // destructive read/remove/create cycle. Older hosts fall back to waiting.
+    const adapter = this.app.vault.adapter as typeof this.app.vault.adapter & {
+      reconcileInternalFile?: (path: string) => Promise<void>;
+    };
+    if (typeof adapter.reconcileInternalFile === "function") {
       try {
-        return await this.app.vault.create(notePath, content);
-      } catch (error) {
-        try {
-          await this.app.vault.adapter.write(notePath, content);
-        } catch (restoreError) {
-          console.warn(
-            "[PF] Could not restore external note:",
-            notePath,
-            restoreError
-          );
-        }
-        throw error;
+        await adapter.reconcileInternalFile(notePath);
+      } catch {
+        // Ownership: local vault refresh with no client terminal — one
+        // fixed diagnostic, never the path or the Error payload.
+        traceConsoleError({
+          op: "note.refresh",
+          stage: "local",
+          code: "backend_error",
+          exitCode: null,
+        });
       }
-    } catch (error) {
-      console.warn("[PF] Could not register external note:", notePath, error);
-      return null;
     }
+    const file = this.app.vault.getAbstractFileByPath(notePath);
+    return file instanceof TFile ? file : null;
   }
 
   async _openSearchResult(notePath: string, newLeaf: boolean) {
     let file = this.app.vault.getAbstractFileByPath(notePath);
     if (!(file instanceof TFile)) {
-      file = await this._materializeExternalNote(notePath);
+      file = await this._registerExternalNote(notePath);
     }
     if (!(file instanceof TFile)) {
+      if (!(await this.app.vault.adapter.exists(notePath))) {
+        new Notice(t("paper_note_missing") + ": " + notePath, 6000);
+        return;
+      }
       const deadline = Date.now() + 5000;
       while (!(file instanceof TFile) && Date.now() < deadline) {
         await new Promise<void>((resolve) => setTimeout(resolve, 100));
@@ -2058,7 +2122,7 @@ export class PaperForgeStatusView extends ItemView {
         );
         return;
       }
-      await this.app.workspace.openLinkText(notePath, "", newLeaf);
+      new Notice(t("paper_note_missing") + ": " + notePath, 6000);
     } catch {
       new Notice("[!!] Failed to open note: " + notePath, 6000);
     }
@@ -2270,6 +2334,7 @@ export class PaperForgeStatusView extends ItemView {
   /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
   async _refreshCurrentMode() {
     if (!this._currentMode || !this._contentEl) return;
+    this._resetSearchView();
     this._contentEl.empty();
     this._contentEl.addClass("switching");
     // Render-only: acquisition lives in _invalidateIndex/_loadDashboardData,
@@ -2323,6 +2388,7 @@ export class PaperForgeStatusView extends ItemView {
     this._currentFilePath = null;
     this._techDetailsExpanded = false;
     if (!this._contentEl) return;
+    this._resetSearchView();
     this._contentEl.empty();
     this._contentEl.removeClass("switching");
     this._renderModeHeader("versions");
@@ -2465,6 +2531,12 @@ export class PaperForgeStatusView extends ItemView {
         cls: "paperforge-version-timeline-header",
       });
       header.createEl("span", { cls: "pf-title", text: paper.title });
+      const restoreFeedback = this._versionRestoreFeedback.get(paper.key);
+      if (restoreFeedback) {
+        timelineArea.createEl("p", {
+          cls: "pf-version-restore-status", text: restoreFeedback, attr: { role: "alert" },
+        });
+      }
 
       if (paper.versions.length === 0) {
         timelineArea.createEl("div", {
@@ -2536,10 +2608,21 @@ export class PaperForgeStatusView extends ItemView {
             }
             try {
               // Python performs the copy AND persists restore_provenance.
-              await client.versionsRestore(paper.key, ver.label);
-              new Notice(
-                t("version_restore_done").replace("{label}", ver.label)
-              );
+              const result = await client.versionsRestore(paper.key, ver.label);
+              paper.current_label = result.label;
+              if (result.provenance_persisted) {
+                this._versionRestoreFeedback.delete(paper.key);
+                if (timelineArea.isConnected) renderTimeline(paper);
+                new Notice(t("version_restore_done").replace("{label}", ver.label));
+              } else {
+                const message = t("version_restore_partial").replace("{label}", ver.label);
+                this._versionRestoreFeedback.set(paper.key, message);
+                if (timelineArea.isConnected) {
+                  renderTimeline(paper);
+                } else {
+                  new Notice(message, 6000);
+                }
+              }
             } catch (err: any) {
               new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
             }
@@ -2691,17 +2774,41 @@ export class PaperForgeStatusView extends ItemView {
         placeholder: "Search papers... (@ for deep search)",
       },
     }) as HTMLInputElement;
+    this._searchContainer.createEl("h3", { text: t("record_papers") });
     this._searchResultsEl = this._searchContainer.createEl("div", {
       cls: "paperforge-search-results",
+    });
+    const records = this._searchContainer.createEl("section", {
+      cls: "paperforge-record-search",
+    });
+    records.createEl("h3", { text: t("record_records") });
+    const historyLabel = records.createEl("label", {
+      text: t("record_history"),
+    });
+    const history = historyLabel.createEl("input", {
+      attr: { type: "checkbox", "aria-label": t("record_history") },
+    });
+    history.checked = this._recordHistory;
+    history.onchange = () => {
+      this._recordHistory = history.checked;
+      void this.executeSearch();
+    };
+    this._recordResultsEl = records.createEl("div", {
+      cls: "paperforge-record-results",
+      attr: { "aria-live": "polite" },
     });
 
     // Update placeholder from i18n on init
     this._searchInput.placeholder = t("retrieval_search_placeholder");
 
-    // Detect @ mode prefix + debounced metadata search
+    // #356: focus-scoped Ctrl+Enter. The input node is re-created on every
+    // re-render, so first detach the PREVIOUS binding (listeners + any push
+    // tied to the stale node — its blur cannot be relied on), then bind
+    // the new input. Exactly one push per focus lifetime; never stacked.
+    this._bindCtrlEnterInput(this._searchInput);
     this._searchInput.addEventListener("input", () => {
-      const val = this._searchInput?.value || "";
-      if (val.startsWith("@") && !val.startsWith("@ ")) {
+      const val = (this._searchInput?.value || "").trim();
+      if (val.startsWith("@")) {
         this._searchMode = "@";
         modeBadge.setText("@");
         modeBadge.addClass("deep");
@@ -2719,7 +2826,9 @@ export class PaperForgeStatusView extends ItemView {
       // Cancel pending debounce
       clearTimeout(this._searchTimer);
       // Reset results & show idle when input cleared
-      if (!val.trim()) {
+      if (!val) {
+        this._searchGeneration++;
+        this._recordResultsEl?.empty();
         this._searchState = "idle";
         this._searchResults = null;
         this._searchActiveIndex = -1;
@@ -2742,6 +2851,8 @@ export class PaperForgeStatusView extends ItemView {
           this._searchInput.value = "";
           this._searchInput.blur();
         }
+        this._searchGeneration++;
+        this._recordResultsEl?.empty();
         this._searchState = "idle";
         this._searchResults = null;
         this._searchActiveIndex = -1;
@@ -2779,20 +2890,15 @@ export class PaperForgeStatusView extends ItemView {
         return;
       }
       if (e.key === "Enter" && e.ctrlKey) {
-        // Ctrl+Enter forces CLI deep search regardless of mode
-        e.preventDefault();
-        if (this._searchTimer) {
-          clearTimeout(this._searchTimer);
-          this._searchTimer = undefined;
-        }
-        // Override mode to @ for this search
-        const originalMode = this._searchMode;
-        this._searchMode = "@";
-        this.executeSearch();
-        this._searchMode = originalMode;
+        // #356 cutover: the focus-scoped Scope is the ONLY Ctrl+Enter
+        // owner. The keymap routes the chord to the scope callback while
+        // the input is focused (the input listener never fires there);
+        // with no push active the chord is not ours — ignore it here so a
+        // single keypress can never execute twice. Plain Enter below
+        // explicitly excludes Ctrl.
         return;
       }
-      if (e.key === "Enter") {
+      if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         if (this._searchTimer) {
           clearTimeout(this._searchTimer);
@@ -2802,6 +2908,82 @@ export class PaperForgeStatusView extends ItemView {
       }
     });
   }
+
+  /**
+   * #356: one focus-scoped Ctrl+Enter chord. The Scope is created once per
+   * view with the default parent scope (so every unrelated Obsidian
+   * shortcut keeps passing through) and registers ONLY ["Ctrl"]+Enter —
+   * the documented contract is ctrlKey. The callback owns the chord: it
+   * clears the debounce timer and runs one one-shot forced-deep request.
+   * No sticky mode, no token, no dedupe table — one owner, one request.
+   */
+  _onCtrlEnterScope(): void {
+    if (this._searchTimer) {
+      clearTimeout(this._searchTimer);
+      this._searchTimer = undefined;
+    }
+    void this.executeSearch(true);
+  }
+
+  _pushCtrlEnterScope(): void {
+    const keymap = this.app.keymap;
+    if (!keymap) return;
+    if (!this._ctrlEnterScope) {
+      this._ctrlEnterScope = new Scope(this.app.scope);
+      this._ctrlEnterScope.register(["Ctrl"], "Enter", () => {
+        // Claim the chord so the global editor binding does not ALSO
+        // open a link for the same keypress.
+        this._onCtrlEnterScope();
+        return false;
+      });
+    }
+    if (this._ctrlEnterActive) return;
+    keymap.pushScope(this._ctrlEnterScope);
+    this._ctrlEnterActive = true;
+  }
+
+  _releaseCtrlEnterScope(): void {
+    if (!this._ctrlEnterActive || !this._ctrlEnterScope) {
+      this._ctrlEnterActive = false;
+      return;
+    }
+    this.app.keymap?.popScope(this._ctrlEnterScope);
+    this._ctrlEnterActive = false;
+  }
+
+  /**
+   * Bind a search input node: detach the previous node's focus/blur
+   * listeners and release any push tied to it FIRST, then bind and record
+   * the new node. Handlers are stable per-view fields so
+   * removeEventListener always matches.
+   */
+  _bindCtrlEnterInput(input: HTMLInputElement): void {
+    if (this._ctrlEnterBoundInput) {
+      this._ctrlEnterBoundInput.removeEventListener("focus", this._onCtrlEnterFocus);
+      this._ctrlEnterBoundInput.removeEventListener("blur", this._onCtrlEnterBlur);
+    }
+    this._releaseCtrlEnterScope();
+    this._ctrlEnterBoundInput = input;
+    input.addEventListener("focus", this._onCtrlEnterFocus);
+    input.addEventListener("blur", this._onCtrlEnterBlur);
+  }
+
+  _unbindCtrlEnterInput(): void {
+    if (this._ctrlEnterBoundInput) {
+      this._ctrlEnterBoundInput.removeEventListener("focus", this._onCtrlEnterFocus);
+      this._ctrlEnterBoundInput.removeEventListener("blur", this._onCtrlEnterBlur);
+      this._ctrlEnterBoundInput = null;
+    }
+    this._releaseCtrlEnterScope();
+  }
+
+  _onCtrlEnterFocus = (): void => {
+    this._pushCtrlEnterScope();
+  };
+
+  _onCtrlEnterBlur = (): void => {
+    this._releaseCtrlEnterScope();
+  };
 
   _renderSearchState() {
     if (!this._searchResultsEl) return;
@@ -2819,7 +3001,7 @@ export class PaperForgeStatusView extends ItemView {
         break;
       }
       case "searching": {
-        const isDeep = this._searchMode === "@";
+        const isDeep = this._searchDeep;
         this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-loading",
           text: isDeep
@@ -2839,7 +3021,7 @@ export class PaperForgeStatusView extends ItemView {
         if (this._searchResults) {
           this._renderSearchResultsList(
             this._searchResults,
-            this._searchMode === "@"
+            this._searchDeep
           );
         }
         // Focus management: focus first result after a short delay
@@ -2886,15 +3068,7 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_open_vector_settings"),
         });
         btn.addEventListener("click", () => {
-          const setting = (this.app as unknown as Record<string, unknown>)[
-            "setting"
-          ];
-          if (setting && typeof setting === "object") {
-            const openTab = (setting as Record<string, unknown>)["openTab"];
-            if (typeof openTab === "function") {
-              openTab.call(setting, "paperforge");
-            }
-          }
+          this._openMemoryDetail();
         });
         // Focus management: focus the action button
         setTimeout(() => {
@@ -2902,6 +3076,32 @@ export class PaperForgeStatusView extends ItemView {
         }, 100);
         break;
       }
+      case "missing-memory-index": {
+        const warn = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        warn.addClass("warning-soft");
+        warn.createEl("div", {
+          cls: "paperforge-search-state-title",
+          text: t("retrieval_memory_index_missing"),
+        });
+        warn.createEl("div", {
+          cls: "paperforge-search-state-desc",
+          text: t("retrieval_memory_index_missing_desc"),
+        });
+        const btn = warn.createEl("button", {
+          cls: "pf-btn-link",
+          text: t("retrieval_open_memory_settings"),
+        });
+        btn.addEventListener("click", () => {
+          this._openMemoryDetail();
+        });
+        setTimeout(() => {
+          btn.focus();
+        }, 100);
+         break;
+       }
       case "backend-unavailable": {
         const err = this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-state-card",
@@ -2942,7 +3142,9 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_retry"),
         });
         retryBtn.addEventListener("click", () => {
-          this.executeSearch();
+          // Replay the failed request's captured mode (e.g. a one-shot
+          // Ctrl+Enter deep retry), never the mutable input mode.
+          this.executeSearch(this._searchDeep);
         });
         // Focus: primary action
         setTimeout(() => {
@@ -2969,7 +3171,7 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_retry"),
         });
         retryBtn.addEventListener("click", () => {
-          this.executeSearch();
+          this.executeSearch(this._searchDeep);
         });
         // Focus: retry button
         setTimeout(() => {
@@ -2996,16 +3198,7 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_rebuild_vectors"),
         });
         rebuildBtn.addEventListener("click", () => {
-          // Trigger rebuild from settings
-          const setting = (this.app as unknown as Record<string, unknown>)[
-            "setting"
-          ];
-          if (setting && typeof setting === "object") {
-            const openTab = (setting as Record<string, unknown>)["openTab"];
-            if (typeof openTab === "function") {
-              openTab.call(setting, "paperforge");
-            }
-          }
+          this._openMemoryDetail();
         });
         // Focus: rebuild button
         setTimeout(() => {
@@ -3028,17 +3221,44 @@ export class PaperForgeStatusView extends ItemView {
       }
     }
   }
+  /**
+   * Recovery navigation for search cards (#356): reach the real Memory
+   * module detail through the Plugin-owned entrypoint. Never dispatches an
+   * action, never starts a build/embedding — navigation only.
+   */
+  _openMemoryDetail(): void {
+    const plugin = (
+      this.app as unknown as {
+        plugins?: { plugins?: Record<string, unknown> };
+      }
+    ).plugins?.plugins?.["paperforge"];
+    const open =
+      plugin !== null &&
+      typeof plugin === "object" &&
+      "openModuleSettings" in plugin
+        ? plugin.openModuleSettings
+        : undefined;
+    if (typeof open === "function") {
+      open.call(plugin, "memory");
+      return;
+    }
+    new Notice(t("retrieval_navigation_unavailable"), 6000);
+  }
 
-  async executeSearch() {
+
+  async executeSearch(forceDeep = false) {
     if (!this._searchInput || !this._searchResultsEl) return;
     const raw = this._searchInput.value.trim();
     if (!raw) return;
 
-    const isDeep = this._searchMode === "@" || raw.startsWith("@");
+    // Request mode is captured once: forced deep (Ctrl+Enter, one-shot, never
+    // sticky), the normalized `@` input-mode prefix, or the raw `@` prefix.
+    // _searchMode is mutable badge state and is never re-read at render time.
+    const isDeep = forceDeep || this._searchMode === "@" || raw.startsWith("@");
     const query = isDeep ? raw.replace(/^@\s*/, "").trim() : raw;
     if (!query) return;
-
-    const mode = isDeep ? "retrieve" : "search";
+    const generation = ++this._searchGeneration;
+    this._searchDeep = isDeep;
 
     // Set searching state immediately
     this._searchState = "searching";
@@ -3049,21 +3269,108 @@ export class PaperForgeStatusView extends ItemView {
     const client = this._getClient();
     if (!client) {
       this._searchState = "backend-unavailable";
+      this._recordResultsEl?.setText(t("record_failed"));
       this._renderSearchState();
       return;
     }
+    const records = this._recordResultsEl;
+    const recordSearch = records
+      ? (async () => {
+          records.setText(t("record_searching"));
+          try {
+            const result = await client.readingRecords(
+              query,
+              this._recordHistory
+            );
+            if (generation !== this._searchGeneration) return;
+            records.empty();
+            if (!result.matches.length)
+              records.createEl("p", { text: t("record_no_matches") });
+            for (const record of result.matches) {
+              const card = records.createEl("article", {
+                cls: "paperforge-record-result",
+              });
+              card.createEl("p", {
+                text: `${record.id} — ${record.paper_id} — ${t("record_" + record.record_status)}`,
+              });
+              card.createEl("blockquote", { text: record.excerpt });
+              card.createEl("p", { text: record.usage });
+              card.createEl("p", {
+                text: t("record_" + record.provenance.status),
+              });
+              const open = card.createEl("button", { text: t("record_view") });
+              open.onclick = () =>
+                new ResearchRecordModal(
+                  this.app,
+                  client,
+                  record,
+                  (key) => {
+                    const paper = this._cachedItems?.find(
+                      (item) => item.zotero_key === key
+                    );
+                    const target = paper?.main_note_path || paper?.note_path;
+                    if (target) void this._openSearchResult(target, false);
+                    else new Notice(t("record_failed"));
+                  },
+                  () => {
+                    void this.executeSearch();
+                  }
+                ).open();
+            }
+          } catch (error) {
+            if (generation !== this._searchGeneration) return;
+            records.setText(
+              `${t("record_failed")}: ${error instanceof Error ? error.message : String(error)}`
+            );
+            records.setAttribute("role", "alert");
+          }
+        })()
+      : Promise.resolve();
 
     try {
       const results = isDeep
         ? await client.retrieve(query, { deep: true })
         : await client.search(query);
+      if (generation !== this._searchGeneration) return;
       this._searchResults = results;
       this._searchState = results.length > 0 ? "results" : "empty";
       this._renderSearchState();
-    } catch (err: any) {
-      const classification = classifyError(String(err?.message ?? err));
-      this._searchState = this._mapErrorToSearchState(classification.type);
+    } catch (err: unknown) {
+      if (generation !== this._searchGeneration) return;
+      // Machine-code-first mapping: the structured rejection carries
+      // `code` + PFResult `data` (narrowed, never message/stdout text).
+      // Missing Memory DB (PATH_NOT_FOUND) is not missing vectors, and a
+      // deep-retrieve PATH_NOT_FOUND is a different authority state than a
+      // metadata-search one: only the metadata path gets the missing-memory
+      // recovery card.
+      const code = rejectionCode(err);
+      const rawData: unknown = rejectionData(err);
+      const vectorState: unknown =
+        rawData !== null &&
+        typeof rawData === "object" &&
+        "vector_state" in rawData
+          ? rawData.vector_state
+          : undefined;
+      if (
+        code === "PRECONDITION_FAILED" &&
+        (vectorState === "not_built" || vectorState === "stale")
+      ) {
+        this._searchState = "vectors-not-built";
+      } else if (code === "PATH_NOT_FOUND" && !isDeep) {
+        // Expected unbuilt Memory index for metadata search: the rejection
+        // already reached the trace ring with its machine code; the new
+        // card explains recovery, no extra Console error here.
+        this._searchState = "missing-memory-index";
+      } else if (code === "PATH_NOT_FOUND") {
+        this._searchState = "backend-unavailable";
+      } else {
+        const msg: unknown = err instanceof Error ? err.message : err;
+        const classification = classifyError(String(code ?? (typeof msg === "string" ? msg : "unknown")));
+        this._searchState = this._mapErrorToSearchState(classification.type);
+      }
       this._renderSearchState();
+    } finally {
+      await recordSearch;
     }
   }
 
@@ -3307,8 +3614,9 @@ export class PaperForgeStatusView extends ItemView {
       try {
         await this._loadDashboardData(false);
         await this._refreshCurrentMode();
-      } catch (e) {
-        console.log("[PF] dashboard load error:", e);
+      } catch {
+        // Ownership: the typed dashboard read already recorded its
+        // terminal — the message bar/Notice surface stays, no View echo.
       }
       if (exitOk) {
         checkOrphanState(

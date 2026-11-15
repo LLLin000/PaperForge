@@ -898,3 +898,33 @@ class TestCollectMaintenanceRowsFulltextPath:
         row = collect_maintenance_rows(tmp_path)[0]
         assert row.fulltext_path == ""
         assert row.to_dict()["fulltext_path"] == ""
+
+
+@pytest.mark.parametrize("system_dir", ["System", "CustomSystem"])
+def test_pristine_canonical_list_is_read_only(tmp_path, capsys, system_dir):
+    from paperforge.commands.ocr import _run_ocr_list
+    from paperforge.worker._utils import pipeline_paths
+
+    canonical_test_config(tmp_path, system_dir=system_dir)
+    paths = pipeline_paths(tmp_path)
+    paths["index"].parent.mkdir(parents=True, exist_ok=True)
+    pdf = tmp_path / "fresh.pdf"
+    pdf.write_bytes(b"synthetic PDF readiness fixture")
+    paths["index"].write_text(json.dumps({"items": [
+        {"zotero_key": "FRESH001", "title": "Fresh canonical paper", "has_pdf": True, "pdf_path": str(pdf)},
+        {"zotero_key": "NOPDF001", "title": "No attached PDF", "has_pdf": False},
+    ]}), encoding="utf-8")
+    before = {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    assert not paths["ocr"].exists()
+    assert _run_ocr_list(tmp_path, json_output=True) == 0
+    rows = {r["key"]: r for r in json.loads(capsys.readouterr().out)}
+    assert set(rows) == {"FRESH001", "NOPDF001"}
+    assert rows["FRESH001"]["title_full"] == "Fresh canonical paper"
+    assert rows["FRESH001"]["status"] == "pending"
+    assert rows["FRESH001"]["can_redo"] is True
+    assert rows["NOPDF001"]["status"] == "nopdf"
+    assert rows["NOPDF001"]["can_redo"] is False
+    assert _run_ocr_list(tmp_path, json_output=True, keys=["FRESH001"]) == 0
+    assert [r["key"] for r in json.loads(capsys.readouterr().out)] == ["FRESH001"]
+    assert {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()} == before
+    assert not paths["ocr"].exists()

@@ -410,6 +410,39 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
       return view;
     }
 
+    it("keeps timeline partial restore feedback and the actual restored version when reselected", async () => {
+      transport.executeHandler = () => JSON.stringify({
+        ok: true, data: { target_path: "/vault/render/fulltext.md", label: "v1", provenance_persisted: false },
+      });
+      const view = makeDashboard(client);
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      Object.assign(view, {
+        _contentEl: host,
+        _versionPapers: [{
+          key: KEY, title: "Synthetic version history", current_label: "v2",
+          versions: [
+            { label: "v1", created_at: "2025-01-01T00:00:00Z", source: "pre-rebuild", fulltext_size: 28 },
+            { label: "v2", created_at: "2025-01-02T00:00:00Z", source: "pre-rebuild", fulltext_size: 28 },
+          ],
+        }],
+      });
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        view._renderVersionMode();
+        (host.querySelector(".paperforge-version-paper-item") as HTMLElement).click();
+        (host.querySelector(".paperforge-version-entry button") as HTMLButtonElement).click();
+        await vi.waitFor(() => expect(host.querySelector('[role="alert"]')).not.toBeNull());
+        expect(host.querySelector(".paperforge-version-current .paperforge-version-label")?.textContent).toBe("v1");
+        (host.querySelector(".paperforge-version-paper-item") as HTMLElement).click();
+        expect(host.querySelector('[role="alert"]')?.textContent).toContain("v1");
+        expect(errors).toHaveBeenCalledOnce();
+      } finally {
+        errors.mockRestore();
+        host.remove();
+      }
+    });
+
     const auditResponse = () =>
       JSON.stringify({
         state: "DEGRADED",

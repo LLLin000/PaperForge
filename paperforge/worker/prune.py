@@ -228,7 +228,7 @@ def _prune_orphan_papers_locked(
                     key_failed = True
 
             try:
-                from paperforge.embedding._chroma import _delete_paper_vectors_locked
+                from paperforge.embedding.vectors import _delete_paper_vectors_locked
 
                 n = _delete_paper_vectors_locked(vault, key)
                 if n > 0:

@@ -190,11 +190,13 @@ export function runLongTask(
       stdio: ["pipe", "pipe", "pipe"],
     }
   );
+  executeChildRegistry.add(child);
   if (opts.closeStdin) child.stdin?.end();
 
   const parser = new NdjsonStreamParser();
   const events: NdjsonEvent[] = [];
   let hardKilled = false;
+  let settled = false;
   // A stop the user asked for: the token may be ignored because the child is
   // inside a phase with no safe point (a cold native import in the embed
   // prepare, #330), so the kill escalation ends it without a terminal event.
@@ -221,6 +223,8 @@ export function runLongTask(
 
   const outcome = new Promise<LongTaskOutcome>((resolve) => {
     child.on("close", (code: number | null) => {
+      settled = true;
+      executeChildRegistry.delete(child);
       clearTimeout(graceTimer);
       parser.finishEOF();
       // #269: the EOF signature must say HOW the child died, so a killed
@@ -234,14 +238,17 @@ export function runLongTask(
               .filter(Boolean)
               .join(", ")
           : "";
+      const terminal = events.find((event) => TERMINAL_EVENTS.has(event.event));
       resolve({
-        ok: !parser.protocolFailure && code === 0,
+        ok: !parser.protocolFailure && code === 0 &&
+          terminal?.event === "result" && terminal.result?.ok !== false,
         exitCode: code,
         // #330: a stop we wrote the token for stays a cancellation when the
         // child had to be killed before reaching a safe point (rc != 130). A
         // stop that lost the race must not relabel a finished build: it only
         // counts while no terminal event arrived.
-        cancelled: code === 130 || (stopRequested && !parser.terminalSeen),
+        cancelled: code === 130 || terminal?.event === "cancelled" ||
+          (stopRequested && !parser.terminalSeen),
         events,
         protocolFailure: parser.protocolFailure
           ? death
@@ -252,6 +259,8 @@ export function runLongTask(
       });
     });
     child.on("error", (err: Error) => {
+      settled = true;
+      executeChildRegistry.delete(child);
       clearTimeout(graceTimer);
       resolve({
         ok: false,
@@ -266,6 +275,7 @@ export function runLongTask(
 
   return {
     stop: () => {
+      if (settled || stopRequested) return;
       stopRequested = true;
       try {
         child.stdin?.write("PAPERFORGE_STOP\n");
@@ -390,13 +400,13 @@ const executeChildRegistry = new ExecuteChildRegistry();
 
 function reapExecuteChildrenImpl(): void {
   for (const child of [...executeChildRegistry]) {
-    hardKill(child);
+    if (child.exitCode == null && child.signalCode == null) hardKill(child);
     executeChildRegistry.delete(child);
   }
 }
 
 export class NodeProcessTransport implements Transport {
-  /** In-flight (non-streamed) execute child registry, keyed by child. */
+  /** In-flight Python children from both result and stream execution. */
   static executeChildren: ExecuteChildRegistry = executeChildRegistry;
   static executeChildRegistry: ExecuteChildRegistry = executeChildRegistry;
   static children: ExecuteChildRegistry = executeChildRegistry;
@@ -421,9 +431,14 @@ export class NodeProcessTransport implements Transport {
     const cmd = resolveRuntimeCommand(readRuntimePointer());
     if (cmd) return { path: cmd.command, args: [...cmd.args] };
 
-    throw new Error(
+    // Expected setup state, not a failure: tag the existing NO_PYTHON
+    // machine code (python-bridge taxonomy) so callers can suppress it from
+    // the Console and offer setup recovery without parsing this message.
+    const err = new Error(
       "PaperForge runtime not ready. Run `paperforge runtime install` outside Obsidian."
-    );
+    ) as Error & { code: string };
+    err.code = "NO_PYTHON";
+    throw err;
   }
 
   /** First schooled interpreter that reports Python >= 3.11, returned as an
@@ -734,6 +749,12 @@ export class NodeProcessTransport implements Transport {
         };
       }
 
+      // Stop arrived while the runtime was still resolving: never spawn.
+      if (stopped) {
+        queue.finish();
+        return { ok: false, exitCode: null, cancelled: true, events: [] };
+      }
+
         longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
         graceMs: options?.graceMs,
         env: options?.env,
@@ -753,8 +774,8 @@ export class NodeProcessTransport implements Transport {
         const outcome = await longTaskHandle.promise;
         queue.finish();
         return outcome;
-      } catch (err: any) {
-        queue.fail(err);
+      } catch (err) {
+        queue.fail(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
     })();

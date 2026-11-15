@@ -5,7 +5,6 @@ import * as https from "https";
 import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
 import type { PythonResult } from "../services/python-bridge";
-import { shouldBlockStep3 } from "./step3-gate";
 
 // ── Interfaces ──
 
@@ -14,6 +13,7 @@ export interface IPluginRef {
   saveSettings(): Promise<void>;
   loadSettings(): Promise<void>;
   manifest: { version: string };
+  getClient?: () => { probe: (module: string) => Promise<unknown> };
 }
 
 export interface ISettingTab {
@@ -274,10 +274,8 @@ export class PaperForgeOrphanModal extends Modal {
 /* ── Orphan state checker ── */
 
 export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
-  console.log("[PF] checkOrphanState called");
-  const client = (plugin as any)?.getClient?.();
+  const client = plugin?.getClient?.();
   if (!client) {
-    console.log("[PF] orphan file NOT FOUND");
     return;
   }
 
@@ -302,7 +300,6 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
         .filter((p: { key: string }) => p.key.length > 0);
       if (resolved.length > 0) {
         if (document.querySelector(".paperforge-orphan-modal")) return;
-        console.log("[PF] orphan file FOUND");
         const orphans: OrphanItem[] = resolved.map(
           (p: { key: string; title?: string }) => ({
             key: p.key,
@@ -310,14 +307,9 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
           })
         );
         new PaperForgeOrphanModal(app, orphans, vp, null).open();
-      } else {
-        console.log("[PF] orphan file NOT FOUND");
       }
     })
-    .catch((err: any) => {
-      // A failure to detect must be visible: a silent catch made a broken
-      // reconcile indistinguishable from "no orphans" in the field log.
-      console.log("[PF] checkOrphanState exception:", err?.message || err);
+    .catch(() => {
       new Notice("PaperForge: orphan detection failed");
     });
 }

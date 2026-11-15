@@ -88,8 +88,19 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
 
   describe("Dashboard Search & Retrieval Seams", () => {
     function makeDashboard(clientInstance: PaperForgeClient | null) {
-      const leaf = {} as any;
-      const view = new (PaperForgeStatusView as any)(leaf) as any;
+      const leaf = {};
+      const view = new PaperForgeStatusView(leaf) as unknown as {
+        app: unknown;
+        _searchInput: HTMLInputElement;
+        _searchResultsEl: HTMLElement;
+        _searchState: string;
+        _searchMode: string;
+        _searchDeep: boolean;
+        _host: HTMLElement;
+        renderSearchSection: (host: HTMLElement) => void;
+        executeSearch: (forceDeep?: boolean) => Promise<void>;
+        _renderSearchState: () => void;
+      };
       view.app = {
         vault: { adapter: { basePath: "/vault" } },
         plugins: {
@@ -100,11 +111,112 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
           },
         },
       };
-      view._searchInput = document.createElement("input");
-      view._searchResultsEl = document.createElement("div");
-      view._renderSearchState = vi.fn();
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      view.renderSearchSection(host);
+      view._host = host;
       return view;
     }
+
+    it("does not launch a debounced search after its view closes", async () => {
+      vi.useFakeTimers();
+      const view = makeDashboard(client);
+      try {
+        view._searchInput.value = "pending query";
+        view._searchInput.dispatchEvent(new Event("input"));
+        await (view as unknown as PaperForgeStatusView).onClose();
+        await vi.advanceTimersByTimeAsync(250);
+        expect(transport.calls.filter((call) => call.argv[0] === "search")).toEqual([]);
+      } finally {
+        vi.useRealTimers();
+        view._host.remove();
+      }
+    });
+
+    it("does not apply an in-flight search result to a closed view", async () => {
+      const response = Promise.withResolvers<string>();
+      transport.executeHandler = (argv) => argv[0] === "search"
+        ? response.promise : JSON.stringify({ ok: true, data: { matches: [] } });
+      const view = makeDashboard(client);
+      view._searchInput.value = "slow query";
+      const resultElement = view._searchResultsEl;
+      const pending = view.executeSearch();
+      await (view as unknown as PaperForgeStatusView).onClose();
+      view._host.remove();
+      const closedMarkup = resultElement.innerHTML;
+      response.resolve(JSON.stringify({ ok: true, data: { matches: [{ title: "Late result" }] } }));
+      await pending;
+      expect(resultElement.innerHTML).toBe(closedMarkup);
+      expect(view._searchState).toBe("idle");
+    });
+
+    function modeLifecycle(view: ReturnType<typeof makeDashboard>) {
+      const seam = view as unknown as PaperForgeStatusView;
+      Object.assign(seam, {
+        _contentEl: view._host,
+        _currentMode: "paper",
+        _currentFilePath: "A.md",
+        _currentPaperKey: null,
+        _renderModeHeader: () => {},
+        _renderBackendBanner: () => {},
+        _renderPaperMode: () => view.renderSearchSection(view._host),
+        _renderGlobalMode: () => view._host.createEl("h3", { text: "Library overview" }),
+      });
+      return seam;
+    }
+
+    it.each(["switch", "refresh"])(
+      "does not send an obsolete debounced query after a %s removes search",
+      async (transition) => {
+        vi.useFakeTimers();
+        const view = makeDashboard(client);
+        const seam = modeLifecycle(view);
+        try {
+          view._searchInput.value = "obsolete paper query";
+          view._searchInput.dispatchEvent(new Event("input"));
+          if (transition === "switch") await seam._switchMode("global", null);
+          else {
+            (seam as any)._currentMode = "global";
+            await seam._refreshCurrentMode();
+          }
+          await vi.advanceTimersByTimeAsync(250);
+          expect(transport.calls.filter((call) => call.argv[0] === "search")).toEqual([]);
+        } finally {
+          vi.useRealTimers();
+          view._host.remove();
+        }
+      }
+    );
+
+    it.each(["switch", "refresh"])(
+      "does not render an old paper reply after a %s and still accepts a new query",
+      async (transition) => {
+        const response = Promise.withResolvers<string>();
+        transport.executeHandler = (argv) => argv[0] !== "search"
+          ? JSON.stringify({ ok: true, data: { matches: [] } })
+          : argv[1] === "paper A marker" ? response.promise
+          : JSON.stringify({ ok: true, data: { matches: [{ title: "Current paper result" }] } });
+        const view = makeDashboard(client);
+        const seam = modeLifecycle(view);
+        try {
+          view._searchInput.value = "paper A marker";
+          const pending = view.executeSearch();
+          if (transition === "switch") await seam._switchMode("paper", "B.md");
+          else await seam._refreshCurrentMode();
+          response.resolve(JSON.stringify({
+            ok: true, data: { matches: [{ title: "Obsolete paper A result" }] },
+          }));
+          await pending;
+          expect(view._searchResultsEl.textContent).not.toContain("Obsolete paper A result");
+          view._searchInput.value = "paper B marker";
+          await view.executeSearch();
+          expect(view._searchResultsEl.textContent).toContain("Current paper result");
+        } finally {
+          response.resolve(JSON.stringify({ ok: true, data: { matches: [] } }));
+          view._host.remove();
+        }
+      }
+    );
 
     it("routes standard search through client.search and never spawns a child process", async () => {
       transport.executeHandler = (argv) => {
@@ -120,9 +232,12 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       view._searchInput.value = "machine learning";
 
       await view.executeSearch();
-
-      expect(transport.calls).toHaveLength(1);
-      expect(transport.calls[0].argv).toEqual([
+      view._host.remove();
+      const searchCalls = transport.calls.filter(
+        (c: { argv: string[] }) => c.argv[0] === "search"
+      );
+      expect(searchCalls).toHaveLength(1);
+      expect(searchCalls[0].argv).toEqual([
         "search",
         "machine learning",
         "--limit",
@@ -151,9 +266,12 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       view._searchInput.value = "@ transformer architecture";
 
       await view.executeSearch();
-
-      expect(transport.calls).toHaveLength(1);
-      expect(transport.calls[0].argv).toEqual([
+      view._host.remove();
+      const retrieveCalls = transport.calls.filter(
+        (c: { argv: string[] }) => c.argv[0] === "retrieve"
+      );
+      expect(retrieveCalls).toHaveLength(1);
+      expect(retrieveCalls[0].argv).toEqual([
         "retrieve",
         "transformer architecture",
         "--limit",
@@ -168,7 +286,106 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(mockSpawn).not.toHaveBeenCalled();
       expect(mockExecFile).not.toHaveBeenCalled();
     });
+    it("renders deep labels for '@ ' and leading-whitespace '@' with real DOM and retrieve argv", async () => {
+      transport.executeHandler = () => {
+        return JSON.stringify({
+          ok: true,
+          data: { matches: [{ id: "unit-space", text: "At-space snippet" }] },
+        });
+      };
+      for (const value of ["@ hello", "  @ hello"]) {
+        const view = makeDashboard(client);
+        view._searchInput.value = value;
+        view._searchInput.dispatchEvent(new Event("input"));
+        expect(
+          view._host.querySelector(".paperforge-search-mode")?.textContent
+        ).toBe("@");
+        await view.executeSearch();
+        const retrieveCalls = transport.calls.filter(
+          (c: { argv: string[] }) => c.argv[0] === "retrieve"
+        );
+        expect(retrieveCalls.at(-1)?.argv).toEqual([
+          "retrieve",
+          "hello",
+          "--limit",
+          "5",
+          "--deep",
+          "--json",
+        ]);
+        // Real render seam: loading label then results header carry deep.
+        const header = view._host.querySelector(
+          ".paperforge-search-results-header .paperforge-search-mode"
+        );
+        expect(header?.textContent).toBe("@");
+        view._host.remove();
+      }
+      expect(mockSpawn).not.toHaveBeenCalled();
+      expect(mockExecFile).not.toHaveBeenCalled();
+    });
 
+    it("keeps forced deep request one-shot: forced deep once, plain Enter stays metadata, mode survives in-flight change", async () => {
+      const seen: string[][] = [];
+      transport.executeHandler = (argv: string[]) => {
+        seen.push(argv);
+        return JSON.stringify({
+          ok: true,
+          data: { matches: [{ id: "u", text: "t" }] },
+        });
+      };
+      const view = makeDashboard(client);
+      view._searchInput.value = "plain query";
+      view._searchInput.dispatchEvent(new Event("input"));
+      expect(
+        view._host.querySelector(".paperforge-search-mode")?.textContent
+      ).toBe("M");
+      // Forced deep for this request only: argv is retrieve, input mode stays M.
+      await view.executeSearch(true);
+      expect(seen.at(-1)?.[0]).toBe("retrieve");
+      expect(view._searchInput.value).toBe("plain query");
+      expect(view._searchMode).toBe("M");
+      // Plain Enter on the unchanged input is metadata again.
+      await view.executeSearch();
+      expect(seen.at(-1)?.[0]).toBe("search");
+      // In-flight input-mode change does not rewrite the settled label.
+      const p = view.executeSearch(true);
+      view._searchMode = "M";
+      await p;
+      expect(
+        view._host.querySelector(
+          ".paperforge-search-results-header .paperforge-search-mode"
+        )?.textContent
+      ).toBe("@");
+      // A real Retry click after a failed forced-deep replays retrieve while
+      // plain Enter stays metadata. Fail the deep request through the
+      // transport, then click the rendered retry button and await the
+      // retried request's completion via the transport gate.
+      transport.executeHandler = () => {
+        const e = new Error("rc1") as Error & { exitCode?: number; stdout?: string };
+        e.exitCode = 1;
+        e.stdout = JSON.stringify({ ok: false, data: null, error: { code: "PATH_NOT_FOUND", message: "no db" } });
+        throw e;
+      };
+      client.invalidateCache();
+      const failP = view.executeSearch(true);
+      await failP.catch(() => undefined);
+      expect(view._searchState).toBe("backend-unavailable");
+      expect(view._searchDeep).toBe(true);
+      const gate = Promise.withResolvers<void>();
+      transport.executeHandler = (argv: string[]) => {
+        seen.push(argv);
+        gate.resolve();
+        return JSON.stringify({ ok: true, data: { matches: [] } });
+      };
+      const buttons = [...view._host.querySelectorAll("button")];
+      expect(buttons.length).toBeGreaterThan(0);
+      buttons.at(-1)?.click();
+      await gate.promise;
+      expect(seen.at(-1)?.[0]).toBe("retrieve");
+      await view.executeSearch();
+      view._host.remove();
+      expect(mockSpawn).not.toHaveBeenCalled();
+      expect(mockExecFile).not.toHaveBeenCalled();
+    });
     it("fails closed with backend-unavailable when PaperForgeClient is missing", async () => {
       const view = makeDashboard(null);
       view._searchInput.value = "test query";
@@ -178,6 +395,101 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(view._searchState).toBe("backend-unavailable");
       expect(transport.calls).toHaveLength(0);
       expect(mockSpawn).not.toHaveBeenCalled();
+    });
+
+    it("maps metadata-search PATH_NOT_FOUND to missing-memory-index and deep-retrieve PATH_NOT_FOUND stays backend-unavailable", async () => {
+      const seen: unknown[][] = [];
+      const origErr = console.error;
+      console.error = (...a: unknown[]) => void seen.push(a);
+      try {
+        transport.executeHandler = (argv: string[]) => {
+          if (argv[0] === "reading-log") {
+            return JSON.stringify({ ok: true, data: { matches: [] } });
+          }
+          const e = new Error("rc1") as Error & { exitCode?: number; stdout?: string };
+          e.exitCode = 1;
+          e.stdout = JSON.stringify({ ok: false, data: null, error: { code: "PATH_NOT_FOUND", message: "no db" } });
+          throw e;
+        };
+        const meta = makeDashboard(client);
+        meta._searchMode = "M";
+        meta._searchInput.value = "metadata query";
+        await meta.executeSearch();
+        expect(meta._searchState).toBe("missing-memory-index");
+
+        client.invalidateCache();
+        const deep = makeDashboard(client);
+        deep._searchMode = "@";
+        deep._searchInput.value = "@ vector query";
+        await deep.executeSearch();
+        expect(deep._searchState).toBe("backend-unavailable");
+
+        const genuine = makeDashboard(client);
+        genuine._searchMode = "M";
+        genuine._searchInput.value = "genuine failure";
+        transport.executeHandler = (argv: string[]) => {
+          if (argv[0] === "reading-log") {
+            return JSON.stringify({ ok: true, data: { matches: [] } });
+          }
+          return JSON.stringify({ ok: false, data: null, error: { code: "BACKEND_UNAVAILABLE", message: "down" } });
+        };
+        await genuine.executeSearch();
+        expect(genuine._searchState).toBe("backend-unavailable");
+
+        client.invalidateCache();
+        transport.executeHandler = () =>
+          JSON.stringify({ ok: true, data: { matches: [] } });
+        const empty = makeDashboard(client);
+        empty._searchMode = "M";
+        empty._searchInput.value = "empty query";
+        await empty.executeSearch();
+        expect(empty._searchState).toBe("empty");
+
+        // Genuine terminals log exactly once with fixed op/code metadata;
+        // expected states (missing-memory card, empty) stay quiet; no query
+        // or exception text ever reaches the console.
+        expect(seen.length).toBe(2);
+        expect(String(seen[0][0])).toContain("op=retrieve");
+        expect(String(seen[0][0])).toContain("code=PATH_NOT_FOUND");
+        expect(String(seen[1][0])).toContain("op=search");
+        expect(String(seen[1][0])).toContain("code=BACKEND_UNAVAILABLE");
+        expect(JSON.stringify(seen)).not.toMatch(
+          /metadata query|vector query|genuine failure|empty query|no db|down|rc1|Error/
+        );
+        for (const v of [meta, deep, genuine, empty]) v._host.remove();
+      } finally {
+        console.error = origErr;
+      }
+    });
+
+    it("missing-memory and vector-settings CTAs navigate without dispatching actions", async () => {
+      const openModuleSettings = vi.fn(() => true);
+      const view = makeDashboard(client);
+      view.app = {
+        vault: { adapter: { basePath: "/vault" } },
+        plugins: { plugins: { paperforge: { getClient: () => client, openModuleSettings } } },
+      };
+      view._searchState = "missing-memory-index";
+      view._renderSearchState();
+      view._host.remove();
+      const missingBtn = [...view._searchResultsEl.querySelectorAll("button")].find((b) =>
+        (b.textContent ?? "").length > 0,
+      );
+      missingBtn?.click();
+      expect(openModuleSettings).toHaveBeenCalledWith("memory");
+      expect(transport.calls).toHaveLength(0);
+
+      const vectors = makeDashboard(client);
+      vectors.app = view.app;
+      vectors._searchState = "vectors-not-built";
+      vectors._renderSearchState();
+      vectors._host.remove();
+      const vectorBtn = [...vectors._searchResultsEl.querySelectorAll("button")].find((b) =>
+        (b.textContent ?? "").length > 0,
+      );
+      vectorBtn?.click();
+      expect(openModuleSettings).toHaveBeenCalledWith("memory");
+      expect(transport.calls).toHaveLength(0);
     });
   });
 

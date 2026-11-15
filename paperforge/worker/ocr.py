@@ -17,6 +17,7 @@ import pymupdf
 import requests
 from PIL import Image
 
+from paperforge.adapters.bbt import load_export_rows
 from paperforge.config import paperforge_paths
 from paperforge.worker import sync as _sync
 from paperforge.worker._progress import progress_bar
@@ -161,10 +162,7 @@ from paperforge.worker.ocr_metadata import (
     write_resolved_metadata,
 )
 from paperforge.worker.ocr_tables import write_table_inventory
-from paperforge.worker.sync import (
-    load_control_actions,
-    load_export_rows,
-)
+from paperforge.worker.sync import load_control_actions
 
 logger = logging.getLogger(__name__)
 
@@ -2875,7 +2873,7 @@ def run_ocr(
                 continue
             zkey = meta.get("zotero_key", meta_dir.name)
             zstatus = str(meta.get("ocr_status", "") or "").strip().lower()
-            if zstatus in {"queued", "running"}:
+            if zstatus in {"queued", "running"} and not meta.get("ocr_job_id"):
                 zstarted = meta.get("ocr_started_at", "")
                 if zstarted:
                     try:
@@ -3019,6 +3017,17 @@ def run_ocr(
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
     ocr_queue = sync_ocr_queue(paths, target_rows)
+    # A lost upload response may conceal a job accepted by the provider.
+    # Keep the existing write-ahead marker authoritative across fresh runs.
+    unconfirmed_keys = {
+        str(row.get("zotero_key", ""))
+        for row in ocr_queue
+        if _read_meta_or_empty(paths["ocr"] / str(row.get("zotero_key", "")) / "meta.json")
+        .get("submission_state") == "submitting"
+    }
+    rate_limited_keys: set[str] = set()
+    timed_out_keys: set[str] = set()
+    result_unavailable_keys: set[str] = set()
     logger.debug(
         "OCR queue prepared: target_keys=%d target_rows=%d queue=%d first=%s status=%s",
         len(target_keys),
@@ -3066,20 +3075,24 @@ def run_ocr(
             try:
                 response = retry_with_meta(_do_poll, meta_path_poll, meta["ocr_job_id"], token)
             except Exception as e:
-                error_state = classify_ocr_error(OCRNetworkError(str(e)), stage="poll")
-                apply_ocr_error_state(queue_row, meta, error_state)
+                # Poll failure says nothing about the remote job's outcome.
+                meta["error"] = "Unable to confirm remote OCR status; the submitted job may still be running."
+                meta["last_error"] = type(e).__name__
+                meta["error_stage"] = "poll"
+                queue_row["queue_status"] = status
                 write_json(paths["ocr"] / key / "meta.json", meta)
+                timed_out_keys.add(key)
                 changed += 1
-                active_submitted = max(0, active_submitted - 1)
                 continue
             try:
                 payload = response.json()["data"]
                 state = payload["state"]
             except (json.JSONDecodeError, KeyError) as e:
-                error_state = classify_ocr_error(
-                    OCRAPISchemaError(f"API schema mismatch during polling: {e}"), stage="poll"
-                )
-                apply_ocr_error_state(queue_row, meta, error_state)
+                meta["error"] = "Unable to confirm remote OCR status; the submitted job may still be running."
+                meta["last_error"] = type(e).__name__
+                meta["error_stage"] = "poll"
+                queue_row["queue_status"] = status
+                timed_out_keys.add(key)
                 meta["raw_response"] = response.text[:1000]
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 json_dir = paths["ocr"] / key / "json"
@@ -3092,10 +3105,10 @@ def run_ocr(
                 continue
             if state in {"pending", "running"}:
                 if _paper_timed_out(meta):
-                    meta["ocr_status"] = "retryable_error"
-                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min)"
-                    queue_row["queue_status"] = "retryable_error"
-                    active_submitted = max(0, active_submitted - 1)
+                    meta["ocr_status"] = "running" if state == "running" else "queued"
+                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min); remote job may still run"
+                    queue_row["queue_status"] = meta["ocr_status"]
+                    timed_out_keys.add(key)
                 else:
                     # Provider "pending" = job submitted, waiting in provider
                     # queue — semantically OUR "queued", never the pre-upload
@@ -3109,8 +3122,18 @@ def run_ocr(
             elif state == "done":
                 try:
                     result_url = payload["resultUrl"]["jsonUrl"]
-                    result_response = requests.get(result_url, timeout=120)
-                    result_response.raise_for_status()
+                    try:
+                        result_response = requests.get(result_url, timeout=120)
+                        result_response.raise_for_status()
+                    except requests.RequestException:
+                        meta["ocr_status"] = "queued"
+                        meta["error"] = "Remote OCR finished, but its result could not be retrieved; check provider status before retrying."
+                        meta["error_stage"] = "result"
+                        queue_row["queue_status"] = "queued"
+                        timed_out_keys.add(key)
+                        result_unavailable_keys.add(key)
+                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        continue
                     lines = [line.strip() for line in result_response.text.splitlines() if line.strip()]
                     all_results = []
                     for line in lines:
@@ -3250,12 +3273,16 @@ def run_ocr(
         remaining = [r for r in ocr_queue if r.get("queue_status", "") not in OCR_SETTLED_STATUSES]
         if not remaining:
             break
+        if all(str(row.get("zotero_key", "")) in (unconfirmed_keys | timed_out_keys) for row in remaining):
+            break
         available_slots = max(0, max_items - active_submitted)
         _sanitized_temp = None
         if available_slots > 0:
-            upload_items = [r for r in remaining if r.get("queue_status", "") not in ("queued", "running")][
-                :available_slots
-            ]
+            upload_items = [
+                r for r in remaining
+                if r.get("queue_status", "") not in ("queued", "running")
+                and str(r.get("zotero_key", "")) not in unconfirmed_keys
+            ][:available_slots]
             for queue_row in upload_items:
                 if stop_check is not None and stop_check():
                     _stopped = True
@@ -3359,7 +3386,9 @@ def run_ocr(
                 meta["ocr_job_id"] = meta.get("ocr_job_id", "") or ""
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 try:
-                    response = retry_with_meta(_do_upload, paths["ocr"] / key / "meta.json", token, upload_pdf)
+                    # Uploads are not idempotent: a lost response cannot be
+                    # retried as though the provider had not accepted it.
+                    response = _do_upload(token, upload_pdf)
                     _job_id = str(response.json()["data"]["jobId"])
                     meta["ocr_job_id"] = _job_id
                     meta["submission_state"] = "submitted"
@@ -3390,16 +3419,20 @@ def run_ocr(
                             _body = str(getattr(e.response, "text", ""))[:500]
                         except Exception:  # noqa: BLE001
                             pass
-                        if _status == 401:
+                        if _status in (401, 403):
+                            meta.pop("submission_state", None)
                             meta["ocr_status"] = "blocked"
-                            meta["error"] = "PaddleOCR token invalid"
+                            meta["error"] = "PaddleOCR token invalid" if _status == 401 else "PaddleOCR access denied"
+                            meta["error_stage"] = "auth"
+                            meta["provider_error_status"] = _status
                             meta["retry_count"] = 3
                             queue_row["queue_status"] = "blocked"
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
-                            _diag(f"OCR: {key} blocked (invalid API token)")
+                            _diag(f"OCR: {key} blocked ({'invalid API token' if _status == 401 else 'access denied'})")
                             continue
                         if _status in (400, 429):
+                            meta.pop("submission_state", None)
                             # 400: provider error codes 10001-10008 (empty /
                             # size / format / pages / params); 429: quota or
                             # rate limit.  Persist the body so the failure is
@@ -3409,7 +3442,10 @@ def run_ocr(
                             meta["error"] = f"upload rejected ({_status}): {_body[:200]}"
                             meta["provider_error"] = _body
                             meta["provider_error_status"] = _status
-                            queue_row["queue_status"] = str(meta.get("ocr_status", "error") or "error")
+                            meta["ocr_status"] = "error"
+                            queue_row["queue_status"] = "error"
+                            if _status == 429:
+                                rate_limited_keys.add(key)
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
                             _diag(f"OCR: {key} upload rejected ({_status}): {_body[:120]}")
@@ -3420,6 +3456,7 @@ def run_ocr(
                         # terminal (authority expects the file); it is a
                         # source defect that must stay on the repair
                         # frontier: blocked + error_stage=source.
+                        meta.pop("submission_state", None)
                         meta["ocr_status"] = "blocked"
                         meta["error"] = "PDF not found"
                         meta["error_stage"] = "source"
@@ -3427,15 +3464,15 @@ def run_ocr(
                         write_json(paths["ocr"] / key / "meta.json", meta)
                         changed += 1
                         continue
-                    retry_count = int(meta.get("retry_count", 0)) + 1
-                    meta["retry_count"] = retry_count
-                    meta["error"] = str(e)
-                    meta["last_error"] = str(e)
+                    unconfirmed_keys.add(key)
+                    meta["error_stage"] = "upload"
+                    meta["error"] = "Submission unconfirmed; do not submit again until the provider is checked."
+                    meta["last_error"] = type(e).__name__
                     meta["ocr_status"] = "pending"
                     queue_row["queue_status"] = "pending"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                    _diag(f"OCR: {key} upload failed (retry {retry_count}/3): {e}")
+                    _diag(f"OCR: {key} submission unconfirmed; inspect provider before retry")
                     continue
                 meta["ocr_status"] = "queued"
                 meta["ocr_started_at"] = datetime.now(timezone.utc).isoformat()
@@ -3450,7 +3487,8 @@ def run_ocr(
         if stop_check is not None and stop_check():
             _stopped = True
             break
-        poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")]
+        poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")
+                      and str(r.get("zotero_key", "")) not in timed_out_keys]
         # F3 (Control Plane Closure): batch observer — ONE provider request
         # per cycle for the whole logical batch; per-paper settle below is
         # unchanged.  If the batch endpoint is unavailable, or a done job's
@@ -3490,20 +3528,18 @@ def run_ocr(
             if state == "done":
                 try:
                     result_url = payload["resultUrl"]["jsonUrl"]
-                    result_response = requests.get(result_url, timeout=120)
-                    if result_response.status_code == 404:
-                        meta["ocr_status"] = "pending"
-                        meta["ocr_job_id"] = ""
-                        meta["needs_sanitize"] = True
-                        meta["error"] = "Result object not found on provider (404)"
-                        meta["retry_count"] = 0
-                        queue_row["queue_status"] = "pending"
+                    try:
+                        result_response = requests.get(result_url, timeout=120)
+                        result_response.raise_for_status()
+                    except requests.RequestException:
+                        meta["ocr_status"] = "queued"
+                        meta["error"] = "Remote OCR finished, but its result could not be retrieved; check provider status before retrying."
+                        meta["error_stage"] = "result"
+                        queue_row["queue_status"] = "queued"
+                        timed_out_keys.add(key)
+                        result_unavailable_keys.add(key)
                         write_json(paths["ocr"] / key / "meta.json", meta)
-                        changed += 1
-                        active_submitted = max(0, active_submitted - 1)
-                        _diag(f"OCR: {key} result expired, will retry")
                         continue
-                    result_response.raise_for_status()
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
                     results = [json.loads(l)["result"] for l in lines]
                     page_num, md_path, json_path, fulltext_md_path, meta = postprocess_ocr_result(
@@ -3578,10 +3614,10 @@ def run_ocr(
                 _failed_count += 1
             else:
                 if _paper_timed_out(meta):
-                    meta["ocr_status"] = "retryable_error"
-                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min)"
-                    queue_row["queue_status"] = "retryable_error"
-                    active_submitted = max(0, active_submitted - 1)
+                    meta["ocr_status"] = "running" if state == "running" else "queued"
+                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min); remote job may still run"
+                    queue_row["queue_status"] = meta["ocr_status"]
+                    timed_out_keys.add(key)
                 else:
                     # Provider "pending" = job submitted — never downgrade to
                     # our pre-upload "pending" (breaks sleep/upload gates).
@@ -3685,7 +3721,9 @@ def run_ocr(
     summary = f"OCR: {' '.join(summary_parts) if summary_parts else 'no items processed'}"
     if progress_callback is None:
         _diag(summary)
-        if pending_keys:
+        if unconfirmed_keys:
+            _diag("OCR: submission unconfirmed; check provider before any retry")
+        elif pending_keys:
             _diag("OCR: re-run to continue polling incomplete items")
     else:
         logger.info(summary)
@@ -3722,6 +3760,9 @@ def run_ocr(
     if result_sink is not None:
         result_sink["per_key"] = settled_snapshot
         result_sink["pending_keys"] = pending_keys
+        result_sink["unconfirmed_keys"] = sorted(unconfirmed_keys)
+        result_sink["rate_limited_keys"] = sorted(rate_limited_keys)
+        result_sink["result_unavailable_keys"] = sorted(result_unavailable_keys)
         result_sink["failed_keys"] = [
             k for k, s in settled_snapshot.items() if s in ("error", "fatal_error", "blocked")
         ]

@@ -54,8 +54,14 @@ vi.mock("obsidian", () => {
       constructor() {
         this.contentEl = document.createElement("div");
       }
-      open() {}
-      close() {}
+      open() {
+        document.body.append(this.contentEl);
+        if ("onOpen" in this && typeof this.onOpen === "function")
+          this.onOpen();
+      }
+      close() {
+        this.contentEl.remove();
+      }
     },
     MarkdownRenderer: { render: () => {} },
     App: class {},
@@ -65,6 +71,12 @@ vi.mock("obsidian", () => {
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
 import { TFile } from "obsidian";
+import { PaperForgeClient } from "../src/client/paperforge-client";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { resolve, join } from "node:path";
 
 
 describe("PaperForgeStatusView runtime pointer resolution", () => {
@@ -548,59 +560,250 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
 });
 
 describe("PaperForgeStatusView note opening", () => {
-  it("materializes an externally created note before opening a search result", async () => {
-    const view = new (PaperForgeStatusView as any)({});
+  it("opens an externally created note without deleting or rewriting it", async () => {
+    // The constructor only stores this leaf; host behavior is supplied below.
+    const hostLeaf = {} as ConstructorParameters<
+      typeof PaperForgeStatusView
+    >[0];
+    const view = new PaperForgeStatusView(hostLeaf);
     const notePath = "Resources/Literature/J01/J01.md";
-    const file = Object.create(TFile.prototype) as TFile;
-    (file as any).path = notePath;
-    (file as any).extension = "md";
+    const file = Object.assign(Object.create(TFile.prototype), {
+      path: notePath,
+      extension: "md",
+    });
     let indexed: TFile | null = null;
-    let physicalExists = true;
-    const leaf = {
-      openFile: vi.fn(async () => undefined),
-    };
-    const app = {
+    const remove = vi.fn();
+    const write = vi.fn();
+    const leaf = { openFile: vi.fn(async () => undefined) };
+    const host = {
       vault: {
-        getAbstractFileByPath: vi.fn(() => indexed),
+        getAbstractFileByPath: () => indexed,
         adapter: {
-          exists: vi.fn(async (path: string) =>
-            path === notePath ? physicalExists : true
-          ),
-          read: vi.fn(async () => "# J01\n"),
-          remove: vi.fn(async () => {
-            physicalExists = false;
+          exists: async () => true,
+          reconcileInternalFile: vi.fn(async () => {
+            indexed = file;
           }),
-          write: vi.fn(async () => {
-            physicalExists = true;
-          }),
+          remove,
+          write,
         },
-        createFolder: vi.fn(async () => undefined),
-        create: vi.fn(async () => {
-          if (physicalExists) throw new Error("File already exists");
-          physicalExists = true;
-          indexed = file;
-          return file;
-        }),
       },
       workspace: {
-        getMostRecentLeaf: vi.fn(() => leaf),
-        getLeaf: vi.fn(() => leaf),
-        revealLeaf: vi.fn(async () => undefined),
+        getMostRecentLeaf: () => leaf,
+        getLeaf: () => leaf,
+        revealLeaf: async () => undefined,
         setActiveLeaf: vi.fn(),
         openLinkText: vi.fn(),
       },
     };
-    (view as any).app = app;
-
-    await (view as any)._openSearchResult(notePath, false);
-
-    expect(app.vault.createFolder).toHaveBeenCalledWith(
-      "Resources/Literature/J01"
-    );
-    expect(app.vault.adapter.read).toHaveBeenCalledWith(notePath);
-    expect(app.vault.adapter.remove).toHaveBeenCalledWith(notePath);
-    expect(app.vault.create).toHaveBeenCalledWith(notePath, "# J01\n");
+    Object.assign(view, { app: host });
+    await view._openSearchResult(notePath, false);
     expect(leaf.openFile).toHaveBeenCalledWith(file);
-    expect(app.workspace.openLinkText).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
   });
+
+  it.each([false, true])(
+    "reads the authoritative note on a cold cache miss (workspace=%s) without rewriting bytes",
+    async (workspace) => {
+      // The constructor only stores this leaf; the host behavior is supplied below.
+      const leaf = {} as ConstructorParameters<typeof PaperForgeStatusView>[0];
+      const view = new PaperForgeStatusView(leaf);
+      const notePath = "Resources/Literature/J01/J01.md";
+      const read = vi.fn(
+        async () => "## 🔍 精读\n**一句话总览:** Existing note overview\n"
+      );
+      const remove = vi.fn();
+      const write = vi.fn();
+      Object.assign(view, {
+        app: {
+          vault: {
+            getAbstractFileByPath: () => null,
+            adapter: {
+              exists: async (p: string) => p === notePath,
+              read,
+              remove,
+              write,
+            },
+          },
+        },
+      });
+      const container = document.createElement("div");
+      view._renderPaperOverviewCard(
+        container,
+        workspace
+          ? {
+              note_path: "Resources/Literature/J01.md",
+              main_note_path: notePath,
+            }
+          : { note_path: notePath }
+      );
+      await vi.waitFor(() =>
+        expect(container.textContent).toContain("Existing note overview")
+      );
+      expect(container.textContent).not.toContain("笔记文件不存在");
+      expect(read).toHaveBeenCalledWith(notePath);
+      expect(remove).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
+      const missing = document.createElement("div");
+      view._renderPaperOverviewCard(missing, {
+        note_path: "Resources/Literature/MISSING.md",
+      });
+      await vi.waitFor(() =>
+        expect(missing.textContent).toContain("Note file does not exist")
+      );
+    }
+  );
+
+  it("does not create a truly missing note while opening a result", async () => {
+    // The constructor only stores this leaf; host behavior is supplied below.
+    const leaf = {} as ConstructorParameters<typeof PaperForgeStatusView>[0];
+    const view = new PaperForgeStatusView(leaf);
+    const openLinkText = vi.fn();
+    Object.assign(view, {
+      app: {
+        vault: {
+          getAbstractFileByPath: () => null,
+          adapter: { exists: async () => false },
+        },
+        workspace: { openLinkText },
+      },
+    });
+    vi.useFakeTimers();
+    try {
+      const opening = view._openSearchResult(
+        "Resources/Literature/MISSING.md",
+        false
+      );
+      await vi.advanceTimersByTimeAsync(5100);
+      await opening;
+      expect(openLinkText).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("visible research record capture", () => {
+  it("keeps the captured paper while selection changes and immediately finds its saved record", async () => {
+    const vault = mkdtempSync(join(tmpdir(), "pf-record-ui-"));
+    const run = promisify(execFile);
+    const python = process.env.PF_PYTHON || "python";
+    const cwd = resolve("../..");
+    const env = {
+      ...process.env,
+      PYTHON_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+      PAPERFORGE_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+    };
+    try {
+      await run(
+        python,
+        [
+          "-c",
+          "from pathlib import Path; from paperforge.config import bootstrap_config; import sys; bootstrap_config(Path(sys.argv[1]))",
+          vault,
+        ],
+        { cwd, env }
+      );
+      const client = new PaperForgeClient({
+        transport: {
+          execute: async (argv) =>
+            (
+              await run(
+                python,
+                ["-m", "paperforge", "--vault", vault, ...argv],
+                { cwd, env }
+              )
+            ).stdout,
+          stream: () => {
+            throw new Error("No remote/stream operations in record capture");
+          },
+        },
+      });
+      const view = new PaperForgeStatusView(
+        {} as ConstructorParameters<typeof PaperForgeStatusView>[0]
+      );
+      Object.assign(view, {
+        app: {
+          plugins: { plugins: { paperforge: { getClient: () => client } } },
+        },
+      });
+      view._contentEl = document.createElement("div");
+      document.body.append(view._contentEl);
+      view._currentPaperKey = "PAPER001";
+      view._currentPaperEntry = { title: "Unrelated title" };
+      view._renderPaperMode();
+      const capture = view._contentEl.querySelector<HTMLButtonElement>(
+        '[data-pf-testid="save-research-record"]'
+      );
+      expect(capture).not.toBeNull();
+      capture!.click();
+      view._currentPaperKey = "OTHER001";
+      const modal = document.querySelector<HTMLElement>(
+        ".paperforge-record-modal"
+      )!;
+      const quote =
+        modal.querySelector<HTMLTextAreaElement>('[name="excerpt"]')!;
+      const usage = modal.querySelector<HTMLTextAreaElement>('[name="usage"]')!;
+      quote.value = "An exact saved observation";
+      usage.value = "non-title-bridge-marker";
+      const sourcePath = modal.querySelector<HTMLInputElement>('[name="pdf"]')!;
+      sourcePath.value = "https://example.invalid/private.pdf";
+      modal.querySelector<HTMLInputElement>('[name="page"]')!.value = "2";
+      modal.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await vi.waitFor(
+        () => expect(modal.textContent).toContain("Operation failed"),
+        { timeout: 10000 }
+      );
+      expect(quote.value).toBe("An exact saved observation");
+      expect(quote.disabled).toBe(false);
+      expect(modal.textContent).not.toMatch(/rln_\d{8}_/);
+      sourcePath.value = "";
+      modal.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await vi.waitFor(() => expect(modal.textContent).toMatch(/rln_\d{8}_/), {
+        timeout: 10000,
+      });
+      expect(modal.textContent).toContain("unknown");
+      expect(
+        view._contentEl.querySelector(".paperforge-search-input")
+      ).not.toBeNull();
+      view._searchInput!.value = "non-title-bridge-marker";
+      await view.executeSearch();
+      const group = view._contentEl.querySelector(".paperforge-record-results");
+      expect(group?.textContent).toContain("An exact saved observation");
+      expect(group?.textContent).toContain("non-title-bridge-marker");
+      expect(group?.textContent).toContain("PAPER001");
+      expect(group?.textContent).not.toContain("OTHER001");
+      modal.remove();
+      group!.querySelector<HTMLButtonElement>("button")!.click();
+      const detail = document.querySelector<HTMLElement>(
+        ".paperforge-record-modal"
+      )!;
+      detail.querySelector<HTMLTextAreaElement>('[name="correction"]')!.value =
+        "Rechecked: do not use the earlier interpretation";
+      detail.querySelector<HTMLInputElement>('[name="reason"]')!.value =
+        "Source review";
+      detail.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await vi.waitFor(
+        () => expect(group!.textContent).toContain("No matching records"),
+        { timeout: 10000 }
+      );
+      const history = view._contentEl.querySelector<HTMLInputElement>(
+        '.paperforge-record-search input[type="checkbox"]'
+      )!;
+      history.checked = true;
+      history.dispatchEvent(new Event("change"));
+      await vi.waitFor(
+        () =>
+          expect(group!.textContent).toContain(
+            "historical, not active evidence"
+          ),
+        { timeout: 10000 }
+      );
+      expect(detail.textContent).toContain("Source review");
+      expect(detail.textContent).toContain("Rechecked: do not use");
+    } finally {
+      document.body.innerHTML = "";
+      rmSync(vault, { recursive: true, force: true });
+    }
+  }, 30000);
 });

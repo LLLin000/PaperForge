@@ -25,6 +25,7 @@ export function readRuntimePointer(home = os.homedir()): PointerInfo | null {
   try {
     raw = JSON.parse(fs.readFileSync(pointerPath, "utf8"));
   } catch {
+
     return null;
   }
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;

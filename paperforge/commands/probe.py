@@ -271,7 +271,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             ttl_seconds=TTL_INSTALLATION,
         )
 
-    if pointer["paperforge_version"] != PAPERFORGE_VERSION:
+    if normalize_release_version(str(pointer.get("paperforge_version", "") or "")) != normalize_release_version(PAPERFORGE_VERSION):
         return build_envelope(
             module="installation", capability_state="needs_action", severity="warning",
             reason_code="installation.runtime_pointer_stale",
@@ -577,11 +577,18 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
     _pipeline_summary = {
         "total": len(rows), "on_current": papers_on_current, "stale": papers_stale,
     }
+    historical_activity = {
+        "current": sum(getattr(r, "status", "") in ("done", "done_degraded") for r in rows),
+        "total": len(rows),
+        "unsettled": sum(getattr(r, "status", "") in ("running", "processing", "queued") for r in rows),
+    }
     _build_envelope = build_envelope
 
     def _wrap(*args, **kwargs):
         env = _build_envelope(*args, **kwargs)
         env["pipeline_version_summary"] = _pipeline_summary
+        if historical_activity["unsettled"]:
+            env["historical_activity"] = historical_activity
         return env
 
     if not rows:
@@ -594,11 +601,7 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
         ),
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
-    # ── Running/active rows → activity overlay (Issue #78 fix) ──
-    TERMINAL_STATUSES = frozenset({'done', 'done_degraded'})
-    ACTIVE_STATUSES = frozenset({'running', 'processing', 'queued'})
-    running_rows = [r for r in rows if getattr(r, 'status', '') in ACTIVE_STATUSES]
-    completed_count = sum(1 for r in rows if getattr(r, 'status', '') in TERMINAL_STATUSES)
+    # Persisted provider/local records do not prove a live local worker.
     total = len(rows)
     # Papers with no OCR output (the actionable set the run action would
     # process).  Counted from the rows so the number matches the OCR list.
@@ -607,13 +610,9 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
         if getattr(r, 'status', '') == 'pending'
         or getattr(r, 'display_action', '') == 'run_ocr'
     )
-    act_state = "running" if running_rows else "idle"
-    if running_rows:
-        act_label = f"OCR processing ({completed_count}/{total})"
-        act_progress = {"current": completed_count, "total": total}
-    else:
-        act_label = None
-        act_progress = None
+    act_state = "idle"
+    act_label = None
+    act_progress = None
 
     # ── Unified state machine (统一出统一回) ──
     # The lineage probe is the AUTHORITY for per-paper OCR state.  The old
@@ -1028,7 +1027,7 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
        a. completed → ready (+ API key notice if missing)
        b. running  → ready + activity
        c. failed   → rebuild vector
-       d. absent   → check ChromaDB → upgrade, or build vector
+       d. absent   → build vector
     """
     # ── Gate 0: canonical config present (fail closed, #142) ────────────
     from paperforge.config import ConfigError as _ConfigError
@@ -1423,43 +1422,7 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
                 notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
             )
 
-        # Check ChromaDB presence for 1.5.15 upgrade path
-        from paperforge.embedding._chroma import get_vector_db_path as _get_chroma_path
-
-        chroma_path = _get_chroma_path(vault) / "chroma.sqlite3"
-        if chroma_path.exists():
-            return build_envelope(
-                module="memory", capability_state="needs_action", severity="warning",
-                reason_code="memory.backend_upgrade_available",
-                reason_text="Smart Retrieval uses the ChromaDB backend. A newer sqlite-vec backend is available — rebuild to switch.",
-                user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-                action_primary=build_action_primary(
-                    action_id="memory.upgrade_backend",
-                    verb="rebuild_index", label="Rebuild index",
-                    safety_class=SAFETY_DESTRUCTIVE,
-                    confirmation_required=True,
-                    confirmation_prompt=(
-                        "Smart Retrieval backend upgrade\n\n"
-                        "What will happen\n"
-                        "• The current ChromaDB index is backed up to paperforge.pre-rebuild-{timestamp}.db\n"
-                        "• A fresh sqlite-vec index is built from your existing paper data\n"
-                        "• Your embedding API is called once per paper to create new vectors\n"
-                        "• After completion, PaperForge switches to the new backend automatically\n\n"
-                        "What is at risk\n"
-                        "• Embedding API charges: papers × your provider's rate\n"
-                        "• Search will not work while the rebuild runs\n"
-                        "• If the rebuild fails, PaperForge restores the backup automatically "
-                        "and your current ChromaDB index remains usable\n\n"
-                        "What stays untouched\n"
-                        "• Your notes, PDFs, and OCR fulltext\n"
-                        "• Your existing ChromaDB data (preserved in the vectors/ directory)\n"
-                        "• Your memory database structure and paper metadata"
-                    ),
-                ),
-                notices=notices, ttl_seconds=TTL_MEMORY,
-            )
-
-        # No vec0 data, no ChromaDB — never built vectors
+        # No vec0 data — vectors were never built
         return build_envelope(
             module="memory", capability_state="needs_action", severity="warning",
             reason_code="memory.index_stale",
@@ -1497,7 +1460,11 @@ def _worst_severity(severities: list[str]) -> str:
 PROBE_ORDER = ("installation", "library", "ocr", "memory", "help")
 
 
-def _probe_base_modules(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+def _probe_base_modules(
+    vault: Path,
+    lineage: dict[str, Any] | None = None,
+    installation_expected_version: str | None = None,
+) -> dict[str, dict[str, Any]]:
     """#140: fixed dispatcher — each base reader runs exactly once, in
     PROBE_ORDER, sequentially. An unexpected reader exception becomes that
     module's valid detection_failed envelope; the aggregate never aborts."""
@@ -1517,6 +1484,13 @@ def _probe_base_modules(vault: Path, lineage: dict[str, Any] | None = None) -> d
                     modules[mod_name] = probe_fn(vault, lineage=lineage)
                 except TypeError:
                     modules[mod_name] = probe_fn(vault)
+            elif mod_name == "installation":
+                if installation_expected_version is None:
+                    modules[mod_name] = probe_fn(vault)
+                else:
+                    modules[mod_name] = probe_fn(
+                        vault, expected_version=installation_expected_version
+                    )
             else:
                 modules[mod_name] = probe_fn(vault)
         except Exception:
@@ -1578,7 +1552,7 @@ def _derive_maintenance_tail(
         envelope = build_envelope(
             module="maintenance", capability_state="ready", severity="ok",
             reason_code="maintenance.no_items",
-            reason_text="All modules are ready — no maintenance needed",
+            reason_text="No maintenance items — check each module state for readiness",
             user_state=USER_STATE_READY, capability_kind=CAPABILITY_REQUIRED,
             action_primary=None, ttl_seconds=TTL_MAINTENANCE,
         )
@@ -1633,11 +1607,13 @@ def probe_maintenance(vault: Path) -> dict[str, Any]:
 # CLI dispatch
 # ---------------------------------------------------------------------------
 
-def _run_probe_all(vault: Path, *, json_output: bool) -> int:
+def _run_probe_all(vault: Path, *, json_output: bool, expected_version: str | None = None) -> int:
     """#140/#148: probe all reads each base capability exactly once,
     derives the maintenance projection from those exact envelopes (zero
     re-probe), and returns the six-module envelope map. A failing probe
-    degrades to its own detection_failed envelope; never aborts."""
+    degrades to its own detection_failed envelope; never aborts.
+    The plugin's expected package version gates installation readiness so
+    the RC4 pointer is never reported ready under an rc5 bundle."""
     import json as _json
 
     try:
@@ -1646,7 +1622,9 @@ def _run_probe_all(vault: Path, *, json_output: bool) -> int:
         lineage_snapshot = _pl(vault)
     except Exception:  # noqa: BLE001
         lineage_snapshot = None
-    modules = _probe_base_modules(vault, lineage=lineage_snapshot)
+    modules = _probe_base_modules(
+        vault, lineage=lineage_snapshot, installation_expected_version=expected_version
+    )
     modules["maintenance"] = derive_maintenance(modules, vault, lineage=lineage_snapshot)
     aggregate = {
         "schema_version": SCHEMA_VERSION,
@@ -1667,7 +1645,11 @@ def run(args: Any) -> int:
     module: str = args.probe_module
 
     if module == "all":
-        return _run_probe_all(vault, json_output=bool(getattr(args, "json", False)))
+        return _run_probe_all(
+            vault,
+            json_output=bool(getattr(args, "json", False)),
+            expected_version=getattr(args, "expected_version", None),
+        )
 
     if module == "installation":
         envelope = probe_installation(vault, expected_version=getattr(args, "expected_version", None))

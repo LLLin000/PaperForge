@@ -31,7 +31,7 @@ from paperforge.embedding import (
     mark_vector_build_state,
     read_vector_build_state,
 )
-from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+from paperforge.embedding.vectors import delete_paper_vectors_in_conn
 from paperforge.embedding.build_target import BuildTarget, ShadowBuild, verify_candidate
 from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.substrate import VECTOR_IDENTITY_VERSION, assess_vector_substrate

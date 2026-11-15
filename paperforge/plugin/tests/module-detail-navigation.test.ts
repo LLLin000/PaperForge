@@ -265,17 +265,6 @@ vi.mock("../src/services/python-bridge", () => ({
   runSubprocess: () => {},
 }));
 
-vi.mock("../src/services/runtime-paths", () => ({
-  resolveVaultPaths: () => ({}),
-  getMemoryRuntime: () => ({}),
-  getVectorRuntime: () => ({}),
-  getRuntimeHealth: () => ({}),
-  isMemoryReady: () => false,
-  isVectorReady: () => false,
-  getMemoryStatusText: () => "",
-  getVectorStatusText: () => "",
-  getCachedPython: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
-}));
 
 vi.mock("../src/services/managed-runtime", () => ({
   readRuntimePointer: () => runtimePointer.value,
@@ -312,9 +301,15 @@ vi.mock("../src/services/progress-parser", () => ({
 
 import { createUnknownEnvelope, ProbeEnvelope } from "../src/constants";
 import { PaperForgeSettingTab } from "../src/settings";
-import { setLanguage } from "../src/i18n";
+import { setLanguage, t } from "../src/i18n";
 import { MockTransport } from "./client/mock-transport";
 import { PaperForgeClient } from "../src/client/paperforge-client";
+import { join } from "node:path";
+import {
+  isConfigHydrated,
+  resolveVaultPaths,
+  setPathConfigSource,
+} from "../src/services/runtime-paths";
 
 // ── Helpers ──
 function fakeApp() {
@@ -392,7 +387,6 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       isOperationActive: vi.fn().mockReturnValue(false),
       cancelActiveOperation: vi.fn(),
       runtimeHealth: vi.fn(async () => ({})),
-      embedMigrate: vi.fn(async () => ({})),
       memoryRestoreBackup: vi.fn(async () => ({})),
       authSetSecret: vi.fn(async () => true),
       // Real reconcile wire (#222): data + a top-level next_actions list. The
@@ -481,6 +475,7 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       embedStatus: vi.fn().mockResolvedValue({}),
       credentialAvailable: vi.fn().mockResolvedValue(false),
       configSet: vi.fn().mockResolvedValue({}),
+
     }),
   };
   return plugin;
@@ -601,6 +596,9 @@ function polyfillObsidianDom(doc: Document) {
     ht.setAttr = function (name: string, value: string) {
       this.setAttribute(name, value);
     };
+    ht.addClass = function (name: string) {
+      this.classList.add(name);
+    };
     ht.appendText = function (text: string) {
       this.appendChild(doc.createTextNode(text));
     };
@@ -608,6 +606,7 @@ function polyfillObsidianDom(doc: Document) {
 }
 
 beforeEach(() => {
+  setPathConfigSource(null);
   dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
     url: "http://localhost",
     pretendToBeVisual: true,
@@ -626,6 +625,42 @@ beforeEach(() => {
 
 afterEach(() => {
   dom.window.close();
+});
+
+it("keeps the versioned installation verdict when a legacy aggregate reports ready", async () => {
+  const tab = makeTab();
+  const ready = { ...createUnknownEnvelope("installation"), user_state: "ready",
+    capability_state: "ready", severity: "ok", reason: { code: "installation.ready", text: "Ready" } };
+  const mismatch = { ...ready, user_state: "action_required", capability_state: "needs_action",
+    severity: "warning", reason: { code: "installation.version_mismatch", text: "Update required" } };
+  const library = createUnknownEnvelope("library");
+  const client = {
+    invalidateCache: vi.fn(),
+    probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready, library } }),
+    probe: vi.fn().mockResolvedValue(mismatch),
+  };
+  (tab as any)._client = client;
+  (tab as any)._refreshAllReadModels();
+  await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
+    .toBe("installation.version_mismatch"));
+  expect(client.probe).toHaveBeenCalledWith("installation", { expectedVersion: "1.0.0" });
+  expect((tab as any)._capabilityState.library).toEqual(library);
+});
+
+it.each(["rejected", "malformed"])("fails closed when the versioned installation probe is %s", async (mode) => {
+  const tab = makeTab();
+  const ready = { ...createUnknownEnvelope("installation"), user_state: "ready",
+    capability_state: "ready", severity: "ok", reason: { code: "installation.ready", text: "Ready" } };
+  (tab as any)._capabilityState = { installation: ready };
+  (tab as any)._client = {
+    invalidateCache: vi.fn(),
+    probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready } }),
+    probe: mode === "rejected" ? vi.fn().mockRejectedValue(new Error("unavailable"))
+      : vi.fn().mockResolvedValue({}),
+  };
+  (tab as any)._refreshAllReadModels();
+  await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
+    .toBe("installation.invalid_response"));
 });
 
 // ════════════════════════════════ 1. Library Detail ════════════════════
@@ -1093,7 +1128,6 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       expect.anything()
     );
   });
-
   it("rebuild_derived -> dispatches ocr.rebuild_derived with scope all", () => {
     const tab = makeTab();
     const client = installOcrClient(tab);
@@ -1905,6 +1939,7 @@ describe("Setup stage separates external runtime from Vault setup", () => {
     (tab as any)._displayInProgress = false;
     (tab as any)._initialDisplay = false;
     (tab as any)._initCapabilityState = () => {};
+
     (tab as any)._refreshPfConfig = () => {};
     (tab as any)._renderOverviewTab = (container: HTMLElement) => {
       container.createEl("h2", { text: "OVERVIEW-SENTINEL" });
@@ -1917,6 +1952,7 @@ describe("Setup stage separates external runtime from Vault setup", () => {
     (tab as any).display();
     expect(containerEl.textContent ?? "").not.toContain("OVERVIEW-SENTINEL");
   });
+
 });
 
 // ═══════════ RC UX Seam: credential save replaces stale keyring values ═════
@@ -1930,6 +1966,7 @@ describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
       authSetSecret,
       invalidateCache: vi.fn(),
       probeAll: vi.fn(async () => ({ modules: {} })),
+      probe: vi.fn(async () => createUnknownEnvelope("installation")),
     };
     const result = await (tab as any)._storeVectorDbCredential(
       "sk-new-key-123"

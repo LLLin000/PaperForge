@@ -19,6 +19,7 @@ import {
   type NextAction,
 } from "../src/services/next-actions-types";
 import { orchestrateFromSync } from "../src/services/next-actions-bridge";
+import { Notice } from "obsidian";
 
 beforeEach(() => resetNextActionTracker());
 
@@ -267,6 +268,23 @@ describe("execution policy", () => {
 });
 
 describe("sync bridge consent boundary", () => {
+  it("reports consent-required follow-ups once without claiming vectors are ready", async () => {
+    vi.mocked(Notice).mockClear();
+    const runAction = vi.fn();
+    await orchestrateFromSync(
+      JSON.stringify({
+        next_actions: [
+          action({ action_id: "embed.build", automatic: false }),
+          action({ action_id: "embed.resume", automatic: false }),
+        ],
+      }),
+      { runAction }
+    );
+    expect(runAction).not.toHaveBeenCalled();
+    expect(Notice).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(Notice).mock.calls[0][0]).toContain("require review");
+    expect(vi.mocked(Notice).mock.calls[0][0]).not.toContain("ready");
+  });
   it("runs automatic work and leaves consent-required work pending", async () => {
     const runAction = vi.fn(async () => ({
       ok: true,

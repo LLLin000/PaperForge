@@ -25,8 +25,7 @@ from paperforge.setup import SetupStepResult
 
 # The vector extras are the runtime requirements for embed build/retrieve
 # (#119: a bare install looks healthy but crashes on the first Build Index
-# click).  ChromaDB is legacy-only (opt-in `legacy-vector` extra) and must
-# never be required here.
+# click).
 VECTOR_CAPABILITY_IMPORTS = ("openai", "sqlite_vec")
 VECTOR_RUNTIME_PROBE = (
     "import paperforge, openai, sqlite_vec;"

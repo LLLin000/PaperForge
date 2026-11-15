@@ -62,6 +62,7 @@ describe("NodeProcessTransport", () => {
     });
   });
 
+
   describe("execute", () => {
     it("spawns python with vault path and executes subcommand", async () => {
       const mockChild = new MockChildProcess();

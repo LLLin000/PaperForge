@@ -56,7 +56,7 @@ import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeClient } from "./client";
-import { clearTrace, dumpTrace, setTraceEnabled } from "./client/trace";
+import { clearTrace, dumpTrace, setTraceEnabled, traceConsoleError } from "./client/trace";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -78,6 +78,10 @@ import {
   runtimeInstallerSteps,
 } from "./services/runtime-installer-launcher";
 import type { ActionRequest } from "./client/action-contract";
+import {
+  applyPathConfigFromList,
+  resolveVaultPaths,
+} from "./services/runtime-paths";
 
 // ── Interface ──
 
@@ -233,6 +237,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    *  Center.  Without this, leaving a deep wizard stage meant clicking
    *  "back" once per stage (#87 UX). */
   _goHome(): void {
+    if (this._setupOperation === "running") return;
     this.activeTab = "overview";
     this._selectedDetailModule = "";
     this._detailReturn = null;
@@ -506,6 +511,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
 
+
   /** One bounded line naming the real install failure (never the whole log). */
   private _formatSetupFailure(error: unknown): string {
     const raw =
@@ -579,6 +585,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #142 / C0: mutations route through the typed config commands; the
     // plugin never writes paperforge.json.
     void (async () => {
+      let libraryConfigured = false;
       // A rejected write is a fact: collect every failure so a partial
       // configuration can never continue into `setup` as if it were saved.
       const problems: Array<{ key: string; reason: string }> = [];
@@ -595,7 +602,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               .then(
                 () => undefined,
                 (e) => {
-                  console.error(`PaperForge: config set ${key} failed`, e);
+                  // Ownership: the typed config client already recorded the
+                  // terminal — keep the user-facing reason, no View echo.
                   problems.push({
                     key,
                     reason: this._formatSetupFailure(e),
@@ -657,9 +665,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       this.display();
 
+      let setupClientOwnsFailure = false;
       try {
         await this.plugin.saveSettings();
         const client = this.getClient();
+        setupClientOwnsFailure = true;
         const handle = client.setup(
           {
             systemDir: settings.system_dir?.trim() || "System",
@@ -681,12 +691,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         );
         const outcome = await handle.outcome;
         if (!outcome.ok) {
-          throw new Error(
-            outcome.protocolFailure
-              ? `${outcome.protocolFailure} (exit=${outcome.exitCode}, cancelled=${outcome.cancelled})`
-              : `Setup failed with exit code ${outcome.exitCode}`
-          );
+          if (outcome.cancelled) {
+            // User-cancelled stream: the client treats it as an expected
+            // state (no Console error) — the wizard stays neutral too.
+            this._setupOperation = "idle";
+            this._setupFeedback = t("setup_install_cancelled");
+            this.display();
+            return;
+          }
+          // Ownership: the shared client already recorded the stream
+          // terminal — keep the user-facing failure, no outer echo.
+          this._setupOperation = "failed";
+          this._setupFeedback = t("setup_library_config_failed");
+          this.display();
+          return;
         }
+        libraryConfigured = true;
+        setupClientOwnsFailure = false;
+        const listed = await client.configList();
+        setupClientOwnsFailure = false;
+        applyPathConfigFromList(this.plugin.settings, listed.fields);
         this._setupOperation = "idle";
         this._setupFeedback =
           envOverridden.length > 0
@@ -717,13 +741,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupFeedback = t("setup_library_configured");
         this.display();
       } catch (error) {
-        console.error("PaperForge library configuration failed:", error);
+        // The shared client owns startup rejections as well as resolved
+        // stream failures. Only pre/post-stream local failures belong here.
+        if (!setupClientOwnsFailure) {
+          traceConsoleError({
+            op: "library.setup",
+            stage: "local",
+            code: "backend_error",
+            exitCode: null,
+          });
+        }
         this._setupOperation = "failed";
-        this._setupFeedback = t("setup_library_config_failed");
+        this._setupFeedback = t(libraryConfigured ? "setup_library_refresh_failed" : "setup_library_config_failed");
         this.display();
       }
     })();
   }
+
   /** Render the Overview tab (header + control center + advanced settings). */
   _renderOverviewTab(containerEl: HTMLElement) {
     const vaultPath = this._getVaultBasePath();
@@ -2240,7 +2274,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {
         void this.getClient()
           .memoryRestoreBackup()
-          .catch(() => undefined)
+          .then(() => new Notice(t("memory_restore_done")))
+          .catch((error: unknown) => {
+            new Notice(t("memory_restore_failed").replace(
+              "{error}", error instanceof Error ? error.message : "Unknown error"
+            ), 6000);
+          })
           .finally(() => {
             this._refreshAllReadModels();
           });
@@ -2257,6 +2296,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       5000
     );
     this._probeModule(mod);
+  }
+
+  /** #174 RC: ChromaDB -> sqlite-vec backend migration (embed migrate). */
+  _runBackendMigration(): void {
+    void this.getClient()
+      .embedMigrate()
+      .then(() => {
+        new Notice(t("migrate_done") || "Backend migrated to sqlite-vec");
+        this._refreshAllReadModels();
+      })
+      .catch((err: Error) => {
+        new Notice(
+          (t("migrate_failed") || "Backend migration failed") +
+            ": " +
+            (err.message || "unknown error")
+        );
+        this._refreshAllReadModels();
+      });
   }
 
   /** #223: dispatch foundation.repair through the action runner.
@@ -2291,23 +2348,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
   }
 
-  /** #174 RC: ChromaDB -> sqlite-vec backend migration (embed migrate). */
-  _runBackendMigration(): void {
-    void this.getClient()
-      .embedMigrate()
-      .then(() => {
-        new Notice(t("migrate_done") || "Backend migrated to sqlite-vec");
-        this._refreshAllReadModels();
-      })
-      .catch((err: Error) => {
-        new Notice(
-          (t("migrate_failed") || "Backend migration failed") +
-            ": " +
-            (err.message || "unknown error")
-        );
-        this._refreshAllReadModels();
-      });
-  }
   /** Dispatch OCR actions through the shared PaperForgeClient (#07 step 3):
    * the same canonical action registry, #137 NDJSON progress, availability
    * gating, and cooperative Stop the OCR Workspace uses — no second
@@ -3099,10 +3139,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (isValidEnvelope(envelope, mod)) {
           this._updateCapabilityEnvelope(mod, envelope);
         } else {
-          console.warn(
-            `[PaperForge] Probe ${mod}: invalid envelope schema`,
-            envelope
-          );
+          // Ownership: probe bypasses the typed PFResult choke point (raw
+          // envelope read), so this local validation owns the terminal.
+          // Never dump the envelope — fixed metadata only.
+          traceConsoleError({
+            op: `probe.${mod}`,
+            stage: "protocol",
+            code: "protocol_error",
+            exitCode: 0,
+          });
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       })
@@ -3116,7 +3161,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ) {
           this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
         } else {
-          console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       });
@@ -3172,7 +3216,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ttl_seconds: 60,
     };
   }
-
   /** Update a single module envelope and refresh the display (#85: Last Known State). */
   _updateCapabilityEnvelope(mod: string, envelope: ProbeEnvelope): void {
     if (!this._capabilityState) this._capabilityState = {};
@@ -3730,11 +3773,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     for (const mod of CAPABILITY_MODULES) {
       this._probing.add(mod);
     }
-    void this.getClient()
-      .probeAll()
-      .then((data) => {
+    const client = this.getClient();
+    // Older runtimes accept expected-version on the installation probe but
+    // ignore it in probe all. Keep Python's versioned verdict authoritative.
+    void Promise.all([
+      client.probeAll({ expectedVersion: this.plugin.manifest?.version }),
+      client.probe("installation", { expectedVersion: this.plugin.manifest?.version })
+        .catch(() => createInvalidEnvelope("installation")),
+    ])
+      .then(([data, installation]) => {
         this._probing.clear();
-        for (const [mod, env] of Object.entries(data.modules ?? {})) {
+        const modules = {
+          ...data.modules,
+          installation: isValidEnvelope(installation, "installation")
+            ? installation : createInvalidEnvelope("installation"),
+        };
+        for (const [mod, env] of Object.entries(modules)) {
           if (isValidEnvelope(env, mod as CapabilityModule)) {
             this._updateCapabilityEnvelope(
               mod as CapabilityModule,
@@ -3765,6 +3819,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._lastOrphanCount = orphanCount;
       })
       .catch(() => {
+        this._updateCapabilityEnvelope("installation", createInvalidEnvelope("installation"));
         this._probing.clear();
         this.display();
       });
@@ -4293,10 +4348,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_exit"),
+      disabled: this._setupOperation === "running",
       onClick: () => this._goHome(),
     });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
+      disabled: this._setupOperation === "running",
       onClick: () => {
         this._setupFeedback = null;
         this._setupOpenStep = null;

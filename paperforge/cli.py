@@ -318,8 +318,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     # #137: `embed stop` control-plane retired — no parser; cancellation is
     # the unified token (stdin PAPERFORGE_STOP / SIGINT / SIGTERM).
-    p_embed_migrate = p_embed_sp.add_parser("migrate", help="Migrate vectors from ChromaDB to vec0 tables")
-    p_embed_migrate.add_argument("--json", action="store_true")
 
 
     p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")
@@ -426,11 +424,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_rl.add_argument("--correction", help="Correction text")
     p_rl.add_argument("--reason", help="Reason for correction (e.g. 'Rechecked figure legend')")
     p_rl.add_argument("--since", help="Export notes since date (YYYY-MM-DD)")
-    p_rl.add_argument("--limit", type=int, default=50, help="Max notes to export")
+    p_rl.add_argument("--limit", type=int, help="Max records (search default 20, range 1..100; export default 50)")
     p_rl.add_argument("--output", help="Write markdown to file")
     p_rl.add_argument("--validate", help="Validate a reading-log.md file")
     p_rl.add_argument("--import", dest="import_file", help="Import reading-log.md into paper_events")
     p_rl.add_argument("--lookup", help="Look up all reading notes for a paper key")
+    p_rl.add_argument("--search", help="Literal all-token research record search (not paper search)")
+    p_rl.add_argument("--paper", help="Restrict record search/correction to this paper key")
+    p_rl.add_argument("--include-history", action="store_true", help="Include corrected originals")
+    p_rl.add_argument("--source-json", help="Optional local source object for a new reading record")
+    p_rl.add_argument("--source-check", help="Revalidate record source before opening PDF/page")
     p_rl.add_argument("--json", action="store_true", help="Output as JSON")
 
     p_pl = sub.add_parser("project-log", help="Record or render project work logs")

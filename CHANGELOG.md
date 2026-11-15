@@ -6,8 +6,38 @@ All notable changes to PaperForge.
 
 ## Unreleased
 
+### Added
+
+- Save research records from the paper panel, search specific quotes/use text separately from paper metadata, and inspect stable record IDs and append-only correction history (#353).
+- Search JSONL immediately without rebuilding Memory or using embeddings; source checks distinguish recorded, user-confirmed, exact-text matched, stale and unavailable positions.
+- Recheck hash-bound, canonical in-vault PDF sources before opening a validated physical page. External paths and junctions resolving outside the vault are refused; printed-page labels are separate and do not establish verification.
+
 ### Fixed
 
+- Build memory retrieval units from the configured OCR directory rather than a hardcoded system directory (#356).
+- Distinguish a published runtime or completed library setup from a subsequent path refresh failure (#356).
+- Classify explicit OCR HTTP 401/403 refusals as blocked; keep ambiguous submissions without a confirmed job ID for reconciliation, with no automatic resubmission or record deletion. Retain remote job IDs after local timeouts and report rate-limit rejection separately (#356).
+- Check installation compatibility with the Python versioned probe even when an older runtime ignores the version in its aggregate response (#356).
+- Show blocked and failed paper keys from the actual OCR action result data in workspace error notices (#356).
+- Refresh the existing Python-authoritative vault paths after successful setup and library configuration, so the first-use export location and subsequent path changes do not require a plugin reload (#356).
+- Reuse the resolved source PDF throughout initial OCR postprocessing, including page rendering, span backfill and object extraction; vault-relative and wikilink locators no longer replace the resolved file mid-pipeline. Missing table source geometry can still require separate repair (#356).
+
+- Count overlapping exact-text occurrences when checking research-record PDF sources; repeated overlapping quotes remain ambiguous and cannot pass source navigation as a unique match, including previously saved records (#356).
+- Preserve partial version-restore results at all UI consumers: inline provenance warnings survive preview/paper reselection, current-version markers follow the confirmed restored content, and absent legacy metadata flags remain unconfirmed rather than definite write failures. Only explicit provenance persistence failure adds a single safe substep diagnostic (#356).
+- Invalidate view-owned search timers, replies and focused shortcuts when switching or refreshing dashboard content, including version mode; obsolete requests cannot update the next paper's results (#356).
+- Keep Setup Stage2 startup rejections client-owned while retaining local settings-save diagnostics; expected missing-runtime states do not acquire a duplicate generic error (#356).
+- Preserve valid negative render-authority reports while diagnosing process/JSON failures once. Failed transport cannot claim success from stdout even when its exit code is unknown (#356).
+
+- Treat long-task error/cancelled terminals and `result.ok:false` as failures even at exit 0; retain startup error codes and reject pending event readers rather than silently ending them. Cancel during runtime resolution prevents spawning, and plugin unload reaps streamed as well as result-mode children (#356).
+- Preserve structured sync, OCR-list and probe failures instead of reporting success or an empty library. OCR Workspace distinguishes loading, setup required, load failure and a genuine empty result, offers Retry, and drops late replies and removed paper selections (#356).
+- Stop search debounce and ignore in-flight replies after the panel closes. Setup cancellation cannot start publication after an awaited settings save; navigation cannot disguise running setup as idle. Memory backup restore reports failure and successful retry (#356).
+
+- Metadata search without a local Memory index now shows a dedicated missing-memory recovery card (deep-retrieve PATH_NOT_FOUND stays distinct); the card navigates to the actual Memory module detail through the Plugin-owned openModuleSettings seam without dispatching builds/embeddings (#356).
+- Console ownership sweep: the shared client owns typed PFResult, probe and stream failures; local bootstrap/handshake, probe-schema validation, discussion read, external-note refresh and clipboard failures retain one redacted op/stage/code/exit diagnostic via traceConsoleError. NO_PYTHON/cancelled/empty remain quiet (#356).
+- Doctor reports the plugin execution interpreter from the published managed-runtime pointer only: missing/invalid/missing-file/stale pointers report setup/repair/update and skip target-environment probing; no python_path or ambient-Python fallback, no in-place or global pip advice (#356).
+- Search mode labels follow the dispatched request: `@`/leading-`@`/Ctrl+Enter deep retrieves render deep loading/results, and the transient input mode no longer leaks into rendered state (#356).
+- Legacy OCR run/redo/rebuild cancelled terminals carry the existing `action.cancelled` machine code via `cancelled_result`; envelope event and exit 130 unchanged (#356).
+- `core/next_actions.py` is wire DTOs plus schema version only; the shadow registry/validators are removed and the single authority stays `actions.registry` (#356).
 - Preserve exact OCR paper scope from CLI, dashboard paper/collection context and workspace confirmation through provider upload (#349). Reject empty or unknown explicit scopes without partial execution.
 - Confine OCR cleanup and stale-job resets to the selected scope. Stop prevents new uploads, including transport retries; submitted provider jobs remain separately reported as running remotely.
 - Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.
@@ -15,10 +45,13 @@ All notable changes to PaperForge.
 - Preserve uppercase alphabetic figure suffixes in caption identities, so same-page figures such as Figure 1A and Figure 1B retain separate captions and assets; parenthesized panel labels remain part of the base figure.
 - Keep cross-page figure reservations non-deliverable until page-qualified assets and crop evidence resolve; split shared same-page groups only when caption-band ownership uniquely covers every asset.
 
+- Discover freshly indexed papers in OCR Workspace before any OCR directory exists; retain historical OCR records and report PDF readiness without writing artifacts (#351). Switching back from an empty filter replaces the empty state with the matching rows.
+- Read existing notes through the Obsidian adapter when its file cache is cold. Refresh externally written notes without deleting/recreating them.
+- Compare the published runtime pointer through the release spelling so an RC4 pointer stays a stale actionable mismatch under an rc5 bundle; `probe all` and read-model refresh carry the plugin version, and Setup renders reinstall on stale/mismatch instead of dead-ending (#356).
+- Classify terminal OCR batches by settlement truth: blocked credential/source rejections surface `OCR_UPLOAD_FAILED` with failed/blocked keys and no re-upload, failures surface `OCR_RESULT_INVALID`, and only genuinely pending work keeps the poll-timeout resume instruction (#356). The Workspace shows the backend machine message first with actionable blocked/failed guidance naming the bounded keys, and drops the mutation snapshot before readback so resume refresh cannot resurrect stale statuses.
+- Keep table caption/text/notes visible when no crop geometry exists: table object markdown emits no dangling image reference for unmaterialized crops, preserves provider HTML/text content with an explicit inability marker, and audit stays strict (#356). The single HTML flattener keeps header (`th`) and data (`td`) cells with matching-tag pairs.
 
 ## 1.5.8 (2026-05-19)
-
-### Memory Layer (New)
 
 - SQLite + FTS5 database (`paperforge.db`) for fast paper metadata lookup
 - `paperforge memory build` / `memory status` / `search`
