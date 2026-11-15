@@ -1578,19 +1578,31 @@ describe("Issue #77 RED Gap 2: installation null-resolver produces setup envelop
     expect(primaryAction.verb).toBe("install");
     expect(primaryAction.action_id).toBe("installation.install_runtime");
   });
-  it("offers the Setup Wizard when the published interpreter is missing", () => {
+  it("defers interpreter existence to the Python probe and surfaces its verdict", async () => {
     const app = new App() as unknown as Record<string, unknown>;
     app.vault = { adapter: { basePath: "/test/vault" } };
     const plugin = createMockPlugin();
-    const probe = vi.fn(() => new Promise<never>(() => {}));
+    const missingEnvelope = {
+      ...createUnknownEnvelope("installation"),
+      capability_state: "unknown" as const,
+      reason: {
+        code: "installation.runtime_executable_missing",
+        text: "The published PaperForge runtime points to a missing Python executable.",
+      },
+      user_state: "setup_required" as const,
+      user_visible_failure: true,
+      action: { primary: probeAction("installation") },
+    };
+    const probe = vi.fn().mockResolvedValue(missingEnvelope);
     (plugin as any).getClient = vi.fn(() => ({ probe }));
     const tab = new PaperForgeSettingTab(
       app as unknown as import("obsidian").App,
       plugin as any
     );
-    const missingPython = "C:/isolated/runtime/missing-python.exe";
+    // A resolved command is enough to probe: the plugin holds no filesystem
+    // authority over the interpreter, the Python probe does.
     (tab as any)._resolveRuntimeCommand = () => ({
-      path: missingPython,
+      path: "C:/isolated/runtime/missing-python.exe",
       args: [],
     });
     let capturedEnvelope: Record<string, any> | null = null;
@@ -1603,24 +1615,17 @@ describe("Issue #77 RED Gap 2: installation null-resolver produces setup envelop
     (tab as any).display = () => {};
 
     (tab as any)._probeModule("installation");
+    await vi.waitFor(() => expect(probe).toHaveBeenCalled());
 
-    expect((plugin as any).getClient).not.toHaveBeenCalled();
-    expect(probe).not.toHaveBeenCalled();
+    expect(probe).toHaveBeenCalledWith(
+      "installation",
+      expect.objectContaining({ expectedVersion: "2.1.0" })
+    );
     expect(capturedEnvelope?.reason?.code).toBe(
       "installation.runtime_executable_missing"
     );
-    expect(capturedEnvelope?.reason?.text).toContain(
-      "missing Python executable"
-    );
-    expect(capturedEnvelope?.action?.primary).toMatchObject({
-      action_id: "foundation.setup",
-      verb: "setup",
-      label: "Open Setup Wizard",
-    });
     expect(capturedEnvelope?.user_state).toBe("setup_required");
-    expect(capturedEnvelope?.user_visible_failure).toBe(true);
   });
-
 });
 
 // ── 31. Issue #77 Contract 1 RED: Installation detail async status re-render ──

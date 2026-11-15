@@ -662,7 +662,7 @@ it.each(["rejected", "malformed"])("fails closed when the versioned installation
   await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
     .toBe("installation.invalid_response"));
 });
-it("offers Setup instead of spawning probes when the published interpreter is missing", () => {
+it("offers Setup instead of spawning probes when no runtime is published", () => {
   const tab = makeTab();
   const client = {
     invalidateCache: vi.fn(),
@@ -670,23 +670,19 @@ it("offers Setup instead of spawning probes when the published interpreter is mi
     probe: vi.fn().mockResolvedValue(createUnknownEnvelope("installation")),
   };
   (tab as any)._client = client;
-  (tab as any)._resolveRuntimeCommand = () => ({
-    path: "C:/isolated/runtime/missing-python.exe",
-    args: [],
-  });
+  // No published runtime: nothing can be probed, and the plugin must not spawn.
+  (tab as any)._resolveRuntimeCommand = () => null;
 
   (tab as any)._refreshAllReadModels();
 
   expect(client.probeAll).not.toHaveBeenCalled();
   expect(client.probe).not.toHaveBeenCalled();
   expect((tab as any)._capabilityState.installation).toMatchObject({
-    reason: {
-      code: "installation.runtime_executable_missing",
-    },
+    reason: { code: "installation.no_python" },
     action: {
       primary: {
-        action_id: "foundation.setup",
-        verb: "setup",
+        action_id: "installation.install_runtime",
+        verb: "install",
       },
     },
     user_state: "setup_required",
@@ -699,10 +695,8 @@ it("does not spawn an individual module probe when the published interpreter is 
     probe: vi.fn().mockResolvedValue(createUnknownEnvelope("ocr")),
   };
   (tab as any)._client = client;
-  (tab as any)._resolveRuntimeCommand = () => ({
-    path: "C:/isolated/runtime/missing-python.exe",
-    args: [],
-  });
+  // No published runtime at all: the plugin must not probe a module.
+  (tab as any)._resolveRuntimeCommand = () => null;
 
   (tab as any)._probeModule("ocr");
 

@@ -3115,45 +3115,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.plugin.saveSettings();
   }
 
-  private _setupRequiredInstallationEnvelope(
-    missingRuntimeExecutable: boolean
-  ): ProbeEnvelope {
-    return {
-      schema_version: 2,
-      module: "installation",
-      capability_state: "unknown",
-      activity_state: "idle",
-      activity_label: null,
-      activity_progress: null,
-      severity: "error",
-      reason: {
-        code: missingRuntimeExecutable
-          ? "installation.runtime_executable_missing"
-          : "installation.no_python",
-        text: missingRuntimeExecutable
-          ? "The published PaperForge runtime points to a missing Python executable. Run the Setup Wizard to restore it."
-          : "No Python found. Run the Setup Wizard to install the managed runtime.",
-      },
-      // A stale pointer needs the Setup Wizard (it must rebuild the runtime);
-      // a simply missing interpreter is the external installer's job.
-      action: {
-        primary: missingRuntimeExecutable
-          ? setupAction()
-          : runtimeInstallAction(t("runtime_install_btn")),
-      },
-      notices: [],
-      user_state: "setup_required",
-      capability_kind: "required",
-      maintenance_eligible: false,
-      user_visible_failure: true,
-      user_impact: missingRuntimeExecutable
-        ? "PaperForge cannot run until its managed runtime is restored."
-        : "PaperForge cannot run without Python.",
-      updated_at: new Date().toISOString(),
-      ttl_seconds: 60,
-    };
-  }
-
   /** Call `paperforge probe <module> --json` and store the validated envelope unchanged. */
   _probeModule(mod: CapabilityModule, lastOperationExitCode?: number): void {
     if (this._probing.has(mod)) return;
@@ -3184,15 +3145,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._updateCapabilityEnvelope(mod, probing);
 
     const resolved = this._resolveRuntimeCommand();
-    const missingRuntimeExecutable =
-      resolved !== null && !fs.existsSync(resolved.path);
-    if (!resolved || missingRuntimeExecutable) {
+    if (!resolved) {
       this._probing.delete(mod);
       if (mod === "installation") {
-        this._updateCapabilityEnvelope(
-          mod,
-          this._setupRequiredInstallationEnvelope(missingRuntimeExecutable)
-        );
+        this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
       } else if (mod === "help") {
         // Help/docs do not need the runtime; keep the honest invalid state.
         this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
@@ -3849,19 +3805,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     this._probing.clear();
     const resolved = this._resolveRuntimeCommand();
-    const missingRuntimeExecutable =
-      resolved !== null && !fs.existsSync(resolved.path);
-    if (!resolved || missingRuntimeExecutable) {
+    if (!resolved) {
       this._capabilityState ??= {};
       for (const mod of CAPABILITY_MODULES) {
         if (mod !== "installation") {
           this._capabilityState[mod] = createInvalidEnvelope(mod);
         }
       }
-      this._updateCapabilityEnvelope(
-        "installation",
-        this._setupRequiredInstallationEnvelope(missingRuntimeExecutable)
-      );
+      this._updateCapabilityEnvelope("installation", this._setupRequiredEnvelope());
       return;
     }
     for (const mod of CAPABILITY_MODULES) {
