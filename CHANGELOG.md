@@ -8,6 +8,7 @@ All notable changes to PaperForge.
 
 ### Added
 
+- Fail the static CI job when the research evidence corpus (`docs/evidence/`) is tracked, and — for a pull request — when any of its commits added it. The gate walks commits rather than diffing endpoints, so an add-then-delete inside a branch still fails; `.gitignore` cannot stop `git add -f`.
 - Save research records from the paper panel, search specific quotes/use text separately from paper metadata, and inspect stable record IDs and append-only correction history (#353).
 - Search JSONL immediately without rebuilding Memory or using embeddings; source checks distinguish recorded, user-confirmed, exact-text matched, stale and unavailable positions.
 - Recheck hash-bound, canonical in-vault PDF sources before opening a validated physical page. External paths and junctions resolving outside the vault are refused; printed-page labels are separate and do not establish verification.
