@@ -1273,7 +1273,13 @@ def stage_reconciliation(
     # Fallback vault via ocr_root.parents[2]
     # Use the same resolver that handles Zotero
     from pathlib import Path as _P
-    zot_candidates = [_P("<root>/Med/Research/99_System/Zotero"), _P.home() / "Zotero"]
+    # Zotero storage is per-machine; never guess one developer's drive. Honour
+    # the configured data dir, then the two conventional locations.
+    configured = os.environ.get("ZOTERO_DATA_DIR") or os.environ.get(
+        "PAPERFORGE_ZOTERO_DATA"
+    )
+    zot_candidates = [_P(configured)] if configured else []
+    zot_candidates += [_P.home() / "Zotero", _P.home() / "Documents" / "Zotero"]
     zot = next((p for p in zot_candidates if p.is_dir()), _P.home())
     pdf_path = None
     try:
