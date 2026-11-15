@@ -105,6 +105,8 @@ const TERMINAL_EVENTS = new Set(["result", "error", "cancelled"]);
 const CONFIRMATION_REQUIRED = [
   "embed.build",
   "embed.resume",
+  "foundation.repair",
+  "foundation.update",
   "library.prune",
   "memory.build",
   "memory.rebuild",
@@ -113,6 +115,7 @@ const CONFIRMATION_REQUIRED = [
 const STREAM_ACTIONS = [
   "embed.build",
   "embed.resume",
+  "foundation.update",
   "ocr.rebuild_derived",
   "ocr.run",
 ];
@@ -327,6 +330,8 @@ describe(
         [
           "embed.build",
           "embed.resume",
+          "foundation.repair",
+          "foundation.update",
           "library.prune",
           "memory.build",
           "memory.rebuild",

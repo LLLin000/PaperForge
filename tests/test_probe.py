@@ -286,8 +286,10 @@ class TestInstallationProbe:
         assert data["reason"]["code"] == "installation.version_mismatch"
         assert data["action"]["primary"]["action_id"] == "foundation.update"
         assert data["action"]["primary"]["verb"] == "update"
-        assert data["action"]["primary"]["safety_class"] == "safe"
-        assert data["action"]["primary"]["confirmation_required"] is False
+        # The merged product ships foundation.update as a registry action that
+        # opens an external updater: mutating, confirmation required.
+        assert data["action"]["primary"]["safety_class"] == "destructive"
+        assert data["action"]["primary"]["confirmation_required"] is True
         assert "command" not in data["action"]["primary"]
 
 
