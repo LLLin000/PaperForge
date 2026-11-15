@@ -205,6 +205,11 @@ jobs:
         working-directory: paperforge/plugin
       - run: npm run build
         working-directory: paperforge/plugin
+      # The wheel and the BRAT/manual install ship the COMMITTED main.js, so a
+      # bundle that no longer matches its sources silently ships old behaviour
+      # (the RC6 integration did exactly that while every test was green).
+      - name: Committed bundle matches the sources
+        run: git diff --exit-code --stat -- paperforge/plugin/main.js
       - name: Preserve first-failure plugin evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
