@@ -1118,8 +1118,8 @@
           {
             "id": "journey-43",
             "status": "LIVE_PASS",
-            "home": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-43/home",
-            "vault": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-43/retained-vault",
+            "home": "<trial-root>/patched-wheel-full-journeys/journey-43/home",
+            "vault": "<trial-root>/patched-wheel-full-journeys/journey-43/retained-vault",
             "core_receipt": "journey-43/evidence/full-user-journey.json",
             "core_receipt_sha256": "143d76612936f9c43a7ffe8aa037c3f228cf82abe581585f25e406eeb9cf4490",
             "step7_integrated_receipt": "journey-43/evidence/full-user-journey-step7-integrated.json",
@@ -1130,8 +1130,8 @@
           {
             "id": "journey-44",
             "status": "LIVE_PASS",
-            "home": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-44/home",
-            "vault": "<home>/AppData/Local/Temp/PF-FunctionalAcceptance-20261103/patched-wheel-full-journeys/journey-44/retained-vault",
+            "home": "<trial-root>/patched-wheel-full-journeys/journey-44/home",
+            "vault": "<trial-root>/patched-wheel-full-journeys/journey-44/retained-vault",
             "core_receipt": "journey-44/evidence/full-user-journey.json",
             "core_receipt_sha256": "57ff716b13640dbd830e990de2b16305f8043877d68d68ea2b20c380d754eb79",
             "step7_integrated_receipt": "journey-44/evidence/full-user-journey-step7-integrated.json",
