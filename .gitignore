@@ -95,6 +95,12 @@ tests/evidence/
 docs/evidence/r3-acceptance/
 docs/evidence/r3-final/
 
+# Research evidence corpus: paper page/figure images, per-paper audit JSON, paper
+# titles and machine paths. Published by accident once and removed from history
+# on 2026-11-15. This line is the belt; scripts/check_no_evidence_tracking.py is
+# the gate, because .gitignore cannot stop `git add -f`.
+docs/evidence/
+
 # local pip cache created by test installs
 pip/cache/
 

@@ -44,6 +44,14 @@ jobs:
       # gone from history, so no path prefix is allowed.
       - name: No machine-identifying paths
         run: python scripts/check_machine_paths.py
+      # The corpus is gone from history; it must never come back, and
+      # `.gitignore` cannot stop `git add -f`. The second scope walks the commits
+      # a pull request adds, so an add-then-delete inside the branch still fails.
+      - name: No research evidence corpus in the index
+        run: python scripts/check_no_evidence_tracking.py
+      - name: No research evidence corpus added by this pull request
+        if: github.event_name == 'pull_request'
+        run: python scripts/check_no_evidence_tracking.py --base ${{ github.event.pull_request.base.sha }}
 
   # ---------------------------------------------------------------------------
   # L1 — Unit tests (3 OS x 1 Python)
