@@ -122,7 +122,7 @@ def test_sync_json_returns_pfresult_when_phase2_export_reload_fails(
         rc = sync_cmd.run(args)
 
     payload = json.loads(output.getvalue())
-    assert rc == 0
+    assert rc == 1
     assert payload["ok"] is False
     assert payload["error"]["code"] == ErrorCode.SYNC_FAILED.value
     assert payload["error"]["details"]["phase"] == "service"

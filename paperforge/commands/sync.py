@@ -111,10 +111,10 @@ def run(args: argparse.Namespace) -> int:
         data["timing"] = {**timing.summary(), "total_ms": timing.total_ms()}
         result.data = data
         print(result.to_json())
-        # JSON mode reports the outcome in the payload (ok:false at exit 0 is
-        # the structured-rejection convention); only plain text uses the exit
-        # code, below.
-        return 0
+        # JSON mode still prints the structured PFResult, but a failure exits
+        # non-zero: the client recovers the payload from stdout on a transport
+        # rejection, so nobody loses the machine reason.
+        return 0 if result.ok else 1
 
     if not result.ok:
         return 1
