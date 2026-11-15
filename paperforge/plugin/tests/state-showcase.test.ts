@@ -635,6 +635,44 @@ describe("buildSupportDiagnostic", () => {
     expect(text).not.toContain("paperforge.json");
   });
 
+  it("redacts absolute paths and credentials but keeps machine-stable facts", () => {
+    const text = buildSupportDiagnostic({
+      pluginVersion: "2.0.0rc6",
+      modules: [
+        {
+          module: "ocr",
+          userState: "action_required",
+          reasonCode: "ocr.upload_failed",
+          errorExcerpt:
+            "HTTP 401 while reading D:\\L\\Med\\Research\\99_System\\Zotero\\storage\\X1\\Chao 2000.pdf",
+        },
+      ],
+      environment: {
+        managedRuntime: "C:\\Users\\lin\\.paperforge\\runtime\\venv",
+        pythonSetting: "/home/lin/.paperforge/runtime/venv/bin/python",
+      },
+      lastSetupFailure: {
+        category: "network",
+        reason:
+          "pip failed: token=abc123secrettoken sk-live-abcdefgh1234 Bearer eyJhbGciOiP.eyJzdWIiOiJ4.sig",
+        at: "2026-11-15T00:00:00.000Z",
+      },
+      recentInstallStages: [],
+    });
+    // Nothing that identifies the machine or a key survives.
+    expect(text).not.toContain("D:\\L\\Med");
+    expect(text).not.toContain("Chao 2000.pdf");
+    expect(text).not.toContain("C:\\Users\\lin");
+    expect(text).not.toContain("/home/lin");
+    expect(text).not.toContain("sk-live-abcdefgh1234");
+    expect(text).not.toContain("abc123secrettoken");
+    expect(text).not.toContain("eyJhbGciOiP");
+    // The report still says what is wrong.
+    expect(text).toContain("ocr.upload_failed");
+    expect(text).toContain("HTTP 401");
+    expect(text).toContain("category: network");
+  });
+
   it("handles empty modules", () => {
     const text = buildSupportDiagnostic({
       pluginVersion: "1.0.0",

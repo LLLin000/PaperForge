@@ -429,6 +429,39 @@ export interface DiagnosticInput {
 }
 
 /** Build a privacy-safe Support Diagnostic text block. */
+/**
+ * Strip machine-identifying values and credentials from a copyable report.
+ *
+ * The Support Diagnostic is pasted into public issues, so a path or a key that
+ * survives here is published. Known absolute roots are removed verbatim (paths
+ * may contain spaces), then leftovers by shape; useful facts — reason codes,
+ * action IDs, timestamps — are untouched.
+ */
+export function redactDiagnostic(text: string, knownRoots: readonly string[] = []): string {
+  let out = text;
+  // Only absolute roots are scrubbed verbatim (they may contain spaces).
+  // A `~/.paperforge/...` or "(not published)" summary is stable across
+  // machines and stays useful in a public issue.
+  const roots = [...knownRoots]
+    .map((root) => root.trim())
+    .filter((root) => root.length > 2 && /^(?:[A-Za-z]:[\\/]|\/)/.test(root))
+    .sort((a, b) => b.length - a.length);
+  for (const root of roots) {
+    out = out.split(root).join("<path>");
+  }
+  out = out
+    // Windows absolute path (stops at whitespace, a quote, or a delimiter).
+    .replace(/[A-Za-z]:[\\/][^\s"'<>|,;]*/g, "<path>")
+    // POSIX absolute path in the directories a machine profile lives under.
+    .replace(/(?<![\w:])\/(?:Users|home|root|var|tmp|opt|mnt|Volumes)\/[^\s"'<>|,;]*/g, "<path>")
+    // Provider keys and bearer tokens.
+    .replace(/\bsk-[A-Za-z0-9_-]{8,}/g, "<redacted-key>")
+    .replace(/\b(Bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, "$1 <redacted>")
+    // key=value secrets in query strings and inline diagnostics.
+    .replace(/\b(token|api[_-]?key|secret|password|authorization)=([^\s&"']+)/gi, "$1=<redacted>");
+  return out;
+}
+
 export function buildSupportDiagnostic(input: DiagnosticInput): string {
   const lines: string[] = [];
   lines.push("=== PaperForge Support Diagnostic ===");
@@ -480,7 +513,11 @@ export function buildSupportDiagnostic(input: DiagnosticInput): string {
 
   lines.push("");
   lines.push("=== End ===");
-  return lines.join("\n");
+  const knownRoots = [
+    input.environment?.managedRuntime ?? "",
+    input.environment?.pythonSetting ?? "",
+  ];
+  return redactDiagnostic(lines.join("\n"), knownRoots);
 }
 
 /** Copy Support Diagnostic to clipboard and announce. */
