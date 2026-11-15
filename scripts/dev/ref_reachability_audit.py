@@ -73,15 +73,25 @@ def remote_refs() -> dict[str, str]:
 
 
 def fetch_all(refs: dict[str, str]) -> None:
-    spec = []
-    for prefix, local in MIRRORS:
-        if prefix == "refs/pull/":
-            spec.append(f"+{prefix}*/head:{local}*/head")
-            spec.append(f"+{prefix}*/merge:{local}*/merge")
-        else:
-            spec.append(f"+{prefix}*:{local}*")
-    git("fetch", "--quiet", "--no-tags", "origin", *spec)
-    del refs  # the fetch uses the refspecs above; the caller re-reads locally
+    """Mirror each ref family separately: a family GitHub no longer serves
+    (no open PRs means no refs/pull/*/merge) must not abort the others."""
+    families = (
+        ["+refs/heads/*:refs/audit/heads/*"],
+        ["+refs/tags/*:refs/audit/tags/*"],
+        ["+refs/pull/*/head:refs/audit/pull/*/head"],
+        ["+refs/pull/*/merge:refs/audit/pull/*/merge"],
+    )
+    del refs
+    for spec in families:
+        proc = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "--no-tags", "origin", *spec],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if proc.returncode != 0:
+            print(f"  (skipped {spec[0]}: {(proc.stderr or '').strip().splitlines()[-1:] or 'no such refs'})")
 
 
 def local_refs() -> dict[str, str]:
