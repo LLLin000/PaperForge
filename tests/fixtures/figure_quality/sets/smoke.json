@@ -1,0 +1,24 @@
+{
+  "set": "smoke",
+  "count": 10,
+  "keys": [
+    "28ALPCY7",
+    "28JLIHLS",
+    "2AZ2EGQB",
+    "2BYRLKQS",
+    "2HEUD5P9",
+    "388XI46Q",
+    "3QYCST4E",
+    "55EKJRBC",
+    "DJLIAZT7",
+    "SRNJDAA2"
+  ],
+  "provenance": {
+    "source": "docs/evidence/m1c/papers.json",
+    "status_filter": "READY",
+    "ready_total": 803,
+    "seed": null,
+    "rule": "explicit user-provided 10-paper smoke list",
+    "generated": "2026-11-09"
+  }
+}

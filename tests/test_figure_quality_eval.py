@@ -15,7 +15,10 @@ module = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(module)
 
 ROOT = Path(__file__).resolve().parents[1]
-SET_DIR = ROOT / "docs" / "evidence" / "figure-quality" / "sets"
+# Frozen key sets and the manual-review log are test fixtures, not evidence
+# output: they live with the tests now that docs/evidence is purged.
+FIXTURE_DIR = ROOT / "tests" / "fixtures" / "figure_quality"
+SET_DIR = FIXTURE_DIR / "sets"
 
 
 def test_frozen_sets_counts_and_disjoint():
@@ -158,7 +161,7 @@ def test_unknown_human_association_is_not_a_pass():
     assert score["human_verified"]["association"]["fn"] == 0
 
 def test_manual_findings_lifecycle_preserves_source_records():
-    path = ROOT / "docs" / "evidence" / "figure-quality" / "smoke" / "manual_findings.jsonl"
+    path = FIXTURE_DIR / "smoke" / "manual_findings.jsonl"
     findings = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     by_id = {finding["id"]: finding for finding in findings}
     original_ids = {
