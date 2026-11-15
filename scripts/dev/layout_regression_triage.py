@@ -6,7 +6,7 @@ regions and their confidences, the plan decision, and a few structural tags.
 
 Usage:
     python scripts/dev/layout_regression_triage.py \
-        --vault <root>/OB/Literature-hub/System/PaperForge/ocr \
+        --vault D:/Zotero-Vault/System/PaperForge/ocr \
         --keys 27MFWJWJ 25K5KZAQ --out triage.json
 """
 

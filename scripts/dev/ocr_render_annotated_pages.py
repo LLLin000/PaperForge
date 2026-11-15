@@ -24,7 +24,7 @@ _THIS_FILE = Path(__file__).resolve()
 _REPO_ROOT = _THIS_FILE.parents[2]
 _FIXTURE_ROOT = _REPO_ROOT / "tests" / "fixtures" / "ocr_real_papers"
 _LEDGER_PATH = _REPO_ROOT / "audit" / "coverage_ledger.json"
-_VAULT = Path(r"<root>\OB\Literature-hub")
+_VAULT = Path(r"D:\Zotero-Vault")
 _OCR_ROOT = _VAULT / "System" / "PaperForge" / "ocr"
 
 ROLE_COLORS = {

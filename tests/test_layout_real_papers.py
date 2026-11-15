@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-VAULT = Path(os.environ.get("PAPERFORGE_VAULT", r"<root>/OB/Literature-hub"))
+VAULT = Path(os.environ.get("PAPERFORGE_VAULT", r"D:/Zotero-Vault"))
 OCR_ROOT = VAULT / "System/PaperForge/ocr"
 PAPERS = ("2332GHPT", "2AGGSMVQ", "24A2QUAH")
 

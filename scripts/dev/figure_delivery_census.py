@@ -573,7 +573,7 @@ def build_census(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--vault", default="<root>/OB/Literature-hub")
+    parser.add_argument("--vault", default="D:/Zotero-Vault")
     parser.add_argument("--ocr-root", default="")
     parser.add_argument("--eligibility", default=str(DEFAULT_ELIGIBILITY))
     parser.add_argument("--historical-census", default=str(DEFAULT_HISTORICAL))

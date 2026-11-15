@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-OCR_DIR = Path(r"<root>\Med\Research_LitControl_Sandbox\System\PaperForge\ocr")
+OCR_DIR = Path(r"D:\Zotero-Vault\System\PaperForge\ocr")
 KEYS = ["2AGGSMVQ", "2BFG5P6B", "2BYRLKQS", "2E4EPHN2", "2GN9LMCW", "2H8MZ27H"]
 
 for key in KEYS:

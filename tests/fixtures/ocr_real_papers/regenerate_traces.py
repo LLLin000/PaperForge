@@ -6,12 +6,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, r"<root>\Med\Research\99_System\LiteraturePipeline\github-release")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from paperforge.worker.ocr_blocks import build_structured_blocks
 
-VAULT_OCR = Path(r"<root>\OB\Literature-hub\System\PaperForge\ocr")
-FIXTURE_ROOT = Path(r"<root>\Med\Research\99_System\LiteraturePipeline\github-release\tests\fixtures\ocr_real_papers")
+VAULT_OCR = Path(r"D:\Zotero-Vault\System\PaperForge\ocr")
+FIXTURE_ROOT = Path(__file__).resolve().parent
 
 FIELD_NAMES = [
     "page", "block_id", "raw_label", "content_preview", "bbox",

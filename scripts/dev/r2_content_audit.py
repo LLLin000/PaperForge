@@ -7,7 +7,7 @@ vault.
 
 Usage:
   python scripts/dev/r2_content_audit.py --summary docs/evidence/r2/full-ready-summary.json \
-      --vault <root>/OB/Literature-hub --out docs/evidence/r2-audit/content.json
+      --vault D:/Zotero-Vault --out docs/evidence/r2-audit/content.json
 """
 from __future__ import annotations
 
@@ -227,7 +227,7 @@ def keys_from_summary(path: Path, classes: set[str]) -> list[str]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vault", default="<root>/OB/Literature-hub")
+    ap.add_argument("--vault", default="D:/Zotero-Vault")
     ap.add_argument("--summary", default=str(REPO / "docs/evidence/r2/full-ready-summary.json"))
     ap.add_argument(
         "--classes",

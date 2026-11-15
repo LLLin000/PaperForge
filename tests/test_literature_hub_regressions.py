@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-VAULT = Path(r"<root>\OB\Literature-hub")
+VAULT = Path(r"D:\Zotero-Vault")
 
 # #142: the real vault must be on canonical config — legacy configs fail
 # closed until the explicit migration runs (`paperforge config migrate`).

@@ -5,7 +5,7 @@ wrote to `structure/`? Read-only; the vault is opened but never written.
 
 Usage:
     python scripts/dev/layout_evidence_parity.py \
-        --vault <root>/OB/Literature-hub/System/PaperForge/ocr \
+        --vault D:/Zotero-Vault/System/PaperForge/ocr \
         --keys 2332GHPT 2AGGSMVQ --out parity.json
 """
 

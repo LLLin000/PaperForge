@@ -2,7 +2,7 @@
 Rebuild and verify OCR output quality for specified papers.
 
 Usage:
-    set PAPERFORGE_REAL_OCR_VAULT=<root>\OB\Literature-hub
+    set PAPERFORGE_REAL_OCR_VAULT=D:\Zotero-Vault
     set PAPERFORGE_REAL_OCR_KEYS=SAN9AYVR,2GN9LMCW,7C8829BD
     python scripts/dev/ocr_rebuild_verify.py
 
@@ -24,7 +24,7 @@ keys = [k.strip() for k in keys if k.strip()]
 if not vault or not vault.exists():
     print("[!!] PAPERFORGE_REAL_OCR_VAULT is not set or does not exist.")
     print("     Set it to a valid Obsidian vault root, e.g.:")
-    print('     set PAPERFORGE_REAL_OCR_VAULT=D:\\L\\OB\\Literature-hub')
+    print('     set PAPERFORGE_REAL_OCR_VAULT=D:\\Zotero-Vault')
     sys.exit(1)
 
 if not keys:

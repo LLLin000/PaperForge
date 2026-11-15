@@ -4,10 +4,10 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, r"<root>\Med\Research\99_System\LiteraturePipeline\github-release")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from paperforge.worker.ocr import postprocess_ocr_result
 
-VAULT = Path(r"<root>\Med\Research_LitControl_Sandbox")
+VAULT = Path(r"D:\Zotero-Vault")
 OCR_DIR = VAULT / "System" / "PaperForge" / "ocr"
 
 # Collect all papers with result.json

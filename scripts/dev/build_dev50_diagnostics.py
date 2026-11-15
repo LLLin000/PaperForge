@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_VAULT = Path("<root>/OB/Literature-hub/System/PaperForge/ocr")
+DEFAULT_VAULT = Path("D:/Zotero-Vault/System/PaperForge/ocr")
 BUCKETS = ("caption_recall", "association", "crop_panel", "page_assembly", "delivery", "structural", "no_defect")
 
 

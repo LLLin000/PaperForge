@@ -27,7 +27,7 @@ _REPO_ROOT = _THIS_FILE.parents[2]  # scripts/dev/ -> scripts/ -> repo root
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-VAULT_OCR = Path("<root>/OB/Literature-hub/System/PaperForge/ocr")
+VAULT_OCR = Path("D:/Zotero-Vault/System/PaperForge/ocr")
 RESULT_PATH = _REPO_ROOT / "docs" / "superpowers" / "analysis" / "2026-07-05-v3-full-vault-corpus-diff.json"
 
 

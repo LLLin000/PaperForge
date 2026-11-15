@@ -194,7 +194,7 @@ def _analyze_catastrophic(ocr_root: Path, keys: list[str]) -> None:
 def main() -> int:
     ocr_root = Path(
         os.environ.get("PAPERFORGE_OCR_ROOT") or os.environ.get("PAPERFORGE_REAL_OCR_ROOT")
-        or "<root>/OB/Literature-hub/System/PaperForge/ocr"
+        or "D:/Zotero-Vault/System/PaperForge/ocr"
     )
 
     # Find the 200 most recent papers with data

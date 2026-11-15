@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -643,7 +644,7 @@ class TestRepositoryAcceptance:
                 "--contract",
                 "docs/architecture-audit-2026-08-06/contract.json",
                 "--out",
-                str(tmp_path := Path("<home>/AppData/Local/Temp/pf-acceptance")),
+                str(tmp_path := Path(tempfile.gettempdir()) / "pf-acceptance"),
             ],
             capture_output=True,
             text=True,
@@ -651,9 +652,9 @@ class TestRepositoryAcceptance:
             timeout=600,
         )
         assert proc.returncode == 0, proc.stderr
-        audit = json.loads((Path("<home>/AppData/Local/Temp/pf-acceptance") / "audit.json").read_text(encoding="utf-8"))
+        audit = json.loads((Path(tempfile.gettempdir()) / "pf-acceptance" / "audit.json").read_text(encoding="utf-8"))
         survey = json.loads(
-            (Path("<home>/AppData/Local/Temp/pf-acceptance") / "survey.json")
+            (Path(tempfile.gettempdir()) / "pf-acceptance" / "survey.json")
             .read_text(encoding="utf-8")
         )
         coverage = {entry["extractor"]: entry["status"] for entry in survey["coverage"]}

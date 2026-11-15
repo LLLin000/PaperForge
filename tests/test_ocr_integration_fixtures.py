@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-OCR_CORPUS = Path("<root>/OB/Literature-hub/System/PaperForge/ocr")
+OCR_CORPUS = Path("D:/Zotero-Vault/System/PaperForge/ocr")
 
 
 def _load_json_path(key: str) -> Path | None:

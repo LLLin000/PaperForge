@@ -1,7 +1,7 @@
 # Real OCR payloads (copied verbatim)
 
 These are **real** `json/result.json` payloads from a production vault
-(`<root>/OB/Literature-hub/System/PaperForge/ocr`), copied so the test suite
+(`D:/Zotero-Vault/System/PaperForge/ocr`), copied so the test suite
 exercises the shape PaddleOCR actually returns rather than one we invented.
 
 ## Why they are here

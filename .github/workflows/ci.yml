@@ -39,6 +39,11 @@ jobs:
       # merge gate here, and this is the class that ships a NameError.
       - name: Ruff static gate
         run: pip install ruff && ruff check paperforge --select F821,F822,F823
+      # A published repo must not name the author's machine. The checker reads
+      # tracked files only; docs/evidence/ is allowed until its history purge
+      # lands (its removal is tracked separately) — drop that flag afterwards.
+      - name: No machine-identifying paths
+        run: python scripts/check_machine_paths.py --allow docs/evidence/
 
   # ---------------------------------------------------------------------------
   # L1 — Unit tests (3 OS x 1 Python)

@@ -117,7 +117,7 @@ def audit_one(vault: Path, key: str) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vault", default="<root>/OB/Literature-hub")
+    ap.add_argument("--vault", default="D:/Zotero-Vault")
     ap.add_argument("--keys", required=True)
     ap.add_argument("--out", required=True)
     args = ap.parse_args()

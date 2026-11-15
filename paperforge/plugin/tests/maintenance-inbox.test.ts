@@ -197,7 +197,7 @@ describe("PaperForgeIssueDraftModal redaction", () => {
   it("13. secrets and paths absent from rendered DOM", () => {
     const draft = {
       title: "OCR: ocr.quality_unacceptable",
-      body: "API key: sk-abc123def456ghi78jkl90mno\nPath: C:\\Users\\test\\Documents\\papers\\transformer.pdf\nPath: C:\\Users\\Lin\\My Vault\\paper.pdf\nZotero data at D:\\Zotero\\data\nPaper: Attention Is All You Need\nSee https://github.com/o/r/issues/new for details",
+      body: "API key: sk-abc123def456ghi78jkl90mno\nPath: C:\\Users\\test\\Documents\\papers\\transformer.pdf\nPath: C:\\Users\\test\\My Vault\\paper.pdf\nZotero data at D:\\Zotero\\data\nPaper: Attention Is All You Need\nSee https://github.com/o/r/issues/new for details",
       labels: ["ocr", "quality"],
     };
     const modal = new PaperForgeIssueDraftModal(
@@ -246,7 +246,7 @@ describe("PaperForgeIssueDraftModal redaction", () => {
     if (input) input.value = "sk-leak1234567890abcdef in title";
     if (textarea)
       textarea.value =
-        "token: [github_token_redacted]\nPath: D:\\data\\secret.csv\nPath: /home/user/secret.csv\nPath: C:\\Users\\Lin\\My Vault\\secret.pdf\nSee https://github.com/o/r/issues/new for details";
+        "token: [github_token_redacted]\nPath: D:\\data\\secret.csv\nPath: /home/user/secret.csv\nPath: C:\\Users\\test\\My Vault\\secret.pdf\nSee https://github.com/o/r/issues/new for details";
     const btn = Array.from(modal.contentEl.querySelectorAll("button")).find(
       (b) => b.textContent?.trim() === "Open GitHub Issue"
     );

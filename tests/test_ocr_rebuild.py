@@ -43,12 +43,12 @@ def test_derived_rebuild_excludes_raw_upgradable_papers() -> None:
     assert selected == ["A"]
 
 
-_PROD_VAULT = Path(r"<root>\OB\Literature-hub")
+_PROD_VAULT = Path(r"D:\Zotero-Vault")
 
 
 @pytest.mark.skipif(
     not _PROD_VAULT.exists(),
-    reason="requires the owner's production vault (<root>\OB\Literature-hub)",
+    reason="requires the owner's production vault (D:/Zotero-Vault)",
 )
 def test_resolve_source_pdf_fallback_stale_path() -> None:
     from paperforge.worker.ocr_rebuild import _resolve_source_pdf_for_rebuild
@@ -61,7 +61,7 @@ def test_resolve_source_pdf_fallback_stale_path() -> None:
 
 @pytest.mark.skipif(
     not _PROD_VAULT.exists(),
-    reason="requires the owner's production vault (<root>\OB\Literature-hub)",
+    reason="requires the owner's production vault (D:/Zotero-Vault)",
 )
 def test_resolve_source_pdf_stale_missing() -> None:
     from paperforge.worker.ocr_rebuild import _resolve_source_pdf_for_rebuild

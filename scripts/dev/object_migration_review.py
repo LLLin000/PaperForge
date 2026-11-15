@@ -23,7 +23,7 @@ DRY = importlib.util.module_from_spec(_DRYRUN_SPEC)
 assert _DRYRUN_SPEC.loader is not None
 _DRYRUN_SPEC.loader.exec_module(DRY)  # noqa: E402
 
-VAULT = Path("<root>/OB/Literature-hub")
+VAULT = Path("D:/Zotero-Vault")
 OCR_ROOT = VAULT / "System" / "PaperForge" / "ocr"
 REPORT_ALL = Path(os.environ.get("OBJECT_MIGRATION_REPORT", "C:/rtools44/tmp/m1chunks/report_all.json"))
 OUT_ROOT = ROOT / "docs" / "evidence" / "m2a"

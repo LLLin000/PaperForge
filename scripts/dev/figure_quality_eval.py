@@ -31,7 +31,7 @@ except Exception:  # pragma: no cover
     Image = None
     ImageDraw = None
 
-VAULT_DEFAULT = Path("<root>/OB/Literature-hub")
+VAULT_DEFAULT = Path("D:/Zotero-Vault")
 OCR_DEFAULT = None
 SET_DIR = ROOT / "docs" / "evidence" / "figure-quality" / "sets"
 OUT_ROOT = ROOT / "docs" / "evidence" / "figure-quality"

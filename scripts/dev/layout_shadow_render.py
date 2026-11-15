@@ -11,7 +11,7 @@ Nothing is written to the OCR vault. The report is the only output.
 
 Usage:
     python scripts/dev/layout_shadow_render.py \
-        --vault <root>/OB/Literature-hub/System/PaperForge/ocr \
+        --vault D:/Zotero-Vault/System/PaperForge/ocr \
         --keys 2HEUD5P9 2332GHPT --out shadow.json
 """
 

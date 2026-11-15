@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 from collections import defaultdict, Counter
 
-OCR_ROOT = Path("<root>/OB/Literature-hub/System/PaperForge/ocr")
+OCR_ROOT = Path("D:/Zotero-Vault/System/PaperForge/ocr")
 
 # Patterns for classification
 # Order matters: more specific patterns first

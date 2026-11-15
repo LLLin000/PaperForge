@@ -644,7 +644,7 @@ describe("buildSupportDiagnostic", () => {
           userState: "action_required",
           reasonCode: "ocr.upload_failed",
           errorExcerpt:
-            "HTTP 401 while reading D:\\L\\Med\\Research\\99_System\\Zotero\\storage\\X1\\Chao 2000.pdf",
+            "HTTP 401 while reading D:\\Zotero\\storage\\X1\\Chao 2000.pdf",
         },
       ],
       environment: {
@@ -660,7 +660,7 @@ describe("buildSupportDiagnostic", () => {
       recentInstallStages: [],
     });
     // Nothing that identifies the machine or a key survives.
-    expect(text).not.toContain("D:\\L\\Med");
+    expect(text).not.toContain("D:\\Zotero");
     expect(text).not.toContain("Chao 2000.pdf");
     expect(text).not.toContain("C:\\Users\\lin");
     expect(text).not.toContain("/home/lin");

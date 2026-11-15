@@ -83,7 +83,7 @@ def audit_one(vault: Path, key: str, filenames: list[str]) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vault", default="<root>/OB/Literature-hub")
+    ap.add_argument("--vault", default="D:/Zotero-Vault")
     ap.add_argument("--summary", default=str(REPO / "docs/evidence/r2/full-ready-summary.json"))
     ap.add_argument("--out", required=True)
     ap.add_argument("--sample", type=int, default=5, help="number of keys to rebuild")

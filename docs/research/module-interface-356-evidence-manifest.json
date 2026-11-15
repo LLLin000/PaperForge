@@ -655,7 +655,7 @@
       "source_tree_sha256": "a83445ffc2a1f4ff194691eea78090980bb90426c17448cb4f14b8b73da9bd94",
       "wheel_sha256": "6536decc32be3a00d7e8a6f21ead77b00c72c1c2c1b9852ec7a3662bf3e5dd32",
       "plugin_bundle_sha256": "15d0dd90a460e2195a750233a5888ae6e7ba7b65dc1542fab8b1a1355365e490",
-      "identity_receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\paired-current-final-followthrough-v3\\evidence\\paired-current-source-identity.json",
+      "identity_receipt": "<trial-root>\\PF-FunctionalAcceptance-20261101\\paired-current-final-followthrough-v3\\evidence\\paired-current-source-identity.json",
       "profiles": ["journey-21", "journey-22"]
     },
     "current_paired_candidate": {
@@ -666,7 +666,7 @@
       "wheel": "non-editable paperforge[vector]; 303 package entries; offline runtime wheelhouse with 34 dependencies; CPython 3.12.10 isolated install; pip check clean in live journeys and CTA install.",
       "plugin_bundle_sha256": "172da7ad173a6ccd309b80c31e47e155951be463eb8b91d616aa0e3e14825678",
       "bundle_identity": "Wheel-embedded Bundle is byte-equal; pip index disabled; offline wheelhouse only.",
-      "identity_receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\paired-current-final-followthrough-v5\\evidence\\paired-current-source-identity.json",
+      "identity_receipt": "<trial-root>\\PF-FunctionalAcceptance-20261101\\paired-current-final-followthrough-v5\\evidence\\paired-current-source-identity.json",
       "post_build_overlay": "After v5 build, no product source changed; only temporary E2E helpers and this matrix/manifest were updated."
     },
     "current_source_v8_update": {
@@ -688,12 +688,12 @@
       "runtime_after_failure": "No post2 artifact installed; pointer SHA stayed cdacb05cdaef518325f9c24f4beecd7dc581c23861d56dbbd0848e0f3bf6897b; runtime remained 2.0.0rc6.post1; pip check clean; UI remained ACTION REQUIRED without false success.",
       "full_profile_journeys": "2/2 LIVE_PASS on the v8 source/Wheel/Bundle tuple. journey-34 and journey-35 used separate HOME/Profile/Vault/runtime, installed non-editably from the offline wheelhouse, passed pip check, completed BBT sync, note/PDF/local search, record save/correction/source-refusal, and restart readback. WebDriver logged stale-element and Notice click-intercept retries on record save in both; assertions and persisted results passed.",
       "receipts": [
-        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-live.json",
-        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-cancel-failure.json",
-        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-live.webp",
-        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-failure.webp",
-        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-34\\evidence\\full-user-journey.json",
-        "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-35\\evidence\\full-user-journey.json"
+        "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-live.json",
+        "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-cancel-failure.json",
+        "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-live.webp",
+        "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-v8-failure.webp",
+        "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-34\\evidence\\full-user-journey.json",
+        "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-35\\evidence\\full-user-journey.json"
       ],
       "receipt_sha256": {
         "success": "fce576fedc712bcff2333711f069bf56776e793a58b43c91fe4d868f2232d0af",
@@ -724,16 +724,16 @@
       "live_recovery": {
         "status": "LIVE_PASS",
         "result": "On real Obsidian, the broken-runtime Dashboard CTA opened a visible Setup Wizard in a Settings popout. The user selected the isolated base Python; Setup installed a fresh candidate and published a different Pointer. pip check was clean, fresh import reported 2.0.0rc6, and probe all reported installation ready.",
-        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-corrupt-runtime-recovery.json",
+        "receipt": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-corrupt-runtime-recovery.json",
         "receipt_sha256": "ffdd9ba2d7cf5f897637b8977e574e17a79a9278193c971de98861538b97fc2c",
-        "wizard_screenshot": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-recovery-wizard-open.png",
+        "wizard_screenshot": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\foundation-update-recovery-wizard-open.png",
         "wizard_screenshot_sha256": "d1edd021f896bb02765b341e0eb14fe45579b7cdd023c1fac0a5b1300bff4256"
       },
       "settings_window_visibility": {
         "status": "LIVE_PASS",
-        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\settings-window-visibility.json",
+        "receipt": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\settings-window-visibility.json",
         "receipt_sha256": "fee1b770968d00a3cfb803937d523e54bf46790063a07965d215aa93dd3ca46d",
-        "screenshot": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\settings-window-1.png",
+        "screenshot": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-32\\evidence\\settings-window-1.png",
         "screenshot_sha256": "6818a82ef83b703c5037830133eb8cd6c89891c3c376ea382488a30dbd81fab8"
       },
       "integrated_journey_gate": {
@@ -747,36 +747,36 @@
           {
             "journey": "journey-39",
             "status": "LIVE_PASS",
-            "home": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\home",
-            "vault": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\retained-vault",
+            "home": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-39\\home",
+            "vault": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-39\\retained-vault",
             "core_receipt": {
-              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\full-user-journey.json",
+              "path": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\full-user-journey.json",
               "sha256": "65ba5c78f139686ccf8d5ed201edf138910038528f528b5a9c330272e94f1b4f"
             },
             "step7_receipt": {
-              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\foundation-update-step7-integrated.json",
+              "path": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\foundation-update-step7-integrated.json",
               "sha256": "1e8e305a7b96cc50d6327a655aec7f8f03ba6803d7aad5792c2bf16d458ddb03"
             },
             "recovery_receipt": {
-              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\foundation-update-corrupt-runtime-recovery.json",
+              "path": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\foundation-update-corrupt-runtime-recovery.json",
               "sha256": "f2b4a2b99620ee962b3d98b875fe42f4ad840c582149c106ba4104a5b9cbf6b"
             }
           },
           {
             "journey": "journey-40",
             "status": "LIVE_PASS",
-            "home": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\home",
-            "vault": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\retained-vault",
+            "home": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-40\\home",
+            "vault": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-40\\retained-vault",
             "core_receipt": {
-              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\full-user-journey.json",
+              "path": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\full-user-journey.json",
               "sha256": "6d0c7d93af4e43298e032efebd33a954ddebd368e0b9f76d8eb024fc2bb83537"
             },
             "step7_receipt": {
-              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\foundation-update-step7-integrated.json",
+              "path": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\foundation-update-step7-integrated.json",
               "sha256": "8655d9be6ff6712240dbb4e820c0a315fb99a29d7b626b800a6bfe5035398f09"
             },
             "recovery_receipt": {
-              "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\foundation-update-corrupt-runtime-recovery.json",
+              "path": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\foundation-update-corrupt-runtime-recovery.json",
               "sha256": "606c124b3baa3ca9ba640634c37d7c313d7c0fdcf7c0fd88cc02ed7735edab91"
             }
           }
@@ -787,7 +787,7 @@
         "status": "LIVE_PASS",
         "backend": "keyring.backends.Windows.WinVaultKeyring",
         "synthetic_identity": "service=paperforge; username=ocr:liveverify_21d2bd295278",
-        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\native-windows-keyring-live.json",
+        "receipt": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-39\\evidence\\native-windows-keyring-live.json",
         "receipt_sha256": "8f0ce883cc38776534cdaf4d42568dfedf4dd8a85d9cc6a5d6ba39e342e651e9",
         "scope": "Verified exact-key absence before write, store/resolve/status, delete and final absence; recorded no credential value. Migration, locked-store and permission-denial branches remain unverified."
       },
@@ -797,7 +797,7 @@
         "test_file_sha256": "775d2df078ce5f920bc223bd69b7cbc14ee667a846a6740307eeba87f965626c",
         "plugin_bundle_sha256": "0e27dc3a16d372a5c1e8cc22c8fbde2c8d4a484f2c93537a9105ba8ebfce69e5",
         "candidate_wheel_sha256": "3b4703c49a03354a13e9936170edbba68a9e33385934edae50a660940b5eb122",
-        "receipt": "C:\\Users\\Lin\\AppData\\Local\\Temp\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\repair-localization-live-retry-3.json",
+        "receipt": "<trial-root>\\PF-FunctionalAcceptance-20261101\\journey-40\\evidence\\repair-localization-live-retry-3.json",
         "receipt_sha256": "c4b7ac378586f458efcf43a776d258ec5125a353dafc7f20fd175322a5898bd0",
         "scope": "Actual foundation.repair action displayed English and Chinese success Notices; an injected isolated import failure displayed Chinese failure Notice. The exact runtime file was restored; import and pip check passed. This is a focused UI check, not a new full-journey tuple or proof that repair fixes every corruption type."
       },

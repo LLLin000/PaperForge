@@ -4,7 +4,7 @@ Rebuilds derived-layer artifacts (structured blocks, metadata, figures, render,
 and block trace) for one or more papers from stored raw blocks.
 
 The rebuild reads from the vault's PaperForge OCR storage, not from git:
-    <root>/OB/Literature-hub/System/PaperForge/ocr/<KEY>/
+    D:/Zotero-Vault/System/PaperForge/ocr/<KEY>/
 
 It re-runs: build_structured_blocks → resolve_metadata → build figures/tables →
 extract objects → render_fulltext_markdown → write render/ + compat fulltext.
@@ -51,7 +51,7 @@ _FIELD_NAMES = [
     "render_default", "index_default",
 ]
 
-_VAULT_OCR = Path("<root>/OB/Literature-hub/System/PaperForge/ocr")
+_VAULT_OCR = Path("D:/Zotero-Vault/System/PaperForge/ocr")
 _FIXTURE_ROOT = _REPO_ROOT / "tests" / "fixtures" / "ocr_real_papers"
 
 
