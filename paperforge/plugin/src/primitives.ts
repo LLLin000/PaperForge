@@ -7,7 +7,9 @@
  */
 
 import {
+  CAPABILITY_MODULES,
   type ActionPrimary,
+  type CapabilityModule,
   type UserState,
   type ProbeEnvelope,
   type MaintenanceItem,
@@ -414,19 +416,28 @@ export interface DiagnosticInput {
     lastSuccessAt?: string | null;
     reasonCode?: string;
     actionId?: string;
-    errorExcerpt?: string;
   }>;
-  /** #257: environment identity — home-relative or "(outside home)" only. */
+  /** Environment location class only; public reports never include paths. */
   environment?: {
     managedRuntime?: string | null;
     runtimeVersion?: string | null;
     pythonSetting?: string | null;
   };
-  /** #257: last classified install failure (category + bounded reason). */
-  lastSetupFailure?: { category: string; reason: string; at: string } | null;
-  /** #257: recent bootstrap/setup stages, oldest first. */
-  recentInstallStages?: string[];
+  /** #257: last classified install failure (category + timestamp only — never raw text). */
+  lastSetupFailure?: { category: string; at: string } | null;
 }
+
+/**
+ * Public, clipboard-safe support report. Only `buildSupportDiagnostic` can
+ * mint it: `copySupportDiagnostic` accepts nothing else, so arbitrary
+ * strings (probe reason text, stage logs, vault paths) cannot reach the
+ * clipboard by accident. Raw free text is omitted at the type level rather
+ * than scrubbed by regex; `redactDiagnostic` remains as defense in depth.
+ */
+declare const publicReportBrand: unique symbol;
+export type PublicSupportReport = string & {
+  readonly [publicReportBrand]: true;
+};
 
 /** Build a privacy-safe Support Diagnostic text block. */
 /**
@@ -440,8 +451,6 @@ export interface DiagnosticInput {
 export function redactDiagnostic(text: string, knownRoots: readonly string[] = []): string {
   let out = text;
   // Only absolute roots are scrubbed verbatim (they may contain spaces).
-  // A `~/.paperforge/...` or "(not published)" summary is stable across
-  // machines and stays useful in a public issue.
   const roots = [...knownRoots]
     .map((root) => root.trim())
     .filter((root) => root.length > 2 && /^(?:[A-Za-z]:[\\/]|\/)/.test(root))
@@ -462,67 +471,169 @@ export function redactDiagnostic(text: string, knownRoots: readonly string[] = [
   return out;
 }
 
-export function buildSupportDiagnostic(input: DiagnosticInput): string {
+/**
+ * Value allowlists for the public report. `DiagnosticInput` selects the
+ * FIELDS; these guards validate every VALUE, because a selected field can
+ * still carry a smuggled title, filename, path, or credential at runtime.
+ * Anything outside the list is withheld, never echoed.
+ */
+const USER_STATES: readonly UserState[] = [
+  "checking",
+  "ready",
+  "not_enabled",
+  "setup_required",
+  "action_required",
+  "detection_failed",
+];
+
+/** Reason/action namespaces the Probe and plugin actually emit. */
+const ID_NAMESPACES: readonly string[] = [...CAPABILITY_MODULES, "embed", "foundation"];
+
+const CODE_PART_RE = /^[a-z][a-z0-9_]*$/;
+
+/** Classifier outputs from `classifySetupFailure` — the only categories. */
+const SETUP_CATEGORIES: readonly string[] = [
+  "python_missing",
+  "import_failed",
+  "timeout",
+  "no_python",
+  "vectors_not_built",
+  "vectors_corrupted",
+  "model_changed",
+  "backend_unavailable",
+  "internal_error",
+  "unknown",
+  "disk_full",
+  "process_busy",
+  "permission_denied",
+  "artifact_unavailable",
+  "wheel_unavailable",
+  "install_interrupted",
+  "network",
+  "version_mismatch",
+];
+
+/** Numeric major.minor.patch plus PEP440-ish suffixes (`2.0.0rc6`). */
+const VERSION_RE = /^\d+\.\d+\.\d+[A-Za-z0-9.+-]*$/;
+/** Strict ISO-8601 timestamps the plugin mints (`Date.toISOString`). */
+const ISO_STAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?$/;
+/** Fixed placeholders the plugin itself emits for paths. */
+const PATH_PLACEHOLDERS: readonly string[] = [
+  "(outside home)",
+  "(not published)",
+  "(auto)",
+  "(unknown)",
+  "(inside home)",
+];
+
+function sanitizeModule(value: string): CapabilityModule | undefined {
+  const v = value.trim();
+  return (CAPABILITY_MODULES as readonly string[]).includes(v)
+    ? (v as CapabilityModule)
+    : undefined;
+}
+
+function sanitizeUserState(value: UserState): UserState | undefined {
+  return USER_STATES.includes(value) ? value : undefined;
+}
+
+/** `namespace.code(.code)*` with a known namespace and safe parts. */
+function sanitizeDottedId(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const v = value.trim();
+  if (!v || v.length > 128) return undefined;
+  const parts = v.split(".");
+  if (parts.length < 2) return undefined;
+  const [ns, ...rest] = parts;
+  if (!ns || !ID_NAMESPACES.includes(ns)) return undefined;
+  if (!rest.every((p) => CODE_PART_RE.test(p))) return undefined;
+  return `${ns}.${rest.join(".")}`;
+}
+
+function sanitizeVersion(
+  value: string | null | undefined
+): string | undefined {
+  if (!value) return undefined;
+  const v = value.trim();
+  return v.length > 0 && v.length <= 64 && VERSION_RE.test(v) ? v : undefined;
+}
+
+/** Valid ISO timestamp only — length alone cannot exclude titles. */
+function sanitizeStamp(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const v = value.trim();
+  if (!v || v.length > 64 || !ISO_STAMP_RE.test(v)) return undefined;
+  return Number.isNaN(Date.parse(v)) ? undefined : v;
+}
+
+function sanitizeCategory(value: string): string | undefined {
+  const v = value.trim();
+  return SETUP_CATEGORIES.includes(v) ? v : undefined;
+}
+
+/** Fixed summary label only; no arbitrary path is returned. */
+function sanitizePathSummary(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const v = value.trim();
+  return PATH_PLACEHOLDERS.includes(v) ? v : fallback;
+}
+
+export function buildSupportDiagnostic(input: DiagnosticInput): PublicSupportReport {
   const lines: string[] = [];
   lines.push("=== PaperForge Support Diagnostic ===");
   lines.push(`Time: ${new Date().toISOString()}`);
-  lines.push(`Plugin: ${input.pluginVersion}`);
-  if (input.backendVersion) {
-    lines.push(`Backend: ${input.backendVersion}`);
+  lines.push(`Plugin: ${sanitizeVersion(input.pluginVersion) ?? "(unknown)"}`);
+  const backend = sanitizeVersion(input.backendVersion);
+  if (backend) {
+    lines.push(`Backend: ${backend}`);
   }
 
   if (input.environment) {
     lines.push("");
     lines.push("--- Environment ---");
     lines.push(
-      `managed-runtime: ${input.environment.managedRuntime ?? "(not published)"}`
+      `managed-runtime: ${sanitizePathSummary(input.environment.managedRuntime, "(not published)")}`
     );
     lines.push(
-      `runtime-version: ${input.environment.runtimeVersion ?? "(unknown)"}`
+      `runtime-version: ${sanitizeVersion(input.environment.runtimeVersion) ?? "(unknown)"}`
     );
     lines.push(
-      `python-setting: ${input.environment.pythonSetting ?? "(auto)"}`
+      `python-setting: ${sanitizePathSummary(input.environment.pythonSetting, "(auto)")}`
     );
   }
 
   if (input.lastSetupFailure) {
     lines.push("");
     lines.push("--- Last Install Failure ---");
-    lines.push(`category: ${input.lastSetupFailure.category}`);
-    lines.push(`reason: ${input.lastSetupFailure.reason}`);
-    lines.push(`at: ${input.lastSetupFailure.at}`);
-  }
-
-  if (input.recentInstallStages && input.recentInstallStages.length > 0) {
-    lines.push("");
-    lines.push("--- Recent Install Stages ---");
-    for (const stage of input.recentInstallStages) {
-      lines.push(stage);
-    }
+    lines.push(
+      `category: ${sanitizeCategory(input.lastSetupFailure.category) ?? "(withheld)"}`
+    );
+    const at = sanitizeStamp(input.lastSetupFailure.at);
+    if (at) lines.push(`at: ${at}`);
   }
 
   lines.push("");
   lines.push("--- Module Status ---");
   for (const mod of input.modules) {
-    lines.push(`${mod.module}: ${mod.userState}`);
-    if (mod.reasonCode) lines.push(`  reason: ${mod.reasonCode}`);
-    if (mod.actionId) lines.push(`  action: ${mod.actionId}`);
-    if (mod.lastSuccessAt) lines.push(`  last-success: ${mod.lastSuccessAt}`);
-    if (mod.errorExcerpt) lines.push(`  error: ${mod.errorExcerpt}`);
+    const name = sanitizeModule(mod.module);
+    if (!name) continue;
+    lines.push(`${name}: ${sanitizeUserState(mod.userState) ?? "(withheld)"}`);
+    const reasonCode = sanitizeDottedId(mod.reasonCode);
+    if (reasonCode) lines.push(`  reason: ${reasonCode}`);
+    const actionId = sanitizeDottedId(mod.actionId);
+    if (actionId) lines.push(`  action: ${actionId}`);
+    const lastSuccess = sanitizeStamp(mod.lastSuccessAt);
+    if (lastSuccess) lines.push(`  last-success: ${lastSuccess}`);
   }
 
   lines.push("");
   lines.push("=== End ===");
-  const knownRoots = [
-    input.environment?.managedRuntime ?? "",
-    input.environment?.pythonSetting ?? "",
-  ];
-  return redactDiagnostic(lines.join("\n"), knownRoots);
+  return redactDiagnostic(lines.join("\n"), []) as PublicSupportReport;
 }
 
 /** Copy Support Diagnostic to clipboard and announce. */
 export function copySupportDiagnostic(
-  diagnostic: string,
+  diagnostic: PublicSupportReport,
   onSuccess?: () => void
 ): void {
   navigator.clipboard
@@ -582,6 +693,9 @@ export function shouldUpdateLastKnown(
 
 /**
  * Collect diagnostic data from capability state for Support Diagnostic.
+ * Allowlist only: module, user state, reason code, action ID, last-known
+ * timestamp. Probe reason text (titles, filenames, paths, secrets) never
+ * enters the public report.
  */
 export function collectDiagnosticModules(
   capabilityState: Record<string, ProbeEnvelope>,
@@ -589,6 +703,8 @@ export function collectDiagnosticModules(
 ): DiagnosticInput["modules"] {
   const modules: DiagnosticInput["modules"] = [];
   for (const [mod, env] of Object.entries(capabilityState)) {
+    // Unknown module keys (typos, spoofed state) never enter the report.
+    if (!(CAPABILITY_MODULES as readonly string[]).includes(mod)) continue;
     const lk = lastKnown.get(mod);
     modules.push({
       module: mod,
@@ -596,7 +712,6 @@ export function collectDiagnosticModules(
       lastSuccessAt: lk?.capturedAt ?? null,
       reasonCode: env.reason?.code,
       actionId: env.action?.primary?.action_id,
-      errorExcerpt: env.reason?.text?.slice(0, 200) ?? undefined,
     });
   }
   return modules;

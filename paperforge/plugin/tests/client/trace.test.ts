@@ -19,7 +19,7 @@ import {
 import { MockTransport } from "./mock-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
 import { PaperForgeStatusView } from "../../src/views/dashboard";
-import { copySupportDiagnostic } from "../../src/primitives";
+import { buildSupportDiagnostic, copySupportDiagnostic } from "../../src/primitives";
 import { checkOrphanState } from "../../src/views/modals";
 
 beforeEach(() => {
@@ -407,7 +407,7 @@ describe("traceConsoleError", () => {
       configurable: true,
     });
     try {
-      copySupportDiagnostic("diagnostic-body");
+      copySupportDiagnostic(buildSupportDiagnostic({ pluginVersion: "test", modules: [] }));
       await vi.waitFor(() => expect(seen.length).toBe(1));
       expect(String(seen[0][0])).toContain("op=diagnostic.copy");
       expect(String(seen[0][0])).toContain("stage=local");

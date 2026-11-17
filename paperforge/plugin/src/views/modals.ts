@@ -508,18 +508,54 @@ function redactText(text: string): {
   return { clean, redactions: Object.values(byClass) };
 }
 
+/**
+ * Public, externalizable issue draft. Only `buildRedactedDraft` can mint it:
+ * the returned object carries allowlisted fields (validated reason code,
+ * bounded paper count, static labels) — never raw reason text or a vault
+ * path. The modal's `redactText` pass stays as defense in depth.
+ */
+declare const publicDraftBrand: unique symbol;
+export type PublicIssueDraft = IssueDraftFields & {
+  readonly [publicDraftBrand]: true;
+};
+
+/** Only probe-owned OCR codes can enter an external issue draft. */
+const OCR_ISSUE_REASON_CODES: readonly string[] = [
+  "ocr.config_corrupt",
+  "ocr.config_missing",
+  "ocr.probe_failed",
+  "ocr.artifacts_missing",
+  "ocr.failed",
+  "ocr.incomplete",
+  "ocr.blocks_missing",
+  "ocr.pending",
+  "ocr.no_pdf",
+  "ocr.quality_failures",
+  "ocr.redo_needed",
+  "ocr.artifacts_stale",
+  "ocr.unexpected_action",
+  "ocr.quality_unacceptable",
+  "ocr.api_key_missing",
+  "ocr.api_unreachable",
+  "ocr.ready",
+];
+
 export function buildRedactedDraft(
   reasonCode: string,
-  reasonText: string,
-  paperCount: number,
-  _vaultPath: string
-): IssueDraftFields {
-  const title = `OCR: ${reasonCode} (${paperCount} papers)`;
+  paperCount: number
+): PublicIssueDraft {
+  const code = OCR_ISSUE_REASON_CODES.includes(reasonCode)
+    ? reasonCode
+    : "ocr.report_requested";
+  const count =
+    Number.isInteger(paperCount) && paperCount >= 0 && paperCount <= 999999
+      ? paperCount
+      : 0;
+  const title = `OCR: ${code} (${count} papers)`;
   const body = [
     `## Diagnostic Summary`,
-    `- Reason: ${reasonCode}`,
-    `- Detail: ${reasonText}`,
-    `- Papers affected: ${paperCount}`,
+    `- Reason: ${code}`,
+    `- Papers affected: ${count}`,
     "",
     `## Environment`,
     `- Vault: [REDACTED]`,
@@ -531,11 +567,11 @@ export function buildRedactedDraft(
     `3. Review this draft, then open GitHub to submit`,
   ].join("\n");
   const labels = ["ocr", "quality", "auto-generated"];
-  return { title, body, labels };
+  return { title, body, labels } as PublicIssueDraft;
 }
 
 export class PaperForgeIssueDraftModal extends Modal {
-  private _draft: IssueDraftFields;
+  private _draft: PublicIssueDraft;
   private _githubUrl: string;
   private _titleInput!: HTMLInputElement;
   private _bodyTextarea!: HTMLTextAreaElement;
@@ -543,7 +579,7 @@ export class PaperForgeIssueDraftModal extends Modal {
   private _inertedEls: HTMLElement[] = [];
   private _boundKeydown!: (e: KeyboardEvent) => void;
 
-  constructor(app: App, draft: IssueDraftFields, githubUrl: string) {
+  constructor(app: App, draft: PublicIssueDraft, githubUrl: string) {
     super(app);
     this._draft = draft;
     this._githubUrl = githubUrl;

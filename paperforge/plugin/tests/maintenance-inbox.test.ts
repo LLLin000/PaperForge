@@ -140,7 +140,10 @@ vi.mock("../src/services/progress-parser", () => ({
   processProgressChunk: () => {},
 }));
 
-import { PaperForgeIssueDraftModal } from "../src/views/modals";
+import {
+  PaperForgeIssueDraftModal,
+  type PublicIssueDraft,
+} from "../src/views/modals";
 
 let dom: JSDOM;
 function augmentEl(el: HTMLElement): HTMLElement {
@@ -199,7 +202,7 @@ describe("PaperForgeIssueDraftModal redaction", () => {
       title: "OCR: ocr.quality_unacceptable",
       body: "API key: sk-abc123def456ghi78jkl90mno\nPath: C:\\Users\\test\\Documents\\papers\\transformer.pdf\nPath: C:\\Users\\test\\My Vault\\paper.pdf\nZotero data at D:\\Zotero\\data\nPaper: Attention Is All You Need\nSee https://github.com/o/r/issues/new for details",
       labels: ["ocr", "quality"],
-    };
+    } as unknown as PublicIssueDraft;
     const modal = new PaperForgeIssueDraftModal(
       {
         vault: { adapter: { basePath: "/test" }, getConfig: () => "en" },
@@ -227,7 +230,7 @@ describe("PaperForgeIssueDraftModal redaction", () => {
       title: "OCR issue",
       body: "API key: sk-evil1234567890abcdef\nPath: C:\\Users\\me\\secret.pdf\nPaper: Test Paper Title",
       labels: ["ocr"],
-    };
+    } as unknown as PublicIssueDraft;
     const modal = new PaperForgeIssueDraftModal(
       {
         vault: { adapter: { basePath: "/test" }, getConfig: () => "en" },
@@ -273,7 +276,7 @@ describe("PaperForgeIssueDraftModal redaction", () => {
       title: "OCR issue",
       body: "Just some text",
       labels: ["ocr"],
-    };
+    } as unknown as PublicIssueDraft;
     const modal = new PaperForgeIssueDraftModal(
       {
         vault: { adapter: { basePath: "/test" }, getConfig: () => "en" },
@@ -303,7 +306,11 @@ describe("PaperForgeIssueDraftModal redaction", () => {
       {
         vault: { adapter: { basePath: "/test" }, getConfig: () => "en" },
       } as never,
-      { title: "OCR issue", body: "Safe draft", labels: ["ocr"] },
+      {
+        title: "OCR issue",
+        body: "Safe draft",
+        labels: ["ocr"],
+      } as unknown as PublicIssueDraft,
       "https://github.com/o/r/issues/new"
     );
     augmentEl(modal.contentEl);

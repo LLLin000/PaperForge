@@ -562,12 +562,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (this._setupStageLog.length > 16) this._setupStageLog.shift();
   }
 
-  /** #257: home-relative path for the diagnostic; never a raw user path. */
+  /** #257: public location class; never return a raw or home-relative path. */
   private _diagnosticPath(value: string | null | undefined): string | null {
     const trimmed = value?.trim();
     if (!trimmed) return null;
     const home = os.homedir();
-    if (trimmed.startsWith(home)) return "~" + trimmed.slice(home.length);
+    if (trimmed.startsWith(home)) return "(inside home)";
     return "(outside home)";
   }
 
@@ -2242,12 +2242,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return;
       }
       if (verb === "investigate") {
-        const vp = this._getVaultBasePath();
         const draft = buildRedactedDraft(
           env.reason.code,
-          env.reason.text,
-          env.action?.primary?.scope_count ?? 0,
-          vp
+          env.action?.primary?.scope_count ?? 0
         );
         new PaperForgeIssueDraftModal(
           this.app,
@@ -3900,6 +3897,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._lastKnownState
     );
     const pointer = readRuntimePointer();
+    // Allowlist projection: raw setup reason text and stage breadcrumbs stay
+    // in memory only — the public report carries category + timestamp.
+    const failure = this._lastSetupFailure;
     const diag: DiagnosticInput = {
       pluginVersion,
       modules,
@@ -3908,8 +3908,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         runtimeVersion: pointer?.paperforgeVersion ?? null,
         pythonSetting: null,
       },
-      lastSetupFailure: this._lastSetupFailure,
-      recentInstallStages: [...this._setupStageLog],
+      lastSetupFailure: failure
+        ? { category: failure.category, at: failure.at }
+        : null,
     };
     const text = buildSupportDiagnostic(diag);
     copySupportDiagnostic(text, () => {

@@ -617,7 +617,6 @@ describe("buildSupportDiagnostic", () => {
           userState: "action_required",
           reasonCode: "ocr.quality_failures",
           actionId: "ocr.redo",
-          errorExcerpt: "3 papers failed",
         },
       ],
     };
@@ -635,7 +634,7 @@ describe("buildSupportDiagnostic", () => {
     expect(text).not.toContain("paperforge.json");
   });
 
-  it("redacts absolute paths and credentials but keeps machine-stable facts", () => {
+  it("omits free text but keeps machine-stable facts", () => {
     const text = buildSupportDiagnostic({
       pluginVersion: "2.0.0rc6",
       modules: [
@@ -643,23 +642,19 @@ describe("buildSupportDiagnostic", () => {
           module: "ocr",
           userState: "action_required",
           reasonCode: "ocr.upload_failed",
-          errorExcerpt:
-            "HTTP 401 while reading D:\\Zotero\\storage\\X1\\Chao 2000.pdf",
         },
       ],
       environment: {
-        managedRuntime: "C:\\Users\\lin\\.paperforge\\runtime\\venv",
-        pythonSetting: "/home/lin/.paperforge/runtime/venv/bin/python",
+        managedRuntime: "(inside home)",
+        pythonSetting: "(outside home)",
       },
       lastSetupFailure: {
         category: "network",
-        reason:
-          "pip failed: token=abc123secrettoken sk-live-abcdefgh1234 Bearer eyJhbGciOiP.eyJzdWIiOiJ4.sig",
         at: "2026-11-15T00:00:00.000Z",
       },
-      recentInstallStages: [],
     });
-    // Nothing that identifies the machine or a key survives.
+    // Raw free text (paths, filenames, keys, stage logs) has no input field,
+    // so it cannot reach the report even before redaction.
     expect(text).not.toContain("D:\\Zotero");
     expect(text).not.toContain("Chao 2000.pdf");
     expect(text).not.toContain("C:\\Users\\lin");
@@ -669,7 +664,7 @@ describe("buildSupportDiagnostic", () => {
     expect(text).not.toContain("eyJhbGciOiP");
     // The report still says what is wrong.
     expect(text).toContain("ocr.upload_failed");
-    expect(text).toContain("HTTP 401");
+    expect(text).toContain("managed-runtime: (inside home)");
     expect(text).toContain("category: network");
   });
 
@@ -682,29 +677,26 @@ describe("buildSupportDiagnostic", () => {
     expect(text.length).toBeGreaterThan(0);
   });
 
-  it("renders environment, last failure, and stages when provided (#257)", () => {
+  it("renders environment and last failure category when provided (#257)", () => {
     const text = buildSupportDiagnostic({
       pluginVersion: "1.0.0",
       modules: [],
       environment: {
-        managedRuntime: "~/.paperforge/runtime/venv",
+        managedRuntime: "(inside home)",
         runtimeVersion: "2.0.0rc5",
         pythonSetting: "(outside home)",
       },
       lastSetupFailure: {
         category: "network",
-        reason: "pip install failed: Read timed out",
         at: "2026-09-30T00:00:00.000Z",
       },
-      recentInstallStages: ["2026-09-30T00:00:00.000Z bootstrap:venv"],
     });
     expect(text).toContain("--- Environment ---");
-    expect(text).toContain("~/.paperforge/runtime/venv");
+    expect(text).toContain("managed-runtime: (inside home)");
     expect(text).toContain("2.0.0rc5");
     expect(text).toContain("--- Last Install Failure ---");
     expect(text).toContain("category: network");
-    expect(text).toContain("--- Recent Install Stages ---");
-    expect(text).toContain("bootstrap:venv");
+    expect(text).not.toContain("Recent Install Stages");
   });
 });
 

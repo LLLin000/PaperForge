@@ -12,6 +12,7 @@ All notable changes to PaperForge.
 - Save research records from the paper panel, search specific quotes/use text separately from paper metadata, and inspect stable record IDs and append-only correction history (#353).
 - Search JSONL immediately without rebuilding Memory or using embeddings; source checks distinguish recorded, user-confirmed, exact-text matched, stale and unavailable positions.
 - Recheck hash-bound, canonical in-vault PDF sources before opening a validated physical page. External paths and junctions resolving outside the vault are refused; printed-page labels are separate and do not establish verification.
+- Restrict OCR Support Diagnostic and issue-draft egress to validated public fields: no probe text, setup detail/stage logs or raw paths; home paths collapse to a location label. Clipboard and issue modal accept sanitized payloads, and drafts include only known OCR reason codes, bounded paper counts and static labels.
 
 ### Fixed
 
