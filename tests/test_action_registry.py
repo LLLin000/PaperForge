@@ -134,7 +134,7 @@ class TestActionVocabulary:
 
     def test_unknown_probe_action_is_rejected_at_construction(self) -> None:
         with pytest.raises(ValueError, match="neither registered nor"):
-            from paperforge.commands.probe import build_action_primary
+            from paperforge.probes.envelope import build_action_primary
 
             build_action_primary(
                 action_id="not-a-real-probe-action",
@@ -958,7 +958,7 @@ class TestCliExitCodes:
         assert payload2["data"]["execution_mode"] == "result"
 
     def test_probe_primary_action_includes_execution_mode(self) -> None:
-        from paperforge.commands.probe import build_action_primary
+        from paperforge.probes.envelope import build_action_primary
 
         act_stream = build_action_primary(action_id="ocr.rebuild_derived", verb="rebuild_derived", label="Rebuild")
         assert act_stream["execution_mode"] == "stream"
@@ -1197,20 +1197,22 @@ class TestProbeActionVocabulary223:
         import ast
         import re
 
-        source = Path("paperforge/commands/probe.py").read_text(encoding="utf-8")
-        emissions: list[tuple[int, str, str]] = []
-        for node in ast.walk(ast.parse(source)):
-            if not (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Name)
-                and node.func.id == "build_action_primary"
-            ):
-                continue
-            kwargs = {kw.arg: kw.value for kw in node.keywords}
-            action_id = getattr(kwargs.get("action_id"), "value", None)
-            verb = getattr(kwargs.get("verb"), "value", None)
-            if isinstance(action_id, str) and isinstance(verb, str):
-                emissions.append((node.lineno, action_id, verb))
+        probe_dir = Path("paperforge/probes")
+        emissions: list[tuple[str, int, str, str]] = []
+        for probe_path in sorted(probe_dir.glob("*.py")):
+            source = probe_path.read_text(encoding="utf-8")
+            for node in ast.walk(ast.parse(source)):
+                if not (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "build_action_primary"
+                ):
+                    continue
+                kwargs = {kw.arg: kw.value for kw in node.keywords}
+                action_id = getattr(kwargs.get("action_id"), "value", None)
+                verb = getattr(kwargs.get("verb"), "value", None)
+                if isinstance(action_id, str) and isinstance(verb, str):
+                    emissions.append((probe_path.name, node.lineno, action_id, verb))
 
         assert len(emissions) > 30, (
             "the emission sweep lost its target — did build_action_primary move "
@@ -1218,23 +1220,23 @@ class TestProbeActionVocabulary223:
         )
 
         problems: list[str] = []
-        for lineno, action_id, verb in emissions:
+        for source_name, lineno, action_id, verb in emissions:
             try:
                 kind = classify_action_id(action_id)
             except Exception as exc:  # noqa: BLE001 — the declaration IS the check
-                problems.append(f"probe.py:{lineno}: {action_id} is undeclared ({exc})")
+                problems.append(f"{source_name}:{lineno}: {action_id} is undeclared ({exc})")
                 continue
             if kind != "non_registry":
                 if action_id not in ACTION_REGISTRY:
-                    problems.append(f"probe.py:{lineno}: {action_id} is neither registered nor declared")
+                    problems.append(f"{source_name}:{lineno}: {action_id} is neither registered nor declared")
                 continue
             declared = NON_REGISTRY_ACTIONS[action_id]
             match = re.search(r"\(verb '([^']+)'\)", declared)
             if match is None:
-                problems.append(f"probe.py:{lineno}: {action_id} declaration names no verb")
+                problems.append(f"{source_name}:{lineno}: {action_id} declaration names no verb")
             elif match.group(1) != verb:
                 problems.append(
-                    f"probe.py:{lineno}: {action_id} emits verb {verb!r} but the "
+                    f"{source_name}:{lineno}: {action_id} emits verb {verb!r} but the "
                     f"declaration says {match.group(1)!r}"
                 )
         assert not problems, "\n".join(problems)

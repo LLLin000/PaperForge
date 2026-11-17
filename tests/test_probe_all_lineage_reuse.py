@@ -36,7 +36,7 @@ def test_probe_all_computes_lineage_once(monkeypatch, tmp_path):
 def test_probe_ocr_standalone_computes_lineage(monkeypatch, tmp_path):
     import json as _json
 
-    import paperforge.commands.probe as probe_mod
+    import paperforge.probes.ocr as ocr_probe_mod
     import paperforge.lineage as lin
     from paperforge.config import paperforge_paths
 
@@ -62,7 +62,7 @@ def test_probe_ocr_standalone_computes_lineage(monkeypatch, tmp_path):
         return original(*args, **kwargs)
 
     monkeypatch.setattr(lin, "probe_lineage", wrapper)
-    probe_mod.probe_ocr(vault)
+    ocr_probe_mod.probe_ocr(vault)
     assert calls["n"] == 1, calls["n"]
 
 

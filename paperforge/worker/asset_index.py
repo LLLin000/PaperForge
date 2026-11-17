@@ -579,6 +579,12 @@ def _compute_export_hash(paths: dict) -> str:
     return h.hexdigest()
 
 
+def compute_export_hash(paths: dict) -> str:
+    """Public read-only seam for the library probe — delegates to the canonical hash."""
+    return _compute_export_hash(paths)
+
+
+
 def _sync_workspace_fulltexts(items: list[dict], vault: Path, paths: dict, verbose: bool = False) -> None:
     for entry in items:
         if entry.get("ocr_status") not in ("done", "done_degraded"):

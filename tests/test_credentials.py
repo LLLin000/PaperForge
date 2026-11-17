@@ -428,7 +428,7 @@ class TestConsumers:
         """probe_ocr's readiness gate reads the authority status — with a
         hermetic missing credential the envelope is missing_input, and with
         the canonical env it reaches the ready tail."""
-        from paperforge.commands.probe import probe_ocr
+        from paperforge.probes.ocr import probe_ocr
 
         vault = tmp_path / "vault"
         vault.mkdir(parents=True)
