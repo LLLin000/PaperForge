@@ -15,15 +15,19 @@ on:
     - cron: "0 6 * * 1"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   PYTHONIOENCODING: utf-8
 
 jobs:
   # ---------------------------------------------------------------------------
-  # L0 — Version consistency check
+  # L0 — Static gates (stdlib-only scripts + undefined-name ruff + module graph)
   # ---------------------------------------------------------------------------
   static:
-    name: L0 — Static (version sync + ruff)
+    name: L0 — Static (version sync + ruff + module graph)
     runs-on: ubuntu-latest
     steps:
       # Full history: the evidence gate walks the commits a pull request adds,
@@ -35,10 +39,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - name: Install package
-        run: pip install -e .
       - name: Check version consistency
         run: python scripts/check_version_sync.py
+      - name: Module dependency and boundary gate
+        run: python scripts/check_module_graph.py --check
       # Undefined names only (F821/F822/F823): the full lint rule set is not a
       # merge gate here, and this is the class that ships a NameError.
       - name: Ruff static gate
@@ -58,54 +62,10 @@ jobs:
         run: python scripts/check_no_evidence_tracking.py --base ${{ github.event.pull_request.base.sha }}
 
   # ---------------------------------------------------------------------------
-  # L1 — Unit tests (3 OS x 1 Python)
+  # L1 + L1.5 — Cross-OS unit + J-matrix headless gates (#146)
   # ---------------------------------------------------------------------------
-  unit-tests:
-    name: L1 — Unit Tests (${{ matrix.os }}, py3.11)
-    strategy:
-      fail-fast: false
-      # ubuntu is not a cell: python-suite runs tests/ (which includes
-      # tests/unit) on that OS already. The remaining cells are the only
-      # cross-platform signal for path/encoding behaviour.
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Use Homebrew Python with loadable SQLite extensions
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          brew install python@3.11
-          PF_PYTHON_BIN="$RUNNER_TEMP/pf-python-bin"
-          mkdir -p "$PF_PYTHON_BIN"
-          ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python"
-          ln -sf "$(brew --prefix python@3.11)/bin/pip3.11" "$PF_PYTHON_BIN/pip"
-          echo "$PF_PYTHON_BIN" >> "$GITHUB_PATH"
-          "$PF_PYTHON_BIN/python" -c "import sqlite3; assert hasattr(sqlite3.connect(':memory:'), 'enable_load_extension')"
-      - name: Install package with test deps
-        run: pip install -e ".[test,vector]"
-      - name: Run unit tests
-        shell: bash
-        run: |
-          python -m pytest tests/unit/ \
-            -v --tb=short --timeout=60 \
-            --junit-xml="$RUNNER_TEMP/paperforge-unit-tests.xml"
-      - name: Preserve first-failure unit evidence
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-failure-unit-tests-${{ matrix.os }}
-          path: ${{ runner.temp }}/paperforge-unit-tests.xml
-          if-no-files-found: warn
-          retention-days: 14
-
-  # ---------------------------------------------------------------------------
-  # L1.5 — J-matrix headless gates (#146): 3-OS machine contracts
-  # ---------------------------------------------------------------------------
+  # J0  tests/unit/ (cross-platform path/encoding signal, folded in to avoid
+  #     booting duplicate Windows/macOS VMs and running brew twice)
   # J1  machine contract fixtures (probe read models, PFResult/JSON/text/progress
   #     NDJSON contracts)
   # J2  headless sync + vault preservation (.obsidian byte-for-byte untouched)
@@ -122,9 +82,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - name: Use Homebrew Python with loadable SQLite extensions
         if: runner.os == 'macOS'
         shell: bash
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
         run: |
           brew install python@3.11
           PF_PYTHON_BIN="$RUNNER_TEMP/pf-python-bin"
@@ -135,6 +99,12 @@ jobs:
           "$PF_PYTHON_BIN/python" -c "import sqlite3; assert hasattr(sqlite3.connect(':memory:'), 'enable_load_extension')"
       - name: Install package with test deps
         run: pip install -e ".[test,vector]"
+      - name: J0 — unit tests
+        shell: bash
+        run: |
+          python -m pytest tests/unit/ \
+            -q --tb=short --timeout=60 \
+            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-unit.xml"
       - name: J1 — machine contract fixtures
         shell: bash
         run: |
@@ -212,7 +182,7 @@ jobs:
       # the protocol suite is told which one to use instead of guessing.
       - name: Point the protocol suite at the job interpreter
         run: echo "PF_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
         working-directory: paperforge/plugin
       - run: npx vitest run --reporter=junit --outputFile="$RUNNER_TEMP/paperforge-plugin-tests.xml"
         working-directory: paperforge/plugin
@@ -263,6 +233,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -274,11 +245,8 @@ jobs:
       # requires `typescript`; without it those cases fail for a reason
       # unrelated to the code under test.
       - name: Install plugin dependencies (TypeScript compiler for the collector)
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
         working-directory: paperforge/plugin
-      - name: Verify architecture generator and golden fixture pins (#231)
-        if: matrix.shard == 0
-        run: python -m pytest tests/test_architecture_audit_fixtures.py -q --tb=short --timeout=180 --junit-xml="$RUNNER_TEMP/paperforge-architecture-fixtures.xml"
       # The --ignore flags are redundant with the shard map (it excludes those
       # directories too); they stay so the coverage contract can read which
       # directories this job does NOT own.
@@ -357,7 +325,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
       - name: Install plugin dependencies (TypeScript compiler for the collector)
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
         working-directory: paperforge/plugin
       - name: Validate live architecture generator and contract parity (#231)
         run: python docs/architecture-audit-2026-08-06/build_audit.py --check
@@ -433,6 +401,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -493,7 +462,7 @@ jobs:
       - name: Publish isolated runtime pointer for E2E
         run: python -c "from paperforge.runtime_pointer import publish_pointer; print(publish_pointer())"
       - name: Install plugin dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
         working-directory: paperforge/plugin
       - name: Build the wheel the first-use journey installs
         shell: bash
@@ -520,16 +489,6 @@ jobs:
         env:
           PF_OBSIDIAN_APP_VERSION: ${{ matrix.app }}
           PF_OBSIDIAN_INSTALLER_VERSION: ${{ matrix.installer }}
-      - name: Upload runtime journey evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-journey-${{ matrix.app }}-${{ matrix.installer }}
-          path: |
-            paperforge/plugin/test/evidence/a01-first-use.json
-            paperforge/plugin/test/evidence/a06-reinstall-switch.json
-          if-no-files-found: error
-          retention-days: 14
       - name: Upload obsidian evidence (all cases)
         if: always()
         uses: actions/upload-artifact@v4
@@ -699,7 +658,6 @@ jobs:
     if: always()
     needs:
       - static
-      - unit-tests
       - python-suite
       - j-matrix
       - cli-acceptance

@@ -33,11 +33,12 @@ TESTS_DIR = REPO_ROOT / "tests"
 #: collected solely by a scheduled workflow is *not* gated.
 GATING_WORKFLOW = "ci.yml"
 #: Jobs whose failure evidence is uploaded. `protocol-tests` and
-#: `ocr-regression` were folded into `python-suite` (2026-11-06): they named
-#: files that job already runs on the same OS, so a second job only paid for a
-#: checkout. Their files remain collected, which this contract verifies.
+#: `ocr-regression` were folded into `python-suite` (2026-11-06), and
+#: `unit-tests` was folded into `j-matrix` on the exact same `[windows-latest,
+#: macos-latest]` matrix (2026-11-18) so CI avoids booting duplicate Windows/macOS
+#: VMs and running Homebrew Python twice. Their files remain collected, which
+#: this contract verifies.
 FAILURE_EVIDENCE_JOBS = (
-    "unit-tests",
     "j-matrix",
     "plugin-tests",
     "python-suite",
@@ -253,7 +254,7 @@ class TestCITestCoverage:
         scripts = " ".join(
             str(step.get("run") or "") for step in jobs["python-suite"].get("steps") or []
         )
-        assert "pytest tests/" in scripts
+        assert "scripts/ci_shard.py" in scripts or "pytest tests/" in scripts
 
 
 class TestAggregateGate:

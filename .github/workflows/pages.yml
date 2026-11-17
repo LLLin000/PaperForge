@@ -34,7 +34,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
       - name: Install plugin dependencies (TypeScript compiler for the collector)
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
         working-directory: paperforge/plugin
       - name: Regenerate the audit report at HEAD
         # build_audit.py imports paperforge.architecture_audit via repo path,
