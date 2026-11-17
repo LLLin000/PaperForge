@@ -257,6 +257,216 @@ def _is_forbidden_worker_target(target: str) -> bool:
     return any(target == root or target.startswith(root + ".") for root in FORBIDDEN_WORKER_TARGETS)
 
 
+def _aliases_from_imports(
+    mod: str, nodes: list[ast.AST], packages: set[str], known: set[str]
+) -> dict[str, str]:
+    """Local name -> fully qualified paperforge module for module imports only."""
+    aliases: dict[str, str] = {}
+    for node in nodes:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if not alias.name.startswith("paperforge"):
+                    continue
+                if alias.asname:
+                    aliases[alias.asname] = alias.name
+                else:
+                    aliases.setdefault(alias.name.split(".")[0], alias.name.split(".")[0])
+        elif isinstance(node, ast.ImportFrom):
+            for (target, name), item in zip(resolve_import(mod, node, packages), node.names):
+                if not target.startswith("paperforge") or name is None or name == "*":
+                    continue
+                if f"{target}.{name}" in known:
+                    aliases[item.asname or name] = f"{target}.{name}"
+                # else: function/class/object import -- not a module alias, ignore
+    return aliases
+
+
+def _resolve_attr_base(value: ast.AST, aliases: dict[str, str]) -> str | None:
+    """Resolve an attribute base to a fully qualified dotted path via module aliases."""
+    parts: list[str] = []
+    node = value
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return None
+    parts.append(node.id)
+    parts.reverse()
+    if parts[0] not in aliases:
+        return None
+    base = aliases[parts[0]]
+    if len(parts) > 1:
+        base = base + "." + ".".join(parts[1:])
+    return base
+
+
+class _LocalShadows(ast.NodeVisitor):
+    """Names bound in one function scope, excluding nested functions/lambdas."""
+
+    def __init__(self) -> None:
+        self.names: set[str] = set()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        pass
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self.names.add(node.name)
+        for dec in node.decorator_list:
+            self.visit(dec)
+        for base in node.bases:
+            self.visit(base)
+        for kw in node.keywords:
+            self.visit(kw)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self.names.add(node.name)
+        self.generic_visit(node)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, ast.Store):
+            self.names.add(node.id)
+
+
+def _local_shadows(
+    mod: str,
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    packages: set[str],
+    known: set[str],
+    local_aliases: dict[str, str],
+) -> set[str]:
+    """Names in ``func`` that hide a module-level alias (params, stores, non-module imports)."""
+    shadows: set[str] = set()
+    args = func.args
+    for arg in list(args.posonlyargs) + list(args.args) + list(args.kwonlyargs):
+        shadows.add(arg.arg)
+    if args.vararg is not None:
+        shadows.add(args.vararg.arg)
+    if args.kwarg is not None:
+        shadows.add(args.kwarg.arg)
+    visitor = _LocalShadows()
+    for stmt in func.body:
+        visitor.visit(stmt)
+    shadows.update(visitor.names)
+    for node in _scope_imports(func.body, include_classes=True):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                bound = (alias.asname or alias.name).split(".")[0]
+                if bound not in local_aliases:
+                    shadows.add(bound)
+        elif isinstance(node, ast.ImportFrom):
+            for (target, name), item in zip(resolve_import(mod, node, packages), node.names):
+                bound = item.asname or item.name
+                if bound == "*":
+                    continue
+                if bound not in local_aliases:
+                    shadows.add(bound)
+    return shadows
+
+
+def _scoped_attributes(
+    tree: ast.Module,
+) -> list[tuple[ast.FunctionDef | ast.AsyncFunctionDef | None, ast.Attribute]]:
+    """Every ``Attribute`` node with its innermost enclosing function (if any).
+
+    Decorators and default values belong to the enclosing scope; only the
+    body runs in the function's own scope.
+    """
+    found: list = []
+
+    def visit(node: ast.AST, owner: ast.AST | None) -> None:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for dec in node.decorator_list:
+                visit(dec, owner)
+            defaults = list(node.args.defaults) + [d for d in node.args.kw_defaults if d is not None]
+            for default in defaults:
+                visit(default, owner)
+            for arg in (
+                list(node.args.posonlyargs)
+                + list(node.args.args)
+                + list(node.args.kwonlyargs)
+                + ([node.args.vararg] if node.args.vararg is not None else [])
+                + ([node.args.kwarg] if node.args.kwarg is not None else [])
+            ):
+                if arg.annotation is not None:
+                    visit(arg.annotation, owner)
+            if node.returns is not None:
+                visit(node.returns, owner)
+            for stmt in node.body:
+                visit(stmt, node)
+            return
+        if isinstance(node, ast.Attribute):
+            found.append((owner, node))
+        for child in ast.iter_child_nodes(node):
+            visit(child, owner)
+
+    visit(tree, None)
+    return found
+
+
+def collect_private_member_accesses(
+    modules: dict[str, Path], trees: dict[str, ast.Module], packages: set[str]
+) -> dict[str, list[dict]]:
+    """Cross-module ``module._private`` attribute uses, keyed by importing module.
+
+    Values are ``{"line": int, "target_module": str, "member": str}`` objects
+    sorted by ``(line, target_module, member)``. Only non-dunder private
+    attribute names count, and only when the base resolves through a module
+    import alias to a *known* module different from the importer (same-file
+    use stays allowed; ``module._private._nested`` does not resolve to a
+    known module, so only the inner access is reported). Module-level
+    aliases are visible inside functions unless shadowed by a parameter,
+    a local binding, or a non-module import; function-level imports never
+    leak into other scopes. Dynamic access (``getattr``, ``__import__``)
+    is invisible -- static limit.
+    """
+    known = set(modules)
+    found: dict[str, set[tuple[int, str, str]]] = {}
+    for mod, tree in trees.items():
+        module_aliases = _aliases_from_imports(mod, _module_scope_imports(tree), packages, known)
+        scope_cache: dict[int, dict[str, str]] = {}
+
+        def effective(
+            owner: ast.FunctionDef | ast.AsyncFunctionDef | None,
+        ) -> dict[str, str]:
+            if owner is None:
+                return module_aliases
+            key = id(owner)
+            if key not in scope_cache:
+                local = _aliases_from_imports(
+                    mod, _scope_imports(owner.body, include_classes=True), packages, known
+                )
+                shadows = _local_shadows(mod, owner, packages, known, local)
+                eff = {k: v for k, v in module_aliases.items() if k not in shadows}
+                eff.update(local)
+                scope_cache[key] = eff
+            return scope_cache[key]
+
+        for owner, node in _scoped_attributes(tree):
+            member = node.attr
+            if not member.startswith("_") or _is_dunder(member):
+                continue
+            target = _resolve_attr_base(node.value, effective(owner))
+            if target is None or target not in known:
+                continue
+            if target == mod:
+                continue
+            found.setdefault(mod, set()).add((node.lineno, target, member))
+    return {
+        mod: [
+            {"line": line, "target_module": target, "member": member}
+            for (line, target, member) in sorted(keys)
+        ]
+        for mod, keys in sorted(found.items())
+    }
+
+
 def collect_violations(
     modules: dict[str, Path], trees: dict[str, ast.Module], packages: set[str]
 ) -> tuple[dict[str, list[str]], dict[str, list[str]], dict[str, list[str]]]:
@@ -336,6 +546,7 @@ def build_snapshot() -> dict:
     graph = collect_graph(modules, trees, packages)
     rings = find_rings(graph)
     private, layer, heavy = collect_violations(modules, trees, packages)
+    member_accesses = collect_private_member_accesses(modules, trees, packages)
     return {
         "version": 1,
         "r1_no_new_rings": len(rings) >= CYCLE_DOWNGRADE_THRESHOLD,
@@ -343,6 +554,7 @@ def build_snapshot() -> dict:
         "private_imports": private,
         "layer_violations": layer,
         "heavy_imports": heavy,
+        "private_member_accesses": member_accesses,
     }
 
 
@@ -363,6 +575,8 @@ def check(snapshot: dict, ratchet: dict) -> list[str]:
     Stale ratchet entries (fixed since the snapshot) never fail: the
     ratchet may only shrink, and shrinking is reported by re-running
     ``--write-ratchet``, not by turning ``--check`` red.
+    ``private_member_access_exceptions`` allowlists exact
+    ``"target_module:member"`` strings per importer, ignoring line numbers.
     """
     failures: list[str] = []
     current_rings = set(snapshot["rings"])
@@ -378,10 +592,25 @@ def check(snapshot: dict, ratchet: dict) -> list[str]:
         ("R3: worker -> commands/plugin imports", "layer_violations"),
         ("R4: new top-level heavy imports", "heavy_imports"),
     ):
-        extra = _new_entries(snapshot[key], ratchet.get(key, {}))
+        extra = _new_entries(snapshot.get(key, {}), ratchet.get(key, {}))
         if extra:
             details = "; ".join(f"{mod}: {keys}" for mod, keys in extra.items())
             failures.append(f"{rule}: {details}")
+    member_exceptions: dict[str, list[str]] = ratchet.get("private_member_access_exceptions", {})
+    extra_members: dict[str, list[str]] = {}
+    current_members: dict[str, list[dict]] = snapshot.get("private_member_accesses", {})
+    for mod in sorted(set(current_members) | set(member_exceptions)):
+        allowed = set(member_exceptions.get(mod, []))
+        remaining = sorted(
+            f'{entry["line"]}:{entry["target_module"]}:{entry["member"]}'
+            for entry in current_members.get(mod, [])
+            if f'{entry["target_module"]}:{entry["member"]}' not in allowed
+        )
+        if remaining:
+            extra_members[mod] = remaining
+    if extra_members:
+        details = "; ".join(f"{mod}: {keys}" for mod, keys in extra_members.items())
+        failures.append(f"R2b: cross-module private member accesses: {details}")
     return failures
 
 
@@ -545,8 +774,9 @@ def reach(entry: str) -> tuple[list[str], int]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="P0 module dependency gate: import rings (R1), cross-package "
-        "private imports (R2), worker->commands/plugin imports (R3), and "
-        "top-level heavy imports (R4). AST-only; dynamic imports, DI, and "
+        "private imports (R2), worker->commands/plugin imports (R3), "
+        "top-level heavy imports (R4), and cross-module private member "
+        "accesses (R2b). AST-only; dynamic imports, DI, and "
         "monkeypatching are invisible (see module docstring). Pre-existing "
         "R2/R3/R4 violations are frozen in tests/architecture_import_ratchet.json "
         "and may only shrink; R1 degrades to no-new-rings once the frozen "
@@ -572,6 +802,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.write_ratchet:
         snapshot = build_snapshot()
+        try:
+            old = json.loads(RATCHET_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            old = {}
+        if isinstance(old, dict) and "private_member_access_exceptions" in old:
+            snapshot["private_member_access_exceptions"] = old["private_member_access_exceptions"]
         RATCHET_PATH.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"wrote {RATCHET_PATH} ({len(snapshot['rings'])} rings)")
         return 0

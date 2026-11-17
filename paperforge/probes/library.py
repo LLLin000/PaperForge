@@ -111,7 +111,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
         envelope = asset_index.read_index(vault)
         if envelope is not None and isinstance(envelope, dict):
             stored_hash = envelope.get("export_hash", "")
-            current_hash = asset_index._compute_export_hash(paths)
+            current_hash = asset_index.compute_export_hash(paths)
             paper_count = envelope.get("paper_count", 0)
 
             if not stored_hash or stored_hash != current_hash:

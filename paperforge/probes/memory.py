@@ -362,9 +362,9 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
             pid = build_state.get("pid", 0)
             pid_alive = False
             try:
-                from paperforge.commands import embed
+                from paperforge.services import embedding as embed
 
-                pid_alive = embed._pid_alive(int(pid)) if pid else False
+                pid_alive = embed.is_pid_alive(int(pid)) if pid else False
             except Exception:
                 pid_alive = False
             if not pid_alive:

@@ -209,6 +209,10 @@ def _pid_alive(pid: int) -> bool:
     except Exception:
         return False
 
+def is_pid_alive(pid: int) -> bool:
+    """Public read-only seam for the memory probe — delegates to the canonical liveness check."""
+    return _pid_alive(pid)
+
 
 def _resolve_lineage_dimension(
     conn, expected_dim: int, stored_dim: int

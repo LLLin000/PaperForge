@@ -199,6 +199,224 @@ def test_r2_dunder_and_local_alias_allowed():
     assert cmg.collect_violations(modules, trees, packages) == ({}, {}, {})
 
 
+def _member_accesses(files: dict[str, str]):
+    modules, trees, packages = _scan(files)
+    return cmg.collect_private_member_accesses(modules, trees, packages)
+
+
+def _entry(line: int, target: str, member: str):
+    return {"line": line, "target_module": target, "member": member}
+
+
+def test_r2b_import_as_alias_member_access_flagged():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "x = asset_index._compute_export_hash({})\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.probes.library": [
+            _entry(2, "paperforge.worker.asset_index", "_compute_export_hash")
+        ]
+    }
+
+
+def test_r2b_plain_import_dotted_member_access_flagged():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "import paperforge.worker.asset_index\n"
+                "x = paperforge.worker.asset_index._compute_export_hash({})\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.probes.library": [
+            _entry(2, "paperforge.worker.asset_index", "_compute_export_hash")
+        ]
+    }
+
+
+def test_r2b_from_import_alias_member_access_flagged():
+    # Probe-style function-level import.
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "def f(paths):\n"
+                "    from paperforge.worker import asset_index as asset_index\n"
+                "    return asset_index._compute_export_hash(paths)\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.probes.library": [
+            _entry(3, "paperforge.worker.asset_index", "_compute_export_hash")
+        ]
+    }
+
+
+def test_r2b_same_package_sibling_member_access_flagged():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.worker.ocr": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "x = asset_index._compute_export_hash({})\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.worker.ocr": [
+            _entry(2, "paperforge.worker.asset_index", "_compute_export_hash")
+        ]
+    }
+
+
+def test_r2b_module_alias_visible_in_function_unless_shadowed():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "def f(paths):\n"
+                "    return asset_index._compute_export_hash(paths)\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.probes.library": [
+            _entry(3, "paperforge.worker.asset_index", "_compute_export_hash")
+        ]
+    }
+
+
+def test_r2b_function_local_alias_does_not_leak():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "def f(paths):\n"
+                "    from paperforge.worker import asset_index\n"
+                "    return asset_index._compute_export_hash(paths)\n"
+                "def g(paths):\n"
+                "    return asset_index._compute_export_hash(paths)\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.probes.library": [
+            _entry(3, "paperforge.worker.asset_index", "_compute_export_hash")
+        ]
+    }
+
+
+def test_r2b_parameter_shadowing_suppresses_flag():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "def f(asset_index):\n"
+                "    return asset_index._compute_export_hash({})\n"
+            ),
+        }
+    )
+    assert found == {}
+
+
+def test_r2b_nested_private_base_is_not_a_module():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "x = asset_index._cache._key\n"
+            ),
+        }
+    )
+    assert found == {
+        "paperforge.probes.library": [_entry(2, "paperforge.worker.asset_index", "_cache")]
+    }
+
+
+def test_r2b_same_module_private_use_allowed():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "x = asset_index._compute_export_hash({})\n"
+            ),
+        }
+    )
+    assert found == {}
+
+
+def test_r2b_public_and_dunder_member_use_allowed():
+    found = _member_accesses(
+        {
+            "paperforge.worker.asset_index": "",
+            "paperforge.probes.library": (
+                "import paperforge.worker.asset_index as asset_index\n"
+                "a = asset_index.read_index(None)\n"
+                "b = asset_index.__version__\n"
+            ),
+        }
+    )
+    assert found == {}
+
+
+def test_r2b_non_module_alias_ignored():
+    found = _member_accesses(
+        {
+            "paperforge.actions.registry": (
+                "from paperforge.lineage import scope_from_dict as _s\n"
+                "x = _s._private\n"
+            ),
+        }
+    )
+    assert found == {}
+
+
+def test_r2b_exception_matched_by_target_not_line():
+    snapshot = {
+        "rings": [],
+        "private_imports": {},
+        "layer_violations": {},
+        "heavy_imports": {},
+        "private_member_accesses": {
+            "paperforge.probes.library": [
+                _entry(114, "paperforge.worker.asset_index", "_compute_export_hash")
+            ]
+        },
+    }
+    ratchet = {
+        "rings": [],
+        "private_imports": {},
+        "layer_violations": {},
+        "heavy_imports": {},
+        "private_member_access_exceptions": {
+            "paperforge.probes.library": ["paperforge.worker.asset_index:_compute_export_hash"]
+        },
+    }
+    assert cmg.check(snapshot, ratchet) == []
+    other = dict(
+        snapshot,
+        private_member_accesses={
+            "paperforge.probes.library": [
+                _entry(114, "paperforge.worker.asset_index", "_other_helper")
+            ]
+        },
+    )
+    failures = cmg.check(other, ratchet)
+    assert len(failures) == 1 and "R2b" in failures[0]
+
+
 def test_r3_worker_to_commands_blocked_at_any_level():
     modules, trees, packages = _scan(
         {

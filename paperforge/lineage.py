@@ -545,6 +545,10 @@ def _detect_orphans(vault: Path) -> dict[str, Any]:
         "orphans": [{"key": p["key"], "title": p["title"]} for p in ws],
     }
 
+def detect_orphans(vault: Path) -> dict[str, Any]:
+    """Public read-only seam for the maintenance probe — delegates to the canonical orphan view."""
+    return _detect_orphans(vault)
+
 
 def _detect_residuals(vault: Path) -> dict[str, Any]:
     """Unified residual detection — **Zotero is the authority**.

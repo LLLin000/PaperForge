@@ -148,7 +148,7 @@ def _derive_maintenance_tail(
             else:
                 from paperforge import lineage
 
-                envelope["orphan"] = lineage._detect_orphans(vault)
+                envelope["orphan"] = lineage.detect_orphans(vault)
         except Exception:  # noqa: BLE001
             envelope["orphan"] = {"count": 0, "keys": []}
     return envelope

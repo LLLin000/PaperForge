@@ -1046,13 +1046,41 @@ class TestMemoryConcreteFixes:
                         "pid": 999999, "started_at": "2026-08-13T00:00:00+00:00"},
         )
         monkeypatch.setattr(
-            "paperforge.services.embedding._pid_alive", lambda pid: False)
+            "paperforge.services.embedding.is_pid_alive", lambda pid: False)
 
         data = probe_mod.probe_memory(tmp_path)
         assert data["capability_state"] == "needs_action"
         assert data["reason"]["code"] == "memory.vector_build_interrupted"
         assert data["action"]["primary"]["action_id"] == "embed.build"
         assert data["action"]["primary"]["availability"] == "available"
+
+    def test_live_running_state_stays_ready(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A running build_state with a LIVE pid is genuinely in progress:
+        ready + activity running, not a zombie resume."""
+        from paperforge import probes as probe_mod
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+
+        monkeypatch.setattr(
+            "paperforge.memory.query.get_memory_status",
+            lambda v: {"db_exists": True, "schema_ok": True, "fresh": True,
+                        "hash_match": True, "count_match": True,
+                        "paper_count_db": 1, "paper_count_index": 1,
+                        "needs_rebuild": False, "schema_version": 7},
+        )
+        monkeypatch.setattr(
+            "paperforge.embedding.build_state.read_vector_build_state",
+            lambda v: {"status": "running", "current": 690, "total": 811,
+                        "pid": 1234, "started_at": "2026-08-13T00:00:00+00:00"},
+        )
+        monkeypatch.setattr(
+            "paperforge.services.embedding.is_pid_alive", lambda pid: True)
+
+        data = probe_mod.probe_memory(tmp_path)
+        assert data["capability_state"] == "ready"
+        assert data["activity_state"] == "running"
+        assert data["reason"]["code"] == "memory.ready"
+        assert data["action"]["primary"] is None
 
 
 class TestVersionSpelling:

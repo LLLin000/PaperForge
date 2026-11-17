@@ -63,6 +63,7 @@ All notable changes to PaperForge.
 - Classify terminal OCR batches by settlement truth: blocked credential/source rejections surface `OCR_UPLOAD_FAILED` with failed/blocked keys and no re-upload, failures surface `OCR_RESULT_INVALID`, and only genuinely pending work keeps the poll-timeout resume instruction (#356). The Workspace shows the backend machine message first with actionable blocked/failed guidance naming the bounded keys, and drops the mutation snapshot before readback so resume refresh cannot resurrect stale statuses.
 - Keep table caption/text/notes visible when no crop geometry exists: table object markdown emits no dangling image reference for unmaterialized crops, preserves provider HTML/text content with an explicit inability marker, and audit stays strict (#356). The single HTML flattener keeps header (`th`) and data (`td`) cells with matching-tag pairs.
 - Route missing managed-runtime executables to an actionable Setup Wizard reinstall state during individual and aggregate status refreshes, without spawning the missing interpreter or changing the published pointer (#356).
+- Route the memory probe liveness check through the owning service API: the old `paperforge.commands.embed._pid_alive` target does not exist, so live builds were misclassified as interrupted; live activity now reports ready/running correctly with the DTO schema unchanged.
 
 ## 1.5.8 (2026-05-19)
 
