@@ -186,7 +186,7 @@ class TestMemoryRestoreProbe:
 
     def test_corrupt_db_with_backup_emits_restore(self, tmp_path: Path) -> None:
         """Corrupt DB + valid backup -> restore_backup action."""
-        from paperforge.commands import probe as probe_mod
+        from paperforge import probes as probe_mod
 
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")
@@ -208,7 +208,7 @@ class TestMemoryRestoreProbe:
 
     def test_corrupt_db_without_backup_emits_rebuild(self, tmp_path: Path) -> None:
         """Corrupt DB without backup -> rebuild action."""
-        from paperforge.commands import probe as probe_mod
+        from paperforge import probes as probe_mod
 
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")

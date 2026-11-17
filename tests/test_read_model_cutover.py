@@ -130,6 +130,7 @@ def test_probe_all_derives_maintenance_with_zero_reprobe(monkeypatch, tmp_path: 
     """#140: the maintenance envelope is derived from the five base results;
     no reader is called a second time."""
     import paperforge.commands.probe as probe_mod
+    import paperforge.probes.maintenance as maint_mod
 
     vault = tmp_path / "vault"
     vault.mkdir()
@@ -137,7 +138,7 @@ def test_probe_all_derives_maintenance_with_zero_reprobe(monkeypatch, tmp_path: 
 
     calls: dict[str, int] = {}
     for name in ("probe_installation", "probe_library", "probe_ocr", "probe_memory", "probe_help"):
-        original = getattr(probe_mod, name)
+        original = getattr(maint_mod, name)
 
         def make_wrapper(mod_name: str, fn):
             def wrapper(*args, **kwargs):
@@ -145,7 +146,7 @@ def test_probe_all_derives_maintenance_with_zero_reprobe(monkeypatch, tmp_path: 
                 return fn(*args, **kwargs)
             return wrapper
 
-        monkeypatch.setattr(probe_mod, name, make_wrapper(name, original))
+        monkeypatch.setattr(maint_mod, name, make_wrapper(name, original))
 
     from io import StringIO
     import contextlib
@@ -178,7 +179,7 @@ def test_ocr_pipeline_versions_detail_surface(tmp_path: Path):
 def test_probe_ocr_envelope_has_no_per_paper_detail(tmp_path: Path):
     """The envelope never carries the per-paper detail; the summary helpers
     stay available for the ready tail (#148)."""
-    from paperforge.commands.probe import ocr_pipeline_version_summary, paper_pipeline_versions
+    from paperforge.probes.ocr import ocr_pipeline_version_summary, paper_pipeline_versions
 
     vault = tmp_path / "vault"
     vault.mkdir()
