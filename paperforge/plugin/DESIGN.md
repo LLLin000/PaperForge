@@ -92,10 +92,20 @@ The six canonical `UserState` tokens (`checking`, `ready`, `not_enabled`, `setup
 
 Every interactive control follows five concrete tactile & typographic rules implemented globally in `paperforge/plugin/styles.css`:
 
-1. **Five-Layer Top-Lit Tactile Hierarchy (`#001`)**:
-   - **Primary** (`--pf-accent`): top inner sheen (`--pf-primary-lift`), 1px bottom lip, subtle outer lift; pressed state translates `1px` down with `--pf-btn-press`. Max **one** primary per view section or navigation bar.
-   - **Secondary** (`--pf-surface` / `--pf-action-btn--secondary`): crisp `--pf-border-strong` rim with `--pf-btn-lift` (`inset 0 1px 0 rgba(255,255,255,0.85)` light / `0.08` dark).
-   - **Ghost** (`pf-btn-ghost` / `pf-action-btn--ghost`): transparent rest state, neutral hover fill, **zero** resting accent outline.
-2. **Concentric & Continuous Corners (`#004`)**: Outer containers (`10px`) minus compact padding (`4px`) drive inner control radii (`6px` = `10 - 4`), while Chromium/Electron views progressively enable `corner-shape: superellipse(1.25)` (keeping `round` strictly on pill badges and color dots).
-3. **Recessed Input & Segmented Tracks (`#015`)**: Unified search bars and segmented controls sit inside `--pf-well-inset` tracks with an active `--pf-surface` capsule casting `--pf-btn-lift`, using deceleration curve `--pf-ease-out: cubic-bezier(0.22, 1, 0.36, 1)`.
-4. **CJK / Latin Typography Switches (`#007`)**: Global `text-autospace: normal`, `text-spacing-trim: trim-start`, `text-wrap: balance` on headings, `text-wrap: pretty` on prose, `white-space: nowrap` on buttons/tabs, and `min-width: 0` on all flex truncating headers.
+### 2. Situational Easing Curves (`#011`) & Architectural Craft Laws
+
+1. **Surface & Hairline Grouping (`Inset Grouped Lists`)**: Never stack bordered card boxes inside bordered card boxes. Related rows (`Control Center` modules, `Memory/OCR` config rows, `.base` table inside workspace) share one unified surface with subtle `1px` inset hairlines.
+2. **Borderless Frosted Toolbar Chrome (`macOS Preview` + `#010`)**: Toolbars use translucent warm-stone blur (`backdrop-filter: blur(18px) saturate(180%)`); icon buttons stay borderless at rest, surfacing a quiet capsule on hover and an accent tint when active; related actions cluster inside soft segmented pills.
+3. **Zero Raw Browser Form Controls**: All checkboxes render as `16×16` squircles, binary switches render as `32×18` `.pf-switch` macOS capsules (`--pf-ease-overshoot`), `<select>` menus render custom dual-chevron pop-up buttons, and `<details>` disclosures use rotating SVG chevrons.
+4. **Situational Motion Tokens (`#011`)**:
+   - `--pf-ease-out`: `cubic-bezier(0.22, 1, 0.36, 1)` (entrances, popovers, button settles)
+   - `--pf-ease-in-out`: `cubic-bezier(0.45, 0, 0.55, 1)` (tab & chevron shifts)
+   - `--pf-ease-overshoot`: `cubic-bezier(0.34, 1.56, 0.64, 1)` (switch thumbs & squircle checkmarks)
+5. **Five-Layer Top-Lit Tactile Hierarchy (`#001`)**:
+   - **Primary** (`--pf-accent`): subtle top-down gradient, top inner sheen (`--pf-primary-lift`), 1px bottom lip, `translateY(1px)` active press. Max **one** primary CTA per viewport section.
+   - **Secondary** (`--pf-surface` / `--pf-action-btn--secondary`): top-lit neutral fill with crisp `--pf-border-strong` rim, compact width (never stretched `100%` across forms).
+   - **Danger** (`.paperforge-orphan-delete-btn`): semantic Crimson (`#c4383b` / `#d95357`) for irreversible destructive modal confirmations.
+   - **Ghost** (`pf-btn-ghost` / `pf-action-btn--ghost`): borderless transparent rest state, neutral hover capsule, zero resting accent outline.
+6. **Concentric & Continuous Corners (`#004`)**: Outer containers (`10px`–`12px`) minus compact padding (`4px`) drive inner control radii (`6px`–`8px`), with `corner-shape: superellipse(1.25)` where supported.
+7. **Recessed Input & Segmented Tracks (`#015`)**: Unified search bars and segmented controls sit inside `--pf-well-inset` tracks with an elevated `--pf-surface` capsule casting `--pf-btn-lift`.
+8. **CJK / Latin Typography Switches (`#007`)**: Global `text-autospace: normal`, `text-spacing-trim: trim-start`, `text-wrap: balance` on headings, `text-wrap: pretty` on prose, `white-space: nowrap` on buttons/tabs, and `min-width: 0` on all flex truncating headers.

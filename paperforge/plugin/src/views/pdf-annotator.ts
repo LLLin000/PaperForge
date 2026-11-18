@@ -442,14 +442,15 @@ export class PaperForgePdfView extends ItemView {
       });
     }
 
-    // Center: Page Navigation & Zoom
+    // Center: Page Navigation & Zoom (Apple Preview subtle clusters)
     const centerGroup = toolbar.createDiv({ cls: "pf-pdf-toolbar-center" });
-    const prevBtn = createPfIconBtn(centerGroup, {
+    const navCluster = centerGroup.createDiv({ cls: "pf-pdf-nav-cluster" });
+    const prevBtn = createPfIconBtn(navCluster, {
       icon: "chevron-left",
       label: lbl("上一页", "Previous page"),
       cls: "pf-pdf-icon-btn",
     });
-    const pageInput = centerGroup.createEl("input", {
+    const pageInput = navCluster.createEl("input", {
       cls: "pf-pdf-page-input pf-tnum",
       type: "number",
       value: String(this._currentPage),
@@ -457,11 +458,11 @@ export class PaperForgePdfView extends ItemView {
     pageInput.min = "1";
     pageInput.max = String(totalPages);
     this._pageInputEl = pageInput;
-    centerGroup.createEl("span", {
+    navCluster.createEl("span", {
       cls: "pf-pdf-page-total pf-tnum",
       text: `/ ${totalPages}`,
     });
-    const nextBtn = createPfIconBtn(centerGroup, {
+    const nextBtn = createPfIconBtn(navCluster, {
       icon: "chevron-right",
       label: lbl("下一页", "Next page"),
       cls: "pf-pdf-icon-btn",
@@ -481,23 +482,22 @@ export class PaperForgePdfView extends ItemView {
       this.scrollToPage(target);
     });
 
-    centerGroup.createDiv({ cls: "pf-pdf-bar-sep" });
-
-    const zoomOut = createPfIconBtn(centerGroup, {
+    const zoomCluster = centerGroup.createDiv({ cls: "pf-pdf-zoom-cluster" });
+    const zoomOut = createPfIconBtn(zoomCluster, {
       icon: "minus",
       label: lbl("缩小", "Zoom out"),
       cls: "pf-pdf-icon-btn",
     });
-    this._zoomLabelEl = centerGroup.createEl("span", {
+    this._zoomLabelEl = zoomCluster.createEl("span", {
       cls: "pf-pdf-zoom-label pf-tnum",
       text: `${Math.round(this._scale * 100)}%`,
     });
-    const zoomIn = createPfIconBtn(centerGroup, {
+    const zoomIn = createPfIconBtn(zoomCluster, {
       icon: "plus",
       label: lbl("放大", "Zoom in"),
       cls: "pf-pdf-icon-btn",
     });
-    this._fitWidthBtn = createPfIconBtn(centerGroup, {
+    this._fitWidthBtn = createPfIconBtn(zoomCluster, {
       icon: "maximize-2",
       label: t("pdf_fit_width") || "Zoom to Fit",
       cls: "pf-pdf-icon-btn",
@@ -688,9 +688,10 @@ export class PaperForgePdfView extends ItemView {
       icon: PfIconName,
       label: string,
       testid: string,
-      onClick: () => void
+      onClick: () => void,
+      parent: HTMLElement = toolsGroup
     ) => {
-      const btn = createPfIconBtn(toolsGroup, {
+      const btn = createPfIconBtn(parent, {
         icon,
         label,
         cls: "pf-pdf-icon-btn",
@@ -723,7 +724,7 @@ export class PaperForgePdfView extends ItemView {
       () => this._setTool(this._activeTool === "ink" ? "select" : "ink")
     );
 
-    toolsGroup.createDiv({ cls: "pf-pdf-bar-sep" });
+    const shapeCluster = toolsGroup.createDiv({ cls: "pf-pdf-shape-cluster" });
 
     const shapes: Array<{
       subtype: ShapeSubtype;
@@ -752,7 +753,8 @@ export class PaperForgePdfView extends ItemView {
             this._shapeSubtype = sh.subtype;
             this._setTool("shape");
           }
-        }
+        },
+        shapeCluster
       );
     }
 
@@ -810,15 +812,22 @@ export class PaperForgePdfView extends ItemView {
       fillBtn.toggleClass("is-active", !this._markupFillTransparent);
     });
 
-    const widthWrap = styleGroup.createDiv({ cls: "pf-pdf-width-group" });
+    const widthWrap = styleGroup.createDiv({
+      cls: "pf-pdf-width-group pf-pdf-stroke-group",
+    });
     for (const w of STROKE_WIDTHS) {
       const wb = widthWrap.createEl("button", {
-        cls: `pf-pdf-pill-ctrl pf-tnum${
+        cls: `pf-pdf-pill-ctrl pf-pdf-stroke-btn${
           this._markupStrokeWidth === w ? " is-active" : ""
         }`,
         type: "button",
-        text: `${w}pt`,
+        attr: {
+          "aria-label": `${w}pt`,
+          title: `${w}pt`,
+        },
       });
+      const bar = wb.createEl("span", { cls: "pf-stroke-bar" });
+      bar.style.height = `${w === 1.5 ? 1.5 : w === 2.5 ? 2.5 : 4}px`;
       wb.addEventListener("click", () => {
         this._markupStrokeWidth = w;
         widthWrap
@@ -828,14 +837,21 @@ export class PaperForgePdfView extends ItemView {
       });
     }
 
-    const fontWrap = styleGroup.createDiv({ cls: "pf-pdf-width-group" });
+    const fontWrap = styleGroup.createDiv({
+      cls: "pf-pdf-width-group pf-pdf-font-group",
+    });
+    fontWrap.createEl("span", { cls: "pf-pdf-font-prefix", text: "Aa" });
     for (const fs of TEXTBOX_FONT_SIZES) {
       const fb = fontWrap.createEl("button", {
         cls: `pf-pdf-pill-ctrl pf-tnum${
           this._markupFontSize === fs ? " is-active" : ""
         }`,
         type: "button",
-        text: `${fs}px`,
+        text: String(fs),
+        attr: {
+          "aria-label": `${fs}px`,
+          title: `${fs}px`,
+        },
       });
       fb.addEventListener("click", () => {
         this._markupFontSize = fs;
@@ -2277,21 +2293,33 @@ export class PaperForgePdfView extends ItemView {
         "#5b45c9";
       dot.style.background = swHex;
 
+      const kindLabels: Record<string, string> = {
+        highlight: lbl("高亮", "highlight"),
+        underline: lbl("下划线", "underline"),
+        strikethrough: lbl("删除线", "strikethrough"),
+        margin: lbl("页边定位", "margin"),
+        area: lbl("图表框选", "area"),
+        ink: lbl("画笔", "ink"),
+        shape: lbl("图形", "shape"),
+        textbox: lbl("文本框", "textbox"),
+        note: lbl("便签", "note"),
+      };
       head.createEl("span", {
-        cls: "pf-pdf-ann-page pf-tnum",
-        text: `P${ann.page} · ${ann.kind}`,
+        cls: "pf-pdf-ann-kind",
+        text: kindLabels[ann.kind] || ann.kind,
       });
       if (isAgent) {
-        const lensLabel = ann.lens ? ` · ${ann.lens}` : "";
+        const lensZh: Record<string, string> = {
+          skeleton: "逻辑骨架",
+          critique: "审稿存疑",
+          method: "关键方法",
+        };
+        const lensText = ann.lens
+          ? ` · ${lbl(lensZh[ann.lens] || ann.lens, ann.lens)}`
+          : "";
         head.createEl("span", {
           cls: "pf-pdf-ann-agent-badge",
-          text: `AI${lensLabel}`,
-        });
-      }
-      if (ann.kind === "margin") {
-        head.createEl("span", {
-          cls: "pf-pdf-badge-pill",
-          text: t("pdf_margin_badge") || "Margin",
+          text: `AI${lensText}`,
         });
       }
       if (ann.figure_id) {
@@ -2300,6 +2328,10 @@ export class PaperForgePdfView extends ItemView {
           text: ann.figure_id,
         });
       }
+      head.createEl("span", {
+        cls: "pf-pdf-ann-page pf-tnum",
+        text: `p.${ann.page}`,
+      });
 
       if (ann.section_path) {
         const sec = card.createEl("div", {
@@ -2312,10 +2344,11 @@ export class PaperForgePdfView extends ItemView {
       }
 
       if (ann.exact_text) {
-        card.createEl("blockquote", {
+        const quoteEl = card.createEl("blockquote", {
           cls: "pf-pdf-ann-quote",
           text: ann.exact_text,
         });
+        quoteEl.style.borderLeftColor = swHex;
       }
       if (ann.comment) {
         card.createEl("p", {

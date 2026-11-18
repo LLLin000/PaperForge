@@ -1801,7 +1801,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     }
     // Option B: Advanced OCR Workspace stays accessible here under Settings -> OCR.
-    renderActionButton(body, {
+    const ocrActionRow = body.createDiv({ cls: "pf-module-action-row" });
+    renderActionButton(ocrActionRow, {
       label:
         (t("md_ocr_workspace_advanced") ||
           t("md_ocr_workspace") ||
@@ -1813,7 +1814,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         } as any),
     });
     if (!isRunning) {
-      renderActionButton(body, {
+      renderActionButton(ocrActionRow, {
         label: t("ocr_configure_credential"),
         variant: "secondary",
         onClick: () => this._startSetupJourney(3),
@@ -3990,8 +3991,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-cc-card-metric",
       text: metricText,
     });
-    // Arrow
-    card.createEl("span", { cls: "pf-cc-card-arrow", text: "\u2192" });
+    // Chevron
+    card.createEl("span", { cls: "pf-cc-card-arrow", text: "\u203A" });
     card.addEventListener("click", () => this._handleCardNavigation(mod));
   }
 
@@ -4953,7 +4954,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const pendingSecretSaves: Array<() => Promise<unknown>> = [];
     for (const opt of optionals) {
       const row = containerEl.createDiv({ cls: "pf-setup-optional" });
-      const checkbox = row.createEl("input", {
+      const head = row.createDiv({ cls: "pf-setup-optional-head" });
+      const copy = head.createDiv({ cls: "pf-setup-optional-copy" });
+      copy.createEl("label", {
+        attr: { for: "pf-setup-opt-" + opt.id },
+        text: opt.label,
+        cls: "pf-setup-optional-label",
+      });
+      copy.createEl("div", {
+        text: opt.desc,
+        cls: "pf-setup-optional-desc",
+      });
+      const checkbox = head.createEl("input", {
+        cls: "pf-switch",
         attr: { type: "checkbox", id: "pf-setup-opt-" + opt.id },
       }) as HTMLInputElement;
       checkbox.checked = this._setupOptionals[opt.id];
@@ -4967,16 +4980,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : opt.id === "memory"
             ? !!this.plugin.settings._vector_db_configured
             : true;
-      const copy = row.createDiv({ cls: "pf-setup-optional-copy" });
-      copy.createEl("label", {
-        attr: { for: "pf-setup-opt-" + opt.id },
-        text: opt.label,
-        cls: "pf-setup-optional-label",
-      });
-      copy.createEl("div", {
-        text: opt.desc,
-        cls: "pf-setup-optional-desc",
-      });
       // The chip states what the user must do next, not just "configured":
       // a green "not configured" reads as done and is why people skip it.
       const needsSecret = opt.id === "ocr" || opt.id === "memory";
@@ -5064,7 +5067,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (saved) key.value = "";
         };
         pendingSecretSaves.push(commitOcrKey);
-        const save = config.createEl("button", {
+        const ocrSaveFooter = config.createDiv({
+          cls: "pf-setup-optional-footer",
+        });
+        const save = ocrSaveFooter.createEl("button", {
           cls: "pf-setup-verify",
           text: t("config_save"),
           attr: { type: "button" },
@@ -5145,7 +5151,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (saved) key.value = "";
         };
         pendingSecretSaves.push(commitMemKey);
-        const save = config.createEl("button", {
+        const memSaveFooter = config.createDiv({
+          cls: "pf-setup-optional-footer",
+        });
+        const save = memSaveFooter.createEl("button", {
           cls: "pf-setup-verify",
           text: t("config_save"),
           attr: { type: "button" },

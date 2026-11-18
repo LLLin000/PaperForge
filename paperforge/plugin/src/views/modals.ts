@@ -163,7 +163,6 @@ export class PaperForgeOrphanModal extends Modal {
         event.preventDefault();
         toggle();
       });
-
     }
     const btnRow = contentEl.createEl("div", {
       cls: "paperforge-modal-actions",
@@ -179,12 +178,18 @@ export class PaperForgeOrphanModal extends Modal {
     });
 
     this._countEl = btnRow.createEl("button", {
-      cls: "paperforge-step-btn mod-cta",
-      text: t("modal_delete_selected").replace("{n}", String(this.orphans.length)),
+      cls: "paperforge-step-btn mod-cta paperforge-orphan-delete-btn",
+      text: t("modal_delete_selected").replace(
+        "{n}",
+        String(this.orphans.length)
+      ),
     });
 
     btnRow
-      .createEl("button", { cls: "paperforge-step-btn", text: t("modal_keep_all") })
+      .createEl("button", {
+        cls: "paperforge-step-btn",
+        text: t("modal_keep_all"),
+      })
       .addEventListener("click", () => this.close());
     this._boundKeydown = (e: KeyboardEvent) =>
       _trapFocus(contentEl as unknown as HTMLElement, e);
@@ -239,7 +244,7 @@ export class PaperForgeOrphanModal extends Modal {
               `PaperForge: prune incomplete (${failed.length} failed: ${failed.join(", ")})`
             );
           } else {
-            new Notice("PaperForge: prune failed");  // ok===false with no failed_keys
+            new Notice("PaperForge: prune failed"); // ok===false with no failed_keys
           }
           this.close();
         })
