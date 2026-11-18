@@ -173,13 +173,8 @@ def extract_citation_key(item: dict) -> str:
     return ""
 
 
-def detect_bbt_export_problem(path: Path) -> str | None:
-    """Return an actionable error message if *path* is not a valid BBT JSON export."""
-    try:
-        data = read_json(path)
-    except Exception as exc:
-        return f"Invalid JSON in export file {path.name}: {exc}"
-
+def _check_bbt_export_data(data: object, filename: str) -> str | None:
+    """Validate already-parsed BBT JSON content without touching the filesystem."""
     if isinstance(data, dict) and isinstance(data.get("items"), list):
         return None
 
@@ -192,23 +187,33 @@ def detect_bbt_export_problem(path: Path) -> str | None:
             )
             if has_csl_shape and not has_bbt_or_pf_shape:
                 return (
-                    f"{path.name} is a CSL JSON export, not Better BibTeX JSON. "
+                    f"{filename} is a CSL JSON export, not Better BibTeX JSON. "
                     "In Zotero, install Better BibTeX, export as 'Better BibTeX JSON' "
                     "(check 'Keep updated'), and save into the exports folder."
                 )
         return None
 
     return (
-        f"{path.name} is not a valid Better BibTeX JSON export "
+        f"Unsupported export format in {filename}: not a valid Better BibTeX JSON export "
         "(missing top-level 'items' array)."
     )
 
 
+def detect_bbt_export_problem(path: Path) -> str | None:
+    """Return an actionable error message if *path* is not a valid BBT JSON export."""
+    try:
+        data = read_json(path)
+    except Exception as exc:
+        return f"Invalid JSON in export file {path.name}: {exc}"
+
+    return _check_bbt_export_data(data, path.name)
+
+
 def load_export_rows(path: Path) -> list[dict]:
-    problem = detect_bbt_export_problem(path)
+    data = read_json(path)
+    problem = _check_bbt_export_data(data, path.name)
     if problem:
         raise ValueError(problem)
-    data = read_json(path)
     if isinstance(data, list):
         return data
     if isinstance(data, dict) and isinstance(data.get("items"), list):
