@@ -355,13 +355,11 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
       }),
       listAnnotations,
       adoptAnnotation,
-      clearAgentAnnotations: vi
-        .fn()
-        .mockResolvedValue({
-          paper_id: "P200",
-          deleted_count: 1,
-          deleted_ids: [],
-        }),
+      clearAgentAnnotations: vi.fn().mockResolvedValue({
+        paper_id: "P200",
+        deleted_count: 1,
+        deleted_ids: [],
+      }),
       deleteAnnotation: vi.fn(),
       promoteAnnotation: vi.fn(),
     } as any;
@@ -391,7 +389,7 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
         ".pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-margin-bracket"
       )
     ).toHaveLength(1);
-    expect(view.contentEl.textContent).toContain("🤖 AI · skeleton");
+    expect(view.contentEl.textContent).toContain("AI · skeleton");
 
     // Toggle AI layer off -> hides AI overlays & cards
     const aiToggle = view.contentEl.querySelector(
@@ -419,6 +417,168 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
     adoptBtn.click();
     await vi.waitFor(() => {
       expect(adoptAnnotation).toHaveBeenCalledWith("P200", "ann_ai_01");
+    });
+  });
+
+  it("supports Preview split highlight (no popup), collapsible Markup bar SVG/textbox, and note citation copy", async () => {
+    const addAnnotation = vi.fn().mockImplementation(async (_k, input) => ({
+      ann_id: `ann_mk_${Math.random().toString(16).slice(2, 6)}`,
+      paper_id: "P300",
+      page: input.page,
+      kind: input.kind,
+      color: input.color,
+      intent: input.intent ?? "general",
+      exact_text: input.exact_text ?? "",
+      comment: input.comment ?? "",
+      tags: [],
+      rects: input.rects,
+      style: input.style ?? {},
+      section_path: "",
+      block_id: "",
+      figure_id: "",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "sha3",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      provenance_status: "verified",
+    }));
+
+    const client: any = {
+      getPdfContext: vi.fn().mockResolvedValue({
+        paper_id: "P300",
+        title: "Preview UX Paper",
+        pdf_abs_path: "D:/Z/P300.pdf",
+        pdf_vault_rel: "Z/P300.pdf",
+        pdf_locator: "Z/P300.pdf",
+        is_vault_relative: true,
+        pdf_sha256: "sha3",
+        page_count: 1,
+        workspace_rel: "Literature/P300",
+        note_rel_path: "Literature/P300/P300.md",
+        annotations: [
+          {
+            ann_id: "ann_prev_1",
+            paper_id: "P300",
+            page: 1,
+            kind: "shape",
+            color: "red",
+            intent: "general",
+            exact_text: "",
+            comment: "",
+            tags: [],
+            rects: [[0.2, 0.2, 0.5, 0.4]],
+            style: {
+              shape_type: "arrow",
+              stroke_color: "#d64545",
+              stroke_width: 2,
+            },
+            section_path: "Methods",
+            block_id: "",
+            figure_id: "",
+            crop_asset_rel: "",
+            embed_wikilink: "",
+            pdf_sha256: "sha3",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+            provenance_status: "verified",
+          },
+          {
+            ann_id: "ann_prev_2",
+            paper_id: "P300",
+            page: 1,
+            kind: "highlight",
+            color: "yellow",
+            intent: "general",
+            exact_text: "Anterior tunnel angle was 24 deg.",
+            comment: "",
+            tags: [],
+            rects: [[0.1, 0.5, 0.6, 0.54]],
+            section_path: "Results",
+            block_id: "",
+            figure_id: "",
+            crop_asset_rel: "",
+            embed_wikilink: "",
+            pdf_sha256: "sha3",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+            provenance_status: "verified",
+          },
+        ],
+      }),
+      listAnnotations: vi.fn().mockResolvedValue([]),
+      addAnnotation,
+    };
+
+    const view = new PaperForgePdfView({} as any, {
+      getClient: () => client,
+    }) as any;
+    view.app = {
+      vault: { adapter: { getResourcePath: (p: string) => p } },
+      workspace: { on: vi.fn().mockReturnValue({}), offref: vi.fn() },
+    };
+    await view.onOpen();
+    await view.setState({ paperKey: "P300", page: 1 }, { history: false });
+
+    // Initial state renders arrow SVG shape & zero unsolicited create popovers
+    expect(
+      view.contentEl.querySelectorAll(".pf-pdf-svg-layer line")
+    ).toHaveLength(1);
+    expect(
+      view.contentEl.querySelector('[data-pf-testid="pdf-create-popover"]')
+    ).toBeNull();
+
+    // Plain mouseup in select mode creates ZERO popup and does NOT call addAnnotation
+    const pageEl = view.contentEl.querySelector(".pf-pdf-page") as HTMLElement;
+    pageEl.dispatchEvent(
+      new dom.window.MouseEvent("mouseup", { bubbles: true })
+    );
+    expect(addAnnotation).not.toHaveBeenCalled();
+    expect(
+      view.contentEl.querySelector('[data-pf-testid="pdf-create-popover"]')
+    ).toBeNull();
+
+    // Toggling highlight split button activates continuous mode; dropdown selects underline + green
+    const hlBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-highlight-tool"]'
+    ) as HTMLButtonElement;
+    hlBtn.click();
+    expect(hlBtn.classList.contains("is-active")).toBe(true);
+
+    const menuBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-highlight-menu-btn"]'
+    ) as HTMLButtonElement;
+    menuBtn.click();
+    const underlineOpt = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-menu-underline"]'
+    ) as HTMLButtonElement;
+    underlineOpt.click();
+    expect(view._highlightKind).toBe("underline");
+
+    // Markup toggle expands secondary bar & activates textbox tool
+    const markupBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-markup-toggle"]'
+    ) as HTMLButtonElement;
+    markupBtn.click();
+    const tbBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-tool-textbox"]'
+    ) as HTMLButtonElement;
+    tbBtn.click();
+    expect(tbBtn.classList.contains("is-active")).toBe(true);
+
+    // Zotero-style Copy Note Citation writes markdown link to clipboard
+    const writeClip = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      value: { writeText: writeClip },
+      configurable: true,
+    });
+    const citeBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-copy-citation-btn"]'
+    ) as HTMLButtonElement;
+    citeBtn.click();
+    await vi.waitFor(() => {
+      expect(writeClip).toHaveBeenCalledTimes(1);
+      expect(writeClip.mock.calls[0][0]).toContain("P300.md|P300 p.1");
     });
   });
 

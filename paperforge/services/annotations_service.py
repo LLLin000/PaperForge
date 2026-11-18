@@ -26,9 +26,23 @@ from paperforge.worker.asset_index import read_index
 
 logger = logging.getLogger(__name__)
 
-VALID_KINDS = frozenset({"highlight", "area", "note", "margin"})
+VALID_KINDS = frozenset(
+    {
+        "highlight",
+        "underline",
+        "strikethrough",
+        "area",
+        "note",
+        "textbox",
+        "shape",
+        "ink",
+        "margin",
+    }
+)
 VALID_INTENTS = frozenset({"evidence", "question", "method", "quote", "general"})
-VALID_COLORS = frozenset({"yellow", "green", "blue", "red", "purple"})
+VALID_COLORS = frozenset(
+    {"yellow", "green", "blue", "pink", "red", "purple", "ink", "gray", "transparent"}
+)
 VALID_AUTHORS = frozenset({"user", "agent"})
 
 
@@ -56,6 +70,41 @@ def _normalize_rects(rects: list[list[float]] | None) -> list[list[float]]:
     if not rects:
         return []
     return [_normalize_rect(r) for r in rects]
+
+
+def _normalize_style(raw: dict[str, Any] | None) -> dict[str, Any]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError("style must be a JSON object")
+    out: dict[str, Any] = {}
+    if "shape_type" in raw and raw["shape_type"] is not None:
+        st = str(raw["shape_type"]).strip().lower()
+        if st not in {"rect", "ellipse", "arrow", "line"}:
+            raise ValueError(f"Unsupported shape_type {st!r}")
+        out["shape_type"] = st
+    for color_key in ("stroke_color", "fill_color"):
+        if color_key in raw and raw[color_key] is not None:
+            out[color_key] = str(raw[color_key]).strip()
+    if "stroke_width" in raw and raw["stroke_width"] is not None:
+        out["stroke_width"] = round(max(0.5, min(16.0, float(raw["stroke_width"]))), 2)
+    if "font_size" in raw and raw["font_size"] is not None:
+        out["font_size"] = int(max(8, min(48, round(float(raw["font_size"])))))
+    if "opacity" in raw and raw["opacity"] is not None:
+        out["opacity"] = round(max(0.05, min(1.0, float(raw["opacity"]))), 3)
+    if "points" in raw and raw["points"] is not None:
+        pts_raw = raw["points"]
+        if not isinstance(pts_raw, list):
+            raise ValueError("style.points must be a list of [x, y] pairs")
+        norm_pts: list[list[float]] = []
+        for pt in pts_raw:
+            if not isinstance(pt, (list, tuple)) or len(pt) != 2:
+                raise ValueError("Each point in style.points must be [x, y]")
+            px = round(max(0.0, min(1.0, float(pt[0]))), 5)
+            py = round(max(0.0, min(1.0, float(pt[1]))), 5)
+            norm_pts.append([px, py])
+        out["points"] = norm_pts
+    return out
 
 
 def _resolve_pdf_from_item(
@@ -358,8 +407,8 @@ def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_i
                         ann_id, paper_id, page, kind, color, intent, author, lens,
                         grounding_tier, exact_text, comment, section_path, block_id,
                         figure_id, rects_json, crop_asset_rel, embed_wikilink,
-                        tags_json, pdf_sha256, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        tags_json, style_json, pdf_sha256, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         record["ann_id"],
                         record["paper_id"],
@@ -379,6 +428,7 @@ def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_i
                         record.get("crop_asset_rel", ""),
                         record.get("embed_wikilink", ""),
                         json.dumps(record.get("tags", []), ensure_ascii=False),
+                        json.dumps(record.get("style") or {}, ensure_ascii=False),
                         record.get("pdf_sha256", ""),
                         record.get("created_at", ""),
                         record.get("updated_at", ""),
@@ -481,6 +531,7 @@ def add_annotation(
     exact_text: str = "",
     comment: str = "",
     tags: list[str] | None = None,
+    style: dict[str, Any] | None = None,
     section_hint: str = "",
     figure_hint: str = "",
 ) -> dict[str, Any]:
@@ -499,6 +550,7 @@ def add_annotation(
     norm_rects = _normalize_rects(rects)
     if not norm_rects:
         raise ValueError("rects must contain at least one [x0, y0, x1, y1] box")
+    norm_style = _normalize_style(style)
 
     vault_root = Path(vault).expanduser().resolve()
     paths = paperforge_paths(vault_root)
@@ -555,6 +607,7 @@ def add_annotation(
         "comment": comment,
         "tags": list(tags or []),
         "rects": norm_rects,
+        "style": norm_style,
         "section_path": ocr_binding["section_path"] or str(section_hint or ""),
         "block_id": ocr_binding["block_id"],
         "figure_id": ocr_binding["figure_id"] or str(figure_hint or ""),
@@ -586,11 +639,17 @@ def update_annotation(
     intent: str | None = None,
     comment: str | None = None,
     tags: list[str] | None = None,
+    style: dict[str, Any] | None = None,
+    rects: list[list[float]] | None = None,
 ) -> dict[str, Any]:
     if color is not None and color not in VALID_COLORS:
         raise ValueError(f"Unsupported color {color!r}")
     if intent is not None and intent not in VALID_INTENTS:
         raise ValueError(f"Unsupported intent {intent!r}")
+    norm_style = _normalize_style(style) if style is not None else None
+    norm_rects = _normalize_rects(rects) if rects is not None else None
+    if rects is not None and not norm_rects:
+        raise ValueError("rects must contain at least one [x0, y0, x1, y1] box")
 
     vault_root = Path(vault).expanduser().resolve()
     _, ws_dir = _resolve_paper_location(vault_root, paper_key)
@@ -604,6 +663,8 @@ def update_annotation(
         patch["comment"] = comment
     if tags is not None:
         patch["tags"] = list(tags)
+    if norm_rects is not None:
+        patch["rects"] = norm_rects
 
     now = _utcnow_iso()
     lock = FileLock(str(jsonl_path) + ".lock", timeout=10)
@@ -611,6 +672,10 @@ def update_annotation(
         state = _replay_jsonl_events(jsonl_path)
         if ann_id not in state:
             raise ValueError(f"Annotation not found: {ann_id}")
+        if norm_style is not None:
+            merged_style = dict(state[ann_id].get("style") or {})
+            merged_style.update(norm_style)
+            patch["style"] = merged_style
         state[ann_id].update(patch)
         state[ann_id]["updated_at"] = now
         updated_rec = dict(state[ann_id])

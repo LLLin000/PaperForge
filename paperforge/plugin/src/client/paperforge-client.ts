@@ -147,14 +147,42 @@ export interface RenderAuditIssue {
   [key: string]: unknown;
 }
 
-export type AnnotationKind = "highlight" | "area" | "note" | "margin";
-export type AnnotationColor = "yellow" | "green" | "blue" | "red" | "purple";
+export type AnnotationKind =
+  | "highlight"
+  | "underline"
+  | "strikethrough"
+  | "area"
+  | "note"
+  | "textbox"
+  | "shape"
+  | "ink"
+  | "margin";
+export type AnnotationColor =
+  | "yellow"
+  | "green"
+  | "blue"
+  | "pink"
+  | "red"
+  | "purple"
+  | "ink"
+  | "gray"
+  | "transparent";
 export type AnnotationIntent =
   | "evidence"
   | "question"
   | "method"
   | "quote"
   | "general";
+
+export interface AnnotationStyleDto {
+  shape_type?: "rect" | "ellipse" | "arrow" | "line";
+  stroke_color?: string;
+  fill_color?: string;
+  stroke_width?: number;
+  font_size?: number;
+  points?: number[][];
+  opacity?: number;
+}
 
 export interface PdfAnnotationDto {
   ann_id: string;
@@ -170,6 +198,7 @@ export interface PdfAnnotationDto {
   comment: string;
   tags: string[];
   rects: number[][];
+  style?: AnnotationStyleDto;
   section_path: string;
   block_id: string;
   figure_id: string;
@@ -2007,6 +2036,7 @@ export class PaperForgeClient {
       exact_text?: string;
       comment?: string;
       tags?: string[];
+      style?: AnnotationStyleDto;
     }
   ): Promise<PdfAnnotationDto> {
     const argv: string[] = [
@@ -2029,8 +2059,11 @@ export class PaperForgeClient {
       input.comment ?? "",
       "--tags-json",
       JSON.stringify(input.tags ?? []),
-      "--json",
     ];
+    if (input.style && Object.keys(input.style).length > 0) {
+      argv.push("--style-json", JSON.stringify(input.style));
+    }
+    argv.push("--json");
     try {
       return await this._executePfResult<PdfAnnotationDto>(argv, {
         timeoutMs: 30000,
@@ -2048,6 +2081,8 @@ export class PaperForgeClient {
       intent?: AnnotationIntent | string;
       comment?: string;
       tags?: string[];
+      style?: AnnotationStyleDto;
+      rects?: number[][];
     }
   ): Promise<PdfAnnotationDto> {
     const argv: string[] = ["annotations", "update", paperKey, annId];
@@ -2056,6 +2091,10 @@ export class PaperForgeClient {
     if (patch.comment !== undefined) argv.push("--comment", patch.comment);
     if (patch.tags !== undefined)
       argv.push("--tags-json", JSON.stringify(patch.tags));
+    if (patch.style !== undefined)
+      argv.push("--style-json", JSON.stringify(patch.style));
+    if (patch.rects !== undefined)
+      argv.push("--rects-json", JSON.stringify(patch.rects));
     argv.push("--json");
     try {
       return await this._executePfResult<PdfAnnotationDto>(argv);

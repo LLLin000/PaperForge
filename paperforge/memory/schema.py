@@ -321,6 +321,7 @@ CREATE TABLE IF NOT EXISTS paper_annotations (
     crop_asset_rel TEXT NOT NULL DEFAULT '',
     embed_wikilink TEXT NOT NULL DEFAULT '',
     tags_json      TEXT NOT NULL DEFAULT '[]',
+    style_json     TEXT NOT NULL DEFAULT '{}',
     pdf_sha256     TEXT NOT NULL DEFAULT '',
     created_at     TEXT NOT NULL,
     updated_at     TEXT NOT NULL,
@@ -404,6 +405,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         ("author", "TEXT NOT NULL DEFAULT 'user'"),
         ("lens", "TEXT NOT NULL DEFAULT ''"),
         ("grounding_tier", "TEXT NOT NULL DEFAULT 'manual'"),
+        ("style_json", "TEXT NOT NULL DEFAULT '{}'"),
     ):
         if col_name not in existing_ann_cols:
             conn.execute(f"ALTER TABLE paper_annotations ADD COLUMN {col_name} {col_def}")

@@ -265,3 +265,104 @@ def test_annotations_cli_json_roundtrip(tmp_path: Path, capsys) -> None:
     assert prev["ok"] is True
     assert "Internal OCR Preview" in prev["data"]["content"]
     assert prev["data"]["total_lines"] == 2
+
+
+def test_markup_kinds_style_json_and_sqlite_persistence(tmp_path: Path, capsys) -> None:
+    vault, _, _ = _setup_annotated_paper_vault(tmp_path, key="MKANN01")
+
+    u = add_annotation(
+        vault,
+        "MKANN01",
+        page=1,
+        rects=[[0.1, 0.2, 0.6, 0.24]],
+        kind="underline",
+        color="pink",
+        exact_text="Key result under test",
+    )
+    assert u["kind"] == "underline"
+    assert u["color"] == "pink"
+
+    arr = add_annotation(
+        vault,
+        "MKANN01",
+        page=1,
+        rects=[[0.2, 0.3, 0.5, 0.45]],
+        kind="shape",
+        color="red",
+        style={"shape_type": "arrow", "stroke_color": "#d64545", "stroke_width": 2.5},
+    )
+    assert arr["style"]["shape_type"] == "arrow"
+
+    ink = add_annotation(
+        vault,
+        "MKANN01",
+        page=1,
+        rects=[[0.15, 0.5, 0.45, 0.62]],
+        kind="ink",
+        color="ink",
+        style={"points": [[0.15, 0.5], [0.3, 0.55], [0.45, 0.62]], "stroke_width": 2.0},
+    )
+    assert ink["kind"] == "ink"
+    assert len(ink["style"]["points"]) == 3
+
+    tb = add_annotation(
+        vault,
+        "MKANN01",
+        page=1,
+        rects=[[0.5, 0.7, 0.85, 0.78]],
+        kind="textbox",
+        color="transparent",
+        comment="Check sample size",
+        style={"font_size": 14, "stroke_color": "#5b45c9"},
+    )
+    assert tb["kind"] == "textbox"
+    assert tb["style"]["font_size"] == 14
+
+    upd = update_annotation(
+        vault,
+        "MKANN01",
+        tb["ann_id"],
+        rects=[[0.52, 0.72, 0.88, 0.8]],
+        style={"font_size": 16},
+    )
+    assert upd["rects"] == [[0.52, 0.72, 0.88, 0.8]]
+    assert upd["style"]["font_size"] == 16
+    assert upd["style"]["stroke_color"] == "#5b45c9"
+
+    build_for_keys(vault)
+    conn = get_connection(get_memory_db_path(vault), read_only=True)
+    try:
+        rows = conn.execute(
+            "SELECT ann_id, kind, style_json FROM paper_annotations WHERE paper_id = ?",
+            ("MKANN01",),
+        ).fetchall()
+        by_id = {r["ann_id"]: json.loads(r["style_json"]) for r in rows}
+        assert by_id[arr["ann_id"]]["shape_type"] == "arrow"
+        assert by_id[tb["ann_id"]]["font_size"] == 16
+    finally:
+        conn.close()
+
+    rc = cli_main(
+        [
+            "--vault",
+            str(vault),
+            "annotations",
+            "add",
+            "MKANN01",
+            "--page",
+            "1",
+            "--rects-json",
+            "[[0.12, 0.14, 0.42, 0.24]]",
+            "--kind",
+            "shape",
+            "--color",
+            "blue",
+            "--style-json",
+            '{"shape_type": "rect", "stroke_width": 3}',
+            "--json",
+        ]
+    )
+    assert rc == 0
+    cli_payload = json.loads(capsys.readouterr().out)
+    assert cli_payload["ok"] is True
+    assert cli_payload["data"]["style"]["shape_type"] == "rect"

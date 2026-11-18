@@ -798,25 +798,40 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_list.add_argument("key", help="Canonical Zotero paper key")
     p_ann_list.add_argument("--json", action="store_true", help="Output JSON")
 
-    p_ann_add = p_ann_sub.add_parser("add", help="Add a highlight/area/note annotation")
+    p_ann_add = p_ann_sub.add_parser("add", help="Add a highlight/markup/area/note annotation")
     p_ann_add.add_argument("key", help="Canonical Zotero paper key")
     p_ann_add.add_argument("--page", type=int, required=True, help="1-based physical page number")
     p_ann_add.add_argument("--rects-json", required=True, help="JSON list of normalized [x0,y0,x1,y1] boxes")
-    p_ann_add.add_argument("--kind", default="highlight", choices=["highlight", "area", "note"])
-    p_ann_add.add_argument("--color", default="yellow", choices=["yellow", "green", "blue", "red", "purple"])
+    p_ann_add.add_argument(
+        "--kind",
+        default="highlight",
+        choices=["highlight", "underline", "strikethrough", "area", "note", "textbox", "shape", "ink", "margin"],
+    )
+    p_ann_add.add_argument(
+        "--color",
+        default="yellow",
+        choices=["yellow", "green", "blue", "pink", "red", "purple", "ink", "gray", "transparent"],
+    )
     p_ann_add.add_argument("--intent", default="general", choices=["evidence", "question", "method", "quote", "general"])
     p_ann_add.add_argument("--exact-text", default="", help="Selected exact text")
     p_ann_add.add_argument("--comment", default="", help="Annotation comment")
     p_ann_add.add_argument("--tags-json", default="[]", help="JSON list of tags")
+    p_ann_add.add_argument("--style-json", default="{}", help="JSON object describing markup style and geometry")
     p_ann_add.add_argument("--json", action="store_true", help="Output JSON")
 
     p_ann_upd = p_ann_sub.add_parser("update", help="Update an existing annotation")
     p_ann_upd.add_argument("key", help="Canonical Zotero paper key")
     p_ann_upd.add_argument("ann_id", help="Annotation ID")
-    p_ann_upd.add_argument("--color", default=None, choices=["yellow", "green", "blue", "red", "purple"])
+    p_ann_upd.add_argument(
+        "--color",
+        default=None,
+        choices=["yellow", "green", "blue", "pink", "red", "purple", "ink", "gray", "transparent"],
+    )
     p_ann_upd.add_argument("--intent", default=None, choices=["evidence", "question", "method", "quote", "general"])
     p_ann_upd.add_argument("--comment", default=None, help="Updated comment")
     p_ann_upd.add_argument("--tags-json", default=None, help="JSON list of tags")
+    p_ann_upd.add_argument("--style-json", default=None, help="JSON object describing updated markup style")
+    p_ann_upd.add_argument("--rects-json", default=None, help="Updated JSON list of normalized [x0,y0,x1,y1] boxes")
     p_ann_upd.add_argument("--json", action="store_true", help="Output JSON")
 
     p_ann_del = p_ann_sub.add_parser("delete", help="Delete an annotation")

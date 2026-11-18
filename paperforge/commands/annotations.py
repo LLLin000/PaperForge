@@ -42,6 +42,8 @@ def run(args: argparse.Namespace) -> int:
             rects = json.loads(rects_raw)
             tags_raw = getattr(args, "tags_json", "[]") or "[]"
             tags = json.loads(tags_raw) if isinstance(tags_raw, str) else list(tags_raw)
+            style_raw = getattr(args, "style_json", "{}") or "{}"
+            style = json.loads(style_raw) if isinstance(style_raw, str) else dict(style_raw)
             data = add_annotation(
                 vault,
                 paper_key,
@@ -53,10 +55,19 @@ def run(args: argparse.Namespace) -> int:
                 exact_text=str(getattr(args, "exact_text", "") or ""),
                 comment=str(getattr(args, "comment", "") or ""),
                 tags=tags,
+                style=style,
             )
         elif verb == "update":
             tags_arg = getattr(args, "tags_json", None)
             tags = json.loads(tags_arg) if tags_arg is not None else None
+            style_arg = getattr(args, "style_json", None)
+            style = (
+                json.loads(style_arg)
+                if isinstance(style_arg, str)
+                else (dict(style_arg) if style_arg is not None else None)
+            )
+            rects_arg = getattr(args, "rects_json", None)
+            rects = json.loads(rects_arg) if isinstance(rects_arg, str) else rects_arg
             data = update_annotation(
                 vault,
                 paper_key,
@@ -65,6 +76,8 @@ def run(args: argparse.Namespace) -> int:
                 intent=getattr(args, "intent", None),
                 comment=getattr(args, "comment", None),
                 tags=tags,
+                style=style,
+                rects=rects,
             )
         elif verb == "delete":
             data = delete_annotation(vault, paper_key, str(args.ann_id))

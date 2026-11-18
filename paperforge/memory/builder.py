@@ -152,8 +152,8 @@ def _import_paper_annotations(
                     ann_id, paper_id, page, kind, color, intent, author, lens,
                     grounding_tier, exact_text, comment, section_path, block_id,
                     figure_id, rects_json, crop_asset_rel, embed_wikilink,
-                    tags_json, pdf_sha256, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    tags_json, style_json, pdf_sha256, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     rec["ann_id"],
                     pid,
@@ -173,6 +173,7 @@ def _import_paper_annotations(
                     rec.get("crop_asset_rel", ""),
                     rec.get("embed_wikilink", ""),
                     json.dumps(rec.get("tags", []), ensure_ascii=False),
+                    json.dumps(rec.get("style") or {}, ensure_ascii=False),
                     rec.get("pdf_sha256", ""),
                     rec.get("created_at", ""),
                     rec.get("updated_at", ""),
