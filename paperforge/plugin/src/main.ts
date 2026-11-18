@@ -1,4 +1,6 @@
 import type { ActionRequest, ActionScope } from "./client/action-contract";
+import * as fs from "fs";
+import * as path from "path";
 import { Plugin, Notice, Modal, Setting, App } from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
@@ -34,6 +36,7 @@ import {
   VIEW_TYPE_PAPERFORGE,
   VIEW_TYPE_OCR_WORKSPACE,
   VIEW_TYPE_PAPERFORGE_PDF,
+  VIEW_TYPE_PF_BASE_TABLE,
   PF_ICON_ID,
   ACTIONS,
   DEFAULT_SETTINGS,
@@ -49,6 +52,7 @@ import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
+import { PaperForgeBasesView } from "./views/paperforge-base-view";
 import {
   PaperForgePdfView,
   type PdfAnnotatorOpenState,
@@ -57,8 +61,14 @@ import { PaperForgeConfirmModal } from "./views/modals";
 import {
   applyPathConfigFromList,
   isConfigHydrated,
+  readPathConfig,
+  resolveVaultPaths,
 } from "./services/runtime-paths";
-import { PaperForgeClient, NodeProcessTransport } from "./client";
+import {
+  PaperForgeClient,
+  NodeProcessTransport,
+  type BaseTableSnapshotDto,
+} from "./client";
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
 export default class PaperForgePlugin extends Plugin {
@@ -78,6 +88,10 @@ export default class PaperForgePlugin extends Plugin {
   _memoryStatusText: string | null = null;
   _ocrProgress = { current: 0, total: 1, key: "" };
   private _settingTab: PaperForgeSettingTab | null = null;
+  private _baseSnapshotCache: BaseTableSnapshotDto | null = null;
+  private _lastStateSeq = -1;
+  private _stateSeqWatcher: fs.FSWatcher | null = null;
+  private _stateSeqTimer: ReturnType<typeof setTimeout> | null = null;
 
   private _client: PaperForgeClient | null = null;
 
@@ -279,6 +293,9 @@ export default class PaperForgePlugin extends Plugin {
                 failedKeys.push(String(event.item_id ?? ""));
               }
               this._settingTab?.display();
+              this._emitStateChanged(
+                this._ocrProgress.key ? [this._ocrProgress.key] : []
+              );
             }
           },
         });
@@ -361,12 +378,29 @@ export default class PaperForgePlugin extends Plugin {
       (leaf) => new PaperForgePdfView(leaf, this)
     );
 
+    const regBases = (
+      this as unknown as {
+        registerBasesView?: (
+          viewType: string,
+          registration: unknown
+        ) => boolean;
+      }
+    ).registerBasesView;
+    if (typeof regBases === "function") {
+      regBases.call(this, VIEW_TYPE_PF_BASE_TABLE, {
+        name: t("base_view_name") || "PaperForge 文献工作台",
+        icon: "library",
+        factory: (controller: unknown, containerEl: HTMLElement) =>
+          new PaperForgeBasesView(controller as any, containerEl, this),
+      });
+    }
+
     this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () =>
       PaperForgeStatusView.open(this as any)
     );
-    this.addRibbonIcon("scan-text", "PaperForge OCR Workspace", () =>
-      OcrWorkspaceView.open(this as any)
-    );
+    this.addRibbonIcon("library", "PaperForge Literature Hub", () => {
+      void this.openLiteratureBase();
+    });
 
     // #99 (owner decision): redo is an internal maintenance command, NOT
     // exposed to users. No ribbon, no command — the CLI keeps it.
@@ -377,6 +411,13 @@ export default class PaperForgePlugin extends Plugin {
       id: "paperforge-status-panel",
       name: t("guide_open"),
       callback: () => PaperForgeStatusView.open(this as any),
+    });
+    this.addCommand({
+      id: "paperforge-open-literature-base",
+      name: t("base_open_hub") || "Open Literature Hub Base",
+      callback: () => {
+        void this.openLiteratureBase();
+      },
     });
     this.addCommand({
       id: "paperforge-ocr-workspace",
@@ -472,6 +513,7 @@ export default class PaperForgePlugin extends Plugin {
           }
         })
         .catch(() => undefined);
+      this._startStateSeqWatcher(vaultBase);
     }
   }
 
@@ -593,6 +635,14 @@ export default class PaperForgePlugin extends Plugin {
           // Smart Retrieval card durably shows the pending embed CTA
           // instead of relying on the 8s Notice + convergence tick.
           this._settingTab?._refreshAllReadModels();
+          if (vaultPath) this._startStateSeqWatcher(vaultPath);
+          if (
+            typeof (
+              this.app as unknown as { workspace?: { trigger?: unknown } }
+            )?.workspace?.trigger === "function"
+          ) {
+            void this.refreshBaseSnapshot().catch(() => undefined);
+          }
         }
       } catch {
         ok = false;
@@ -648,8 +698,150 @@ export default class PaperForgePlugin extends Plugin {
     }
   }
 
+  getBaseSnapshotCache(): BaseTableSnapshotDto | null {
+    return this._baseSnapshotCache ?? null;
+  }
+
+  isOcrRunningForKey(key: string): boolean {
+    if (!key || this._ocrProgress?.key !== key) return false;
+    try {
+      return this.getClient().isOperationActive();
+    } catch {
+      return false;
+    }
+  }
+
+  private _emitStateChanged(changedKeys: string[] = []): void {
+    const ws = (
+      this.app as unknown as {
+        workspace?: { trigger?: (name: string, data?: unknown) => void };
+      }
+    )?.workspace;
+    if (typeof ws?.trigger === "function") {
+      ws.trigger("paperforge:state-changed", {
+        snapshot: this._baseSnapshotCache,
+        changedKeys,
+      });
+    }
+  }
+
+  async refreshBaseSnapshot(
+    changedKeys: string[] = []
+  ): Promise<BaseTableSnapshotDto | null> {
+    try {
+      const snap = await this.getClient().getBaseTableSnapshot();
+      this._baseSnapshotCache = snap;
+      if (typeof snap?.seq === "number") {
+        this._lastStateSeq = snap.seq;
+      }
+      this._emitStateChanged(changedKeys);
+      return snap;
+    } catch {
+      return this._baseSnapshotCache;
+    }
+  }
+
+  triggerManualSync(): void {
+    const vaultPath = (
+      this.app.vault.adapter as unknown as { basePath?: string }
+    )?.basePath;
+    if (vaultPath) {
+      new Notice("PaperForge: syncing library...");
+      this._autoSync(vaultPath);
+    }
+  }
+
+  openOcrDiagnostic(_paperKey?: string): void {
+    void OcrWorkspaceView.open(this as any);
+  }
+
+  async openLiteratureBase(): Promise<void> {
+    const vaultBase =
+      (this.app.vault.adapter as unknown as { basePath?: string })?.basePath ??
+      "";
+    const cfgBase = vaultBase ? readPathConfig(vaultBase).base_dir : "";
+    const baseDir = (cfgBase || this.settings.base_dir || "").replace(
+      /[\\/]+$/,
+      ""
+    );
+    const preferredPath = baseDir ? `${baseDir}/Literature Hub.base` : "";
+    const targetFile =
+      (preferredPath &&
+        this.app.vault.getAbstractFileByPath?.(preferredPath)) ||
+      this.app.vault
+        .getFiles?.()
+        ?.find((f) => f.name === "Literature Hub.base") ||
+      null;
+    if (targetFile) {
+      await this.app.workspace.openLinkText(targetFile.path, "");
+      return;
+    }
+    if (preferredPath && typeof this.app.vault.adapter?.exists === "function") {
+      try {
+        if (await this.app.vault.adapter.exists(preferredPath)) {
+          await this.app.workspace.openLinkText(preferredPath, "");
+          return;
+        }
+      } catch {
+        // Fall through to dashboard
+      }
+    }
+    PaperForgeStatusView.open(this as any);
+  }
+
+  private _startStateSeqWatcher(vaultBase: string): void {
+    if (this._stateSeqWatcher || !vaultBase || !isConfigHydrated()) return;
+    let indexesDir = "";
+    try {
+      indexesDir = resolveVaultPaths(vaultBase).indexesDir;
+    } catch {
+      return;
+    }
+    if (!indexesDir || !fs.existsSync(indexesDir)) return;
+    const seqFile = path.join(indexesDir, ".state-seq.json");
+    const scheduleRefresh = () => {
+      if (this._stateSeqTimer) clearTimeout(this._stateSeqTimer);
+      this._stateSeqTimer = setTimeout(() => {
+        this._stateSeqTimer = null;
+        try {
+          if (!fs.existsSync(seqFile)) return;
+          const raw = JSON.parse(fs.readFileSync(seqFile, "utf-8")) as {
+            seq?: unknown;
+            changed_keys?: unknown;
+          };
+          const nextSeq = typeof raw.seq === "number" ? raw.seq : -1;
+          if (nextSeq > 0 && nextSeq === this._lastStateSeq) return;
+          if (nextSeq > 0) this._lastStateSeq = nextSeq;
+          const changedKeys = Array.isArray(raw.changed_keys)
+            ? raw.changed_keys.map((k) => String(k))
+            : [];
+          this.getClient().invalidateCache();
+          void this.refreshBaseSnapshot(changedKeys);
+        } catch {
+          // Ignore transient partial/locked read during atomic replace
+        }
+      }, 150);
+    };
+    try {
+      this._stateSeqWatcher = fs.watch(indexesDir, (_event, filename) => {
+        if (!filename || filename === ".state-seq.json") {
+          scheduleRefresh();
+        }
+      });
+    } catch {
+      this._stateSeqWatcher = null;
+    }
+  }
+
   onunload() {
     if (this._pollTimer) clearInterval(this._pollTimer);
+    if (this._stateSeqTimer) clearTimeout(this._stateSeqTimer);
+    try {
+      this._stateSeqWatcher?.close?.();
+    } catch {
+      // ignore watcher close errors
+    }
+    this._stateSeqWatcher = null;
     // In-flight embed/OCR operations are owned by the shared client's
     // OperationLock — cancelled below via cancelActiveOperation.
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);

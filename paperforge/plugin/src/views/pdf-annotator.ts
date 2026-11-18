@@ -1,5 +1,6 @@
 import {
   App,
+  EventRef,
   ItemView,
   Notice,
   Platform,
@@ -123,7 +124,8 @@ export class PaperForgePdfView extends ItemView {
   private _currentPage = 1;
   private _areaMode = false;
   private _sidebarOpen = true;
-  private _intentFilter: AnnotationIntent | "all" = "all";
+  private _authorFilter: "all" | "user" | "agent" = "all";
+  private _showAgentLayer = true;
   private _renderedPages = new Set<number>();
   private _renderingPages = new Set<number>();
   private _observer: IntersectionObserver | null = null;
@@ -131,6 +133,10 @@ export class PaperForgePdfView extends ItemView {
   private _scrollEl: HTMLElement | null = null;
   private _sidebarListEl: HTMLElement | null = null;
   private _popoverEl: HTMLElement | null = null;
+  private _aiToggleBtn: HTMLButtonElement | null = null;
+  private _clearAiBtn: HTMLButtonElement | null = null;
+  private _sideToggleBtn: HTMLButtonElement | null = null;
+  private _stateRef: EventRef | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: PdfPluginHost) {
     super(leaf);
@@ -175,6 +181,7 @@ export class PaperForgePdfView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    this._subscribeStateChanges();
     if (this._state.paperKey) {
       await this._loadAndRender();
     } else {
@@ -186,7 +193,63 @@ export class PaperForgePdfView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    const ws = (
+      this.app as unknown as {
+        workspace?: { offref?: (ref: EventRef) => void };
+      }
+    )?.workspace;
+    if (this._stateRef && typeof ws?.offref === "function") {
+      ws.offref(this._stateRef);
+    }
+    this._stateRef = null;
     this._teardownDocument();
+  }
+
+  private _subscribeStateChanges(): void {
+    if (this._stateRef) return;
+    const ws = (
+      this.app as unknown as {
+        workspace?: {
+          on?: (ev: string, cb: (payload?: unknown) => void) => EventRef;
+        };
+      }
+    )?.workspace;
+    if (typeof ws?.on === "function") {
+      this._stateRef = ws.on(
+        "paperforge:state-changed",
+        (payload?: unknown) => {
+          if (!this._state.paperKey || !this._doc) return;
+          const changed = (payload as { changedKeys?: string[] } | undefined)
+            ?.changedKeys;
+          if (
+            Array.isArray(changed) &&
+            changed.length > 0 &&
+            !changed.includes(this._state.paperKey)
+          ) {
+            return;
+          }
+          void this._reloadAnnotationsOnly();
+        }
+      );
+    }
+  }
+
+  private async _reloadAnnotationsOnly(): Promise<void> {
+    const key = this._state.paperKey;
+    if (!key) return;
+    const client = this.plugin.getClient() as unknown as {
+      listAnnotations?: (paperKey: string) => Promise<PdfAnnotationDto[]>;
+    };
+    if (typeof client?.listAnnotations !== "function") return;
+    try {
+      const next = await client.listAnnotations(key);
+      if (this._state.paperKey !== key || !Array.isArray(next)) return;
+      this._annotations = next;
+      this._refreshOverlays();
+      this._renderSidebarList();
+    } catch {
+      // Ignore transient refresh failure while external writer finishes
+    }
   }
 
   private _teardownDocument(): void {
@@ -387,6 +450,27 @@ export class PaperForgePdfView extends ItemView {
       text: `📋 ${this._annotations.length}`,
       attr: { "data-pf-testid": "pdf-toggle-sidebar" },
     });
+    this._sideToggleBtn = sideToggle;
+
+    const agentCount = this._annotations.filter(
+      (a) => a.author === "agent"
+    ).length;
+    const aiToggle = controls.createEl("button", {
+      cls: `pf-btn ${this._showAgentLayer ? "mod-cta" : "pf-btn-secondary"}`,
+      text: `${t("pdf_ai_layer_toggle") || "🤖 AI 批注层"} (${agentCount})`,
+      attr: { "data-pf-testid": "pdf-toggle-ai-layer" },
+    });
+    this._aiToggleBtn = aiToggle;
+    aiToggle.addEventListener("click", () => {
+      this._showAgentLayer = !this._showAgentLayer;
+      if (!this._showAgentLayer && this._authorFilter === "agent") {
+        this._authorFilter = "all";
+      }
+      aiToggle.toggleClass("mod-cta", this._showAgentLayer);
+      aiToggle.toggleClass("pf-btn-secondary", !this._showAgentLayer);
+      this._refreshOverlays();
+      this._renderSidebarList();
+    });
 
     const body = root.createDiv({ cls: "pf-pdf-body" });
     this._scrollEl = body.createDiv({ cls: "pf-pdf-scroll" });
@@ -399,20 +483,25 @@ export class PaperForgePdfView extends ItemView {
     });
 
     const filterBar = sidebar.createDiv({ cls: "pf-pdf-filter-bar" });
-    const filters: Array<[AnnotationIntent | "all", string]> = [
+    const filters: Array<["all" | "user" | "agent", string]> = [
       ["all", t("pdf_filter_all") || "全部"],
-      ["evidence", "💡 证据"],
-      ["question", "❓ 存疑"],
-      ["method", "🧪 方法"],
-      ["quote", "✍️ 引述"],
+      ["user", t("pdf_filter_mine") || "🖍️ 我的批注"],
+      ["agent", t("pdf_filter_ai") || "🤖 AI 领读"],
     ];
     for (const [id, label] of filters) {
       const chip = filterBar.createEl("button", {
-        cls: `pf-pdf-filter-chip ${this._intentFilter === id ? "is-active" : ""}`,
+        cls: `pf-pdf-filter-chip ${this._authorFilter === id ? "is-active" : ""}`,
         text: label,
+        attr: { "data-author-filter": id },
       });
       chip.addEventListener("click", () => {
-        this._intentFilter = id;
+        this._authorFilter = id;
+        if (id === "agent" && !this._showAgentLayer) {
+          this._showAgentLayer = true;
+          this._aiToggleBtn?.toggleClass("mod-cta", true);
+          this._aiToggleBtn?.toggleClass("pf-btn-secondary", false);
+          this._refreshOverlays();
+        }
         filterBar
           .querySelectorAll(".pf-pdf-filter-chip")
           .forEach((el) => el.classList.remove("is-active"));
@@ -420,6 +509,32 @@ export class PaperForgePdfView extends ItemView {
         this._renderSidebarList();
       });
     }
+
+    const clearAiBtn = filterBar.createEl("button", {
+      cls: "pf-pdf-clear-ai-btn",
+      text: t("pdf_clear_ai_btn") || "🧹 清空 AI",
+      attr: { "data-pf-testid": "pdf-clear-ai-btn" },
+    });
+    clearAiBtn.style.display = agentCount > 0 ? "" : "none";
+    this._clearAiBtn = clearAiBtn;
+    clearAiBtn.addEventListener("click", () => {
+      void this.plugin
+        .getClient()
+        .clearAgentAnnotations(this._state.paperKey)
+        .then(() => {
+          this._annotations = this._annotations.filter(
+            (a) => a.author !== "agent"
+          );
+          this._refreshOverlays();
+          this._renderSidebarList();
+          new Notice(t("pdf_cleared_ai_notice") || "已清空 AI 批注层");
+        })
+        .catch((err) => {
+          new Notice(
+            `Clear AI failed: ${err instanceof Error ? err.message : String(err)}`
+          );
+        });
+    });
 
     this._sidebarListEl = sidebar.createDiv({ cls: "pf-pdf-ann-list" });
   }
@@ -655,7 +770,7 @@ export class PaperForgePdfView extends ItemView {
     });
   }
 
-  /** Open floating cognitive intent + color popover and persist via backend authority. */
+  /** Open floating color + note popover and persist via backend authority. */
   public _openCreatePopover(params: {
     anchorEl: HTMLElement;
     page: number;
@@ -672,8 +787,6 @@ export class PaperForgePdfView extends ItemView {
 
     let selectedColor: AnnotationColor =
       params.kind === "area" ? "blue" : "yellow";
-    let selectedIntent: AnnotationIntent =
-      params.kind === "area" ? "evidence" : "evidence";
 
     const swatchRow = pop.createDiv({ cls: "pf-pdf-swatch-row" });
     for (const sw of COLOR_SWATCHES) {
@@ -691,28 +804,6 @@ export class PaperForgePdfView extends ItemView {
           .querySelectorAll(".pf-pdf-swatch")
           .forEach((n) => n.classList.remove("is-selected"));
         btn.classList.add("is-selected");
-      });
-    }
-
-    const intentRow = pop.createDiv({ cls: "pf-pdf-intent-row" });
-    for (const intent of [
-      "evidence",
-      "question",
-      "method",
-      "quote",
-    ] as AnnotationIntent[]) {
-      const meta = INTENT_META[intent];
-      const pill = intentRow.createEl("button", {
-        cls: `pf-pdf-intent-pill ${intent === selectedIntent ? "is-selected" : ""}`,
-        text: `${meta.badge} ${t(meta.labelKey) || meta.fallback}`,
-        attr: { type: "button", "data-intent": intent },
-      });
-      pill.addEventListener("click", () => {
-        selectedIntent = intent;
-        intentRow
-          .querySelectorAll(".pf-pdf-intent-pill")
-          .forEach((n) => n.classList.remove("is-selected"));
-        pill.classList.add("is-selected");
       });
     }
 
@@ -751,7 +842,7 @@ export class PaperForgePdfView extends ItemView {
               rects: params.rects,
               kind: params.kind,
               color: selectedColor,
-              intent: selectedIntent,
+              intent: "general",
               exact_text: params.exactText,
               comment: commentInput.value.trim(),
             });
@@ -792,10 +883,18 @@ export class PaperForgePdfView extends ItemView {
     layer.empty();
     for (const ann of this._annotations) {
       if (ann.page !== pageNumber) continue;
+      if (ann.author === "agent" && !this._showAgentLayer) continue;
+      const boxClasses = [
+        "pf-pdf-ann-box",
+        `pf-pdf-ann--${ann.color || "yellow"}`,
+        `pf-pdf-ann-kind--${ann.kind}`,
+      ];
+      if (ann.author === "agent") boxClasses.push("pf-pdf-hl-agent");
+      if (ann.kind === "margin") boxClasses.push("pf-pdf-margin-bracket");
       for (const rect of ann.rects || []) {
         if (!Array.isArray(rect) || rect.length < 4) continue;
         const box = layer.createDiv({
-          cls: `pf-pdf-ann-box pf-pdf-ann--${ann.color || "yellow"} pf-pdf-ann-kind--${ann.kind}`,
+          cls: boxClasses.join(" "),
           attr: {
             "data-ann-id": ann.ann_id,
             title: ann.comment || ann.exact_text || "",
@@ -810,13 +909,32 @@ export class PaperForgePdfView extends ItemView {
   }
 
   private _renderSidebarList(): void {
+    const agentCount = this._annotations.filter(
+      (a) => a.author === "agent"
+    ).length;
+    if (this._sideToggleBtn) {
+      this._sideToggleBtn.setText(`📋 ${this._annotations.length}`);
+    }
+    if (this._aiToggleBtn) {
+      this._aiToggleBtn.setText(
+        `${t("pdf_ai_layer_toggle") || "🤖 AI 批注层"} (${agentCount})`
+      );
+    }
+    if (this._clearAiBtn) {
+      this._clearAiBtn.style.display = agentCount > 0 ? "" : "none";
+    }
+
     const list = this._sidebarListEl;
     if (!list) return;
     list.empty();
 
-    const filtered = this._annotations.filter(
-      (a) => this._intentFilter === "all" || a.intent === this._intentFilter
-    );
+    const filtered = this._annotations.filter((a) => {
+      const isAgent = a.author === "agent";
+      if (isAgent && !this._showAgentLayer) return false;
+      if (this._authorFilter === "user") return !isAgent;
+      if (this._authorFilter === "agent") return isAgent;
+      return true;
+    });
     if (!filtered.length) {
       list.createDiv({
         cls: "pf-pdf-sidebar-empty",
@@ -826,22 +944,36 @@ export class PaperForgePdfView extends ItemView {
     }
 
     for (const ann of filtered) {
+      const isAgent = ann.author === "agent";
       const card = list.createDiv({
-        cls: `pf-pdf-ann-card pf-pdf-ann--${ann.color || "yellow"}`,
+        cls: `pf-pdf-ann-card pf-pdf-ann--${ann.color || "yellow"}${isAgent ? " is-agent" : ""}`,
         attr: { "data-ann-id": ann.ann_id },
       });
       const head = card.createDiv({ cls: "pf-pdf-ann-card-head" });
-      const meta =
-        INTENT_META[(ann.intent as AnnotationIntent) || "general"] ??
-        INTENT_META.general;
-      head.createEl("span", {
-        cls: "pf-pdf-ann-intent",
-        text: `${meta.badge} ${t(meta.labelKey) || meta.fallback}`,
-      });
+      if (isAgent) {
+        head.createEl("span", {
+          cls: "pf-pdf-ann-intent pf-pdf-ann-agent-badge",
+          text: ann.lens ? `🤖 AI · ${ann.lens}` : "🤖 AI",
+        });
+      } else {
+        const meta =
+          INTENT_META[(ann.intent as AnnotationIntent) || "general"] ??
+          INTENT_META.general;
+        head.createEl("span", {
+          cls: "pf-pdf-ann-intent",
+          text: `${meta.badge} ${t(meta.labelKey) || meta.fallback}`,
+        });
+      }
       head.createEl("span", {
         cls: "pf-pdf-ann-page",
         text: `P.${ann.page}`,
       });
+      if (ann.kind === "margin") {
+        head.createEl("span", {
+          cls: "pf-pdf-ann-fig-badge",
+          text: t("pdf_margin_badge") || "页边定位",
+        });
+      }
       if (ann.figure_id) {
         head.createEl("span", {
           cls: "pf-pdf-ann-fig-badge",
@@ -887,6 +1019,32 @@ export class PaperForgePdfView extends ItemView {
       jumpBtn.addEventListener("click", () =>
         this.scrollToPage(ann.page, ann.ann_id)
       );
+
+      if (isAgent) {
+        const adoptBtn = actions.createEl("button", {
+          cls: "pf-btn pf-btn-secondary",
+          text: t("pdf_adopt_btn") || "✓ 采纳",
+          attr: { "data-pf-testid": "pdf-adopt-ann-btn" },
+        });
+        adoptBtn.addEventListener("click", () => {
+          void this.plugin
+            .getClient()
+            .adoptAnnotation(this._state.paperKey, ann.ann_id)
+            .then((updated) => {
+              this._annotations = this._annotations.map((item) =>
+                item.ann_id === ann.ann_id ? updated : item
+              );
+              this._refreshOverlays();
+              this._renderSidebarList();
+              new Notice(t("pdf_adopted_notice") || "已采纳为我的批注");
+            })
+            .catch((err) => {
+              new Notice(
+                `Adopt failed: ${err instanceof Error ? err.message : String(err)}`
+              );
+            });
+        });
+      }
 
       const promoteBtn = actions.createEl("button", {
         cls: "pf-btn pf-btn-secondary",

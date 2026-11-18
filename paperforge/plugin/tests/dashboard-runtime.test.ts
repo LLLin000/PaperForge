@@ -12,9 +12,7 @@ const runtimePointer = vi.hoisted(() => ({
 vi.mock("../src/services/managed-runtime", () => ({
   readRuntimePointer: () => runtimePointer.value,
   resolveRuntimeCommand: (pointer: { pythonPath?: string } | null) =>
-    pointer?.pythonPath
-      ? { command: pointer.pythonPath, args: [] }
-      : null,
+    pointer?.pythonPath ? { command: pointer.pythonPath, args: [] } : null,
 }));
 
 // Mock obsidian — minimal stubs needed to construct PaperForgeStatusView
@@ -70,6 +68,7 @@ vi.mock("obsidian", () => {
 });
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
+import { ResearchRecordCaptureModal } from "../src/views/research-record";
 import { TFile } from "obsidian";
 import { PaperForgeClient } from "../src/client/paperforge-client";
 import { execFile } from "node:child_process";
@@ -77,7 +76,6 @@ import { promisify } from "node:util";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-
 
 describe("PaperForgeStatusView runtime pointer resolution", () => {
   let leaf: any;
@@ -639,10 +637,13 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
       expect(view._currentMode).toBe("global");
     });
     activeFile = { path: "Bases/Old.base", extension: "base" };
-    if (!activeLeafChanged) throw new Error("active-leaf listener was not registered");
+    if (!activeLeafChanged)
+      throw new Error("active-leaf listener was not registered");
     activeLeafChanged();
     await vi.waitFor(() => {
-      expect(view.containerEl.querySelector(".paperforge-search-input")).not.toBeNull();
+      expect(
+        view.containerEl.querySelector(".paperforge-search-input")
+      ).not.toBeNull();
     });
     const input = view.containerEl.querySelector<HTMLInputElement>(
       ".paperforge-search-input"
@@ -656,12 +657,14 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
 
     await vi.waitFor(() => {
       expect(
-        view.containerEl.querySelector(".paperforge-search-results")?.textContent
+        view.containerEl.querySelector(".paperforge-search-results")
+          ?.textContent
       ).toContain("Suture Anchor");
     });
     expect(
-      view.containerEl.querySelector<HTMLInputElement>(".paperforge-search-input")
-        ?.value
+      view.containerEl.querySelector<HTMLInputElement>(
+        ".paperforge-search-input"
+      )?.value
     ).toBe(query);
     expect(search).toHaveBeenCalledWith(query);
     await view.onClose();
@@ -792,8 +795,8 @@ describe("PaperForgeStatusView note opening", () => {
   });
 });
 
-describe("visible research record capture", () => {
-  it("keeps the captured paper while selection changes and immediately finds its saved record", async () => {
+describe("living paper memory card & research record search", () => {
+  it("hides manual capture form clutter in paper mode, renders Living Paper Memory facets, and supports record search/correction", async () => {
     const vault = mkdtempSync(join(tmpdir(), "pf-record-ui-"));
     const run = promisify(execFile);
     const python = process.env.PF_PYTHON || "python";
@@ -808,7 +811,18 @@ describe("visible research record capture", () => {
         python,
         [
           "-c",
-          "from pathlib import Path; from paperforge.config import bootstrap_config; import sys; bootstrap_config(Path(sys.argv[1]))",
+          [
+            "from pathlib import Path",
+            "import json, sys",
+            "from paperforge.config import bootstrap_config",
+            "from paperforge.services.memory_card_service import refine_memory_facet",
+            "vault = Path(sys.argv[1])",
+            "bootstrap_config(vault)",
+            "(vault / 'Resources/Literature/Ortho/PAPER001 - Test').mkdir(parents=True, exist_ok=True)",
+            "(vault / '.paperforge/indexes').mkdir(parents=True, exist_ok=True)",
+            "(vault / '.paperforge/indexes/formal-library.json').write_text(json.dumps({'version': 1, 'items': [{'zotero_key': 'PAPER001', 'title': 'Unrelated title', 'paper_root': 'Resources/Literature/Ortho/PAPER001 - Test/'}]}), encoding='utf-8')",
+            "refine_memory_facet(vault, 'PAPER001', facet='idea_logic', content='Uses 75 Hz PEMF to rescue chondrocyte osteogenesis via Ca2+ influx.')",
+          ].join("; "),
           vault,
         ],
         { cwd, env }
@@ -841,11 +855,35 @@ describe("visible research record capture", () => {
       view._currentPaperKey = "PAPER001";
       view._currentPaperEntry = { title: "Unrelated title" };
       view._renderPaperMode();
-      const capture = view._contentEl.querySelector<HTMLButtonElement>(
-        '[data-pf-testid="save-research-record"]'
+
+      // Phase 3: redundant manual record-entry form button is removed from Paper Mode UI
+      expect(
+        view._contentEl.querySelector('[data-pf-testid="save-research-record"]')
+      ).toBeNull();
+
+      // Phase 3: Living Paper Memory Card renders facets dynamically
+      const memCard = view._contentEl.querySelector(
+        '[data-pf-testid="living-memory-card"]'
       );
-      expect(capture).not.toBeNull();
-      capture!.click();
+      expect(memCard).not.toBeNull();
+      await vi.waitFor(
+        () =>
+          expect(memCard!.textContent).toContain(
+            "Uses 75 Hz PEMF to rescue chondrocyte osteogenesis via Ca2+ influx."
+          ),
+        { timeout: 10000 }
+      );
+
+      // Preserve underlying capture modal + search correction history contract
+      new ResearchRecordCaptureModal(
+        (view as any).app,
+        client,
+        "PAPER001",
+        "",
+        () => {
+          if (view._searchInput?.value.trim()) void view.executeSearch();
+        }
+      ).open();
       view._currentPaperKey = "OTHER001";
       const modal = document.querySelector<HTMLElement>(
         ".paperforge-record-modal"

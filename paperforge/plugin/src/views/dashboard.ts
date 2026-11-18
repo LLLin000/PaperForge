@@ -28,6 +28,7 @@ import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { checkOrphanState } from "./modals";
 import { orchestrateFromSync } from "../services/next-actions-bridge";
 import {
+  type PaperMemoryCardDto,
   type PaperVersionInfoDTO,
   type VersionEntryDTO,
 } from "../client/paperforge-client";
@@ -39,10 +40,7 @@ import {
   traceConsoleError,
 } from "../client/trace";
 import type { PaperForgeClient } from "../client";
-import {
-  ResearchRecordCaptureModal,
-  ResearchRecordModal,
-} from "./research-record";
+import { ResearchRecordModal } from "./research-record";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -89,6 +87,7 @@ export class PaperForgeStatusView extends ItemView {
   _techDetailsExpanded = false;
   _paperforgeVersion = "";
   private _showingLoadFailure = false;
+  private _livingMemoryBodyEl: HTMLElement | null = null;
   _dashboardPermissions: Record<string, boolean> = {};
   _headerTitle: HTMLElement | null = null;
   _versionBadge: HTMLElement | null = null;
@@ -179,6 +178,8 @@ export class PaperForgeStatusView extends ItemView {
           this.app.workspace.off("active-leaf-change", sub.ref);
         } else if (sub.event === "modify") {
           this.app.vault.off("modify", sub.ref);
+        } else if (sub.event === "paperforge:state-changed") {
+          this.app.workspace.offref?.(sub.ref);
         }
       }
       this._modeSubscribers = [];
@@ -1074,31 +1075,6 @@ export class PaperForgeStatusView extends ItemView {
       pill.createEl("span", { cls: "paperforge-status-pill-icon", text: icon });
       pill.createEl("span", { text: " " + item.label });
     }
-    const saveRecord = stripRight.createEl("button", {
-      text: t("record_save"),
-      attr: { "data-pf-testid": "save-research-record" },
-    });
-    saveRecord.onclick = () => {
-      const client = this._getClient();
-      if (!client) {
-        new Notice(t("runtime_not_available"));
-        return;
-      }
-      // Capture the canonical paper and PDF now, not when the asynchronous form submits.
-      let pdf = typeof entry.pdf_path === "string" ? entry.pdf_path : "";
-      if (pdf.startsWith("[[") && pdf.endsWith("]]")) pdf = pdf.slice(2, -2);
-      if (path.isAbsolute(pdf)) {
-        const base = this.app.vault?.adapter;
-        const root =
-          base && "basePath" in base && typeof base.basePath === "string"
-            ? base.basePath
-            : "";
-        pdf = root ? path.relative(root, pdf).replace(/\\/g, "/") : "";
-      }
-      new ResearchRecordCaptureModal(this.app, client, key, pdf, () => {
-        if (this._searchInput?.value.trim()) void this.executeSearch();
-      }).open();
-    };
     if (entry.pdf_path) {
       const pdfBtn = stripRight.createEl("button", {
         cls: "paperforge-contextual-btn",
@@ -1202,6 +1178,7 @@ export class PaperForgeStatusView extends ItemView {
       })();
     });
     this._renderPaperOverviewCard(view, entry);
+    this._renderLivingMemoryCard(view, key);
     if (entry.next_step === "ready" && entry.deep_reading_status === "done") {
       const complete = view.createEl("div", { cls: "paperforge-complete-row" });
       complete.createEl("span", { text: "\u2713" });
@@ -1214,6 +1191,85 @@ export class PaperForgeStatusView extends ItemView {
     this._renderRecentDiscussionCard(view, entry);
     this._renderPaperTechnicalDetails(view, entry);
     this.renderSearchSection(view);
+  }
+
+  /* ── Living Paper Memory Card: evolving faceted insights ── */
+  _renderLivingMemoryCard(container: HTMLElement, paperKey: string): void {
+    const card = container.createEl("div", {
+      cls: "pf-living-memory-card",
+      attr: { "data-pf-testid": "living-memory-card" },
+    });
+    const header = card.createEl("div", { cls: "pf-living-memory-header" });
+    header.createEl("span", {
+      cls: "pf-living-memory-title",
+      text: t("living_memory_title") || "🧠 动态认知记忆",
+    });
+    const body = card.createEl("div", { cls: "pf-living-memory-body" });
+    this._livingMemoryBodyEl = body;
+    void this._loadLivingMemoryInto(body, paperKey);
+  }
+
+  private async _loadLivingMemoryInto(
+    body: HTMLElement,
+    paperKey: string
+  ): Promise<void> {
+    body.empty();
+    const client = this._getClient() as unknown as {
+      getMemoryCard?: (key: string) => Promise<PaperMemoryCardDto>;
+    } | null;
+    if (typeof client?.getMemoryCard !== "function") {
+      body.createEl("div", {
+        cls: "pf-living-memory-empty",
+        text:
+          t("living_memory_empty") ||
+          "尚未沉淀动态记忆 — 与 Agent 讨论或批注本篇文献后将自动按维度演进更新。",
+      });
+      return;
+    }
+    try {
+      const card = await client.getMemoryCard(paperKey);
+      if (this._currentPaperKey !== paperKey) return;
+      body.empty();
+      const facets = Array.isArray(card?.facets) ? card.facets : [];
+      if (facets.length === 0) {
+        body.createEl("div", {
+          cls: "pf-living-memory-empty",
+          text:
+            t("living_memory_empty") ||
+            "尚未沉淀动态记忆 — 与 Agent 讨论或批注本篇文献后将自动按维度演进更新。",
+        });
+        return;
+      }
+      for (const f of facets) {
+        const item = body.createEl("div", {
+          cls: "pf-living-memory-facet",
+          attr: { "data-facet": f.facet },
+        });
+        const fHead = item.createEl("div", {
+          cls: "pf-living-memory-facet-head",
+        });
+        fHead.createEl("span", {
+          cls: "pf-living-memory-facet-label",
+          text: f.label || f.facet,
+        });
+        fHead.createEl("span", {
+          cls: "pf-living-memory-facet-rev",
+          text: `r${f.revision || 1}`,
+        });
+        item.createEl("div", {
+          cls: "pf-living-memory-facet-body",
+          text: f.content,
+        });
+      }
+    } catch {
+      body.empty();
+      body.createEl("div", {
+        cls: "pf-living-memory-empty",
+        text:
+          t("living_memory_empty") ||
+          "尚未沉淀动态记忆 — 与 Agent 讨论或批注本篇文献后将自动按维度演进更新。",
+      });
+    }
   }
 
   /* ── Paper Overview Card: read from formal note body ── */
@@ -3860,6 +3916,36 @@ export class PaperForgeStatusView extends ItemView {
       event: "active-leaf-change",
       ref: leafHandler,
     });
+    const stateRef = (
+      this.app.workspace as unknown as {
+        on?: (ev: string, cb: (payload?: unknown) => void) => unknown;
+      }
+    )?.on?.("paperforge:state-changed", (payload?: unknown) => {
+      if (
+        this._currentMode === "paper" &&
+        this._currentPaperKey &&
+        this._livingMemoryBodyEl
+      ) {
+        const changed = (payload as { changedKeys?: string[] } | undefined)
+          ?.changedKeys;
+        if (
+          !Array.isArray(changed) ||
+          changed.length === 0 ||
+          changed.includes(this._currentPaperKey)
+        ) {
+          void this._loadLivingMemoryInto(
+            this._livingMemoryBodyEl,
+            this._currentPaperKey
+          );
+        }
+      }
+    });
+    if (stateRef) {
+      this._modeSubscribers.push({
+        event: "paperforge:state-changed",
+        ref: stateRef,
+      });
+    }
     // No filename watcher: formal-library.json is Python's file — mutations
     // reach the UI via explicit refresh / sync / client invalidation,
     // never via host-local filename inference (Ticket 07 step 5).

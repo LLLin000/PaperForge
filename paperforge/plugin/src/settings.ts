@@ -1782,10 +1782,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       }
     }
-    // The OCR Workspace entry lives HERE, in its own module: the topbar
-    // link duplicated it on every other surface.
+    // Option B: Advanced OCR Workspace stays accessible here under Settings -> OCR.
     renderActionButton(body, {
-      label: (t("md_ocr_workspace") || "OCR Workspace") + " \u2197",
+      label:
+        (t("md_ocr_workspace_advanced") ||
+          t("md_ocr_workspace") ||
+          "Advanced OCR Workspace") + " \u2197",
       onClick: () =>
         (this.app as any).workspace.getLeaf().setViewState({
           type: "paperforge-ocr-workspace",

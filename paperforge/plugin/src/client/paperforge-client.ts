@@ -147,7 +147,7 @@ export interface RenderAuditIssue {
   [key: string]: unknown;
 }
 
-export type AnnotationKind = "highlight" | "area" | "note";
+export type AnnotationKind = "highlight" | "area" | "note" | "margin";
 export type AnnotationColor = "yellow" | "green" | "blue" | "red" | "purple";
 export type AnnotationIntent =
   | "evidence"
@@ -163,6 +163,9 @@ export interface PdfAnnotationDto {
   kind: AnnotationKind;
   color: AnnotationColor | string;
   intent: AnnotationIntent | string;
+  author?: "user" | "agent" | string;
+  lens?: string;
+  grounding_tier?: string;
   exact_text: string;
   comment: string;
   tags: string[];
@@ -176,6 +179,54 @@ export interface PdfAnnotationDto {
   created_at: string;
   updated_at: string;
   provenance_status?: "verified" | "changed" | "unknown" | string;
+}
+
+export interface MemoryFacetDto {
+  facet: string;
+  label: string;
+  content: string;
+  revision: number;
+  updated_at: string;
+}
+
+export interface PaperMemoryCardDto {
+  paper_id: string;
+  updated_at: string;
+  facet_count: number;
+  facets: MemoryFacetDto[];
+}
+
+export interface BasePaperRowDto {
+  zotero_key: string;
+  title: string;
+  first_author: string;
+  year: string;
+  journal: string;
+  impact_factor: string;
+  domain: string;
+  has_pdf: boolean;
+  do_ocr: boolean;
+  analyze: boolean;
+  ocr_status: string;
+  deep_reading_status: string;
+  main_note_path: string;
+  user_ann_count: number;
+  agent_ann_count: number;
+  memory_facet_count: number;
+  memory_updated_at: string;
+  needs_diagnostic: boolean;
+}
+
+export interface BaseTableSnapshotDto {
+  seq: number;
+  updated_at: string;
+  rows: Record<string, BasePaperRowDto>;
+}
+
+export interface ClearAgentAnnotationsResultDto {
+  paper_id: string;
+  deleted_count: number;
+  deleted_ids: string[];
 }
 
 export interface PaperPdfContextDto {
@@ -2059,6 +2110,56 @@ export class PaperForgeClient {
       ],
       { timeoutMs: 30000 }
     );
+  }
+
+  async adoptAnnotation(
+    paperKey: string,
+    annId: string
+  ): Promise<PdfAnnotationDto> {
+    try {
+      return await this._executePfResult<PdfAnnotationDto>([
+        "annotations",
+        "adopt",
+        paperKey,
+        annId,
+        "--json",
+      ]);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async clearAgentAnnotations(
+    paperKey: string,
+    lens?: string
+  ): Promise<ClearAgentAnnotationsResultDto> {
+    const argv: string[] = ["annotations", "clear-agent", paperKey];
+    if (lens) argv.push("--lens", lens);
+    argv.push("--json");
+    try {
+      return await this._executePfResult<ClearAgentAnnotationsResultDto>(argv);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  // ── 8. Living Paper Memory & Base Table Snapshots ────────────────────────
+
+  async getMemoryCard(paperKey: string): Promise<PaperMemoryCardDto> {
+    return this._executePfResult<PaperMemoryCardDto>([
+      "memory-card",
+      "get",
+      paperKey,
+      "--json",
+    ]);
+  }
+
+  async getBaseTableSnapshot(): Promise<BaseTableSnapshotDto> {
+    return this._executePfResult<BaseTableSnapshotDto>([
+      "memory-card",
+      "base-snapshot",
+      "--json",
+    ]);
   }
 }
 

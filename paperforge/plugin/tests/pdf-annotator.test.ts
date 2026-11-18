@@ -173,14 +173,15 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
     );
   });
 
-  it("renders PDF pages, displays annotations with intent/figure badges, and saves new annotations", async () => {
+  it("renders PDF pages, omits 5-pill intent clutter, and saves new annotations", async () => {
     const addAnnotation = vi.fn().mockResolvedValue({
       ann_id: "ann_new01",
       paper_id: "P100",
       page: 1,
       kind: "highlight",
       color: "green",
-      intent: "question",
+      intent: "general",
+      author: "user",
       exact_text: "Sample ACL text",
       comment: "Why p=0.04?",
       tags: [],
@@ -216,6 +217,7 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
             kind: "area",
             color: "blue",
             intent: "evidence",
+            author: "user",
             exact_text: "",
             comment: "KM survival curve",
             tags: [],
@@ -234,6 +236,9 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
         ],
       }),
       addAnnotation,
+      listAnnotations: vi.fn().mockResolvedValue([]),
+      adoptAnnotation: vi.fn(),
+      clearAgentAnnotations: vi.fn(),
       deleteAnnotation: vi.fn().mockResolvedValue({ deleted: true }),
       promoteAnnotation: vi.fn().mockResolvedValue({ promoted: true }),
     } as any;
@@ -265,10 +270,9 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
       kind: "highlight",
       exactText: "Sample ACL text",
     });
-    const qPill = view.contentEl.querySelector(
-      '.pf-pdf-intent-pill[data-intent="question"]'
-    ) as HTMLButtonElement;
-    qPill.click();
+    expect(view.contentEl.querySelectorAll(".pf-pdf-intent-pill")).toHaveLength(
+      0
+    );
     const commentBox = view.contentEl.querySelector(
       ".pf-pdf-popover-comment"
     ) as HTMLTextAreaElement;
@@ -285,11 +289,137 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
       "P100",
       expect.objectContaining({
         page: 1,
-        intent: "question",
+        intent: "general",
         exact_text: "Sample ACL text",
         comment: "Why p=0.04?",
       })
     );
+  });
+
+  it("supports AI PDF annotation layer toggle, margin bracket, adopt, and live state-changed reload", async () => {
+    const stateListeners: Array<(payload?: unknown) => void> = [];
+    const agentAnn = {
+      ann_id: "ann_ai_01",
+      paper_id: "P200",
+      page: 1,
+      kind: "margin",
+      color: "purple",
+      intent: "general",
+      author: "agent",
+      lens: "skeleton",
+      grounding_tier: "margin_fallback",
+      exact_text: "Scanned theorem statement.",
+      comment: "Key mechanistic claim needing sample size check.",
+      tags: [],
+      rects: [[0.012, 0.25, 0.022, 0.38]],
+      section_path: "Results",
+      block_id: "blk_1",
+      figure_id: "",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "sha1",
+      created_at: "2026-11-18T00:00:00Z",
+      updated_at: "2026-11-18T00:00:00Z",
+      provenance_status: "verified",
+    };
+    const adoptedAnn = {
+      ...agentAnn,
+      author: "user",
+      lens: "",
+    };
+
+    const adoptAnnotation = vi.fn().mockResolvedValue(adoptedAnn);
+    const listAnnotations = vi.fn().mockResolvedValue([
+      agentAnn,
+      {
+        ...agentAnn,
+        ann_id: "ann_ai_02",
+        kind: "highlight",
+        comment: "Live pushed from CLI agent",
+      },
+    ]);
+
+    const client = {
+      getPdfContext: vi.fn().mockResolvedValue({
+        paper_id: "P200",
+        title: "Agent Review Paper",
+        pdf_abs_path: "C:/Zotero/storage/Y/paper.pdf",
+        pdf_vault_rel: "",
+        pdf_locator: "storage:Y/paper.pdf",
+        is_vault_relative: false,
+        pdf_sha256: "sha1",
+        page_count: 1,
+        workspace_rel: "Resources/Literature/Ortho/P200",
+        note_rel_path: "Resources/Literature/Ortho/P200/P200.md",
+        annotations: [agentAnn],
+      }),
+      listAnnotations,
+      adoptAnnotation,
+      clearAgentAnnotations: vi
+        .fn()
+        .mockResolvedValue({
+          paper_id: "P200",
+          deleted_count: 1,
+          deleted_ids: [],
+        }),
+      deleteAnnotation: vi.fn(),
+      promoteAnnotation: vi.fn(),
+    } as any;
+
+    const view = new PaperForgePdfView({} as any, { getClient: () => client });
+    view.app = {
+      vault: {
+        adapter: { getResourcePath: (p: string) => `app://vault/${p}` },
+        getAbstractFileByPath: () => null,
+      },
+      workspace: {
+        on: (_ev: string, cb: (payload?: unknown) => void) => {
+          stateListeners.push(cb);
+          return cb;
+        },
+        offref: vi.fn(),
+        getLeaf: () => ({ openFile: vi.fn() }),
+        openLinkText: vi.fn(),
+      },
+    } as any;
+
+    await view.onOpen();
+    await view.setState({ paperKey: "P200", page: 1 }, { history: false });
+
+    expect(
+      view.contentEl.querySelectorAll(
+        ".pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-margin-bracket"
+      )
+    ).toHaveLength(1);
+    expect(view.contentEl.textContent).toContain("🤖 AI · skeleton");
+
+    // Toggle AI layer off -> hides AI overlays & cards
+    const aiToggle = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-toggle-ai-layer"]'
+    ) as HTMLButtonElement;
+    aiToggle.click();
+    expect(view.contentEl.querySelectorAll(".pf-pdf-hl-agent")).toHaveLength(0);
+    aiToggle.click();
+    expect(view.contentEl.querySelectorAll(".pf-pdf-hl-agent")).toHaveLength(1);
+
+    // Live workspace state-changed notification reloads external CLI agent marks
+    expect(stateListeners.length).toBeGreaterThan(0);
+    stateListeners[0]({ changedKeys: ["P200"] });
+    await vi.waitFor(() => {
+      expect(listAnnotations).toHaveBeenCalledWith("P200");
+      expect(view.contentEl.textContent).toContain(
+        "Live pushed from CLI agent"
+      );
+    });
+
+    // Adopt button converts AI annotation into user annotation
+    const adoptBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-adopt-ann-btn"]'
+    ) as HTMLButtonElement;
+    adoptBtn.click();
+    await vi.waitFor(() => {
+      expect(adoptAnnotation).toHaveBeenCalledWith("P200", "ann_ai_01");
+    });
   });
 
   it("OcrWorkspaceView opens read-only DiagnosticFulltextPreviewModal for .paperforge/ paths", async () => {

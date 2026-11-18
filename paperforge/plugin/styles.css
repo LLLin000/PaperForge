@@ -8495,3 +8495,211 @@ input.pf-ocr-ws-search-input::placeholder {
   background: var(--background-primary-alt);
   border-radius: 6px;
 }
+
+/* ── v2.2 PaperForge Bases Workbench ── */
+.pf-base-view-root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 4px;
+}
+.pf-base-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+.pf-base-toolbar-stats,
+.pf-base-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pf-base-stat-pill {
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+}
+.pf-base-seq-tag {
+  font-size: var(--font-ui-smallest);
+  color: var(--text-muted);
+}
+.pf-base-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+}
+.pf-base-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-ui-small);
+}
+.pf-base-table th,
+.pf-base-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--background-modifier-border);
+  vertical-align: middle;
+}
+.pf-base-table th {
+  background: var(--background-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pf-base-title-link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+.pf-base-title-link:hover {
+  color: var(--interactive-accent);
+  text-decoration: underline;
+}
+.pf-base-submeta {
+  font-size: var(--font-ui-smallest);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.pf-base-flag-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 10px;
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.pf-base-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: var(--font-ui-smallest);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.pf-base-badge.is-ok {
+  background: rgba(34, 197, 94, 0.14);
+  color: var(--color-green);
+}
+.pf-base-badge.is-pending {
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+.pf-base-badge.is-fail {
+  background: rgba(239, 68, 68, 0.14);
+  color: var(--color-red);
+}
+.pf-base-badge.is-running {
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--color-orange);
+  font-weight: 600;
+}
+.pf-base-cog-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pf-base-cog-pill {
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: var(--font-ui-smallest);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+.pf-base-cog-pill.is-agent {
+  border-style: dashed;
+}
+.pf-base-cell-actions {
+  white-space: nowrap;
+}
+.pf-base-act-btn {
+  margin-right: 4px;
+  padding: 3px 7px;
+  font-size: var(--font-ui-smallest);
+}
+.pf-base-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ── v2.2 Living Paper Memory Card ── */
+.pf-living-memory-card {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+.pf-living-memory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.pf-living-memory-title {
+  font-weight: 600;
+  font-size: var(--font-ui-small);
+}
+.pf-living-memory-facet {
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  background: var(--background-primary);
+  border-left: 3px solid var(--interactive-accent);
+}
+.pf-living-memory-facet-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-ui-smallest);
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.pf-living-memory-facet-label {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.pf-living-memory-facet-body {
+  font-size: var(--font-ui-smaller);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.pf-living-memory-empty {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* ── v2.2 AI PDF Annotation Layer & Margin Bracket ── */
+.pf-pdf-ann-box.pf-pdf-hl-agent {
+  outline: 1.5px dashed var(--color-purple, #8b5cf6);
+  background: rgba(139, 92, 246, 0.16);
+}
+.pf-pdf-ann-box.pf-pdf-margin-bracket {
+  border-left: 4px solid var(--color-purple, #8b5cf6);
+  border-radius: 2px;
+  background: rgba(139, 92, 246, 0.08);
+  outline: none;
+}
+.pf-pdf-ann-card.is-agent {
+  border-left: 3px dashed var(--color-purple, #8b5cf6);
+}
+.pf-pdf-ann-agent-badge {
+  font-weight: 600;
+  color: var(--color-purple, #8b5cf6);
+}
+.pf-pdf-clear-ai-btn {
+  margin-left: auto;
+  font-size: var(--font-ui-smallest);
+}
