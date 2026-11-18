@@ -130,10 +130,13 @@ export interface PaperForgeSettings {
   agent_platform: string;
   language: string;
   paddleocr_api_key: string;
+  paddleocr_job_url?: string;
+  paddleocr_model?: string;
   zotero_data_dir: string;
   vector_db_api_key: string;
   vector_db_api_base: string;
   vector_db_api_model: string;
+  vector_db_provider_type?: string;
   last_seen_version: string;
   capabilityState: Record<string, ProbeEnvelope>;
   autoSyncEnabled?: boolean;
@@ -152,6 +155,8 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   frozen_skills: {},
   language: "",
   paddleocr_api_key: "",
+  paddleocr_job_url: "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+  paddleocr_model: "PaddleOCR-VL-1.6",
   zotero_data_dir: "",
   agent_platform: "opencode",
   features: {
@@ -161,6 +166,7 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   vector_db_api_key: "",
   vector_db_api_base: "",
   vector_db_api_model: "text-embedding-3-small",
+  vector_db_provider_type: "openai_sdk",
   system_dir: "",
   resources_dir: "",
   literature_dir: "",

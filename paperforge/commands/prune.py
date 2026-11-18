@@ -58,7 +58,7 @@ def run(args: argparse.Namespace) -> int:
     json_output = getattr(args, "json", False)
     keys_filter = getattr(args, "keys", None) or []
 
-    from paperforge.lineage import _detect_residuals
+    from paperforge.lineage import _detect_residuals, workspace_dir_for_key
     from paperforge.worker.prune import prune_orphan_papers
 
     # Unified residual detection (Zotero = authority): an OCR-only or
@@ -75,10 +75,14 @@ def run(args: argparse.Namespace) -> int:
             print("[OK] No residual papers found.")
         return 0
 
-    candidates = [
-        {"key": k, "domain": "", "workspace_dir": Path()}
-        for k in residuals.get("keys", [])
-    ]
+    candidates = []
+    for k in residuals.get("keys", []):
+        ws = workspace_dir_for_key(vault, k)
+        candidates.append({
+            "key": k,
+            "domain": ws.parent.name if ws is not None else "",
+            "workspace_dir": ws,
+        })
     result_data = prune_orphan_papers(vault, _candidates=candidates, dry_run=True)
 
     preview = result_data.get("preview", [])
@@ -100,7 +104,7 @@ def run(args: argparse.Namespace) -> int:
             {
                 "key": p["key"],
                 "domain": p["domain"],
-                "workspace_dir": Path(p["workspace"]),
+                "workspace_dir": Path(p["workspace"]) if p.get("workspace") else None,
                 "ocr_dir": Path(p["ocr_dir"]) if p.get("ocr_dir") else None,
             }
             for p in preview
@@ -138,7 +142,7 @@ def run(args: argparse.Namespace) -> int:
         {
             "key": preview[i]["key"],
             "domain": preview[i]["domain"],
-            "workspace_dir": Path(preview[i]["workspace"]),
+            "workspace_dir": Path(preview[i]["workspace"]) if preview[i].get("workspace") else None,
             "ocr_dir": Path(preview[i]["ocr_dir"]) if preview[i].get("ocr_dir") else None,
         }
         for i in selected_indices

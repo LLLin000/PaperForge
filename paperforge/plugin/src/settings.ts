@@ -102,6 +102,33 @@ const AGENT_PLATFORM_LABELS: Record<string, string> = {
   windsurf: "Windsurf",
   github_copilot: "GitHub Copilot",
   gemini: "Gemini CLI",
+  kilo: "Kilo Code",
+  pi: "Pi Agent",
+  omp: "Oh My Pi",
+  crush: "Crush",
+  kimi: "Kimi CLI",
+  cline: "Cline",
+  augment: "Augment",
+  trae: "Trae",
+};
+
+/** Skill deployment directories per agent platform (fallback: .agents/skills). */
+const AGENT_PLATFORM_SKILL_DIRS: Record<string, string> = {
+  opencode: ".opencode/skills",
+  claude: ".claude/skills",
+  codex: ".codex/skills",
+  cursor: ".cursor/skills",
+  windsurf: ".windsurf/skills",
+  github_copilot: ".github/skills",
+  gemini: ".gemini/skills",
+  cline: ".cline/skills",
+  kilo: ".kilocode/skills",
+  kimi: ".kimi/skills",
+  augment: ".augment/skills",
+  trae: ".trae/skills",
+  pi: ".agents/skills",
+  omp: ".agents/skills",
+  crush: ".agents/skills",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1320,15 +1347,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Skills inventory for the selected agent platform. */
   private _renderSkillsList(containerEl: HTMLElement): void {
-    const agentDirs: Record<string, string> = {
-      opencode: ".opencode/skills",
-      claude: ".claude/skills",
-      codex: ".codex/skills",
-      cursor: ".cursor/skills",
-      windsurf: ".windsurf/skills",
-      github_copilot: ".github/skills",
-      gemini: ".gemini/skills",
-    };
     const vaultPath = this._getVaultBasePath();
     const selectedPlatform: string =
       this.plugin.settings.agent_platform || "opencode";
@@ -1342,8 +1360,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     skillsDescEl.createEl("br");
     skillsDescEl.createEl("span", { text: t("feat_skills_system") });
 
-    // Show skills for selected platform
-    const skillDir = path.join(vaultPath, agentDirs[selectedPlatform]);
+    // Show skills for selected platform (fallback to .agents/skills)
+    const primarySkillRel =
+      AGENT_PLATFORM_SKILL_DIRS[selectedPlatform] ?? ".agents/skills";
+    const primarySkillDir = path.join(vaultPath, primarySkillRel);
+    const fallbackSkillDir = path.join(vaultPath, ".agents/skills");
+    const skillDir = fs.existsSync(primarySkillDir)
+      ? primarySkillDir
+      : fs.existsSync(fallbackSkillDir)
+        ? fallbackSkillDir
+        : primarySkillDir;
     interface SkillEntry {
       name: string;
       desc: string;
@@ -1766,6 +1792,43 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         label: t("ocr_configure_credential"),
         onClick: () => this._startSetupJourney(3),
       });
+
+      const ocrCfg = body.createDiv({ cls: "pf-sr-cfg pf-ocr-endpoint-cfg" });
+      const ocrUrlRow = ocrCfg.createDiv({ cls: "pf-sr-cfg-row" });
+      ocrUrlRow.createEl("label", {
+        text: t("ocr_job_url_label") || "PaddleOCR Job URL",
+        cls: "pf-sr-cfg-lbl",
+      });
+      const ocrUrlInput = ocrUrlRow.createEl("input", {
+        cls: "pf-ocr-cfg-input",
+        attr: {
+          type: "text",
+          "data-pf-testid": "ocr-job-url-input",
+          placeholder: "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+        },
+      }) as HTMLInputElement;
+      ocrUrlInput.value = this.plugin.settings.paddleocr_job_url || "";
+      ocrUrlInput.addEventListener("change", () => {
+        this._setVectorDbConfig("paddleocr_job_url", ocrUrlInput);
+      });
+
+      const ocrModelRow = ocrCfg.createDiv({ cls: "pf-sr-cfg-row" });
+      ocrModelRow.createEl("label", {
+        text: t("ocr_model_label") || "PaddleOCR Model",
+        cls: "pf-sr-cfg-lbl",
+      });
+      const ocrModelInput = ocrModelRow.createEl("input", {
+        cls: "pf-ocr-cfg-input",
+        attr: {
+          type: "text",
+          "data-pf-testid": "ocr-model-input",
+          placeholder: "PaddleOCR-VL-1.6",
+        },
+      }) as HTMLInputElement;
+      ocrModelInput.value = this.plugin.settings.paddleocr_model || "";
+      ocrModelInput.addEventListener("change", () => {
+        this._setVectorDbConfig("paddleocr_model", ocrModelInput);
+      });
     }
   }
   /** Render the Memory detail view (Issue #78). */
@@ -1773,35 +1836,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._renderModuleDetailShell(containerEl, "agent");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
 
-    const platforms: Record<string, string> = {
-      opencode: "OpenCode",
-      claude: "Claude Code",
-      codex: "Codex",
-      cursor: "Cursor",
-      windsurf: "Windsurf",
-      github_copilot: "GitHub Copilot",
-      gemini: "Gemini CLI",
-    };
-    const directories: Record<string, string> = {
-      opencode: ".opencode/skills",
-      claude: ".claude/skills",
-      codex: ".codex/skills",
-      cursor: ".cursor/skills",
-      windsurf: ".windsurf/skills",
-      github_copilot: ".github/skills",
-      gemini: ".gemini/skills",
-    };
     const current = this.plugin.settings.agent_platform || "opencode";
+    const vaultBase = this._getVaultBasePath();
     const skillDirectory = path.join(
-      this._getVaultBasePath(),
-      directories[current]
+      vaultBase,
+      AGENT_PLATFORM_SKILL_DIRS[current] ?? ".agents/skills"
     );
-    const deployed = fs.existsSync(skillDirectory);
+    const deployed =
+      fs.existsSync(skillDirectory) ||
+      fs.existsSync(path.join(vaultBase, ".agents/skills"));
 
     const facts = body.createDiv({ cls: "pf-module-facts" });
     const platform = facts.createDiv({ cls: "pf-module-fact" });
     platform.createEl("span", { text: t("md_agent_platform") });
-    platform.createEl("span", { text: platforms[current] ?? current });
+    platform.createEl("span", {
+      text: AGENT_PLATFORM_LABELS[current] ?? current,
+    });
     const deployment = facts.createDiv({ cls: "pf-module-fact" });
     deployment.createEl("span", { text: t("md_agent_deployment") });
     deployment.createEl("span", {
@@ -1810,6 +1860,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const connection = facts.createDiv({ cls: "pf-module-fact" });
     connection.createEl("span", { text: t("agent_live_connection") });
     connection.createEl("span", { text: t("md_agent_connection_unknown") });
+
+    body.createEl("p", {
+      cls: "caption",
+      text: t("agent_external_cli_hint"),
+    });
 
     if (this._agentPlatformDraft === null) {
       renderActionButton(body, {
@@ -1828,10 +1883,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // hardcoded map is a presentation label lookup only.
       const editorChoices = this.plugin.agentPlatformChoices.length
         ? this.plugin.agentPlatformChoices
-        : Object.keys(platforms);
+        : Object.keys(AGENT_PLATFORM_LABELS);
       for (const value of editorChoices) {
         const option = select.createEl("option", {
-          text: platforms[value] ?? value,
+          text: AGENT_PLATFORM_LABELS[value] ?? value,
           attr: { value },
         }) as HTMLOptionElement;
         option.selected = value === this._agentPlatformDraft;
@@ -1876,9 +1931,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         label: t("config_verify"),
         onClick: () => {
           const value = this._agentPlatformDraft ?? current;
-          const found = fs.existsSync(
-            path.join(this._getVaultBasePath(), directories[value])
-          );
+          const dirRel = AGENT_PLATFORM_SKILL_DIRS[value] ?? ".agents/skills";
+          const found =
+            fs.existsSync(path.join(this._getVaultBasePath(), dirRel)) ||
+            fs.existsSync(
+              path.join(this._getVaultBasePath(), ".agents/skills")
+            );
           new Notice(
             found ? t("agent_verify_found") : t("agent_verify_missing")
           );
@@ -2019,7 +2077,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cfgIcon.textContent = open ? "\u25b6" : "\u25bc";
     });
 
-    // API Key
+    // API Key — commit on Save button or blur/change (no mid-typing timer truncation)
     const kr = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
     kr.createEl("label", {
       text: t("feat_openai_key") || "API Key",
@@ -2033,20 +2091,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         placeholder: apiKeyConfigured ? "\u2022\u2022\u2022\u2022" : "sk-...",
       },
     }) as HTMLInputElement;
-    let kt: ReturnType<typeof setTimeout> | null = null;
-    ki.addEventListener("input", () => {
-      const v = ki.value;
+    const commitApiKey = async () => {
+      const v = ki.value.trim();
       if (!v) return;
-      if (kt) clearTimeout(kt);
-      kt = setTimeout(async () => {
-        if (await this._storeVectorDbCredential(v)) {
-          ki.value = "";
-          ki.placeholder = "\u2022\u2022\u2022\u2022";
-          cfgBody.style.display = "none";
-          cfgIcon.textContent = "\u25b6";
-        }
-        kt = null;
-      }, 600);
+      if (await this._storeVectorDbCredential(v)) {
+        ki.value = "";
+        ki.placeholder = "\u2022\u2022\u2022\u2022";
+        cfgBody.style.display = "none";
+        cfgIcon.textContent = "\u25b6";
+      }
+    };
+    const kSave = kr.createEl("button", {
+      cls: "pf-sr-cfg-save-btn",
+      text: t("api_key_save_btn") || t("config_save") || "Save",
+      attr: { type: "button", "data-pf-testid": "sr-api-key-save" },
+    });
+    kSave.addEventListener("click", () => {
+      void commitApiKey();
+    });
+    ki.addEventListener("change", () => {
+      void commitApiKey();
     });
 
     // Base URL
@@ -2086,6 +2150,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
       this._setVectorDbConfig("vector_db_api_model", mi);
+    });
+
+    // Provider Type (class pf-sr-cfg-select keeps .pf-sr-cfg-input count at 3)
+    const pr = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
+    pr.createEl("label", {
+      text: t("mem_provider_type_label") || "API Client Mode",
+      cls: "pf-sr-cfg-lbl",
+    });
+    const pi = pr.createEl("select", {
+      cls: "pf-sr-cfg-select",
+      attr: { "data-pf-testid": "sr-provider-type-select" },
+    }) as HTMLSelectElement;
+    for (const [val, label] of [
+      ["openai_sdk", "openai_sdk (OpenAI SDK)"],
+      ["requests", "requests (HTTP Direct / Proxy)"],
+    ]) {
+      const opt = pi.createEl("option", { text: label, attr: { value: val } });
+      opt.selected =
+        (this.plugin.settings.vector_db_provider_type || "openai_sdk") === val;
+    }
+    pi.addEventListener("change", () => {
+      this._setVectorDbConfig("vector_db_provider_type", pi);
     });
 
     // ── Impact box (when action needed) ──
@@ -2718,10 +2804,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         } else if (result.cancelled || sawCancelled) {
           new Notice(t("embed_build_stopped"), 8000);
         } else {
+          const payload = result.payload as Record<string, unknown> | null;
+          const payloadError = payload?.error as
+            | { message?: unknown }
+            | undefined;
           const reason =
-            typeof result.payload?.availability_reason === "string"
-              ? result.payload.availability_reason
-              : `exit code ${result.exitCode}`;
+            typeof payload?.availability_reason === "string"
+              ? payload.availability_reason
+              : typeof payloadError?.message === "string"
+                ? payloadError.message
+                : `exit code ${result.exitCode}`;
           new Notice(
             (t("sr_build_failed_notice") || "Build failed: {detail}").replace(
               "{detail}",
@@ -4687,15 +4779,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       .catch(() => undefined);
   }
   private _setVectorDbConfig(
-    key: "vector_db_api_base" | "vector_db_api_model",
-    input: HTMLInputElement
+    key:
+      | "vector_db_api_base"
+      | "vector_db_api_model"
+      | "vector_db_provider_type"
+      | "paddleocr_job_url"
+      | "paddleocr_model",
+    input: HTMLInputElement | HTMLSelectElement
   ): void {
-    const value = input.value.trim();
-    const previous = String(this.plugin.settings[key] ?? "");
+    let value = input.value.trim();
+    if (key === "vector_db_api_base" && value) {
+      value = value.replace(/\/+$/, "").replace(/\/embeddings$/i, "");
+      input.value = value;
+    }
+    const previous = String((this.plugin.settings as any)[key] ?? "");
     void this.getClient()
       .configSet(key, value)
       .then(async () => {
-        this.plugin.settings[key] = value;
+        (this.plugin.settings as any)[key] = value;
         await this.plugin.saveSettings();
         this._refreshVectorDbCredentialStatus();
       })
@@ -4774,6 +4875,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         desc: t("setup_opt_agent_desc"),
       },
     ];
+    const pendingSecretSaves: Array<() => Promise<unknown>> = [];
     for (const opt of optionals) {
       const row = containerEl.createDiv({ cls: "pf-setup-optional" });
       const checkbox = row.createEl("input", {
@@ -4846,22 +4948,54 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : t("field_paddleocr"),
           },
         }) as HTMLInputElement;
+        config.createEl("label", {
+          text: t("ocr_job_url_label") || "PaddleOCR Job URL",
+        });
+        const jobUrl = config.createEl("input", {
+          cls: "pf-setup-ocr-extra-input",
+          attr: {
+            type: "text",
+            placeholder:
+              this.plugin.settings.paddleocr_job_url ||
+              "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+          },
+        }) as HTMLInputElement;
+        jobUrl.value = this.plugin.settings.paddleocr_job_url || "";
+        jobUrl.addEventListener("change", () => {
+          this._setVectorDbConfig("paddleocr_job_url", jobUrl);
+        });
+        config.createEl("label", {
+          text: t("ocr_model_label") || "PaddleOCR Model",
+        });
+        const ocrModel = config.createEl("input", {
+          cls: "pf-setup-ocr-extra-input",
+          attr: {
+            type: "text",
+            placeholder:
+              this.plugin.settings.paddleocr_model || "PaddleOCR-VL-1.6",
+          },
+        }) as HTMLInputElement;
+        ocrModel.value = this.plugin.settings.paddleocr_model || "";
+        ocrModel.addEventListener("change", () => {
+          this._setVectorDbConfig("paddleocr_model", ocrModel);
+        });
+        const commitOcrKey = async () => {
+          const val = key.value.trim();
+          if (!val) return;
+          const saved = await this._storeSetupSecret("paddleocr-api-key", val);
+          status.setText(
+            saved ? t("setup_optional_saved") : t("setup_optional_save_failed")
+          );
+          if (saved) key.value = "";
+        };
+        pendingSecretSaves.push(commitOcrKey);
         const save = config.createEl("button", {
           cls: "pf-setup-verify",
           text: t("config_save"),
           attr: { type: "button" },
         });
         save.addEventListener("click", () => {
-          void this._storeSetupSecret("paddleocr-api-key", key.value).then(
-            (saved) => {
-              status.setText(
-                saved
-                  ? t("setup_optional_saved")
-                  : t("setup_optional_save_failed")
-              );
-              if (saved) key.value = "";
-            }
-          );
+          void commitOcrKey();
         });
       } else if (opt.id === "memory") {
         config.createEl("label", { text: t("feat_openai_key") });
@@ -4905,28 +5039,54 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         base.addEventListener("change", () => {
           this._setVectorDbConfig("vector_db_api_base", base);
         });
+        config.createEl("label", {
+          text: t("mem_provider_type_label") || "API Client Mode",
+        });
+        const ptype = config.createEl("select", {
+          cls: "pf-setup-select",
+        }) as HTMLSelectElement;
+        for (const [val, label] of [
+          ["openai_sdk", "openai_sdk (OpenAI SDK)"],
+          ["requests", "requests (HTTP Direct / Proxy)"],
+        ]) {
+          const option = ptype.createEl("option", {
+            text: label,
+            attr: { value: val },
+          }) as HTMLOptionElement;
+          option.selected =
+            (this.plugin.settings.vector_db_provider_type || "openai_sdk") ===
+            val;
+        }
+        ptype.addEventListener("change", () => {
+          this._setVectorDbConfig("vector_db_provider_type", ptype);
+        });
+        const commitMemKey = async () => {
+          const val = key.value.trim();
+          if (!val) return;
+          const saved = await this._storeSetupSecret("vector-db-api-key", val);
+          status.setText(
+            saved ? t("setup_optional_saved") : t("setup_optional_save_failed")
+          );
+          if (saved) key.value = "";
+        };
+        pendingSecretSaves.push(commitMemKey);
         const save = config.createEl("button", {
           cls: "pf-setup-verify",
           text: t("config_save"),
           attr: { type: "button" },
         });
         save.addEventListener("click", () => {
-          void this._storeSetupSecret("vector-db-api-key", key.value).then(
-            (saved) => {
-              status.setText(
-                saved
-                  ? t("setup_optional_saved")
-                  : t("setup_optional_save_failed")
-              );
-              if (saved) key.value = "";
-            }
-          );
+          void commitMemKey();
         });
       } else {
         config.createEl("label", { text: t("feat_agent_platform") });
         config.createEl("p", {
           cls: "caption",
           text: t("feat_agent_platform_desc"),
+        });
+        config.createEl("p", {
+          cls: "caption",
+          text: t("agent_external_cli_hint"),
         });
         const select = config.createEl("select") as HTMLSelectElement;
         const setupChoices = this.plugin.agentPlatformChoices.length
@@ -4978,7 +5138,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      onClick: () => this._refreshSetupReadiness(),
+      onClick: () => {
+        void Promise.all(pendingSecretSaves.map((fn) => fn())).finally(() => {
+          this._refreshSetupReadiness();
+        });
+      },
     });
   }
 

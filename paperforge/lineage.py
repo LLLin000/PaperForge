@@ -689,6 +689,9 @@ def _workspace_dir_for_key(vault: Path, key: str) -> Path | None:
     return None
 
 
+workspace_dir_for_key = _workspace_dir_for_key
+
+
 def _db_paper_keys(vault: Path) -> set[str]:
     try:
         from paperforge.memory.db import get_memory_db_path, open_live_reader

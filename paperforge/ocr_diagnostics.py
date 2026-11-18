@@ -57,15 +57,20 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
         }
 
     # L2 — URL reachability (use POST since most endpoints reject GET)
-    job_url = os.environ.get(
-        "PADDLEOCR_JOB_URL",
-        "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
-    ).strip()
+    cfg = config or {}
+    job_url = (
+        str(cfg.get("paddleocr_job_url") or "").strip()
+        or os.environ.get("PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs").strip()
+    )
+    ocr_model = (
+        str(cfg.get("paddleocr_model") or "").strip()
+        or os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6").strip()
+    )
     try:
         resp = requests.post(
             job_url,
             headers={"Authorization": f"bearer {token}"},
-            json={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6")},
+            json={"model": ocr_model},
             timeout=30,
         )
         if resp.status_code == 401:
@@ -73,7 +78,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "level": 2,
                 "passed": False,
                 "error": "URL returned 401 Unauthorized",
-                "fix": "PaddleOCR API token is invalid. Run `paperforge auth set ocr --stdin --replace` and re-run `paperforge ocr --diagnose`",
+                "fix": "PaddleOCR API token is invalid. Update OCR API Key in PaperForge Settings or run `paperforge auth set ocr --stdin --replace`",
             }
         if resp.status_code >= 500:
             return {
@@ -89,20 +94,20 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "level": 2,
                 "passed": False,
                 "error": f"URL returned {resp.status_code}",
-                "fix": "Check PADDLEOCR_JOB_URL in .env and re-run `paperforge ocr --diagnose`",
+                "fix": "Check PaddleOCR Job URL in PaperForge Settings (or run `paperforge config set paddleocr_job_url <URL>`)",
             }
     except requests.RequestException as e:
         return {
             "level": 2,
             "passed": False,
             "error": f"Failed to reach OCR URL: {e}",
-            "fix": "Check network connection and PADDLEOCR_JOB_URL in .env",
+            "fix": "Check network connection and PaddleOCR Job URL in PaperForge Settings",
         }
 
     # L3 — API response structure
     try:
         minimal_payload = {
-            "model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6"),
+            "model": ocr_model,
             "optionalPayload": json.dumps({"useDocOrientationClassify": False}),
         }
         resp = requests.post(
@@ -163,7 +168,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 resp = requests.post(
                     job_url,
                     headers={"Authorization": f"bearer {token}"},
-                    data={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6")},
+                    data={"model": ocr_model},
                     files={"file": f},
                     timeout=120,
                 )

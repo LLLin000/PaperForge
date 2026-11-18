@@ -32,6 +32,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     extract_preserved_deep_reading,
     extract_preserved_ocr_redo,
     extract_preserved_tags,
+    read_frontmatter_dict,
     update_frontmatter_field,
 )
 from paperforge.adapters.zotero_paths import (
@@ -1028,12 +1029,42 @@ def next_key(domain: str, export_rows: list[dict]) -> str:
     return f"{prefix}{max_num + 1:03d}"
 
 
+_KNOWN_FRONTMATTER_KEYS = frozenset({
+    "title",
+    "aliases",
+    "year",
+    "journal",
+    "first_author",
+    "zotero_key",
+    "citation_key",
+    "domain",
+    "doi",
+    "pmid",
+    "collection_path",
+    "collection_tags",
+    "impact_factor",
+    "abstract",
+    "has_pdf",
+    "do_ocr",
+    "analyze",
+    "ocr_status",
+    "deep_reading_status",
+    "pdf_path",
+    "fulltext_md_path",
+    "ocr_redo",
+    "ocr_time",
+    "tags",
+})
+
+
 def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[str] | None = None, preserved_ocr_redo: bool | None = None) -> str:
     preserved_deep = extract_preserved_deep_reading(existing_text)
     if preserved_tags is None and existing_text:
         preserved_tags = extract_preserved_tags(existing_text)
     if preserved_ocr_redo is None and existing_text:
         preserved_ocr_redo = extract_preserved_ocr_redo(existing_text)
+    existing_fm = read_frontmatter_dict(existing_text) if existing_text else {}
+    custom_fm = {k: v for k, v in existing_fm.items() if k not in _KNOWN_FRONTMATTER_KEYS}
     first_author = entry.get("first_author", "")
     if not first_author:
         authors = entry.get("authors", [])
@@ -1083,6 +1114,20 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
                 f"  - {entry.get('domain', '')}",
             ]
         )
+    if custom_fm:
+        try:
+            import yaml
+
+            custom_dump = yaml.safe_dump(
+                custom_fm,
+                allow_unicode=True,
+                sort_keys=False,
+                default_flow_style=False,
+            ).strip()
+            if custom_dump:
+                lines.extend(custom_dump.splitlines())
+        except Exception:
+            pass
     lines.extend(
         [
             "---",

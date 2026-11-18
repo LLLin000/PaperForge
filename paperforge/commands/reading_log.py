@@ -333,7 +333,8 @@ def _render_reading_log_md(vault: Path, project: str = "") -> None:
     if project:
         output_dir = paths["resources"] / "Projects" / project
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / "reading-log.md"
+        # Never overwrite the human/Agent narrative prose file reading-log.md.
+        output_path = output_dir / "reading-log.index.md"
     else:
         output_dir = paths["paperforge"] / "logs" / "rendered"
         output_dir.mkdir(parents=True, exist_ok=True)

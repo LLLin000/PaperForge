@@ -1222,6 +1222,14 @@ const LANG: Record<string, Record<string, string>> = {
       "Cannot determine whole-library impact. Refresh status before running OCR.",
     ocr_ws_pagination_previous: "Previous page",
     ocr_ws_pagination_next: "Next page",
+    ocr_scope_all_unselected_warn:
+      "⚠️ 0 papers marked do_ocr:true — continuing will upload all eligible PDFs in your library",
+    ocr_job_url_label: "PaddleOCR Job URL",
+    ocr_model_label: "PaddleOCR Model",
+    mem_provider_type_label: "API Client Mode",
+    api_key_save_btn: "Save",
+    agent_external_cli_hint:
+      "Note: /pf-deep, /pf-lit, and PaperForge skills run inside your chosen external AI coding CLI/editor (e.g., Claude Code, OpenCode, Cursor), not directly inside Obsidian chat.",
   },
   zh: {
     record_save: "保存研究记录",
@@ -2346,6 +2354,14 @@ const LANG: Record<string, Record<string, string>> = {
       "无法确定整个文献库的影响范围，请刷新状态后再运行 OCR。",
     ocr_ws_pagination_previous: "上一页",
     ocr_ws_pagination_next: "下一页",
+    ocr_scope_all_unselected_warn:
+      "⚠️ 当前有 0 篇文献勾选 do_ocr:true —— 继续将对库内所有符合条件的 PDF 执行 OCR",
+    ocr_job_url_label: "PaddleOCR 接口 URL",
+    ocr_model_label: "PaddleOCR 模型",
+    mem_provider_type_label: "API 客户端模式",
+    api_key_save_btn: "保存",
+    agent_external_cli_hint:
+      "提示：/pf-deep、/pf-lit 等深度精读技能需在所选外部 AI Agent 工具（如 Claude Code、OpenCode、Cursor 等）中以本库为工作目录调用，并非在 Obsidian 内嵌聊天窗口中执行。",
   },
 };
 

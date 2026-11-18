@@ -41,6 +41,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     _legacy_control_flags,
     extract_preserved_tags,
     read_frontmatter_dict,
+    split_frontmatter_block,
 )
 from paperforge.config import paperforge_paths
 from paperforge.core.io import write_text_atomic
@@ -258,7 +259,15 @@ def migrate_legacy_index(vault: Path) -> bool:
 # read_frontmatter_bool / read_frontmatter_optional_bool imported from adapters
 
 
-def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: Path) -> dict:
+def _build_entry(
+    item: dict,
+    vault: Path,
+    paths: dict,
+    domain: str,
+    zotero_dir: Path,
+    *,
+    active_domain_keys: dict[str, set[str]] | None = None,
+) -> dict:
     """Construct a single canonical index entry from a BBT export *item*.
 
     This helper is used by both ``build_index()`` (all items) and
@@ -327,14 +336,38 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     title_slug = slugify_filename(item["title"])
     note_path = paths["literature"] / domain / f"{key}.md"
 
-    # --- Freeze slug: reuse existing workspace if it exists under a different slug ---
+    # --- Freeze slug & migrate moved workspace across renamed domains ---
     workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
     if not workspace_dir.exists():
+        found_in_domain = False
         for candidate in (paths["literature"] / domain).glob(f"{key} - *"):
             if candidate.is_dir():
                 workspace_dir = candidate
                 title_slug = workspace_dir.name.split(" - ", 1)[1] if " - " in workspace_dir.name else title_slug
+                found_in_domain = True
                 break
+        if not found_in_domain and paths["literature"].exists():
+            moved_candidates: list[Path] = []
+            for other_dir in sorted(paths["literature"].iterdir()):
+                if not other_dir.is_dir() or other_dir.name == domain:
+                    continue
+                if active_domain_keys is not None and key in active_domain_keys.get(other_dir.name, set()):
+                    continue
+                for candidate in other_dir.glob(f"{key} - *"):
+                    if candidate.is_dir():
+                        moved_candidates.append(candidate)
+            if len(moved_candidates) == 1:
+                old_ws = moved_candidates[0]
+                target_ws = paths["literature"] / domain / old_ws.name
+                if not target_ws.exists():
+                    target_ws.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(old_ws), str(target_ws))
+                    workspace_dir = target_ws
+                    title_slug = (
+                        workspace_dir.name.split(" - ", 1)[1]
+                        if " - " in workspace_dir.name
+                        else title_slug
+                    )
 
     if note_path.parent.exists():
         for stale_note in note_path.parent.glob(f"{key}*.md"):
@@ -507,14 +540,14 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         except Exception:  # noqa: BLE001 — corrupt restored note: skip rewrite
             text = None
         if text is not None:
-            fm_close = text.find("---\n", 4)  # closing --- after opening ---
-            if fm_close != -1:
-                body = text[fm_close + 4 :]  # everything after frontmatter
+            split_old = split_frontmatter_block(text)
+            if split_old is not None:
+                _old_fm, body = split_old
                 preserved_tags = extract_preserved_tags(text)
                 new_full = frontmatter_note(entry, text, preserved_tags=preserved_tags)
-                new_fm_close = new_full.find("---\n", 4)
-                if new_fm_close != -1:
-                    new_fm = new_full[: new_fm_close + 4]  # new frontmatter block with closing ---\n
+                split_new = split_frontmatter_block(new_full)
+                if split_new is not None:
+                    new_fm, _ = split_new
                     write_text_atomic(main_note_path, new_fm + body)
                 else:
                     write_text_atomic(main_note_path, new_full)
@@ -650,13 +683,39 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
 
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
-    index_rows: list[dict] = []
-
+    staged_exports: list[tuple[str, list[dict]]] = []
+    active_domain_keys: dict[str, set[str]] = {}
     for export_path in sorted(paths["exports"].glob("*.json")):
         domain = domain_lookup.get(export_path.name, export_path.stem)
         export_rows = load_export_rows(export_path)
+        staged_exports.append((domain, export_rows))
+        keys_in_domain = active_domain_keys.setdefault(domain, set())
         for item in export_rows:
-            entry = _build_entry(item, vault, paths, domain, zotero_dir)
+            if item.get("key"):
+                keys_in_domain.add(str(item["key"]))
+
+    index_rows: list[dict] = []
+    seen_keys: set[str] = set()
+    for domain, export_rows in staged_exports:
+        for item in export_rows:
+            item_key = str(item.get("key") or "")
+            if item_key and item_key in seen_keys:
+                logger.warning(
+                    "Duplicate zotero_key %s in domain '%s'; keeping first export entry",
+                    item_key,
+                    domain,
+                )
+                continue
+            if item_key:
+                seen_keys.add(item_key)
+            entry = _build_entry(
+                item,
+                vault,
+                paths,
+                domain,
+                zotero_dir,
+                active_domain_keys=active_domain_keys,
+            )
             index_rows.append(entry)
 
     index_path = paths["index"]

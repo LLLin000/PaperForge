@@ -187,7 +187,9 @@ class SyncService:
                         continue
                     title = str(fm.get("title", ""))
                     has_pdf = fm.get("has_pdf", False) is True
-                    normalized = re.sub(r"[^a-z0-9]", "", title.lower())[:20]
+                    normalized = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", title.lower())
+                    if not normalized:
+                        continue
                     records_info[key] = {
                         "file": record_file,
                         "title": title,
@@ -209,11 +211,20 @@ class SyncService:
                         if not records_info[k]["has_pdf"]:
                             to_delete.append(k)
 
+            from paperforge.worker.trash import trash_remove
+
             deleted = 0
             for key in to_delete:
                 try:
-                    records_info[key]["file"].unlink()
-                    deleted += 1
+                    rec = trash_remove(
+                        records_info[key]["file"],
+                        vault=self.vault,
+                        allowed_root=domain_dir,
+                        operation="sync.clean_orphaned_records",
+                        paper_key=key,
+                    )
+                    if rec is not None:
+                        deleted += 1
                 except Exception:
                     pass
             if deleted > 0 and not json_output:

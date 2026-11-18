@@ -57,17 +57,19 @@ def _enrich_orphan_preview(vault: Path, candidates: list[dict]) -> list[dict]:
     enriched = []
     for c in candidates:
         key = c["key"]
-        ws = c["workspace_dir"]
+        ws = c.get("workspace_dir")
+        has_ws = bool(ws and str(ws) not in ("", "."))
 
-        title_from_dir = ws.name.split(" - ", 1)[1] if " - " in ws.name else key
+        title_from_dir = ws.name.split(" - ", 1)[1] if has_ws and " - " in ws.name else key
 
-        note_path = ws / f"{key}.md"
         fm = {}
-        if note_path.exists():
-            try:
-                fm = read_frontmatter_dict(note_path.read_text(encoding="utf-8"))
-            except Exception:
-                pass
+        if has_ws:
+            note_path = ws / f"{key}.md"
+            if note_path.exists():
+                try:
+                    fm = read_frontmatter_dict(note_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
 
         title = fm.get("title", title_from_dir) or title_from_dir
         first_author = fm.get("first_author", "") or ""
@@ -84,7 +86,7 @@ def _enrich_orphan_preview(vault: Path, candidates: list[dict]) -> list[dict]:
             "has_pdf": fm.get("has_pdf", False) in (True, "true"),
             "collection_path": coll,
             "domain": c["domain"],
-            "workspace": str(ws),
+            "workspace": str(ws) if has_ws else "",
             "ocr_dir": str(c["ocr_dir"]) if c["ocr_dir"] and c["ocr_dir"].exists() else None,
         })
 
@@ -209,7 +211,7 @@ def _prune_orphan_papers_locked(
                     key_failed = True
 
             ws = c.get("workspace_dir")
-            if ws and ws.exists():
+            if ws and str(ws) not in ("", ".") and ws.exists():
                 try:
                     rec = trash_remove(
                         ws,

@@ -20,7 +20,9 @@ class ConfirmMigrationModal extends Modal {
       cls: "setting-item-description",
     });
     const actions = this.contentEl.createDiv({ cls: "pf-modal-actions" });
-    const cancel = actions.createEl("button", { text: t("migrate_modal_cancel") });
+    const cancel = actions.createEl("button", {
+      text: t("migrate_modal_cancel"),
+    });
     cancel.addEventListener("click", () => this.close());
     const go = actions.createEl("button", { text: t("migrate_modal_confirm") });
     go.addEventListener("click", () => {
@@ -171,13 +173,20 @@ export default class PaperForgePlugin extends Plugin {
     await this.saveSettings();
   }
 
-
   /** One user-facing OCR run path for Settings, Dashboard, and commands. */
-  async requestOcrRun(scope: ActionScope = { kind: "all" }): Promise<void> {
+  async requestOcrRun(
+    scopeOrSkipConfirm: ActionScope | boolean = { kind: "all" }
+  ): Promise<void> {
     if (this.getClient().isOperationActive()) {
       new Notice(t("ocr_already_running"));
       return;
     }
+    const skipConfirm =
+      typeof scopeOrSkipConfirm === "boolean" ? scopeOrSkipConfirm : false;
+    const scope: ActionScope =
+      typeof scopeOrSkipConfirm === "boolean"
+        ? { kind: "all" }
+        : scopeOrSkipConfirm;
     if (scope.kind === "papers" && scope.keys?.some((key) => !key.trim())) {
       new Notice(t("ocr_scope_empty"));
       return;
@@ -204,12 +213,19 @@ export default class PaperForgePlugin extends Plugin {
       snapshot.kind === "papers"
         ? `${t("ocr_scope_papers")} (${snapshot.keys!.length}): ${snapshot.keys!.join(", ")}`
         : "";
+    let checkedCount = -1;
     if (snapshot.kind === "all") {
       try {
         const data = await this.getClient().dashboardStats();
         if (!Array.isArray(data.items))
           throw new Error("Library impact unavailable");
-        scopeLabel = `${t("ocr_scope_all")} (${data.items.length})`;
+        checkedCount = data.items.filter(
+          (item: any) => item?.do_ocr === true
+        ).length;
+        scopeLabel =
+          checkedCount > 0
+            ? `${t("ocr_scope_all")} (${data.items.length}, ${checkedCount} do_ocr)`
+            : `${t("ocr_scope_all")} (${data.items.length}) — ${t("ocr_scope_all_unselected_warn")}`;
       } catch {
         new Notice(t("ocr_scope_unavailable"));
         return;
@@ -298,6 +314,11 @@ export default class PaperForgePlugin extends Plugin {
         this._settingTab?.display();
       });
     };
+
+    if (skipConfirm && (snapshot.kind !== "all" || checkedCount > 0)) {
+      start();
+      return;
+    }
 
     new PaperForgeConfirmModal(
       this.app,
@@ -492,9 +513,16 @@ export default class PaperForgePlugin extends Plugin {
             list.fields.find((f) => f.key === key)?.value;
           const apiBase = String(pick("vector_db_api_base") ?? "");
           const apiModel = String(pick("vector_db_api_model") ?? "");
+          const providerType = String(pick("vector_db_provider_type") ?? "");
+          const ocrJobUrl = String(pick("paddleocr_job_url") ?? "");
+          const ocrModel = String(pick("paddleocr_model") ?? "");
           const agentPlatform = String(pick("agent_platform") ?? "");
           if (apiBase) this.settings.vector_db_api_base = apiBase;
           if (apiModel) this.settings.vector_db_api_model = apiModel;
+          if (providerType)
+            this.settings.vector_db_provider_type = providerType;
+          if (ocrJobUrl) this.settings.paddleocr_job_url = ocrJobUrl;
+          if (ocrModel) this.settings.paddleocr_model = ocrModel;
           if (agentPlatform) this.settings.agent_platform = agentPlatform;
         } catch {
           /* mirrors keep prior values; canonical file is authoritative */
@@ -636,9 +664,15 @@ export default class PaperForgePlugin extends Plugin {
         // mutations route through config set (#142).
         const apiBase = String(pick("vector_db_api_base") ?? "");
         const apiModel = String(pick("vector_db_api_model") ?? "");
+        const providerType = String(pick("vector_db_provider_type") ?? "");
+        const ocrJobUrl = String(pick("paddleocr_job_url") ?? "");
+        const ocrModel = String(pick("paddleocr_model") ?? "");
         const agentPlatform = String(pick("agent_platform") ?? "");
         if (apiBase) this.settings.vector_db_api_base = apiBase;
         if (apiModel) this.settings.vector_db_api_model = apiModel;
+        if (providerType) this.settings.vector_db_provider_type = providerType;
+        if (ocrJobUrl) this.settings.paddleocr_job_url = ocrJobUrl;
+        if (ocrModel) this.settings.paddleocr_model = ocrModel;
         if (agentPlatform) this.settings.agent_platform = agentPlatform;
         // agent_platform choices come from Python's config list (#142).
         const platformField = list.fields.find(
@@ -650,7 +684,6 @@ export default class PaperForgePlugin extends Plugin {
         // stay disabled until a fresh probe/config response (#144).
       }
     }
-
   }
 
   async saveSettings() {

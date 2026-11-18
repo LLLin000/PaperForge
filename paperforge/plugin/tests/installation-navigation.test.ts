@@ -1870,4 +1870,30 @@ describe("Issue #356 recovery: openSetupJourney", () => {
       callOrder.indexOf("sync")
     );
   });
+
+  it("requestOcrRun(true) treats boolean skipConfirm as whole-library scope and warns when 0 papers have do_ocr:true", async () => {
+    const dashboardStats = vi.fn().mockResolvedValue({
+      items: [{ zotero_key: "K1", do_ocr: false }],
+    });
+    const runAction = vi.fn().mockResolvedValue({ ok: true });
+    const fakePlugin = {
+      getClient: () => ({
+        isOperationActive: () => false,
+        dashboardStats,
+        runAction,
+      }),
+      app: { vault: { adapter: { basePath: "/vault" } } },
+    };
+    const obsidianMod = await import("obsidian");
+    const openSpy = vi.spyOn(obsidianMod.Modal.prototype, "open");
+    await PaperForgePlugin.prototype.requestOcrRun.call(
+      fakePlugin,
+      true as any
+    );
+    expect(dashboardStats).toHaveBeenCalledOnce();
+    // Since checkedCount === 0, user must still get a warning confirmation modal
+    expect(openSpy).toHaveBeenCalledOnce();
+    expect(runAction).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
 });

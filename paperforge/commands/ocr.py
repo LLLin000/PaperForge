@@ -67,11 +67,17 @@ _collect_ocr_health_summary = collect_ocr_health_summary
 
 def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int:
     """Run OCR diagnostics and print results."""
+    from paperforge.config import ConfigError, load_vault_config
     from paperforge.credentials import CredentialError as _CredentialError
     from paperforge.ocr_diagnostics import ocr_doctor
 
     try:
-        result = ocr_doctor(config=None, live=live)
+        cfg: dict[str, str] | None = load_vault_config(vault)
+    except ConfigError:
+        cfg = None
+
+    try:
+        result = ocr_doctor(config=cfg, live=live)
     except _CredentialError as exc:
         # #173 corrective: a backend fault (locked/unavailable/denied) is a
         # distinct diagnostic finding — never crashed and never disguised as

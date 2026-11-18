@@ -2824,6 +2824,7 @@ def run_ocr(
     progress_callback: Callable[[str], None] | None = None,
     result_sink: dict | None = None,
     batch_id: str | None = None,
+    allow_unselected_all: bool = True,
 ) -> int:
     """#174 RC: cooperative stop at paper boundaries + per-paper progress —
     the #137 NDJSON stream (ocr.run) needs both.  Returns 130 when stopped.
@@ -2858,6 +2859,9 @@ def run_ocr(
     target_keys = set(selected_keys) if selected_keys is not None else {
         key for key, action in control_actions.items() if action.get("do_ocr", False)
     }
+    if selected_keys is None and not target_keys and not allow_unselected_all:
+        _diag("OCR skipped: 0 papers marked do_ocr: true and allow_unselected_all=False.", flush=True)
+        return 0
     process_all = selected_keys is None and not target_keys
     cleanup_blocked_ocr_dirs(paths, None if process_all else target_keys)
 

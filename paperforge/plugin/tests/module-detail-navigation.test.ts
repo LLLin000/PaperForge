@@ -8,33 +8,43 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
 
 // ── Hoisted mutable state ──
-const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens, runtimePointer } = vi.hoisted(
-  () => {
-    const modalOpens: Array<{
-      kind: string;
-      title: string;
-      effectLabel: string;
-      onConfirm?: () => void;
-      draft: unknown;
-    }> = [];
-    const noticeCalls: string[] = [];
-    const spawnedProcesses: Array<{
-      args: string[];
-      onData?: (data: unknown) => void;
-      onStderr?: (data: unknown) => void;
-      onError?: (err: Error) => void;
-      onClose?: (code: number | null) => void;
-    }> = [];
-    const execFileCalls: Array<{
-      args: string[];
-      cb?: (err: Error | null, stdout: string, stderr: string) => void;
-    }> = [];
-    const runtimePointer: { value: Record<string, string> | null } = {
-      value: null,
-    };
-    return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens, runtimePointer };
-  }
-);
+const {
+  noticeCalls,
+  spawnedProcesses,
+  execFileCalls,
+  modalOpens,
+  runtimePointer,
+} = vi.hoisted(() => {
+  const modalOpens: Array<{
+    kind: string;
+    title: string;
+    effectLabel: string;
+    onConfirm?: () => void;
+    draft: unknown;
+  }> = [];
+  const noticeCalls: string[] = [];
+  const spawnedProcesses: Array<{
+    args: string[];
+    onData?: (data: unknown) => void;
+    onStderr?: (data: unknown) => void;
+    onError?: (err: Error) => void;
+    onClose?: (code: number | null) => void;
+  }> = [];
+  const execFileCalls: Array<{
+    args: string[];
+    cb?: (err: Error | null, stdout: string, stderr: string) => void;
+  }> = [];
+  const runtimePointer: { value: Record<string, string> | null } = {
+    value: null,
+  };
+  return {
+    noticeCalls,
+    spawnedProcesses,
+    execFileCalls,
+    modalOpens,
+    runtimePointer,
+  };
+});
 
 // ── Mocks ──
 vi.mock("../src/release-notes.json", () => ({ default: { versions: [] } }));
@@ -265,13 +275,10 @@ vi.mock("../src/services/python-bridge", () => ({
   runSubprocess: () => {},
 }));
 
-
 vi.mock("../src/services/managed-runtime", () => ({
   readRuntimePointer: () => runtimePointer.value,
   resolveRuntimeCommand: (pointer: { pythonPath?: string } | null) =>
-    pointer?.pythonPath
-      ? { command: pointer.pythonPath, args: [] }
-      : null,
+    pointer?.pythonPath ? { command: pointer.pythonPath, args: [] } : null,
 }));
 
 vi.mock("../src/utils/disclosure", () => ({
@@ -475,7 +482,6 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       embedStatus: vi.fn().mockResolvedValue({}),
       credentialAvailable: vi.fn().mockResolvedValue(false),
       configSet: vi.fn().mockResolvedValue({}),
-
     }),
   };
   return plugin;
@@ -629,39 +635,69 @@ afterEach(() => {
 
 it("keeps the versioned installation verdict when a legacy aggregate reports ready", async () => {
   const tab = makeTab();
-  const ready = { ...createUnknownEnvelope("installation"), user_state: "ready",
-    capability_state: "ready", severity: "ok", reason: { code: "installation.ready", text: "Ready" } };
-  const mismatch = { ...ready, user_state: "action_required", capability_state: "needs_action",
-    severity: "warning", reason: { code: "installation.version_mismatch", text: "Update required" } };
+  const ready = {
+    ...createUnknownEnvelope("installation"),
+    user_state: "ready",
+    capability_state: "ready",
+    severity: "ok",
+    reason: { code: "installation.ready", text: "Ready" },
+  };
+  const mismatch = {
+    ...ready,
+    user_state: "action_required",
+    capability_state: "needs_action",
+    severity: "warning",
+    reason: { code: "installation.version_mismatch", text: "Update required" },
+  };
   const library = createUnknownEnvelope("library");
   const client = {
     invalidateCache: vi.fn(),
-    probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready, library } }),
+    probeAll: vi
+      .fn()
+      .mockResolvedValue({ modules: { installation: ready, library } }),
     probe: vi.fn().mockResolvedValue(mismatch),
   };
   (tab as any)._client = client;
   (tab as any)._refreshAllReadModels();
-  await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
-    .toBe("installation.version_mismatch"));
-  expect(client.probe).toHaveBeenCalledWith("installation", { expectedVersion: "1.0.0" });
+  await vi.waitFor(() =>
+    expect((tab as any)._capabilityState.installation?.reason.code).toBe(
+      "installation.version_mismatch"
+    )
+  );
+  expect(client.probe).toHaveBeenCalledWith("installation", {
+    expectedVersion: "1.0.0",
+  });
   expect((tab as any)._capabilityState.library).toEqual(library);
 });
 
-it.each(["rejected", "malformed"])("fails closed when the versioned installation probe is %s", async (mode) => {
-  const tab = makeTab();
-  const ready = { ...createUnknownEnvelope("installation"), user_state: "ready",
-    capability_state: "ready", severity: "ok", reason: { code: "installation.ready", text: "Ready" } };
-  (tab as any)._capabilityState = { installation: ready };
-  (tab as any)._client = {
-    invalidateCache: vi.fn(),
-    probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready } }),
-    probe: mode === "rejected" ? vi.fn().mockRejectedValue(new Error("unavailable"))
-      : vi.fn().mockResolvedValue({}),
-  };
-  (tab as any)._refreshAllReadModels();
-  await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
-    .toBe("installation.invalid_response"));
-});
+it.each(["rejected", "malformed"])(
+  "fails closed when the versioned installation probe is %s",
+  async (mode) => {
+    const tab = makeTab();
+    const ready = {
+      ...createUnknownEnvelope("installation"),
+      user_state: "ready",
+      capability_state: "ready",
+      severity: "ok",
+      reason: { code: "installation.ready", text: "Ready" },
+    };
+    (tab as any)._capabilityState = { installation: ready };
+    (tab as any)._client = {
+      invalidateCache: vi.fn(),
+      probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready } }),
+      probe:
+        mode === "rejected"
+          ? vi.fn().mockRejectedValue(new Error("unavailable"))
+          : vi.fn().mockResolvedValue({}),
+    };
+    (tab as any)._refreshAllReadModels();
+    await vi.waitFor(() =>
+      expect((tab as any)._capabilityState.installation?.reason.code).toBe(
+        "installation.invalid_response"
+      )
+    );
+  }
+);
 it("offers Setup instead of spawning probes when no runtime is published", () => {
   const tab = makeTab();
   const client = {
@@ -1122,7 +1158,11 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       confirmation_required: false,
     } as any;
     (tab as any)._runAllowedDispatch("installation", primary, {} as any);
-    expect(execFileCalls.some((call) => call.args.includes("foundation.update_python"))).toBe(false);
+    expect(
+      execFileCalls.some((call) =>
+        call.args.includes("foundation.update_python")
+      )
+    ).toBe(false);
     expect(noticeCalls.length).toBeGreaterThan(0);
   });
 
@@ -2028,7 +2068,6 @@ describe("Setup stage separates external runtime from Vault setup", () => {
     (tab as any).display();
     expect(containerEl.textContent ?? "").not.toContain("OVERVIEW-SENTINEL");
   });
-
 });
 
 // ═══════════ RC UX Seam: credential save replaces stale keyring values ═════
@@ -2053,5 +2092,77 @@ describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
     // contract tests) — and no child process is spawned by the tab.
     expect(authSetSecret).toHaveBeenCalledWith("embedding", "sk-new-key-123");
     expect(spawnedProcesses).toHaveLength(0);
+  });
+});
+
+// ═══════════ Commit 1C: Agent platforms, endpoint & URL normalization ═══════════
+describe("settings robustness fixes (Commit 1C)", () => {
+  it("renders non-legacy agent platforms (trae, cline, kimi) without throwing", () => {
+    for (const platform of ["trae", "cline", "kimi", "pi", "augment"]) {
+      const tab = makeTab();
+      (tab.plugin as any).settings.agent_platform = platform;
+      const el = dom.window.document.createElement("div");
+      expect(() => (tab as any)._renderAgentDetail(el)).not.toThrow();
+      expect(el.textContent ?? "").toContain("/pf-deep");
+    }
+  });
+
+  it("strips trailing /embeddings from vector_db_api_base before saving", async () => {
+    const tab = makeTab();
+    const client = (tab as any).getClient();
+    const configSet = vi.fn().mockResolvedValue({});
+    client.configSet = configSet;
+
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    const base = el.querySelectorAll<HTMLInputElement>(".pf-sr-cfg-input")[1];
+    base.value = "https://proxy.example/v1/embeddings/";
+    base.dispatchEvent(new dom.window.Event("change"));
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_api_base",
+      "https://proxy.example/v1"
+    );
+    expect(base.value).toBe("https://proxy.example/v1");
+  });
+
+  it("renders PaddleOCR URL/model and provider type selector while keeping .pf-sr-cfg-input count at 3", async () => {
+    const tab = makeTab();
+    const client = (tab as any).getClient();
+    const configSet = vi.fn().mockResolvedValue({});
+    client.configSet = configSet;
+
+    const memEl = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(memEl);
+    expect(memEl.querySelectorAll(".pf-sr-cfg-input")).toHaveLength(3);
+    const providerSelect = memEl.querySelector<HTMLSelectElement>(
+      '[data-pf-testid="sr-provider-type-select"]'
+    );
+    expect(providerSelect).not.toBeNull();
+    providerSelect!.value = "requests";
+    providerSelect!.dispatchEvent(new dom.window.Event("change"));
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_provider_type",
+      "requests"
+    );
+
+    const ocrEl = dom.window.document.createElement("div");
+    (tab as any)._capabilityState = {
+      ocr: { ...createUnknownEnvelope("ocr"), user_state: "ready" },
+    };
+    (tab as any)._renderOcrDetail(ocrEl);
+    const urlInput = ocrEl.querySelector<HTMLInputElement>(
+      '[data-pf-testid="ocr-job-url-input"]'
+    );
+    expect(urlInput).not.toBeNull();
+    urlInput!.value = "https://custom.ocr.local/jobs";
+    urlInput!.dispatchEvent(new dom.window.Event("change"));
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+    expect(configSet).toHaveBeenCalledWith(
+      "paddleocr_job_url",
+      "https://custom.ocr.local/jobs"
+    );
   });
 });

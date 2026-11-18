@@ -27,13 +27,13 @@
       "33:paperforge.worker._utils"
     ],
     "paperforge.commands.ocr": [
-      "105:paperforge.worker._utils",
+      "111:paperforge.worker._utils",
       "17:paperforge.worker.ocr_maintenance:_can_rebuild",
       "30:paperforge.worker._utils",
-      "445:paperforge.worker._utils",
-      "446:paperforge.worker.ocr:_resolve_paddleocr_token",
-      "598:paperforge.worker._utils",
-      "787:paperforge.worker._progress"
+      "451:paperforge.worker._utils",
+      "452:paperforge.worker.ocr:_resolve_paddleocr_token",
+      "604:paperforge.worker._utils",
+      "793:paperforge.worker._progress"
     ],
     "paperforge.commands.paper_context": [
       "114:paperforge.worker._utils"
@@ -54,7 +54,7 @@
       "379:paperforge.lineage:_canonical_pdf_map"
     ],
     "paperforge.lineage": [
-      "1197:paperforge.embedding._config"
+      "1200:paperforge.embedding._config"
     ],
     "paperforge.plugin.test.fixtures.build_e2e_vault": [
       "197:paperforge.lineage:_resolve_canonical_pdf"
@@ -71,23 +71,23 @@
       "735:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
-      "232:paperforge.worker._utils",
-      "359:paperforge.worker._domain",
-      "448:paperforge.worker._utils"
+      "243:paperforge.worker._utils",
+      "370:paperforge.worker._domain",
+      "459:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"
     ],
     "paperforge.worker.asset_index": [
       "40:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
-      "548:paperforge.embedding._config",
-      "548:paperforge.embedding._config:_read_plugin_settings"
+      "581:paperforge.embedding._config",
+      "581:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
-      "2953:paperforge.lineage:_resolve_canonical_pdf"
+      "2957:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
-      "231:paperforge.embedding.vectors:_delete_paper_vectors_locked"
+      "233:paperforge.embedding.vectors:_delete_paper_vectors_locked"
     ],
     "paperforge.worker.sync": [
       "27:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
