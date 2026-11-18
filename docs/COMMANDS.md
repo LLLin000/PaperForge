@@ -299,6 +299,34 @@ paperforge paper-status <query>      # 查找文献状态 (key/DOI/title/alias)
 paperforge paper-status "XGT9Z257" --json
 ```
 
+### `paperforge inspect`
+
+只读检查单篇文献从 Zotero 索引到向量检出的六阶段全链路状态与瓶颈定位：
+
+```bash
+paperforge inspect <KEY|DOI|citation_key|title>
+paperforge inspect XGT9Z257 --json
+```
+
+检查阶段（按流水线顺序）：`source`（索引与 PDF 解析）→ `lineage`（文献笔记与状态）→ `ocr`（`blocks.raw.jsonl`、管线版本陈旧度、离线可重建性与健康度）→ `objects_and_render`（图表清单、`render/fulltext.md` 与一致性审计）→ `memory`（`paperforge.db` schema、units 计数与 freshness）→ `vectors`（`vec_body_meta` / `vec_objects_meta` 与配置模型）。
+
+特点：
+- **严格只读**：不写任何文件，不获取 Barrier/Writer 锁；若 `paperforge.db` 存在，仅以 SQLite `?mode=ro` 只读方式查询。
+- 返回 `diagnosis.overall`（`healthy` | `degraded` | `action_needed`）、`diagnosis.bottleneck_stage`、`diagnosis.findings` 以及可执行建议命令（如离线 `ocr.rebuild_derived` 或 `paperforge memory build`）；多候选模糊匹配时返回 `resolved: false` 与候选列表，未找到时退出码为 `1`（`PATH_NOT_FOUND`）。
+
+调试 OCR V3 分阶段角色/归属跃迁（开发者离线脚本，不修改 Vault）：
+
+```bash
+python scripts/dev/ocr_rebuild_paper.py --dump-stages-only --ocr-dir <vault/System/PaperForge/ocr> <KEY>
+```
+
+### `paperforge probe`
+
+```bash
+paperforge probe all --json          # 汇总 installation/library/ocr/memory/help/maintenance 探测
+paperforge probe ocr --json          # 探测单一模块状态
+```
+
 ### `paperforge reading-log`
 
 ```bash

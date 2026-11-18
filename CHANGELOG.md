@@ -8,6 +8,9 @@ All notable changes to PaperForge.
 
 ### Added
 
+- Add strictly read-only `paperforge inspect <query> [--json]` per-paper 6-stage diagnostic command (`source`, `lineage`, `ocr`, `objects_and_render`, `memory`, `vectors`) using SQLite `?mode=ro` URI without creating lock or WAL files, plus `scripts/dev/ocr_rebuild_paper.py --dump-stages` / `--dump-stages-only` for offline OCR V3 stage transition inspection.
+- Formalize pluggable OCR inbound schema protocol (`paperforge/providers/base.py`, `paperforge/providers/__init__.py`) and route PaddleOCR normalization and job submission through `resolve_ocr_provider`.
+- Add `check_module_graph.py --check` (R1-R4) to the L0 `static` GitHub Actions job and fold standalone cross-OS `unit-tests` into `j-matrix` while tightening CI caching and PR concurrency cancellation.
 - Fail the static CI job when the research evidence corpus (`docs/evidence/`) is tracked, and — for a pull request — when any of its commits added it. The gate walks commits rather than diffing endpoints, so an add-then-delete inside a branch still fails; `.gitignore` cannot stop `git add -f`.
 - Save research records from the paper panel, search specific quotes/use text separately from paper metadata, and inspect stable record IDs and append-only correction history (#353).
 - Search JSONL immediately without rebuilding Memory or using embeddings; source checks distinguish recorded, user-confirmed, exact-text matched, stale and unavailable positions.
@@ -16,6 +19,8 @@ All notable changes to PaperForge.
 
 ### Fixed
 
+- Route embedding preflight and runtime clients (`preflight.py`, `builder.py`, `dim_detect.py`, `search.py`) through `resolve_embedding_provider` and `check_embedding_provider_prereqs`, enabling `vector_db_provider_type=requests` without requiring the `openai` SDK.
+- Eliminate the remaining `worker -> commands` layer violation (`worker/ocr_health.py:collect_ocr_health_summary`), expose public read-only APIs on `promote_r` and `render_audit`, and defer top-level `pymupdf` / `PIL` imports inside OCR worker modules (verified by `tests/test_import_weight.py`).
 - Build memory retrieval units from the configured OCR directory rather than a hardcoded system directory (#356).
 - Distinguish a published runtime or completed library setup from a subsequent path refresh failure (#356).
 - Classify explicit OCR HTTP 401/403 refusals as blocked; keep ambiguous submissions without a confirmed job ID for reconciliation, with no automatic resubmission or record deletion. On a per-paper poll timeout, release that paper's local concurrency slot while retaining the remote job ID; report provider rate-limit rejection separately (#356).

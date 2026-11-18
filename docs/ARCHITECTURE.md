@@ -1,104 +1,133 @@
 # PaperForge Architecture
 
-> Maintainer-facing documentation covering the two-layer design, data flow, directory structure, key design decisions, and extension points.
+> Maintainer-facing documentation covering the control/data/retrieval planes, provider seams, module-boundary gates, key design decisions, and extension points.
 >
-> **Last updated:** 2026-09-01 | **Version:** v1.3 | **Target audience:** maintainers and contributors
+> **Last updated:** 2026-11-18 | **Version:** v2.0 | **Target audience:** maintainers and contributors
 
 ---
 
 ## Table of Contents
 
 1. [System Overview](#system-overview)
-2. [Data Flow](#data-flow)
-3. [Directory Structure](#directory-structure)
-4. [Commands Package](#commands-package)
-5. [Design Decision Records (ADR)](#design-decision-records-adr)
-6. [Extension Points](#extension-points)
+2. [Control Plane & Privacy Boundary](#control-plane--privacy-boundary)
+3. [Data Flow & V3 OCR Contract](#data-flow--v3-ocr-contract)
+4. [Retrieval & Pluggable Embedding Plane](#retrieval--pluggable-embedding-plane)
+5. [Directory Structure](#directory-structure)
+6. [Module Boundaries & Architecture Gates](#module-boundaries--architecture-gates)
+7. [Diagnostics & Troubleshooting](#diagnostics--troubleshooting)
+8. [Commands Package](#commands-package)
+9. [Design Decision Records (ADR)](#design-decision-records-adr)
+10. [Extension Points](#extension-points)
 
 ---
 
 ## System Overview
 
-PaperForge is a local-first literature workflow that bridges Zotero (reference management) and Obsidian (knowledge management) for medical researchers. The system is intentionally split into two distinct layers: the **Worker layer** and the **Agent layer**. This separation is the defining architectural choice of the project.
+PaperForge is a local-first literature workflow that bridges Zotero (reference management) and Obsidian (knowledge management) for medical researchers. Its v2.0 architecture cleanly separates three planes plus a cognitive agent layer:
 
-The **Worker layer** (`literature_pipeline.py` and the `paperforge/commands/` package) handles all automated, mechanical tasks: detecting new literature from Zotero via Better BibTeX JSON export, generating formal notes, running OCR through the PaddleOCR API, and maintaining state consistency across the system. Workers are deterministic, idempotent where possible, and designed to run without human intervention. They are triggered by CLI commands such as `paperforge sync` or `paperforge ocr`.
-
-The **Agent layer** (OpenCode Agent skills like `/pf-deep` and `/pf-paper`) handles interactive, cognitive tasks: deep reading, critical analysis, figure interpretation, and synthesis writing. Agents require human direction — they are triggered by explicit user commands and operate on data prepared by the Worker layer. An Agent never triggers a Worker automatically, and a Worker never triggers an Agent automatically.
-
-This separation matters for three reasons. First, it keeps the automation layer simple and testable — workers are plain Python functions with clear inputs and outputs. Second, it respects user agency — deep reading is a deliberate act, not a background process. Third, it isolates failure domains: a bug in OCR handling cannot corrupt a user's carefully written analysis, and an Agent hallucination cannot damage the underlying library index.
+- **Control Plane (`paperforge.json`, `paperforge/actions/`, `paperforge/probes/`, `paperforge/runtime_installer.py`, `plugin/src/client/`)**: The Obsidian plugin is a typed thin client (`PaperForgeClient` in `paperforge/plugin/src/client/paperforge-client.ts`) that communicates with Python solely through structured `PFResult` JSON, the frozen NDJSON progress stream (`core/streaming.py`), declarative action descriptors in `paperforge/actions/registry.py`, and Schema-v2 capability probes in `paperforge/probes/`. Command strings and raw argv never cross the wire.
+- **Data Plane (`paperforge/providers/`, `paperforge/worker/`, `paperforge/render_audit.py`, `paperforge/reconcile_figures.py`)**: Deterministic pipeline stages transform Better BibTeX (BBT) exports into formal Markdown notes, normalized OCR raw blocks via pluggable `OCRProvider` adapters, V3-structured artifacts (`blocks.structured.jsonl`, inventories, cropped assets, `render/fulltext.md`), and audited render consistency reports.
+- **Retrieval & Pluggable Embedding Plane (`paperforge/memory/`, `paperforge/retrieval/`, `paperforge/embedding/providers/`)**: SQLite + FTS5 metadata/body retrieval (`paperforge.db`) combined with `sqlite-vec` (`vec0`) hybrid search driven by unified embedding provider resolution (`openai_sdk` and `requests`).
+- **Agent Layer (`paperforge/skills/paperforge/`)**: Interactive cognitive workflows (`/pf-deep`, `/pf-paper`, retrieval routing via `query-plan`) operate strictly over Worker-prepared canonical outputs and CLI contracts. Workers never trigger Agents, and Agents never mutate underlying SQLite/OCR stores directly.
 
 ---
 
-## Data Flow
+## Control Plane & Privacy Boundary
 
-The complete pipeline flows from Zotero to Obsidian through six stages, with file formats and state transitions at each step.
+- **Managed Runtime Pointer**: `paperforge runtime install|update|repair|status` manages an isolated Python runtime and atomically publishes a `pointer.json` record only after candidate verification succeeds. The plugin treats the pointer as read-only and never mutates the active environment in-place.
+- **Modular Capability Probes (`paperforge/probes/`)**: Six domain probe modules (`installation.py`, `library.py`, `ocr.py`, `memory.py`, `maintenance.py`, `help.py`) plus shared Schema-v2 envelope builders (`envelope.py`) synthesize semantic read models consumed by Dashboard and Settings views; `paperforge/commands/probe.py` acts as a compatibility facade and CLI dispatcher.
+- **Declarative Action Registry (`paperforge/actions/registry.py`)**: Owns action metadata (`safety_class`, `confirmation_required`, `interruptible`, `scope`) and preflight projections (`preflight_projection.py`).
+- **Support & Issue Egress Redaction**: User-facing support diagnostics and GitHub issue drafts (`PublicSupportReport` in `paperforge/plugin/src/primitives.ts` and `PublicIssueDraft` in `paperforge/plugin/src/views/modals.ts`) allowlist structured public fields (known OCR reason codes, bounded counts, static labels) and redact local paths, tokens, paper titles, PDF filenames, and raw stderr/stage logs.
 
+---
+
+## Data Flow & V3 OCR Contract
+
+The complete pipeline flows from Zotero exports to Obsidian notes and retrieval stores through deterministic, resumable stages:
+
+```text
++----------+     Better BibTeX      +-----------------------------------+
+|  Zotero  |  ------------------->  | <system_dir>/PaperForge/exports/  |
+| Library  |     auto-export        | library.json                      |
++----------+                        +-----------------+-----------------+
+                                                      |
+                                              paperforge sync
+                                                      v
++-----------------------------------+  +-----------------------------------+
+| <resources_dir>/<literature_dir>/ |  | <system_dir>/PaperForge/indexes/  |
+| <KEY> - <Title>.md (Formal Notes) |  | formal-library.json (v2 envelope) |
++-----------------------------------+  +-----------------+-----------------+
+                                                         |
+                                      paperforge ocr run / action ocr.run
+                                                         v
++-------------------------------------------------------------------------+
+| <system_dir>/PaperForge/ocr/<KEY>/                                      |
+|   raw/                  source_metadata.json, raw_meta.json              |
+|   canonical/            blocks.raw.jsonl (provider-normalized truth)    |
+|   structure/            blocks.structured.jsonl, figure_inventory.json, |
+|                         table_inventory.json, reader_figures.json       |
+|   render/               fulltext.md, render-map.json,                   |
+|                         render.consistency.json, materialization...json |
+|   assets/               cropped figure & table images                   |
+|   health/               ocr_health.json                                 |
+|   index/                structure-tree.json, role-index.json,           |
+|                         result-hash.txt (atomic publication gate)       |
+|   meta.json, fulltext.md (compat projection)                            |
++------------------------------------+------------------------------------+
+                                     |
+              paperforge memory build + paperforge embed build
+                                     v
++-------------------------------------------------------------------------+
+| <system_dir>/PaperForge/indexes/paperforge.db                           |
+|   papers + paper_fts (FTS5) + body_units / body_units_fts               |
+|   object_units + vec_body / vec_objects / vec_fulltext (sqlite-vec)     |
++-------------------------------------------------------------------------+
 ```
-+----------+     Better BibTeX      +---------------------------+
-|  Zotero  |  ------------------->  |  library.json (JSON)      |
-|  (User   |     auto-export        |  <system_dir>/PaperForge/ |
-|  Library)|                        |  exports/                 |
-+----------+                        +------------+--------------+
-                                                  |
-                                          paperforge sync
-                                                  |
-                                                  v
-+-----------------------------------+  +---------------------------+
-|  Literature/<domain>/<key> -      |  |  Markdown + YAML          |
-|  <Title>.md (Formal Notes)        |  |  frontmatter              |
-+-----------------------------------+  +---------------------------+
-                                                  |
-                               User sets do_ocr: true
-                                                  |
-                                                  v
-+-----------------------------------+  +---------------------------+
-|  <system_dir>/PaperForge/ocr/     |  |  fulltext.md (Markdown)   |
-|  <key>/ (OCR Output)              |  |  images/ (PNG/JPEG)       |
-|                                   |  |  meta.json (JSON)         |
-|                                   |  |  figure-map.json (JSON)   |
-+-----------------------------------+  +---------------------------+
-                                                  |
-                               User sets analyze: true
-                               paperforge deep-reading (check queue)
-                                                  |
-                                                  v
-+-----------------------------------+  +---------------------------+
-|  /pf-deep <zotero_key>            |  |  Agent-generated Markdown |
-|  (Agent Deep Reading)             |  |  inserted into Formal     |
-|                                   |  |  Note ## 精读 section     |
-+-----------------------------------+  +---------------------------+
+
+### Pluggable OCR Provider Seam (`paperforge/providers/`)
+
+- `paperforge/providers/base.py` defines the runtime-checkable `OCRProvider` protocol (`submit_pdf`, `poll_job`, `parse_result`) and `ProviderStatus`.
+- `paperforge/providers/__init__.py` exposes `resolve_ocr_provider(provider_name)` and inbound schema helpers (`extract_paddleocr_result_url`, `iter_paddleocr_page_results`, `parse_paddleocr_page_blocks`, `parse_paddleocr_raw_blocks`).
+- `paperforge/worker/ocr_blocks.py` and `paperforge/worker/ocr.py` normalize vendor responses exclusively through the provider boundary before writing `canonical/blocks.raw.jsonl`.
+
+### V3 OCR Pipeline Stage Contract
+
+The V3 derived pipeline (enabled by default; `OCR_PIPELINE_V3=0` reverts to legacy order) executes a strict contract sequence because downstream stages consume candidate and ownership fields stamped by earlier ones:
+
+```text
+raw blocks
+  → build_structured_blocks(..., normalize_mode="seed_only")   # seed_role + signatures
+  → pre_match_normalize                                        # shadow role_candidate
+  → run_association_stage (ocr_object_stage.py)                # figures, bio cleanup, tables, conflicts
+  → post_match_normalize                                       # tail settlement + role commit
+  → commit_object_roles / apply_object_writebacks              # _object_owner_id + figure_inner_text
+  → write inventories & blocks.structured.jsonl
+  → extract_and_write_objects                                  # bbox-expanded image/table crops
+  → render_fulltext_markdown & write_render_outputs            # fulltext.md + render.consistency.json
+  → publish_ocr_result_hash                                    # clear result-hash.pending gate
 ```
 
-### Stage-by-Stage Explanation
+Heavy native libraries (`pymupdf`, `PIL`, `torch`, `chromadb`, `pdfplumber`) are strictly lazy-loaded inside worker functions (enforced by `tests/test_import_weight.py` and `check_module_graph.py` R4) so Windows multiprocessing spawn never imports them at module load time.
 
-| Stage | Input | Output | Trigger | Actor |
-|-------|-------|--------|---------|-------|
-| **1. Export** | Zotero items | `library.json` | Automatic (BBT "Keep updated") | Better BibTeX |
-| **2. Sync** | `library.json` | `Literature/<key> - <Title>.md` | `paperforge sync` | Worker |
-| **3. OCR** | PDF attachments | `ocr/<key>/` directory | `paperforge ocr` | Worker |
-| **4. Queue Check** | Formal note frontmatter | Console table | `paperforge deep-reading` | Worker |
-| **5. Deep Reading** | OCR output + formal note | Annotated formal note | `/pf-deep <key>` | Agent |
+### Stage-by-Stage Overview
 
-### State Machine (OCR)
+| Stage | Primary Command / Module | Inputs | Authoritative Outputs |
+|-------|--------------------------|--------|-----------------------|
+| **1. Export** | Better BibTeX | Zotero items | `exports/library.json` |
+| **2. Sync** | `paperforge sync` | `library.json` | `indexes/formal-library.json`, Formal Notes |
+| **3. OCR Raw** | `paperforge ocr run` | Source PDF via `pdf_resolver.py` | `canonical/blocks.raw.jsonl`, `raw/` |
+| **4. OCR Derived** | `paperforge ocr rebuild` / `ocr_rebuild.py` | `blocks.raw.jsonl`, `source_metadata.json` | `structure/`, `assets/`, `render/`, `index/result-hash.txt` |
+| **5. Memory Substrate** | `paperforge memory build` | `formal-library.json`, published OCR `index/` + `structure/` | `indexes/paperforge.db` (FTS5 + structural units) |
+| **6. Vector Index** | `paperforge embed build` | `body_units`, `object_units` | `vec_*` virtual tables in `paperforge.db` |
 
-Each literature item tracks `ocr_status` through a finite state machine:
+---
 
-```
-       pending  <----  User sets do_ocr: true
-          |
-          v
-    processing  <----  Worker uploads PDF to PaddleOCR
-          |
-    +-----+-----+
-    |           |
-    v           v
-   done      failed
-    |           |
-    v           v
-  Ready      User may retry
-  for deep   by resetting
-  reading    do_ocr: true
-```
+## Retrieval & Pluggable Embedding Plane
+
+All embedding operations route through `paperforge/embedding/providers/__init__.py`:
+
+- `check_embedding_provider_prereqs(vault)` verifies runtime dependencies for the configured `vector_db_provider_type` (`openai_sdk` checks `openai`; `requests` checks `requests` and does not require `openai`).
+- `resolve_embedding_provider(vault, default_cls=...)` instantiates `paperforge.embedding.providers.openai_compatible.OpenAICompatibleProvider` or `paperforge.embedding.providers.requests_fallback.OpenAICompatibleProvider` uniformly across `preflight.py`, `builder.py`, `dim_detect.py`, and `search.py`.
 
 ---
 
@@ -140,64 +169,77 @@ v1.5 用三个检索意图取代了旧版的 L4 gateway 系统（content-discove
 
 ## Directory Structure
 
-PaperForge uses **5 core directories** under the Obsidian vault root. All paths are configurable via `paperforge.json` and resolved through the shared config resolver (see [ADR-001](#adr-001-config-precedence)).
+PaperForge uses structured directories under the Obsidian vault root. All paths are configured in schema-v2 `paperforge.json` and resolved through `paperforge/config.py` (`load_config` / `resolve_paths`, see [ADR-001](#adr-001-config-precedence)).
 
-```
+```text
 {vault_root}/
-|
 |-- <resources_dir/>                          # User data and notes
-|   |-- <literature_dir/>                     # Formal literature notes (with frontmatter tracking)
-|   |   |-- 骨科/
-|   |   |   |-- ABCDEFG - Paper Title.md      # Generated by sync
-|   |   |-- 运动医学/
-|   |   |   |-- HIJKLMN - Another Title.md
+|   |-- <literature_dir/>                     # Formal literature notes (frontmatter + ## 精读)
+|       |-- <domain>/
+|           |-- ABCDEFG - Paper Title.md
 |
-|-- <system_dir>/                             # System-generated data
+|-- <system_dir>/                             # System-generated artifacts (regenerable)
 |   |-- PaperForge/
-|   |   |-- exports/                          # BBT JSON export
-|   |   |   |-- library.json                  # Auto-exported by Zotero
-|   |   |-- ocr/                              # OCR results
-|   |   |   |-- ABCDEFG/                      # One directory per Zotero key
-|   |   |   |   |-- fulltext.md               # Extracted text with page markers
-|   |   |   |   |-- images/                   # Auto-cut figures and tables
-|   |   |   |   |-- meta.json                 # OCR status and metadata
-|   |   |   |   |-- figure-map.json           # Figure index (auto-generated)
-|   |   |   |   |-- chart-type-map.json       # Chart type classification
-|   |   |-- worker/scripts/
-|   |   |   |-- literature_pipeline.py        # Core worker script
+|   |   |-- exports/
+|   |   |   |-- library.json                  # Zotero BBT auto-export
+|   |   |-- indexes/
+|   |   |   |-- formal-library.json           # Canonical asset index (v2 envelope)
+|   |   |   |-- paperforge.db                 # SQLite FTS5 + retrieval units + vec0 vectors
+|   |   |-- ocr/
+|   |       |-- ABCDEFG/                      # One workspace per zotero_key
+|   |           |-- raw/                      # source_metadata.json, raw_meta.json
+|   |           |-- canonical/blocks.raw.jsonl
+|   |           |-- structure/                # blocks.structured.jsonl, figure/table inventories
+|   |           |-- render/                   # fulltext.md, render.consistency.json, provenance
+|   |           |-- assets/                   # cropped figure/table images
+|   |           |-- health/ocr_health.json
+|   |           |-- index/                    # structure-tree.json, role-index.json, result-hash.txt
+|   |           |-- meta.json
+|   |           |-- fulltext.md               # Compat projection
 |   |
-|   |-- Zotero/                               # Junction/symlink to Zotero storage
-|   |   |-- storage/                          # Actual PDF attachments
+|   |-- Zotero/storage/                       # Zotero PDF attachments (or external junction)
 |
-|-- <agent_config_dir>/                       # Agent configuration
-|   |-- skills/
-|   |   |-- literature-qa/                    # Deep reading skill
-|   |   |   |-- scripts/
-|   |   |   |   |-- ld_deep.py                # /pf-deep implementation
-|   |   |   |-- prompt_deep_subagent.md       # Agent prompt template
-|   |   |   |-- chart-reading/                # 14 chart type guides
-|   |-- command/
-|   |   |-- pf-deep.md                        # Command documentation
-|   |   |-- pf-paper.md
-|   |   |-- pf-ocr.md
-|   |   |-- pf-sync.md
-|   |   |-- pf-status.md
-|
-|-- paperforge.json                           # Configuration file
-|-- .env                                      # API keys (not committed)
-|-- AGENTS.md                                 # User guide
+|-- .agents/skills/paperforge/                # Deployed PaperForge agent skill
+|-- paperforge.json                           # Canonical schema-v2 configuration
+|-- .env                                      # Local secrets/overrides (never exported by diagnostics)
 ```
 
 ### Directory Rationale
 
 | Directory | Purpose | Generated By | Modified By |
 |-----------|---------|--------------|-------------|
-| `<resources_dir>/<literature_dir>/` | Final output: formal notes with frontmatter + deep reading annotations | `paperforge sync` (Worker) | Agent (writes `## 精读`), User |
-| `<system_dir>/PaperForge/exports/` | Better BibTeX JSON export | Zotero + BBT (external) | Read-only for PaperForge |
-| `<system_dir>/PaperForge/ocr/` | OCR extraction results: text, images, metadata | `paperforge ocr` (Worker) | Read-only for Agent |
-| `<system_dir>/Zotero/` | Junction or symlink to Zotero data directory | User (installation step) | Read-only for PaperForge |
+| `<resources_dir>/<literature_dir>/` | Formal notes with frontmatter + deep reading annotations | `paperforge sync` | Agent (writes `## 精读`), User |
+| `<system_dir>/PaperForge/exports/` | Better BibTeX JSON export | Zotero + BBT | Read-only for PaperForge |
+| `<system_dir>/PaperForge/indexes/` | Canonical asset index + SQLite FTS5/`vec0` database | `paperforge sync`, `memory build`, `embed build` | Python backend only |
+| `<system_dir>/PaperForge/ocr/` | Normalized raw OCR, V3 structured blocks, crops, renders | `paperforge ocr`, `ocr rebuild` | Read-only for Agent/UI |
+| `<system_dir>/Zotero/` | Zotero data directory or junction | User (setup step) | Read-only for PaperForge |
 
-The separation between `<resources_dir>/` (user-facing, should be backed up) and `<system_dir>/` (system-generated, can be rebuilt) is intentional. If a vault is lost, `<resources_dir>/` contains the valuable intellectual output; `<system_dir>/PaperForge/ocr/` and `<system_dir>/PaperForge/exports/` can be regenerated by re-running workers.
+---
+
+## Module Boundaries & Architecture Gates
+
+Module boundaries are enforced in automated CI (`L0 static` + Python/Plugin suites) rather than convention alone:
+
+| Gate | Tool / Test | What It Enforces |
+|------|-------------|------------------|
+| **Module Graph & Layering** | `scripts/check_module_graph.py --check` (`tests/test_module_graph.py`) | **R1** zero import cycles (`rings: []`); **R2/R2b** no cross-module `_private` access (aliased or local-shadowed) outside shrinking frozen ratchet; **R3** zero `worker/ -> commands/` or `worker/ -> plugin/` violations (`layer_violations: {}`); **R4** no new top-level heavy imports (`torch`, `chromadb`, `fitz`, `pymupdf`, `pdfplumber`, `PIL`). |
+| **Worker Import Weight** | `tests/test_import_weight.py` | Subprocess check proving importing `paperforge.worker.ocr` never pulls in `torch`, `chromadb`, `pdfplumber`, `fitz`, `pymupdf`, or `PIL`. |
+| **Cross-Layer Contract Audit** | `paperforge/architecture_audit/` (`docs/architecture-audit-2026-08-06/build_audit.py --check`) | Python AST + TypeScript AST collectors verifying single mutation/publication authorities, read-only query surfaces, cooperative stop authority, and display-only version restore. |
+| **Plugin Transport Ratchet** | `tests/test_architecture_boundaries.py` & plugin Vitest | `PaperForgeClient` owns all subprocess spawns and error redaction; UI views consume typed DTOs only. |
+| **CI Shard Partition** | `scripts/ci_shard.py --write` (`tests/test_ci_shard_map.py`, `tests/test_ci_coverage_contract.py`) | Ensures every tracked test file is covered by the merge gate without blind spots. |
+
+---
+
+## Diagnostics & Troubleshooting
+
+PaperForge provides layered read-only diagnostic surfaces before mutating vault artifacts:
+
+1. **System & Environment Health (`paperforge probe all --json`)**: Queries the 6 modular probes in `paperforge/probes/` (`installation`, `library`, `ocr`, `memory`, `help`, `maintenance`) to inspect managed runtime status, config validity, index health, and pending repairs without side effects.
+2. **Per-Paper End-to-End Bottleneck Locator (`paperforge inspect <query> [--json]`)**: Implemented in `paperforge/commands/inspect_paper.py`. Resolves a paper by `zotero_key`, `citation_key`, `DOI`, title, or OCR directory and reports structured status across all 6 stages (`source`, `lineage`, `ocr`, `objects_and_render`, `memory`, `vectors`) plus actionable remediation commands. Opens `paperforge.db` strictly via SQLite `?mode=ro` URI when present and leaves the vault byte-identical.
+3. **OCR Provider Connectivity (`paperforge ocr doctor [--live]`)**: Verifies OCR endpoint reachability and response parsing.
+4. **Offline V3 Stage Debugger (`python scripts/dev/ocr_rebuild_paper.py --dump-stages-only --ocr-dir <ocr_root> <KEY>`)**: Replays the 5 in-memory V3 structural stages (`1_seed_roles` → `2_pre_match_normalize` → `3_object_matching` → `4_post_match_normalize` → `5_object_writebacks`) from `canonical/blocks.raw.jsonl` and emits role counts and block-level state transitions to `stages_summary.json`.
+
+---
 
 ### Render Reconciliation and R/P Authority
 
@@ -314,7 +356,7 @@ if args.command == "deep-reading":
 
 ### Agent Integration
 
-Agent skills (e.g., `skills/literature-qa/scripts/ld_deep.py`) reuse the same resolver logic but call `paperforge.commands` functions directly rather than going through the CLI argument parser.
+Deployed skills in `.agents/skills/paperforge/` call documented `paperforge` CLI JSON contracts (`query-plan`, `paper-context`, `search`, `retrieve`, `inspect`) rather than mutating vault stores or SQLite directly.
 
 ### Backward Compatibility
 
@@ -332,25 +374,23 @@ if args.command == "selection-sync":
 
 ## Design Decision Records (ADR)
 
-### ADR-001: Config Precedence
+### ADR-001: Config Precedence & Fail-Closed Authority
 
-**Status:** Accepted
-**Phase:** 1 (Foundation)
-**Context:** PaperForge needs to support multiple configuration sources: built-in defaults, JSON config files, environment variables, and explicit function arguments. Users need predictable override behavior.
-**Decision:** Establish a locked five-level precedence hierarchy:
+**Status:** Accepted (updated v2.0)
+**Phase:** 1 (Foundation) -> Config v2 (#142)
+**Context:** PaperForge needs to support multiple configuration sources: built-in defaults, schema-v2 `paperforge.json`, process environment variables, and explicit invocation overrides, while refusing silent guesses or secret fields in config files.
+**Decision:** Python (`paperforge/config.py:load_config`, `resolve_paths`) is the sole config parser, validator, and writer, enforcing four deterministic precedence levels:
 
-1. **Explicit overrides** (function parameter)
-2. **Process environment variables** (`PAPERFORGE_*`)
-3. **`paperforge.json` nested `vault_config` block**
-4. **`paperforge.json` top-level keys** (legacy backward-compat)
-5. **Built-in defaults**
+1. **Built-in defaults** (`FIELD_SPECS`)
+2. **`paperforge.json`** (schema v2 nested `vault_config` + top-level scalar fields)
+3. **Process environment variables** (`PAPERFORGE_*`, `VECTOR_DB_*`, `PADDLEOCR_*`, `ZOTERO_DATA_DIR`)
+4. **Explicit invocation overrides**
 
-The `load_vault_config()` function in `paperforge/config.py` merges sources in this exact order. No source can accidentally override a higher-precedence source.
+Missing, corrupt, legacy (`config.migration_required`), future-schema, or secret-bearing configs fail closed. `paperforge_paths()` and `load_vault_config()` delegate to `resolve_paths()` and `load_config()`.
 **Consequences:**
-- (+) Predictable behavior: users know exactly which setting wins.
-- (+) Backward compatible: legacy top-level JSON keys still work.
-- (+) Testable: tests can inject overrides without mutating global state.
-- (-) Slightly more complex than a single config dict; requires documentation.
+- (+) Predictable fail-closed resolution shared across CLI, workers, probes, and actions.
+- (+) No secret leakage into `paperforge.json`; credentials are managed separately via `auth`.
+- (+) Testable via explicit overrides without mutating global state.
 
 ---
 
@@ -660,52 +700,27 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
        return mycommand.run(args)
    ```
 
-5. **Add tests** in `tests/test_mycommand.py` following the fixture-based pattern.
-
-### Adding a New Agent Command
-
-1. **Create command documentation** in `<agent_config_dir>/command/pf-mycmd.md` following the unified template (see `docs/COMMANDS.md`).
-
-2. **Implement skill logic** in `<agent_config_dir>/skills/<skill-name>/scripts/`:
-   - Import from `paperforge.commands` for shared logic.
-   - Or call `paperforge.cli.main(["mycmd", ...])` for CLI reuse.
-
-3. **Register with agent platform**:
-   - **OpenCode:** Add to `.opencode/command/` directory.
-   - **Codex:** Add to `.codex/commands/` (structure TBD — follow platform conventions).
-   - **Claude Code:** Add to `.claude/commands/` (structure TBD — follow platform conventions).
-
-### Adding Support for a New Agent Platform
-
-The current implementation targets **OpenCode Agent** (`.opencode/skills/` and `.opencode/command/`). To add **Codex** or **Claude Code**:
-
-1. **Analyze platform conventions**: Each platform has its own skill/command directory structure and metadata format.
-
-2. **Create platform-specific wrappers**:
-   ```python
-   # paperforge/agents/codex_adapter.py
-   from paperforge.commands import get_command_module
-
-   def run_codex_command(name: str, vault: Path, **kwargs):
-       """Adapter for Codex agent commands."""
-       module = get_command_module(name)
-       # Construct argparse.Namespace from Codex inputs
-       args = argparse.Namespace(vault_path=vault, **kwargs)
-       return module.run(args)
+5. **Assign the new test file to a CI shard and check module boundaries**:
+   ```bash
+   python scripts/ci_shard.py --write
+   python scripts/check_module_graph.py --check
    ```
 
-3. **Add platform directories** to `DEFAULT_CONFIG` in `paperforge/config.py`:
-   ```python
-   DEFAULT_CONFIG = {
-       # ... existing keys ...
-       "codex_skill_dir": ".codex/skills",
-       "claude_skill_dir": ".claude/skills",
-   }
-   ```
+### Adding an OCR Provider
 
-4. **Update setup wizard** (`setup_wizard.py`) to generate platform-specific config and directories.
+1. Implement the `OCRProvider` protocol (`paperforge/providers/base.py`) so `submit_pdf`, `poll_job`, and `parse_result` return normalized canonical raw-block schemas.
+2. Register the provider in `resolve_ocr_provider()` inside `paperforge/providers/__init__.py`.
+3. Add offline contract tests under `tests/unit/` asserting zero impact on `paperforge/worker/ocr_blocks.py` or downstream V3 stages.
 
-5. **Document platform differences** in `docs/COMMANDS.md` under "Platform Notes."
+### Adding an Embedding Provider
+
+1. Implement `EmbeddingProvider` (`paperforge/embedding/providers/base.py`).
+2. Add its prerequisite check and instantiation branch to `check_embedding_provider_prereqs()` and `resolve_embedding_provider()` in `paperforge/embedding/providers/__init__.py`, and register the `vector_db_provider_type` choice in `paperforge/config.py`.
+3. Verify `preflight.py`, `builder.py`, `dim_detect.py`, and `search.py` resolve through the factory uniformly without extra optional SDK imports at preflight time.
+
+### Agent Skill Packaging & Platforms
+
+Packaged Agent skill prompts and workflows live in `paperforge/skills/paperforge/` and are deployed into any supported harness directory via `paperforge skill deploy --to <dir>` (default `.agents/skills`). Supported platform IDs are enumerated in `paperforge/config.py:AGENT_PLATFORM_IDS`.
 
 ---
 
