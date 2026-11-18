@@ -354,11 +354,11 @@ def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_i
                     return
                 conn.execute(
                     """INSERT OR REPLACE INTO paper_annotations (
-                        ann_id, paper_id, page, kind, color, intent,
-                        exact_text, comment, section_path, block_id, figure_id,
-                        rects_json, crop_asset_rel, embed_wikilink, tags_json,
-                        pdf_sha256, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        ann_id, paper_id, page, kind, color, intent, author, lens,
+                        grounding_tier, exact_text, comment, section_path, block_id,
+                        figure_id, rects_json, crop_asset_rel, embed_wikilink,
+                        tags_json, pdf_sha256, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         record["ann_id"],
                         record["paper_id"],
@@ -366,6 +366,9 @@ def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_i
                         record.get("kind", "highlight"),
                         record.get("color", "yellow"),
                         record.get("intent", "general"),
+                        record.get("author", "user"),
+                        record.get("lens", ""),
+                        record.get("grounding_tier", "manual"),
                         record.get("exact_text", ""),
                         record.get("comment", ""),
                         record.get("section_path", ""),

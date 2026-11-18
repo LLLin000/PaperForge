@@ -43,7 +43,7 @@ class TestIncrementalMerge:
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 3
+        assert content.count("type: paperforge-table") == 3
 
         user_custom = (
             content
@@ -61,8 +61,8 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom Dashboard" in refreshed, "User custom view was lost on incremental refresh"
-        assert refreshed.count("type: table") == 4
-        assert "控制面板" in refreshed
+        assert refreshed.count("type: paperforge-table") == 3
+        assert refreshed.count("type: table") == 1
         assert "控制面板" in refreshed
 
     def test_standard_paperforge_views_are_updated_on_refresh(self):
@@ -76,7 +76,7 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content2 = domain_base.read_text(encoding="utf-8")
 
-        assert content2.count("type: table") == 3
+        assert content2.count("type: paperforge-table") == 3
         assert "${LIBRARY_RECORDS}" not in content2
 
     def test_force_flag_does_full_regeneration(self):
@@ -101,7 +101,7 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom View" not in refreshed, "force=True should have replaced all views"
-        assert refreshed.count("type: table") == 3
+        assert refreshed.count("type: paperforge-table") == 3
         assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 3
 
     def test_user_modified_filter_on_standard_view_is_preserved(self):
@@ -141,7 +141,7 @@ class TestIncrementalMerge:
 
         assert domain_base.exists()
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 3
+        assert content.count("type: paperforge-table") == 3
         assert PAPERFORGE_VIEW_PREFIX in content
 
     def test_old_file_without_prefix_gets_views_without_duplication(self):
@@ -280,7 +280,7 @@ class TestLiteratureHubBase:
         hub_base = bases / "Literature Hub.base"
         assert hub_base.exists(), "Literature Hub.base not created"
         content = hub_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 3, f"Expected 3 views, got {content.count('type: table')}"
+        assert content.count("type: paperforge-table") == 3, f"Expected 3 views, got {content.count('type: paperforge-table')}"
         assert PAPERFORGE_VIEW_PREFIX in content
         assert "${LIBRARY_RECORDS}" not in content, "Placeholder should be substituted"
 
@@ -343,7 +343,8 @@ views:
         result = merge_base_views(existing, views, folder_filter="Resources/Literature/骨科")
 
         assert "My Custom View" in result, "User view was lost"
-        assert result.count("type: table") == 4
+        assert result.count("type: paperforge-table") == 3
+        assert result.count("type: table") == 1
         assert result.count(PAPERFORGE_VIEW_PREFIX) == 3
         assert "推荐分析" not in result, "Old PF view should be dropped"
 
@@ -353,7 +354,7 @@ views:
         result = merge_base_views(None, views, folder_filter="Resources/Literature/骨科")
 
         assert "views:" in result
-        assert "type: table" in result
+        assert "type: paperforge-table" in result
         assert "properties:" in result
 
     def test_merge_base_views_unknown_placeholder_unchanged(self):

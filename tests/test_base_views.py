@@ -58,6 +58,12 @@ class TestBuildBaseViews:
         for v in views:
             assert "sort" not in v, f"View '{v['name']}' should not have sort key"
 
+    def test_build_base_views_uses_paperforge_table_and_hides_fulltext(self):
+        views = build_base_views("骨科")
+        for v in views:
+            assert v.get("type") == "paperforge-table"
+            assert "fulltext_md_path" not in v["order"]
+
 
 class TestSubstituteConfigPlaceholders:
     def test_substitutes_literature(self, tmp_path):

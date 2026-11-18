@@ -835,6 +835,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_prev.add_argument("key", help="Canonical Zotero paper key")
     p_ann_prev.add_argument("--max-chars", type=int, default=80000, help="Max characters to return")
     p_ann_prev.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_mc = sub.add_parser("memory-card", help="Living Paper Memory Cards & Base table snapshots")
+    p_mc_sub = p_mc.add_subparsers(dest="mc_verb", required=True)
+
+    p_mc_get = p_mc_sub.add_parser("get", help="Read living memory card for a paper")
+    p_mc_get.add_argument("key", help="Canonical Zotero paper key")
+    p_mc_get.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_mc_ref = p_mc_sub.add_parser("refine", help="Synthesize/update one cognitive facet of a paper")
+    p_mc_ref.add_argument("key", help="Canonical Zotero paper key")
+    p_mc_ref.add_argument("--facet", required=True, help="Facet slug (e.g. idea_logic, methods_params, research_craft, critique_limits, my_connection)")
+    p_mc_ref.add_argument("--content", required=True, help="Synthesized refined memory text")
+    p_mc_ref.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_mc_hist = p_mc_sub.add_parser("history", help="Inspect revision snapshots for a paper memory card")
+    p_mc_hist.add_argument("key", help="Canonical Zotero paper key")
+    p_mc_hist.add_argument("--facet", default="", help="Optional facet filter")
+    p_mc_hist.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_mc_clr = p_mc_sub.add_parser("clear", help="Clear a facet (or all facets) from a paper memory card")
+    p_mc_clr.add_argument("key", help="Canonical Zotero paper key")
+    p_mc_clr.add_argument("--facet", default="", help="Optional facet filter")
+    p_mc_clr.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_mc_snap = p_mc_sub.add_parser("base-snapshot", help="Fast read-only snapshot for Obsidian Base views")
+    p_mc_snap.add_argument("--json", action="store_true", help="Output JSON")
     return parser
 
 # ---------------------------------------------------------------------------
@@ -902,7 +928,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "setup", "selection-sync", "index-refresh", "base-refresh", "read",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
-        "probe", "inspect", "migrate-storage", "annotations",
+        "probe", "inspect", "migrate-storage", "annotations", "memory-card",
     }
     if args.command in lightweight_commands:
         _resolve_pipeline()
@@ -1151,6 +1177,11 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if args.command == "annotations":
         from paperforge.commands.annotations import run
+
+        return run(args)
+
+    if args.command == "memory-card":
+        from paperforge.commands.memory_card import run
 
         return run(args)
 

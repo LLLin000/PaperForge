@@ -149,11 +149,11 @@ def _import_paper_annotations(
         for rec in recs:
             conn.execute(
                 """INSERT OR REPLACE INTO paper_annotations (
-                    ann_id, paper_id, page, kind, color, intent,
-                    exact_text, comment, section_path, block_id, figure_id,
-                    rects_json, crop_asset_rel, embed_wikilink, tags_json,
-                    pdf_sha256, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ann_id, paper_id, page, kind, color, intent, author, lens,
+                    grounding_tier, exact_text, comment, section_path, block_id,
+                    figure_id, rects_json, crop_asset_rel, embed_wikilink,
+                    tags_json, pdf_sha256, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     rec["ann_id"],
                     pid,
@@ -161,6 +161,9 @@ def _import_paper_annotations(
                     rec.get("kind", "highlight"),
                     rec.get("color", "yellow"),
                     rec.get("intent", "general"),
+                    rec.get("author", "user"),
+                    rec.get("lens", ""),
+                    rec.get("grounding_tier", "manual"),
                     rec.get("exact_text", ""),
                     rec.get("comment", ""),
                     rec.get("section_path", ""),
@@ -173,6 +176,58 @@ def _import_paper_annotations(
                     rec.get("pdf_sha256", ""),
                     rec.get("created_at", ""),
                     rec.get("updated_at", ""),
+                ),
+            )
+            imported += 1
+    return imported
+
+
+def _import_paper_memory_cards(
+    conn: sqlite3.Connection,
+    vault: Path,
+    items: list[dict],
+    valid_keys: set[str],
+) -> int:
+    """Ingest workspace ``ai/memory-card.json`` facets into ``paper_memory_cards``."""
+    imported = 0
+    for item in items:
+        pid = str(item.get("zotero_key") or "")
+        if not pid or pid not in valid_keys:
+            continue
+        paper_root = str(item.get("paper_root") or "").rstrip("/")
+        if not paper_root:
+            continue
+        card_path = vault / paper_root / "ai" / "memory-card.json"
+        if not card_path.exists():
+            continue
+        try:
+            payload = json.loads(card_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        facets = payload.get("facets", {})
+        if isinstance(facets, list):
+            facet_iter = [(f.get("facet"), f) for f in facets if isinstance(f, dict)]
+        elif isinstance(facets, dict):
+            facet_iter = list(facets.items())
+        else:
+            facet_iter = []
+        conn.execute("DELETE FROM paper_memory_cards WHERE zotero_key = ?", (pid,))
+        for slug, entry in facet_iter:
+            if not slug or not isinstance(entry, dict):
+                continue
+            content = str(entry.get("content") or "").strip()
+            if not content:
+                continue
+            conn.execute(
+                """INSERT OR REPLACE INTO paper_memory_cards
+                   (zotero_key, facet, content, revision, updated_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    pid,
+                    str(slug),
+                    content,
+                    int(entry.get("revision") or 1),
+                    str(entry.get("updated_at") or ""),
                 ),
             )
             imported += 1
@@ -305,6 +360,7 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
     conn.execute("DELETE FROM paper_events WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM reading_log WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_annotations WHERE paper_id=?", (key,))
+    conn.execute("DELETE FROM paper_memory_cards WHERE zotero_key=?", (key,))
     conn.execute("DELETE FROM paper_aliases WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_assets WHERE paper_id=?", (key,))
 
@@ -408,6 +464,12 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             result = _full_rebuild(conn, vault, items, canonical_hash, generated_at, ocr_root)
             conn.commit()
             conn.close()
+            try:
+                from paperforge.services.state_signal import bump_state_seq
+
+                bump_state_seq(vault, reason="memory.build")
+            except Exception:
+                pass
             return result
 
         # ── 3. Global hash unchanged + no schema change → fast path ──────
@@ -489,6 +551,7 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         correction_result = _import_correction_log(conn, vault, valid_keys)
         _hydrate_reading_log_for_keys(conn, vault, diff["added"])
         _import_paper_annotations(conn, vault, items, valid_keys)
+        _import_paper_memory_cards(conn, vault, items, valid_keys)
         # 4d. OCR unit rebuilds (per-paper hash comparison) — ALL papers in
         #     scope EXCEPT the failed ones: units are an independent
         #     dimension from paper_state_hash (a re-OCRed paper can have
@@ -525,6 +588,12 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
         conn.commit()
         conn.close()
+        try:
+            from paperforge.services.state_signal import bump_state_seq
+
+            bump_state_seq(vault, reason="memory.build", changed_keys=successful_keys)
+        except Exception:
+            pass
         return {
             "papers_indexed": papers_count,
             "db_path": str(db_path),
@@ -643,6 +712,7 @@ def _full_rebuild(
     reading_result = _import_reading_log(conn, vault, valid_keys)
     _import_project_log(conn, vault)
     _import_paper_annotations(conn, vault, items, valid_keys)
+    _import_paper_memory_cards(conn, vault, items, valid_keys)
     conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
     correction_result = _import_correction_log(conn, vault, valid_keys)
     conn.execute("DELETE FROM paper_events WHERE event_type != 'correction_note';")

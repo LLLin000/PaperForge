@@ -309,6 +309,9 @@ CREATE TABLE IF NOT EXISTS paper_annotations (
     kind           TEXT NOT NULL DEFAULT 'highlight',
     color          TEXT NOT NULL DEFAULT 'yellow',
     intent         TEXT NOT NULL DEFAULT 'general',
+    author         TEXT NOT NULL DEFAULT 'user',
+    lens           TEXT NOT NULL DEFAULT '',
+    grounding_tier TEXT NOT NULL DEFAULT 'manual',
     exact_text     TEXT NOT NULL DEFAULT '',
     comment        TEXT NOT NULL DEFAULT '',
     section_path   TEXT NOT NULL DEFAULT '',
@@ -326,7 +329,34 @@ CREATE TABLE IF NOT EXISTS paper_annotations (
 """
 
 
+CREATE_PAPER_MEMORY_CARDS = """
+CREATE TABLE IF NOT EXISTS paper_memory_cards (
+    zotero_key TEXT NOT NULL,
+    facet      TEXT NOT NULL,
+    content    TEXT NOT NULL DEFAULT '',
+    revision   INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (zotero_key, facet),
+    FOREIGN KEY (zotero_key) REFERENCES papers(zotero_key)
+);
+"""
+
+
+CREATE_PAPER_MEMORY_HISTORY = """
+CREATE TABLE IF NOT EXISTS paper_memory_history (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    zotero_key TEXT NOT NULL,
+    facet      TEXT NOT NULL,
+    content    TEXT NOT NULL DEFAULT '',
+    revision   INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+"""
+
+
 ALL_TABLES = [
+    "paper_memory_history",
+    "paper_memory_cards",
     "paper_annotations",
     "body_units",
     "body_units_fts",
@@ -364,11 +394,27 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     # #162/T1: lineage rows (vector layer) — created unconditionally like
     # build_state; existing DBs pick it up on the next ensure_schema.
     conn.execute(CREATE_LINEAGE)
-    # Sidecar PDF annotations cache table — created unconditionally so existing DBs
-    # adopt it seamlessly while keeping CURRENT_SCHEMA_VERSION == 7.
+    # Sidecar PDF annotations & Living Paper Memory Card tables — created
+    # unconditionally while keeping CURRENT_SCHEMA_VERSION == 7.
     conn.execute(CREATE_PAPER_ANNOTATIONS)
+    existing_ann_cols = {
+        str(r[1]) for r in conn.execute("PRAGMA table_info(paper_annotations)").fetchall()
+    }
+    for col_name, col_def in (
+        ("author", "TEXT NOT NULL DEFAULT 'user'"),
+        ("lens", "TEXT NOT NULL DEFAULT ''"),
+        ("grounding_tier", "TEXT NOT NULL DEFAULT 'manual'"),
+    ):
+        if col_name not in existing_ann_cols:
+            conn.execute(f"ALTER TABLE paper_annotations ADD COLUMN {col_name} {col_def}")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_paper_annotations_paper ON paper_annotations(paper_id, page);"
+    )
+    conn.execute(CREATE_PAPER_MEMORY_CARDS)
+    conn.execute(CREATE_PAPER_MEMORY_HISTORY)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_paper_memory_history_key "
+        "ON paper_memory_history(zotero_key, facet, id);"
     )
 
     # Run pending migrations

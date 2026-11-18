@@ -80,8 +80,8 @@
     ],
     "paperforge.worker.asset_index": [
       "40:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
-      "585:paperforge.embedding._config",
-      "585:paperforge.embedding._config:_read_plugin_settings"
+      "599:paperforge.embedding._config",
+      "599:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
       "2976:paperforge.lineage:_resolve_canonical_pdf"

@@ -224,6 +224,16 @@ def run(args: argparse.Namespace) -> int:
                 else:
                     reason = "target index row was not updated"
             raise RuntimeError(_index_sync_failure(reason))
+        try:
+            from paperforge.services.state_signal import bump_state_seq
+
+            bump_state_seq(
+                vault,
+                reason=f"note.{field}",
+                changed_keys=[str(entry.get("zotero_key") or "")],
+            )
+        except Exception:
+            pass
         data = {
             "intent": "note-set-flag",
             "key": entry.get("zotero_key"),

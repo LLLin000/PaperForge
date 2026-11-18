@@ -94,6 +94,12 @@ def mutate_index(vault: Path, mutator) -> bool:
             os.fsync(tmp.fileno())
             tmp.close()
             os.replace(tmp.name, path)
+            try:
+                from paperforge.services.state_signal import bump_state_seq_in_dir
+
+                bump_state_seq_in_dir(path.parent, reason="index.write")
+            except Exception:
+                pass
         except BaseException:
             tmp.close()
             try:
@@ -183,6 +189,12 @@ def atomic_write_index(path: Path, data: dict) -> None:
             os.fsync(tmp.fileno())
             tmp.close()
             os.replace(tmp.name, path)
+            try:
+                from paperforge.services.state_signal import bump_state_seq_in_dir
+
+                bump_state_seq_in_dir(path.parent, reason="index.write")
+            except Exception:
+                pass
         except BaseException:
             if tmp is not None:
                 tmp.close()
@@ -552,11 +564,13 @@ def _build_entry(
                 split_new = split_frontmatter_block(new_full)
                 if split_new is not None:
                     new_fm, _ = split_new
-                    write_text_atomic(main_note_path, new_fm + body)
+                    target_text = new_fm + body
                 else:
-                    write_text_atomic(main_note_path, new_full)
+                    target_text = new_full
             else:
-                write_text_atomic(main_note_path, frontmatter_note(entry, text))
+                target_text = frontmatter_note(entry, text)
+            if target_text != text:
+                write_text_atomic(main_note_path, target_text)
     else:
         existing_text = fm_cached_text if not fm_was_main and fm_cached_text else (
             note_path.read_text(encoding="utf-8") if note_path.exists() else ""

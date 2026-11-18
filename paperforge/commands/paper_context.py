@@ -144,6 +144,7 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
         result = {
             "warning": "Prior reading notes are not verified facts. Re-check source before reuse.",
             "paper": paper,
+            "living_memory": _load_living_memory(vault, resolved_key, conn),
             "prior_notes": prior_notes,
             "corrections": corrections,
             "recheck_targets": recheck_targets,
@@ -174,6 +175,51 @@ def _project_annotation(ann: dict) -> dict:
     }
 
 
+def _load_living_memory(vault: Path, zotero_key: str, conn: sqlite3.Connection) -> dict:
+    """Load the faceted Living Paper Memory Card for *zotero_key*."""
+    try:
+        from paperforge.services.memory_card_service import get_memory_card
+
+        card = get_memory_card(vault, zotero_key)
+        if card.get("facets"):
+            return card
+    except Exception:
+        pass
+
+    facets: list[dict] = []
+    try:
+        from paperforge.services.memory_card_service import facet_label
+
+        has_table = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='paper_memory_cards'"
+        ).fetchone()
+        if has_table is not None:
+            for r in conn.execute(
+                "SELECT facet, content, revision, updated_at "
+                "FROM paper_memory_cards WHERE zotero_key = ?",
+                (zotero_key,),
+            ).fetchall():
+                slug = str(r["facet"])
+                facets.append(
+                    {
+                        "facet": slug,
+                        "label": facet_label(slug),
+                        "content": str(r["content"] or ""),
+                        "revision": int(r["revision"] or 1),
+                        "updated_at": str(r["updated_at"] or ""),
+                    }
+                )
+    except Exception:
+        facets = []
+    latest = max((f["updated_at"] for f in facets if f.get("updated_at")), default="")
+    return {
+        "paper_id": zotero_key,
+        "updated_at": latest,
+        "facet_count": len(facets),
+        "facets": facets,
+    }
+
+
 def _load_user_annotations(vault: Path, zotero_key: str, conn: sqlite3.Connection) -> dict:
     """Load non-destructive user PDF annotations from sidecar JSONL with SQLite fallback."""
     rows: list[dict] = []
@@ -192,12 +238,18 @@ def _load_user_annotations(vault: Path, zotero_key: str, conn: sqlite3.Connectio
             if has_table is not None:
                 db_rows = conn.execute(
                     "SELECT ann_id, kind, color, intent, page, exact_text, comment, "
-                    "section_path, figure_id, crop_asset_rel, embed_wikilink, provenance_status "
-                    "FROM paper_annotations WHERE zotero_key = ? "
+                    "section_path, figure_id, crop_asset_rel, embed_wikilink, pdf_sha256 "
+                    "FROM paper_annotations WHERE paper_id = ? "
                     "ORDER BY page ASC, created_at ASC",
                     (zotero_key,),
                 ).fetchall()
-                rows = [dict(r) for r in db_rows]
+                rows = [
+                    {
+                        **dict(r),
+                        "provenance_status": "verified" if r["pdf_sha256"] else "unknown",
+                    }
+                    for r in db_rows
+                ]
         except Exception:
             rows = []
 
@@ -257,6 +309,9 @@ def run(args: argparse.Namespace) -> int:
             print(f"  Corrections: {len(result.data.get('corrections', []))}")
             if result.data.get("recheck_targets"):
                 print(f"  Recheck targets: {len(result.data['recheck_targets'])}")
+            lm = result.data.get("living_memory") or {}
+            if lm.get("facet_count", 0) > 0:
+                print(f"  Living memory: {lm['facet_count']} facets (updated {lm.get('updated_at', '')})")
             ua = result.data.get("user_annotations") or {}
             if ua.get("total", 0) > 0:
                 print(f"  Annotations: {ua['total']} ({len(ua.get('questions', []))} questions)")

@@ -40,20 +40,10 @@ PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
 
 
 def build_base_views(domain: str) -> list[dict]:
-    """Build the 4-view list for a domain Base file.
-
-    Uses workflow gate columns (has_pdf, do_ocr, analyze, ocr_status)
-    matching the master version's Base views.  See REQUIREMENTS.md
-    §Reference Vault Learnings for the ground-truth pattern.
-
-    Args:
-        domain: The domain name (e.g., "骨科").
-
-    Returns:
-        List of 4 view dicts, each with keys: name, order, filter, sort.
-    """
+    """Build the standard PaperForge Base views for a domain or hub Base file."""
     return [
         {
+            "type": "paperforge-table",
             "name": "控制面板",
             "order": [
                 "file.name",
@@ -68,16 +58,17 @@ def build_base_views(domain: str) -> list[dict]:
                 "ocr_status",
                 "deep_reading_status",
                 "pdf_path",
-                "fulltext_md_path",
             ],
             "filter": None,
         },
         {
+            "type": "paperforge-table",
             "name": "待 OCR",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
             "filter": 'do_ocr == true && ocr_status == "pending"',
         },
         {
+            "type": "paperforge-table",
             "name": "待深度阅读",
             "order": [
                 "year",
@@ -127,7 +118,8 @@ def _render_views_section(views: list[dict]) -> str:
     """Render a list of view dicts to YAML views: section."""
     lines = []
     for v in views:
-        lines.append("  - type: table")
+        vtype = str(v.get("type") or "paperforge-table")
+        lines.append(f"  - type: {vtype}")
         lines.append(f'    name: "{v["name"]}"')
         lines.append("    order:")
         for col in v["order"]:
@@ -243,8 +235,6 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
     displayName: "Deep Reading"
   pdf_path:
     displayName: "PDF Path"
-  fulltext_md_path:
-    displayName: "Fulltext"
 """
 
     if not existing_content or not existing_content.strip():
@@ -278,8 +268,9 @@ views:
 
     new_pf_blocks = []
     for v in new_views:
+        vtype = str(v.get("type") or "paperforge-table")
         rendered = f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
-        rendered += "  - type: table\n"
+        rendered += f"  - type: {vtype}\n"
         rendered += f'    name: "{v["name"]}"\n'
         rendered += "    order:\n"
         for col in v["order"]:
@@ -308,15 +299,15 @@ views:
             # Collect the full existing PF view block (PF prefix + all its indented lines)
             old_block_lines = [line]
             i += 1
-            type_table_count = 0
+            type_view_count = 0
             while i < len(lines):
                 next_line = lines[i]
                 if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
                     break
-                if next_line.strip().startswith("- type: table"):
-                    if type_table_count >= 1:
+                if next_line.strip().startswith("- type:"):
+                    if type_view_count >= 1:
                         break
-                    type_table_count += 1
+                    type_view_count += 1
                 old_block_lines.append(next_line)
                 i += 1
             # Get fresh block and inject preserved column widths
@@ -329,14 +320,14 @@ views:
                 rebuilt_views_lines.append(pf_block)
             continue
 
-        elif line.strip().startswith("- type: table"):
+        elif line.strip().startswith("- type:"):
             view_block_lines = [line]
             i += 1
             while i < len(lines):
                 next_line = lines[i]
                 if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
                     break
-                if next_line.strip().startswith("- type: table"):
+                if next_line.strip().startswith("- type:"):
                     break
                 if next_line.strip() and not next_line.startswith(" ") and not next_line.startswith("\t"):
                     break
@@ -364,8 +355,9 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
     """Build complete .base YAML with PAPERFORGE_VIEW_PREFIX markers on each view."""
     views_yaml = ""
     for v in views:
+        vtype = str(v.get("type") or "paperforge-table")
         views_yaml += f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
-        views_yaml += "  - type: table\n"
+        views_yaml += f"  - type: {vtype}\n"
         views_yaml += f'    name: "{v["name"]}"\n'
         views_yaml += "    order:\n"
         for col in v["order"]:
@@ -412,8 +404,6 @@ properties:
     displayName: "Deep Reading"
   pdf_path:
     displayName: "PDF Path"
-  fulltext_md_path:
-    displayName: "Fulltext"
 views:
 {views_yaml}"""
 
@@ -465,15 +455,15 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             view_name = line[len(PAPERFORGE_VIEW_PREFIX):].strip()
             block_lines = [line]
             i += 1
-            type_table_count = 0
+            type_view_count = 0
             while i < len(view_body_lines):
                 next_line = view_body_lines[i]
                 if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
                     break
-                if next_line.strip().startswith("- type: table"):
-                    if type_table_count >= 1:
+                if next_line.strip().startswith("- type:"):
+                    if type_view_count >= 1:
                         break
-                    type_table_count += 1
+                    type_view_count += 1
                 if next_line.strip() and not next_line.startswith(" ") and not next_line.startswith("\t"):
                     break
                 block_lines.append(next_line)
@@ -481,14 +471,14 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             view_blocks.append((True, view_name, "\n".join(block_lines)))
             continue
 
-        elif line.strip().startswith("- type: table"):
+        elif line.strip().startswith("- type:"):
             block_lines = [line]
             i += 1
             while i < len(view_body_lines):
                 next_line = view_body_lines[i]
                 if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
                     break
-                if next_line.strip().startswith("- type: table"):
+                if next_line.strip().startswith("- type:"):
                     break
                 if next_line.strip() and not next_line.startswith(" ") and not next_line.startswith("\t"):
                     break
@@ -521,8 +511,9 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
     # For existing standard views, keep them AS-IS (don't replace content)
     for v in views:
         if v["name"] not in deduped:
+            vtype = str(v.get("type") or "paperforge-table")
             block = f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
-            block += "  - type: table\n"
+            block += f"  - type: {vtype}\n"
             block += f'    name: "{v["name"]}"\n'
             block += "    order:\n"
             for col in v["order"]:
