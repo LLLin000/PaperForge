@@ -1148,10 +1148,10 @@ export async function renderAllScenes(): Promise<void> {
       "02-base-empty-and-filtered-states",
       "02 · Base 多选表头上下文栏（解析全文）、零命中空态与 AsterLab 暗黑主题预览",
       "左：勾选多篇条目后在表头滑出上下文操作栏「已选 3 篇 → 解析全文」；右：筛选零命中空态与 AsterLab 暗黑暖灰主题",
-      1420
+      1440
     );
     const grid = body.createDiv({ cls: "pf-doc-grid-2" });
-    grid.style.gridTemplateColumns = "minmax(0, 1.38fr) minmax(0, 1fr)";
+    grid.style.gridTemplateColumns = "minmax(0, 1.46fr) minmax(0, 1fr)";
 
     // Left: Multi-select contextual action bar above table
     const leftCard = grid.createDiv({ cls: "pf-doc-panel" });
@@ -1174,7 +1174,6 @@ export async function renderAllScenes(): Promise<void> {
         "file.name",
         "note.first_author",
         "note.year",
-        "note.journal",
         "note.impact_factor",
         "note.annotations",
         "note.ocr_status",
@@ -1472,13 +1471,15 @@ export async function renderAllScenes(): Promise<void> {
     const c3 = grid.createDiv({ cls: "pf-doc-panel pf-doc-sidebar-shell" });
     c3.createDiv({ cls: "pf-doc-panel-label", text: "C. 索引未就绪恢复引导态" });
     const slot3 = c3.createDiv();
-    const v3a = populateDashboardView(app3, slot3.createDiv(), snap, (v) => {
+    const v3aMount = slot3.createDiv();
+    const v3a = populateDashboardView(app3, v3aMount, snap, (v) => {
       v._currentMode = "global";
       v._renderModeHeader("global");
       v.renderSearchSection(v._contentEl);
       v._searchState = "missing-memory-index";
       v._renderSearchState();
     });
+    v3aMount.querySelector(".paperforge-record-search")?.remove();
     const v3bMount = slot3.createDiv();
     const v3b = populateDashboardView(app3, v3bMount, snap, (v) => {
       v._currentMode = "global";
@@ -1486,6 +1487,9 @@ export async function renderAllScenes(): Promise<void> {
       v._searchState = "vectors-not-built";
       v._renderSearchState();
     });
+    v3bMount.querySelector(".paperforge-header")?.remove();
+    v3bMount.querySelector(".paperforge-search-section > .pf-label")?.remove();
+    v3bMount.querySelector(".paperforge-search-input-row")?.remove();
     void v3a;
     void v3b;
   }
@@ -1750,6 +1754,7 @@ export async function renderAllScenes(): Promise<void> {
       isOperationActive: () => false,
     });
     tabMem._renderMemoryDetail(right.createDiv());
+    (right.querySelector(".pf-sr-cfg-head") as HTMLElement | null)?.click();
   }
 
   // ── Scene 12: Secondary OCR Workspace & Modals (Option B) ──────────────────
