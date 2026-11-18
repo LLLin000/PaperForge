@@ -68,7 +68,7 @@ paperforge search "<query>" --limit <N> --json
 paperforge retrieve "<query>" --json
 paperforge retrieve "<query>" --limit <N> --json
 paperforge retrieve "<query>" --paper <KEY> --json          # 限定单篇论文
-paperforge retrieve "<query>" --deep --json                 # 混合检索（BM25 + 向量）
+paperforge retrieve "<query>" --deep --json          # 全并集混合检索（BM25 + 向量；无向量时回退 BM25）
 paperforge retrieve "<query>" --paper <KEY> --deep --json   # 单篇混合检索
 ```
 
@@ -262,7 +262,7 @@ paperforge retrieve "<query>"            # 正文内容检索（完整语法见�
 paperforge retrieve "<query>" --json
 paperforge retrieve "<query>" --limit 10
 paperforge retrieve "<query>" --paper KEY
-paperforge retrieve "<query>" --deep
+paperforge retrieve "<query>" --deep       # 混合全并集检索 (BM25 + 向量；无向量时回退 BM25)
 ```
 
 ### `paperforge query-plan`
@@ -277,7 +277,7 @@ paperforge query-plan "<query>" --intent locate --json
 ### `paperforge paper-context`
 
 ```bash
-paperforge paper-context <KEY>          # 论文完整上下文
+paperforge paper-context <KEY>          # 论文完整上下文 (含 user_annotations 批注摘要)
 paperforge paper-context <KEY> --json
 paperforge paper-context <KEY> --structure --json  # 附加 StructureTree
 ```
@@ -331,7 +331,7 @@ paperforge probe ocr --json          # 探测单一模块状态
 
 ```bash
 paperforge reading-log --write <KEY> --section "Discussion P12" --excerpt "..." --usage "..." # 写阅读笔记
-paperforge reading-log --render      # 渲染 reading-log.md
+paperforge reading-log --render      # 渲染 reading-log.index.md（不覆盖用户手工 reading-log.md）
 paperforge reading-log --lookup <KEY> # 查某文献的阅读笔记
 paperforge reading-log --since 2026-01-01 --limit 100 --output notes.md # 导出
 paperforge reading-log --validate reading-log.md
@@ -359,6 +359,30 @@ JSONL 是权威来源，每次查询重新读取；成功保存或修正后立�
 来源必须是当前论文规范 PDF 的 Vault 内相对路径。绝对路径、协议、穿越和解析到 Vault 外的 junction/symlink 拒绝；原 Zotero 外部存储路径不在本项来源跳转支持范围。请在授权副本 Vault 中使用本地 PDF，不自动复制或修改原件。
 
 插件单篇论文面板提供“保存研究记录”和论文／研究记录两个搜索分区。保存显示持久 ID，详情支持重新核验后打开 PDF 物理页及追加修正。无需 Embedding，不代表任意语义问句检索或 OCR 内容质量验收。
+
+
+### `paperforge annotations`
+
+无损旁路 PDF 批注子系统（读写 `<workspace>/annotations.jsonl` 并同步至 `paperforge.db` 的 `paper_annotations` 表；严格只读原 PDF，不改写原始文件字节）：
+
+```bash
+paperforge annotations pdf-info <KEY> --json       # 查询规范 PDF 路径、SHA-256 与批注列表
+paperforge annotations list <KEY> --json           # 列出活跃高亮/框选批注与 provenance 状态
+paperforge annotations add <KEY> --page 3 --rects-json '[[0.1,0.2,0.8,0.24]]' --kind highlight --color yellow --intent evidence --exact-text "..." --json
+paperforge annotations update <KEY> <ANN_ID> --intent question --comment "核实统计方法" --json
+paperforge annotations delete <KEY> <ANN_ID> --json
+paperforge annotations promote <KEY> <ANN_ID> --usage evidence --project "ProjectX" --json  # 晋升为带物理页码与 SHA-256 的 reading-log 记录
+paperforge annotations fulltext-preview <KEY> --max-chars 80000 --json                     # OCR Workspace 只读排错预览
+```
+
+### `paperforge migrate-storage`
+
+将旧版 `<system_dir>/PaperForge/` 引擎产物平滑迁移至对 Obsidian 隐藏的 `.paperforge/` 目录，并将各篇裁切图表以 `<KEY>_figure_*.jpg` / `<KEY>_table_*.jpg` 独立命名物化到对应文献工作区 `assets/` 目录、清理工作区冗余 `fulltext.md` 与重写笔记图链：
+
+```bash
+paperforge migrate-storage --dry-run --json   # 预览待迁移项与受影响文件数（零写入）
+paperforge migrate-storage --json             # 执行存储迁移与 paperforge.json system_dir 更新
+```
 
 
 ### `paperforge prune`

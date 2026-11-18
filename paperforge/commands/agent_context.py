@@ -25,6 +25,10 @@ COMMANDS = {
         "usage": "paperforge retrieve <query> --json [--limit N]",
         "purpose": "Semantic content retrieval across OCR fulltext — use this first when the user wants something inside papers",
     },
+    "annotations": {
+        "usage": "paperforge annotations list <zotero_key> --json",
+        "purpose": "Read non-destructive PDF highlights, area crops, and user questions",
+    },
     "context": {
         "usage": "paperforge context <key> | --domain D | --collection P | --all",
         "purpose": "List all papers in a collection/domain (no truncation) or get single paper context pack",
@@ -54,7 +58,9 @@ RULES = [
     "For content lookup, start with retrieve. Search is not semantic fulltext discovery.",
     "When a search returns > 20 results, present the count to the user and offer to narrow — never silently skip large result sets.",
     "A raw zero-result search does not prove library absence when the query is noncanonical for metadata search.",
-    "Check embed status --json (db_exists + chunk_count) before calling retrieve; skip retrieve if vector index is unavailable.",
+    "retrieve --deep works via FTS5 BM25 even before vector embeddings are built; check embed status --json only when diagnosing semantic vector coverage.",
+    "Internal engine stores and machine fulltext.md live in .paperforge/ (or <system_dir>/PaperForge); never edit fulltext.md or ask users to annotate it — user annotations live in sidecar PDF annotations (paper-context user_annotations / paperforge annotations).",
+    "When paper-context returns user_annotations.questions, prioritize answering and verifying those user-flagged passages against the source text.",
 ]
 
 

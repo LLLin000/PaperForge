@@ -122,9 +122,10 @@ CLI 返回 `ok=false` 时报告错误和 repair action；返回 `ok=true` 但无
 
 1. **`capture_project_knowledge`** — 直接保存/归档/提取（用户说"记一下"、"保存这次"、"提取方法论"）
 2. **`deep_analyze_paper`** — 用户明确要求精读（出现"精读"、"深度分析"、"完整分析"、"Keshav"等动作词时，优先于普通问答）
-3. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题），但未要求精读
-4. **`discover_papers`** — 用户要找一批论文（"找XX的文章"、"collection里有什么"）
-5. **`find_supporting_evidence`** — 用户要找具体证据/参数/术语（"找75 Hz"、"找支持这句话的依据"）
+3. **`synthesize_evidence_matrix`** — 用户要求横向对比多篇文献、归纳参数窗或生成证据矩阵（"横向对比"、"证据矩阵"、"compare papers"）
+4. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题），但未要求精读
+5. **`discover_papers`** — 用户要找一批论文（"找XX的文章"、"collection里有什么"）
+6. **`find_supporting_evidence`** — 用户要找具体证据/参数/术语（"找75 Hz"、"找支持这句话的依据"）
 
 **判定顺序（必须严格按此顺序执行）：**
 
@@ -181,6 +182,7 @@ paperforge/skills/paperforge/
 │   ├── discover-papers.md
 │   ├── find-supporting-evidence.md
 │   ├── deep-analyze-paper.md
+│   ├── synthesize-evidence-matrix.md
 │   └── capture-project-knowledge.md
 ├── atoms/                ← 可复用子步骤
 │   ├── clarify-user-intent.md

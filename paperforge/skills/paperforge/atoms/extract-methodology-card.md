@@ -31,10 +31,10 @@ $PYTHON -m paperforge --vault "$VAULT" project-log --list --project "<project>" 
 
 ### Step 3: 读取方法论卡片模板
 
-从 `references/method-card-template.md` 读取模板：
+从 skill 自带的 `atoms/method-card-template.md` 读取模板，并从 bootstrap 返回的 `paths.paperforge_dir`（新库默认 `.paperforge`，旧库为 `System/PaperForge`）获取归档目录 `$PF_DIR`：
 
 ```bash
-cat "$VAULT/System/PaperForge/references/method-card-template.md"
+cat "$SKILL_DIR/atoms/method-card-template.md"
 ```
 
 ### Step 4: 填充模板生成卡片
@@ -71,7 +71,7 @@ status: active
 ### Step 5: 确认写入
 
 ```
-即将创建方法论卡片到 System/PaperForge/methodology/archive/<id>.md:
+即将创建方法论卡片到 $PF_DIR/methodology/archive/<id>.md:
 
 标题: dc-parameter-audit
 来源: 综述写作
@@ -86,7 +86,8 @@ status: active
 ### Step 6: 写入
 
 ```bash
-cat > "$VAULT/System/PaperForge/methodology/archive/<id>.md" << 'EOF'
+mkdir -p "$PF_DIR/methodology/archive"
+cat > "$PF_DIR/methodology/archive/<id>.md" << 'EOF'
 <卡片内容>
 EOF
 ```
@@ -105,4 +106,4 @@ EOF
 
 ## 参考
 
-模板文件：`references/method-card-template.md`
+模板文件：`$SKILL_DIR/atoms/method-card-template.md`

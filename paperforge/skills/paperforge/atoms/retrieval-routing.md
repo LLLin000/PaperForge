@@ -377,7 +377,7 @@ paper scope + fulltext_unavailable:
 
 ```
 paper-context <KEY> --json
-  → paper 元数据 + 状态 + 关联笔记 + prior_notes
+  → paper 元数据 + 状态 + 关联笔记 + prior_notes + user_annotations (total/questions/highlights)
 
 paper-context <KEY> --structure --json
   → 附加 StructureTree（论文章节导航地图）
@@ -413,7 +413,7 @@ retrieve "<query>" [--paper KEY] [--deep] [--limit N] --json
     page_span（存在时）
 
 --paper KEY: 限定到单篇论文
---deep: 混合检索模式（BM25 + 向量），适用于需要跨章节关联的查询
+--deep: 全并集混合检索模式（FTS5 BM25 + body/object 向量融合），适用于需要跨章节关联的查询；未构建向量索引时仍可安全回退到 BM25 检索
 ```
 
 ### `query-plan` — 检索规划器

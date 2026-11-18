@@ -89,19 +89,27 @@ StructureTree 是**导航地图，不是全文内容替代品**。用于确定�
 找不到标准标题时，按 `document_order` 和 `path` 判断。很多论文使用 Materials and Methods、Experimental、Findings 等变体。
 详细内容仍由 `pf_deep.py prepare`、fulltext、figure/table 素材、chart-reading atom 提供。
 
+**检查 user_annotations（来自内置 PDF 批注器）：**
+
+- 若 `data.user_annotations.total > 0`：
+  - `user_annotations.questions` 为用户在阅读 PDF 时标记的 `❓ 存疑/待查` 批注，Pass 2/3 **必须**逐条回到原文核实并在 `#### 遗留问题` 或对应章节给出明确回答
+  - `user_annotations.highlights`（含 `evidence`、`method`、`quote` 及框选截图 `embed_wikilink`）可作为优先关注锚点与直接证据候选，但仍须对照原文核实页码与上下文
+
 **检查 prior_notes：**
 
 - 如果存在 `data.prior_notes`，逐条看 `verified` 字段
 - `verified: false` 的条目记入 recheck_targets，精读时必须回原文复核
 - `verified: true` → 可作为已核过的历史记录和复查优先级；**仍不能脱离原文直接回答事实问题**（见 SKILL.md §5 Reading-Log Safety Rule）
 
-**记录关键路径：**
+**记录关键路径与隐藏约束：**
 
 - `data.paper.note_path`
-- `data.paper.fulltext_path`
+- `data.paper.fulltext_path`（位于 `.paperforge/ocr/<KEY>/fulltext.md` 或 `<system_dir>/PaperForge/ocr/<KEY>/fulltext.md`，仅作机器只读来源；**禁止修改 fulltext.md 或提示用户在 fulltext.md 上写批注**，用户批注统一在 Obsidian 内置 PDF 阅读器完成后写入旁路 `annotations.jsonl`）
+- 正式笔记中的图表图片嵌入使用工作区独立命名格式 `![[<KEY>_figure_001.jpg]]` / `![[<KEY>_table_001.jpg]]`
 - `data.structure.version`（仅当 structure 非 null）
 - `data.structure.nodes`（仅当 structure 非 null）
 - `structure_available`
+- `user_annotations`
 - `recheck_targets`
 
 ---
@@ -207,7 +215,7 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" -
 - 哪些结论扎实，哪些仍存疑（`> [!warning]`）
 - Discussion 与 Conclusion 怎么读
 - 对自己的启发
-- 遗留问题（`> [!question]`）
+- 遗留问题（`> [!question]`），且若 `data.user_annotations.questions` 非空，必须逐条标注物理页码并回应用户划出的疑问
 
 ---
 
@@ -217,8 +225,18 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" -
 $PYTHON "$SKILL_DIR/scripts/pf_deep.py" validate-note "<formal_note_path>" --fulltext "<fulltext_path>"
 ```
 
-- `OK` → 告知用户精读完成
+- `OK` → 进入 Step 7
 - 错误 → 修正缺失项，直到通过（最多 3 轮）
+
+---
+
+### Step 7: Finalize (`deep-finalize`)
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" deep-finalize <zotero_key> --json
+```
+
+确认返回 `ok: true` 后告知用户精读完成并提示 Dashboard 状态已更新。
 
 ---
 

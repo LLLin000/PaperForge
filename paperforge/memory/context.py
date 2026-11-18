@@ -7,8 +7,10 @@ from paperforge.memory.db import open_live_reader, get_connection, get_memory_db
 
 def _build_collection_tree(conn) -> list[dict]:
     """Build collection hierarchy from papers.collection_path.
-    
-    Each collection_path is pipe-separated, e.g. "骨科 | 骨折".
+
+    Supports both multi-collection ``/``-delimited paths joined by ``|``
+    (e.g. ``"骨科/脊柱 | 骨科/创伤"``) and legacy single ``|``-delimited paths
+    (e.g. ``"骨科 | 骨折"``).
     Returns flat list of top-level collections with sub-collections.
     """
     rows = conn.execute(
@@ -18,17 +20,35 @@ def _build_collection_tree(conn) -> list[dict]:
     ).fetchall()
     top: dict[str, dict] = {}
     for row in rows:
-        parts = [p.strip() for p in row["collection_path"].split("|") if p.strip()]
-        if not parts:
+        raw_path = str(row["collection_path"] or "")
+        branches = [p.strip() for p in raw_path.split("|") if p.strip()]
+        if not branches:
             continue
-        root = parts[0]
-        if root not in top:
-            top[root] = {"name": root, "count": 0, "sub": []}
-        top[root]["count"] += row["cnt"]
-        if len(parts) > 1:
-            sub_name = parts[-1]
-            if sub_name not in top[root]["sub"]:
-                top[root]["sub"].append(sub_name)
+        if any("/" in branch for branch in branches):
+            seen_roots: set[str] = set()
+            for branch in branches:
+                segs = [s.strip() for s in branch.split("/") if s.strip()]
+                if not segs:
+                    continue
+                root = segs[0]
+                if root not in top:
+                    top[root] = {"name": root, "count": 0, "sub": []}
+                if root not in seen_roots:
+                    top[root]["count"] += row["cnt"]
+                    seen_roots.add(root)
+                if len(segs) > 1:
+                    sub_name = "/".join(segs[1:])
+                    if sub_name not in top[root]["sub"]:
+                        top[root]["sub"].append(sub_name)
+        else:
+            root = branches[0]
+            if root not in top:
+                top[root] = {"name": root, "count": 0, "sub": []}
+            top[root]["count"] += row["cnt"]
+            if len(branches) > 1:
+                sub_name = branches[-1]
+                if sub_name not in top[root]["sub"]:
+                    top[root]["sub"].append(sub_name)
     for c in top.values():
         c["sub"] = sorted(c["sub"])
     return sorted(top.values(), key=lambda x: -x["count"])

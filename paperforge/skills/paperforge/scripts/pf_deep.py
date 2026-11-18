@@ -150,7 +150,6 @@ REQUIRED_SECTIONS = [
     "**主要发现**",
     "**较扎实**",
     "**仍存疑**",
-    "**遗留问题**",
 ]
 
 
@@ -915,9 +914,77 @@ def render_study_scaffold(figures: Iterable[FigureEntry], tables: Iterable[Table
         "- 方法组合上：\n"
         "- 未来工作想法：\n\n"
         "#### 遗留问题\n"
-        "**遗留问题**\n"
         "- \n"
     )
+
+
+def _strip_key_prefix(stem: str, zotero_key: str = "") -> str:
+    if zotero_key and stem.startswith(f"{zotero_key}_"):
+        return stem[len(zotero_key) + 1 :]
+    return re.sub(r"^[A-Z0-9]{6,}_", "", stem)
+
+
+def _infer_note_key(note_path: Path, figure_map: dict | None = None) -> str:
+    if figure_map and figure_map.get("zotero_key"):
+        return str(figure_map["zotero_key"]).strip()
+    m = re.match(r"^([A-Z0-9]{6,})\b", note_path.stem)
+    if m:
+        return m.group(1)
+    try:
+        head = note_path.read_text(encoding="utf-8")[:1024]
+        fm = re.search(r'^zotero_key:\s*"?([A-Z0-9]{6,})"?', head, re.MULTILINE)
+        if fm:
+            return fm.group(1)
+    except OSError:
+        pass
+    return ""
+
+
+def _prefer_workspace_visual_link(
+    image_link: str,
+    zotero_key: str = "",
+    workspace_dir: Path | None = None,
+) -> str:
+    """Prefer `<workspace>/assets/<KEY>_<obj>.jpg` when materialized on disk."""
+    if not image_link or not zotero_key or workspace_dir is None:
+        return image_link
+    obj_stem = _strip_key_prefix(Path(image_link.strip()).stem, zotero_key)
+    target_name = f"{zotero_key}_{obj_stem}.jpg"
+    if (workspace_dir / "assets" / target_name).exists():
+        return target_name
+    return image_link
+
+
+def _rewrite_entries_for_workspace(
+    figures: list[FigureEntry],
+    tables: list[TableEntry],
+    zotero_key: str = "",
+    workspace_dir: Path | None = None,
+) -> None:
+    if not zotero_key or workspace_dir is None:
+        return
+    for fig in figures:
+        fig.image_link = _prefer_workspace_visual_link(fig.image_link, zotero_key, workspace_dir)
+        for add_img in fig.additional_images:
+            if isinstance(add_img, dict) and add_img.get("link"):
+                add_img["link"] = _prefer_workspace_visual_link(str(add_img["link"]), zotero_key, workspace_dir)
+    for tbl in tables:
+        tbl.image_link = _prefer_workspace_visual_link(tbl.image_link, zotero_key, workspace_dir)
+
+
+def _note_has_visual_embed(note_text: str, image_link: str) -> bool:
+    """Accept exact embed or key-prefixed workspace JPG/asset variant matching the object stem."""
+    if f"![[{image_link}]]" in note_text:
+        return True
+    obj_stem = _strip_key_prefix(Path(image_link.strip()).stem)
+    if not obj_stem:
+        return False
+    stem_re = re.compile(rf"^(?:[A-Z0-9]{{6,}}_)?{re.escape(obj_stem)}(?:\.(?:jpg|jpeg|png|md))?$", re.IGNORECASE)
+    for match in re.finditer(r"!\[\[([^\]|#]+)(?:\|[^\]]+)?\]\]", note_text):
+        target_name = Path(match.group(1).strip()).name
+        if stem_re.match(target_name):
+            return True
+    return False
 
 
 def render_figure_block(figure: FigureEntry) -> str:
@@ -954,17 +1021,14 @@ def validate_selected_blocks(
     for figure in figures:
         # Use prefix matching for heading to accommodate custom titles
         heading_prefix = f"> [!note]- Figure {figure.number}："
-        embed = f"![[{figure.image_link}]]"
-        # Check if any line starts with the heading prefix and embed exists
         has_heading = any(line.strip().startswith(heading_prefix) for line in note_text.splitlines())
-        if not has_heading or embed not in note_text:
+        if not has_heading or not _note_has_visual_embed(note_text, figure.image_link):
             missing.append(f"Figure {figure.number}")
 
     for table in tables or []:
         heading_prefix = f"> [!note]- Table {table.number}"
-        embed = f"![[{table.image_link}]]"
         has_heading = any(line.strip().startswith(heading_prefix) for line in note_text.splitlines())
-        if not has_heading or embed not in note_text:
+        if not has_heading or not _note_has_visual_embed(note_text, table.image_link):
             missing.append(f"Table {table.number}")
 
     return missing
@@ -1096,9 +1160,9 @@ def postprocess_pass2(note_text: str, figure_count: int) -> list[dict]:
                     "message": f"Figure {fig_num}: sub-heading '{heading_text}' has no content",
                 })
 
-    # Check 2 — Image bounds: detect stray ![[ outside callout blocks
+    # Check 2 — Image bounds: detect stray ![[ outside callout blocks (allow PDF _ann_ crops)
     for i, line in enumerate(lines, 1):
-        if "![" not in line:
+        if "![" not in line or re.search(r"_ann_[A-Za-z0-9_.-]+", line):
             continue
         # A line that does not start with ">" cannot be inside a callout
         if not line.strip().startswith(">"):
@@ -1532,9 +1596,15 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
                 all_guides.add(guide)
         result["chart_recommendations"] = sorted(all_guides)
 
-        # 8. Extract figures/tables and run ensure-scaffold
+        # 8. Sync workspace visual assets & run ensure-scaffold
+        with contextlib.suppress(Exception):
+            from paperforge.worker.asset_index import sync_workspace_visual_assets
+
+            sync_workspace_visual_assets(ocr_dir, formal_note.parent, zotero_key)
+
         figure_candidates = extract_figures_from_fulltext(fulltext_text, figure_map)
         table_candidates = extract_tables_from_fulltext(fulltext_text, figure_map)
+        _rewrite_entries_for_workspace(figure_candidates, table_candidates, zotero_key, formal_note.parent)
         planned_figures = build_figure_plan(figure_candidates)
         planned_tables = table_candidates  # Include all tables by default
 
@@ -1718,6 +1788,12 @@ def main() -> int:
                     figure_map = json.loads(figure_map_path.read_text(encoding="utf-8"))
             figure_candidates = extract_figures_from_fulltext(fulltext, figure_map)
             table_candidates = extract_tables_from_fulltext(fulltext, figure_map)
+            _rewrite_entries_for_workspace(
+                figure_candidates,
+                table_candidates,
+                _infer_note_key(args.note, figure_map),
+                args.note.parent,
+            )
             selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}
             selected_tables = {part.strip() for part in (args.tables or "").split(",") if part.strip()}
             figures = (
@@ -1735,6 +1811,12 @@ def main() -> int:
         fulltext = args.fulltext.read_text(encoding="utf-8")
         figure_candidates = extract_figures_from_fulltext(fulltext)
         table_candidates = extract_tables_from_fulltext(fulltext)
+        _rewrite_entries_for_workspace(
+            figure_candidates,
+            table_candidates,
+            _infer_note_key(args.note),
+            args.note.parent,
+        )
         selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}
         selected_tables = {part.strip() for part in (args.tables or "").split(",") if part.strip()}
         figures = (
@@ -1760,6 +1842,12 @@ def main() -> int:
                 figure_map = json.loads(figure_map_path.read_text(encoding="utf-8"))
         figure_candidates = extract_figures_from_fulltext(fulltext, figure_map)
         table_candidates = extract_tables_from_fulltext(fulltext)
+        _rewrite_entries_for_workspace(
+            figure_candidates,
+            table_candidates,
+            _infer_note_key(args.note, figure_map),
+            args.note.parent,
+        )
         selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}
         selected_tables = {part.strip() for part in (args.tables or "").split(",") if part.strip()}
         figures = (

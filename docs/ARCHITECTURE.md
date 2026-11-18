@@ -158,9 +158,10 @@ CLI 执行器
 
 1. **query-plan 是唯一的检索规划器。** Agent 不自行选择检索策略。query-plan 返回 `primary` + 最多一个 `fallback`。
 2. **最多一次 fallback。** primary 零结果时才触发 fallback。scope=paper 时不执行 fallback。
-3. **StructureTree** 是章节导航地图，不是全文内容替代品。`paper-context --structure` 返回论文的章节树（node_id、parent_id、path、depth、page_span），用于确定 evidence 所在章节。
+3. **StructureTree** 是章节导航地图，不是全文内容替代品。`paper-context --structure` 返回论文的章节树（node_id、parent_id、path、depth、page_span），用于确定 evidence 所在章节；同时返回用户在内置 PDF 批注器留下的 `user_annotations`（`questions` 与 `highlights`）。
 4. **Evidence 由结构化字段判定。** `source_kind=body` + `structure_resolved=true` = 可靠正文证据；`source_kind=object` = 图表证据。
-5. **Agent 只理解 CLI contract。** 不接触 vec0、FTS5、embedding、SQLite 等存储层实现。
+5. **全并集混合检索（BM25 ∪ Vector）。** `retrieve --deep` 对 FTS5 BM25 与 `vec_body` / `vec_objects` 执行并集融合与元数据水合，不会因单一 BM25 命中而截断纯语义向量结果，亦可在未构建向量索引时回退到 BM25 检索。
+6. **Agent 只理解 CLI contract。** 不接触 vec0、FTS5、embedding、SQLite 等存储层实现。
 
 ### 简化过程
 
@@ -169,35 +170,39 @@ v1.5 用三个检索意图取代了旧版的 L4 gateway 系统（content-discove
 
 ## Directory Structure
 
-PaperForge uses structured directories under the Obsidian vault root. All paths are configured in schema-v2 `paperforge.json` and resolved through `paperforge/config.py` (`load_config` / `resolve_paths`, see [ADR-001](#adr-001-config-precedence)).
+PaperForge uses structured directories under the Obsidian vault root. All paths are configured in schema-v2 `paperforge.json` and resolved through `paperforge/config.py` (`load_config` / `resolve_paths`, see [ADR-001](#adr-001-config-precedence)). Fresh setups default `system_dir` to hidden `.paperforge` (keeping tens of thousands of OCR JSONL/markdown intermediates invisible to Obsidian's file scanner), while legacy `System/PaperForge` vaults remain supported and can migrate in place via `paperforge migrate-storage`. Internal `fulltext.md` stays inside the engine directory; user-facing visual crops materialize as `<workspace>/assets/<KEY>_figure_NNN.jpg` / `<KEY>_table_NNN.jpg` and non-destructive PDF highlights/crops persist in `<workspace>/annotations.jsonl` (+ SQLite `paper_annotations`).
 
 ```text
 {vault_root}/
-|-- <resources_dir/>                          # User data and notes
-|   |-- <literature_dir/>                     # Formal literature notes (frontmatter + ## 精读)
+|-- <resources_dir/>                          # User data and notes (indexed by Obsidian)
+|   |-- <literature_dir/>                     # Formal literature notes & per-paper workspaces
 |       |-- <domain>/
-|           |-- ABCDEFG - Paper Title.md
+|           |-- ABCDEFG - Paper Title/
+|               |-- ABCDEFG - Paper Title.md  # Formal note + ## 精读 + ![[ABCDEFG_figure_001.jpg]]
+|               |-- annotations.jsonl         # Non-destructive Zotero-style PDF sidecar annotations
+|               |-- assets/
+|                   |-- ABCDEFG_figure_001.jpg  # Unique key-prefixed figure crop (collision-free)
+|                   |-- ABCDEFG_ann_xxx.jpg     # PDF area selection screenshot crop
 |
-|-- <system_dir>/                             # System-generated artifacts (regenerable)
-|   |-- PaperForge/
-|   |   |-- exports/
-|   |   |   |-- library.json                  # Zotero BBT auto-export
-|   |   |-- indexes/
-|   |   |   |-- formal-library.json           # Canonical asset index (v2 envelope)
-|   |   |   |-- paperforge.db                 # SQLite FTS5 + retrieval units + vec0 vectors
-|   |   |-- ocr/
-|   |       |-- ABCDEFG/                      # One workspace per zotero_key
-|   |           |-- raw/                      # source_metadata.json, raw_meta.json
-|   |           |-- canonical/blocks.raw.jsonl
-|   |           |-- structure/                # blocks.structured.jsonl, figure/table inventories
-|   |           |-- render/                   # fulltext.md, render.consistency.json, provenance
-|   |           |-- assets/                   # cropped figure/table images
-|   |           |-- health/ocr_health.json
-|   |           |-- index/                    # structure-tree.json, role-index.json, result-hash.txt
-|   |           |-- meta.json
-|   |           |-- fulltext.md               # Compat projection
-|   |
-|   |-- Zotero/storage/                       # Zotero PDF attachments (or external junction)
+|-- .paperforge/ (or <system_dir>/PaperForge/) # Engine artifacts hidden from Obsidian indexer
+|   |-- exports/
+|   |   |-- library.json                      # Zotero BBT auto-export
+|   |-- indexes/
+|   |   |-- formal-library.json               # Canonical asset index (v2 envelope)
+|   |   |-- paperforge.db                     # SQLite FTS5 + retrieval units + vec0 + paper_annotations
+|   |-- ocr/
+|       |-- ABCDEFG/                          # One OCR store per zotero_key
+|           |-- raw/                          # source_metadata.json, raw_meta.json
+|           |-- canonical/blocks.raw.jsonl
+|           |-- structure/                    # blocks.structured.jsonl, figure/table inventories
+|           |-- render/                       # internal machine fulltext.md, render.consistency.json
+|           |-- assets/                       # source figure/table crops (syncs to workspace/assets/)
+|           |-- health/ocr_health.json
+|           |-- index/                        # structure-tree.json, role-index.json, result-hash.txt
+|           |-- meta.json
+|           |-- fulltext.md                   # Internal machine projection (hidden from user workspaces)
+|
+|-- Zotero/storage/                           # External or vault-local Zotero PDF attachments
 |
 |-- .agents/skills/paperforge/                # Deployed PaperForge agent skill
 |-- paperforge.json                           # Canonical schema-v2 configuration
@@ -208,11 +213,11 @@ PaperForge uses structured directories under the Obsidian vault root. All paths 
 
 | Directory | Purpose | Generated By | Modified By |
 |-----------|---------|--------------|-------------|
-| `<resources_dir>/<literature_dir>/` | Formal notes with frontmatter + deep reading annotations | `paperforge sync` | Agent (writes `## 精读`), User |
-| `<system_dir>/PaperForge/exports/` | Better BibTeX JSON export | Zotero + BBT | Read-only for PaperForge |
-| `<system_dir>/PaperForge/indexes/` | Canonical asset index + SQLite FTS5/`vec0` database | `paperforge sync`, `memory build`, `embed build` | Python backend only |
-| `<system_dir>/PaperForge/ocr/` | Normalized raw OCR, V3 structured blocks, crops, renders | `paperforge ocr`, `ocr rebuild` | Read-only for Agent/UI |
-| `<system_dir>/Zotero/` | Zotero data directory or junction | User (setup step) | Read-only for PaperForge |
+| `<resources_dir>/<literature_dir>/` | Formal notes (`<KEY>.md`), per-paper `annotations.jsonl`, unique `<KEY>_*.jpg` crops | `paperforge sync`, PDF Annotator (`PaperForgePdfView`) | Agent (writes `## 精读`), User |
+| `.paperforge/exports/` | Better BibTeX JSON export | Zotero + BBT | Read-only for PaperForge |
+| `.paperforge/indexes/` | Canonical asset index + SQLite FTS5/`vec0`/`paper_annotations` database | `paperforge sync`, `memory build`, `embed build` | Python backend only |
+| `.paperforge/ocr/` | Normalized raw OCR, V3 structured blocks, internal machine `fulltext.md` (hidden from Obsidian) | `paperforge ocr`, `ocr rebuild` | Read-only for Agent / OCR Workspace diagnostic preview |
+| `<zotero_data_dir>/` | Vault-local or external Zotero data directory (`storage/`) | User (setup step) | Read-only for PaperForge |
 
 ---
 

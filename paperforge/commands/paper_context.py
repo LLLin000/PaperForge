@@ -19,7 +19,9 @@ def _build_compact_tree(vault: Path, zotero_key: str, conn: sqlite3.Connection) 
     Pure projection of existing StructureTree fields — no block-level recalculation.
     Returns None when paper has no OCR structure.
     """
-    tree_path = vault / "System" / "PaperForge" / "ocr" / zotero_key / "index" / "structure-tree.json"
+    from paperforge.config import paperforge_paths
+
+    tree_path = paperforge_paths(vault)["ocr"] / zotero_key / "index" / "structure-tree.json"
     if not tree_path.exists():
         return None
 
@@ -145,6 +147,7 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
             "prior_notes": prior_notes,
             "corrections": corrections,
             "recheck_targets": recheck_targets,
+            "user_annotations": _load_user_annotations(vault, resolved_key, conn),
         }
         if structure:
             result["structure"] = _build_compact_tree(vault, resolved_key, conn)
@@ -152,6 +155,58 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
     finally:
         conn.close()
         reader.__exit__(None, None, None)
+
+
+def _project_annotation(ann: dict) -> dict:
+    """Project a sidecar or DB annotation record into a compact agent-facing dict."""
+    return {
+        "ann_id": str(ann.get("ann_id") or ""),
+        "page": ann.get("page"),
+        "kind": str(ann.get("kind") or "highlight"),
+        "intent": str(ann.get("intent") or "general"),
+        "color": str(ann.get("color") or "yellow"),
+        "section_path": str(ann.get("section_path") or ""),
+        "figure_id": str(ann.get("figure_id") or ""),
+        "exact_text": str(ann.get("exact_text") or ""),
+        "comment": str(ann.get("comment") or ""),
+        "embed_wikilink": str(ann.get("embed_wikilink") or ""),
+        "provenance_status": str(ann.get("provenance_status") or "verified"),
+    }
+
+
+def _load_user_annotations(vault: Path, zotero_key: str, conn: sqlite3.Connection) -> dict:
+    """Load non-destructive user PDF annotations from sidecar JSONL with SQLite fallback."""
+    rows: list[dict] = []
+    try:
+        from paperforge.services.annotations_service import list_annotations
+
+        rows = list_annotations(vault, zotero_key)
+    except Exception:
+        rows = []
+
+    if not rows:
+        try:
+            has_table = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='paper_annotations'"
+            ).fetchone()
+            if has_table is not None:
+                db_rows = conn.execute(
+                    "SELECT ann_id, kind, color, intent, page, exact_text, comment, "
+                    "section_path, figure_id, crop_asset_rel, embed_wikilink, provenance_status "
+                    "FROM paper_annotations WHERE zotero_key = ? "
+                    "ORDER BY page ASC, created_at ASC",
+                    (zotero_key,),
+                ).fetchall()
+                rows = [dict(r) for r in db_rows]
+        except Exception:
+            rows = []
+
+    projected = [_project_annotation(r) for r in rows]
+    return {
+        "total": len(projected),
+        "questions": [a for a in projected if a.get("intent") == "question"],
+        "highlights": [a for a in projected if a.get("intent") != "question"],
+    }
 
 
 def run(args: argparse.Namespace) -> int:
@@ -202,6 +257,9 @@ def run(args: argparse.Namespace) -> int:
             print(f"  Corrections: {len(result.data.get('corrections', []))}")
             if result.data.get("recheck_targets"):
                 print(f"  Recheck targets: {len(result.data['recheck_targets'])}")
+            ua = result.data.get("user_annotations") or {}
+            if ua.get("total", 0) > 0:
+                print(f"  Annotations: {ua['total']} ({len(ua.get('questions', []))} questions)")
             if result.data.get("structure"):
                 s = result.data["structure"]
                 print(f"  Structure: {len(s.get('nodes', []))} nodes (v={s.get('version', '')[:12]})")

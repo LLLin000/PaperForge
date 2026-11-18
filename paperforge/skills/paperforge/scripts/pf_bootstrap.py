@@ -317,10 +317,11 @@ def main() -> None:
     literature_dir = cfg.get("literature_dir", "Literature")
 
     # --- 3. Build paths from config ---
-    pf_root = vault / system_dir / "PaperForge"
+    pf_root = vault / system_dir if Path(system_dir).name == ".paperforge" else vault / system_dir / "PaperForge"
 
     paths = {
         "literature_dir": str(vault / resources_dir / literature_dir),
+        "paperforge_dir": str(pf_root),
         "index_path": str(pf_root / "indexes" / "formal-library.json"),
         "ocr_dir": str(pf_root / "ocr"),
         "exports_dir": str(pf_root / "exports"),

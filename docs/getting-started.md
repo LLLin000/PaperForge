@@ -18,9 +18,9 @@
 2. 对你要同步的文献库或分类右键 -> `导出...`
 3. 格式选：**Better BibTeX JSON**
 4. 勾选 **"Keep updated"**
-5. 保存到：`{你的Vault路径}/<system_dir>/PaperForge/exports/`
+5. 保存到向导自动创建的导出目录（新库默认为 `{你的Vault路径}/.paperforge/exports/`；旧库升级为 `{你的Vault路径}/System/PaperForge/exports/`）
 
-> system_dir 默认是 `System`，例如保存到 `MyVault/System/PaperForge/exports/library.json`
+> 💡 新建 Vault 默认将引擎缓存、OCR 中间文件与内部 `fulltext.md` 收归隐藏目录 `.paperforge/`，避免上万个中间文件拖慢 Obsidian 索引与启动速度；如果你正在使用旧版 `System/PaperForge/` 目录，可随时运行 `paperforge migrate-storage` 一键平滑迁移。
 
 ---
 
@@ -45,11 +45,21 @@ paperforge sync
 paperforge ocr
 ```
 
-OCR 结果保存在 `System/PaperForge/ocr/<key>/` 下，包括全文文本和图表。
+OCR 结果保存在隐藏引擎目录 `.paperforge/ocr/<key>/`（或旧版 `System/PaperForge/ocr/<key>/`）下，包括供检索与 Agent 使用的全文文本，并将裁切好的独立命名图表 `assets/<key>_figure_*.jpg` 同步到正式笔记工作区；`fulltext.md` 不再冗余复制到可见文献文件夹。
 
 ---
 
-## 5. 深度精读
+## 5. 阅读原版 PDF 并无损批注（Obsidian 内置阅读器）
+
+在 Dashboard 或单篇文献面板点击 **打开 PDF**，即可直接在 Obsidian 标签页中使用内置 **PaperForge PDF Annotator**（基于原生 `loadPdfJs()`）：
+
+- **划线高亮与科研意图标注**：支持选区高亮并标注为 `evidence`（💡 核心证据）、`question`（❓ 存疑待查）、`method`（🧪 方法细节）、`quote`（✍️ 可引述）
+- **框选截图**：框选图表面板或公式区域自动生成独立截图 `assets/<key>_ann_<id>.jpg` 并绑定 OCR 章节与图表上下文
+- **随文献永存、原 PDF 零改动**：全部批注保存在文献工作区 `<workspace>/annotations.jsonl`，严格不修改原始 PDF 字节，支持一键晋升为可检索的 `reading-log` 证据卡，并在执行 `/pf-deep` 时自动喂给 AI Agent 优先解答你标记的疑问
+
+---
+
+## 6. 深度精读
 
 OCR 完成后，把 formal note 的 `analyze` 改为 `true`。
 
@@ -62,18 +72,19 @@ paperforge deep-reading
 
 ---
 
-## 6. 文献问答
+## 7. 文献问答
 
 不强制 OCR。直接输入 `/pf-paper <zotero_key>` 进入交互式问答。
 
 ---
 
-## 7. 日常路径
+## 8. 日常路径
 
 ```
 添加文献到 Zotero
   -> BBT 自动导出到 exports/
   -> 点 Sync
+  -> Obsidian 内置 PDF 阅读器划线/框选批注 (annotations.jsonl)
   -> 标记 do_ocr: true
   -> 运行 OCR
   -> 标记 analyze: true
@@ -83,7 +94,7 @@ paperforge deep-reading
 
 ---
 
-## 8. 相关文档
+## 9. 相关文档
 
 - [命令参考](COMMANDS.md) — 所有 CLI 和 Agent 命令速查
 - [故障排除](troubleshooting.md) — 常见问题

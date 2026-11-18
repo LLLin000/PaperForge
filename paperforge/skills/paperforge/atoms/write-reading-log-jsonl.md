@@ -48,9 +48,15 @@
 
 ## 步骤
 
-### Step 1: 收集必填字段
+### Step 1: 收集必填字段 & 物理页码核验
 
 从对话上下文提取：`paper_id`、`section`、`excerpt`、`context`、`usage`。
+
+- 若引用来自内置 PDF 阅读器已保存的高亮/截图批注，优先直接晋升并保留物理页码与 provenance：
+  ```bash
+  $PYTHON -m paperforge --vault "$VAULT" annotations promote <paper_id> <ann_id> --project "<project>" --json
+  ```
+- 若手动记录 JSONL，必须先核对原文物理页码（`page` / `<!-- page N -->`）与逐字引文；`section` 应注明章节点与物理页码（如 `Results Fig.3 (p.5)`）。
 
 ### Step 2: 生成 id
 
@@ -91,7 +97,7 @@ $PYTHON -m paperforge --vault "$VAULT" reading-log --write <paper_id> \
 $PYTHON -m paperforge --vault "$VAULT" reading-log --render --project "<project>"
 ```
 
-输出到 `Resources/Projects/<project>/reading-log.md`。
+输出到 `Resources/Projects/<project>/reading-log.index.md`（不覆盖用户手工编写的叙事区 `reading-log.md`）。
 
 ---
 
