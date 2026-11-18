@@ -41,6 +41,7 @@ import {
 } from "../client/trace";
 import type { PaperForgeClient } from "../client";
 import { ResearchRecordModal } from "./research-record";
+import { setPfIcon, type PfIconName } from "./icons";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -458,35 +459,11 @@ export class PaperForgeStatusView extends ItemView {
       this._renderSkeleton(container);
       return;
     }
-    const dimensions = [
-      {
-        key: "pdf_health",
-        label: "PDF Health",
-        iconOk: "\u2713",
-        iconWarn: "\u26A0",
-        iconFail: "\u2717",
-      },
-      {
-        key: "ocr_health",
-        label: "OCR Health",
-        iconOk: "\u2713",
-        iconWarn: "\u26A0",
-        iconFail: "\u2717",
-      },
-      {
-        key: "note_health",
-        label: "Note Health",
-        iconOk: "\u2713",
-        iconWarn: "\u26A0",
-        iconFail: "\u2717",
-      },
-      {
-        key: "asset_health",
-        label: "Asset Health",
-        iconOk: "\u2713",
-        iconWarn: "\u26A0",
-        iconFail: "\u2717",
-      },
+    const dimensions: Array<{ key: string; label: string }> = [
+      { key: "pdf_health", label: "PDF 文件" },
+      { key: "ocr_health", label: "全文解析" },
+      { key: "note_health", label: "文献笔记" },
+      { key: "asset_health", label: "关联素材" },
     ];
     const matrix = container.createEl("div", {
       cls: "paperforge-health-matrix",
@@ -494,27 +471,30 @@ export class PaperForgeStatusView extends ItemView {
     for (const dim of dimensions) {
       const status = health[dim.key] || "healthy";
       const cell = matrix.createEl("div", { cls: "paperforge-health-cell" });
-      let icon: string, statusClass: string, tooltip: string;
+      let iconName: PfIconName, statusClass: string, tooltip: string;
       if (status === "healthy" || status === "ok") {
-        icon = dim.iconOk;
+        iconName = "check";
         statusClass = "ok";
-        tooltip = `${dim.label}: OK`;
+        tooltip = `${dim.label}：正常`;
       } else if (
         status === "warn" ||
         status === "warning" ||
         status === "degraded"
       ) {
-        icon = dim.iconWarn;
+        iconName = "alert-triangle";
         statusClass = "warn";
-        tooltip = `${dim.label}: Needs Attention`;
+        tooltip = `${dim.label}：需关注`;
       } else {
-        icon = dim.iconFail;
+        iconName = "x";
         statusClass = "fail";
-        tooltip = `${dim.label}: Failed`;
+        tooltip = `${dim.label}：异常`;
       }
       cell.addClass(statusClass);
       cell.setAttribute("title", tooltip);
-      cell.createEl("div", { cls: "paperforge-health-cell-icon", text: icon });
+      const iconEl = cell.createEl("div", {
+        cls: "paperforge-health-cell-icon",
+      });
+      setPfIcon(iconEl, iconName, 14);
       cell.createEl("div", {
         cls: "paperforge-health-cell-label",
         text: dim.label,
@@ -884,10 +864,10 @@ export class PaperForgeStatusView extends ItemView {
     const hubBtn = btnsRow.createEl("button", {
       cls: "paperforge-contextual-btn primary",
     });
-    hubBtn.createEl("span", {
+    const hubIcon = hubBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
-      text: "\uD83D\uDCC1",
     });
+    setPfIcon(hubIcon, "folder", 14);
     hubBtn.createEl("span", { text: t("dash_open_hub") });
     hubBtn.addEventListener("click", () => {
       const baseDir = plugin?.settings?.base_dir || "Bases";
@@ -913,10 +893,10 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-contextual-btn",
       attr: { "data-pf-testid": "sync-library" },
     });
-    globalSyncBtn.createEl("span", {
+    const syncIcon = globalSyncBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
-      text: "\u21BB",
     });
+    setPfIcon(syncIcon, "refresh-cw", 14);
     globalSyncBtn.createEl("span", { text: t("dash_sync_library") });
     globalSyncBtn.addEventListener("click", () => {
       void this._runLibrarySync();
@@ -924,10 +904,10 @@ export class PaperForgeStatusView extends ItemView {
     const globalOcrBtn = btnsRow.createEl("button", {
       cls: "paperforge-contextual-btn",
     });
-    globalOcrBtn.createEl("span", {
+    const ocrIcon = globalOcrBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
-      text: "\u229E",
     });
+    setPfIcon(ocrIcon, "file-text", 14);
     globalOcrBtn.createEl("span", { text: t("dash_run_ocr") });
     globalOcrBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
@@ -1071,19 +1051,18 @@ export class PaperForgeStatusView extends ItemView {
       else if (item.fail) statusCls = "fail";
       else if (item.pending) statusCls = "pending";
       pill.addClass(statusCls);
-      const icon = item.ok ? "\u2713" : item.fail ? "\u2717" : "\u25CB";
-      pill.createEl("span", { cls: "paperforge-status-pill-icon", text: icon });
-      pill.createEl("span", { text: " " + item.label });
+      pill.createEl("span", { cls: "paperforge-status-pill-dot" });
+      pill.createEl("span", { text: item.label });
     }
     if (entry.pdf_path) {
       const pdfBtn = stripRight.createEl("button", {
-        cls: "paperforge-contextual-btn",
+        cls: "paperforge-contextual-btn primary",
         attr: { "data-pf-testid": "open-pdf" },
       });
-      pdfBtn.createEl("span", {
+      const pdfIcon = pdfBtn.createEl("span", {
         cls: "paperforge-contextual-btn-icon",
-        text: "\uD83D\uDCC4",
       });
+      setPfIcon(pdfIcon, "file-text", 14);
       pdfBtn.createEl("span", { text: "\u6253\u5F00 PDF" });
       pdfBtn.addEventListener("click", () => {
         const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
@@ -1181,7 +1160,8 @@ export class PaperForgeStatusView extends ItemView {
     this._renderLivingMemoryCard(view, key);
     if (entry.next_step === "ready" && entry.deep_reading_status === "done") {
       const complete = view.createEl("div", { cls: "paperforge-complete-row" });
-      complete.createEl("span", { text: "\u2713" });
+      const checkEl = complete.createEl("span", { cls: "pf-complete-icon" });
+      setPfIcon(checkEl, "check", 14);
       complete.createEl("span", {
         text: "\u5DF2\u5B8C\u6210\uFF0C\u53EF\u76F4\u63A5\u4F7F\u7528",
       });
@@ -1200,9 +1180,16 @@ export class PaperForgeStatusView extends ItemView {
       attr: { "data-pf-testid": "living-memory-card" },
     });
     const header = card.createEl("div", { cls: "pf-living-memory-header" });
-    header.createEl("span", {
+    const titleWrap = header.createEl("span", {
+      cls: "pf-living-memory-title-wrap",
+    });
+    const memIcon = titleWrap.createEl("span", {
+      cls: "pf-living-memory-icon",
+    });
+    setPfIcon(memIcon, "layers", 14);
+    titleWrap.createEl("span", {
       cls: "pf-living-memory-title",
-      text: t("living_memory_title") || "🧠 动态认知记忆",
+      text: t("living_memory_title") || "\u7814\u7A76\u8BA4\u77E5\u8BB0\u5FC6",
     });
     const body = card.createEl("div", { cls: "pf-living-memory-body" });
     this._livingMemoryBodyEl = body;
@@ -1222,7 +1209,7 @@ export class PaperForgeStatusView extends ItemView {
         cls: "pf-living-memory-empty",
         text:
           t("living_memory_empty") ||
-          "尚未沉淀动态记忆 — 与 Agent 讨论或批注本篇文献后将自动按维度演进更新。",
+          "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
       });
       return;
     }
@@ -1236,7 +1223,7 @@ export class PaperForgeStatusView extends ItemView {
           cls: "pf-living-memory-empty",
           text:
             t("living_memory_empty") ||
-            "尚未沉淀动态记忆 — 与 Agent 讨论或批注本篇文献后将自动按维度演进更新。",
+            "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
         });
         return;
       }
@@ -1252,10 +1239,14 @@ export class PaperForgeStatusView extends ItemView {
           cls: "pf-living-memory-facet-label",
           text: f.label || f.facet,
         });
-        fHead.createEl("span", {
-          cls: "pf-living-memory-facet-rev",
-          text: `r${f.revision || 1}`,
-        });
+        const dateLabel = f.updated_at ? f.updated_at.slice(5, 10) : "";
+        if (dateLabel) {
+          fHead.createEl("span", {
+            cls: "pf-living-memory-facet-date pf-tnum",
+            text: dateLabel,
+            attr: { title: `\u7B2C ${f.revision || 1} \u6B21\u6C89\u6DC0` },
+          });
+        }
         item.createEl("div", {
           cls: "pf-living-memory-facet-body",
           text: f.content,
@@ -1267,7 +1258,7 @@ export class PaperForgeStatusView extends ItemView {
         cls: "pf-living-memory-empty",
         text:
           t("living_memory_empty") ||
-          "尚未沉淀动态记忆 — 与 Agent 讨论或批注本篇文献后将自动按维度演进更新。",
+          "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
       });
     }
   }
@@ -1527,17 +1518,21 @@ export class PaperForgeStatusView extends ItemView {
     body.style.display = "none";
     if (this._techDetailsExpanded) {
       body.style.display = "block";
-      toggle.setText("\u6280\u672F\u8BE6\u60C5 \u25BE");
+      toggle.setText(
+        "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25BE"
+      );
     } else {
-      toggle.setText("\u6280\u672F\u8BE6\u60C5 \u25B8");
+      toggle.setText(
+        "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25B8"
+      );
     }
     toggle.addEventListener("click", () => {
       const visible = body.style.display !== "none";
       body.style.display = visible ? "none" : "block";
       toggle.setText(
         visible
-          ? "\u6280\u672F\u8BE6\u60C5 \u25B8"
-          : "\u6280\u672F\u8BE6\u60C5 \u25BE"
+          ? "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25B8"
+          : "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25BE"
       );
       this._techDetailsExpanded = !visible;
     });
@@ -1987,43 +1982,43 @@ export class PaperForgeStatusView extends ItemView {
     const nextStep = entry.next_step || "ready";
     const stepInfo: Record<
       string,
-      { label: string; text: string; actionId: string | null; icon: string }
+      { label: string; text: string; actionId: string | null; icon: PfIconName }
     > = {
       sync: {
         label: "Sync Needed",
         text: t("dash_next_sync"),
         actionId: "paperforge-sync",
-        icon: "\u21BB",
+        icon: "refresh-cw",
       },
       ocr: {
         label: "OCR Needed",
         text: t("dash_next_ocr"),
         actionId: "paperforge-ocr",
-        icon: "\u229E",
+        icon: "file-text",
       },
       repair: {
         label: "Repair Needed",
         text: t("dash_next_repair"),
         actionId: "paperforge-repair",
-        icon: "\u21BA",
+        icon: "wrench",
       },
       "rebuild index": {
         label: "Rebuild Needed",
         text: t("dash_next_resync"),
         actionId: "paperforge-sync",
-        icon: "\u21BB",
+        icon: "refresh-cw",
       },
       "/pf-deep": {
         label: "Ready for Deep Reading",
         text: t("dash_next_deep"),
         actionId: null,
-        icon: "\uD83D\uDD0D",
+        icon: "book-open",
       },
       ready: {
         label: "All Set",
         text: t("dash_next_done"),
         actionId: "ready",
-        icon: "\u2713",
+        icon: "check",
       },
     };
     const info = stepInfo[nextStep] || stepInfo["ready"];
@@ -2040,7 +2035,11 @@ export class PaperForgeStatusView extends ItemView {
       const trigger = card.createEl("button", {
         cls: "paperforge-next-step-trigger",
       });
-      trigger.createEl("span", { text: info.icon + "  " + info.label });
+      const iconSpan = trigger.createEl("span", {
+        cls: "paperforge-contextual-btn-icon",
+      });
+      setPfIcon(iconSpan, info.icon, 14);
+      trigger.createEl("span", { text: info.label });
       trigger.addEventListener("click", () => {
         if (info.actionId === "paperforge-sync") {
           void this._runLibrarySync();
@@ -2053,15 +2052,20 @@ export class PaperForgeStatusView extends ItemView {
       const trigger = card.createEl("button", {
         cls: "paperforge-next-step-trigger",
       });
-      trigger.createEl("span", {
-        text: "\uD83D\uDCCB  " + t("copy_pf_deep_cmd"),
+      const iconSpan = trigger.createEl("span", {
+        cls: "paperforge-contextual-btn-icon",
+      });
+      setPfIcon(iconSpan, "copy", 14);
+      const labelSpan = trigger.createEl("span", {
+        text: t("copy_pf_deep_cmd"),
       });
       trigger.addEventListener("click", () => {
         const fullCmd = "/pf-deep " + key;
         navigator.clipboard
           .writeText(fullCmd)
           .then(() => {
-            trigger.setText("\u2713  " + t("copied"));
+            setPfIcon(iconSpan, "check", 14);
+            labelSpan.setText(t("copied"));
             new Notice(fullCmd + " copied");
           })
           .catch(() => {
@@ -2090,7 +2094,11 @@ export class PaperForgeStatusView extends ItemView {
       const trigger = card.createEl("button", {
         cls: "paperforge-next-step-trigger",
       });
-      trigger.createEl("span", { text: "\u2713  " + info.label });
+      const iconSpan = trigger.createEl("span", {
+        cls: "paperforge-contextual-btn-icon",
+      });
+      setPfIcon(iconSpan, "check", 14);
+      trigger.createEl("span", { text: info.label });
     }
   }
 

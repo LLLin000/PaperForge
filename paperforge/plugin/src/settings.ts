@@ -296,6 +296,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._displayInProgress = true;
     const { containerEl } = this;
     containerEl.empty();
+    containerEl.classList?.add("pf-settings-shell");
     this._refreshPfConfig();
     if (this._initialDisplay) {
       this._restoreNavMemory();
@@ -1188,7 +1189,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Version
     addCheck(
       t("foundation_version"),
-      "✓",
+      t("cc_badge_ready") || "Ready",
       this.plugin.manifest.version,
       "pf-status-ok"
     );
@@ -1202,7 +1203,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : t("runtime_status_not_installed")));
     addCheck(
       t("foundation_python"),
-      runtimeReady ? "✓" : this._runtimeStatusLoading ? "…" : "—",
+      runtimeReady
+        ? t("cc_badge_ready") || "Ready"
+        : this._runtimeStatusLoading
+          ? t("cc_badge_checking") || "Checking"
+          : t("cc_badge_setup_required") || "Setup Required",
       runtime?.python_path ?? pointer?.pythonPath ?? runtimeLabel,
       runtimeReady
         ? "pf-status-ok"
@@ -1220,7 +1225,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const hasSystem = fs.existsSync(systemDir);
     addCheck(
       t("foundation_vault_structure"),
-      hasSystem ? "✓" : "✗",
+      hasSystem
+        ? t("cc_badge_ready") || "Ready"
+        : t("cc_badge_setup_required") || "Setup Required",
       hasSystem
         ? path.posix.join(
             this.plugin.settings.system_dir || "System",
@@ -1236,7 +1243,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       fs.existsSync(this.plugin.settings.zotero_data_dir);
     addCheck(
       t("foundation_zotero"),
-      hasZotero ? "✓" : "✗",
+      hasZotero
+        ? t("cc_badge_ready") || "Ready"
+        : t("cc_badge_setup_required") || "Setup Required",
       hasZotero
         ? this.plugin.settings.zotero_data_dir
         : t("foundation_zotero_missing"),
@@ -1250,13 +1259,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const hasOpenai = !!this.plugin.settings._vector_db_configured;
     addCheck(
       t("foundation_paddle_key"),
-      hasPaddle ? "✓" : "✗",
+      hasPaddle
+        ? t("config_configured") || "Configured"
+        : t("cc_badge_not_enabled") || "Not Set",
       hasPaddle ? t("config_configured") : t("foundation_paddle_missing"),
       hasPaddle ? "pf-status-ok" : "pf-status-error"
     );
     addCheck(
       t("foundation_openai_key"),
-      hasOpenai ? "✓" : "✗",
+      hasOpenai
+        ? t("config_configured") || "Configured"
+        : t("cc_badge_not_enabled") || "Not Set",
       hasOpenai ? t("config_configured") : t("foundation_openai_missing"),
       hasOpenai ? "pf-status-ok" : "pf-status-error"
     );
@@ -1283,7 +1296,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     addCheck(
       t("foundation_python_packages"),
-      runtime?.vector_ready ? "✓" : this._runtimeStatusLoading ? "…" : "—",
+      runtime?.vector_ready
+        ? t("cc_badge_ready") || "Ready"
+        : this._runtimeStatusLoading
+          ? t("cc_badge_checking") || "Checking"
+          : t("cc_badge_not_enabled") || "Optional",
       runtime?.vector_ready ? t("runtime_vector_ready") : runtimeLabel,
       runtime?.vector_ready
         ? "pf-status-ok"
@@ -3830,6 +3847,43 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             createUnknownEnvelope(mod.id as CapabilityModule));
       this._renderOverviewCard(moduleList, mod.id, mod.label, env, idx + 1);
     }
+
+    // ── Appearance Palette Mode (AsterLab Warm Neutral vs Obsidian Theme) ──
+    const themeBar = cc.createDiv({ cls: "pf-cc-theme-bar" });
+    const themeCopy = themeBar.createDiv({ cls: "pf-cc-theme-copy" });
+    themeCopy.createEl("div", {
+      cls: "pf-cc-theme-label",
+      text: t("settings_theme_label") || "界面配色",
+    });
+    themeCopy.createEl("div", {
+      cls: "pf-cc-theme-desc",
+      text:
+        t("settings_theme_desc") ||
+        "默认使用 AsterLab 暖白 / 暗黑暖灰精密配色，也可选择跟随当前 Obsidian 主题色。",
+    });
+    const themeSelect = themeBar.createEl("select", {
+      cls: "pf-cc-theme-select",
+      attr: { "data-pf-testid": "settings-theme-mode" },
+    }) as HTMLSelectElement;
+    for (const [val, label] of [
+      ["asterlab", t("settings_theme_asterlab") || "AsterLab 暖白原色（默认）"],
+      ["obsidian", t("settings_theme_obsidian") || "跟随当前 Obsidian 主题"],
+    ] as const) {
+      const opt = themeSelect.createEl("option", { text: label });
+      opt.value = val;
+    }
+    themeSelect.value =
+      this.plugin.settings.ui_theme_mode === "obsidian"
+        ? "obsidian"
+        : "asterlab";
+    themeSelect.addEventListener("change", () => {
+      this.plugin.settings.ui_theme_mode =
+        themeSelect.value === "obsidian" ? "obsidian" : "asterlab";
+      (
+        this.plugin as unknown as { applyUiThemeMode?: () => void }
+      ).applyUiThemeMode?.();
+      void this.plugin.saveSettings();
+    });
   }
 
   /** Derive Agent availability from the selected platform's deployed skill. */

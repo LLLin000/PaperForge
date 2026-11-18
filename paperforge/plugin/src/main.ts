@@ -356,6 +356,7 @@ export default class PaperForgePlugin extends Plugin {
   async onload() {
     await this.loadSettings();
     await this.saveSettings();
+    this.applyUiThemeMode();
     // Diagnostic boundary trace (metadata only; see client/trace.ts).
     setTraceEnabled(this.settings.debug_trace === true);
     setLanguage(this.app, this.settings.language);
@@ -833,7 +834,18 @@ export default class PaperForgePlugin extends Plugin {
     }
   }
 
+  applyUiThemeMode(): void {
+    if (typeof document === "undefined" || !document.body) return;
+    const mode =
+      this.settings?.ui_theme_mode === "obsidian" ? "obsidian" : "asterlab";
+    document.body.classList.toggle("pf-theme-obsidian", mode === "obsidian");
+    document.body.classList.toggle("pf-theme-asterlab", mode === "asterlab");
+  }
+
   onunload() {
+    if (typeof document !== "undefined" && document.body) {
+      document.body.classList.remove("pf-theme-obsidian", "pf-theme-asterlab");
+    }
     if (this._pollTimer) clearInterval(this._pollTimer);
     if (this._stateSeqTimer) clearTimeout(this._stateSeqTimer);
     try {

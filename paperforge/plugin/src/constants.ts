@@ -69,15 +69,15 @@ export const ACTIONS: ActionDef[] = [
     id: "paperforge-sync",
     title: "Sync Library",
     desc: "Pull new references from Zotero and generate literature notes",
-    icon: "\u21BB",
+    icon: "sync",
     commandId: "sync",
     okMsg: "Sync complete",
   },
   {
     id: "paperforge-ocr",
     title: "Run OCR",
-    desc: "Extract full text and figures from PDFs via PaddleOCR",
-    icon: "\u229E",
+    desc: "Extract full text and figures via PaperForge fulltext parser",
+    icon: "ocr",
     commandId: "ocr",
     okMsg: "OCR started",
     // One full poll cycle runs up to 15 minutes (60 x 15s); per-paper
@@ -88,8 +88,8 @@ export const ACTIONS: ActionDef[] = [
   {
     id: "paperforge-doctor",
     title: "Run Doctor",
-    desc: "Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health",
-    icon: "\u2695",
+    desc: "Verify PaperForge setup — check configs, Zotero, paths, and index health",
+    icon: "doctor",
     commandId: "doctor",
     okMsg: "Doctor complete",
   },
@@ -97,7 +97,7 @@ export const ACTIONS: ActionDef[] = [
     id: "paperforge-repair",
     title: "Repair Issues",
     desc: "Fix three-way state divergence, path errors, and rebuild index",
-    icon: "\u21BA",
+    icon: "repair",
     commandId: "repair",
     args: ["--fix", "--fix-paths"],
     okMsg: "Repair complete",
@@ -106,7 +106,7 @@ export const ACTIONS: ActionDef[] = [
     id: "paperforge-ocr-redo",
     title: "Redo OCR",
     desc: "Re-run OCR for papers marked ocr_redo: true",
-    icon: "\u21BA",
+    icon: "redo",
     commandId: "ocr",
     args: ["redo"],
     okMsg: "OCR redo started",
@@ -149,6 +149,8 @@ export interface PaperForgeSettings {
   _vector_db_configured?: boolean;
   /** Diagnostic: log every client↔backend operation (metadata only). */
   debug_trace?: boolean;
+  /** UI color binding mode: "asterlab" (default warm-neutral) or "obsidian" (follow active theme). */
+  ui_theme_mode?: "asterlab" | "obsidian";
   [key: string]: unknown;
 }
 
@@ -182,6 +184,7 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   _paddleocr_configured: false,
   _vector_db_configured: false,
   _setup_complete: false,
+  ui_theme_mode: "asterlab",
 };
 
 // ── Workflow state helpers ──

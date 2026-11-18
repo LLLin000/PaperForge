@@ -752,6 +752,17 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+### ADR-015: AsterLab Design System, Single-View `.base` Selection Header, & macOS Preview PDF Reader
+
+**Context**: Prior UI iterations stacked emoji-heavy status badges, duplicated Obsidian's Base toolbar with a second button bar, generated separate `待 OCR` / `待深度阅读` Base views that pulled researcher focus toward low-frequency backend plumbing, and used an intrusive selection popover in the PDF reader.
+
+**Decisions**:
+1. **Unified Semantic Design Tokens (`ui_theme_mode`)**: Adopt the warm-neutral AsterLab MyGo palette (`#f7f6f3` light / `#171614` dark / single violet accent) and strict 4px grid / 3-tier radius geometry as default (`asterlab`), paired with a live CSS custom-property bridge (`obsidian`) that inherits Obsidian theme backgrounds and `--interactive-accent`. Zero UI emojis; all controls use `1.65px` stroke vector icons (`src/views/icons.ts`), tabular numerals, and scholarly copy with technical identifiers tucked into secondary disclosures.
+2. **Streamlined Single-View `.base` & Multi-Select Header Bar**: `paperforge/worker/base_views.py` converges on one primary `文献库` view (`type: paperforge-table`) while retiring legacy PF-managed `控制面板` / `待 OCR` / `待深度阅读` views (preserving user custom views untouched). `PaperForgeBasesView` honors Obsidian's `config.getOrder()`, `config.getDisplayName()`, and `data.groupedData`, removes per-row action button walls and checkbox flag columns, and moves batch execution to a contextual selection header bar (`已选 N 篇` + `解析全文`) backed directly by `ActionScope { kind: "papers", keys }` — eliminating high-frequency YAML frontmatter churn.
+3. **macOS Preview Two-Tier PDF Reader & Extended `style_json` Sidecar**: `PaperForgePdfView` adopts Apple Preview's quiet `40px` primary toolbar (including dual-mode split `高亮 | ▾` supporting selection-first zero-popup highlighting and continuous pen toggle) plus a collapsible `36px` `标记` (`Markup`) toolbar for `underline`, `strikethrough`, `ink`, `shape` (`rect` / `ellipse` / `arrow` / `line`), `textbox`, and `note`, alongside Zotero-style `拷贝引用至笔记` Markdown backlinks. Backend `paper_annotations` stores arbitrary vector/typography metadata in `style_json TEXT NOT NULL DEFAULT '{}'`.
+
+---
+
 ## Glossary
 
 - **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.

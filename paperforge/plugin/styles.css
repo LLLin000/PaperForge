@@ -1,13 +1,305 @@
 /* ==========================================================================
    PaperForge — Obsidian Plugin Styles
-   A clean dashboard for literature pipeline monitoring & control.
+   AsterLab Dual-Mode Design Token Layer (AsterLab Warm Neutral default /
+   Obsidian Theme Bridge via body.pf-theme-obsidian)
    ========================================================================== */
+
+:root,
+.theme-light body:not(.pf-theme-obsidian),
+body.pf-theme-asterlab:not(.theme-dark),
+.theme-light .pf-scope-asterlab {
+  --pf-canvas: #f7f6f3;
+  --pf-surface: #ffffff;
+  --pf-elevated: #faf9f7;
+  --pf-rail: #f1efea;
+  --pf-hover: #efece6;
+  --pf-border: #e7e3db;
+  --pf-border-hover: #d6d0c5;
+  --pf-border-strong: #d6d0c5;
+  --pf-text: #1c1b18;
+  --pf-text-muted: #5f5a52;
+  --pf-text-subtle: #8f897f;
+  --pf-accent: #5b45c9;
+  --pf-accent-hover: #4b37ae;
+  --pf-accent-text: #ffffff;
+  --pf-accent-soft: rgba(91, 69, 201, 0.1);
+  --pf-accent-tint: #faf8ff;
+  --pf-accent-line: #cfc4f0;
+  --pf-success: #2f7a4f;
+  --pf-warning: #7a6233;
+  --pf-danger: #a3373a;
+  --pf-radius: 10px;
+  --pf-radius-control: 6px;
+  --pf-radius-panel: 10px;
+  --pf-radius-dialog: 12px;
+  --pf-control-h: 30px;
+  --pf-row-h: 32px;
+  --pf-shadow-float:
+    0 8px 24px rgba(28, 27, 24, 0.1), 0 1px 3px rgba(28, 27, 24, 0.06);
+}
+
+.theme-dark body:not(.pf-theme-obsidian),
+body.theme-dark.pf-theme-asterlab,
+.theme-dark .pf-scope-asterlab {
+  --pf-canvas: #171614;
+  --pf-surface: #1e1d1a;
+  --pf-elevated: #242320;
+  --pf-rail: #171614;
+  --pf-hover: #2b2925;
+  --pf-border: #37352f;
+  --pf-border-hover: #4a473f;
+  --pf-border-strong: #4a473f;
+  --pf-text: #f2efe9;
+  --pf-text-muted: #a9a49a;
+  --pf-text-subtle: #78736a;
+  --pf-accent: #a996ff;
+  --pf-accent-hover: #bcabff;
+  --pf-accent-text: #1b1533;
+  --pf-accent-soft: rgba(169, 150, 255, 0.14);
+  --pf-accent-tint: rgba(169, 150, 255, 0.08);
+  --pf-accent-line: rgba(169, 150, 255, 0.36);
+  --pf-success: #84c9a4;
+  --pf-warning: #d9b878;
+  --pf-danger: #e79a9c;
+  --pf-shadow-float:
+    0 10px 28px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+body.pf-theme-obsidian {
+  --pf-canvas: var(--background-secondary);
+  --pf-surface: var(--background-primary);
+  --pf-surface-alt: var(--background-primary-alt);
+  --pf-elevated: var(--background-primary-alt);
+  --pf-rail: var(--background-secondary);
+  --pf-hover: var(--background-modifier-hover);
+  --pf-border: var(--background-modifier-border);
+  --pf-border-hover: var(--background-modifier-border-hover);
+  --pf-border-strong: var(--background-modifier-border-hover);
+  --pf-text: var(--text-normal);
+  --pf-text-muted: var(--text-muted);
+  --pf-text-subtle: var(--text-faint);
+  --pf-accent: var(--interactive-accent);
+  --pf-accent-hover: var(--interactive-accent-hover);
+  --pf-accent-text: var(--text-on-accent);
+  --pf-accent-soft: color-mix(
+    in srgb,
+    var(--interactive-accent) 12%,
+    transparent
+  );
+  --pf-accent-tint: color-mix(
+    in srgb,
+    var(--interactive-accent) 7%,
+    transparent
+  );
+  --pf-accent-line: color-mix(
+    in srgb,
+    var(--interactive-accent) 34%,
+    transparent
+  );
+  --pf-success: var(--text-success);
+  --pf-warning: var(--text-warning);
+  --pf-danger: var(--text-error);
+}
+
+/* ── Shared AsterLab Structural Primitives ── */
+.pf-tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-svg-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.pf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--pf-control-h, 30px);
+  padding: 0 12px;
+  border-radius: var(--pf-radius-control, 6px);
+  border: 1px solid var(--pf-border-strong);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 120ms ease-out,
+    border-color 120ms ease-out;
+}
+.pf-btn:hover:not(:disabled) {
+  background: var(--pf-hover);
+}
+.pf-btn.mod-cta,
+.pf-btn-primary {
+  background: var(--pf-accent);
+  border-color: var(--pf-accent);
+  color: var(--pf-accent-text);
+}
+.pf-btn.mod-cta:hover:not(:disabled),
+.pf-btn-primary:hover:not(:disabled) {
+  background: var(--pf-accent-hover);
+  border-color: var(--pf-accent-hover);
+}
+.pf-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--pf-text-muted);
+}
+.pf-btn-ghost:hover:not(:disabled) {
+  background: var(--pf-hover);
+  color: var(--pf-text);
+}
+.pf-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pf-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--pf-radius-control, 6px);
+  background: transparent;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+  transition:
+    background 120ms ease-out,
+    color 120ms ease-out,
+    border-color 120ms ease-out;
+}
+.pf-icon-btn:hover:not(:disabled) {
+  background: var(--pf-hover);
+  color: var(--pf-text);
+}
+.pf-icon-btn.is-active {
+  background: var(--pf-accent-soft);
+  color: var(--pf-accent);
+  border-color: var(--pf-accent-line);
+}
+.pf-icon-btn:focus-visible,
+.pf-btn:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 1px;
+}
+
+.pf-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--pf-rail);
+  border-radius: var(--pf-radius-panel, 10px);
+}
+.pf-segmented-item {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--pf-radius-control, 6px);
+  background: transparent;
+  color: var(--pf-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pf-segmented-item:hover {
+  color: var(--pf-text);
+}
+.pf-segmented-item.is-active {
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border-color: var(--pf-border);
+}
+
+.pf-badge-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  color: var(--pf-text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.pf-badge-outline.is-done {
+  color: var(--pf-text-muted);
+}
+.pf-badge-outline.is-running {
+  color: var(--pf-accent);
+  border-color: var(--pf-accent-line);
+  background: var(--pf-accent-soft);
+}
+.pf-badge-outline.is-warn {
+  color: var(--pf-warning);
+  border-color: color-mix(in srgb, var(--pf-warning) 35%, var(--pf-border));
+}
+.pf-badge-outline.is-fail {
+  color: var(--pf-danger);
+  border-color: color-mix(in srgb, var(--pf-danger) 40%, var(--pf-border));
+}
+
+.pf-settings-shell {
+  background: var(--pf-canvas);
+  color: var(--pf-text);
+  padding: 16px 20px 32px;
+  border-radius: var(--pf-radius-panel, 10px);
+}
+.pf-cc-theme-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-surface);
+}
+.pf-cc-theme-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pf-cc-theme-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+.pf-cc-theme-desc {
+  font-size: 12px;
+  color: var(--pf-text-muted);
+}
+.pf-cc-theme-select {
+  height: var(--pf-control-h, 30px);
+  padding: 0 10px;
+  border-radius: var(--pf-radius-control, 6px);
+  border: 1px solid var(--pf-border-strong);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  font-size: 12px;
+  flex-shrink: 0;
+}
 
 /* ── Root Panel ── */
 .paperforge-status-panel {
   font-family: inherit;
-  font-size: 14px;
-  color: var(--text-normal);
+  font-size: 13px;
+  color: var(--pf-text);
+  background: var(--pf-canvas);
   padding: 14px 14px 56px 14px;
   height: 100%;
   overflow-y: auto;
@@ -17,12 +309,7 @@
   gap: 12px;
   container-type: inline-size;
   container-name: pfpanel;
-  --pf-surface: var(--background-secondary);
-  --pf-surface-alt: var(--background-primary-alt);
-  --pf-border: var(--background-modifier-border);
-  --pf-border-hover: var(--background-modifier-border-hover);
-  --pf-accent: var(--interactive-accent);
-  --pf-radius: var(--radius-m);
+  --pf-surface-alt: var(--pf-elevated);
 }
 
 /* ── Typography tokens ── */
@@ -8635,50 +8922,79 @@ input.pf-ocr-ws-search-input::placeholder {
   color: var(--text-muted);
 }
 
-/* ── v2.2 Living Paper Memory Card ── */
+/* ── AsterLab Living Paper Memory Card (Inspector section) ── */
 .pf-living-memory-card {
-  margin: 10px 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  margin: 4px 0;
+  padding: 14px 16px;
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
 }
 .pf-living-memory-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+.pf-living-memory-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pf-text);
+}
+.pf-living-memory-icon {
+  color: var(--pf-text-muted);
+  display: inline-flex;
 }
 .pf-living-memory-title {
   font-weight: 600;
-  font-size: var(--font-ui-small);
+  font-size: 14px;
+  color: var(--pf-text);
 }
 .pf-living-memory-facet {
-  padding: 6px 8px;
-  margin-bottom: 6px;
-  border-radius: 6px;
-  background: var(--background-primary);
-  border-left: 3px solid var(--interactive-accent);
+  padding: 10px 0;
+  border-top: 1px solid var(--pf-border);
+}
+.pf-living-memory-facet:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.pf-living-memory-facet:last-child {
+  padding-bottom: 0;
 }
 .pf-living-memory-facet-head {
   display: flex;
   justify-content: space-between;
-  font-size: var(--font-ui-smallest);
-  color: var(--text-muted);
-  margin-bottom: 3px;
+  align-items: center;
+  margin-bottom: 4px;
 }
 .pf-living-memory-facet-label {
-  font-weight: 600;
-  color: var(--text-normal);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--pf-text-subtle);
+  letter-spacing: 0.2px;
+}
+.pf-living-memory-facet-date {
+  font-size: 11px;
+  color: var(--pf-text-subtle);
 }
 .pf-living-memory-facet-body {
-  font-size: var(--font-ui-smaller);
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--pf-text);
   white-space: pre-wrap;
 }
 .pf-living-memory-empty {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--pf-text-muted);
+}
+
+.paperforge-status-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
 /* ── v2.2 AI PDF Annotation Layer & Margin Bracket ── */
@@ -8702,4 +9018,201 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-pdf-clear-ai-btn {
   margin-left: auto;
   font-size: var(--font-ui-smallest);
+}
+
+/* ==========================================================================
+   AsterLab Alignment Overrides — Dashboard, Control Center, OCR Workspace, Modals
+   ========================================================================== */
+.paperforge-status-panel .paperforge-library-snapshot,
+.paperforge-status-panel .paperforge-system-status,
+.paperforge-status-panel .paperforge-global-actions,
+.paperforge-status-panel .paperforge-paper-overview,
+.paperforge-status-panel .paperforge-next-step-card,
+.paperforge-status-panel .paperforge-discussion-card,
+.paperforge-status-panel .paperforge-collection-card {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  box-shadow: none;
+}
+
+.paperforge-status-panel .paperforge-paper-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pf-text);
+  line-height: 1.35;
+}
+
+.paperforge-status-panel .paperforge-paper-meta,
+.paperforge-status-panel .paperforge-section-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--pf-text-subtle);
+  text-transform: none;
+  letter-spacing: 0.2px;
+}
+
+.paperforge-status-panel .paperforge-snapshot-pill {
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-control, 6px);
+}
+.paperforge-status-panel .paperforge-snapshot-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--pf-text);
+}
+
+.paperforge-status-panel .paperforge-status-pill {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  color: var(--pf-text-muted);
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 11.5px;
+  gap: 5px;
+}
+.paperforge-status-panel .paperforge-status-pill.ok {
+  background: var(--pf-surface);
+  border-color: var(--pf-border);
+  color: var(--pf-text-muted);
+}
+.paperforge-status-panel
+  .paperforge-status-pill.ok
+  .paperforge-status-pill-dot {
+  color: var(--pf-success);
+}
+.paperforge-status-panel .paperforge-status-pill.pending {
+  background: var(--pf-surface);
+  border-color: var(--pf-border);
+  color: var(--pf-text-muted);
+}
+.paperforge-status-panel .paperforge-status-pill.fail {
+  background: var(--pf-surface);
+  border-color: color-mix(in srgb, var(--pf-danger) 40%, var(--pf-border));
+  color: var(--pf-danger);
+}
+
+.paperforge-status-panel .paperforge-contextual-btn,
+.paperforge-status-panel .paperforge-next-step-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--pf-control-h, 30px);
+  padding: 0 12px;
+  border-radius: var(--pf-radius-control, 6px);
+  border: 1px solid var(--pf-border-strong);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+.paperforge-status-panel .paperforge-contextual-btn:hover,
+.paperforge-status-panel .paperforge-next-step-trigger:hover {
+  background: var(--pf-hover);
+}
+.paperforge-status-panel .paperforge-contextual-btn.primary {
+  background: var(--pf-accent);
+  border-color: var(--pf-accent);
+  color: var(--pf-accent-text);
+}
+.paperforge-status-panel .paperforge-contextual-btn.primary:hover {
+  background: var(--pf-accent-hover);
+  border-color: var(--pf-accent-hover);
+}
+.paperforge-status-panel .paperforge-contextual-btn-icon,
+.pf-complete-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pf-control-center .pf-cc-summary {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+}
+.pf-control-center .pf-cc-module-list {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  overflow: hidden;
+}
+.pf-control-center .pf-cc-module-card,
+.modal-content .pf-cc-module-card {
+  border-bottom: 1px solid var(--pf-border) !important;
+  color: var(--pf-text) !important;
+}
+.pf-control-center .pf-cc-module-card:last-child,
+.modal-content .pf-cc-module-card:last-child {
+  border-bottom: 0 !important;
+}
+.pf-cc-num {
+  color: var(--pf-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+.pf-badge {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.pf-badge--ready {
+  color: var(--pf-success);
+  border-color: color-mix(in srgb, var(--pf-success) 30%, var(--pf-border));
+}
+.pf-badge--setup-required,
+.pf-badge--action-required {
+  color: var(--pf-warning);
+  border-color: color-mix(in srgb, var(--pf-warning) 35%, var(--pf-border));
+}
+.pf-badge--detection-failed {
+  color: var(--pf-danger);
+  border-color: color-mix(in srgb, var(--pf-danger) 40%, var(--pf-border));
+}
+.pf-badge--not-enabled,
+.pf-badge--checking {
+  color: var(--pf-text-muted);
+}
+
+.pf-ocr-ws-detail {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+}
+.pf-ocr-ws-table th {
+  background: var(--pf-elevated);
+  color: var(--pf-text-subtle);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.1px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--pf-border);
+}
+.pf-ocr-ws-table td {
+  height: 36px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--pf-border);
+  font-variant-numeric: tabular-nums;
+}
+.pf-ocr-ws-table tr:hover td {
+  background: var(--pf-elevated);
+}
+.pf-ocr-ws-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.paperforge-modal {
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border-radius: var(--pf-radius-dialog, 12px);
 }
