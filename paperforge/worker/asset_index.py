@@ -399,12 +399,16 @@ def _build_entry(
             break  # only one old file per key
     source_fulltext = paths["ocr"] / key / "fulltext.md"
     stale_workspace_fulltext = workspace_dir / "fulltext.md"
+    hidden_engine = Path(str(paths["paperforge"])).name == ".paperforge"
 
     workspace_dir.mkdir(parents=True, exist_ok=True)
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
+    # Materialize per-paper cropped visual assets (<KEY>_figure_001.jpg, <KEY>_table_001.jpg)
+    # inside <workspace>/assets/ so Obsidian renders images natively without scanning .paperforge/.
+    sync_workspace_visual_assets(paths["ocr"] / key, workspace_dir, key)
     # ponytail: size + mtime guard avoids I/O on unchanged fulltext.
-    # If source was deleted, remove stale workspace copy.
-    if not source_fulltext.exists():
+    # When engine lives in hidden .paperforge/, keep fulltext internal (never expose workspace copy).
+    if hidden_engine or not source_fulltext.exists():
         if stale_workspace_fulltext.exists():
             stale_workspace_fulltext.unlink()
     else:
@@ -618,15 +622,64 @@ def compute_export_hash(paths: dict) -> str:
 
 
 
-def _sync_workspace_fulltexts(items: list[dict], vault: Path, paths: dict, verbose: bool = False) -> None:
-    for entry in items:
-        if entry.get("ocr_status") not in ("done", "done_degraded"):
+def sync_workspace_visual_assets(
+    ocr_paper_dir: Path,
+    workspace_dir: Path,
+    zotero_key: str,
+) -> list[str]:
+    """Copy cropped figure/table JPGs from OCR assets into ``<workspace>/assets/<KEY>_*.jpg``.
+
+    Size + mtime guarded; never overwrites unrelated user files or ``<KEY>_ann_*.jpg`` crops.
+    Returns list of materialized filenames under ``<workspace>/assets/``.
+    """
+    assets_src = ocr_paper_dir / "assets"
+    if not assets_src.exists() or not zotero_key:
+        return []
+    dst_dir = workspace_dir / "assets"
+    materialized: list[str] = []
+    for subdir in ("figures", "tables"):
+        src_folder = assets_src / subdir
+        if not src_folder.exists():
             continue
+        for img_path in sorted(src_folder.glob("*.jpg")):
+            target_name = f"{zotero_key}_{img_path.name}"
+            dst_path = dst_dir / target_name
+            try:
+                src_st = img_path.stat()
+                dst_st = dst_path.stat() if dst_path.exists() else None
+            except OSError:
+                dst_st = None
+                src_st = None
+            changed = (
+                dst_st is None
+                or src_st is None
+                or src_st.st_size != dst_st.st_size
+                or src_st.st_mtime_ns != dst_st.st_mtime_ns
+            )
+            if changed:
+                dst_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(str(img_path), str(dst_path))
+            materialized.append(target_name)
+    return materialized
+
+
+def _sync_workspace_fulltexts(items: list[dict], vault: Path, paths: dict, verbose: bool = False) -> None:
+    hidden_engine = Path(str(paths["paperforge"])).name == ".paperforge"
+    for entry in items:
         ws_dir_rel = entry.get("paper_root", "")
         if not ws_dir_rel:
             continue
         ws_dir = vault / ws_dir_rel
         ws_ft = ws_dir / "fulltext.md"
+        if hidden_engine and ws_ft.exists():
+            ws_ft.unlink()
+        if entry.get("ocr_status") not in ("done", "done_degraded"):
+            continue
+        key = str(entry.get("zotero_key") or "")
+        if key:
+            sync_workspace_visual_assets(paths["ocr"] / key, ws_dir, key)
+        if hidden_engine:
+            continue
         if ws_ft.exists():
             continue
         ft_rel = entry.get("fulltext_path", "")

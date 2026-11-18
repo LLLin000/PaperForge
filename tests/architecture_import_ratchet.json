@@ -72,19 +72,19 @@
     ],
     "paperforge.services.sync_service": [
       "243:paperforge.worker._utils",
-      "370:paperforge.worker._domain",
-      "459:paperforge.worker._utils"
+      "430:paperforge.worker._domain",
+      "519:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"
     ],
     "paperforge.worker.asset_index": [
       "40:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
-      "581:paperforge.embedding._config",
-      "581:paperforge.embedding._config:_read_plugin_settings"
+      "585:paperforge.embedding._config",
+      "585:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
-      "2957:paperforge.lineage:_resolve_canonical_pdf"
+      "2976:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
       "233:paperforge.embedding.vectors:_delete_paper_vectors_locked"

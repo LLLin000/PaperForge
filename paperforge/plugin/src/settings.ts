@@ -719,9 +719,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         await this.plugin.saveSettings();
         const client = this.getClient();
         setupClientOwnsFailure = true;
+        const hydrated =
+          Boolean(this._getVaultBasePath()) &&
+          !resolveVaultPaths(this._getVaultBasePath())?.configWarning;
+        const defaultSysDir = hydrated ? "System" : ".paperforge";
         const handle = client.setup(
           {
-            systemDir: settings.system_dir?.trim() || "System",
+            systemDir: settings.system_dir?.trim() || defaultSysDir,
             resourcesDir: settings.resources_dir?.trim() || "Resources",
             literatureDir: settings.literature_dir?.trim() || "Literature",
             baseDir: settings.base_dir?.trim() || "Bases",
@@ -4618,6 +4622,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const folders = body.createDiv({
           cls: "pf-setup-folder-grid",
         });
+        const hydratedLib =
+          Boolean(this._getVaultBasePath()) &&
+          !resolveVaultPaths(this._getVaultBasePath())?.configWarning;
+        const defaultSysDirHint = hydratedLib ? "System" : ".paperforge";
         const folders_: Array<
           [
             keyof typeof settings &
@@ -4627,7 +4635,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             string,
           ]
         > = [
-          ["system_dir", "dir_system", "System", "folder_help_system"],
+          ["system_dir", "dir_system", defaultSysDirHint, "folder_help_system"],
           [
             "resources_dir",
             "dir_resources",

@@ -1088,6 +1088,8 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
         f"impact_factor: {yaml_quote(entry.get('impact_factor', ''))}",
     ])
     lines.extend(yaml_block(entry.get("abstract", "")))
+    _raw_ft = str(entry.get("fulltext_path", "") or "")
+    _public_ft = "" if (not _raw_ft or _raw_ft.startswith(".")) else _raw_ft
     lines.extend(
         [
             f"has_pdf: {('true' if entry.get('has_pdf') else 'false')}",
@@ -1096,7 +1098,7 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
             f"ocr_status: {yaml_quote(entry.get('ocr_status', 'pending'))}",
             f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}",
             f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}",
-            f"fulltext_md_path: {yaml_quote('[[{}]]'.format(entry['fulltext_path']) if entry.get('ocr_status') == 'done' and entry.get('fulltext_path') else '')}",
+            f"fulltext_md_path: {yaml_quote('[[{}]]'.format(_public_ft) if entry.get('ocr_status') == 'done' and _public_ft else '')}",
         ]
     )
     ocr_redo_value = bool(preserved_ocr_redo)

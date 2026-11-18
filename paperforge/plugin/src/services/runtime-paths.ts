@@ -45,7 +45,11 @@ export function setPathConfigSource(cfg: PathConfig | null): void {
 export function applyPathConfigFromList(
   settings: Pick<
     PaperForgeSettings,
-    "system_dir" | "resources_dir" | "literature_dir" | "base_dir" | "zotero_data_dir"
+    | "system_dir"
+    | "resources_dir"
+    | "literature_dir"
+    | "base_dir"
+    | "zotero_data_dir"
   >,
   fields: ReadonlyArray<Pick<ConfigField, "key" | "value">>
 ): void {
@@ -70,20 +74,34 @@ export function isConfigHydrated(): boolean {
 
 export function readPathConfig(vaultPath: string, _fs?: unknown): PathConfig {
   if (_pathConfigSource) {
-    return { ..._pathConfigSource, _warning: _pathConfigSource._warning ?? null };
+    return {
+      ..._pathConfigSource,
+      _warning: _pathConfigSource._warning ?? null,
+    };
   }
   return {
     system_dir: "",
     resources_dir: "",
     literature_dir: "",
     base_dir: "",
-    _warning: "config authority not hydrated; paths unavailable — no semantic work may run",
+    _warning:
+      "config authority not hydrated; paths unavailable — no semantic work may run",
   };
 }
 
-export function resolveVaultPaths(vaultPath: string, _fs?: unknown): ResolvedPaths {
+export function resolveVaultPaths(
+  vaultPath: string,
+  _fs?: unknown
+): ResolvedPaths {
   const cfg = readPathConfig(vaultPath, _fs);
-  const systemDir = path.join(vaultPath, cfg.system_dir, "PaperForge");
+  const sysLeaf = cfg.system_dir
+    .replace(/[\\/]+$/, "")
+    .split(/[\\/]/)
+    .pop();
+  const systemDir =
+    sysLeaf === ".paperforge"
+      ? path.join(vaultPath, cfg.system_dir)
+      : path.join(vaultPath, cfg.system_dir, "PaperForge");
   return {
     vault: vaultPath,
     systemDir,

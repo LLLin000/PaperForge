@@ -23,6 +23,7 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "paper-lookup": "paperforge.commands.paper_lookup",
     "content-discovery": "paperforge.commands.content_discovery",
     "scoped-fetch": "paperforge.commands.scoped_fetch",
+    "migrate-storage": "paperforge.commands.migrate_storage",
 }
 
 

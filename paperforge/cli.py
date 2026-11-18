@@ -779,6 +779,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_runtime_status.add_argument("--expected-version", metavar="VERSION")
     p_runtime_status.add_argument("--base-python", metavar="PYTHON")
     p_runtime_status.add_argument("--json", action="store_true", help="Output result as JSON")
+
+    p_migrate_storage = sub.add_parser(
+        "migrate-storage",
+        help="Move engine data from System/PaperForge to hidden .paperforge/ and materialize per-paper assets",
+    )
+    p_migrate_storage.add_argument("--dry-run", action="store_true", help="Preview changes without modifying files")
+    p_migrate_storage.add_argument("--json", action="store_true", help="Output JSON")
     return parser
 
 # ---------------------------------------------------------------------------
@@ -846,7 +853,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "setup", "selection-sync", "index-refresh", "base-refresh", "read",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
-        "probe", "inspect",
+        "probe", "inspect", "migrate-storage",
     }
     if args.command in lightweight_commands:
         _resolve_pipeline()
@@ -1088,6 +1095,11 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
         return run(args)
 
+    if args.command == "migrate-storage":
+        from paperforge.commands.migrate_storage import run
+
+        return run(args)
+
     if args.command == "runtime-health":
         from paperforge.commands.runtime_health import run
 
@@ -1142,6 +1154,12 @@ def _run_cli(argv: list[str] | None = None) -> int:
             _val = getattr(args, _key, None)
             if _val is not None:
                 _cfg[_key] = _val
+        if (
+            "system_dir" not in _cfg
+            and not (vault / "paperforge.json").exists()
+            and not (vault / "System" / "PaperForge").exists()
+        ):
+            _cfg["system_dir"] = ".paperforge"
         _zotero = getattr(args, "zotero_data", None)
         if _zotero is not None:
             # Persist the external locator in canonical config so probe and

@@ -302,23 +302,83 @@ class SyncService:
                 logger.error("Failed to build candidate: %s", e)
         return candidates
 
+    def _compute_sync_fastpath_digest(self, paths: dict[str, Path]) -> str:
+        """O(1) stat-based digest across exports, OCR meta.json, paperforge.json, and domain notes."""
+        import hashlib
+        import os as _os
+
+        h = hashlib.sha256()
+        cfg_file = self.vault / "paperforge.json"
+        if cfg_file.exists():
+            try:
+                st = cfg_file.stat()
+                h.update(f"cfg:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+            except OSError:
+                pass
+        exports_dir = paths.get("exports")
+        if exports_dir and exports_dir.exists():
+            for ep in sorted(exports_dir.glob("*.json")):
+                try:
+                    st = ep.stat()
+                    h.update(f"exp:{ep.name}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+                except OSError:
+                    pass
+        ocr_dir = paths.get("ocr")
+        if ocr_dir and ocr_dir.exists():
+            try:
+                with _os.scandir(ocr_dir) as it:
+                    entries = sorted((e.name, e.path) for e in it if e.is_dir())
+                for name, pdir in entries:
+                    mp = Path(pdir) / "meta.json"
+                    if mp.exists():
+                        st = mp.stat()
+                        h.update(f"ocr:{name}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+            except OSError:
+                pass
+        lit_dir = paths.get("literature")
+        if lit_dir and lit_dir.exists():
+            try:
+                with _os.scandir(lit_dir) as d_it:
+                    doms = sorted((d.name, d.path) for d in d_it if d.is_dir())
+                for dname, dpath in doms:
+                    with _os.scandir(dpath) as n_it:
+                        for ne in sorted(n_it, key=lambda x: x.name):
+                            if ne.is_file() and ne.name.endswith(".md"):
+                                st = ne.stat()
+                                h.update(f"note:{dname}/{ne.name}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+            except OSError:
+                pass
+        return h.hexdigest()
+
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
         prune: bool = False, prune_force: bool = False, rebuild_index: bool = False,
     ) -> PFResult:
-        """Full sync orchestration. Returns PFResult contract.
+        """Full sync orchestration. Returns PFResult contract."""
+        import json as _json
+        import os as _os
 
-        v2.2: Service now orchestrates the full sync lifecycle:
-        1. Load BBT exports
-        2. Selection sync (count items from worker)
-        3. Build canonical index (asset_index)
-        4. Clean orphaned records + flat notes
-        5. Return PFResult
+        fastpath_eligible = not (selection_only or index_only or rebuild_index or prune or prune_force)
+        fastpath_paths: dict[str, Path] | None = None
+        fastpath_digest = ""
+        if fastpath_eligible:
+            try:
+                fastpath_paths = self.resolve_paths()
+                fp_file = fastpath_paths["paperforge"] / "indexes" / ".sync-fastpath.json"
+                idx_file = fastpath_paths["index"]
+                if fp_file.exists() and idx_file.exists():
+                    fastpath_digest = self._compute_sync_fastpath_digest(fastpath_paths)
+                    cached = _json.loads(fp_file.read_text(encoding="utf-8"))
+                    if cached.get("digest") == fastpath_digest and isinstance(cached.get("data"), dict):
+                        return PFResult(
+                            ok=True,
+                            command="sync",
+                            version=__version__,
+                            data=cached["data"],
+                        )
+            except Exception:
+                fastpath_paths = None
 
-        Args:
-            selection_only: Skip index build + cleanup phases.
-            index_only: Skip selection sync phase.
-        """
         # ── Pre-check: BBT exports ──
         _export_code = "ok"
         try:
@@ -496,8 +556,12 @@ class SyncService:
                             "can_backfill": legacy_state["can_backfill"],
                         })
 
-                    # Check for dirty runtime files
-                    _dirty = _get_dirty_files()
+                    # Check for dirty runtime files only when explicitly enabled
+                    _dirty = (
+                        _get_dirty_files()
+                        if _os.environ.get("PAPERFORGE_CHECK_GIT_DIRTY") == "1"
+                        else []
+                    )
                     watched_dirty = bool(detect_ocr_runtime_preflight_issues(_dirty))
 
                     ocr_runtime_summary = summarize_ocr_runtime_followups(
@@ -555,10 +619,27 @@ class SyncService:
         if _export_code != "ok":
             result.warnings.append(f"BBT exports: {_export_code}")
 
-        # ── Preflight: OCR runtime dirty files ──
-        _dirty = _get_dirty_files()
+        # ── Preflight: OCR runtime dirty files (opt-in dev check) ──
+        _dirty = (
+            _get_dirty_files()
+            if _os.environ.get("PAPERFORGE_CHECK_GIT_DIRTY") == "1"
+            else []
+        )
         if _dirty:
             result.warnings.extend(detect_ocr_runtime_preflight_issues(_dirty))
+
+        if fastpath_eligible and is_ok:
+            try:
+                _fp_paths = fastpath_paths or self.resolve_paths()
+                _fp_file = _fp_paths["paperforge"] / "indexes" / ".sync-fastpath.json"
+                _fp_file.parent.mkdir(parents=True, exist_ok=True)
+                _new_digest = self._compute_sync_fastpath_digest(_fp_paths)
+                _fp_file.write_text(
+                    _json.dumps({"digest": _new_digest, "data": result.data}, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
 
         return result
 

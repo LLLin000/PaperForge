@@ -2441,6 +2441,25 @@ def postprocess_ocr_result(
     json_path = str((json_dir / "result.json").relative_to(paths["vault"])).replace("\\", "/")
     fulltext_md_path = str(fulltext_path.resolve())
 
+    # Materialize per-paper cropped figures/tables into Obsidian workspace assets/ and prune transient page cache
+    try:
+        from paperforge.lineage import workspace_dir_for_key
+        from paperforge.worker.asset_index import sync_workspace_visual_assets
+
+        ws_dir = workspace_dir_for_key(vault, key)
+        if ws_dir is not None and ws_dir.exists():
+            sync_workspace_visual_assets(ocr_root, ws_dir, key)
+    except Exception:
+        pass
+    if os.environ.get("PAPERFORGE_KEEP_PAGE_IMAGES") != "1":
+        pages_dir = ocr_root / "pages"
+        if pages_dir.exists():
+            for pg_img in pages_dir.glob("page_*.jpg"):
+                try:
+                    pg_img.unlink()
+                except OSError:
+                    pass
+
     # #126: verified success — publish the canonical hash, then clear the
     # publication marker (commit point). Missing artifacts leave the marker.
     if publish_ocr_result_hash(ocr_root) is not None:

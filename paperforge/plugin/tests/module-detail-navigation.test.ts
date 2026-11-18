@@ -2165,4 +2165,18 @@ describe("settings robustness fixes (Commit 1C)", () => {
       "https://custom.ocr.local/jobs"
     );
   });
+
+  it("resolveVaultPaths collapses .paperforge instead of nesting .paperforge/PaperForge", async () => {
+    const { applyPathConfigFromList, resolveVaultPaths } =
+      await import("../src/services/runtime-paths");
+    applyPathConfigFromList({} as any, [
+      { key: "system_dir", value: ".paperforge" },
+      { key: "resources_dir", value: "Resources" },
+      { key: "literature_dir", value: "Literature" },
+      { key: "base_dir", value: "Bases" },
+    ]);
+    const paths = resolveVaultPaths("/vault");
+    expect(paths.systemDir).toBe("/vault/.paperforge");
+    expect(paths.ocrDir).toBe("/vault/.paperforge/ocr");
+  });
 });

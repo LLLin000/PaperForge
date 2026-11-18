@@ -659,6 +659,16 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     if publish_ocr_result_hash(paper_root) is not None:
         clear_result_hash_pending(paper_root)
 
+    try:
+        from paperforge.lineage import workspace_dir_for_key
+        from paperforge.worker.asset_index import sync_workspace_visual_assets
+
+        ws_dir = workspace_dir_for_key(vault, key)
+        if ws_dir is not None and ws_dir.exists():
+            sync_workspace_visual_assets(paper_root, ws_dir, key)
+    except Exception:
+        pass
+
     # 2026-08-16: rebuild is an OCR-subsystem repair — it must also bring a
     # LEGACY meta's version payload up to date (pdf_fingerprint + the
     # P0-B raw_blocks_hash), otherwise provenance stays unknown forever and

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import os
 import shutil
 from pathlib import Path
 
@@ -214,6 +215,20 @@ def backup_render_before_rebuild(paper_root: Path) -> str | None:
             pass
 
     existing.append(entry)
+    try:
+        max_versions = max(1, int(os.environ.get("PAPERFORGE_MAX_OCR_VERSIONS", "5")))
+    except ValueError:
+        max_versions = 5
+    while len(existing) > max_versions:
+        evicted = existing.pop(0)
+        evicted_label = str(evicted.get("label") or "")
+        if evicted_label:
+            evicted_dir = versions_root / evicted_label
+            if evicted_dir.exists() and evicted_dir.is_dir() and evicted_dir.parent == versions_root:
+                try:
+                    shutil.rmtree(evicted_dir)
+                except OSError:
+                    pass
     manifest["versions"] = existing
     manifest["current"] = {"label": label}
 

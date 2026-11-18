@@ -791,8 +791,9 @@ def resolve_paths(vault: Path, snapshot: ConfigSnapshot | None = None) -> dict[s
     values = {key: cv.value for key, cv in snap.values.items()}
 
     vault = Path(vault).expanduser().resolve()
-    system = vault / str(values["system_dir"])
-    paperforge = system / "PaperForge"
+    sys_rel = str(values["system_dir"]).strip()
+    system = vault / sys_rel
+    paperforge = system if Path(sys_rel).name == ".paperforge" else system / "PaperForge"
     resources = vault / str(values["resources_dir"])
     literature = resources / str(values["literature_dir"])
     control = resources / str(values["control_dir"])
