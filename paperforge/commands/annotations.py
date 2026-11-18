@@ -18,6 +18,9 @@ def run(args: argparse.Namespace) -> int:
 
     from paperforge.services.annotations_service import (
         add_annotation,
+        adopt_agent_annotation,
+        agent_mark_annotation,
+        clear_agent_annotations,
         delete_annotation,
         get_paper_pdf_context,
         list_annotations,
@@ -72,6 +75,29 @@ def run(args: argparse.Namespace) -> int:
                 str(args.ann_id),
                 usage=str(getattr(args, "usage", "evidence") or "evidence"),
                 project=str(getattr(args, "project", "") or ""),
+            )
+        elif verb == "agent-mark":
+            tags_raw = getattr(args, "tags_json", "[]") or "[]"
+            tags = json.loads(tags_raw) if isinstance(tags_raw, str) else list(tags_raw)
+            data = agent_mark_annotation(
+                vault,
+                paper_key,
+                quote=str(getattr(args, "quote", "") or ""),
+                figure_id=str(getattr(args, "figure_id", "") or ""),
+                page_hint=getattr(args, "page_hint", None),
+                section_hint=str(getattr(args, "section_hint", "") or ""),
+                comment=str(getattr(args, "comment", "") or ""),
+                color=str(getattr(args, "color", "purple") or "purple"),
+                lens=str(getattr(args, "lens", "skeleton") or "skeleton"),
+                tags=tags,
+            )
+        elif verb == "adopt":
+            data = adopt_agent_annotation(vault, paper_key, str(args.ann_id))
+        elif verb == "clear-agent":
+            data = clear_agent_annotations(
+                vault,
+                paper_key,
+                lens=str(getattr(args, "lens", "") or ""),
             )
         else:
             raise ValueError(f"Unknown annotations verb: {verb!r}")

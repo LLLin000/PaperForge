@@ -836,6 +836,28 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_prev.add_argument("--max-chars", type=int, default=80000, help="Max characters to return")
     p_ann_prev.add_argument("--json", action="store_true", help="Output JSON")
 
+    p_ann_am = p_ann_sub.add_parser("agent-mark", help="Ground quote/figure in PDF and create an AI annotation")
+    p_ann_am.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_am.add_argument("--quote", default="", help="Verbatim sentence or phrase from the paper")
+    p_ann_am.add_argument("--figure-id", default="", help="Optional OCR figure/table ID (e.g. figure_001)")
+    p_ann_am.add_argument("--page-hint", type=int, default=None, help="Optional 1-based physical page hint")
+    p_ann_am.add_argument("--section-hint", default="", help="Optional section title hint")
+    p_ann_am.add_argument("--comment", default="", help="Insightful review comment or analytical note")
+    p_ann_am.add_argument("--color", default="purple", choices=["yellow", "green", "blue", "red", "purple"])
+    p_ann_am.add_argument("--lens", default="skeleton", help="Annotation lens (skeleton|methods|critique|custom)")
+    p_ann_am.add_argument("--tags-json", default="[]", help="JSON list of tags")
+    p_ann_am.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_adopt = p_ann_sub.add_parser("adopt", help="Adopt an agent annotation into user annotations")
+    p_ann_adopt.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_adopt.add_argument("ann_id", help="Annotation ID")
+    p_ann_adopt.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_ca = p_ann_sub.add_parser("clear-agent", help="Clear agent review annotations while preserving user highlights")
+    p_ann_ca.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_ca.add_argument("--lens", default="", help="Optional lens filter")
+    p_ann_ca.add_argument("--json", action="store_true", help="Output JSON")
+
     p_mc = sub.add_parser("memory-card", help="Living Paper Memory Cards & Base table snapshots")
     p_mc_sub = p_mc.add_subparsers(dest="mc_verb", required=True)
 

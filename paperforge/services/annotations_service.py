@@ -26,9 +26,10 @@ from paperforge.worker.asset_index import read_index
 
 logger = logging.getLogger(__name__)
 
-VALID_KINDS = frozenset({"highlight", "area", "note"})
+VALID_KINDS = frozenset({"highlight", "area", "note", "margin"})
 VALID_INTENTS = frozenset({"evidence", "question", "method", "quote", "general"})
 VALID_COLORS = frozenset({"yellow", "green", "blue", "red", "purple"})
+VALID_AUTHORS = frozenset({"user", "agent"})
 
 
 def _utcnow_iso() -> str:
@@ -456,6 +457,15 @@ def list_annotations(vault: Path, paper_key: str) -> list[dict[str, Any]]:
     return _attach_live_provenance(read_active_annotations_for_workspace(ws_dir), current_sha)
 
 
+def _bump_seq_safe(vault: Path, reason: str, key: str) -> None:
+    try:
+        from paperforge.services.state_signal import bump_state_seq
+
+        bump_state_seq(vault, reason=reason, changed_keys=[key])
+    except Exception:
+        pass
+
+
 def add_annotation(
     vault: Path,
     paper_key: str,
@@ -465,9 +475,14 @@ def add_annotation(
     kind: str = "highlight",
     color: str = "yellow",
     intent: str = "general",
+    author: str = "user",
+    lens: str = "",
+    grounding_tier: str = "manual",
     exact_text: str = "",
     comment: str = "",
     tags: list[str] | None = None,
+    section_hint: str = "",
+    figure_hint: str = "",
 ) -> dict[str, Any]:
     """Create a non-destructive sidecar PDF annotation with optional area crop & OCR binding."""
     if not isinstance(page, int) or page < 1:
@@ -478,6 +493,8 @@ def add_annotation(
         raise ValueError(f"Unsupported intent {intent!r}; expected one of {sorted(VALID_INTENTS)}")
     if color not in VALID_COLORS:
         raise ValueError(f"Unsupported color {color!r}; expected one of {sorted(VALID_COLORS)}")
+    if author not in VALID_AUTHORS:
+        raise ValueError(f"Unsupported author {author!r}; expected one of {sorted(VALID_AUTHORS)}")
 
     norm_rects = _normalize_rects(rects)
     if not norm_rects:
@@ -531,13 +548,16 @@ def add_annotation(
         "kind": kind,
         "color": color,
         "intent": intent,
+        "author": author,
+        "lens": str(lens or ""),
+        "grounding_tier": str(grounding_tier or "manual"),
         "exact_text": exact_text,
         "comment": comment,
         "tags": list(tags or []),
         "rects": norm_rects,
-        "section_path": ocr_binding["section_path"],
+        "section_path": ocr_binding["section_path"] or str(section_hint or ""),
         "block_id": ocr_binding["block_id"],
-        "figure_id": ocr_binding["figure_id"],
+        "figure_id": ocr_binding["figure_id"] or str(figure_hint or ""),
         "crop_asset_rel": crop_asset_rel,
         "embed_wikilink": embed_wikilink,
         "pdf_sha256": pdf_sha,
@@ -552,6 +572,7 @@ def add_annotation(
             fh.write(json.dumps({"op": "add", "ann_id": ann_id, "record": record}, ensure_ascii=False) + "\n")
 
     _sync_sqlite_annotation(vault_root, record)
+    _bump_seq_safe(vault_root, "annotations.add", paper_key)
     record["provenance_status"] = "verified" if pdf_sha else "unknown"
     return record
 
@@ -603,6 +624,7 @@ def update_annotation(
             )
 
     _sync_sqlite_annotation(vault_root, updated_rec)
+    _bump_seq_safe(vault_root, "annotations.update", paper_key)
     paths = paperforge_paths(vault_root)
     item, _ = _resolve_paper_location(vault_root, paper_key)
     pdf_abs, _, _, _ = _resolve_pdf_from_item(vault_root, paths, paper_key, item)
@@ -625,7 +647,136 @@ def delete_annotation(vault: Path, paper_key: str, ann_id: str) -> dict[str, Any
                 json.dumps({"op": "delete", "ann_id": ann_id, "updated_at": now}, ensure_ascii=False) + "\n"
             )
     _sync_sqlite_annotation(vault_root, None, delete_id=ann_id)
+    _bump_seq_safe(vault_root, "annotations.delete", paper_key)
     return {"deleted": True, "ann_id": ann_id, "paper_id": paper_key}
+
+
+def agent_mark_annotation(
+    vault: Path,
+    paper_key: str,
+    *,
+    quote: str = "",
+    figure_id: str = "",
+    page_hint: int | None = None,
+    section_hint: str = "",
+    comment: str = "",
+    color: str = "purple",
+    lens: str = "skeleton",
+    tags: list[str] | None = None,
+) -> dict[str, Any]:
+    """Ground a verbatim quote or figure ID on the paper's PDF and save an ``author='agent'`` mark."""
+    vault_root = Path(vault).expanduser().resolve()
+    paths = paperforge_paths(vault_root)
+    item, _ws_dir = _resolve_paper_location(vault_root, paper_key)
+    pdf_abs, _, _, _ = _resolve_pdf_from_item(vault_root, paths, paper_key, item)
+    if pdf_abs is None or not pdf_abs.exists():
+        raise ValueError(f"Canonical PDF not found for {paper_key}")
+
+    from paperforge.services.pdf_grounding import ground_target_in_pdf
+
+    grounded = ground_target_in_pdf(
+        vault_root,
+        paper_key,
+        pdf_abs,
+        quote=quote,
+        figure_id=figure_id,
+        page_hint=page_hint,
+        section_hint=section_hint,
+    )
+    lens_to_intent = {
+        "skeleton": "evidence",
+        "methods": "method",
+        "critique": "question",
+        "custom": "evidence",
+    }
+    intent = lens_to_intent.get(str(lens or "").strip().lower(), "general")
+    return add_annotation(
+        vault_root,
+        paper_key,
+        page=int(grounded["page"]),
+        rects=grounded["rects"],
+        kind=str(grounded["kind"]),
+        color=color,
+        intent=intent,
+        author="agent",
+        lens=str(lens or "skeleton"),
+        grounding_tier=str(grounded["grounding_tier"]),
+        exact_text=str(grounded["matched_text"]),
+        comment=str(comment or ""),
+        tags=tags,
+        section_hint=str(grounded.get("section_path") or section_hint),
+        figure_hint=str(grounded.get("figure_id") or figure_id),
+    )
+
+
+def adopt_agent_annotation(vault: Path, paper_key: str, ann_id: str) -> dict[str, Any]:
+    """Promote an ``author='agent'`` review mark into a user-owned annotation."""
+    vault_root = Path(vault).expanduser().resolve()
+    _, ws_dir = _resolve_paper_location(vault_root, paper_key)
+    jsonl_path = _annotations_file_for_workspace(ws_dir)
+    now = _utcnow_iso()
+    lock = FileLock(str(jsonl_path) + ".lock", timeout=10)
+    with lock:
+        state = _replay_jsonl_events(jsonl_path)
+        if ann_id not in state:
+            raise ValueError(f"Annotation not found: {ann_id}")
+        patch = {"author": "user"}
+        state[ann_id].update(patch)
+        state[ann_id]["updated_at"] = now
+        updated_rec = dict(state[ann_id])
+        with jsonl_path.open("a", encoding="utf-8") as fh:
+            fh.write(
+                json.dumps(
+                    {"op": "update", "ann_id": ann_id, "patch": patch, "updated_at": now},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    _sync_sqlite_annotation(vault_root, updated_rec)
+    _bump_seq_safe(vault_root, "annotations.adopt", paper_key)
+    paths = paperforge_paths(vault_root)
+    item, _ = _resolve_paper_location(vault_root, paper_key)
+    pdf_abs, _, _, _ = _resolve_pdf_from_item(vault_root, paths, paper_key, item)
+    current_sha = _sha256_file(pdf_abs) if (pdf_abs and pdf_abs.exists()) else ""
+    return _attach_live_provenance([updated_rec], current_sha)[0]
+
+
+def clear_agent_annotations(
+    vault: Path,
+    paper_key: str,
+    *,
+    lens: str = "",
+) -> dict[str, Any]:
+    """Delete ``author='agent'`` marks (optionally scoped by lens); preserves user highlights."""
+    vault_root = Path(vault).expanduser().resolve()
+    _, ws_dir = _resolve_paper_location(vault_root, paper_key)
+    jsonl_path = _annotations_file_for_workspace(ws_dir)
+    if not jsonl_path.exists():
+        return {"paper_id": paper_key, "deleted_count": 0, "deleted_ids": []}
+    now = _utcnow_iso()
+    lens_filter = str(lens or "").strip()
+    deleted_ids: list[str] = []
+    lock = FileLock(str(jsonl_path) + ".lock", timeout=10)
+    with lock:
+        state = _replay_jsonl_events(jsonl_path)
+        targets = [
+            aid
+            for aid, rec in state.items()
+            if rec.get("author") == "agent"
+            and (not lens_filter or str(rec.get("lens") or "") == lens_filter)
+        ]
+        if targets:
+            with jsonl_path.open("a", encoding="utf-8") as fh:
+                for aid in targets:
+                    fh.write(
+                        json.dumps({"op": "delete", "ann_id": aid, "updated_at": now}, ensure_ascii=False) + "\n"
+                    )
+                    deleted_ids.append(aid)
+    for aid in deleted_ids:
+        _sync_sqlite_annotation(vault_root, None, delete_id=aid)
+    if deleted_ids:
+        _bump_seq_safe(vault_root, "annotations.clear_agent", paper_key)
+    return {"paper_id": paper_key, "deleted_count": len(deleted_ids), "deleted_ids": deleted_ids}
 
 
 def promote_to_reading_log(
