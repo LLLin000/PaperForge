@@ -251,6 +251,7 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
     --interactive-accent-hover: #bcabff;
     --text-on-accent: #1b1533;
     --shadow-s: 0 10px 28px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
     color: #f2efe9;
   }}
   * {{ box-sizing: border-box; }}
@@ -263,7 +264,7 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
     font-size: var(--font-ui-small);
     line-height: 1.5;
   }}
-  button {{
+  :where(button) {{
     font-family: inherit;
     font-size: 12px;
     padding: 5px 10px;
@@ -273,17 +274,17 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
     color: var(--text-normal);
     cursor: pointer;
   }}
-  button.mod-cta {{
+  :where(button.mod-cta) {{
     background: var(--interactive-accent);
     border-color: var(--interactive-accent);
     color: var(--text-on-accent);
   }}
-  button.mod-warning {{
+  :where(button.mod-warning) {{
     background: #cf222e;
     border-color: #cf222e;
     color: #fff;
   }}
-  input[type="text"], input[type="password"], input[type="number"], select, textarea {{
+  :where(input[type="text"], input[type="password"], input[type="number"], select, textarea) {{
     font-family: inherit;
     font-size: 12px;
     padding: 5px 8px;
@@ -409,8 +410,8 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
     background: var(--pf-surface, var(--background-primary));
   }}
   .pf-ob-bases-toolbar {{
-    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
-    height: 38px; padding: 0 12px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 8px;
+    min-height: 38px; padding: 5px 12px;
     background: var(--pf-elevated, #faf9f7);
     border-bottom: 1px solid var(--pf-border, var(--background-modifier-border));
   }}
@@ -452,9 +453,11 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
   }}
 
   /* Grid helpers */
-  .pf-doc-grid-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }}
-  .pf-doc-grid-3 {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: start; }}
+  .pf-doc-grid-2 {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }}
+  .pf-doc-grid-3 {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }}
   .pf-doc-panel {{
+    min-width: 0;
+    overflow: hidden;
     background: var(--pf-surface, var(--background-primary));
     border: 1px solid var(--pf-border, var(--background-modifier-border));
     border-radius: 10px;
@@ -541,7 +544,7 @@ def main() -> int:
                 for slug in SCENES:
                     loc = page.locator(f"#scene-{slug}")
                     loc.wait_for(state="visible", timeout=10000)
-                    out_png = OUT_DIR / f"{slug}.png"
+                    out_png = OUT_DIR / f"v2-{slug}.png"
                     loc.screenshot(path=str(out_png))
                     print(f"rendered: {out_png.relative_to(REPO_ROOT).as_posix()} ({out_png.stat().st_size} bytes)")
             finally:

@@ -693,16 +693,21 @@ function makeFakeSettings(overrides?: Partial<PaperForgeSettings>): PaperForgeSe
   };
 }
 
-function makeFakePlugin(app: App, snapshot: BaseTableSnapshotDto, opts?: { populatedMemory?: boolean; pdfChanged?: boolean }) {
+function makeFakePlugin(
+  app: App,
+  snapshot: BaseTableSnapshotDto,
+  opts?: { populatedMemory?: boolean; pdfChanged?: boolean; ocrRunning?: boolean }
+) {
   const anns = makeAnnotations();
   if (opts?.pdfChanged) {
     anns.forEach((a) => {
       a.provenance_status = "changed";
     });
   }
+  const ocrRunning = Boolean(opts?.ocrRunning);
   const settings = makeFakeSettings();
   const fakeClient = {
-    isOperationActive: () => true,
+    isOperationActive: () => ocrRunning,
     cancelActiveOperation: () => {},
     backendVersion: async () => "2.2.0",
     dashboardStats: async () => ({
@@ -857,11 +862,11 @@ function makeFakePlugin(app: App, snapshot: BaseTableSnapshotDto, opts?: { popul
     settings,
     agentPlatformChoices: ["opencode", "claude", "codex", "cursor", "gemini", "windsurf"],
     _embedStatusCache: {},
-    _ocrProgress: { current: 2, total: 5, key: "KEY_PROC" },
+    _ocrProgress: ocrRunning ? { current: 2, total: 5, key: "KEY_PROC" } : undefined,
     getClient: () => fakeClient as unknown as ReturnType<never>,
     getBaseSnapshotCache: () => snapshot,
     refreshBaseSnapshot: async () => snapshot,
-    isOcrRunningForKey: (key: string) => key === "KEY_PROC",
+    isOcrRunningForKey: (key: string) => ocrRunning && key === "KEY_PROC",
     openPaperPdf: async () => {},
     requestOcrRun: async () => {},
     triggerManualSync: () => {},
@@ -1075,7 +1080,7 @@ export async function renderAllScenes(): Promise<void> {
   {
     const snap = makeSnapshot("KEY_PROC");
     const app = new App(makeMockFiles(), VAULT_ROOT);
-    const plugin = makeFakePlugin(app, snap, { populatedMemory: true });
+    const plugin = makeFakePlugin(app, snap, { populatedMemory: true, ocrRunning: true });
     const { body } = createScene(
       "01-base-workbench-all-states",
       "01 · Obsidian Bases 文献库单视图工作台（type: paperforge-table · 原生分组与自定义属性列）",
@@ -1143,9 +1148,10 @@ export async function renderAllScenes(): Promise<void> {
       "02-base-empty-and-filtered-states",
       "02 · Base 多选表头上下文栏（解析全文）、零命中空态与 AsterLab 暗黑主题预览",
       "左：勾选多篇条目后在表头滑出上下文操作栏「已选 3 篇 → 解析全文」；右：筛选零命中空态与 AsterLab 暗黑暖灰主题",
-      1320
+      1420
     );
     const grid = body.createDiv({ cls: "pf-doc-grid-2" });
+    grid.style.gridTemplateColumns = "minmax(0, 1.38fr) minmax(0, 1fr)";
 
     // Left: Multi-select contextual action bar above table
     const leftCard = grid.createDiv({ cls: "pf-doc-panel" });
@@ -1162,6 +1168,19 @@ export async function renderAllScenes(): Promise<void> {
     });
     const bvLeft = new PaperForgeBasesView({} as never, leftMount, plugin as never);
     (bvLeft as unknown as { app: App }).app = app;
+    bvLeft.config = {
+      get: (k: string) => (k === "show_annotations" ? undefined : undefined),
+      getOrder: () => [
+        "file.name",
+        "note.first_author",
+        "note.year",
+        "note.journal",
+        "note.impact_factor",
+        "note.annotations",
+        "note.ocr_status",
+      ],
+      getDisplayName: () => "",
+    } as never;
     bvLeft.data = {
       data: makeBaseEntries(snap, [
         "KEY_DONE",
@@ -1187,7 +1206,7 @@ export async function renderAllScenes(): Promise<void> {
     const emptyBox = rightCard.createDiv({ cls: "pf-doc-subbox" });
     const rightMount = buildNativeBaseChrome(emptyBox, {
       activeViewName: "文献库",
-      filterText: 'domain == "神经科" && ocr_status == "pending"',
+      filterText: "筛选: 神经科 · 未解析",
       sortText: "排序: 默认",
       groupText: "分组: 无",
       countText: "0 篇显示",
@@ -1210,6 +1229,11 @@ export async function renderAllScenes(): Promise<void> {
     });
     const bvDark = new PaperForgeBasesView({} as never, darkMount, plugin as never);
     (bvDark as unknown as { app: App }).app = app;
+    bvDark.config = {
+      get: (k: string) => (k === "show_annotations" ? false : undefined),
+      getOrder: () => ["file.name", "note.year", "note.ocr_status"],
+      getDisplayName: () => "",
+    } as never;
     bvDark.data = {
       data: makeBaseEntries(snap, ["KEY_DONE", "KEY_DEEP_WAIT"]),
     } as never;
@@ -1266,7 +1290,7 @@ export async function renderAllScenes(): Promise<void> {
   {
     const snap = makeSnapshot("KEY_PROC");
     const app = new App(makeMockFiles(), VAULT_ROOT);
-    makeFakePlugin(app, snap);
+    makeFakePlugin(app, snap, { ocrRunning: true });
     const { body } = createScene(
       "04-dashboard-collection-mode",
       "04 · Dashboard 集合模式（Collection Mode · 当前激活 <domain>.base 时显示）",
@@ -1414,7 +1438,10 @@ export async function renderAllScenes(): Promise<void> {
       v._currentMode = "global";
       v._renderModeHeader("global");
       v.renderSearchSection(v._contentEl);
-      if (v._searchInput) v._searchInput.value = "@nifedipine Ca2+ 22 min";
+      if (v._searchInput) {
+        v._searchInput.value = "@nifedipine Ca2+ 22 min";
+        v._searchInput.dispatchEvent(new Event("input"));
+      }
       v._searchState = "results";
       v._searchDeep = true;
       v._searchResults = [
@@ -1503,10 +1530,13 @@ export async function renderAllScenes(): Promise<void> {
     const ddEl = pdfView.contentEl.querySelector(
       '[data-pf-testid="pdf-highlight-dropdown"]'
     ) as HTMLElement | null;
-    if (ddEl) {
+    if (ddEl && hlMenuBtn) {
+      const btnRect = hlMenuBtn.getBoundingClientRect();
+      const hostRect = mainSlot.getBoundingClientRect();
       ddEl.style.position = "absolute";
-      ddEl.style.right = "164px";
-      ddEl.style.top = "44px";
+      ddEl.style.right = "auto";
+      ddEl.style.left = `${Math.max(12, Math.round(btnRect.right - hostRect.left - 168))}px`;
+      ddEl.style.top = `${Math.round(btnRect.bottom - hostRect.top + 4)}px`;
     }
   }
 
@@ -1823,7 +1853,8 @@ export async function renderAllScenes(): Promise<void> {
   }
 
   // Wait a couple ticks for async child components (LivingMemoryCard, credentialAvailable, etc.)
-  await new Promise((r) => setTimeout(r, 120));
+  await new Promise((r) => setTimeout(r, 140));
+  (document.activeElement as HTMLElement | null)?.blur?.();
   (window as unknown as { __PF_SHOWCASE_READY__: boolean }).__PF_SHOWCASE_READY__ = true;
 }
 

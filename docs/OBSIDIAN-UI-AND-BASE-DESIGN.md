@@ -14,7 +14,7 @@
 | 渲染编排器 | `scripts/dev/render_obsidian_ui_docs.py` | 调用 `esbuild` 打包展示入口并注入 `paperforge/plugin/styles.css`，通过 Playwright Chromium 截取 12 张 `@2x` Retina PNG |
 | 场景构造入口 | `scripts/dev/_obsidian_ui_showcase.ts` | 实例化真实 `PaperForgeBasesView`、`PaperForgeStatusView`、`PaperForgePdfView`、`PaperForgeSettingTab`、`OcrWorkspaceView` 与三大安全弹窗，覆写合成快照与桩客户端 |
 | Obsidian 运行时垫片 | `scripts/dev/_obsidian_browser_shim.ts` | 模拟 Obsidian 1.12 运行时（`BasesView`、`ItemView`、`PluginSettingTab`、`Modal`、`Setting`、`Menu`、`createEl` 及按画布缩放比例自适应的 `loadPdfJs` 双栏科研 PDF 页） |
-| 产物图片目录 | `docs/images/ui-states/` | 存放 `01-*.png` 至 `12-*.png` 共 12 张最新状态截图 |
+| 产物图片目录 | `docs/images/ui-states/` | 存放 `v2-01-*.png` 至 `v2-12-*.png` 共 12 张最新状态截图（采用版本号前缀避免 Obsidian / 编辑器 Markdown 预览的同 URL 位图内存缓存命中旧图） |
 
 > [!NOTE]
 > 为保证离线确定性与静态路径门禁通过，展示场景仅构造合成文献库路径（例如 `D:/ResearchVault`、`C:/Users/Researcher/Zotero`），不读取任何本机个人库或敏感真实路径。
@@ -40,12 +40,13 @@ python scripts/dev/render_obsidian_ui_docs.py
 | **`asterlab`（默认）** | `pf-theme-asterlab` | Light: `#f7f6f3` / `#ffffff` / `#faf9f7`<br>Dark: `#171614` / `#1e1d1a` / `#242320` | Light: `#5b45c9`<br>Dark: `#a996ff` | 默认开启；暖灰纸质感高对比科研工作区 |
 | **`obsidian`** | `pf-theme-obsidian` | 实时映射 `--background-secondary` / `--background-primary` | 实时映射 `--interactive-accent` | 需要严格跟随用户第三方 Obsidian 主题时启用 |
 
-### 2.2 比例尺、图标与克制排版准则
+### 2.2 比例尺、图标、物理微交互与克制排版准则
 
 1. **统一线条图标库（零界面 Emoji）**：全部视图图标由纯 DOM/SVG 工具 `paperforge/plugin/src/views/icons.ts`（`1.65px` 均匀描边、`round` 端帽 Lucide 几何图标）渲染；`🤖`、`🔍`、`🧠`、`📄` 等 UI 装饰 Emoji 已清零，防止视觉噪音与平台字体差异。
-2. **4 px 间距网格与三档圆角**：仅使用 `6px`（控件/胶囊 `--pf-radius-control`）、`10px`（卡片/工作区面板 `--pf-radius-panel`）和 `12px`（浮窗/弹窗 `--pf-radius-dialog`）。
-3. **等宽对齐数字（`.pf-tnum`）**：年份、影响因子、批注计数、页码、缩放比及队列进度统一启用 `font-variant-numeric: tabular-nums`。
-4. **单主按钮与渐进披露**：每个独立操作区最多 1 枚主强调按钮（`--pf-accent`）；内部状态/工程细节收敛在 `高级选项与技术标识` 折叠块内，不长期暴露底层技术版本号。
+2. **同心连续曲率（`vibedesign.tips #004`）**：仅使用 `6px`（控件/胶囊 `--pf-radius-control`）、`10px`（卡片/工作区面板 `--pf-radius-panel`）和 `12px`（浮窗/弹窗 `--pf-radius-dialog`）三档圆角，并在支持的 Chromium 引擎下启用 `corner-shape: superellipse(1.25)` 连续曲率，严格保持容器内嵌控件满足 $R_{\text{inner}} = R_{\text{outer}} - \text{padding}$。
+3. **顶光微凸三级按钮层级（`#001`）**：全面落实 `--pf-btn-lift` / `--pf-primary-lift` 顶光渐变与 `--pf-btn-press` 按压反馈，显式区分 Primary（单主强调）、Secondary（白底描边微凸）与 Ghost（默认透明、悬停显面），消除早先设置向导与侧栏按钮紫框/紫底泛滥问题。
+4. **内凹轨道与一体化搜索槽（`#007`）**：`.pf-segmented` 分段轨道与 Dashboard 检索输入区统一采用 `--pf-well-inset` 内嵌微阴影槽（`M` / `@` 模式徽章与无边框 `<input>` 共槽，且空结果态不渲染孤立小标题）。
+5. **柔光浮层、双环色板与中西文排版连续性（`#009` / `#015`）**：高亮/标记下拉面板采用磨砂微透明与柔和描边阴影；色板选中态使用「`2px` 表面白隔断环 + `1.5px` `--pf-accent` 外环」双环体系；全界面启用 `tabular-nums`（`.pf-tnum`）及「单个 `paperforge-header` 不重复类型标签 + 高级选项折叠披露」的渐进信息架构。
 
 ---
 
@@ -66,9 +67,9 @@ python scripts/dev/render_obsidian_ui_docs.py
 - 左侧显示已选计数（`.pf-tnum`，如 `已选 3 篇`）与 `取消选择`。
 - 右侧提供面向所选集合的上下文操作：`查看诊断`、`同步文献库`、以及唯一主强调动作 `解析全文`——直接以 `ActionScope { kind: "papers", keys }` 派发至 `requestOcrRun`，不再需要人工切换 `待 OCR` 分页或逐行点击解析。
 
-![01 · Obsidian Bases 文献库单视图工作台](images/ui-states/01-base-workbench-all-states.png)
+![01 · Obsidian Bases 文献库单视图工作台](images/ui-states/v2-01-base-workbench-all-states.png)
 
-![02 · Base 多选表头上下文栏与 AsterLab Dark 预览](images/ui-states/02-base-empty-and-filtered-states.png)
+![02 · Base 多选表头上下文栏与 AsterLab Dark 预览](images/ui-states/v2-02-base-empty-and-filtered-states.png)
 
 ---
 
@@ -81,13 +82,13 @@ python scripts/dev/render_obsidian_ui_docs.py
 3. **Paper Mode（单篇伴读 + 5 维度研究认知记忆）**：展示一句话精读总览与 5 维度 **研究认知记忆**（`研究思路与逻辑链`、`实验技术与关键参数`、`研究技巧与巧思`、`硬伤、边界与存疑`、`课题迁移与灵感` —— 采用 Refine-Don't-Append 原位演进机制，移除 `rev` 版本噪声标签），将流程控制与工程元数据收入 `高级选项与技术标识` 折叠区块。
 4. **检索状态矩阵**：区分 `M` 元数据快速检索、`@` 混合语义深度检索，以及索引/向量未就绪时的就地重建引导卡。
 
-![03 · Dashboard 全局模式（健康态 vs 恢复引导态）](images/ui-states/03-dashboard-global-modes.png)
+![03 · Dashboard 全局模式（健康态 vs 恢复引导态）](images/ui-states/v2-03-dashboard-global-modes.png)
 
-![04 · Dashboard 集合漏斗模式（骨科.base 联动）](images/ui-states/04-dashboard-collection-mode.png)
+![04 · Dashboard 集合漏斗模式（骨科.base 联动）](images/ui-states/v2-04-dashboard-collection-mode.png)
 
-![05 · Dashboard 单篇伴读模式与 5 维度研究认知记忆](images/ui-states/05-dashboard-paper-mode-living-memory.png)
+![05 · Dashboard 单篇伴读模式与 5 维度研究认知记忆](images/ui-states/v2-05-dashboard-paper-mode-living-memory.png)
 
-![06 · Dashboard 检索状态矩阵（M / @ 深检 / 索引未就绪恢复）](images/ui-states/06-dashboard-search-and-recovery-states.png)
+![06 · Dashboard 检索状态矩阵（M / @ 深检 / 索引未就绪恢复）](images/ui-states/v2-06-dashboard-search-and-recovery-states.png)
 
 ---
 
@@ -113,13 +114,13 @@ python scripts/dev/render_obsidian_ui_docs.py
 
 所有标注继续坚持**零污染源 PDF 字节**契约：事件流写入 `<workspace>/annotations.jsonl`，经 `paperforge/services/annotations_service.py` 校验 `kind`、`color` 与 `_normalize_style()` 后同步到 SQLite `paper_annotations.style_json` 列（含 `shape_type`、`stroke_color`、`fill_color`、`stroke_width`、`font_size`、`points` 等矢量坐标与样式字段）。
 
-### 5.3 248 px 左侧栏与 Zotero 式「拷贝引用至笔记」
+### 5.3 268 px 左侧栏与 Zotero 式「拷贝引用至笔记」
 
-左侧可折叠栏提供 Apple Preview 一致的 `.pf-segmented` 三标签：`缩略图`（实时画布缩略图 + 当前页紫框高亮）、`目录`（读取 PDF Outline 并兼容 OCR `section_path` 回退）与 `高亮与笔记`（`全部 | 我的 | AI 导读` 筛选、`清空 AI 标注`、`采纳`、以及 Zotero 风格的 **`拷贝引用至笔记`** 一键生成带双链页码的引用文本 `> "<exact_text>" — [[<note_rel>|<key> p.<page>]]`）。
+左侧可折叠栏提供 Apple Preview 一致的 `.pf-segmented` 三标签：`缩略图`（实时画布缩略图 + 当前页紫框高亮）、`目录`（读取 PDF Outline 并兼容 OCR `section_path` 回退）与 `批注`（`全部 | 我的 | AI 导读` 筛选、`清空 AI 标注`、`采纳`、以及 Zotero 风格的 **`拷贝引用至笔记`** 一键生成带双链页码的引用文本 `> "<exact_text>" — [[<note_rel>|<key> p.<page>]]`）。
 
-![07 · macOS 预览双层工具栏、矢量批注与左栏引述桥](images/ui-states/07-pdf-annotator-human-and-ai-layers.png)
+![07 · macOS 预览双层工具栏、矢量批注与左栏引述桥](images/ui-states/v2-07-pdf-annotator-human-and-ai-layers.png)
 
-![08 · PDF 阅读器 AsterLab Dark 主题与边界状态](images/ui-states/08-pdf-annotator-provenance-and-empty-states.png)
+![08 · PDF 阅读器 AsterLab Dark 主题与边界状态](images/ui-states/v2-08-pdf-annotator-provenance-and-empty-states.png)
 
 ---
 
@@ -129,10 +130,10 @@ python scripts/dev/render_obsidian_ui_docs.py
 2. **四阶段安装向导**：引导科研人员完成托管运行时准备、Zotero/BBT 连接、可选能力选择与就绪检查。
 3. **二级维护台与安全弹窗（`OcrWorkspaceView` & Modals）**：仅按需进入的批量 OCR 重跑、版本恢复对比、只读 OCR 排版诊断预览与 Zotero 孤儿清理弹窗均已统一切换至 AsterLab 语义变量与线条图标体系。
 
-![09 · 设置控制中心：五大能力六态与界面配色切换](images/ui-states/09-settings-control-center-six-states.png)
+![09 · 设置控制中心：五大能力六态与界面配色切换](images/ui-states/v2-09-settings-control-center-six-states.png)
 
-![10 · 安装向导四阶段全览](images/ui-states/10-settings-setup-wizard-four-stages.png)
+![10 · 安装向导四阶段全览](images/ui-states/v2-10-settings-setup-wizard-four-stages.png)
 
-![11 · OCR 与智能检索模块配置详情](images/ui-states/11-settings-ocr-and-memory-details.png)
+![11 · OCR 与智能检索模块配置详情](images/ui-states/v2-11-settings-ocr-and-memory-details.png)
 
-![12 · 二级 OCR 批量维护工作台与三大安全弹窗](images/ui-states/12-ocr-workspace-and-modals.png)
+![12 · 二级 OCR 批量维护工作台与三大安全弹窗](images/ui-states/v2-12-ocr-workspace-and-modals.png)
