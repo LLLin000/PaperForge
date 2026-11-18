@@ -23,11 +23,10 @@ import {
 import { VIEW_TYPE_PF_BASE_TABLE } from "../src/constants";
 import type { BaseTableSnapshotDto } from "../src/client/paperforge-client";
 
-describe("PaperForgeBasesView & live state reactivity (Phase 1)", () => {
+describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () => {
   let snapshot: BaseTableSnapshotDto;
   let stateListeners: Array<() => void>;
   let host: PaperForgeBasesHost;
-  let setNoteFlag: ReturnType<typeof vi.fn>;
   let refreshBaseSnapshot: ReturnType<typeof vi.fn>;
   let openPaperPdf: ReturnType<typeof vi.fn>;
   let requestOcrRun: ReturnType<typeof vi.fn>;
@@ -80,9 +79,28 @@ describe("PaperForgeBasesView & live state reactivity (Phase 1)", () => {
           memory_updated_at: "",
           needs_diagnostic: true,
         },
+        K_WAIT: {
+          zotero_key: "K_WAIT",
+          title: "Meniscus Hydrogel Mechanics",
+          first_author: "Wang",
+          year: "2024",
+          journal: "Acta Biomater.",
+          impact_factor: "9.4",
+          domain: "Sports",
+          has_pdf: true,
+          do_ocr: false,
+          analyze: false,
+          ocr_status: "pending",
+          deep_reading_status: "pending",
+          main_note_path: "Resources/Literature/Sports/K_WAIT/K_WAIT.md",
+          user_ann_count: 1,
+          agent_ann_count: 0,
+          memory_facet_count: 0,
+          memory_updated_at: "",
+          needs_diagnostic: false,
+        },
       },
     };
-    setNoteFlag = vi.fn().mockResolvedValue({ ok: true });
     refreshBaseSnapshot = vi.fn().mockResolvedValue(snapshot);
     openPaperPdf = vi.fn().mockResolvedValue(undefined);
     requestOcrRun = vi.fn().mockResolvedValue(undefined);
@@ -100,11 +118,11 @@ describe("PaperForgeBasesView & live state reactivity (Phase 1)", () => {
           openLinkText,
         },
       } as any,
-      getClient: () => ({ setNoteFlag }) as any,
+      getClient: () => ({}) as any,
       getBaseSnapshotCache: () => snapshot,
       refreshBaseSnapshot,
-      isOcrRunningForKey: (k: string) => k === "K_FAIL",
-      _ocrProgress: { current: 1, total: 2, key: "K_FAIL" },
+      isOcrRunningForKey: (k: string) => k === "K_WAIT",
+      _ocrProgress: { current: 1, total: 2, key: "K_WAIT" },
       openPaperPdf,
       requestOcrRun,
       triggerManualSync: vi.fn(),
@@ -112,77 +130,201 @@ describe("PaperForgeBasesView & live state reactivity (Phase 1)", () => {
     };
   });
 
-  it("renders Base entries with physical read/write separation, live status, cognitive pills, and actions", async () => {
+  it("renders calm Base rows with custom config order, leading PDF icon, and contextual selection header bar", async () => {
     const container = dom.window.document.createElement("div");
     const view = new PaperForgeBasesView({} as any, container, host);
     expect(view.type).toBe(VIEW_TYPE_PF_BASE_TABLE);
 
-    // Base QueryResult supplies filtered/sorted subset (respects Obsidian native Filter/Sort)
+    // Custom column order including a custom user property `note.topic`
+    (view as any).config = {
+      get: (k: string) => (k === "show_annotations" ? true : false),
+      getOrder: () => [
+        "note.title",
+        "note.topic",
+        "note.year",
+        "note.ocr_status",
+      ],
+      getDisplayName: (id: string) =>
+        id === "note.topic" ? "研究课题" : id.replace(/^note\./, ""),
+    };
+
+    const mkEntry = (key: string, topic: string) => ({
+      file: {
+        path: snapshot.rows[key].main_note_path,
+        basename: key,
+      },
+      getValue: (propId: string) => {
+        if (propId === "note.zotero_key") {
+          return { data: key, toString: () => key };
+        }
+        if (propId === "note.topic") {
+          return { data: topic, toString: () => topic };
+        }
+        return null;
+      },
+    });
+
     (view as any).data = {
       data: [
-        {
-          file: {
-            path: "Resources/Literature/Ortho/K_FAIL/K_FAIL.md",
-            basename: "K_FAIL",
-          },
-          getValue: () => ({ data: "K_FAIL", toString: () => "K_FAIL" }),
-        },
-        {
-          file: {
-            path: "Resources/Literature/Ortho/K_DONE/K_DONE.md",
-            basename: "K_DONE",
-          },
-          getValue: () => ({ data: "K_DONE", toString: () => "K_DONE" }),
-        },
+        mkEntry("K_FAIL", "肩袖损伤"),
+        mkEntry("K_WAIT", "半月板水凝胶"),
+        mkEntry("K_DONE", "电纺支架"),
       ],
     };
 
     view.onload();
     view.onDataUpdated();
 
+    // No duplicate top toolbar, no seq tag, no row emojis, no selection bar at rest
+    expect(container.querySelector(".pf-base-toolbar")).toBeNull();
+    expect(container.querySelector(".pf-base-selection-bar")).toBeNull();
+    expect(container.textContent).not.toContain("seq #");
+    expect(container.textContent).not.toContain("🧠");
+    expect(container.textContent).not.toContain("⚡");
+
+    // Custom user column rendered from config.getOrder() & getDisplayName()
+    expect(container.textContent).toContain("研究课题");
+    expect(container.textContent).toContain("肩袖损伤");
+    expect(container.textContent).toContain("电纺支架");
+
     const rows = Array.from(container.querySelectorAll("tr.pf-base-row"));
-    expect(rows).toHaveLength(2);
-    // Order matches BasesQueryResult
+    expect(rows).toHaveLength(3);
     expect(rows[0].getAttribute("data-paper-key")).toBe("K_FAIL");
-    expect(rows[1].getAttribute("data-paper-key")).toBe("K_DONE");
+    expect(rows[1].getAttribute("data-paper-key")).toBe("K_WAIT");
+    expect(rows[2].getAttribute("data-paper-key")).toBe("K_DONE");
 
-    // Live OCR running badge for K_FAIL, Done + Deep-read + cognitive counts for K_DONE
-    expect(rows[0].textContent).toContain("⚡ OCR (1/2)");
-    expect(rows[1].textContent).toContain("🧠 4");
-    expect(rows[1].textContent).toContain("🖍️ 3");
-    expect(rows[1].textContent).toContain("🤖 7");
+    // Live running progress & calm outline status labels
+    expect(rows[0].textContent).toContain("解析异常");
+    expect(rows[1].textContent).toContain("解析中 1/2");
+    expect(rows[2].textContent).toContain("已精读");
+    expect(rows[2].textContent).toContain("10 批注 · 4 记忆");
 
-    // Checkbox mutation routes through Python authority client.setNoteFlag (never YAML direct write)
-    const doOcrCheckbox = rows[0].querySelector(
-      'input[data-pf-flag="do_ocr"]'
-    ) as HTMLInputElement;
-    doOcrCheckbox.checked = true;
-    doOcrCheckbox.dispatchEvent(new dom.window.Event("change"));
-    await vi.waitFor(() => {
-      expect(setNoteFlag).toHaveBeenCalledWith("K_FAIL", "do_ocr", true);
-      expect(refreshBaseSnapshot).toHaveBeenCalledWith(["K_FAIL"]);
-    });
-
-    // Interactive row action buttons
-    const pdfBtn = rows[1].querySelector(
+    // Leading PDF icon opens PDF; title click opens main note
+    const pdfBtn = rows[2].querySelector(
       '[data-pf-testid="base-open-pdf"]'
     ) as HTMLButtonElement;
     pdfBtn.click();
     expect(openPaperPdf).toHaveBeenCalledWith("K_DONE");
 
-    const diagBtn = rows[0].querySelector(
-      '[data-pf-testid="base-open-diag"]'
+    const noteBtn = rows[2].querySelector(
+      '[data-pf-testid="base-open-note"]'
     ) as HTMLButtonElement;
-    diagBtn.click();
+    noteBtn.click();
+    expect(openLinkText).toHaveBeenCalledWith(
+      "Resources/Literature/Ortho/K_DONE/K_DONE.md",
+      ""
+    );
+
+    // Click failed status pill -> opens diagnostic
+    const diagPill = rows[0].querySelector(
+      '[data-pf-testid="base-status-diag"]'
+    ) as HTMLButtonElement;
+    diagPill.click();
     expect(openOcrDiagnostic).toHaveBeenCalledWith("K_FAIL");
 
-    // External state-seq update triggers live table re-render
+    // Check first row -> contextual header bar appears with Parse Fulltext & View Diagnostic
+    const cbFail = rows[0].querySelector(
+      'input[data-pf-select-key="K_FAIL"]'
+    ) as HTMLInputElement;
+    cbFail.checked = true;
+    cbFail.dispatchEvent(new dom.window.Event("change"));
+
+    const selBar = container.querySelector(
+      '[data-pf-testid="base-selection-bar"]'
+    );
+    expect(selBar).not.toBeNull();
+    expect(selBar?.textContent).toMatch(/1 selected|已选 1 篇/);
+    expect(
+      selBar?.querySelector('[data-pf-testid="base-open-diag"]')
+    ).not.toBeNull();
+
+    // Shift+Click third row -> range selects rows 0..2
+    const cbDone = container.querySelector(
+      'input[data-pf-select-key="K_DONE"]'
+    ) as HTMLInputElement;
+    cbDone.dispatchEvent(
+      new dom.window.MouseEvent("click", { shiftKey: true })
+    );
+    cbDone.checked = true;
+    cbDone.dispatchEvent(new dom.window.Event("change"));
+
+    const selBarRange = container.querySelector(
+      '[data-pf-testid="base-selection-bar"]'
+    );
+    expect(selBarRange?.textContent).toMatch(/3 selected|已选 3 篇/);
+
+    // Parse Fulltext dispatches Python ActionScope { kind: "papers", keys }
+    const runBtn = container.querySelector(
+      '[data-pf-testid="base-run-selected-ocr"]'
+    ) as HTMLButtonElement;
+    runBtn.click();
+    expect(requestOcrRun).toHaveBeenCalledWith({
+      kind: "papers",
+      keys: ["K_FAIL", "K_WAIT", "K_DONE"],
+    });
+
+    // Live state-changed update preserves selection & updates counts
     snapshot.rows.K_DONE.memory_facet_count = 5;
-    snapshot.seq = 4;
     stateListeners[0]();
-    expect(container.textContent).toContain("seq #4");
-    expect(container.textContent).toContain("🧠 5");
+    expect(container.textContent).toContain("10 批注 · 5 记忆");
+    expect(
+      container.querySelector('[data-pf-testid="base-selection-bar"]')
+        ?.textContent
+    ).toMatch(/3 selected|已选 3 篇/);
+
+    // Clear selection hides contextual bar
+    const clearBtn = container.querySelector(
+      '[data-pf-testid="base-clear-selection"]'
+    ) as HTMLButtonElement;
+    clearBtn.click();
+    expect(
+      container.querySelector('[data-pf-testid="base-selection-bar"]')
+    ).toBeNull();
 
     view.onunload();
+  });
+
+  it("supports Obsidian groupedData sections", () => {
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    (view as any).data = {
+      groupedData: [
+        {
+          hasKey: () => true,
+          key: { data: "Ortho", toString: () => "Ortho" },
+          entries: [
+            {
+              file: {
+                basename: "K_DONE",
+                path: snapshot.rows.K_DONE.main_note_path,
+              },
+              getValue: () => ({ data: "K_DONE" }),
+            },
+          ],
+        },
+        {
+          hasKey: () => true,
+          key: { data: "Sports", toString: () => "Sports" },
+          entries: [
+            {
+              file: {
+                basename: "K_WAIT",
+                path: snapshot.rows.K_WAIT.main_note_path,
+              },
+              getValue: () => ({ data: "K_WAIT" }),
+            },
+          ],
+        },
+      ],
+    };
+
+    view.onDataUpdated();
+    const groups = Array.from(
+      container.querySelectorAll("tr.pf-base-group-row")
+    );
+    expect(groups).toHaveLength(2);
+    expect(groups[0].textContent).toContain("Ortho");
+    expect(groups[0].textContent).toContain("1 篇");
+    expect(groups[1].textContent).toContain("Sports");
   });
 });

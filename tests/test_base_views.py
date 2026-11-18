@@ -7,62 +7,43 @@ from paperforge.worker.base_views import (
 
 
 class TestBuildBaseViews:
-    def test_build_base_views_has_3_standard_views(self):
+    def test_build_base_views_has_single_library_view(self):
         views = build_base_views("骨科")
         names = {v["name"] for v in views}
-        assert names == {"控制面板", "待 OCR", "待深度阅读"}
+        assert names == {"文献库"}
 
-    def test_ocr_redo_view_removed(self):
-        views = build_base_views("骨科")
-        assert not any(v["name"] == "重做OCR" for v in views)
-
-    def test_returns_exactly_3_views(self):
-        views = build_base_views("骨科")
-        assert len(views) == 3
-
-    def test_each_view_has_required_keys(self):
-        views = build_base_views("骨科")
-        for v in views:
-            assert "name" in v
-            assert "order" in v
-            assert "filter" in v
-            assert isinstance(v["order"], list)
-            assert len(v["order"]) > 0
-
-    def test_control_panel_has_no_filter(self):
-        views = build_base_views("骨科")
-        cp = next(v for v in views if v["name"] == "控制面板")
-        assert cp["filter"] is None
-
-    def test_pending_ocr_filter(self):
-        views = build_base_views("骨科")
-        pending = next(v for v in views if v["name"] == "待 OCR")
-        assert "do_ocr == true" in pending["filter"]
-        assert 'ocr_status == "pending"' in pending["filter"]
-
-    def test_deep_reading_pending_filter(self):
-        views = build_base_views("骨科")
-        pending = next(v for v in views if v["name"] == "待深度阅读")
-        assert "analyze == true" in pending["filter"]
-        assert 'ocr_status == "done"' in pending["filter"]
-        assert 'deep_reading_status == "pending"' in pending["filter"]
-
-    def test_removed_views_not_present(self):
-        removed = {"推荐分析", "OCR 完成", "深度阅读完成", "正式卡片", "全记录"}
+    def test_legacy_pipeline_views_removed(self):
+        removed = {
+            "控制面板",
+            "待 OCR",
+            "待深度阅读",
+            "重做OCR",
+            "推荐分析",
+            "OCR 完成",
+            "深度阅读完成",
+            "正式卡片",
+            "全记录",
+        }
         views = build_base_views("骨科")
         names = {v["name"] for v in views}
         assert removed.isdisjoint(names), f"Removed views still present: {removed & names}"
 
-    def test_build_base_views_has_no_sort(self):
+    def test_returns_exactly_1_view(self):
         views = build_base_views("骨科")
-        for v in views:
-            assert "sort" not in v, f"View '{v['name']}' should not have sort key"
+        assert len(views) == 1
 
-    def test_build_base_views_uses_paperforge_table_and_hides_fulltext(self):
+    def test_view_has_required_keys_and_no_queue_flags(self):
         views = build_base_views("骨科")
-        for v in views:
-            assert v.get("type") == "paperforge-table"
-            assert "fulltext_md_path" not in v["order"]
+        v = views[0]
+        assert v["name"] == "文献库"
+        assert isinstance(v["order"], list)
+        assert len(v["order"]) > 0
+        assert v["filter"] is None
+        assert "sort" not in v
+        assert v.get("type") == "paperforge-table"
+        assert "fulltext_md_path" not in v["order"]
+        assert "do_ocr" not in v["order"]
+        assert "analyze" not in v["order"]
 
 
 class TestSubstituteConfigPlaceholders:

@@ -389,10 +389,24 @@ export default class PaperForgePlugin extends Plugin {
     ).registerBasesView;
     if (typeof regBases === "function") {
       regBases.call(this, VIEW_TYPE_PF_BASE_TABLE, {
-        name: t("base_view_name") || "PaperForge 文献工作台",
+        name: t("base_view_name") || "PaperForge 文献库",
         icon: "library",
         factory: (controller: unknown, containerEl: HTMLElement) =>
           new PaperForgeBasesView(controller as any, containerEl, this),
+        options: () => [
+          {
+            key: "show_annotations",
+            type: "toggle",
+            displayName: "显示批注与记忆计数",
+            default: true,
+          },
+          {
+            key: "compact_rows",
+            type: "toggle",
+            displayName: "紧凑行高",
+            default: false,
+          },
+        ],
       });
     }
 

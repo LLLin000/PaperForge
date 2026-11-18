@@ -1,4 +1,4 @@
-"""Tests for incremental merge and user-view preservation (Phase 3, Plan 02)."""
+"""Tests for incremental merge, retired legacy view cleanup, and user-view preservation."""
 
 import pytest
 
@@ -43,7 +43,7 @@ class TestIncrementalMerge:
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: paperforge-table") == 3
+        assert content.count("type: paperforge-table") == 1
 
         user_custom = (
             content
@@ -61,22 +61,22 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom Dashboard" in refreshed, "User custom view was lost on incremental refresh"
-        assert refreshed.count("type: paperforge-table") == 3
+        assert refreshed.count("type: paperforge-table") == 1
         assert refreshed.count("type: table") == 1
-        assert "控制面板" in refreshed
+        assert "文献库" in refreshed
 
     def test_standard_paperforge_views_are_updated_on_refresh(self):
-        """Standard views are replaced with fresh content on each refresh."""
+        """Standard library view stays clean and unique across refreshes."""
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
         ensure_base_views(self.vault, self.paths, self.config, force=False)
 
         content1 = domain_base.read_text(encoding="utf-8")
-        assert content1.count(PAPERFORGE_VIEW_PREFIX) == 3
+        assert content1.count(PAPERFORGE_VIEW_PREFIX) == 1
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content2 = domain_base.read_text(encoding="utf-8")
 
-        assert content2.count("type: paperforge-table") == 3
+        assert content2.count("type: paperforge-table") == 1
         assert "${LIBRARY_RECORDS}" not in content2
 
     def test_force_flag_does_full_regeneration(self):
@@ -101,36 +101,28 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom View" not in refreshed, "force=True should have replaced all views"
-        assert refreshed.count("type: paperforge-table") == 3
-        assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 3
+        assert refreshed.count("type: paperforge-table") == 1
+        assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 1
 
     def test_user_modified_filter_on_standard_view_is_preserved(self):
-        """User changes filter on a standard PF view — on refresh it is PRESERVED.
-
-        v3: _sanitize_base_file does NOT touch existing view content.
-        User modifications to standard view filters, columns, widths, sort survive refresh.
-        Only: duplicate removal, syntax fixes, missing standard views appended.
-        """
+        """User changes filter on 文献库 — on refresh it is PRESERVED unless force=True."""
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content1 = domain_base.read_text(encoding="utf-8")
 
-        ocr_filter_old = 'ocr_status == "pending"'
-        ocr_filter_modified = 'ocr_status == "pending" && extra_check == true'
-
-        modified = content1.replace(ocr_filter_old, ocr_filter_modified)
+        user_filter = "\n    filter: 'impact_factor >= 5'"
+        modified = content1.replace("    order:\n      - title", f"    filter: 'impact_factor >= 5'\n    order:\n      - title")
+        assert "impact_factor >= 5" in modified
         domain_base.write_text(modified, encoding="utf-8")
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         refreshed = domain_base.read_text(encoding="utf-8")
 
-        # v3: existing view content is preserved — user modification survives
-        assert ocr_filter_modified in refreshed, "User filter modification should be preserved"
-        # force=True should still regenerate (user mods lost when force)
+        assert "impact_factor >= 5" in refreshed, "User filter modification should be preserved"
+
         ensure_base_views(self.vault, self.paths, self.config, force=True)
         force_refreshed = domain_base.read_text(encoding="utf-8")
-        assert ocr_filter_old in force_refreshed
-        assert ocr_filter_modified not in force_refreshed
+        assert "impact_factor >= 5" not in force_refreshed
 
     def test_new_domain_base_is_created_on_first_run(self):
         """First run creates domain base if none exists."""
@@ -141,113 +133,57 @@ class TestIncrementalMerge:
 
         assert domain_base.exists()
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: paperforge-table") == 3
+        assert content.count("type: paperforge-table") == 1
         assert PAPERFORGE_VIEW_PREFIX in content
 
-    def test_old_file_without_prefix_gets_views_without_duplication(self):
-        """Old base files (no PAPERFORGE_VIEW_PREFIX): existing views preserved, missing standard views appended."""
+    def test_legacy_pipeline_views_are_retired_and_replaced_by_single_library_view(self):
+        """Legacy 控制面板/待 OCR/待深度阅读/重做OCR views are retired during sanitize while preserving user views."""
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
 
-        # Simulate old-version file: 2 views without PAPERFORGE_VIEW_PREFIX
-        old_content = """filters:
+        legacy_content = """filters:
   and:
     - file.inFolder("Resources/Literature/骨科")
     - file.ext == "md"
     - !zotero_key.isEmpty()
 properties: {}
 views:
-  - type: table
-    name: "控制面板"
-    order:
-      - file.name
-      - title
-  - type: table
-    name: "待 OCR"
-    order:
-      - year
-      - title
-    filter: 'do_ocr == true && ocr_status == "pending"'
-"""
-        domain_base.write_text(old_content, encoding="utf-8")
-
-        ensure_base_views(self.vault, self.paths, self.config, force=False)
-        content = domain_base.read_text(encoding="utf-8")
-
-        # Old views preserved as-is (no prefix added to existing); missing views appended with prefix
-        assert content.count('name: "控制面板"') == 1
-        assert content.count('name: "待 OCR"') == 1
-        assert content.count(PAPERFORGE_VIEW_PREFIX) == 1  # Only 待深度阅读 added
-        assert "待深度阅读" in content
-
-    def test_corrupted_file_with_eight_views_repaired_to_four(self):
-        """Post-corruption: 4 old prefix-free views + 4 new PF-prefixed views = 8.
-        merge_base_views should replace ALL PF views -> exactly 4, no duplicates.
-        This is the actual user state after the V1 bug: each sync appended duplicates."""
-        domain_base = self.bases / f"{slugify_filename('骨科')}.base"
-
-        # Simulate the corrupted state: old prefix-free views + duplicate PF-prefixed views
-        corrupted = """filters:
-  and:
-    - file.inFolder("Resources/Literature/骨科")
-    - file.ext == "md"
-    - !zotero_key.isEmpty()
-properties: {}
-views:
-  - type: table
-    name: "控制面板"
-    order:
-      - file.name
-      - title
-  - type: table
-    name: "待 OCR"
-    order:
-      - year
-      - title
-    filter: 'do_ocr == true && ocr_status = "pending"'
 # PAPERFORGE_VIEW: 控制面板
-  - type: table
+  - type: paperforge-table
     name: "控制面板"
     order:
       - file.name
       - title
 # PAPERFORGE_VIEW: 待 OCR
-  - type: table
+  - type: paperforge-table
     name: "待 OCR"
     order:
       - year
       - title
     filter: 'do_ocr == true && ocr_status == "pending"'
 # PAPERFORGE_VIEW: 待深度阅读
-  - type: table
+  - type: paperforge-table
     name: "待深度阅读"
     order:
       - year
       - title
     filter: 'analyze == true && ocr_status == "done" && deep_reading_status == "pending"'
-# PAPERFORGE_VIEW: 重做OCR
   - type: table
-    name: "重做OCR"
+    name: "重点精读集"
     order:
-      - year
       - title
-    filter: 'ocr_status == "done"'
+      - impact_factor
 """
-        domain_base.write_text(corrupted, encoding="utf-8")
+        domain_base.write_text(legacy_content, encoding="utf-8")
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content = domain_base.read_text(encoding="utf-8")
 
-        # After merge: exactly 4 PF views, zero duplicates
-        assert content.count(PAPERFORGE_VIEW_PREFIX) == 4
-        # Count first: a backslash inside an f-string replacement field is a
-        # SyntaxError on Python 3.11 (allowed only from 3.12, PEP 701), which is
-        # why this file could not even be collected by CI.
-        panel_views = content.count('name: "控制面板"')
-        assert panel_views == 1, f"Expected 1 控制面板, got {panel_views}"
-        assert content.count('name: "待 OCR"') == 1
-        assert content.count('name: "待深度阅读"') == 1
-        assert content.count('name: "重做OCR"') == 1
-        assert "重做OCR" in content
+        assert content.count(PAPERFORGE_VIEW_PREFIX) == 1
+        assert 'name: "文献库"' in content
+        assert 'name: "重点精读集"' in content
+        assert 'name: "控制面板"' not in content
+        assert 'name: "待 OCR"' not in content
+        assert 'name: "待深度阅读"' not in content
 
 
 class TestLiteratureHubBase:
@@ -280,7 +216,8 @@ class TestLiteratureHubBase:
         hub_base = bases / "Literature Hub.base"
         assert hub_base.exists(), "Literature Hub.base not created"
         content = hub_base.read_text(encoding="utf-8")
-        assert content.count("type: paperforge-table") == 3, f"Expected 3 views, got {content.count('type: paperforge-table')}"
+        assert content.count("type: paperforge-table") == 1
+        assert 'name: "文献库"' in content
         assert PAPERFORGE_VIEW_PREFIX in content
         assert "${LIBRARY_RECORDS}" not in content, "Placeholder should be substituted"
 
@@ -317,8 +254,8 @@ class TestLiteratureHubBase:
 
 
 class TestMergeBaseViews:
-    def test_merge_base_views_preserves_user_views(self):
-        """merge_base_views preserves views without PAPERFORGE_VIEW_PREFIX."""
+    def test_merge_base_views_preserves_user_views_and_retires_legacy_pf(self):
+        """merge_base_views preserves user views and retires legacy PF views."""
         existing = """
 filters:
   and:
@@ -343,10 +280,11 @@ views:
         result = merge_base_views(existing, views, folder_filter="Resources/Literature/骨科")
 
         assert "My Custom View" in result, "User view was lost"
-        assert result.count("type: paperforge-table") == 3
+        assert result.count("type: paperforge-table") == 1
         assert result.count("type: table") == 1
-        assert result.count(PAPERFORGE_VIEW_PREFIX) == 3
-        assert "推荐分析" not in result, "Old PF view should be dropped"
+        assert result.count(PAPERFORGE_VIEW_PREFIX) == 1
+        assert "推荐分析" not in result
+        assert "控制面板" not in result
 
     def test_merge_base_views_first_run_generates_fresh(self):
         """merge_base_views with no existing content generates fresh YAML."""
@@ -356,6 +294,7 @@ views:
         assert "views:" in result
         assert "type: paperforge-table" in result
         assert "properties:" in result
+        assert 'name: "文献库"' in result
 
     def test_merge_base_views_unknown_placeholder_unchanged(self):
         """Unknown placeholders in content are left unchanged after merge."""
@@ -372,25 +311,22 @@ views:
         views = build_base_views("骨科")
         result = merge_base_views(existing, views)
 
-        # Only known placeholders should be substituted
         assert "${LIBRARY_RECORDS}" not in result or "03_Resources" in result
 
     def test_merge_base_views_preserves_column_widths(self):
-        """User-adjusted column widths in PF views survive merge."""
+        """User-adjusted column widths on 文献库 survive merge."""
         existing = """
 filters:
   and:
     - file.inFolder("骨科")
 views:
-# PAPERFORGE_VIEW: 控制面板
-  - type: table
-    name: "控制面板"
+# PAPERFORGE_VIEW: 文献库
+  - type: paperforge-table
+    name: "文献库"
     widths:
-      file.name: 180
       title: 400
       year: 60
     order:
-      - file.name
       - title
       - year
 # PAPERFORGE_VIEW: 重做OCR
@@ -408,9 +344,9 @@ views:
         result = merge_base_views(existing, views)
 
         assert "widths:" in result
-        assert "file.name: 180" in result
         assert "title: 400" in result
         assert "year: 60" in result
+        assert "重做OCR" not in result
 
     def test_merge_base_views_widths_not_injected_when_none_exist(self):
         """Fresh PF views without old widths should not have widths injected."""
@@ -419,11 +355,10 @@ filters:
   and:
     - file.inFolder("骨科")
 views:
-# PAPERFORGE_VIEW: 控制面板
-  - type: table
-    name: "控制面板"
+# PAPERFORGE_VIEW: 文献库
+  - type: paperforge-table
+    name: "文献库"
     order:
-      - file.name
       - title
 """
         views = build_base_views("骨科")

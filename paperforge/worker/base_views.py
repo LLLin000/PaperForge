@@ -38,50 +38,37 @@ def base_markdown_filter(path: Path, vault: Path) -> str:
 
 PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
 
+RETIRED_PF_VIEWS = frozenset(
+    {
+        "控制面板",
+        "待 OCR",
+        "待深度阅读",
+        "重做OCR",
+        "推荐分析",
+        "OCR 完成",
+        "深度阅读完成",
+        "正式卡片",
+        "全记录",
+    }
+)
+
 
 def build_base_views(domain: str) -> list[dict]:
-    """Build the standard PaperForge Base views for a domain or hub Base file."""
+    """Build the streamlined PaperForge Base view (`文献库`) for a domain or hub Base file."""
     return [
         {
             "type": "paperforge-table",
-            "name": "控制面板",
+            "name": "文献库",
             "order": [
-                "file.name",
                 "title",
-                "year",
                 "first_author",
+                "year",
                 "journal",
                 "impact_factor",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
+                "domain",
                 "ocr_status",
-                "deep_reading_status",
-                "pdf_path",
             ],
             "filter": None,
-        },
-        {
-            "type": "paperforge-table",
-            "name": "待 OCR",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": 'do_ocr == true && ocr_status == "pending"',
-        },
-        {
-            "type": "paperforge-table",
-            "name": "待深度阅读",
-            "order": [
-                "year",
-                "first_author",
-                "title",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
-                "deep_reading_status",
-                "pdf_path",
-            ],
-            "filter": 'analyze == true && ocr_status == "done" && deep_reading_status == "pending"',
         },
     ]
 
@@ -210,31 +197,33 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
   zotero_key:
     displayName: "Zotero Key"
   title:
-    displayName: "Title"
+    displayName: "标题"
   year:
-    displayName: "Year"
+    displayName: "年份"
   first_author:
-    displayName: "First Author"
+    displayName: "第一作者"
   journal:
-    displayName: "Journal"
+    displayName: "期刊"
   impact_factor:
     displayName: "IF"
+  domain:
+    displayName: "领域"
   has_pdf:
-    displayName: "PDF"
+    displayName: "附件"
   do_ocr:
     displayName: "OCR"
   analyze:
-    displayName: "Analyze"
+    displayName: "精读"
   ocr_status:
-    displayName: "OCR Status"
+    displayName: "状态"
   ocr_redo:
-    displayName: "\u91CD\u505AOCR"
+    displayName: "重做OCR"
   ocr_time:
-    displayName: "\u5B8C\u6210\u65F6\u95F4"
+    displayName: "解析时间"
   deep_reading_status:
-    displayName: "Deep Reading"
+    displayName: "精读状态"
   pdf_path:
-    displayName: "PDF Path"
+    displayName: "PDF 路径"
 """
 
     if not existing_content or not existing_content.strip():
@@ -335,7 +324,7 @@ views:
                 i += 1
             block_text = "\n".join(view_block_lines)
             name_match = re.search(r'name:\s*"([^"]*)"', block_text)
-            if name_match and name_match.group(1) in pf_view_names:
+            if name_match and (name_match.group(1) in pf_view_names or name_match.group(1) in RETIRED_PF_VIEWS):
                 continue
             rebuilt_views_lines.append(block_text)
             continue
@@ -381,29 +370,31 @@ properties:
   zotero_key:
     displayName: "Zotero Key"
   title:
-    displayName: "Title"
+    displayName: "标题"
   year:
-    displayName: "Year"
+    displayName: "年份"
   first_author:
-    displayName: "First Author"
+    displayName: "第一作者"
   journal:
-    displayName: "Journal"
+    displayName: "期刊"
   impact_factor:
     displayName: "IF"
+  domain:
+    displayName: "领域"
   has_pdf:
-    displayName: "PDF"
+    displayName: "附件"
   do_ocr:
     displayName: "OCR"
   analyze:
-    displayName: "Analyze"
+    displayName: "精读"
   ocr_status:
     displayName: "状态"
   ocr_time:
-    displayName: "完成时间"
+    displayName: "解析时间"
   deep_reading_status:
-    displayName: "Deep Reading"
+    displayName: "精读状态"
   pdf_path:
-    displayName: "PDF Path"
+    displayName: "PDF 路径"
 views:
 {views_yaml}"""
 
@@ -492,17 +483,18 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
         else:
             i += 1
 
-    # --- Phase 3: deduplicate ---
-    # For each view name, keep PF-prefixed if exists, otherwise first occurrence
-    deduped: dict[str, str] = {}  # view_name -> block_text (NO prefix included for non-PF)
+    # --- Phase 3: deduplicate & retire legacy pipeline-clutter views ---
+    # Keep user custom views untouched; retire legacy PF views in RETIRED_PF_VIEWS.
+    deduped: dict[str, str] = {}
     for is_pf, view_name, block_text in view_blocks:
         if not view_name:
+            continue
+        if (is_pf and view_name not in STANDARD_NAMES) or (view_name in RETIRED_PF_VIEWS):
             continue
         if view_name in deduped:
             if is_pf:
                 # PF block wins over user block
                 deduped[view_name] = block_text
-            # else: keep existing (first occurrence or existing PF)
         else:
             deduped[view_name] = block_text
 

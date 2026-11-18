@@ -8783,63 +8783,130 @@ input.pf-ocr-ws-search-input::placeholder {
   border-radius: 6px;
 }
 
-/* ── v2.2 PaperForge Bases Workbench ── */
+/* ── AsterLab Native Bases Literature Workbench ── */
 .pf-base-view-root {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 4px;
+  color: var(--pf-text);
 }
-.pf-base-toolbar {
+.pf-base-activity-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--pf-radius-control, 6px);
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+  font-size: 12px;
+  color: var(--pf-text-muted);
+}
+.pf-base-activity-icon {
+  display: inline-flex;
+  color: var(--pf-accent);
+}
+.pf-base-selection-bar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-accent-tint);
+  border: 1px solid var(--pf-accent-line);
 }
-.pf-base-toolbar-stats,
-.pf-base-toolbar-actions {
+.pf-base-selection-left,
+.pf-base-selection-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
-.pf-base-stat-pill {
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  font-size: var(--font-ui-smaller);
-}
-.pf-base-seq-tag {
-  font-size: var(--font-ui-smallest);
-  color: var(--text-muted);
+.pf-base-selection-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
 }
 .pf-base-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-surface);
 }
 .pf-base-table {
   width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-ui-small);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  color: var(--pf-text);
 }
 .pf-base-table th,
 .pf-base-table td {
-  padding: 8px 10px;
+  height: 36px;
+  padding: 6px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--pf-border);
   vertical-align: middle;
 }
+.pf-base-view-root.is-compact .pf-base-table th,
+.pf-base-view-root.is-compact .pf-base-table td {
+  height: 30px;
+  padding: 4px 10px;
+}
 .pf-base-table th {
-  background: var(--background-secondary);
-  font-weight: 600;
+  background: var(--pf-elevated);
+  color: var(--pf-text-subtle);
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
+}
+.pf-base-table th.is-num,
+.pf-base-table td.is-num {
+  text-align: right;
+  white-space: nowrap;
+}
+.pf-base-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.pf-base-table tbody tr.pf-base-row:hover td {
+  background: var(--pf-elevated);
+}
+.pf-base-table tbody tr.pf-base-row.is-selected td {
+  background: var(--pf-accent-tint);
+}
+.pf-base-col-check,
+.pf-base-cell-check {
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  padding-left: 10px !important;
+  padding-right: 4px !important;
+  text-align: center !important;
+}
+.pf-base-col-check input,
+.pf-base-cell-check input {
+  margin: 0;
+  accent-color: var(--pf-accent);
+  cursor: pointer;
+}
+.pf-base-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 240px;
+}
+.pf-base-pdf-trigger {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+.pf-base-no-pdf-slot {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 .pf-base-title-link {
   background: transparent;
@@ -8847,79 +8914,77 @@ input.pf-ocr-ws-search-input::placeholder {
   padding: 0;
   margin: 0;
   text-align: left;
-  font-weight: 600;
-  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pf-text);
   cursor: pointer;
+  line-height: 1.4;
 }
 .pf-base-title-link:hover {
-  color: var(--interactive-accent);
+  color: var(--pf-accent);
   text-decoration: underline;
 }
-.pf-base-submeta {
-  font-size: var(--font-ui-smallest);
-  color: var(--text-muted);
-  margin-top: 2px;
+.pf-base-text-ellipsis {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
-.pf-base-flag-label {
+.pf-base-muted {
+  color: var(--pf-text-muted);
+}
+.pf-base-domain-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-right: 10px;
-  font-size: var(--font-ui-smaller);
+  gap: 6px;
+  font-size: 12px;
+  color: var(--pf-text);
+  white-space: nowrap;
+}
+.pf-base-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pf-base-group-row td {
+  background: var(--pf-elevated);
+  height: 30px;
+  padding: 4px 12px;
+}
+.pf-base-group-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf-base-group-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+.pf-base-group-count {
+  font-size: 11.5px;
+  color: var(--pf-text-subtle);
+}
+.pf-badge-outline.is-clickable {
   cursor: pointer;
 }
-.pf-base-badge {
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-size: var(--font-ui-smallest);
-  margin-right: 4px;
-  white-space: nowrap;
-}
-.pf-base-badge.is-ok {
-  background: rgba(34, 197, 94, 0.14);
-  color: var(--color-green);
-}
-.pf-base-badge.is-pending {
-  background: var(--background-modifier-hover);
-  color: var(--text-muted);
-}
-.pf-base-badge.is-fail {
-  background: rgba(239, 68, 68, 0.14);
-  color: var(--color-red);
-}
-.pf-base-badge.is-running {
-  background: rgba(245, 158, 11, 0.18);
-  color: var(--color-orange);
-  font-weight: 600;
-}
-.pf-base-cog-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.pf-base-cog-pill {
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-size: var(--font-ui-smallest);
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-}
-.pf-base-cog-pill.is-agent {
-  border-style: dashed;
-}
-.pf-base-cell-actions {
-  white-space: nowrap;
-}
-.pf-base-act-btn {
-  margin-right: 4px;
-  padding: 3px 7px;
-  font-size: var(--font-ui-smallest);
+.pf-badge-outline.is-clickable:hover {
+  background: var(--pf-hover);
 }
 .pf-base-empty {
-  padding: 24px;
-  text-align: center;
-  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 16px;
+  border: 1px dashed var(--pf-border-strong);
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-surface);
+  color: var(--pf-text-muted);
+  font-size: 13px;
 }
 
 /* ── AsterLab Living Paper Memory Card (Inspector section) ── */
