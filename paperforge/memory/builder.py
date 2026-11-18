@@ -123,6 +123,61 @@ def _import_project_log(conn, vault: Path) -> int:
         count += 1
     return count
 
+
+def _import_paper_annotations(
+    conn: sqlite3.Connection,
+    vault: Path,
+    items: list[dict],
+    valid_keys: set[str],
+) -> int:
+    """Ingest active annotations from each paper's ``<workspace>/annotations.jsonl``."""
+    from paperforge.services.annotations_service import read_active_annotations_for_workspace
+
+    imported = 0
+    for item in items:
+        pid = str(item.get("zotero_key") or "")
+        if not pid or pid not in valid_keys:
+            continue
+        paper_root = str(item.get("paper_root") or "").rstrip("/")
+        if not paper_root:
+            continue
+        ws_dir = vault / paper_root
+        if not (ws_dir / "annotations.jsonl").exists():
+            continue
+        recs = read_active_annotations_for_workspace(ws_dir)
+        conn.execute("DELETE FROM paper_annotations WHERE paper_id = ?", (pid,))
+        for rec in recs:
+            conn.execute(
+                """INSERT OR REPLACE INTO paper_annotations (
+                    ann_id, paper_id, page, kind, color, intent,
+                    exact_text, comment, section_path, block_id, figure_id,
+                    rects_json, crop_asset_rel, embed_wikilink, tags_json,
+                    pdf_sha256, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    rec["ann_id"],
+                    pid,
+                    int(rec.get("page", 1) or 1),
+                    rec.get("kind", "highlight"),
+                    rec.get("color", "yellow"),
+                    rec.get("intent", "general"),
+                    rec.get("exact_text", ""),
+                    rec.get("comment", ""),
+                    rec.get("section_path", ""),
+                    rec.get("block_id", ""),
+                    rec.get("figure_id", ""),
+                    json.dumps(rec.get("rects", [])),
+                    rec.get("crop_asset_rel", ""),
+                    rec.get("embed_wikilink", ""),
+                    json.dumps(rec.get("tags", []), ensure_ascii=False),
+                    rec.get("pdf_sha256", ""),
+                    rec.get("created_at", ""),
+                    rec.get("updated_at", ""),
+                ),
+            )
+            imported += 1
+    return imported
+
 def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: set[str] | None = None) -> dict:
     """Import correction-log.jsonl into paper_events for FTS search.
 
@@ -249,6 +304,7 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
     conn.execute("DELETE FROM object_units WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_events WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM reading_log WHERE paper_id=?", (key,))
+    conn.execute("DELETE FROM paper_annotations WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_aliases WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_assets WHERE paper_id=?", (key,))
 
@@ -432,6 +488,7 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             )
         correction_result = _import_correction_log(conn, vault, valid_keys)
         _hydrate_reading_log_for_keys(conn, vault, diff["added"])
+        _import_paper_annotations(conn, vault, items, valid_keys)
         # 4d. OCR unit rebuilds (per-paper hash comparison) — ALL papers in
         #     scope EXCEPT the failed ones: units are an independent
         #     dimension from paper_state_hash (a re-OCRed paper can have
@@ -507,6 +564,7 @@ def _full_rebuild(
     conn.execute("PRAGMA foreign_keys=OFF;")
     conn.execute("DELETE FROM paper_events;")
     conn.execute("DELETE FROM reading_log;")
+    conn.execute("DELETE FROM paper_annotations;")
     conn.execute("DELETE FROM project_log;")
     conn.execute("DELETE FROM paper_aliases;")
     conn.execute("DELETE FROM paper_assets;")
@@ -584,6 +642,7 @@ def _full_rebuild(
     valid_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
     reading_result = _import_reading_log(conn, vault, valid_keys)
     _import_project_log(conn, vault)
+    _import_paper_annotations(conn, vault, items, valid_keys)
     conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
     correction_result = _import_correction_log(conn, vault, valid_keys)
     conn.execute("DELETE FROM paper_events WHERE event_type != 'correction_note';")

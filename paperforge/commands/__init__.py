@@ -24,6 +24,7 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "content-discovery": "paperforge.commands.content_discovery",
     "scoped-fetch": "paperforge.commands.scoped_fetch",
     "migrate-storage": "paperforge.commands.migrate_storage",
+    "annotations": "paperforge.commands.annotations",
 }
 
 

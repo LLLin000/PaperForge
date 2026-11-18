@@ -1,0 +1,89 @@
+"""CLI command `paperforge annotations` — non-destructive sidecar PDF annotations."""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from paperforge import __version__
+from paperforge.core.errors import ErrorCode
+from paperforge.core.result import PFError, PFResult
+
+
+def run(args: argparse.Namespace) -> int:
+    vault = Path(getattr(args, "vault_path", None) or ".").resolve()
+    verb = getattr(args, "ann_verb", "")
+    paper_key = str(getattr(args, "key", "") or "").strip()
+    json_output = bool(getattr(args, "json", False))
+
+    from paperforge.services.annotations_service import (
+        add_annotation,
+        delete_annotation,
+        get_paper_pdf_context,
+        list_annotations,
+        promote_to_reading_log,
+        update_annotation,
+    )
+
+    try:
+        if verb == "pdf-info":
+            data = get_paper_pdf_context(vault, paper_key)
+        elif verb == "list":
+            data = {"paper_id": paper_key, "annotations": list_annotations(vault, paper_key)}
+        elif verb == "add":
+            rects_raw = getattr(args, "rects_json", "[]")
+            rects = json.loads(rects_raw)
+            tags_raw = getattr(args, "tags_json", "[]") or "[]"
+            tags = json.loads(tags_raw) if isinstance(tags_raw, str) else list(tags_raw)
+            data = add_annotation(
+                vault,
+                paper_key,
+                page=int(args.page),
+                rects=rects,
+                kind=str(getattr(args, "kind", "highlight")),
+                color=str(getattr(args, "color", "yellow")),
+                intent=str(getattr(args, "intent", "general")),
+                exact_text=str(getattr(args, "exact_text", "") or ""),
+                comment=str(getattr(args, "comment", "") or ""),
+                tags=tags,
+            )
+        elif verb == "update":
+            tags_arg = getattr(args, "tags_json", None)
+            tags = json.loads(tags_arg) if tags_arg is not None else None
+            data = update_annotation(
+                vault,
+                paper_key,
+                str(args.ann_id),
+                color=getattr(args, "color", None),
+                intent=getattr(args, "intent", None),
+                comment=getattr(args, "comment", None),
+                tags=tags,
+            )
+        elif verb == "delete":
+            data = delete_annotation(vault, paper_key, str(args.ann_id))
+        elif verb == "promote":
+            data = promote_to_reading_log(
+                vault,
+                paper_key,
+                str(args.ann_id),
+                usage=str(getattr(args, "usage", "evidence") or "evidence"),
+                project=str(getattr(args, "project", "") or ""),
+            )
+        else:
+            raise ValueError(f"Unknown annotations verb: {verb!r}")
+
+        res = PFResult(ok=True, command="annotations", version=__version__, data=data)
+        if json_output:
+            print(res.to_json())
+        else:
+            print(json.dumps(data, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as exc:  # noqa: BLE001
+        res = PFResult(
+            ok=False,
+            command="annotations",
+            version=__version__,
+            error=PFError(code=ErrorCode.VALIDATION_ERROR, message=str(exc)),
+        )
+        print(res.to_json() if json_output else f"annotations {verb} failed: {exc}")
+        return 1

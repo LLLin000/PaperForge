@@ -301,7 +301,33 @@ CREATE TABLE IF NOT EXISTS build_state (
 """
 
 
+CREATE_PAPER_ANNOTATIONS = """
+CREATE TABLE IF NOT EXISTS paper_annotations (
+    ann_id         TEXT PRIMARY KEY,
+    paper_id       TEXT NOT NULL,
+    page           INTEGER NOT NULL,
+    kind           TEXT NOT NULL DEFAULT 'highlight',
+    color          TEXT NOT NULL DEFAULT 'yellow',
+    intent         TEXT NOT NULL DEFAULT 'general',
+    exact_text     TEXT NOT NULL DEFAULT '',
+    comment        TEXT NOT NULL DEFAULT '',
+    section_path   TEXT NOT NULL DEFAULT '',
+    block_id       TEXT NOT NULL DEFAULT '',
+    figure_id      TEXT NOT NULL DEFAULT '',
+    rects_json     TEXT NOT NULL DEFAULT '[]',
+    crop_asset_rel TEXT NOT NULL DEFAULT '',
+    embed_wikilink TEXT NOT NULL DEFAULT '',
+    tags_json      TEXT NOT NULL DEFAULT '[]',
+    pdf_sha256     TEXT NOT NULL DEFAULT '',
+    created_at     TEXT NOT NULL,
+    updated_at     TEXT NOT NULL,
+    FOREIGN KEY (paper_id) REFERENCES papers(zotero_key)
+);
+"""
+
+
 ALL_TABLES = [
+    "paper_annotations",
     "body_units",
     "body_units_fts",
     "object_units",
@@ -338,6 +364,12 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     # #162/T1: lineage rows (vector layer) — created unconditionally like
     # build_state; existing DBs pick it up on the next ensure_schema.
     conn.execute(CREATE_LINEAGE)
+    # Sidecar PDF annotations cache table — created unconditionally so existing DBs
+    # adopt it seamlessly while keeping CURRENT_SCHEMA_VERSION == 7.
+    conn.execute(CREATE_PAPER_ANNOTATIONS)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_paper_annotations_paper ON paper_annotations(paper_id, page);"
+    )
 
     # Run pending migrations
     migrate_schema(conn, get_schema_version(conn), CURRENT_SCHEMA_VERSION)

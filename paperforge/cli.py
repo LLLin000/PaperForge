@@ -786,6 +786,50 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_migrate_storage.add_argument("--dry-run", action="store_true", help="Preview changes without modifying files")
     p_migrate_storage.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann = sub.add_parser("annotations", help="Non-destructive Zotero-style sidecar PDF annotations")
+    p_ann_sub = p_ann.add_subparsers(dest="ann_verb", required=True)
+
+    p_ann_info = p_ann_sub.add_parser("pdf-info", help="Get canonical PDF path, SHA-256, and annotations")
+    p_ann_info.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_info.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_list = p_ann_sub.add_parser("list", help="List active annotations for a paper")
+    p_ann_list.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_list.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_add = p_ann_sub.add_parser("add", help="Add a highlight/area/note annotation")
+    p_ann_add.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_add.add_argument("--page", type=int, required=True, help="1-based physical page number")
+    p_ann_add.add_argument("--rects-json", required=True, help="JSON list of normalized [x0,y0,x1,y1] boxes")
+    p_ann_add.add_argument("--kind", default="highlight", choices=["highlight", "area", "note"])
+    p_ann_add.add_argument("--color", default="yellow", choices=["yellow", "green", "blue", "red", "purple"])
+    p_ann_add.add_argument("--intent", default="general", choices=["evidence", "question", "method", "quote", "general"])
+    p_ann_add.add_argument("--exact-text", default="", help="Selected exact text")
+    p_ann_add.add_argument("--comment", default="", help="Annotation comment")
+    p_ann_add.add_argument("--tags-json", default="[]", help="JSON list of tags")
+    p_ann_add.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_upd = p_ann_sub.add_parser("update", help="Update an existing annotation")
+    p_ann_upd.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_upd.add_argument("ann_id", help="Annotation ID")
+    p_ann_upd.add_argument("--color", default=None, choices=["yellow", "green", "blue", "red", "purple"])
+    p_ann_upd.add_argument("--intent", default=None, choices=["evidence", "question", "method", "quote", "general"])
+    p_ann_upd.add_argument("--comment", default=None, help="Updated comment")
+    p_ann_upd.add_argument("--tags-json", default=None, help="JSON list of tags")
+    p_ann_upd.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_del = p_ann_sub.add_parser("delete", help="Delete an annotation")
+    p_ann_del.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_del.add_argument("ann_id", help="Annotation ID")
+    p_ann_del.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_pro = p_ann_sub.add_parser("promote", help="Promote an annotation into reading-log.jsonl")
+    p_ann_pro.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_pro.add_argument("ann_id", help="Annotation ID")
+    p_ann_pro.add_argument("--usage", default="evidence", help="Research usage category")
+    p_ann_pro.add_argument("--project", default="", help="Optional project name")
+    p_ann_pro.add_argument("--json", action="store_true", help="Output JSON")
     return parser
 
 # ---------------------------------------------------------------------------
@@ -853,7 +897,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "setup", "selection-sync", "index-refresh", "base-refresh", "read",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
-        "probe", "inspect", "migrate-storage",
+        "probe", "inspect", "migrate-storage", "annotations",
     }
     if args.command in lightweight_commands:
         _resolve_pipeline()
@@ -1097,6 +1141,11 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if args.command == "migrate-storage":
         from paperforge.commands.migrate_storage import run
+
+        return run(args)
+
+    if args.command == "annotations":
+        from paperforge.commands.annotations import run
 
         return run(args)
 

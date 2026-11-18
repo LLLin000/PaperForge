@@ -18,10 +18,11 @@ def _configured_zotero_dir(vault: Path) -> Path | None:
         snapshot = load_config(vault)
     except ConfigError:
         return None
+    zot_dir = resolve_paths(vault, snapshot)["zotero_dir"].resolve()
     val = str(snapshot.values["zotero_data_dir"].value or "").strip()
-    if not val:
+    if not val and not zot_dir.exists():
         return None
-    return resolve_paths(vault, snapshot)["zotero_dir"].resolve()
+    return zot_dir
 
 
 def _relative_pdf(vault: Path, value: object) -> Path:
