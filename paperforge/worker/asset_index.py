@@ -404,7 +404,7 @@ def _build_entry(
     workspace_dir.mkdir(parents=True, exist_ok=True)
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
     # Materialize per-paper cropped visual assets (<KEY>_figure_001.jpg, <KEY>_table_001.jpg)
-    # inside <workspace>/assets/ so Obsidian renders images natively without scanning .paperforge/.
+    # inside <workspace>/assets/ so Obsidian displays images natively without scanning .paperforge/.
     sync_workspace_visual_assets(paths["ocr"] / key, workspace_dir, key)
     # ponytail: size + mtime guard avoids I/O on unchanged fulltext.
     # When engine lives in hidden .paperforge/, keep fulltext internal (never expose workspace copy).
