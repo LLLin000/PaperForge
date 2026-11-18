@@ -830,6 +830,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_pro.add_argument("--usage", default="evidence", help="Research usage category")
     p_ann_pro.add_argument("--project", default="", help="Optional project name")
     p_ann_pro.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_prev = p_ann_sub.add_parser("fulltext-preview", help="Read internal OCR text for diagnostic preview")
+    p_ann_prev.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_prev.add_argument("--max-chars", type=int, default=80000, help="Max characters to return")
+    p_ann_prev.add_argument("--json", action="store_true", help="Output JSON")
     return parser
 
 # ---------------------------------------------------------------------------

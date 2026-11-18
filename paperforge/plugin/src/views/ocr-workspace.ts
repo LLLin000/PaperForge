@@ -123,7 +123,8 @@ export class OcrWorkspaceView extends ItemView {
   /** F-12: view-owned closed flag; gates late renders/streaming. Reset by onOpen(). */
   private _closed = false;
   private _loadGeneration = 0;
-  private _loadState: "loading" | "ready" | "failed" | "setup_required" = "loading";
+  private _loadState: "loading" | "ready" | "failed" | "setup_required" =
+    "loading";
   /** #126 PR D: pagination — selection is per visible page. */
   private _page = 1;
 
@@ -233,7 +234,10 @@ export class OcrWorkspaceView extends ItemView {
             ? "processing"
             : executionStatus === "queued"
               ? "queued"
-              : paperStatusFromLineage(row.status ?? prev?.status ?? "pending", observed);
+              : paperStatusFromLineage(
+                  row.status ?? prev?.status ?? "pending",
+                  observed
+                );
         this.papers.push({
           key,
           title: row.title_full || row.title || key,
@@ -247,7 +251,8 @@ export class OcrWorkspaceView extends ItemView {
           backupCount: prev?.backupCount ?? 0,
           canRedo: row.can_redo ?? prev?.canRedo ?? false,
           canRebuild: row.can_rebuild ?? prev?.canRebuild ?? false,
-          recommendedAction: row.recommended_action ?? prev?.recommendedAction ?? "",
+          recommendedAction:
+            row.recommended_action ?? prev?.recommendedAction ?? "",
           fulltextPath: row.fulltext_path ?? prev?.fulltextPath ?? "",
           ocrFinishedAt: row.finished_at ?? prev?.ocrFinishedAt ?? "",
         });
@@ -256,12 +261,18 @@ export class OcrWorkspaceView extends ItemView {
       for (const key of this.checkedKeys) {
         if (!availableKeys.has(key)) this.checkedKeys.delete(key);
       }
-      if (this.selectedKey && !availableKeys.has(this.selectedKey)) this.selectedKey = null;
+      if (this.selectedKey && !availableKeys.has(this.selectedKey))
+        this.selectedKey = null;
       this._loadState = "ready";
     } catch (error) {
       if (this._closed || generation !== this._loadGeneration) return;
-      this._loadState = error !== null && typeof error === "object" &&
-        "code" in error && error.code === "NO_PYTHON" ? "setup_required" : "failed";
+      this._loadState =
+        error !== null &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "NO_PYTHON"
+          ? "setup_required"
+          : "failed";
     }
     this._render();
   }
@@ -345,8 +356,12 @@ export class OcrWorkspaceView extends ItemView {
         attr: { role: this._loadState === "failed" ? "alert" : "status" },
       });
       if (this._loadState !== "loading") {
-        const retry = header.createEl("button", { text: t("install_btn_retry") });
-        retry.addEventListener("click", () => { void this._loadPapers(); });
+        const retry = header.createEl("button", {
+          text: t("install_btn_retry"),
+        });
+        retry.addEventListener("click", () => {
+          void this._loadPapers();
+        });
       }
     }
   }
@@ -1167,7 +1182,11 @@ export class OcrWorkspaceView extends ItemView {
         const payload = (result.payload ?? {}) as {
           availability_reason?: unknown;
           error?: { code?: unknown; message?: unknown } | null;
-          data?: { blocked_keys?: unknown; pending_keys?: unknown; failed_keys?: unknown } | null;
+          data?: {
+            blocked_keys?: unknown;
+            pending_keys?: unknown;
+            failed_keys?: unknown;
+          } | null;
         };
         const errCode =
           payload.error && typeof payload.error.code === "string"
@@ -1193,10 +1212,10 @@ export class OcrWorkspaceView extends ItemView {
             ? `${errMessage ?? "OCR blocked — check credentials and source files before retry"} (${blockedKeys})`
             : errCode === "OCR_RESULT_INVALID" && failedKeys
               ? `${errMessage ?? "OCR failed"} (${failedKeys})`
-              : errMessage ??
+              : (errMessage ??
                 (typeof payload.availability_reason === "string"
                   ? payload.availability_reason
-                  : `exit code ${result.exitCode}`);
+                  : `exit code ${result.exitCode}`));
         new Notice(
           (t("ocr_error_notice") || "OCR error") + ": " + reason,
           8000
@@ -1260,19 +1279,50 @@ export class OcrWorkspaceView extends ItemView {
       new Notice(t("ocr_ws_fulltext_not_found") || "Fulltext not found");
       return;
     }
-    const file = this.app.vault.getAbstractFileByPath(rel);
-    if (!(file instanceof TFile)) {
+    const file = !rel.startsWith(".")
+      ? this.app.vault.getAbstractFileByPath(rel)
+      : null;
+    if (file instanceof TFile) {
+      const workspace = this.app.workspace;
+      const leaf = workspace.getLeaf();
+      try {
+        await leaf.openFile(file);
+        await workspace.revealLeaf(leaf);
+        workspace.setActiveLeaf(leaf, { focus: true });
+      } catch {
+        traceConsoleError({
+          op: "ocr.fulltext.open",
+          stage: "local",
+          code: "backend_error",
+          exitCode: null,
+        });
+        new Notice(
+          t("ocr_ws_fulltext_open_failed") || "Unable to open fulltext",
+          8000
+        );
+      }
+      return;
+    }
+    if (!rel.startsWith(".")) {
       new Notice(
         t("ocr_ws_fulltext_not_found") || "Fulltext not found in vault"
       );
       return;
     }
-    const workspace = this.app.workspace;
-    const leaf = workspace.getLeaf();
+    const client = this._getClient();
+    if (!client) {
+      new Notice(t("runtime_not_available") || "Environment unavailable");
+      return;
+    }
     try {
-      await leaf.openFile(file);
-      await workspace.revealLeaf(leaf);
-      workspace.setActiveLeaf(leaf, { focus: true });
+      const preview = await client.readDiagnosticFulltext(key);
+      new DiagnosticFulltextPreviewModal(
+        this.app,
+        key,
+        preview.content,
+        preview.truncated,
+        preview.total_lines
+      ).open();
     } catch {
       traceConsoleError({
         op: "ocr.fulltext.open",
@@ -1281,10 +1331,52 @@ export class OcrWorkspaceView extends ItemView {
         exitCode: null,
       });
       new Notice(
-        t("ocr_ws_fulltext_open_failed") || "Unable to open fulltext",
+        t("ocr_ws_fulltext_open_failed") || "Unable to load diagnostic preview",
         8000
       );
     }
+  }
+}
+
+/** Read-only OCR markdown preview for internal `.paperforge/` storage. */
+class DiagnosticFulltextPreviewModal extends Modal {
+  constructor(
+    app: Modal["app"],
+    private readonly paperKey: string,
+    private readonly content: string,
+    private readonly truncated: boolean,
+    private readonly totalLines: number
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("pf-diag-fulltext-modal");
+    contentEl.createEl("h3", {
+      text: `${t("ocr_diag_preview_title") || "OCR Quality Preview (Read-Only)"} — ${this.paperKey}`,
+    });
+    contentEl.createDiv({
+      cls: "pf-diag-fulltext-banner",
+      text:
+        t("ocr_diag_preview_banner") ||
+        "Read-only internal OCR output inside .paperforge/. For reading & highlighting, use the PDF Annotator.",
+    });
+    if (this.truncated) {
+      contentEl.createEl("p", {
+        cls: "caption",
+        text: `Showing leading preview (${this.totalLines} lines total).`,
+      });
+    }
+    contentEl.createEl("pre", {
+      cls: "pf-diag-fulltext-pre",
+      text: this.content,
+    });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
   }
 }
 
@@ -1337,7 +1429,9 @@ export class VersionRestoreModal extends Modal {
   private currentLabel: string;
   private paperKey: string;
   private currentPath: string;
-  private restore: (label: string) => ReturnType<PaperForgeClient["versionsRestore"]>;
+  private restore: (
+    label: string
+  ) => ReturnType<PaperForgeClient["versionsRestore"]>;
   private restoreFeedback: string | null = null;
   private selectedIdx: number = 0;
   private onRestored: (() => void) | null;
@@ -1408,7 +1502,9 @@ export class VersionRestoreModal extends Modal {
     contentEl.empty();
     if (this.restoreFeedback) {
       contentEl.createEl("p", {
-        cls: "pf-version-restore-status", text: this.restoreFeedback, attr: { role: "alert" },
+        cls: "pf-version-restore-status",
+        text: this.restoreFeedback,
+        attr: { role: "alert" },
       });
     }
 
@@ -1589,10 +1685,15 @@ export class VersionRestoreModal extends Modal {
       this.currentLabel = result.label;
       if (result.provenance_persisted) {
         this.restoreFeedback = null;
-        new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
+        new Notice(
+          t("ocr_ws_detail_restore_done").replace("{label}", ver.label)
+        );
         this.close();
       } else {
-        const message = t("version_restore_partial").replace("{label}", ver.label);
+        const message = t("version_restore_partial").replace(
+          "{label}",
+          ver.label
+        );
         this.restoreFeedback = message;
         this.contentCache.delete("__current__");
         this.contentCache.delete(ver.label);

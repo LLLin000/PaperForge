@@ -25,7 +25,13 @@ import type {
   ActionScope,
 } from "./action-contract";
 import { buildActionArgv } from "./action-contract";
-import { commandIdentity, isTraceEnabled, rejectionCode, traceConsoleError, traceRecord } from "./trace";
+import {
+  commandIdentity,
+  isTraceEnabled,
+  rejectionCode,
+  traceConsoleError,
+  traceRecord,
+} from "./trace";
 
 export interface PaperForgeClientOptions {
   transport: Transport;
@@ -139,6 +145,59 @@ export interface RenderAuditIssue {
   severity?: string;
   message?: string;
   [key: string]: unknown;
+}
+
+export type AnnotationKind = "highlight" | "area" | "note";
+export type AnnotationColor = "yellow" | "green" | "blue" | "red" | "purple";
+export type AnnotationIntent =
+  | "evidence"
+  | "question"
+  | "method"
+  | "quote"
+  | "general";
+
+export interface PdfAnnotationDto {
+  ann_id: string;
+  paper_id: string;
+  page: number;
+  kind: AnnotationKind;
+  color: AnnotationColor | string;
+  intent: AnnotationIntent | string;
+  exact_text: string;
+  comment: string;
+  tags: string[];
+  rects: number[][];
+  section_path: string;
+  block_id: string;
+  figure_id: string;
+  crop_asset_rel: string;
+  embed_wikilink: string;
+  pdf_sha256: string;
+  created_at: string;
+  updated_at: string;
+  provenance_status?: "verified" | "changed" | "unknown" | string;
+}
+
+export interface PaperPdfContextDto {
+  paper_id: string;
+  title: string;
+  pdf_abs_path: string;
+  pdf_vault_rel: string;
+  pdf_locator: string;
+  is_vault_relative: boolean;
+  pdf_sha256: string;
+  page_count: number;
+  workspace_rel: string;
+  note_rel_path: string;
+  annotations: PdfAnnotationDto[];
+}
+
+export interface DiagnosticFulltextDto {
+  paper_id: string;
+  content: string;
+  truncated: boolean;
+  total_lines: number;
+  total_chars: number;
 }
 
 export interface RenderAuditPaper {
@@ -555,7 +614,9 @@ export class PaperForgeClient {
           traceConsoleError({
             op: `${operationId} ${commandIdentity(argv)}`,
             stage: "stream",
-            code: outcome.protocolFailure ? "protocol_failure" : "backend_error",
+            code: outcome.protocolFailure
+              ? "protocol_failure"
+              : "backend_error",
             exitCode: outcome.exitCode,
           });
         }
@@ -648,7 +709,9 @@ export class PaperForgeClient {
     });
   }
 
-  async probeAll(options?: { expectedVersion?: string }): Promise<ProbeAllEnvelope> {
+  async probeAll(options?: {
+    expectedVersion?: string;
+  }): Promise<ProbeAllEnvelope> {
     const extraArgs: string[] = [];
     if (options?.expectedVersion) {
       extraArgs.push("--expected-version", options.expectedVersion);
@@ -782,10 +845,14 @@ export class PaperForgeClient {
       return raw;
     } catch (err: unknown) {
       const exitOf: unknown =
-        err !== null && typeof err === "object" && "exitCode" in err ? err.exitCode : undefined;
+        err !== null && typeof err === "object" && "exitCode" in err
+          ? err.exitCode
+          : undefined;
       const exitCode = typeof exitOf === "number" ? exitOf : undefined;
       const codeOf: unknown =
-        err !== null && typeof err === "object" && "code" in err ? err.code : undefined;
+        err !== null && typeof err === "object" && "code" in err
+          ? err.code
+          : undefined;
       traceRecord({
         ts: Date.now(),
         kind: "exec",
@@ -803,7 +870,6 @@ export class PaperForgeClient {
       throw err;
     }
   }
-
 
   private async _executePfResult<T>(
     argv: string[],
@@ -829,9 +895,18 @@ export class PaperForgeClient {
       const stdout = typeof outOf === "string" ? outOf : null;
       if (stdout === null || !stdout.trim()) {
         const code =
-          err !== null && typeof err === "object" && "code" in err && typeof err.code === "string"
-            ? err.code : "transport_error";
-        traceConsoleError({ op, stage: "process", code, exitCode: transportExitCode(err) });
+          err !== null &&
+          typeof err === "object" &&
+          "code" in err &&
+          typeof err.code === "string"
+            ? err.code
+            : "transport_error";
+        traceConsoleError({
+          op,
+          stage: "process",
+          code,
+          exitCode: transportExitCode(err),
+        });
         throw err;
       }
       transportError = err;
@@ -843,7 +918,12 @@ export class PaperForgeClient {
     } catch {
       // No valid authority payload: report the process failure only once.
       if (transportError) {
-        traceConsoleError({ op, stage: "process", code: "transport_error", exitCode: transportExitCode(transportError) });
+        traceConsoleError({
+          op,
+          stage: "process",
+          code: "transport_error",
+          exitCode: transportExitCode(transportError),
+        });
         throw transportError;
       }
       traceRecord({
@@ -855,19 +935,29 @@ export class PaperForgeClient {
         epoch: this._epoch,
         code: "protocol_error",
       });
-      traceConsoleError({ op, stage: "protocol", code: "protocol_error", exitCode: 0 });
+      traceConsoleError({
+        op,
+        stage: "protocol",
+        code: "protocol_error",
+        exitCode: 0,
+      });
       throw new Error("Failed to parse PFResult JSON");
     }
     // PFResult recognition MUST catch ok:false even when `data` is absent
     // (bare rejection without a data key still carries code/message).
     if (parsed && typeof parsed === "object" && "ok" in parsed) {
-      const envelope: { ok?: unknown; error?: unknown; data?: unknown } = parsed;
+      const envelope: { ok?: unknown; error?: unknown; data?: unknown } =
+        parsed;
       const errCode: unknown =
-        envelope.error !== null && typeof envelope.error === "object" && "code" in envelope.error
+        envelope.error !== null &&
+        typeof envelope.error === "object" &&
+        "code" in envelope.error
           ? envelope.error.code
           : undefined;
       const errMsg: unknown =
-        envelope.error !== null && typeof envelope.error === "object" && "message" in envelope.error
+        envelope.error !== null &&
+        typeof envelope.error === "object" &&
+        "message" in envelope.error
           ? envelope.error.message
           : undefined;
       // Fail closed: a structured ok:false PFResult is an authority
@@ -889,15 +979,26 @@ export class PaperForgeClient {
         // empty-DB state: trace ring keeps the machine code and the UI keeps
         // its card, no red log. Only other authority rejections log, with
         // the real exit code from the transport error (rc0 is exit=0).
-        const hasAuthorityError = envelope.error !== null && envelope.error !== undefined;
+        const hasAuthorityError =
+          envelope.error !== null && envelope.error !== undefined;
         const isExpectedEmptyDb = op === "search" && code === "PATH_NOT_FOUND";
         const vectorState =
-          envelope.data !== null && typeof envelope.data === "object" && "vector_state" in envelope.data
-            ? envelope.data.vector_state : undefined;
-        const isExpectedVectorState = op === "retrieve" && code === "PRECONDITION_FAILED" &&
+          envelope.data !== null &&
+          typeof envelope.data === "object" &&
+          "vector_state" in envelope.data
+            ? envelope.data.vector_state
+            : undefined;
+        const isExpectedVectorState =
+          op === "retrieve" &&
+          code === "PRECONDITION_FAILED" &&
           (vectorState === "not_built" || vectorState === "stale");
         if (hasAuthorityError && !isExpectedEmptyDb && !isExpectedVectorState)
-          traceConsoleError({ op, stage: "pfresult", code, exitCode: transportExitCode(transportError) });
+          traceConsoleError({
+            op,
+            stage: "pfresult",
+            code,
+            exitCode: transportExitCode(transportError),
+          });
         const rejection = new Error(
           String(errMsg || errCode || "backend_error")
         );
@@ -905,7 +1006,8 @@ export class PaperForgeClient {
         // PFResult data (e.g. vector_state) survive on the thrown Error so
         // UI mapping can classify without scraping message text or stdout.
         // Never argv/stdout/stderr/query — only code + data.
-        const extras: PfRejectionExtras = rejection as unknown as PfRejectionExtras;
+        const extras: PfRejectionExtras =
+          rejection as unknown as PfRejectionExtras;
         extras.code = code;
         extras.data = ("data" in envelope ? envelope.data : null) ?? null;
         extras.exitCode = transportExitCode(transportError);
@@ -928,7 +1030,12 @@ export class PaperForgeClient {
           epoch: this._epoch,
           code: "protocol_contradiction",
         });
-        traceConsoleError({ op, stage: "protocol", code: "protocol_contradiction", exitCode: transportExitCode(transportError) });
+        traceConsoleError({
+          op,
+          stage: "protocol",
+          code: "protocol_contradiction",
+          exitCode: transportExitCode(transportError),
+        });
         throw transportError;
       }
       // PFResult data is unwrapped; minimal envelopes retain their shape.
@@ -937,7 +1044,12 @@ export class PaperForgeClient {
     }
     // Preflight and other legacy surfaces return valid bare JSON.
     if (transportError) {
-      traceConsoleError({ op, stage: "process", code: "transport_error", exitCode: transportExitCode(transportError) });
+      traceConsoleError({
+        op,
+        stage: "process",
+        code: "transport_error",
+        exitCode: transportExitCode(transportError),
+      });
       throw transportError;
     }
     return parsed as T;
@@ -1283,12 +1395,23 @@ export class PaperForgeClient {
     streamOptions?: StreamOptions
   ): Promise<ActionRunResult> {
     const desc = await this.describeAction(req.action_id);
-    const localBusy = desc?.execution_mode === "stream" && this.isOperationActive();
-    if (localBusy || (desc?.availability && desc.availability !== ACTION_AVAILABLE)) {
+    const localBusy =
+      desc?.execution_mode === "stream" && this.isOperationActive();
+    if (
+      localBusy ||
+      (desc?.availability && desc.availability !== ACTION_AVAILABLE)
+    ) {
       const availability = localBusy ? "busy" : desc!.availability;
-      const reason = localBusy ? "Another operation is already active" : desc?.availability_reason;
-      traceRecord({ ts: Date.now(), kind: "error", op: `action.${req.action_id}`,
-        ok: false, code: availability === "busy" ? "action.busy" : "action.unavailable" });
+      const reason = localBusy
+        ? "Another operation is already active"
+        : desc?.availability_reason;
+      traceRecord({
+        ts: Date.now(),
+        kind: "error",
+        op: `action.${req.action_id}`,
+        ok: false,
+        code: availability === "busy" ? "action.busy" : "action.unavailable",
+      });
       return {
         ok: false,
         payload: {
@@ -1297,7 +1420,8 @@ export class PaperForgeClient {
           availability,
           availability_reason: reason,
           error: {
-            code: availability === "busy" ? "action.busy" : "action.unavailable",
+            code:
+              availability === "busy" ? "action.busy" : "action.unavailable",
             message: reason || availability,
             details: {},
           },
@@ -1313,20 +1437,34 @@ export class PaperForgeClient {
 
     if (desc?.execution_mode === "stream") {
       try {
-        const handle = this.streamOperation(`action.${req.action_id}`, argv, streamOptions);
+        const handle = this.streamOperation(
+          `action.${req.action_id}`,
+          argv,
+          streamOptions
+        );
         const outcome = await handle.outcome;
         // streamOperation owns the single Console terminal; this adapter only
         // preserves a safe machine-readable rejection for action consumers.
-        const terminalEv = outcome.events.find(
-          (event) => ["result", "error", "cancelled"].includes(event.event)
+        const terminalEv = outcome.events.find((event) =>
+          ["result", "error", "cancelled"].includes(event.event)
         );
-        let payload = (terminalEv?.result as Record<string, unknown> | null) ?? null;
+        let payload =
+          (terminalEv?.result as Record<string, unknown> | null) ?? null;
         if (!outcome.ok && (outcome.protocolFailure || !payload)) {
-          const code = outcome.cancelled ? "action.cancelled"
-            : outcome.protocolFailure ? "protocol_failure" : "transport_error";
-          payload = { ok: false, error: { code, message: outcome.cancelled
-            ? "Operation cancelled"
-            : "Backend operation ended without a valid terminal result" } };
+          const code = outcome.cancelled
+            ? "action.cancelled"
+            : outcome.protocolFailure
+              ? "protocol_failure"
+              : "transport_error";
+          payload = {
+            ok: false,
+            error: {
+              code,
+              message: outcome.cancelled
+                ? "Operation cancelled"
+                : "Backend operation ended without a valid terminal result",
+            },
+          };
         }
         return {
           ok: outcome.ok,
@@ -1337,10 +1475,16 @@ export class PaperForgeClient {
       } catch (err) {
         return {
           ok: false,
-          payload: { ok: false, error: {
-            code: rejectionCode(err) ?? "transport_error",
-            message: err instanceof Error ? err.message : "Operation failed to start",
-          } },
+          payload: {
+            ok: false,
+            error: {
+              code: rejectionCode(err) ?? "transport_error",
+              message:
+                err instanceof Error
+                  ? err.message
+                  : "Operation failed to start",
+            },
+          },
           exitCode: transportExitCode(err) ?? 1,
         };
       }
@@ -1353,9 +1497,13 @@ export class PaperForgeClient {
         raw = await this._executeRaw(argv);
       } catch (err: unknown) {
         const failureOut: unknown =
-          err !== null && typeof err === "object" && "stdout" in err ? err.stdout : undefined;
+          err !== null && typeof err === "object" && "stdout" in err
+            ? err.stdout
+            : undefined;
         const failureExit: unknown =
-          err !== null && typeof err === "object" && "exitCode" in err ? err.exitCode : undefined;
+          err !== null && typeof err === "object" && "exitCode" in err
+            ? err.exitCode
+            : undefined;
         if (typeof failureOut !== "string" || !failureOut.trim()) {
           throw err;
         }
@@ -1365,14 +1513,29 @@ export class PaperForgeClient {
       let payload: Record<string, unknown>;
       try {
         payload = JSON.parse(raw);
-        if (!payload || typeof payload !== "object" || typeof payload.ok !== "boolean") {
+        if (
+          !payload ||
+          typeof payload !== "object" ||
+          typeof payload.ok !== "boolean"
+        ) {
           throw new Error("Expected a PFResult with boolean ok");
         }
       } catch {
-        traceConsoleError({ op: `action.${actionReq.action_id}`, stage: "result", code: "protocol_error", exitCode });
+        traceConsoleError({
+          op: `action.${actionReq.action_id}`,
+          stage: "result",
+          code: "protocol_error",
+          exitCode,
+        });
         return {
           ok: false,
-          payload: { ok: false, error: { code: "protocol_error", message: "Invalid action PFResult JSON" } },
+          payload: {
+            ok: false,
+            error: {
+              code: "protocol_error",
+              message: "Invalid action PFResult JSON",
+            },
+          },
           exitCode,
         };
       }
@@ -1387,7 +1550,9 @@ export class PaperForgeClient {
       }
       if (payload.ok !== true) {
         const perrCode: unknown =
-          payload.error !== null && typeof payload.error === "object" && "code" in payload.error
+          payload.error !== null &&
+          typeof payload.error === "object" &&
+          "code" in payload.error
             ? payload.error.code
             : undefined;
         traceConsoleError({
@@ -1405,7 +1570,9 @@ export class PaperForgeClient {
           : undefined;
       const exitNum = typeof exitOf === "number" ? exitOf : 1;
       const isContradiction: unknown =
-        err !== null && typeof err === "object" && "protocolContradiction" in err
+        err !== null &&
+        typeof err === "object" &&
+        "protocolContradiction" in err
           ? err.protocolContradiction
           : undefined;
       const errCodeOf: unknown =
@@ -1426,10 +1593,28 @@ export class PaperForgeClient {
       return {
         ok: false,
         payload: isContradiction
-          ? { ok: false, error: { code: "protocol_contradiction", message: err instanceof Error ? err.message : String(err) } }
+          ? {
+              ok: false,
+              error: {
+                code: "protocol_contradiction",
+                message: err instanceof Error ? err.message : String(err),
+              },
+            }
           : isExpectedSetup
-            ? { ok: false, error: { code: "NO_PYTHON", message: err instanceof Error ? err.message : String(err) } }
-            : { ok: false, error: { code: "transport_error", message: err instanceof Error ? err.message : String(err) } },
+            ? {
+                ok: false,
+                error: {
+                  code: "NO_PYTHON",
+                  message: err instanceof Error ? err.message : String(err),
+                },
+              }
+            : {
+                ok: false,
+                error: {
+                  code: "transport_error",
+                  message: err instanceof Error ? err.message : String(err),
+                },
+              },
         exitCode: exitNum,
       };
     } finally {
@@ -1629,12 +1814,16 @@ export class PaperForgeClient {
     } catch (err: unknown) {
       transportFailed = true;
       exitCode = transportExitCode(err);
-      const stdout = err !== null && typeof err === "object" && "stdout" in err
-        ? err.stdout : null;
+      const stdout =
+        err !== null && typeof err === "object" && "stdout" in err
+          ? err.stdout
+          : null;
       if (typeof stdout !== "string" || !stdout.trim()) {
         traceConsoleError({
-          op: commandIdentity(argv), stage: "process",
-          code: rejectionCode(err) ?? "transport_error", exitCode,
+          op: commandIdentity(argv),
+          stage: "process",
+          code: rejectionCode(err) ?? "transport_error",
+          exitCode,
         });
         throw err;
       }
@@ -1644,21 +1833,40 @@ export class PaperForgeClient {
     let code: string | null = null;
     try {
       parsed = JSON.parse(raw);
-      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      if (
+        parsed === null ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed)
+      ) {
         code = "protocol_error";
       }
     } catch {
       code = "protocol_error";
     }
-    if (!code && transportFailed && parsed &&
-        typeof parsed === "object" && "ok" in parsed && parsed.ok === true) {
+    if (
+      !code &&
+      transportFailed &&
+      parsed &&
+      typeof parsed === "object" &&
+      "ok" in parsed &&
+      parsed.ok === true
+    ) {
       code = "protocol_contradiction";
     }
     if (code) {
-      traceConsoleError({ op: commandIdentity(argv), stage: "protocol", code, exitCode });
-      throw Object.assign(new Error("Backend returned invalid or contradictory authority JSON"), {
-        code, exitCode,
+      traceConsoleError({
+        op: commandIdentity(argv),
+        stage: "protocol",
+        code,
+        exitCode,
       });
+      throw Object.assign(
+        new Error("Backend returned invalid or contradictory authority JSON"),
+        {
+          code,
+          exitCode,
+        }
+      );
     }
     // Negative audit reports and mutation rejections are authority values,
     // not PFResult failures; preserve them, including nonzero-exit reports.
@@ -1719,6 +1927,138 @@ export class PaperForgeClient {
     } finally {
       this.invalidateCache();
     }
+  }
+
+  // ── 7. Non-destructive Sidecar PDF Annotations & Diagnostic Read ───────
+
+  async getPdfContext(paperKey: string): Promise<PaperPdfContextDto> {
+    return this._executePfResult<PaperPdfContextDto>(
+      ["annotations", "pdf-info", paperKey, "--json"],
+      { timeoutMs: 30000 }
+    );
+  }
+
+  async listAnnotations(paperKey: string): Promise<PdfAnnotationDto[]> {
+    const data = await this._executePfResult<{
+      annotations?: PdfAnnotationDto[];
+    }>(["annotations", "list", paperKey, "--json"]);
+    return Array.isArray(data?.annotations) ? data.annotations : [];
+  }
+
+  async addAnnotation(
+    paperKey: string,
+    input: {
+      page: number;
+      rects: number[][];
+      kind?: AnnotationKind;
+      color?: AnnotationColor | string;
+      intent?: AnnotationIntent | string;
+      exact_text?: string;
+      comment?: string;
+      tags?: string[];
+    }
+  ): Promise<PdfAnnotationDto> {
+    const argv: string[] = [
+      "annotations",
+      "add",
+      paperKey,
+      "--page",
+      String(input.page),
+      "--rects-json",
+      JSON.stringify(input.rects),
+      "--kind",
+      input.kind ?? "highlight",
+      "--color",
+      input.color ?? "yellow",
+      "--intent",
+      input.intent ?? "general",
+      "--exact-text",
+      input.exact_text ?? "",
+      "--comment",
+      input.comment ?? "",
+      "--tags-json",
+      JSON.stringify(input.tags ?? []),
+      "--json",
+    ];
+    try {
+      return await this._executePfResult<PdfAnnotationDto>(argv, {
+        timeoutMs: 30000,
+      });
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async updateAnnotation(
+    paperKey: string,
+    annId: string,
+    patch: {
+      color?: AnnotationColor | string;
+      intent?: AnnotationIntent | string;
+      comment?: string;
+      tags?: string[];
+    }
+  ): Promise<PdfAnnotationDto> {
+    const argv: string[] = ["annotations", "update", paperKey, annId];
+    if (patch.color !== undefined) argv.push("--color", patch.color);
+    if (patch.intent !== undefined) argv.push("--intent", patch.intent);
+    if (patch.comment !== undefined) argv.push("--comment", patch.comment);
+    if (patch.tags !== undefined)
+      argv.push("--tags-json", JSON.stringify(patch.tags));
+    argv.push("--json");
+    try {
+      return await this._executePfResult<PdfAnnotationDto>(argv);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async deleteAnnotation(
+    paperKey: string,
+    annId: string
+  ): Promise<{ deleted: boolean; ann_id: string; paper_id: string }> {
+    try {
+      return await this._executePfResult<{
+        deleted: boolean;
+        ann_id: string;
+        paper_id: string;
+      }>(["annotations", "delete", paperKey, annId, "--json"]);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async promoteAnnotation(
+    paperKey: string,
+    annId: string,
+    opts?: { usage?: string; project?: string }
+  ): Promise<Record<string, unknown>> {
+    const argv: string[] = ["annotations", "promote", paperKey, annId];
+    if (opts?.usage) argv.push("--usage", opts.usage);
+    if (opts?.project) argv.push("--project", opts.project);
+    argv.push("--json");
+    try {
+      return await this._executePfResult<Record<string, unknown>>(argv);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async readDiagnosticFulltext(
+    paperKey: string,
+    maxChars = 80000
+  ): Promise<DiagnosticFulltextDto> {
+    return this._executePfResult<DiagnosticFulltextDto>(
+      [
+        "annotations",
+        "fulltext-preview",
+        paperKey,
+        "--max-chars",
+        String(maxChars),
+        "--json",
+      ],
+      { timeoutMs: 30000 }
+    );
   }
 }
 

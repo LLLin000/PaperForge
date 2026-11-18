@@ -33,7 +33,11 @@ import {
 } from "../client/paperforge-client";
 import { diffFulltext } from "../services/version-diff";
 import { VersionRestoreModal } from "./ocr-workspace";
-import { rejectionCode, rejectionData, traceConsoleError } from "../client/trace";
+import {
+  rejectionCode,
+  rejectionData,
+  traceConsoleError,
+} from "../client/trace";
 import type { PaperForgeClient } from "../client";
 import {
   ResearchRecordCaptureModal,
@@ -758,14 +762,14 @@ export class PaperForgeStatusView extends ItemView {
       statusGrid,
       t("dash_row_index"),
       indexOk ? "healthy" : "missing",
-      indexOk
-        ? indexItems.length + " entries"
-        : t("dash_index_not_loaded")
+      indexOk ? indexItems.length + " entries" : t("dash_index_not_loaded")
     );
     // Export health is Python's check_permissions().can_sync — the
     // host-local filesystem scan (Semantic Fact) is retired (#TB-2).
     const exportOk = this._dashboardPermissions.can_sync === true;
-    const exportDetail = exportOk ? t("dash_exports_detected") : t("dash_exports_missing");
+    const exportDetail = exportOk
+      ? t("dash_exports_detected")
+      : t("dash_exports_missing");
     this._renderSystemStatusRow(
       statusGrid,
       t("dash_row_zotero"),
@@ -788,7 +792,10 @@ export class PaperForgeStatusView extends ItemView {
           dot?.classList.toggle("ok", available);
           dot?.classList.toggle("fail", !available);
           const detail = tokenRow.querySelector(".paperforge-status-detail");
-          if (detail) detail.textContent = available ? t("dash_configured") : t("dash_not_set");
+          if (detail)
+            detail.textContent = available
+              ? t("dash_configured")
+              : t("dash_not_set");
         },
         () => {
           if (!tokenRow.isConnected) return;
@@ -807,13 +814,14 @@ export class PaperForgeStatusView extends ItemView {
       | { capability_state?: string; reason?: { code?: string; text?: string } }
       | undefined;
     const memOk = memEnv?.capability_state === "ready";
-    const memReasonKey = "cc_reason_" + (memEnv?.reason?.code ?? "").replace(/\./g, "_");
+    const memReasonKey =
+      "cc_reason_" + (memEnv?.reason?.code ?? "").replace(/\./g, "_");
     const memReasonLocalized = t(memReasonKey);
     const memDetail = memOk
       ? t("dash_configured")
       : memReasonLocalized !== memReasonKey
         ? memReasonLocalized
-        : memEnv?.reason?.text ?? t("dash_unknown");
+        : (memEnv?.reason?.text ?? t("dash_unknown"));
     this._renderSystemStatusRow(
       statusGrid,
       t("dash_row_memory"),
@@ -1102,6 +1110,13 @@ export class PaperForgeStatusView extends ItemView {
       });
       pdfBtn.createEl("span", { text: "\u6253\u5F00 PDF" });
       pdfBtn.addEventListener("click", () => {
+        const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
+          "paperforge"
+        ];
+        if (key && typeof pfPlugin?.openPaperPdf === "function") {
+          void pfPlugin.openPaperPdf(key);
+          return;
+        }
         const pathMatch = entry.pdf_path.match(/\[\[([^\]]+)\]\]/);
         const isWikilink = pathMatch !== null;
         const targetPath = pathMatch ? pathMatch[1] : entry.pdf_path;
@@ -1137,20 +1152,6 @@ export class PaperForgeStatusView extends ItemView {
           new Notice("[!!] PDF not found: " + targetPath, 6000);
         }
       });
-    }
-    if (entry.fulltext_path) {
-      const ftBtn = stripRight.createEl("button", {
-        cls: "paperforge-contextual-btn",
-        attr: { "data-pf-testid": "open-fulltext" },
-      });
-      ftBtn.createEl("span", {
-        cls: "paperforge-contextual-btn-icon",
-        text: "\uD83D\uDCDD",
-      });
-      ftBtn.createEl("span", { text: "\u6253\u5F00\u5168\u6587" });
-      ftBtn.addEventListener("click", () =>
-        this._openFulltext(entry.fulltext_path)
-      );
     }
     // Version history button — always visible, versions mode handles empty state
     const verBtn = stripRight.createEl("button", {
@@ -1550,9 +1551,8 @@ export class PaperForgeStatusView extends ItemView {
       ["OCR Status", entry.ocr_status || "\u2014"],
       ["Asset Health", health.asset_health || "\u2014"],
       ["Note Path", entry.note_path || "\u2014"],
-      ["Fulltext Path", entry.fulltext_path || "\u2014"],
     ];
-    const copyableLabels = new Set(["Note Path", "Fulltext Path", "Key"]);
+    const copyableLabels = new Set(["Note Path", "Key"]);
     for (const [l, v] of rows) {
       const row = body.createEl("div", { cls: "paperforge-technical-row" });
       row.createEl("span", { cls: "paperforge-technical-label", text: l });
@@ -2530,7 +2530,9 @@ export class PaperForgeStatusView extends ItemView {
       const restoreFeedback = this._versionRestoreFeedback.get(paper.key);
       if (restoreFeedback) {
         timelineArea.createEl("p", {
-          cls: "pf-version-restore-status", text: restoreFeedback, attr: { role: "alert" },
+          cls: "pf-version-restore-status",
+          text: restoreFeedback,
+          attr: { role: "alert" },
         });
       }
 
@@ -2609,9 +2611,14 @@ export class PaperForgeStatusView extends ItemView {
               if (result.provenance_persisted) {
                 this._versionRestoreFeedback.delete(paper.key);
                 if (timelineArea.isConnected) renderTimeline(paper);
-                new Notice(t("version_restore_done").replace("{label}", ver.label));
+                new Notice(
+                  t("version_restore_done").replace("{label}", ver.label)
+                );
               } else {
-                const message = t("version_restore_partial").replace("{label}", ver.label);
+                const message = t("version_restore_partial").replace(
+                  "{label}",
+                  ver.label
+                );
                 this._versionRestoreFeedback.set(paper.key, message);
                 if (timelineArea.isConnected) {
                   renderTimeline(paper);
@@ -2972,8 +2979,14 @@ export class PaperForgeStatusView extends ItemView {
    */
   _bindCtrlEnterInput(input: HTMLInputElement): void {
     if (this._ctrlEnterBoundInput) {
-      this._ctrlEnterBoundInput.removeEventListener("focus", this._onCtrlEnterFocus);
-      this._ctrlEnterBoundInput.removeEventListener("blur", this._onCtrlEnterBlur);
+      this._ctrlEnterBoundInput.removeEventListener(
+        "focus",
+        this._onCtrlEnterFocus
+      );
+      this._ctrlEnterBoundInput.removeEventListener(
+        "blur",
+        this._onCtrlEnterBlur
+      );
     }
     this._releaseCtrlEnterScope();
     this._ctrlEnterBoundInput = input;
@@ -2983,8 +2996,14 @@ export class PaperForgeStatusView extends ItemView {
 
   _unbindCtrlEnterInput(): void {
     if (this._ctrlEnterBoundInput) {
-      this._ctrlEnterBoundInput.removeEventListener("focus", this._onCtrlEnterFocus);
-      this._ctrlEnterBoundInput.removeEventListener("blur", this._onCtrlEnterBlur);
+      this._ctrlEnterBoundInput.removeEventListener(
+        "focus",
+        this._onCtrlEnterFocus
+      );
+      this._ctrlEnterBoundInput.removeEventListener(
+        "blur",
+        this._onCtrlEnterBlur
+      );
       this._ctrlEnterBoundInput = null;
     }
     this._releaseCtrlEnterScope();
@@ -3032,10 +3051,7 @@ export class PaperForgeStatusView extends ItemView {
         this._searchResultsEl.setAttr("role", "listbox");
         this._searchResultsEl.setAttr("aria-live", "polite");
         if (this._searchResults) {
-          this._renderSearchResultsList(
-            this._searchResults,
-            this._searchDeep
-          );
+          this._renderSearchResultsList(this._searchResults, this._searchDeep);
         }
         // Focus management: focus first result after a short delay
         setTimeout(() => {
@@ -3113,8 +3129,8 @@ export class PaperForgeStatusView extends ItemView {
         setTimeout(() => {
           btn.focus();
         }, 100);
-         break;
-       }
+        break;
+      }
       case "backend-unavailable": {
         const err = this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-state-card",
@@ -3258,7 +3274,6 @@ export class PaperForgeStatusView extends ItemView {
     new Notice(t("retrieval_navigation_unavailable"), 6000);
   }
 
-
   async executeSearch(forceDeep = false) {
     if (!this._searchInput || !this._searchResultsEl) return;
     this._searchQuery = this._searchInput.value;
@@ -3380,7 +3395,9 @@ export class PaperForgeStatusView extends ItemView {
         this._searchState = "backend-unavailable";
       } else {
         const msg: unknown = err instanceof Error ? err.message : err;
-        const classification = classifyError(String(code ?? (typeof msg === "string" ? msg : "unknown")));
+        const classification = classifyError(
+          String(code ?? (typeof msg === "string" ? msg : "unknown"))
+        );
         this._searchState = this._mapErrorToSearchState(classification.type);
       }
       this._renderSearchState();

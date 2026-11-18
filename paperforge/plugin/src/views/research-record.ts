@@ -185,12 +185,31 @@ export class ResearchRecordModal extends Modal {
       source.disabled = true;
       try {
         const checked = await this.client.readingRecordSource(record);
-        // The backend checks canonical paper, vault containment, current hash and physical bounds.
-        await this.app.workspace.openLinkText(
-          `${checked.path}#page=${checked.physical_page}`,
-          "",
-          true
-        );
+        // Prefer built-in Obsidian PDF annotator (supports external Zotero PDFs too).
+        const pfPlugin = (
+          this.app as unknown as {
+            plugins?: { plugins?: Record<string, unknown> };
+          }
+        ).plugins?.plugins?.paperforge as
+          | {
+              openPaperPdf?: (
+                key: string,
+                opts?: { page?: number }
+              ) => Promise<void>;
+            }
+          | undefined;
+        if (typeof pfPlugin?.openPaperPdf === "function") {
+          await pfPlugin.openPaperPdf(record.paper_id, {
+            page: checked.physical_page,
+          });
+        } else {
+          // The backend checks canonical paper, vault containment, current hash and physical bounds.
+          await this.app.workspace.openLinkText(
+            `${checked.path}#page=${checked.physical_page}`,
+            "",
+            true
+          );
+        }
         status.setText(t("record_" + checked.provenance.status));
       } catch (error) {
         status.setText(

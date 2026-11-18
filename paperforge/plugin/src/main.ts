@@ -33,6 +33,7 @@ class ConfirmMigrationModal extends Modal {
 import {
   VIEW_TYPE_PAPERFORGE,
   VIEW_TYPE_OCR_WORKSPACE,
+  VIEW_TYPE_PAPERFORGE_PDF,
   PF_ICON_ID,
   ACTIONS,
   DEFAULT_SETTINGS,
@@ -48,6 +49,10 @@ import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
+import {
+  PaperForgePdfView,
+  type PdfAnnotatorOpenState,
+} from "./views/pdf-annotator";
 import { PaperForgeConfirmModal } from "./views/modals";
 import {
   applyPathConfigFromList,
@@ -351,6 +356,11 @@ export default class PaperForgePlugin extends Plugin {
       (leaf) => new OcrWorkspaceView(leaf, this)
     );
 
+    this.registerView(
+      VIEW_TYPE_PAPERFORGE_PDF,
+      (leaf) => new PaperForgePdfView(leaf, this)
+    );
+
     this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () =>
       PaperForgeStatusView.open(this as any)
     );
@@ -607,11 +617,43 @@ export default class PaperForgePlugin extends Plugin {
     // stub: no Console noise, no behavior change.
   }
 
+  /** Open a paper inside the built-in Obsidian sidecar PDF annotator tab. */
+  async openPaperPdf(
+    paperKey: string,
+    opts?: { page?: number; annId?: string }
+  ): Promise<void> {
+    if (!paperKey) return;
+    const state: PdfAnnotatorOpenState = {
+      paperKey,
+      page: opts?.page,
+      annId: opts?.annId,
+    };
+    const existing = this.app.workspace
+      .getLeavesOfType(VIEW_TYPE_PAPERFORGE_PDF)
+      .find((leaf) => {
+        const st = leaf.getViewState().state as
+          | Partial<PdfAnnotatorOpenState>
+          | undefined;
+        return st?.paperKey === paperKey;
+      });
+    const leaf = existing ?? this.app.workspace.getLeaf("tab");
+    await leaf.setViewState({
+      type: VIEW_TYPE_PAPERFORGE_PDF,
+      active: true,
+      state: { ...state },
+    });
+    await this.app.workspace.revealLeaf(leaf);
+    if (existing && opts?.page && existing.view instanceof PaperForgePdfView) {
+      existing.view.scrollToPage(opts.page, opts.annId);
+    }
+  }
+
   onunload() {
     if (this._pollTimer) clearInterval(this._pollTimer);
     // In-flight embed/OCR operations are owned by the shared client's
     // OperationLock — cancelled below via cancelActiveOperation.
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE_PDF);
     this._client?.cancelActiveOperation();
     // Reap ordinary (non-streamed) execute children so they do not outlive
     // the plugin/Window (issue #266).

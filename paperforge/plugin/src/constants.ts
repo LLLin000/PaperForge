@@ -34,6 +34,7 @@ export type {
 
 export const VIEW_TYPE_PAPERFORGE = "paperforge-status";
 export const VIEW_TYPE_OCR_WORKSPACE = "paperforge-ocr-workspace";
+export const VIEW_TYPE_PAPERFORGE_PDF = "paperforge-pdf-view";
 // Built-in Lucide id: a custom addIcon(<svg>) string renders a nested SVG
 // inside Obsidian's wrapper and collapses to a tiny box in the ribbon.
 export const PF_ICON_ID = "book-open";

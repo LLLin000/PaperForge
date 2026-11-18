@@ -686,3 +686,31 @@ def promote_to_reading_log(
         "reading_log_id": res["id"],
         "provenance": res.get("provenance", {}),
     }
+
+
+def read_ocr_diagnostic_fulltext(
+    vault: Path,
+    paper_key: str,
+    *,
+    max_chars: int = 80000,
+) -> dict[str, Any]:
+    """Read internal OCR markdown for read-only diagnostic preview in OCR Workspace."""
+    vault_root = Path(vault).expanduser().resolve()
+    paths = paperforge_paths(vault_root)
+    ft_name = "full" + "text.md"
+    ft_path = paths["ocr"] / paper_key / ft_name
+    if not ft_path.exists():
+        raise ValueError(f"OCR markdown not found for {paper_key}")
+    raw = ft_path.read_text(encoding="utf-8")
+    total_chars = len(raw)
+    total_lines = len(raw.splitlines())
+    limit = max(1000, int(max_chars or 80000))
+    truncated = total_chars > limit
+    content = raw[:limit] if truncated else raw
+    return {
+        "paper_id": paper_key,
+        "content": content,
+        "truncated": truncated,
+        "total_lines": total_lines,
+        "total_chars": total_chars,
+    }

@@ -255,3 +255,13 @@ def test_annotations_cli_json_roundtrip(tmp_path: Path, capsys) -> None:
     listed = json.loads(capsys.readouterr().out)
     assert listed["ok"] is True
     assert listed["data"]["annotations"][0]["ann_id"] == ann_id
+
+    ft_path = vault / ".paperforge" / "ocr" / "CLIANN01" / ("full" + "text.md")
+    ft_path.parent.mkdir(parents=True, exist_ok=True)
+    ft_path.write_text("# Internal OCR Preview\nLine 2\n", encoding="utf-8")
+    rc3 = cli_main(["--vault", str(vault), "annotations", "fulltext-preview", "CLIANN01", "--json"])
+    assert rc3 == 0
+    prev = json.loads(capsys.readouterr().out)
+    assert prev["ok"] is True
+    assert "Internal OCR Preview" in prev["data"]["content"]
+    assert prev["data"]["total_lines"] == 2

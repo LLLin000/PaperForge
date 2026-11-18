@@ -22,12 +22,16 @@ def run(args: argparse.Namespace) -> int:
         get_paper_pdf_context,
         list_annotations,
         promote_to_reading_log,
+        read_ocr_diagnostic_fulltext,
         update_annotation,
     )
 
     try:
         if verb == "pdf-info":
             data = get_paper_pdf_context(vault, paper_key)
+        elif verb == "fulltext-preview":
+            max_chars = int(getattr(args, "max_chars", 80000) or 80000)
+            data = read_ocr_diagnostic_fulltext(vault, paper_key, max_chars=max_chars)
         elif verb == "list":
             data = {"paper_id": paper_key, "annotations": list_annotations(vault, paper_key)}
         elif verb == "add":
