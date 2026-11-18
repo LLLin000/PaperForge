@@ -26,8 +26,12 @@ COMMANDS = {
         "purpose": "Semantic content retrieval across OCR fulltext — use this first when the user wants something inside papers",
     },
     "annotations": {
-        "usage": "paperforge annotations list <zotero_key> --json",
-        "purpose": "Read non-destructive PDF highlights, area crops, and user questions",
+        "usage": "paperforge annotations list|agent-mark|adopt|clear-agent <zotero_key> [--quote TEXT] [--comment TEXT] [--lens skeleton|methods|critique|custom] --json",
+        "purpose": "Read user PDF highlights/crops or place non-destructive AI layer annotations via 3-stage fuzzy PDF grounding",
+    },
+    "memory-card": {
+        "usage": "paperforge memory-card get|refine|history <zotero_key> [--facet idea_logic|methods_params|research_craft|critique_limits|my_connection] [--content TEXT] --json",
+        "purpose": "Read and evolve the single-paper faceted Living Paper Memory Card across discussions",
     },
     "context": {
         "usage": "paperforge context <key> | --domain D | --collection P | --all",
@@ -61,6 +65,8 @@ RULES = [
     "retrieve --deep works via FTS5 BM25 even before vector embeddings are built; check embed status --json only when diagnosing semantic vector coverage.",
     "Internal engine stores and machine fulltext.md live in .paperforge/ (or <system_dir>/PaperForge); never edit fulltext.md or ask users to annotate it — user annotations live in sidecar PDF annotations (paper-context user_annotations / paperforge annotations).",
     "When paper-context returns user_annotations.questions, prioritize answering and verifying those user-flagged passages against the source text.",
+    "Always inspect paper-context data.living_memory before answering about a paper, and use paperforge memory-card refine to synthesize evolving insights per facet instead of dumping raw Q&A logs.",
+    "When asked to annotate a PDF, always pass verbatim substrings from fulltext.md to paperforge annotations agent-mark with insightful non-paraphrase comments.",
 ]
 
 

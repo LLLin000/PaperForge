@@ -484,6 +484,30 @@ paperforge scoped-fetch "<query>"      # L4 网关: 范围受限获取
 paperforge scoped-fetch "PEMF 75 Hz treatment protocol" --json --limit 10
 ```
 
+### `paperforge memory-card`
+
+维护单篇论文的动态分面认知记忆（`idea_logic` / `methods_params` / `research_craft` / `critique_limits` / `my_connection`）与 Obsidian Base 工作台只读快照：
+
+```bash
+paperforge memory-card get <KEY> --json
+paperforge memory-card refine <KEY> --facet critique_limits --content "..." --json
+paperforge memory-card history <KEY> [--facet <FACET>] --json
+paperforge memory-card clear <KEY> [--facet <FACET>] --json
+paperforge memory-card base-snapshot --json
+```
+
+### `paperforge annotations`
+
+读写内置 PDF 阅读器侧车批注层（用户批注 + AI 批注层）：
+
+```bash
+paperforge annotations pdf-info <KEY> --json
+paperforge annotations list <KEY> --json
+paperforge annotations agent-mark <KEY> --quote "<原文>" --comment "<洞见>" [--lens skeleton|methods|critique|custom] [--color purple|blue|red|green|yellow] [--page N] [--figure-id figure_001] --json
+paperforge annotations adopt <KEY> <ANN_ID> --json
+paperforge annotations clear-agent <KEY> [--lens <LENS>] --json
+```
+
 ---
 
 ## 相关文档

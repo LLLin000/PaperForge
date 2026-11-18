@@ -40,14 +40,19 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 #### 如果 primary 是 paper-context
 
+direct_context_placeholder:
 直接复用 primary 的 response，**不再调用第二次 paper-context**。从 response 中记录：
 ```
 paper_key              — session 生命周期复用
 title, first_author, year, journal, domain — 不重复调用
 fulltext_path          — 有全文时记录
 note_path              — formal note 路径
+living_memory          — 已沉淀的分面认知记忆（idea_logic/methods_params/research_craft/critique_limits/my_connection）
+user_annotations       — 内置 PDF 阅读器上的高亮与疑问
 prior_notes            — 存在时记录 recheck_targets
 ```
+
+> [!important] **Read-Before-Speak 原则**：若 `data.living_memory.facets` 非空，务必先结合既有分面理解承接讨论并验证新问题，避免从零重复泛读；若 `user_annotations.questions` 非空，优先关注用户划出的疑点。
 
 #### 如果 primary 是 search
 
@@ -159,16 +164,20 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 ---
 
-## 保存讨论
+## 保存与演进单篇记忆
 
-用户说"保存"、"结束"、"完成"时执行。
+1. **动态单篇认知沉淀（`atoms/update-paper-memory.md`）**
+   若讨论中针对论文的实验技术参数、研究逻辑、巧思设计、审稿硬伤或课题启发产生了新的已核实洞见（或用户明确说"记住这个理解/记进这张文献卡片"）：
+   - 按 `atoms/update-paper-memory.md` 读取现有分面，融合后执行 `memory-card refine <KEY> --facet <...> --content "..." --json`；
+   - **禁止**把逐字问答对话直接贴进记忆卡片，始终提炼为紧凑的多维度认知演变摘要。
+   - 若用户明确希望顺手在 PDF 原页高亮关键句段或图表，可路由至 `molecules/annotate-paper-pdf.md`。
 
-1. 收集 Q&A 对，序列化为 JSON 数组
-2. 调用 `paperforge.worker.discussion record` 或对应的保存 atom
-3. 返回 ok → 告知用户已保存
-4. 返回 error → 重试一次，仍失败则告知用户
-
-> [!important] 不要自动保存。仅用户明确要求时执行。
+2. **保存问答对 / 项目知识库**
+   用户明确说"保存讨论"、"结束"、"归档项目"时：
+   1. 收集 Q&A 对，序列化为 JSON 数组
+   2. 调用 `paperforge.worker.discussion record` 或对应的保存 atom
+   3. 返回 ok → 告知用户已保存
+   4. 返回 error → 重试一次，仍失败则告知用户
 
 如果用户要求保存到项目知识库，跳转至 `capture-project-knowledge.md`。
 

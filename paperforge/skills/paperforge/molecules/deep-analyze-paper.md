@@ -89,10 +89,11 @@ StructureTree 是**导航地图，不是全文内容替代品**。用于确定�
 找不到标准标题时，按 `document_order` 和 `path` 判断。很多论文使用 Materials and Methods、Experimental、Findings 等变体。
 详细内容仍由 `pf_deep.py prepare`、fulltext、figure/table 素材、chart-reading atom 提供。
 
-**检查 user_annotations（来自内置 PDF 批注器）：**
+**检查 living_memory 与 user_annotations（来自内置 PDF 批注器与记忆层）：**
 
+- 若 `data.living_memory.facets` 非空：先读取既有各维度记忆，使本次精读在前置认知基础上纵深验证，而非机械重复；
 - 若 `data.user_annotations.total > 0`：
-  - `user_annotations.questions` 为用户在阅读 PDF 时标记的 `❓ 存疑/待查` 批注，Pass 2/3 **必须**逐条回到原文核实并在 `#### 遗留问题` 或对应章节给出明确回答
+  - `user_annotations.questions` 为用户在阅读 PDF 时标记的疑问批注，Pass 2/3 **必须**逐条回到原文核实并在 `#### 遗留问题` 或对应章节给出明确回答
   - `user_annotations.highlights`（含 `evidence`、`method`、`quote` 及框选截图 `embed_wikilink`）可作为优先关注锚点与直接证据候选，但仍须对照原文核实页码与上下文
 
 **检查 prior_notes：**
@@ -230,13 +231,15 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" validate-note "<formal_note_path>" --ful
 
 ---
 
-### Step 7: Finalize (`deep-finalize`)
+### Step 7: Finalize (`deep-finalize`) & 同步演进单篇记忆
 
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" deep-finalize <zotero_key> --json
 ```
 
-确认返回 `ok: true` 后告知用户精读完成并提示 Dashboard 状态已更新。
+确认返回 `ok: true` 后：
+1. 按 `atoms/update-paper-memory.md` 将本轮精读沉淀的关键内容分别融合更新至 `idea_logic`、`methods_params`、`research_craft`、`critique_limits`、`my_connection` 对应分面；
+2. 告知用户精读与动态记忆已更新，Obsidian 文献工作台（Base）及 Dashboard 会实时反映最新状态。
 
 ---
 

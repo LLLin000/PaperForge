@@ -1,10 +1,10 @@
 ---
 name: paperforge
 description: >
-  Research Memory Runtime — 文献搜索、精读、问答、阅读笔记、
+  Research Memory Runtime — 文献搜索、精读、PDF 批注、问答、阅读笔记、
   工作记录、方法论提取。Triggered by:
   pf-deep pf-paper pf-sync pf-ocr pf-status,
-  "精读" "找文献" "搜文献" "文献问答" "读一下" "看看这篇"
+  "精读" "批注" "标注 PDF" "找文献" "搜文献" "文献问答" "读一下" "看看这篇"
   "讨论" "记录阅读" "记录工作" "总结会话" "提取方法论"
   "记一下" "保存这次" "找证据" "找75 Hz" "找支持" "collection" "库里".
 source: paperforge
@@ -121,11 +121,12 @@ CLI 返回 `ok=false` 时报告错误和 repair action；返回 `ok=true` 但无
 ### C. 顶层研究意图（按判定顺序）
 
 1. **`capture_project_knowledge`** — 直接保存/归档/提取（用户说"记一下"、"保存这次"、"提取方法论"）
-2. **`deep_analyze_paper`** — 用户明确要求精读（出现"精读"、"深度分析"、"完整分析"、"Keshav"等动作词时，优先于普通问答）
-3. **`synthesize_evidence_matrix`** — 用户要求横向对比多篇文献、归纳参数窗或生成证据矩阵（"横向对比"、"证据矩阵"、"compare papers"）
-4. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题），但未要求精读
-5. **`discover_papers`** — 用户要找一批论文（"找XX的文章"、"collection里有什么"）
-6. **`find_supporting_evidence`** — 用户要找具体证据/参数/术语（"找75 Hz"、"找支持这句话的依据"）
+2. **`annotate_paper_pdf`** — 用户明确要求给某篇论文做 PDF 批注 / 领读标注（"批注这篇"、"在 PDF 上标出逻辑链/实验参数/硬伤"、`molecules/annotate-paper-pdf.md`）
+3. **`deep_analyze_paper`** — 用户明确要求精读（出现"精读"、"深度分析"、"完整分析"、"Keshav"等动作词时，优先于普通问答）
+4. **`synthesize_evidence_matrix`** — 用户要求横向对比多篇文献、归纳参数窗或生成证据矩阵（"横向对比"、"证据矩阵"、"compare papers"）
+5. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题），但未要求精读
+6. **`discover_papers`** — 用户要找一批论文（"找XX的文章"、"collection里有什么"）
+7. **`find_supporting_evidence`** — 用户要找具体证据/参数/术语（"找75 Hz"、"找支持这句话的依据"）
 
 **判定顺序（必须严格按此顺序执行）：**
 
@@ -133,13 +134,14 @@ CLI 返回 `ok=false` 时报告错误和 repair action；返回 `ok=true` 但无
 0. 处理机械命令（A 节）
 1. 处理别名（B 节）→ deep_analyze_paper / read_known_paper
 2. 如果用户要求保存/归档/从上下文提取 → capture_project_knowledge
-3. 如果用户明确要求精读（含"精读"、"深度分析"、"Keshav"等词）→ deep_analyze_paper
-4. 如果用户已指向单一论文但未要求精读 → read_known_paper
-5. 如果用户想要论文列表 → discover_papers
-6. 如果用户想要证据/支持 → find_supporting_evidence
-7. 如果意图无法判定 → 打开 atoms/clarify-user-intent.md
+3. 如果用户明确要求对论文 PDF 划线/打批注 → annotate_paper_pdf
+4. 如果用户明确要求精读（含"精读"、"深度分析"、"Keshav"等词）→ deep_analyze_paper
+5. 如果用户已指向单一论文但未要求精读 → read_known_paper
+6. 如果用户想要论文列表 → discover_papers
+7. 如果用户想要证据/支持 → find_supporting_evidence
+8. 如果意图无法判定 → 打开 atoms/clarify-user-intent.md
    注意：如果多个 intent 同时匹配（如"找这篇的证据然后保存"），**除非某个 intent 明显主导**，否则也走 clarify；不要硬猜。
-8. post-action：molecule 输出后，如果用户要求保存 → capture_project_knowledge
+9. post-action：molecule 输出后，如果用户要求保存 → capture_project_knowledge
 ```
 
 ### D. Clarify 回退
@@ -179,6 +181,7 @@ paperforge/skills/paperforge/
 ├── SKILL.md              ← 本文件（compound：启动注入 + 路由 + 全局规则）
 ├── molecules/            ← 1 molecule = 1 intent 的完整执行流程
 │   ├── read-known-paper.md
+│   ├── annotate-paper-pdf.md
 │   ├── discover-papers.md
 │   ├── find-supporting-evidence.md
 │   ├── deep-analyze-paper.md
@@ -187,6 +190,7 @@ paperforge/skills/paperforge/
 ├── atoms/                ← 可复用子步骤
 │   ├── clarify-user-intent.md
 │   ├── retrieval-routing.md
+│   ├── update-paper-memory.md
 │   ├── write-reading-log-jsonl.md
 │   ├── write-project-reading-log.md
 │   ├── write-project-log.md

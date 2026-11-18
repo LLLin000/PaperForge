@@ -671,6 +671,19 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
 
 ---
 
+### ADR-014: Native Obsidian Bases View, Daemon-Free State Reactivity & Living Paper Memory (v2.2)
+
+**Status:** Accepted
+**Context:** Relying purely on Markdown YAML frontmatter for both user queues (`do_ocr`, `analyze`) and mutable machine states caused redundant YAML rewrites, lacked real-time UI updates between external CLI runs and Obsidian, and exposed overly heavy manual forms in the sidebar and PDF popover. Additionally, Agents lacked an error-tolerant mechanism to anchor highlights onto real PDF pages across OCR hyphenation, symbol drift, and scanned pages.
+
+**Decision:**
+1. **Native Obsidian `BasesView` (`paperforge-table`) + YAML Read/Write Decoupling**: `paperforge/worker/base_views.py` configures `.base` files with `type: paperforge-table`, handled by `PaperForgeBasesView` (`plugin/src/views/paperforge-base-view.ts`). Machine state (`ocr_status`, `deep_reading_status`, cognitive counts) renders read-only from SQLite/index via `paperforge memory-card base-snapshot --json`, while user queue checkboxes route through `client.setNoteFlag()`. `asset_index.py:_build_entry` enforces a no-op write guard to skip redundant YAML rewrites.
+2. **Daemon-Free Live UI Reactivity (`.state-seq.json`)**: `paperforge/services/state_signal.py` atomically increments `<indexes_dir>/.state-seq.json` on Python state mutations (`sync`, `ocr`, `memory-card`, `annotations`). `main.ts` watches `.state-seq.json` with a 150ms debounce and broadcasts `"paperforge:state-changed"` so open Base tables, PDF viewers, and Dashboard memory cards refresh live without a persistent background daemon.
+3. **Evolving Living Paper Memory Cards**: `paper_memory_cards` + `paper_memory_history` (plus `<workspace>/ai/memory-card.json`) maintain 5 refined facets (`idea_logic`, `methods_params`, `research_craft`, `critique_limits`, `my_connection`) updated via `paperforge memory-card refine`.
+4. **3-Stage Fuzzy PDF Sentence Grounding (`paperforge/services/pdf_grounding.py`)**: Stage 1 narrows candidate OCR blocks (`±1` page); Stage 2a/2b folds ligatures, hyphenation, and math symbols on PyMuPDF `rawdict` word streams (including same-page cross-column rescue for merged columns); Stage 3 honestly degrades scanned/unmatched blocks to left-margin vertical brackets (`kind="margin"`, `grounding_tier="margin_fallback"`). All AI marks carry `author="agent"` for independent toggling and adoption (`[✓ 采纳]`) in `PaperForgePdfView`.
+
+---
+
 ## Extension Points
 
 ### Adding a New CLI Command
