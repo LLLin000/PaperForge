@@ -252,12 +252,66 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
 
         fused = _fuse_results(bm25_results, vec_results, limit)
 
+        # Hydrate paper metadata & heading for vector-only hits in batch
+        missing_meta_pids = sorted({
+            str(r.get("paper_id") or "")
+            for r in fused
+            if r.get("paper_id") and not (r.get("title") and r.get("first_author"))
+        })
+        if missing_meta_pids:
+            ph = ",".join("?" for _ in missing_meta_pids)
+            prows = conn.execute(
+                f"SELECT zotero_key, title, first_author, year, journal, domain FROM papers WHERE zotero_key IN ({ph})",
+                missing_meta_pids,
+            ).fetchall()
+            pmap = {row["zotero_key"]: row for row in prows}
+            for r in fused:
+                prow = pmap.get(r.get("paper_id", ""))
+                if prow is not None:
+                    for fld in ("title", "first_author", "year", "journal", "domain"):
+                        if not r.get(fld):
+                            r[fld] = prow[fld] or ""
+
+        body_uids = [
+            str(r["unit_id"])
+            for r in fused
+            if r.get("unit_id") and not r.get("heading") and r.get("source", "body") == "body"
+        ]
+        if body_uids:
+            ph = ",".join("?" for _ in body_uids)
+            brows = conn.execute(
+                f"SELECT unit_id, section_title, section_path FROM body_units WHERE unit_id IN ({ph})",
+                body_uids,
+            ).fetchall()
+            bmap = {row["unit_id"]: (row["section_title"] or row["section_path"] or "") for row in brows}
+            for r in fused:
+                if not r.get("heading") and r.get("unit_id") in bmap:
+                    r["heading"] = bmap[r["unit_id"]]
+
+        obj_uids = [
+            str(r["unit_id"])
+            for r in fused
+            if r.get("unit_id") and not r.get("heading") and r.get("source") == "object"
+        ]
+        if obj_uids:
+            ph = ",".join("?" for _ in obj_uids)
+            orows = conn.execute(
+                f"SELECT unit_id, object_label FROM object_units WHERE unit_id IN ({ph})",
+                obj_uids,
+            ).fetchall()
+            omap = {row["unit_id"]: (row["object_label"] or "") for row in orows}
+            for r in fused:
+                if not r.get("heading") and r.get("unit_id") in omap:
+                    r["heading"] = omap[r["unit_id"]]
+
         # Enrich fused results with structural coordinates
         for r in fused:
             enrichment = enrich_retrieval_hit(
                 conn, paper_id=r.get("paper_id", ""), source_kind=r.get("source", "body"), unit_id=r.get("unit_id", "")
             )
             r.update(enrichment)
+            if not r.get("title"):
+                r["title"] = str(r.get("paper_id") or "")
 
         return fused
 def _bm25_search(
@@ -383,108 +437,94 @@ def _vec_search(
 
     return results
 
+def _canon_source(src: object) -> str:
+    s = str(src or "").strip()
+    if s in ("", "body", "body_unit"):
+        return "body"
+    return s
+
+
 def _fuse_results(
     bm25_results: list[dict], vec_results: list[dict], limit: int
 ) -> list[dict]:
-    """Fuse BM25 and vec0 results with combined score.
+    """Fuse full union of BM25 and vec0 results with combined score.
 
-    Fusion formula: combined = 0.3 * bm25_norm + 0.7 * vec_norm.
-    Deduplicates by (source_kind, unit_id).
+    Fusion formula:
+    - matched in both: 0.3 * bm25_norm + 0.7 * vec_norm
+    - bm25-only: bm25_norm
+    - vec-only: 0.7 * vec_norm (when bm25 present) or vec_norm (when bm25 empty)
+    Deduplicates by (canonical_source, unit_id).
     """
-    # Build vec lookup: (source, unit_id) -> vec_score
     vec_lookup: dict[tuple[str, str], float] = {}
     for vr in vec_results:
-        key = (vr.get("source", ""), vr.get("unit_id", ""))
+        uid = str(vr.get("unit_id") or "")
+        if not uid:
+            continue
+        key = (_canon_source(vr.get("source")), uid)
         if key not in vec_lookup or vr["vec_score"] > vec_lookup[key]:
             vec_lookup[key] = vr["vec_score"]
 
     has_vec = bool(vec_results)
+    has_bm25 = bool(bm25_results)
 
-    for br in bm25_results:
-        bm25_norm = br["bm25_score"]
-        key = ("body", br.get("unit_id", ""))
+    candidates: list[dict] = []
+    seen: set[tuple[str, str]] = set()
 
-        if has_vec and key in vec_lookup:
-            vec_raw = vec_lookup[key]
+    for idx, br in enumerate(bm25_results):
+        uid = str(br.get("unit_id") or "")
+        src = _canon_source(br.get("source"))
+        dedupe_key = (src, uid) if uid else ("__bm25_anon__", str(idx))
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+
+        bm25_norm = float(br.get("bm25_score", 0.0))
+        lookup_key = (src, uid)
+        if has_vec and uid and lookup_key in vec_lookup:
+            vec_raw = float(vec_lookup[lookup_key])
             vec_norm = 1.0 - (1.0 / (1.0 + vec_raw)) if vec_raw > 0 else 0.0
             br["vec_score"] = round(vec_raw, 4)
-            combined = 0.3 * bm25_norm + 0.7 * vec_norm
-            br["score"] = round(combined, 4)
+            br["score"] = round(0.3 * bm25_norm + 0.7 * vec_norm, 4)
         else:
             br["vec_score"] = 0.0
             br["score"] = round(bm25_norm, 4)
+        br.setdefault("matched_terms", "")
+        candidates.append(br)
 
-    bm25_results.sort(key=lambda r: r["score"], reverse=True)
-
-    # Final dedup and cap by (source, unit_id)
-    seen: set[tuple[str, str]] = set()
-    out: list[dict] = []
-    for r in bm25_results:
-        key = ("body", r.get("unit_id", ""))
-        if key in seen:
-            continue
-        seen.add(key)
-        r["matched_terms"] = ""
-        out.append(r)
-        if len(out) >= limit:
-            break
-
-    # If BM25 was empty but vec had results, synthesize entries
-    if not out and has_vec:
-        seen_v: set[tuple[str, str]] = set()
-        for vr in vec_results:
-            key = (vr.get("source", ""), vr.get("unit_id", ""))
-            if key in seen_v:
+    # Full union: include ALL unmatched vector hits (both body and object)
+    if has_vec:
+        for idx, vr in enumerate(vec_results):
+            uid = str(vr.get("unit_id") or "")
+            src = _canon_source(vr.get("source"))
+            raw_src = str(vr.get("source") or src)
+            dedupe_key = (src, uid) if uid else ("__vec_anon__", str(idx))
+            if dedupe_key in seen:
                 continue
-            seen_v.add(key)
-            vec_raw = vr["vec_score"]
+            seen.add(dedupe_key)
+            vec_raw = float(vr.get("vec_score", 0.0))
             vec_norm = 1.0 - (1.0 / (1.0 + vec_raw)) if vec_raw > 0 else 0.0
-            out.append(
+            combined = 0.7 * vec_norm if has_bm25 else vec_norm
+            candidates.append(
                 {
                     "paper_id": vr["paper_id"],
-                    "source": vr.get("source", ""),
-                    "unit_id": vr.get("unit_id", ""),
+                    "source": raw_src,
+                    "unit_id": uid,
                     "text": vr.get("text", ""),
+                    "bm25_score": 0.0,
                     "vec_score": round(vec_raw, 4),
-                    "score": round(vec_norm, 4),
+                    "score": round(combined, 4),
                     "matched_terms": "",
-                    "heading": "",
-                    "title": "",
-                    "first_author": "",
-                    "year": "",
-                    "journal": "",
-                    "domain": "",
+                    "heading": vr.get("heading", ""),
+                    "title": vr.get("title", ""),
+                    "first_author": vr.get("first_author", ""),
+                    "year": vr.get("year", ""),
+                    "journal": vr.get("journal", ""),
+                    "domain": vr.get("domain", ""),
                 }
             )
-            if len(out) >= limit:
-                break
 
-    # Append object-only vec hits not covered by BM25
-    if has_vec and len(out) < limit:
-        for vr in vec_results:
-            if vr.get("source") != "object":
-                continue
-            key = ("object", vr.get("unit_id", ""))
-            if key in seen:
-                continue
-            seen.add(key)
-            vec_raw = vr["vec_score"]
-            vec_norm = 1.0 - (1.0 / (1.0 + vec_raw)) if vec_raw > 0 else 0.0
-            out.append({
-                "paper_id": vr["paper_id"],
-                "source": "object",
-                "unit_id": vr.get("unit_id", ""),
-                "text": vr.get("text", ""),
-                "vec_score": round(vec_raw, 4),
-                "score": round(vec_norm, 4),
-                "matched_terms": "",
-                "heading": "",
-                "title": "",
-                "first_author": "",
-                "year": "",
-                "journal": "",
-                "domain": "",
-            })
-            if len(out) >= limit:
-                break
-    return out
+    candidates.sort(
+        key=lambda r: (float(r.get("score", 0.0)), float(r.get("vec_score", 0.0))),
+        reverse=True,
+    )
+    return candidates[:limit]

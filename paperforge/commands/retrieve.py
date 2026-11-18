@@ -128,10 +128,27 @@ def run(args: argparse.Namespace) -> int:
     if deep:
         try:
             raw_chunks = hybrid_search(vault, query, limit=limit, paper_id=paper_key)
-            # #159 §6 reader gate: never serve a mismatched/unknown chain.
+            # #159 §6 reader gate: never serve a mismatched/unknown chain, while
+            # permitting BM25-only hits when vectors are not built.
             from paperforge.reader_gate import filter_readable
 
-            raw_chunks = filter_readable(vault, raw_chunks, require_vector=True)
+            vec_used = [c for c in raw_chunks if float(c.get("vec_score") or 0.0) > 0.0]
+            bm25_only = [c for c in raw_chunks if float(c.get("vec_score") or 0.0) <= 0.0]
+            vec_allowed = filter_readable(vault, vec_used, require_vector=True)
+            allowed_ids = {id(c) for c in vec_allowed}
+            for c in vec_used:
+                if id(c) not in allowed_ids and float(c.get("bm25_score") or 0.0) > 0.0:
+                    bm25_only.append({
+                        **c,
+                        "vec_score": 0.0,
+                        "score": round(float(c["bm25_score"]), 4),
+                    })
+            bm25_allowed = filter_readable(vault, bm25_only, require_vector=False)
+            raw_chunks = sorted(
+                vec_allowed + bm25_allowed,
+                key=lambda r: float(r.get("score") or 0.0),
+                reverse=True,
+            )[:limit]
         except Exception as e:
             result = PFResult(
                 ok=False,

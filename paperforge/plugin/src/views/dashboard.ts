@@ -3476,20 +3476,20 @@ export class PaperForgeStatusView extends ItemView {
       if (isActive) card.addClass("active");
 
       // Title
+      const zoteroKey =
+        typeof rec["zotero_key"] === "string" ? rec["zotero_key"] : "";
       const titleText =
-        typeof rec["title"] === "string"
+        typeof rec["title"] === "string" && rec["title"]
           ? rec["title"]
-          : typeof rec["file_name"] === "string"
+          : typeof rec["file_name"] === "string" && rec["file_name"]
             ? rec["file_name"]
-            : "(untitled)";
+            : zoteroKey || "(untitled)";
       card.createEl("div", {
         cls: "paperforge-search-result-title",
         text: titleText,
       });
 
       // Note path resolution: main_note_path → note_path → zotero_key lookup in cached index
-      const zoteroKey =
-        typeof rec["zotero_key"] === "string" ? rec["zotero_key"] : "";
       const mainNotePath =
         typeof rec["main_note_path"] === "string" && rec["main_note_path"]
           ? rec["main_note_path"]
@@ -3554,6 +3554,18 @@ export class PaperForgeStatusView extends ItemView {
           cls: "paperforge-search-result-journal",
           text: rec["journal"],
         });
+      }
+      if (isDeep) {
+        const sectionOrObject =
+          (typeof rec["object_label"] === "string" && rec["object_label"]) ||
+          (typeof rec["heading"] === "string" && rec["heading"]) ||
+          "";
+        if (sectionOrObject) {
+          meta.createEl("span", {
+            cls: "paperforge-search-result-section",
+            text: sectionOrObject,
+          });
+        }
       }
       if (rec["score"] !== undefined) {
         const score = rec["score"];
