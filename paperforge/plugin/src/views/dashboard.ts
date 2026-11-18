@@ -228,7 +228,10 @@ export class PaperForgeStatusView extends ItemView {
     const headerLeft = header.createEl("div", {
       cls: "paperforge-header-left",
     });
-    headerLeft.createEl("div", { cls: "paperforge-header-logo", text: "P" });
+    const logoEl = headerLeft.createEl("div", {
+      cls: "paperforge-header-logo",
+    });
+    setPfIcon(logoEl, "book-open", 14);
     this._modeContextEl = headerLeft.createEl("div", {
       cls: "paperforge-mode-context",
     });
@@ -244,7 +247,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-header-refresh",
       attr: { "aria-label": "Refresh" },
     });
-    refreshBtn.innerHTML = "\u21BB";
+    setPfIcon(refreshBtn, "refresh-cw", 14);
     refreshBtn.addEventListener("click", () => {
       void (async () => {
         await this._invalidateIndex();
@@ -2368,10 +2371,10 @@ export class PaperForgeStatusView extends ItemView {
     const ocrActionBtn = actionsRow.createEl("button", {
       cls: "paperforge-contextual-btn primary",
     });
-    ocrActionBtn.createEl("span", {
+    const ocrIcon = ocrActionBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
-      text: "\u229E",
     });
+    setPfIcon(ocrIcon, "play", 13);
     ocrActionBtn.createEl("span", { text: t("dash_run_ocr") });
     ocrActionBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
@@ -2380,10 +2383,10 @@ export class PaperForgeStatusView extends ItemView {
     const syncBtn = actionsRow.createEl("button", {
       cls: "paperforge-contextual-btn",
     });
-    syncBtn.createEl("span", {
+    const syncIcon = syncBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
-      text: "\u21BB",
     });
+    setPfIcon(syncIcon, "refresh-cw", 13);
     syncBtn.createEl("span", { text: t("dash_sync_library") });
     syncBtn.addEventListener("click", () => {
       void this._runLibrarySync();
@@ -2830,9 +2833,11 @@ export class PaperForgeStatusView extends ItemView {
     const inputRow = this._searchContainer.createEl("div", {
       cls: "paperforge-search-input-row",
     });
+    const initDeep =
+      this._searchQuery.trim().startsWith("@") || this._searchMode === "@";
     const modeBadge = inputRow.createEl("span", {
-      cls: "paperforge-search-mode",
-      text: "M",
+      cls: initDeep ? "paperforge-search-mode deep" : "paperforge-search-mode",
+      text: initDeep ? "@" : "M",
     });
     this._searchInput = inputRow.createEl("input", {
       cls: "paperforge-search-input",
@@ -2850,12 +2855,11 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-record-search",
     });
     records.createEl("h3", { text: t("record_records") });
-    const historyLabel = records.createEl("label", {
-      text: t("record_history"),
-    });
+    const historyLabel = records.createEl("label");
     const history = historyLabel.createEl("input", {
       attr: { type: "checkbox", "aria-label": t("record_history") },
     });
+    historyLabel.createEl("span", { text: t("record_history") });
     history.checked = this._recordHistory;
     history.onchange = () => {
       this._recordHistory = history.checked;

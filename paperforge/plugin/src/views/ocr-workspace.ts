@@ -552,7 +552,7 @@ export class OcrWorkspaceView extends ItemView {
       for (const v of versions) {
         const chip = vf.createEl("button", {
           cls: `pf-ocr-ws-chip${this.versionFilter === v ? " pf-active" : ""}`,
-          text: `v${v}`,
+          text: v.startsWith("v") ? v : `v${v}`,
         });
         chip.addEventListener("click", () => {
           this.versionFilter = this.versionFilter === v ? null : v;
@@ -1568,7 +1568,12 @@ export class VersionRestoreModal extends Modal {
       ver.source +
       " · " +
       sizeStr +
-      (ver.renderer_version ? " · renderer v" + ver.renderer_version : "") +
+      (ver.renderer_version
+        ? " · renderer " +
+          (ver.renderer_version.startsWith("v")
+            ? ver.renderer_version
+            : "v" + ver.renderer_version)
+        : "") +
       "</span>";
 
     const contentArea = preview.createDiv({ cls: "pf-vr-content" });

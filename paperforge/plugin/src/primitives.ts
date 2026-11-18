@@ -134,6 +134,7 @@ export interface ActionButtonConfig {
   label: string;
   disabled?: boolean;
   loading?: boolean;
+  variant?: "primary" | "secondary" | "ghost";
   onClick: () => void;
 }
 
@@ -142,8 +143,15 @@ export function renderActionButton(
   parent: HTMLElement,
   config: ActionButtonConfig
 ): HTMLElement {
+  const variant = config.variant ?? "primary";
+  const variantCls =
+    variant === "secondary"
+      ? " pf-action-btn--secondary"
+      : variant === "ghost"
+        ? " pf-action-btn--ghost"
+        : "";
   const btn = parent.createEl("button", {
-    cls: "pf-action-btn",
+    cls: `pf-action-btn${variantCls}`,
     text: config.loading ? "…" : config.label,
   });
   if (config.loading) {
@@ -448,7 +456,10 @@ export type PublicSupportReport = string & {
  * may contain spaces), then leftovers by shape; useful facts — reason codes,
  * action IDs, timestamps — are untouched.
  */
-export function redactDiagnostic(text: string, knownRoots: readonly string[] = []): string {
+export function redactDiagnostic(
+  text: string,
+  knownRoots: readonly string[] = []
+): string {
   let out = text;
   // Only absolute roots are scrubbed verbatim (they may contain spaces).
   const roots = [...knownRoots]
@@ -462,12 +473,18 @@ export function redactDiagnostic(text: string, knownRoots: readonly string[] = [
     // Windows absolute path (stops at whitespace, a quote, or a delimiter).
     .replace(/[A-Za-z]:[\\/][^\s"'<>|,;]*/g, "<path>")
     // POSIX absolute path in the directories a machine profile lives under.
-    .replace(/(?<![\w:])\/(?:Users|home|root|var|tmp|opt|mnt|Volumes)\/[^\s"'<>|,;]*/g, "<path>")
+    .replace(
+      /(?<![\w:])\/(?:Users|home|root|var|tmp|opt|mnt|Volumes)\/[^\s"'<>|,;]*/g,
+      "<path>"
+    )
     // Provider keys and bearer tokens.
     .replace(/\bsk-[A-Za-z0-9_-]{8,}/g, "<redacted-key>")
     .replace(/\b(Bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, "$1 <redacted>")
     // key=value secrets in query strings and inline diagnostics.
-    .replace(/\b(token|api[_-]?key|secret|password|authorization)=([^\s&"']+)/gi, "$1=<redacted>");
+    .replace(
+      /\b(token|api[_-]?key|secret|password|authorization)=([^\s&"']+)/gi,
+      "$1=<redacted>"
+    );
   return out;
 }
 
@@ -487,7 +504,11 @@ const USER_STATES: readonly UserState[] = [
 ];
 
 /** Reason/action namespaces the Probe and plugin actually emit. */
-const ID_NAMESPACES: readonly string[] = [...CAPABILITY_MODULES, "embed", "foundation"];
+const ID_NAMESPACES: readonly string[] = [
+  ...CAPABILITY_MODULES,
+  "embed",
+  "foundation",
+];
 
 const CODE_PART_RE = /^[a-z][a-z0-9_]*$/;
 
@@ -516,7 +537,8 @@ const SETUP_CATEGORIES: readonly string[] = [
 /** Numeric major.minor.patch plus PEP440-ish suffixes (`2.0.0rc6`). */
 const VERSION_RE = /^\d+\.\d+\.\d+[A-Za-z0-9.+-]*$/;
 /** Strict ISO-8601 timestamps the plugin mints (`Date.toISOString`). */
-const ISO_STAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?$/;
+const ISO_STAMP_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?$/;
 /** Fixed placeholders the plugin itself emits for paths. */
 const PATH_PLACEHOLDERS: readonly string[] = [
   "(outside home)",
@@ -550,9 +572,7 @@ function sanitizeDottedId(value: string | undefined): string | undefined {
   return `${ns}.${rest.join(".")}`;
 }
 
-function sanitizeVersion(
-  value: string | null | undefined
-): string | undefined {
+function sanitizeVersion(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
   const v = value.trim();
   return v.length > 0 && v.length <= 64 && VERSION_RE.test(v) ? v : undefined;
@@ -578,7 +598,9 @@ function sanitizePathSummary(value: unknown, fallback: string): string {
   return PATH_PLACEHOLDERS.includes(v) ? v : fallback;
 }
 
-export function buildSupportDiagnostic(input: DiagnosticInput): PublicSupportReport {
+export function buildSupportDiagnostic(
+  input: DiagnosticInput
+): PublicSupportReport {
   const lines: string[] = [];
   lines.push("=== PaperForge Support Diagnostic ===");
   lines.push(`Time: ${new Date().toISOString()}`);

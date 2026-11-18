@@ -36,6 +36,20 @@ body.pf-theme-asterlab:not(.theme-dark),
   --pf-row-h: 32px;
   --pf-shadow-float:
     0 8px 24px rgba(28, 27, 24, 0.1), 0 1px 3px rgba(28, 27, 24, 0.06);
+  --pf-btn-lift:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 0 rgba(28, 27, 24, 0.06), 0 1px 2px rgba(28, 27, 24, 0.06);
+  --pf-primary-lift:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 1px 2px rgba(91, 69, 201, 0.28);
+  --pf-btn-press:
+    inset 0 1px 2px rgba(28, 27, 24, 0.18), inset 0 0 0 transparent,
+    0 0 0 transparent;
+  --pf-well-inset:
+    inset 0 1px 2px rgba(28, 27, 24, 0.06),
+    inset 0 0 0 1px rgba(28, 27, 24, 0.05);
+  --pf-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
 }
 
 .theme-dark body:not(.pf-theme-obsidian),
@@ -63,6 +77,20 @@ body.theme-dark.pf-theme-asterlab,
   --pf-danger: #e79a9c;
   --pf-shadow-float:
     0 10px 28px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.25);
+  --pf-btn-lift:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.28);
+  --pf-primary-lift:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+  --pf-btn-press:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45), inset 0 0 0 transparent,
+    0 0 0 transparent;
+  --pf-well-inset:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --pf-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
 }
 
 body.pf-theme-obsidian {
@@ -6792,14 +6820,16 @@ input.pf-ocr-ws-search-input::placeholder {
   box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 .pf-btn-secondary {
-  background: var(--background-secondary);
-  color: var(--text-normal);
-  box-shadow: 0 0 0 1px var(--background-modifier-border);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border-strong);
+  box-shadow: var(--pf-btn-lift);
 }
 .pf-btn-ghost {
   background: transparent;
-  color: var(--interactive-accent);
-  box-shadow: 0 0 0 1px var(--interactive-accent);
+  color: var(--pf-text-muted);
+  border: 1px solid transparent;
+  box-shadow: none;
 }
 .pf-btn-warning {
   background: color-mix(in srgb, var(--text-warning) 12%, transparent);
@@ -7225,14 +7255,14 @@ input.pf-ocr-ws-search-input::placeholder {
   color: var(--text-on-accent);
 }
 .pf-btn-secondary {
-  background: var(--background-secondary);
-  color: var(--text-normal);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border-strong);
 }
 .pf-btn-ghost {
   background: transparent;
-  color: var(--interactive-accent);
-  border: 1px solid var(--interactive-accent);
+  color: var(--pf-text-muted);
+  border: 1px solid transparent;
 }
 .pf-btn-warning {
   background: color-mix(in srgb, var(--text-warning) 10%, transparent);
@@ -8811,7 +8841,7 @@ input.pf-ocr-ws-search-input::placeholder {
   min-height: 0;
 }
 .pf-pdf-sidebar {
-  width: 248px;
+  width: 268px;
   min-width: 224px;
   border-right: 1px solid var(--pf-border, var(--background-modifier-border));
   background: var(--pf-surface, var(--background-secondary));
@@ -9452,6 +9482,7 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 .pf-base-empty {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 12px;
@@ -9760,4 +9791,593 @@ input.pf-ocr-ws-search-input::placeholder {
   background: var(--pf-surface);
   color: var(--pf-text);
   border-radius: var(--pf-radius-dialog, 12px);
+}
+
+/* ==========================================================================
+   VibeDesign Micro-Craft Polish (#001 / #004 / #007 / #009 / #015)
+   ========================================================================== */
+
+/* 1. Continuous Squircle Corners (#004) + Global Typography Switches (#007) */
+@supports (corner-shape: superellipse(1.25)) {
+  :where(
+    .paperforge-status-panel *,
+    .pf-base-view-root *,
+    .pf-pdf-view *,
+    .pf-control-center *,
+    .pf-ocr-workspace *,
+    .pf-setup-journey *,
+    .paperforge-modal *
+  ) {
+    corner-shape: superellipse(1.25);
+  }
+  .pf-badge,
+  .pf-badge-outline,
+  .pf-setup-step,
+  .pf-pdf-swatch,
+  .pf-pdf-mini-swatch,
+  .pf-pdf-ann-dot,
+  .pf-base-dot,
+  .pf-base-group-dot,
+  .pf-pdf-split-dot,
+  .pf-pdf-prov-badge,
+  .pf-pdf-ann-agent-badge,
+  .pf-pdf-ann-fig-badge,
+  .pf-pdf-badge-pill,
+  .pf-ocr-ws-status,
+  .pf-ocr-badge,
+  .paperforge-status-pill {
+    corner-shape: round !important;
+  }
+}
+
+.paperforge-status-panel,
+.pf-base-view-root,
+.pf-pdf-view,
+.pf-control-center,
+.pf-ocr-workspace,
+.pf-setup-journey,
+.paperforge-modal {
+  text-autospace: normal;
+  text-spacing-trim: trim-start;
+  accent-color: var(--pf-accent);
+}
+
+.paperforge-status-panel :is(h2, h3, .paperforge-paper-title),
+.pf-control-center :is(h2, h3),
+.pf-setup-journey :is(h2, h3),
+.pf-ocr-workspace :is(h2, h3) {
+  text-wrap: balance;
+}
+
+.paperforge-status-panel :is(p, .pf-lm-body, .paperforge-overview-text),
+.pf-control-center p,
+.pf-setup-journey p {
+  text-wrap: pretty;
+}
+
+:is(
+  .pf-btn,
+  .pf-action-btn,
+  .pf-badge,
+  .pf-badge-outline,
+  .pf-segmented-btn,
+  .pf-setup-step,
+  .pf-pdf-pill-ctrl,
+  .paperforge-contextual-btn,
+  .paperforge-next-step-trigger
+) {
+  white-space: nowrap;
+}
+
+/* 2. Five-Layer Top-Lit Tactile Buttons & Variants (#001) */
+.pf-btn,
+.pf-action-btn,
+.paperforge-contextual-btn,
+.paperforge-next-step-trigger,
+.pf-ocr-ws-detail button,
+.paperforge-search-results button,
+.pf-setup-flow-body .pf-setup-verify {
+  font-weight: 500;
+  border-radius: var(--pf-radius-control, 6px);
+  transition:
+    background-color 140ms var(--pf-ease-out),
+    border-color 140ms var(--pf-ease-out),
+    box-shadow 140ms var(--pf-ease-out),
+    transform 100ms var(--pf-ease-out);
+}
+
+.pf-btn:not(.pf-btn-primary):not(.pf-btn-ghost):not(.mod-cta),
+.paperforge-contextual-btn:not(.primary),
+.paperforge-next-step-trigger,
+.pf-action-btn--secondary,
+.pf-ocr-ws-detail button:not(.mod-cta):not(.mod-warning),
+.paperforge-search-results button,
+.pf-setup-flow-body .pf-setup-verify {
+  background: var(--pf-surface) !important;
+  color: var(--pf-text) !important;
+  border: 1px solid var(--pf-border-strong) !important;
+  box-shadow: var(--pf-btn-lift) !important;
+}
+
+.pf-btn:not(.pf-btn-primary):not(.pf-btn-ghost):not(.mod-cta):hover:not(
+    :disabled
+  ),
+.paperforge-contextual-btn:not(.primary):hover:not(:disabled),
+.paperforge-next-step-trigger:hover:not(:disabled),
+.pf-action-btn--secondary:hover:not(:disabled),
+.pf-ocr-ws-detail button:not(.mod-cta):not(.mod-warning):hover:not(:disabled),
+.paperforge-search-results button:hover:not(:disabled),
+.pf-setup-flow-body .pf-setup-verify:hover:not(:disabled) {
+  background: var(--pf-elevated) !important;
+  border-color: var(--pf-border-hover) !important;
+}
+
+.pf-btn.pf-btn-primary,
+.pf-btn.mod-cta,
+.paperforge-contextual-btn.primary,
+.pf-action-btn:not(.pf-action-btn--secondary):not(.pf-action-btn--ghost) {
+  background: var(--pf-accent);
+  border: 1px solid var(--pf-accent);
+  color: var(--pf-accent-text);
+  box-shadow: var(--pf-primary-lift);
+}
+
+.pf-btn.pf-btn-primary:hover:not(:disabled),
+.pf-btn.mod-cta:hover:not(:disabled),
+.paperforge-contextual-btn.primary:hover:not(:disabled),
+.pf-action-btn:not(.pf-action-btn--secondary):not(
+    .pf-action-btn--ghost
+  ):hover:not(:disabled) {
+  background: var(--pf-accent-hover);
+  border-color: var(--pf-accent-hover);
+}
+
+.pf-btn.pf-btn-ghost,
+.pf-action-btn--ghost {
+  background: transparent !important;
+  color: var(--pf-text-muted) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+.pf-btn.pf-btn-ghost:hover:not(:disabled),
+.pf-action-btn--ghost:hover:not(:disabled) {
+  background: var(--pf-hover) !important;
+  color: var(--pf-text) !important;
+}
+
+:is(.pf-btn, .pf-action-btn, .paperforge-contextual-btn):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--pf-btn-press) !important;
+}
+
+/* 3. Segmented Recessed Wells (#015) */
+.pf-segmented {
+  background: var(--pf-rail) !important;
+  padding: 3px !important;
+  border-radius: 9px !important;
+  border: 1px solid var(--pf-border) !important;
+  box-shadow: var(--pf-well-inset) !important;
+  gap: 2px;
+}
+
+.pf-segmented-btn {
+  border-radius: 6px !important;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--pf-text-muted);
+  height: 24px;
+  font-weight: 500;
+  transition:
+    background-color 140ms var(--pf-ease-out),
+    color 140ms var(--pf-ease-out),
+    box-shadow 140ms var(--pf-ease-out);
+}
+
+.pf-segmented-btn:hover {
+  color: var(--pf-text);
+}
+
+.pf-segmented-btn.is-active {
+  background: var(--pf-surface) !important;
+  color: var(--pf-text) !important;
+  border-color: var(--pf-border) !important;
+  box-shadow: var(--pf-btn-lift) !important;
+}
+
+/* 4. Dashboard Companion Inspector Micro-Polish (03 / 04 / 05 / 06) */
+.paperforge-status-panel .paperforge-header {
+  height: 40px;
+  padding: 0 2px 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.paperforge-status-panel .paperforge-header-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 8px;
+}
+
+.paperforge-status-panel .paperforge-header-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+  color: var(--pf-text-muted);
+  box-shadow: var(--pf-btn-lift);
+}
+
+.paperforge-status-panel .paperforge-mode-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.paperforge-status-panel .paperforge-mode-badge {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border-strong);
+  color: var(--pf-text-muted);
+  letter-spacing: 0.4px;
+}
+
+.paperforge-status-panel .paperforge-mode-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+/* Eliminate duplicated "Paper" / "Collection" header titles */
+.paperforge-status-panel
+  .paperforge-header-left:has([data-pf-mode="paper"])
+  .paperforge-header-title,
+.paperforge-status-panel
+  .paperforge-header-left:has([data-pf-mode="collection"])
+  .paperforge-header-title,
+.paperforge-status-panel
+  .paperforge-header-left:has([data-pf-mode="paper"])
+  .paperforge-header-badge,
+.paperforge-status-panel
+  .paperforge-header-left:has([data-pf-mode="collection"])
+  .paperforge-header-badge {
+  display: none;
+}
+
+.paperforge-status-panel .paperforge-header-refresh {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--pf-text-muted);
+}
+
+.paperforge-status-panel .paperforge-header-refresh:hover {
+  background: var(--pf-hover);
+  color: var(--pf-text);
+}
+
+.paperforge-status-panel .paperforge-section-label {
+  padding-left: 0 !important;
+  border-left: none !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: var(--pf-text-muted) !important;
+  margin-bottom: 8px !important;
+}
+
+/* Recovery / Issue card: replace curved left accent border artifacts */
+.paperforge-status-panel .paperforge-issue-summary {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-left: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  padding: 12px 14px;
+}
+
+.paperforge-status-panel .paperforge-issue-item {
+  border-left: none;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-elevated);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.paperforge-status-panel .paperforge-issue-item::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pf-warning);
+  flex-shrink: 0;
+}
+
+/* Collection funnel & pipeline spacing */
+.paperforge-status-panel .paperforge-workflow-stage-value,
+.paperforge-status-panel .paperforge-ocr-count-value {
+  color: var(--pf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.paperforge-status-panel .paperforge-ocr-badge {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border-strong);
+  color: var(--pf-text-muted);
+  border-radius: 999px;
+}
+
+.paperforge-status-panel .paperforge-ocr-badge.active {
+  background: var(--pf-accent-tint);
+  border-color: var(--pf-accent-line);
+  color: var(--pf-accent);
+}
+
+.paperforge-status-panel .paperforge-ocr-counts {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.paperforge-status-panel .paperforge-ocr-count-label {
+  font-size: 10.5px;
+  color: var(--pf-text-subtle);
+  white-space: nowrap;
+}
+
+/* Unified Recessed Search Field */
+.paperforge-status-panel .paperforge-search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border-strong);
+  border-radius: var(--pf-radius-control, 6px);
+  box-shadow: var(--pf-well-inset);
+}
+
+.paperforge-status-panel .paperforge-search-mode {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--pf-surface);
+  color: var(--pf-text-muted);
+  border: 1px solid var(--pf-border);
+  box-shadow: var(--pf-btn-lift);
+  flex-shrink: 0;
+}
+
+.paperforge-status-panel .paperforge-search-mode.deep {
+  background: var(--pf-accent-tint);
+  border-color: var(--pf-accent-line);
+  color: var(--pf-accent);
+}
+
+.paperforge-status-panel .paperforge-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px 2px !important;
+  color: var(--pf-text);
+}
+
+.paperforge-status-panel .paperforge-search-section > h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pf-text-muted);
+  margin: 12px 0 6px;
+}
+
+.paperforge-status-panel
+  .paperforge-search-section
+  > h3:has(+ .paperforge-search-results:empty) {
+  display: none;
+}
+
+.paperforge-status-panel .paperforge-record-search {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pf-border);
+}
+
+.paperforge-status-panel .paperforge-record-search h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pf-text-muted);
+  margin: 0 0 6px;
+}
+
+.paperforge-status-panel .paperforge-record-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+}
+
+.paperforge-status-panel .paperforge-search-state-card .pf-btn-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: var(--pf-radius-control, 6px);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border-strong);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: var(--pf-btn-lift);
+  outline: none;
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--pf-ease-out),
+    border-color 140ms var(--pf-ease-out);
+}
+
+.paperforge-status-panel .paperforge-search-state-card .pf-btn-link:hover {
+  background: var(--pf-elevated);
+  border-color: var(--pf-text-subtle);
+}
+
+.paperforge-status-panel
+  .paperforge-search-state-card
+  .pf-btn-link:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: var(--pf-btn-lift);
+}
+
+.paperforge-status-panel
+  .paperforge-search-state-card
+  .pf-btn-link:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--pf-surface, #ffffff),
+    0 0 0 4px var(--pf-accent, #5b45c9);
+}
+
+/* 5. PDF Sidebar & Swatches Polish (07 / 08) */
+.pf-pdf-filter-bar {
+  flex-wrap: nowrap !important;
+  justify-content: space-between;
+  padding: 7px 8px !important;
+  gap: 6px !important;
+}
+
+.pf-pdf-filter-bar .pf-segmented-btn {
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+
+.pf-pdf-clear-ai-btn {
+  padding: 2px 6px !important;
+  height: 24px !important;
+  font-size: 11px !important;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.pf-pdf-ann-card-actions {
+  gap: 6px;
+}
+
+.pf-pdf-ann-card-actions [data-pf-testid="pdf-adopt-ann-btn"] {
+  border-color: var(--pf-accent-line) !important;
+  background: var(--pf-accent-tint) !important;
+  color: var(--pf-accent) !important;
+}
+
+.pf-pdf-swatch,
+.pf-pdf-mini-swatch {
+  border: none !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.pf-pdf-swatch.is-selected,
+.pf-pdf-mini-swatch.is-selected {
+  outline: none !important;
+  box-shadow:
+    0 0 0 2px var(--pf-surface, #ffffff),
+    0 0 0 3.5px var(--pf-accent, #5b45c9) !important;
+}
+
+/* 6. Control Center & Setup Wizard Micro-Craft (09 / 10 / 11) */
+.pf-control-center .pf-cc-summary {
+  padding: 16px 18px;
+}
+
+.pf-control-center .pf-cc-summary-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pf-border);
+}
+
+.pf-control-center .pf-cc-module-card {
+  display: grid !important;
+  grid-template-columns: 24px minmax(78px, auto) auto minmax(0, 1fr) auto 14px;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 11px 14px !important;
+}
+
+.pf-control-center .pf-cc-card-name {
+  white-space: nowrap;
+}
+
+.pf-control-center .pf-cc-card-sentence {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-control-center .pf-cc-card-metric {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--pf-text-subtle);
+  font-size: 11.5px;
+}
+
+.pf-setup-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pf-runtime-manual {
+  margin: 12px 0;
+}
+
+.pf-setup-optional {
+  background: var(--pf-surface) !important;
+  border: 1px solid var(--pf-border) !important;
+  border-radius: var(--pf-radius-panel, 10px) !important;
+}
+
+.pf-setup-optional:has(input:checked) {
+  border-color: var(--pf-border-strong) !important;
+  background: var(--pf-surface) !important;
+}
+
+.pf-setup-optional-config {
+  border-top: 1px solid var(--pf-border) !important;
+}
+
+.pf-setup-nav {
+  padding-top: 14px;
+  border-top: 1px solid var(--pf-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-btn,
+  .pf-action-btn,
+  .pf-segmented-btn,
+  .paperforge-contextual-btn {
+    transition: none !important;
+  }
 }

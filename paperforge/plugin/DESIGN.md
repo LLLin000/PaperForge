@@ -85,3 +85,17 @@ All surfaces consume semantic `--pf-*` CSS custom properties declared in `paperf
 ## 5. Six-State Capability Model (Settings & Maintenance)
 
 The six canonical `UserState` tokens (`checking`, `ready`, `not_enabled`, `setup_required`, `action_required`, `detection_failed`) render with quiet `1px` outline badges + text (`11.5px` / `6px` dot) so modules never shout visually unless human intervention is required.
+
+---
+
+## 6. Interactive Micro-Craft Rules (`vibedesign.tips` Alignment)
+
+Every interactive control follows five concrete tactile & typographic rules implemented globally in `paperforge/plugin/styles.css`:
+
+1. **Five-Layer Top-Lit Tactile Hierarchy (`#001`)**:
+   - **Primary** (`--pf-accent`): top inner sheen (`--pf-primary-lift`), 1px bottom lip, subtle outer lift; pressed state translates `1px` down with `--pf-btn-press`. Max **one** primary per view section or navigation bar.
+   - **Secondary** (`--pf-surface` / `--pf-action-btn--secondary`): crisp `--pf-border-strong` rim with `--pf-btn-lift` (`inset 0 1px 0 rgba(255,255,255,0.85)` light / `0.08` dark).
+   - **Ghost** (`pf-btn-ghost` / `pf-action-btn--ghost`): transparent rest state, neutral hover fill, **zero** resting accent outline.
+2. **Concentric & Continuous Corners (`#004`)**: Outer containers (`10px`) minus compact padding (`4px`) drive inner control radii (`6px` = `10 - 4`), while Chromium/Electron views progressively enable `corner-shape: superellipse(1.25)` (keeping `round` strictly on pill badges and color dots).
+3. **Recessed Input & Segmented Tracks (`#015`)**: Unified search bars and segmented controls sit inside `--pf-well-inset` tracks with an active `--pf-surface` capsule casting `--pf-btn-lift`, using deceleration curve `--pf-ease-out: cubic-bezier(0.22, 1, 0.36, 1)`.
+4. **CJK / Latin Typography Switches (`#007`)**: Global `text-autospace: normal`, `text-spacing-trim: trim-start`, `text-wrap: balance` on headings, `text-wrap: pretty` on prose, `white-space: nowrap` on buttons/tabs, and `min-width: 0` on all flex truncating headers.

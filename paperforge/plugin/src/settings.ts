@@ -1321,6 +1321,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         renderActionButton(body, {
           label: t("runtime_cancel_btn"),
+          variant: "secondary",
           onClick: () => this._cancelRuntimePoll(),
         });
       } else {
@@ -1805,6 +1806,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         (t("md_ocr_workspace_advanced") ||
           t("md_ocr_workspace") ||
           "Advanced OCR Workspace") + " \u2197",
+      variant: "secondary",
       onClick: () =>
         (this.app as any).workspace.getLeaf().setViewState({
           type: "paperforge-ocr-workspace",
@@ -1813,6 +1815,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (!isRunning) {
       renderActionButton(body, {
         label: t("ocr_configure_credential"),
+        variant: "secondary",
         onClick: () => this._startSetupJourney(3),
       });
 
@@ -1892,6 +1895,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (this._agentPlatformDraft === null) {
       renderActionButton(body, {
         label: t("config_change"),
+        variant: "secondary",
         onClick: () => {
           this._agentPlatformDraft = current;
           this.display();
@@ -1945,6 +1949,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       renderActionButton(actions, {
         label: t("config_cancel"),
+        variant: "ghost",
         onClick: () => {
           this._agentPlatformDraft = null;
           this.display();
@@ -1952,6 +1957,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       renderActionButton(actions, {
         label: t("config_verify"),
+        variant: "secondary",
         onClick: () => {
           const value = this._agentPlatformDraft ?? current;
           const dirRel = AGENT_PLATFORM_SKILL_DIRS[value] ?? ".agents/skills";
@@ -4296,6 +4302,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
         renderActionButton(containerEl, {
           label: t("runtime_cancel_btn"),
+          variant: "secondary",
           onClick: () => this._cancelRuntimePoll(),
         });
       } else {
@@ -4322,6 +4329,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     renderActionButton(containerEl, {
       label: t("setup_runtime_refresh"),
+      variant: "secondary",
       onClick: () => {
         this._refreshRuntimeStatus(true);
         this.display();
@@ -4331,6 +4339,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_later"),
+      variant: "ghost",
       onClick: () => {
         this._setupStage = 1;
         this.activeTab = "overview";
@@ -4737,11 +4746,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_exit"),
+      variant: "ghost",
       disabled: this._setupOperation === "running",
       onClick: () => this._goHome(),
     });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
+      variant: "secondary",
       disabled: this._setupOperation === "running",
       onClick: () => {
         this._setupFeedback = null;
@@ -5191,10 +5202,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_exit"),
+      variant: "ghost",
       onClick: () => this._goHome(),
     });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
+      variant: "secondary",
       onClick: () => {
         this._setupStage = 2;
         this.display();
@@ -5256,10 +5269,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_exit"),
+      variant: "ghost",
       onClick: () => this._goHome(),
     });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
+      variant: "secondary",
       onClick: () => {
         this._setupStage = 3;
         this.display();
@@ -5268,6 +5283,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (!foundationReady || !libraryReady) {
       renderActionButton(nav, {
         label: t("setup_review_recheck"),
+        variant: "secondary",
         disabled: checking,
         onClick: () => this._refreshSetupReadiness(),
       });
