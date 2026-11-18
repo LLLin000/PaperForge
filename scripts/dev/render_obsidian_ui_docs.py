@@ -1,0 +1,512 @@
+#!/usr/bin/env python3
+"""Render PaperForge Obsidian UI all-states & Base design screenshots from live TS components.
+
+Usage:
+    python scripts/dev/render_obsidian_ui_docs.py
+"""
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PLUGIN_DIR = REPO_ROOT / "paperforge" / "plugin"
+SHIM_PATH = REPO_ROOT / "scripts" / "dev" / "_obsidian_browser_shim.ts"
+ENTRY_PATH = REPO_ROOT / "scripts" / "dev" / "_obsidian_ui_showcase.ts"
+STYLES_CSS = PLUGIN_DIR / "styles.css"
+OUT_DIR = REPO_ROOT / "docs" / "images" / "ui-states"
+
+SCENES = [
+    "01-base-workbench-all-states",
+    "02-base-empty-and-filtered-states",
+    "03-dashboard-global-modes",
+    "04-dashboard-collection-mode",
+    "05-dashboard-paper-mode-living-memory",
+    "06-dashboard-search-and-recovery-states",
+    "07-pdf-annotator-human-and-ai-layers",
+    "08-pdf-annotator-provenance-and-empty-states",
+    "09-settings-control-center-six-states",
+    "10-settings-setup-wizard-four-stages",
+    "11-settings-ocr-and-memory-details",
+    "12-ocr-workspace-and-modals",
+]
+
+
+def _find_browser_executable() -> str | None:
+    for cmd in ("google-chrome", "chromium", "chrome", "msedge"):
+        found = shutil.which(cmd)
+        if found:
+            return found
+    prog_files = [
+        os.environ.get("PROGRAMFILES", r"C:\Program Files"),
+        os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"),
+    ]
+    candidates = [
+        ("Google", "Chrome", "Application", "chrome.exe"),
+        ("Microsoft", "Edge", "Application", "msedge.exe"),
+    ]
+    for root in prog_files:
+        for parts in candidates:
+            p = Path(root).joinpath(*parts)
+            if p.exists():
+                return str(p)
+    return None
+
+
+def _bundle_showcase(build_dir: Path) -> Path:
+    bundle_js = build_dir / "showcase.js"
+    builder_cjs = build_dir / "build.cjs"
+
+    path_shim = build_dir / "shim_path.js"
+    path_shim.write_text(
+        r"""
+const sep = "/";
+function join(...parts) {
+  return parts.filter(Boolean).join("/").replace(/\\+/g, "/").replace(/\/+/g, "/");
+}
+function resolve(...parts) { return join(...parts); }
+function basename(p) { return String(p || "").split(/[\\/]/).pop() || ""; }
+function dirname(p) {
+  const s = String(p || "").replace(/\\+/g, "/").split("/");
+  s.pop();
+  return s.join("/") || ".";
+}
+function extname(p) {
+  const b = basename(p);
+  const i = b.lastIndexOf(".");
+  return i > 0 ? b.slice(i) : "";
+}
+function isAbsolute(p) { return /^([A-Za-z]:[\\/]|\/)/.test(String(p || "")); }
+function relative(_a, b) { return String(b || ""); }
+module.exports = { sep, join, resolve, basename, dirname, extname, isAbsolute, relative };
+""",
+        encoding="utf-8",
+    )
+
+    fs_shim = build_dir / "shim_fs.js"
+    fs_shim.write_text(
+        r"""
+module.exports = {
+  existsSync: (p) => !String(p || "").includes("missing"),
+  readdirSync: (p) => (String(p || "").includes("exports") ? ["library.json", "骨科.json"] : []),
+  readFileSync: (p) => {
+    const s = String(p || "");
+    if (s.includes("pointer.json")) {
+      return JSON.stringify({ python_path: "python", paperforge_version: "2.2.0" });
+    }
+    if (s.includes("versions/v1")) {
+      return "# 3.1 Results\n\nPEMF stimulation at 75 Hz improved early osteogenesis (p<0.05).\n\nDiscussion draft v1.";
+    }
+    if (s.includes("versions/v2") || s.includes("render/fulltext.md")) {
+      return "# 3.1 Results\n\nPEMF stimulation at 75 Hz ± 5 µM markedly enhanced osteogenesis via L-type Ca2+ influx (p=0.003).\n\nValidated against Figure 1B and Nifedipine blockade.";
+    }
+    return "";
+  },
+  statSync: () => ({ isDirectory: () => false, isFile: () => true, size: 4200, mtimeMs: Date.now() }),
+  watch: () => ({ close: () => {} }),
+};
+""",
+        encoding="utf-8",
+    )
+
+    os_shim = build_dir / "shim_os.js"
+    os_shim.write_text(
+        'module.exports = { homedir: () => "C:/Users/Researcher", platform: () => "win32", tmpdir: () => "/tmp" };\n',
+        encoding="utf-8",
+    )
+
+    empty_shim = build_dir / "shim_empty.js"
+    empty_shim.write_text("module.exports = {};\n", encoding="utf-8")
+
+    node_modules = (PLUGIN_DIR / "node_modules").as_posix()
+    entry_posix = ENTRY_PATH.as_posix()
+    shim_posix = SHIM_PATH.as_posix()
+    out_posix = bundle_js.as_posix()
+    path_p = path_shim.as_posix()
+    fs_p = fs_shim.as_posix()
+    os_p = os_shim.as_posix()
+    empty_p = empty_shim.as_posix()
+
+    builder_cjs.write_text(
+        f"""
+const esbuild = require("{node_modules}/esbuild");
+
+const browserShims = {{
+  name: "pf-browser-shims",
+  setup(build) {{
+    build.onResolve({{ filter: /^obsidian$/ }}, () => ({{ path: "{shim_posix}" }}));
+    build.onResolve({{ filter: /^(node:)?path$/ }}, () => ({{ path: "{path_p}" }}));
+    build.onResolve({{ filter: /^(node:)?fs$/ }}, () => ({{ path: "{fs_p}" }}));
+    build.onResolve({{ filter: /^(node:)?os$/ }}, () => ({{ path: "{os_p}" }}));
+    build.onResolve({{ filter: /^(node:)?(https|child_process)$/ }}, () => ({{ path: "{empty_p}" }}));
+  }},
+}};
+
+esbuild.build({{
+  entryPoints: ["{entry_posix}"],
+  bundle: true,
+  platform: "browser",
+  target: ["chrome120"],
+  outfile: "{out_posix}",
+  nodePaths: ["{node_modules}"],
+  plugins: [browserShims],
+  define: {{
+    "process.env.NODE_ENV": '"production"',
+    "process.platform": '"win32"',
+  }},
+}}).catch((e) => {{
+  console.error(e);
+  process.exit(1);
+}});
+""",
+        encoding="utf-8",
+    )
+
+    proc = subprocess.run(
+        ["node", str(builder_cjs)],
+        cwd=str(PLUGIN_DIR),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"esbuild showcase bundle failed:\n{proc.stderr}\n{proc.stdout}")
+    return bundle_js
+
+
+def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
+    html_path = build_dir / "index.html"
+    styles_uri = STYLES_CSS.as_uri()
+    bundle_uri = bundle_js.as_uri()
+    html_path.write_text(
+        f"""<!doctype html>
+<html class="theme-light" lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>PaperForge Obsidian UI & Base Design Showcase</title>
+<link rel="stylesheet" href="{styles_uri}" />
+<style>
+  :root {{
+    --background-primary: #ffffff;
+    --background-primary-alt: #f8f9fb;
+    --background-secondary: #f4f5f7;
+    --background-secondary-alt: #ebedf0;
+    --background-modifier-border: #e1e4e8;
+    --background-modifier-border-hover: #c9ced6;
+    --background-modifier-hover: rgba(15, 23, 42, 0.05);
+    --text-normal: #1f2328;
+    --text-muted: #59636e;
+    --text-faint: #8c959f;
+    --interactive-normal: #f3f4f6;
+    --interactive-hover: #e5e7eb;
+    --interactive-accent: #7c3aed;
+    --interactive-accent-hover: #6d28d9;
+    --text-on-accent: #ffffff;
+    --text-success: #1a7f37;
+    --text-warning: #9a6700;
+    --text-error: #cf222e;
+    --color-green: #1a7f37;
+    --color-red: #cf222e;
+    --color-orange: #bc4c00;
+    --color-purple: #8250df;
+    --color-blue: #0969da;
+    --font-interface: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", Inter, system-ui, sans-serif;
+    --font-monospace-theme: "Cascadia Code", Consolas, ui-monospace, monospace;
+    --font-ui-large: 18px;
+    --font-ui-medium: 15px;
+    --font-ui-small: 13px;
+    --font-ui-smaller: 11.5px;
+    --font-ui-smallest: 10.5px;
+    --font-semibold: 600;
+    --radius-s: 5px;
+    --radius-m: 8px;
+    --radius-l: 12px;
+    --size-4-1: 4px;
+    --size-4-2: 8px;
+    --size-4-3: 12px;
+    --size-4-4: 16px;
+    --shadow-s: 0 4px 16px rgba(15, 23, 42, 0.08);
+  }}
+  * {{ box-sizing: border-box; }}
+  body {{
+    margin: 0;
+    padding: 24px;
+    background: #eef1f6;
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: var(--font-ui-small);
+    line-height: 1.5;
+  }}
+  button {{
+    font-family: inherit;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: var(--radius-s);
+    border: 1px solid var(--background-modifier-border);
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+    cursor: pointer;
+  }}
+  button.mod-cta {{
+    background: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+  }}
+  button.mod-warning {{
+    background: #cf222e;
+    border-color: #cf222e;
+    color: #fff;
+  }}
+  input[type="text"], input[type="password"], input[type="number"], select, textarea {{
+    font-family: inherit;
+    font-size: 12px;
+    padding: 5px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--background-primary);
+    color: var(--text-normal);
+  }}
+  .setting-item {{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--background-modifier-border);
+  }}
+  .setting-item-heading {{ font-weight: 600; border-top: none; padding-top: 4px; }}
+  .setting-item-info {{ flex: 1; }}
+  .setting-item-name {{ font-weight: 500; font-size: 13px; }}
+  .setting-item-description {{ font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }}
+  .setting-item-control {{ display: flex; align-items: center; gap: 8px; }}
+  .checkbox-container {{
+    width: 36px; height: 20px; border-radius: 10px;
+    background: #cbd5e1; position: relative; transition: 0.15s;
+  }}
+  .checkbox-container.is-enabled {{ background: var(--interactive-accent); }}
+  .checkbox-container::after {{
+    content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; top: 2px; left: 2px; transition: 0.15s;
+  }}
+  .checkbox-container.is-enabled::after {{ left: 18px; }}
+
+  /* Scene framing */
+  .pf-doc-scene {{
+    margin: 0 0 36px 0;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }}
+  .pf-doc-scene-banner {{
+    padding: 10px 16px;
+    background: linear-gradient(90deg, #1e293b 0%, #312e81 100%);
+    color: #f8fafc;
+  }}
+  .pf-doc-scene-title {{ font-weight: 600; font-size: 14px; }}
+  .pf-doc-scene-sub {{ font-size: 11.5px; color: #cbd5e1; margin-top: 2px; }}
+  .pf-doc-scene-body {{ padding: 14px; background: #e9edf3; }}
+
+  /* Obsidian Workspace Chrome */
+  .pf-ob-window {{
+    background: var(--background-primary);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+  }}
+  .pf-ob-titlebar {{
+    height: 30px; padding: 0 12px;
+    background: #e2e8f0; border-bottom: 1px solid #cbd5e1;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 11.5px; color: #475569; font-weight: 500;
+  }}
+  .pf-ob-titlebar-dots {{ display: flex; gap: 6px; }}
+  .pf-ob-titlebar-dots .dot {{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; }}
+  .pf-ob-titlebar-dots .red {{ background: #ef4444; }}
+  .pf-ob-titlebar-dots .yellow {{ background: #f59e0b; }}
+  .pf-ob-titlebar-dots .green {{ background: #22c55e; }}
+  .pf-ob-workbench {{ display: flex; align-items: stretch; }}
+  .pf-ob-ribbon {{
+    width: 40px; flex-shrink: 0;
+    background: #f1f5f9; border-right: 1px solid var(--background-modifier-border);
+    padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }}
+  .pf-ob-ribbon-icon {{
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; color: #64748b;
+  }}
+  .pf-ob-ribbon-icon.is-active {{
+    background: rgba(124, 58, 237, 0.14);
+    color: var(--interactive-accent);
+  }}
+  .pf-ob-main-leaf {{ flex: 1; min-width: 0; background: var(--background-primary); }}
+  .pf-ob-right-sidebar {{
+    width: 370px; flex-shrink: 0;
+    background: var(--background-secondary);
+    border-left: 1px solid var(--background-modifier-border);
+  }}
+  .pf-doc-grid-pdf-bounds {{ display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); gap: 14px; align-items: start; }}
+  .pf-doc-modal-host .modal {{
+    position: static; width: 100% !important; max-width: none !important; box-shadow: none;
+    border: 1px solid var(--background-modifier-border); border-radius: 6px;
+  }}
+  .pf-ob-tab-header {{
+    height: 34px; background: #f1f5f9;
+    border-bottom: 1px solid var(--background-modifier-border);
+    display: flex; align-items: flex-end; padding: 0 10px;
+  }}
+  .pf-ob-tab {{
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-bottom: none; border-radius: 6px 6px 0 0;
+    font-size: 12px; font-weight: 500;
+  }}
+  .pf-ob-tab-icon {{ display: inline-flex; color: var(--interactive-accent); }}
+  .pf-ob-leaf-content {{ padding: 12px 14px; }}
+  .pf-ob-sidebar-content {{ padding: 8px; }}
+
+  /* Obsidian Bases Toolbar Simulation */
+  .pf-ob-bases-container {{
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px; overflow: hidden; background: var(--background-primary);
+  }}
+  .pf-ob-bases-toolbar {{
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 8px 12px; background: #f8fafc;
+    border-bottom: 1px solid var(--background-modifier-border);
+  }}
+  .pf-ob-bases-views, .pf-ob-bases-controls {{
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  }}
+  .pf-ob-bases-view-pill {{
+    padding: 3px 10px; border-radius: 6px; font-size: 12px;
+    color: var(--text-muted); border: 1px solid transparent;
+  }}
+  .pf-ob-bases-view-pill.is-active {{
+    background: var(--background-primary); color: var(--interactive-accent);
+    border-color: var(--background-modifier-border); font-weight: 600;
+  }}
+  .pf-ob-bases-chip {{
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 10px; font-size: 11px;
+    background: var(--background-primary); border: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+  }}
+  .pf-ob-chip-icon {{ display: inline-flex; }}
+  .pf-ob-bases-view-mount {{ padding: 10px; }}
+
+  /* Grid helpers */
+  .pf-doc-grid-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }}
+  .pf-doc-grid-3 {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: start; }}
+  .pf-doc-panel {{
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }}
+  .pf-doc-panel-label {{
+    font-size: 12px; font-weight: 600; color: var(--interactive-accent);
+    padding-bottom: 6px; margin-bottom: 8px;
+    border-bottom: 1px dashed var(--background-modifier-border);
+  }}
+  .pf-doc-subbox {{
+    margin-bottom: 10px; border: 1px solid var(--background-modifier-border);
+    border-radius: 6px; padding: 6px; background: var(--background-primary-alt);
+  }}
+  .pf-doc-sidebar-shell .paperforge-status-panel {{ max-height: none; overflow: visible; }}
+  .pf-doc-maint-sample {{ margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--background-modifier-border); }}
+
+  /* PDF viewer showcase sizing */
+  .pf-pdf-body {{ max-height: 760px; overflow: hidden; }}
+  .pf-pdf-scroll {{ overflow: hidden; }}
+  .pf-pdf-ann-box {{ position: absolute; pointer-events: none; border-radius: 3px; }}
+  .pf-pdf-ann--yellow.pf-pdf-ann-kind--highlight {{ background: rgba(253, 224, 71, 0.36); }}
+  .pf-pdf-ann--blue.pf-pdf-ann-kind--area {{ background: rgba(59, 130, 246, 0.14); border: 2px solid #3b82f6; }}
+  .pf-pdf-ann-box.pf-pdf-hl-agent {{ outline: 1.5px dashed #8b5cf6; background: rgba(139, 92, 246, 0.18); }}
+  .pf-pdf-ann-box.pf-pdf-margin-bracket {{ border-left: 5px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); outline: none; }}
+  .pf-pdf-overlay-layer {{ position: absolute; inset: 0; pointer-events: none; }}
+  .pf-pdf-page {{ position: relative; margin: 0 auto 12px auto; box-shadow: var(--shadow-s); }}
+
+  /* Modal showcase embedding */
+  .pf-doc-modal-host .modal-container {{
+    position: static; width: 100%; height: auto; background: transparent;
+  }}
+  .pf-doc-modal-host .modal {{
+    position: static; width: 100%; max-width: none; box-shadow: none;
+    border: 1px solid var(--background-modifier-border); border-radius: 6px;
+  }}
+  .pf-doc-modal-host .modal-content {{ padding: 10px; max-height: 440px; overflow: hidden; }}
+</style>
+</head>
+<body>
+<script src="{bundle_uri}"></script>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+    return html_path
+
+
+def main() -> int:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    browser_exe = _find_browser_executable()
+    with tempfile.TemporaryDirectory(prefix="pf-ui-docs-") as tmp:
+        build_dir = Path(tmp)
+        bundle_js = _bundle_showcase(build_dir)
+        html_path = _write_host_html(build_dir, bundle_js)
+
+        with sync_playwright() as pw:
+            launch_kwargs: dict[str, object] = {"headless": True}
+            if browser_exe:
+                launch_kwargs["executable_path"] = browser_exe
+            browser = pw.chromium.launch(**launch_kwargs)
+            try:
+                page = browser.new_page(
+                    viewport={"width": 1440, "height": 2200},
+                    device_scale_factor=2,
+                )
+                page.set_default_timeout(15000)
+                errors: list[str] = []
+                logs: list[str] = []
+                page.on("pageerror", lambda exc: errors.append(str(exc)))
+                page.on("console", lambda msg: logs.append(f"[{msg.type}] {msg.text}"))
+                page.goto(html_path.as_uri(), wait_until="domcontentloaded", timeout=15000)
+                try:
+                    page.wait_for_function(
+                        "() => window.__PF_SHOWCASE_READY__ === true || Boolean(window.__PF_SHOWCASE_ERROR__)",
+                        timeout=12000,
+                    )
+                except Exception as exc:
+                    stage = page.evaluate("() => window.__PF_STAGE__ || 'init'")
+                    raise RuntimeError(
+                        f"Timed out at stage={stage!r}; errors={errors}; logs={logs[-15:]}"
+                    ) from exc
+                showcase_err = page.evaluate("() => window.__PF_SHOWCASE_ERROR__ || ''")
+                if showcase_err:
+                    raise RuntimeError(f"Showcase JS error:\n{showcase_err}")
+                if errors:
+                    raise RuntimeError(f"Uncaught page errors:\n" + "\n".join(errors))
+
+                for slug in SCENES:
+                    loc = page.locator(f"#scene-{slug}")
+                    loc.wait_for(state="visible", timeout=10000)
+                    out_png = OUT_DIR / f"{slug}.png"
+                    loc.screenshot(path=str(out_png))
+                    print(f"rendered: {out_png.relative_to(REPO_ROOT).as_posix()} ({out_png.stat().st_size} bytes)")
+            finally:
+                browser.close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
