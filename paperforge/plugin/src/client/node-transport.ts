@@ -240,14 +240,19 @@ export function runLongTask(
           : "";
       const terminal = events.find((event) => TERMINAL_EVENTS.has(event.event));
       resolve({
-        ok: !parser.protocolFailure && code === 0 &&
-          terminal?.event === "result" && terminal.result?.ok !== false,
+        ok:
+          !parser.protocolFailure &&
+          code === 0 &&
+          terminal?.event === "result" &&
+          terminal.result?.ok !== false,
         exitCode: code,
         // #330: a stop we wrote the token for stays a cancellation when the
         // child had to be killed before reaching a safe point (rc != 130). A
         // stop that lost the race must not relabel a finished build: it only
         // counts while no terminal event arrived.
-        cancelled: code === 130 || terminal?.event === "cancelled" ||
+        cancelled:
+          code === 130 ||
+          terminal?.event === "cancelled" ||
           (stopRequested && !parser.terminalSeen),
         events,
         protocolFailure: parser.protocolFailure
@@ -342,6 +347,7 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   const plat = process.platform;
   const home = os.homedir();
   const extras: string[] = [];
+  const tailExtras: string[] = [];
   const gitDir = resolveGitDir();
   if (gitDir) extras.push(gitDir);
   if (plat === "darwin") {
@@ -353,6 +359,23 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
     );
   } else if (plat === "linux") {
     extras.push("/usr/local/bin", "/usr/bin", `${home}/.local/bin`);
+  } else if (plat === "win32") {
+    const localAppData =
+      env.LOCALAPPDATA ||
+      process.env.LOCALAPPDATA ||
+      (home ? path.join(home, "AppData", "Local") : "");
+    const programFiles =
+      env.ProgramFiles || process.env.ProgramFiles || "C:\\Program Files";
+    for (const ver of ["Python313", "Python312", "Python311"]) {
+      if (localAppData) {
+        const pyDir = path.join(localAppData, "Programs", "Python", ver);
+        tailExtras.push(pyDir, path.join(pyDir, "Scripts"));
+      }
+      const pfDir = path.join(programFiles, ver);
+      tailExtras.push(pfDir, path.join(pfDir, "Scripts"));
+      const rootDir = `C:\\${ver}`;
+      tailExtras.push(rootDir, path.join(rootDir, "Scripts"));
+    }
   }
   // Children resolve binaries through PATH only. A GUI host can start with a
   // PATH that is empty or stripped to nothing usable (menu-launched apps on
@@ -363,7 +386,9 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
       ? "C:\\Windows\\System32;C:\\Windows"
       : "/usr/local/bin:/usr/bin:/bin";
   const cur = env.PATH || process.env.PATH || floor;
-  env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
+  env.PATH = [...extras, cur, ...tailExtras]
+    .filter(Boolean)
+    .join(path.delimiter);
   return stripCredentialEnv(env) as Record<string, string | undefined>;
 }
 
@@ -450,28 +475,49 @@ export class NodeProcessTransport implements Transport {
    * `cmd /c ... py ...` answers "'py' is not recognized". Embedding
    * `sys.executable` keeps the script PATH-independent. */
   discoverBasePython(): string | null {
-    for (const candidate of basePythonCandidates()) {
+    const probes: Array<{ cmd: string; preArgs: string[] }> =
+      basePythonCandidates().map((cmd) => ({ cmd, preArgs: [] }));
+    if (process.platform === "win32") {
+      // If `py` defaults to an older Python (<3.11), probe explicit 3.11+ py launcher tags.
+      probes.push(
+        { cmd: "py", preArgs: ["-3.13"] },
+        { cmd: "py", preArgs: ["-3.12"] },
+        { cmd: "py", preArgs: ["-3.11"] }
+      );
+    }
+    const probeEnv = paperforgeEnrichedEnv() as NodeJS.ProcessEnv;
+    for (const { cmd, preArgs } of probes) {
       try {
-        const out = this._execFileSyncFn(candidate, ["--version"], {
+        const out = this._execFileSyncFn(cmd, [...preArgs, "--version"], {
           timeout: 5000,
           windowsHide: true,
           encoding: "utf-8",
+          env: probeEnv,
         });
         const match = /Python\s+(\d+)\.(\d+)/.exec(String(out));
         if (!match || Number(match[1]) < 3 || Number(match[2]) < 11) continue;
         try {
           const exe = String(
             this._execFileSyncFn(
-              candidate,
-              ["-c", "import sys;print(sys.executable)"],
-              { timeout: 5000, windowsHide: true, encoding: "utf-8" }
+              cmd,
+              [...preArgs, "-c", "import sys;print(sys.executable)"],
+              {
+                timeout: 5000,
+                windowsHide: true,
+                encoding: "utf-8",
+                env: probeEnv,
+              }
             )
           ).trim();
-          return exe || candidate;
+          // Skip Windows Microsoft Store app-execution aliases (they are zero-byte stubs).
+          if (exe && exe.toLowerCase().includes("\\microsoft\\windowsapps\\")) {
+            continue;
+          }
+          return exe || cmd;
         } catch {
           // Version probe worked but the path probe did not: the bare name is
           // still better than nothing (a PATH that worked for this process).
-          return candidate;
+          return cmd;
         }
       } catch {
         // candidate absent — try the next one
@@ -755,7 +801,7 @@ export class NodeProcessTransport implements Transport {
         return { ok: false, exitCode: null, cancelled: true, events: [] };
       }
 
-        longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
+      longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
         graceMs: options?.graceMs,
         env: options?.env,
         closeStdin: argv[0] === "setup",
@@ -793,15 +839,26 @@ export class NodeProcessTransport implements Transport {
   }
 }
 
-
 export const executeChildren = executeChildRegistry;
 export const children = executeChildRegistry;
 export const childRegistry = executeChildRegistry;
 export const _executeChildren = executeChildRegistry;
 export const _childRegistry = executeChildRegistry;
-export function reapExecuteChildren(): void { reapExecuteChildrenImpl(); }
-export function reapAll(): void { reapExecuteChildrenImpl(); }
-export function reapAllExecuteChildren(): void { reapExecuteChildrenImpl(); }
-export function killExecuteChildren(): void { reapExecuteChildrenImpl(); }
-export function killAllExecuteChildren(): void { reapExecuteChildrenImpl(); }
-export function clearExecuteChildren(): void { reapExecuteChildrenImpl(); }
+export function reapExecuteChildren(): void {
+  reapExecuteChildrenImpl();
+}
+export function reapAll(): void {
+  reapExecuteChildrenImpl();
+}
+export function reapAllExecuteChildren(): void {
+  reapExecuteChildrenImpl();
+}
+export function killExecuteChildren(): void {
+  reapExecuteChildrenImpl();
+}
+export function killAllExecuteChildren(): void {
+  reapExecuteChildrenImpl();
+}
+export function clearExecuteChildren(): void {
+  reapExecuteChildrenImpl();
+}

@@ -52,11 +52,19 @@ import {
   scanBbtDirectChildren,
   classifySetupFailure,
 } from "./services/python-bridge";
-import type { ErrorClassification, PythonResult } from "./services/python-bridge";
+import type {
+  ErrorClassification,
+  PythonResult,
+} from "./services/python-bridge";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeClient } from "./client";
-import { clearTrace, dumpTrace, setTraceEnabled, traceConsoleError } from "./client/trace";
+import {
+  clearTrace,
+  dumpTrace,
+  setTraceEnabled,
+  traceConsoleError,
+} from "./client/trace";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -95,7 +103,6 @@ const AGENT_PLATFORM_LABELS: Record<string, string> = {
   github_copilot: "GitHub Copilot",
   gemini: "Gemini CLI",
 };
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ISettingPlugin {
@@ -523,8 +530,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     void this.plugin.saveSettings().then(() => this.display());
   }
 
-
-
   /** One bounded line naming the real install failure (never the whole log). */
   private _formatSetupFailure(error: unknown): string {
     const raw =
@@ -763,7 +768,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           });
         }
         this._setupOperation = "failed";
-        this._setupFeedback = t(libraryConfigured ? "setup_library_refresh_failed" : "setup_library_config_failed");
+        this._setupFeedback = t(
+          libraryConfigured
+            ? "setup_library_refresh_failed"
+            : "setup_library_config_failed"
+        );
         this.display();
       }
     })();
@@ -816,7 +825,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     return "";
   }
-
 
   private _resolveRuntimeCommand(): { path: string; args: string[] } | null {
     const run = resolveRuntimeCommand(readRuntimePointer());
@@ -993,28 +1001,39 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
-  private _stopRuntimePoll(ready: boolean): void {
+  private _stopRuntimePoll(ready: boolean, cancelReason?: string): void {
     if (this._runtimePollTimer) {
       clearInterval(this._runtimePollTimer);
       this._runtimePollTimer = null;
     }
     if (this._setupOperation === "running") {
-      this._setupOperation = ready ? "idle" : "failed";
+      this._setupOperation = cancelReason ? "idle" : ready ? "idle" : "failed";
       if (!ready) {
-        // Say why the poll gave up: a template with an empty slot tells the
-        // user nothing and hides the failing command's own message.
-        const detail =
-          this._runtimeStatusError || this._installerLogTail() || "";
-        this._setupFeedback = t("runtime_installer_failed").replace(
-          "{error}",
-          detail || "the runtime did not become ready in time"
-        );
+        if (cancelReason) {
+          this._setupFeedback = cancelReason;
+        } else {
+          // Say why the poll gave up: a template with an empty slot tells the
+          // user nothing and hides the failing command's own message.
+          const detail =
+            this._runtimeStatusError || this._installerLogTail() || "";
+          this._setupFeedback = t("runtime_installer_failed").replace(
+            "{error}",
+            detail || "the runtime did not become ready in time"
+          );
+        }
       }
+    } else if (cancelReason) {
+      this._setupFeedback = cancelReason;
     }
     if (ready) this._setupReinstallRequested = false;
     this._refreshRuntimeStatus(true);
     this.display();
     if (ready) new Notice(t("runtime_install_complete"));
+    else if (cancelReason) new Notice(cancelReason);
+  }
+
+  private _cancelRuntimePoll(): void {
+    this._stopRuntimePoll(false, t("runtime_install_cancelled"));
   }
 
   /** Render the Installation detail view (Issue #77). */
@@ -1044,8 +1063,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // timed-out check must not read as "installed and verified".
       text: runtimeReady
         ? t("md_foundation_ready")
-        : this._runtimeStatusError ??
-          this._getModuleConsequence("installation", env),
+        : (this._runtimeStatusError ??
+          this._getModuleConsequence("installation", env)),
       cls: runtimeReady ? "pf-status-ok" : "setting-item-description",
     });
 
@@ -1164,9 +1183,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     addCheck(
       t("foundation_python_packages"),
       runtime?.vector_ready ? "✓" : this._runtimeStatusLoading ? "…" : "—",
-      runtime?.vector_ready
-        ? t("runtime_vector_ready")
-        : runtimeLabel,
+      runtime?.vector_ready ? t("runtime_vector_ready") : runtimeLabel,
       runtime?.vector_ready
         ? "pf-status-ok"
         : this._runtimeStatusLoading
@@ -1179,15 +1196,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ? "update"
         : "repair";
     if (!runtimeReady) {
-      renderActionButton(body, {
-        label:
-          runtimeAction === "install"
-            ? t("runtime_install_btn")
-            : runtimeAction === "update"
-              ? t("runtime_update_btn")
-              : t("runtime_repair_btn"),
-        onClick: () => this._launchRuntimeInstaller(runtimeAction),
-      });
+      if (this._runtimePollTimer) {
+        body.createEl("p", {
+          cls: "pf-setup-status",
+          text: t("runtime_installing"),
+        });
+        renderActionButton(body, {
+          label: t("runtime_cancel_btn"),
+          onClick: () => this._cancelRuntimePoll(),
+        });
+      } else {
+        renderActionButton(body, {
+          label:
+            runtimeAction === "install"
+              ? t("runtime_install_btn")
+              : runtimeAction === "update"
+                ? t("runtime_update_btn")
+                : t("runtime_repair_btn"),
+          onClick: () => this._launchRuntimeInstaller(runtimeAction),
+        });
+      }
       body.createEl("p", {
         text: t("runtime_installer_hint"),
         cls: "setting-item-description",
@@ -1219,7 +1247,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         );
     }
   }
-
 
   /** Render the Skills inventory for the selected agent platform. */
   private _renderSkillsList(containerEl: HTMLElement): void {
@@ -2166,9 +2193,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (mod === "library") {
         this._startSetupJourney(2);
       } else {
-        this._startSetupJourney(
-          mod === "ocr" || mod === "memory" ? 3 : 1
-        );
+        this._startSetupJourney(mod === "ocr" || mod === "memory" ? 3 : 1);
       }
       return;
     }
@@ -2290,9 +2315,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .memoryRestoreBackup()
           .then(() => new Notice(t("memory_restore_done")))
           .catch((error: unknown) => {
-            new Notice(t("memory_restore_failed").replace(
-              "{error}", error instanceof Error ? error.message : "Unknown error"
-            ), 6000);
+            new Notice(
+              t("memory_restore_failed").replace(
+                "{error}",
+                error instanceof Error ? error.message : "Unknown error"
+              ),
+              6000
+            );
           })
           .finally(() => {
             this._refreshAllReadModels();
@@ -2821,8 +2850,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       helpAction?.action_id === "help.restore" &&
       helpAction.availability === "available"
     ) {
-      const actionKey =
-        "action_" + helpAction.action_id.replace(/[.-]/g, "_");
+      const actionKey = "action_" + helpAction.action_id.replace(/[.-]/g, "_");
       const translated = t(actionKey);
       const restore = containerEl.createDiv({ cls: "pf-help-restore" });
       restore.createEl("p", {
@@ -3150,7 +3178,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // Help/docs do not need the runtime; keep the honest invalid state.
         this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
       } else {
-        this._updateCapabilityEnvelope(mod, this._blockedByRuntimeEnvelope(mod));
+        this._updateCapabilityEnvelope(
+          mod,
+          this._blockedByRuntimeEnvelope(mod)
+        );
       }
       return;
     }
@@ -3237,7 +3268,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       activity_label: null,
       activity_progress: null,
       severity: "error",
-      reason: { code: "installation.no_python", text: t("runtime_not_ready_reason") },
+      reason: {
+        code: "installation.no_python",
+        text: t("runtime_not_ready_reason"),
+      },
       action: { primary: runtimeInstallAction(t("runtime_install_btn")) },
       notices: [],
       user_state: "setup_required",
@@ -3291,7 +3325,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    *  then falls back to bare code (e.g. "ready" → "cc_reason_ready"). */
   /** Localized label for a backend action: the wire label is English. */
   private _actionLabel(primary: ActionPrimary): string {
-    const idKey = "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
+    const idKey =
+      "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
     const byId = t(idKey);
     if (byId !== idKey) return byId;
     const verbKey = "cc_action_" + primary.verb;
@@ -3809,7 +3844,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this._capabilityState[mod] = createInvalidEnvelope(mod);
         }
       }
-      this._updateCapabilityEnvelope("installation", this._setupRequiredEnvelope());
+      this._updateCapabilityEnvelope(
+        "installation",
+        this._setupRequiredEnvelope()
+      );
       return;
     }
     for (const mod of CAPABILITY_MODULES) {
@@ -3819,7 +3857,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ignore it in probe all. Keep Python's versioned verdict authoritative.
     void Promise.all([
       client.probeAll({ expectedVersion: this.plugin.manifest?.version }),
-      client.probe("installation", { expectedVersion: this.plugin.manifest?.version })
+      client
+        .probe("installation", {
+          expectedVersion: this.plugin.manifest?.version,
+        })
         .catch(() => createInvalidEnvelope("installation")),
     ])
       .then(([data, installation]) => {
@@ -3827,7 +3868,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const modules = {
           ...data.modules,
           installation: isValidEnvelope(installation, "installation")
-            ? installation : createInvalidEnvelope("installation"),
+            ? installation
+            : createInvalidEnvelope("installation"),
         };
         for (const [mod, env] of Object.entries(modules)) {
           if (isValidEnvelope(env, mod as CapabilityModule)) {
@@ -3860,7 +3902,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._lastOrphanCount = orphanCount;
       })
       .catch(() => {
-        this._updateCapabilityEnvelope("installation", createInvalidEnvelope("installation"));
+        this._updateCapabilityEnvelope(
+          "installation",
+          createInvalidEnvelope("installation")
+        );
         this._probing.clear();
         this.display();
       });
@@ -4000,10 +4045,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ? t("setup_runtime_checking")
         : ready
           ? t("setup_runtime_ready")
-          : this._runtimeStatusError ??
+          : (this._runtimeStatusError ??
             (pointer
               ? t("setup_runtime_attention")
-              : t("setup_runtime_missing")),
+              : t("setup_runtime_missing"))),
       cls: ready ? "pf-setup-ok" : "pf-setup-status",
     });
     // A requested reinstall is an explicit action even when the runtime is
@@ -4027,6 +4072,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             text: progress,
           });
         }
+        renderActionButton(containerEl, {
+          label: t("runtime_cancel_btn"),
+          onClick: () => this._cancelRuntimePoll(),
+        });
       } else {
         renderActionButton(containerEl, {
           label: this._setupReinstallRequested
@@ -4080,7 +4129,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Names of BBT JSON exports already present in the canonical folder. */
   private _listBbtExports(exportsDir: string): string[] {
     try {
-      if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
+      if (!fs.existsSync(exportsDir))
+        fs.mkdirSync(exportsDir, { recursive: true });
       return fs
         .readdirSync(exportsDir)
         .filter((f: string) => f.toLowerCase().endsWith(".json"))
@@ -4166,7 +4216,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Completion is monotonic: a ready library means its prerequisites held,
     // even if the export folder was emptied or a path was edited afterwards.
     const steps = [
-      { id: "zotero", title: t("setup_step_zotero"), done: zoteroOk || libReady },
+      {
+        id: "zotero",
+        title: t("setup_step_zotero"),
+        done: zoteroOk || libReady,
+      },
       { id: "bbt", title: t("setup_step_bbt"), done: bbtOk || libReady },
       { id: "verify", title: t("setup_step_verify_title"), done: libReady },
     ];
@@ -4176,7 +4230,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const flow = containerEl.createDiv({ cls: "pf-setup-flow" });
     for (const [index, step] of steps.entries()) {
       const row = flow.createDiv({ cls: "pf-setup-flow-step" });
-      row.dataset.state = step.done ? "done" : step.id === currentId ? "current" : "pending";
+      row.dataset.state = step.done
+        ? "done"
+        : step.id === currentId
+          ? "current"
+          : "pending";
       const head = row.createDiv({ cls: "pf-setup-flow-head" });
       head.createEl("span", { cls: "pf-step-num", text: String(index + 1) });
       head.createEl("span", { cls: "pf-step-title", text: step.title });
@@ -4232,7 +4290,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         const input = body.createEl("input", {
           cls: "pf-setup-input",
-          attr: { type: "text", placeholder: t("setup_step_zotero_placeholder") },
+          attr: {
+            type: "text",
+            placeholder: t("setup_step_zotero_placeholder"),
+          },
         }) as HTMLInputElement;
         input.value = settings.zotero_data_dir || "";
         input.addEventListener("change", () => {
@@ -4278,7 +4339,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               fs.mkdirSync(exportsDir, { recursive: true });
               void shell.openPath(exportsDir);
             } catch (error) {
-              console.error("PaperForge: cannot open the exports folder", error);
+              console.error(
+                "PaperForge: cannot open the exports folder",
+                error
+              );
               new Notice(exportsDir);
             }
           });
@@ -4352,10 +4416,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-setup-folder-grid",
         });
         const folders_: Array<
-          [keyof typeof settings & ("system_dir" | "resources_dir" | "literature_dir" | "base_dir"), string, string, string]
+          [
+            keyof typeof settings &
+              ("system_dir" | "resources_dir" | "literature_dir" | "base_dir"),
+            string,
+            string,
+            string,
+          ]
         > = [
           ["system_dir", "dir_system", "System", "folder_help_system"],
-          ["resources_dir", "dir_resources", "Resources", "folder_help_resources"],
+          [
+            "resources_dir",
+            "dir_resources",
+            "Resources",
+            "folder_help_resources",
+          ],
           ["literature_dir", "dir_notes", "Literature", "folder_help_notes"],
           ["base_dir", "dir_base", "Bases", "folder_help_base"],
         ];
@@ -4380,7 +4455,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           attr: { type: "button" },
         }) as HTMLButtonElement;
         verify.disabled = running;
-        verify.addEventListener("click", () => this._applyLibraryConfiguration());
+        verify.addEventListener("click", () =>
+          this._applyLibraryConfiguration()
+        );
       }
     }
 
@@ -4627,7 +4704,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 "{platform}",
                 AGENT_PLATFORM_LABELS[
                   this.plugin.settings.agent_platform || "opencode"
-                ] ?? this.plugin.settings.agent_platform ?? "opencode"
+                ] ??
+                  this.plugin.settings.agent_platform ??
+                  "opencode"
               )
             : configured
               ? t("config_configured")

@@ -65,6 +65,7 @@ export function windowsInstallerScript(shellCommand: string): string {
   const [first, second] = shellCommand.split(" && ");
   return [
     "@echo off",
+    "@chcp 65001 >nul",
     first,
     "if errorlevel 1 goto :paperforge_failed",
     second,
@@ -144,20 +145,31 @@ except Exception:
     pass
 
 print("[PaperForge] Installing CLI " + VERSION + " ...", flush=True)
-raise SystemExit(
-    subprocess.call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--user",
-            "--upgrade",
-            *extra,
-            "paperforge==" + VERSION,
+import os
+cmd = [
+    sys.executable,
+    "-m",
+    "pip",
+    "install",
+    "--user",
+    "--upgrade",
+    "--default-timeout=60",
+    *extra,
+    "paperforge==" + VERSION,
+]
+rc = subprocess.call(cmd)
+if rc != 0 and not os.environ.get("PIP_INDEX_URL") and not os.environ.get("PIP_FIND_LINKS"):
+    print("[PaperForge] Retrying CLI install with PyPI mirror ...", flush=True)
+    rc = subprocess.call(
+        cmd
+        + [
+            "-i",
+            "https://pypi.tuna.tsinghua.edu.cn/simple",
+            "--trusted-host",
+            "pypi.tuna.tsinghua.edu.cn",
         ]
     )
-)
+raise SystemExit(rc)
 `;
 }
 

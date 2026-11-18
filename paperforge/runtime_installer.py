@@ -146,10 +146,44 @@ def _managed_python(venv_dir: Path) -> Path:
     return venv_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+_FALLBACK_PYPI_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
+_FALLBACK_PYPI_HOST = "pypi.tuna.tsinghua.edu.cn"
+
+
 def _pip_install(
     venv_python: Path, spec: str, *, cwd: Path
 ) -> subprocess.CompletedProcess[str]:
-    return _run([str(venv_python), "-m", "pip", "install", spec], cwd=cwd, timeout=1800)
+    result = _run(
+        [str(venv_python), "-m", "pip", "install", "--default-timeout=60", spec],
+        cwd=cwd,
+        timeout=1800,
+    )
+    if (
+        result.returncode != 0
+        and not os.environ.get("PIP_INDEX_URL")
+        and not os.environ.get("PIP_FIND_LINKS")
+        and not spec.lower().endswith(".whl")
+    ):
+        mirror_result = _run(
+            [
+                str(venv_python),
+                "-m",
+                "pip",
+                "install",
+                "--default-timeout=60",
+                "-i",
+                _FALLBACK_PYPI_INDEX,
+                "--trusted-host",
+                _FALLBACK_PYPI_HOST,
+                spec,
+            ],
+            cwd=cwd,
+            timeout=1800,
+        )
+        if mirror_result.returncode == 0:
+            return mirror_result
+        return mirror_result if (mirror_result.stderr or mirror_result.stdout) else result
+    return result
 
 
 def _fresh_verify(python: str, *, cwd: Path) -> tuple[bool, str | None, str | None]:

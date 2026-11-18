@@ -298,3 +298,25 @@ def test_prune_never_deletes_a_foreign_environment(tmp_path):
     assert not ours_old.exists()
     assert ours_new.exists()
     assert foreign.exists(), "prune must never touch a directory it did not create"
+
+
+def test_pip_install_falls_back_to_pypi_mirror_on_failure(tmp_path: Path, monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], *, cwd: Path, timeout: int = 300) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        if "-i" in command:
+            return subprocess.CompletedProcess(command, 0, "ok mirror", "")
+        return subprocess.CompletedProcess(command, 1, "", "connection timeout")
+
+    monkeypatch.delenv("PIP_INDEX_URL", raising=False)
+    monkeypatch.delenv("PIP_FIND_LINKS", raising=False)
+    monkeypatch.setattr(runtime_installer, "_run", fake_run)
+
+    result = runtime_installer._pip_install(tmp_path / "python", "paperforge[vector]==2.0.0", cwd=tmp_path)
+
+    assert result.returncode == 0
+    assert len(calls) == 2
+    assert "-i" not in calls[0]
+    assert runtime_installer._FALLBACK_PYPI_INDEX in calls[1]
+

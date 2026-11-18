@@ -317,7 +317,8 @@ const LANG: Record<string, Record<string, string>> = {
     version_no_backups: "No version history available",
     version_restore_confirm: "Restore {label} for {paper}?",
     version_restore_done: "Restored {label}",
-    version_restore_partial: "Content restored to {label}, but the restore provenance has not been confirmed saved. Review the restored result.",
+    version_restore_partial:
+      "Content restored to {label}, but the restore provenance has not been confirmed saved. Review the restored result.",
     memory_restore_done: "Memory database restored from backup.",
     memory_restore_failed: "Memory database restore failed: {error}",
     version_compare_title: "{vA} vs {vB}",
@@ -413,11 +414,15 @@ const LANG: Record<string, Record<string, string>> = {
     dash_accept: "Accept",
     dash_no_candidates: "No staged R/P candidates for this paper.",
     dash_open_preview: "Open preview",
-    dash_next_sync: "This paper needs to be synced from Zotero. Click to run sync.",
-    dash_next_ocr: "Fulltext is missing but the PDF is present. Click to run OCR.",
-    dash_next_repair: "State divergence or path errors detected. Click to repair.",
+    dash_next_sync:
+      "This paper needs to be synced from Zotero. Click to run sync.",
+    dash_next_ocr:
+      "Fulltext is missing but the PDF is present. Click to run OCR.",
+    dash_next_repair:
+      "State divergence or path errors detected. Click to repair.",
     dash_next_resync: "Index may be stale. Click to run sync and rebuild it.",
-    dash_next_deep: "Fulltext is ready. Copy the /pf-deep command and run it in your agent.",
+    dash_next_deep:
+      "Fulltext is ready. Copy the /pf-deep command and run it in your agent.",
     dash_next_done: "This paper is fully processed and ready to use.",
     dash_recommended: "Recommended next step",
     dash_workflow_overview: "Workflow overview",
@@ -607,7 +612,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_migrate_btn: "Migrate",
     foundation_migrate_hint:
       "One-time move of Obsidian SecretStorage values into the system keyring.",
-    migrate_none_found: "No legacy credentials found in Obsidian SecretStorage.",
+    migrate_none_found:
+      "No legacy credentials found in Obsidian SecretStorage.",
     foundation_setup: "Vault setup",
     foundation_setup_desc:
       "Configure this vault. The runtime is already installed and stays external.",
@@ -635,7 +641,8 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_vector_ready: "Vector dependencies ready",
     runtime_not_ready_reason:
       "Runtime is not ready. Run `paperforge runtime install` outside Obsidian.",
-    runtime_not_ready_impact: "PaperForge cannot run without the managed runtime.",
+    runtime_not_ready_impact:
+      "PaperForge cannot run without the managed runtime.",
     module_blocked_by_runtime:
       "Finish Foundation first — the managed runtime is not installed yet.",
     setup_runtime_checking: "Checking the managed Python runtime…",
@@ -650,6 +657,9 @@ const LANG: Record<string, Record<string, string>> = {
       "Runtime check timed out. Check the runtime from the terminal, or run the installer again.",
     runtime_installing:
       "Installing… this can take a few minutes. Keep Obsidian open; this panel updates by itself.",
+    runtime_cancel_btn: "Cancel waiting",
+    runtime_install_cancelled:
+      "Stopped waiting for the installer. You can restart installation or refresh runtime status anytime.",
     runtime_install_btn: "Install PaperForge runtime",
     runtime_reinstall_btn: "Reinstall PaperForge runtime",
     runtime_update_btn: "Update PaperForge runtime",
@@ -863,15 +873,22 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_config_corrupt:
       "Configuration file is corrupt. Run setup to repair.",
     cc_reason_action_available: "Ready to continue",
-    cc_reason_credential_missing: "A credential is missing — configure the API key first.",
-    cc_reason_installation_version_mismatch: "The plugin and the runtime versions differ. Update the runtime.",
-    cc_reason_library_index_legacy: "The index uses an old format. Run sync once to migrate it.",
-    cc_reason_library_index_validation_failed: "The index failed validation. Run sync again.",
+    cc_reason_credential_missing:
+      "A credential is missing — configure the API key first.",
+    cc_reason_installation_version_mismatch:
+      "The plugin and the runtime versions differ. Update the runtime.",
+    cc_reason_library_index_legacy:
+      "The index uses an old format. Run sync once to migrate it.",
+    cc_reason_library_index_validation_failed:
+      "The index failed validation. Run sync again.",
     cc_reason_library_no_orphans: "No orphaned papers.",
-    cc_reason_library_orphans_present: "Orphaned papers found (removed from Zotero).",
+    cc_reason_library_orphans_present:
+      "Orphaned papers found (removed from Zotero).",
     cc_reason_lineage_ocr_: "The OCR output has a defect.",
-    cc_reason_lineage_ocr_blocks_defect: "OCR block data is defective. Rebuilding is recommended.",
-    cc_reason_lineage_ocr_derived_stale: "OCR derived output is out of date. Rebuild it.",
+    cc_reason_lineage_ocr_blocks_defect:
+      "OCR block data is defective. Rebuilding is recommended.",
+    cc_reason_lineage_ocr_derived_stale:
+      "OCR derived output is out of date. Rebuild it.",
     cc_reason_lineage_ocr_missing: "No OCR output yet.",
     cc_reason_lineage_ocr_provenance_defect: "OCR provenance records disagree.",
     cc_reason_lineage_ocr_raw_defect: "The raw OCR output is defective.",
@@ -879,16 +896,22 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_lineage_vector_defect: "Vector data has a defect.",
     cc_reason_maintenance_items_present: "There are items that need attention.",
     cc_reason_maintenance_no_items: "Nothing needs attention.",
-    cc_reason_memory_backend_upgrade_available: "A newer vector backend is available.",
-    cc_reason_memory_db_busy: "The memory database is busy. Try again in a moment.",
-    cc_reason_memory_dependencies_missing: "Memory-layer dependencies are missing.",
+    cc_reason_memory_backend_upgrade_available:
+      "A newer vector backend is available.",
+    cc_reason_memory_db_busy:
+      "The memory database is busy. Try again in a moment.",
+    cc_reason_memory_dependencies_missing:
+      "Memory-layer dependencies are missing.",
     cc_reason_memory_migration_needed: "Memory data needs a migration.",
     cc_reason_memory_probe_failed: "The memory layer probe failed.",
     cc_reason_memory_vector_build_failed: "Vector build failed.",
-    cc_reason_memory_vector_build_interrupted: "Vector build was interrupted and can resume.",
-    cc_reason_memory_vector_identity_changed: "The embedding configuration changed; rebuild the vectors.",
+    cc_reason_memory_vector_build_interrupted:
+      "Vector build was interrupted and can resume.",
+    cc_reason_memory_vector_identity_changed:
+      "The embedding configuration changed; rebuild the vectors.",
     cc_reason_memory_vector_probe_failed: "The vector index probe failed.",
-    cc_reason_memory_vector_publish_pending: "The vector index publish is still pending.",
+    cc_reason_memory_vector_publish_pending:
+      "The vector index publish is still pending.",
     cc_reason_ocr_api_unreachable: "The OCR service cannot be reached.",
     cc_reason_ocr_artifacts_stale: "OCR output is out of date.",
     cc_reason_ocr_blocks_missing: "OCR block data is missing.",
@@ -898,14 +921,18 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_ocr_pending: "Waiting for OCR.",
     cc_reason_ocr_probe_failed: "The OCR probe failed.",
     cc_reason_ocr_quality_failures: "OCR quality checks did not pass.",
-    cc_reason_ocr_quality_unacceptable: "OCR quality is not acceptable; redo it.",
+    cc_reason_ocr_quality_unacceptable:
+      "OCR quality is not acceptable; redo it.",
     cc_reason_ocr_redo_needed: "OCR should be redone.",
     cc_reason_ocr_unexpected_action: "OCR returned an unexpected action.",
     cc_reason_paper_not_found: "This paper could not be found.",
-    cc_reason_substrate_memory_incompatible: "The memory database schema is incompatible; upgrade it.",
-    cc_reason_substrate_vector_incompatible: "The vector index schema is incompatible; rebuild it.",
+    cc_reason_substrate_memory_incompatible:
+      "The memory database schema is incompatible; upgrade it.",
+    cc_reason_substrate_vector_incompatible:
+      "The vector index schema is incompatible; rebuild it.",
     cc_reason_vector_build_in_progress: "A vector build is in progress.",
-    cc_reason_vector_substrate_incompatible: "The vector store schema is incompatible.",
+    cc_reason_vector_substrate_incompatible:
+      "The vector store schema is incompatible.",
     cc_reason_config_missing:
       "Configuration file is missing. Run setup to create one.",
     cc_reason_python_version_unsupported:
@@ -969,7 +996,8 @@ const LANG: Record<string, Record<string, string>> = {
     // ── Maintenance Inbox (Issue #80) ──
     maintenance_inbox_title: "Maintenance Inbox",
     maintenance_checking: "Checking maintenance status…",
-    maintenance_all_clear: "No maintenance items — check each module state for readiness.",
+    maintenance_all_clear:
+      "No maintenance items — check each module state for readiness.",
     maintenance_n_pending_inbox: "{n} module(s) need attention",
     maintenance_dismiss: "Dismiss",
     maintenance_undismiss: "Show",
@@ -1058,8 +1086,10 @@ const LANG: Record<string, Record<string, string>> = {
     // ── OCR Workspace (Issue #95) ──
     ocr_ws_title: "OCR Workspace",
     ocr_ws_load_loading: "Loading library and OCR status…",
-    ocr_ws_load_failed: "Could not load the library. This is not an empty library. See the PaperForge Console error, then retry.",
-    ocr_ws_load_setup_required: "Finish Python runtime setup in PaperForge settings, then retry.",
+    ocr_ws_load_failed:
+      "Could not load the library. This is not an empty library. See the PaperForge Console error, then retry.",
+    ocr_ws_load_setup_required:
+      "Finish Python runtime setup in PaperForge settings, then retry.",
     ocr_ws_filter_all: "All",
     ocr_ws_filter_unprocessed: "Not processed",
     ocr_ws_filter_review: "Needs review",
@@ -1085,7 +1115,8 @@ const LANG: Record<string, Record<string, string>> = {
       "Sync the library first \u2014 papers appear here once the index is built.",
     ocr_ws_open_dashboard: "Open dashboard",
     ocr_ws_empty_no_match: "No papers match the current filter",
-    ocr_ws_empty_clear_filters: "Clear the search and status filter to see everything again.",
+    ocr_ws_empty_clear_filters:
+      "Clear the search and status filter to see everything again.",
     ocr_ws_clear_filters: "Clear filters",
     ocr_ws_no_papers: "No papers found with OCR data",
     ocr_ws_lede:
@@ -1172,7 +1203,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_status_pending: "Pending",
     paper_note_missing: "Note file does not exist",
     ocr_ws_status_unknown: "Unknown",
-      cc_heading: "Control center",
+    cc_heading: "Control center",
     nav_home: "Control center",
     setup_library_config_env_override:
       "At runtime these settings are overridden by environment variables: {keys}",
@@ -1187,7 +1218,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Cannot determine whole-library impact. Refresh status before running OCR.",
     ocr_ws_pagination_previous: "Previous page",
     ocr_ws_pagination_next: "Next page",
-},
+  },
   zh: {
     record_save: "保存研究记录",
     record_papers: "论文",
@@ -1571,8 +1602,10 @@ const LANG: Record<string, Record<string, string>> = {
     dash_open_hub: "打开文献中心",
     dash_sync_library: "同步文献库",
     dash_run_ocr: "运行 OCR",
-    dash_config_missing: "当前文献库尚未配置。请完成设置（设置 → 基础环境 → 库配置）。",
-    dash_cli_unreachable: "PaperForge Core 未响应。请先完成设置（设置 → 基础环境）后重试。",
+    dash_config_missing:
+      "当前文献库尚未配置。请完成设置（设置 → 基础环境 → 库配置）。",
+    dash_cli_unreachable:
+      "PaperForge Core 未响应。请先完成设置（设置 → 基础环境）后重试。",
     modal_pdf_badge: "PDF",
     modal_no_pdf_badge: "无 PDF",
     modal_deselect_all: "全部取消选择",
@@ -1587,7 +1620,8 @@ const LANG: Record<string, Record<string, string>> = {
     backend_missing_btn: "打开设置",
     version_restore_confirm: "确认将 {paper} 恢复到 {label}？",
     version_restore_done: "已恢复到 {label}",
-    version_restore_partial: "正文已恢复到 {label}，但恢复来源记录尚未确认保存。请检查恢复结果。",
+    version_restore_partial:
+      "正文已恢复到 {label}，但恢复来源记录尚未确认保存。请检查恢复结果。",
     memory_restore_done: "已从备份恢复记忆数据库。",
     memory_restore_failed: "记忆数据库恢复失败：{error}",
     version_compare_title: "{vA} vs {vB}",
@@ -1644,7 +1678,8 @@ const LANG: Record<string, Record<string, string>> = {
     cc_summary_setup_first: "先完成基础环境",
     cc_start_setup: "开始设置",
     cc_summary_connect_library: "只剩一步：连接文献库",
-    cc_summary_connect_library_body: "把 Zotero 指给 PaperForge 一次，之后它会自动同步并生成笔记。",
+    cc_summary_connect_library_body:
+      "把 Zotero 指给 PaperForge 一次，之后它会自动同步并生成笔记。",
     cc_continue_setup: "继续设置",
     cc_needs_attention_one: "项需要关注",
     cc_metric_papers: "文献数：",
@@ -1745,13 +1780,15 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_skills: "Skills",
     md_foundation_legacy_migrate: "迁移旧版配置",
     foundation_migrate_btn: "迁移",
-    foundation_migrate_hint: "把 Obsidian SecretStorage 里的旧值一次性搬进系统钥匙串。",
+    foundation_migrate_hint:
+      "把 Obsidian SecretStorage 里的旧值一次性搬进系统钥匙串。",
     migrate_none_found: "Obsidian SecretStorage 中没有找到旧的凭据。",
     foundation_setup: "库配置",
     foundation_setup_desc:
       "配置当前文献库。运行环境已由外部安装器就绪，Obsidian 不再参与安装。",
     foundation_setup_btn: "打开配置向导",
-    runtime_next_step_hint: "运行环境就绪后才会出现库配置这一步——请先安装运行环境。",
+    runtime_next_step_hint:
+      "运行环境就绪后才会出现库配置这一步——请先安装运行环境。",
     config_confirm: "确认",
     ocr_configure_credential: "配置 OCR 凭据",
     feat_install_deps_desc: "安装智能检索所需的依赖项。",
@@ -1779,10 +1816,16 @@ const LANG: Record<string, Record<string, string>> = {
     setup_runtime_ready: "PaperForge Core 已就绪。下一步：连接文献库。",
     setup_runtime_attention:
       "PaperForge Core 需要更新。点下面的按钮更新或修复。",
-    setup_runtime_missing: "PaperForge Core 尚未安装。点下面的「安装运行环境」即可。",
+    setup_runtime_missing:
+      "PaperForge Core 尚未安装。点下面的「安装运行环境」即可。",
     setup_runtime_refresh: "刷新运行环境状态",
-    runtime_status_timeout: "运行环境检查超时。可在终端检查运行环境，或重新运行安装器。",
-    runtime_installing: "正在安装…可能需要几分钟。保持 Obsidian 打开即可，此面板会自动更新。",
+    runtime_status_timeout:
+      "运行环境检查超时。可在终端检查运行环境，或重新运行安装器。",
+    runtime_installing:
+      "正在安装…可能需要几分钟。保持 Obsidian 打开即可，此面板会自动更新。",
+    runtime_cancel_btn: "取消等待",
+    runtime_install_cancelled:
+      "已停止等待安装程序。你可以随时重新点击安装或刷新状态。",
     runtime_install_btn: "安装 PaperForge 运行环境",
     runtime_reinstall_btn: "重新安装 PaperForge 运行环境",
     runtime_update_btn: "更新 PaperForge 运行环境",
@@ -1813,7 +1856,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_step_verify_title: "配置文件夹",
     setup_step_verify_desc: "确认文件夹后保存。",
     setup_library_folders_advanced: "库内文件夹（已填默认值）",
-    setup_library_folders_hint: "保持默认即可，除非你的库已经用了别的名字。每个目录各放一类文件：",
+    setup_library_folders_hint:
+      "保持默认即可，除非你的库已经用了别的名字。每个目录各放一类文件：",
     folder_help_system: "索引与日志。",
     folder_help_resources: "PaperForge 保存的 PDF 与图片副本。",
     folder_help_notes: "它生成的文献笔记。",
@@ -1821,7 +1865,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_continue_hint: "完成第 1-3 步后即可继续。",
     setup_bbt_section_title: "导入 Better BibTeX JSON 导出（必需）",
     setup_library_syncing: "正在用 BBT 导出同步文献库…",
-    setup_library_sync_failed: "配置已保存，但文献库同步失败。请检查导出文件后重试。",
+    setup_library_sync_failed:
+      "配置已保存，但文献库同步失败。请检查导出文件后重试。",
     setup_library_loading: "正在读取库配置…",
     setup_library_configured: "文献库配置已保存，正在检查连接。",
     setup_library_configuring: "正在保存并检查文献库配置…",
@@ -1831,8 +1876,10 @@ const LANG: Record<string, Record<string, string>> = {
     setup_optionals_desc: "只选择需要的功能；跳过后仍可随时启用。",
     setup_optional_needs_key: "需要填写 API 密钥",
     setup_optional_platform: "平台：{platform}",
-    setup_optional_ocr_key_hint: "在 PaddleOCR 控制台创建 API Key 后填到这里；OCR 会把 PDF 上传到该服务。",
-    setup_optional_embedding_key_hint: "支持任意 OpenAI 兼容服务：填入密钥，必要时再改模型或 Base URL。",
+    setup_optional_ocr_key_hint:
+      "在 PaddleOCR 控制台创建 API Key 后填到这里；OCR 会把 PDF 上传到该服务。",
+    setup_optional_embedding_key_hint:
+      "支持任意 OpenAI 兼容服务：填入密钥，必要时再改模型或 Base URL。",
     setup_optional_saved: "配置已安全保存。",
     setup_optional_save_failed:
       "配置无法保存。请检查 Obsidian 安全存储后重试。",
@@ -1853,7 +1900,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_nav_complete: "完成设置",
     help_title: "帮助",
     help_lede: "打开相关模块，或复制诊断信息寻求支持。",
-    help_restore_missing: "PaperForge 随附的 Skill 文件缺失。重新安装托管运行环境即可恢复。",
+    help_restore_missing:
+      "PaperForge 随附的 Skill 文件缺失。重新安装托管运行环境即可恢复。",
     help_intro: "选择一个任务，或复制隐私安全的支持诊断。",
     help_getting_started: "开始使用",
     help_library_task: "连接 Zotero 并同步文献",
@@ -1983,7 +2031,8 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_installation_ready: "PaperForge 环境已正确配置。",
     cc_reason_action_available: "可以继续",
     cc_reason_credential_missing: "缺少凭据，请先配置 API 密钥。",
-    cc_reason_installation_version_mismatch: "插件与运行环境版本不一致，请更新运行环境。",
+    cc_reason_installation_version_mismatch:
+      "插件与运行环境版本不一致，请更新运行环境。",
     cc_reason_library_index_legacy: "索引是旧格式，同步一次即可迁移。",
     cc_reason_library_index_validation_failed: "索引校验失败，请重新同步。",
     cc_reason_library_no_orphans: "没有残留文献。",
@@ -2165,8 +2214,10 @@ const LANG: Record<string, Record<string, string>> = {
     // ── OCR 工作区 (Issue #95) ──
     ocr_ws_title: "OCR 工作区",
     ocr_ws_load_loading: "正在加载文献库和 OCR 状态…",
-    ocr_ws_load_failed: "文献库加载失败，并非空文献库。请查看 Console 中的 PaperForge 错误，然后重试。",
-    ocr_ws_load_setup_required: "请先在 PaperForge 设置中完成 Python 运行环境配置，然后重试。",
+    ocr_ws_load_failed:
+      "文献库加载失败，并非空文献库。请查看 Console 中的 PaperForge 错误，然后重试。",
+    ocr_ws_load_setup_required:
+      "请先在 PaperForge 设置中完成 Python 运行环境配置，然后重试。",
     ocr_ws_filter_all: "全部",
     ocr_ws_filter_unprocessed: "未处理",
     ocr_ws_filter_review: "需审核",
@@ -2274,7 +2325,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_status_pending: "待处理",
     paper_note_missing: "笔记文件不存在",
     ocr_ws_status_unknown: "未知",
-      cc_heading: "控制中心",
+    cc_heading: "控制中心",
     nav_home: "控制中心",
     setup_library_config_env_override: "运行时以下设置被环境变量覆盖：{keys}",
     setup_optional_config_save_failed: "配置无法保存，仍使用原值。",
@@ -2287,7 +2338,7 @@ const LANG: Record<string, Record<string, string>> = {
       "无法确定整个文献库的影响范围，请刷新状态后再运行 OCR。",
     ocr_ws_pagination_previous: "上一页",
     ocr_ws_pagination_next: "下一页",
-},
+  },
 };
 
 let T: Record<string, string> | null = null;
