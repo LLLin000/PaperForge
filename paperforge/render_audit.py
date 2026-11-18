@@ -815,3 +815,15 @@ def audit_papers(
             "issues": sum(len(report.get("issues", [])) for report in reports),
         },
     }
+
+
+# Public read-only audit helper exports for reconcile/promotion consumers.
+inventory_asset_claim_conflicts = _inventory_asset_claim_conflicts
+inventory_identity_conflicts = _inventory_identity_conflicts
+inventory_rows = _inventory_rows
+audit_label = _label
+audit_page_number = _page_number
+audit_position_view = _position_view
+read_materialization_provenance = _read_materialization_provenance
+collect_render_artifacts = _render_artifacts
+audit_snapshot = _snapshot

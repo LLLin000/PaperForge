@@ -802,6 +802,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.write_ratchet:
         snapshot = build_snapshot()
+        snapshot.pop("private_member_accesses", None)
         try:
             old = json.loads(RATCHET_PATH.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):

@@ -60,33 +60,9 @@ def _collect_ocr_queue_data(vault: Path) -> dict:
     }
 
 
-def _collect_ocr_health_summary(vault: Path) -> list[dict]:
-    """Scan OCR directories for health/ocr_health.json files and return summaries."""
-    from paperforge.worker._utils import pipeline_paths
+from paperforge.worker.ocr_health import collect_ocr_health_summary
 
-    paths = pipeline_paths(vault)
-    ocr_root = paths.get("ocr")
-    if not ocr_root or not ocr_root.exists():
-        return []
-    summaries = []
-    for dir_path in sorted(ocr_root.iterdir()):
-        if not dir_path.is_dir():
-            continue
-        health_path = dir_path / "health" / "ocr_health.json"
-        if health_path.exists():
-            try:
-                health = json.loads(health_path.read_text(encoding="utf-8"))
-                summaries.append({
-                    "key": dir_path.name,
-                    "overall": health.get("overall", "unknown"),
-                    "page_count": health.get("page_count", 0),
-                    "blocks_count": health.get("blocks_count", 0),
-                    "figure_count": health.get("figure_caption_count", 0),
-                    "table_count": health.get("table_caption_count", 0),
-                })
-            except Exception:
-                continue
-    return summaries
+_collect_ocr_health_summary = collect_ocr_health_summary
 
 
 def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int:

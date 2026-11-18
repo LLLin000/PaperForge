@@ -194,7 +194,7 @@ class TestOcrPreflight:
                 return_value={"needs_sanitize": True},
             ),
             patch("paperforge.worker.ocr.write_json"),
-            patch("paperforge.worker.ocr.pymupdf.open") as mock_open,
+            patch("pymupdf.open") as mock_open,
             patch("paperforge.worker.ocr.requests.post") as mock_post,
             patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
@@ -269,7 +269,7 @@ class TestOcrPreflight:
                 return_value={"needs_sanitize": True},
             ),
             patch("paperforge.worker.ocr.write_json"),
-            patch("paperforge.worker.ocr.pymupdf.open") as mock_open,
+            patch("pymupdf.open") as mock_open,
             patch("paperforge.worker.ocr.requests.post") as mock_post,
             patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):

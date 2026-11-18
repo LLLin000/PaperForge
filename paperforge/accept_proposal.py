@@ -17,28 +17,28 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.promote_r import (
-    _IMAGE_RE,
-    _atomic_copy,
-    _audit_failed,
-    _cleanup_backup_dir,
-    _image_facts,
-    _issue_mentions_object,
-    _mark_transaction_committed,
-    _merge_provenance,
-    _promotion_audit,
-    _raw_path_has_symlink,
-    _recover_pending_transaction,
-    _restore_snapshots,
-    _sha256_path,
-    _snapshot_files,
-    _snapshot_hash,
-    _write_json_atomic,
+    IMAGE_RE as _IMAGE_RE,
+    atomic_copy as _atomic_copy,
+    audit_failed as _audit_failed,
+    cleanup_backup_dir as _cleanup_backup_dir,
+    image_facts as _image_facts,
+    issue_mentions_object as _issue_mentions_object,
+    mark_transaction_committed as _mark_transaction_committed,
+    merge_provenance as _merge_provenance,
+    promotion_audit as _promotion_audit,
+    raw_path_has_symlink as _raw_path_has_symlink,
+    recover_pending_transaction as _recover_pending_transaction,
+    restore_snapshots as _restore_snapshots,
+    sha256_path as _sha256_path,
+    snapshot_files as _snapshot_files,
+    snapshot_hash as _snapshot_hash,
+    write_json_atomic as _write_json_atomic,
 )
 from paperforge.render_audit import (
-    _inventory_asset_claim_conflicts,
-    _inventory_identity_conflicts,
-    _inventory_rows,
     audit_paper,
+    inventory_asset_claim_conflicts as _inventory_asset_claim_conflicts,
+    inventory_identity_conflicts as _inventory_identity_conflicts,
+    inventory_rows as _inventory_rows,
 )
 
 _FINAL_P_DECISIONS = {

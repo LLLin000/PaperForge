@@ -1128,7 +1128,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         pass
 
     # Structured OCR health
-    from paperforge.commands.ocr import _collect_ocr_health_summary as _collect_health
+    from paperforge.worker.ocr_health import collect_ocr_health_summary as _collect_health
     _structured_health = _collect_health(vault)
 
     # OCR version state

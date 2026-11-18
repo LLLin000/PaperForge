@@ -24,10 +24,10 @@ from typing import Any
 # copy, so changing one side only silently marked every staged plan stale.
 from paperforge.figure_reconciliation import reconcile_snapshot_hash as _snapshot_hash
 from paperforge.render_audit import (
-    _inventory_asset_claim_conflicts,
-    _inventory_identity_conflicts,
-    _inventory_rows,
     audit_paper,
+    inventory_asset_claim_conflicts as _inventory_asset_claim_conflicts,
+    inventory_identity_conflicts as _inventory_identity_conflicts,
+    inventory_rows as _inventory_rows,
 )
 
 _MANIFEST_NAME = "r-manifest.json"
@@ -1218,3 +1218,22 @@ def promote_r(
             "reason": "R_PROMOTION_BUSY",
             "paper_key": paper_key,
         }
+
+
+# Public promotion/journal helpers shared with accept_proposal.
+IMAGE_RE = _IMAGE_RE
+atomic_copy = _atomic_copy
+audit_failed = _audit_failed
+cleanup_backup_dir = _cleanup_backup_dir
+image_facts = _image_facts
+issue_mentions_object = _issue_mentions_object
+mark_transaction_committed = _mark_transaction_committed
+merge_provenance = _merge_provenance
+promotion_audit = _promotion_audit
+raw_path_has_symlink = _raw_path_has_symlink
+recover_pending_transaction = _recover_pending_transaction
+restore_snapshots = _restore_snapshots
+sha256_path = _sha256_path
+snapshot_files = _snapshot_files
+snapshot_hash = _snapshot_hash
+write_json_atomic = _write_json_atomic

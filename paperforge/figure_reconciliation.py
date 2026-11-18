@@ -15,15 +15,15 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.render_audit import (
-    _inventory_asset_claim_conflicts,
-    _inventory_identity_conflicts,
-    _inventory_rows,
-    _label,
-    _page_number,
-    _position_view,
-    _read_materialization_provenance,
-    _render_artifacts,
-    _snapshot,
+    audit_label as _label,
+    audit_page_number as _page_number,
+    audit_position_view as _position_view,
+    audit_snapshot as _snapshot,
+    collect_render_artifacts as _render_artifacts,
+    inventory_asset_claim_conflicts as _inventory_asset_claim_conflicts,
+    inventory_identity_conflicts as _inventory_identity_conflicts,
+    inventory_rows as _inventory_rows,
+    read_materialization_provenance as _read_materialization_provenance,
 )
 
 _SCHEMA_VERSION = 1

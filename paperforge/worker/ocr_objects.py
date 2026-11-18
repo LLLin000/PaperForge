@@ -10,9 +10,10 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from PIL import Image
+if TYPE_CHECKING:
+    from PIL import Image
 
 from paperforge.worker.ocr_math import normalize_ocr_math_text
 

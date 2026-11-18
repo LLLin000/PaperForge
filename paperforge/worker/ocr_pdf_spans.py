@@ -12,12 +12,15 @@ import os as _os
 from collections.abc import Sequence
 from contextlib import redirect_stderr as _redirect_stderr
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pymupdf
+if TYPE_CHECKING:
+    import pymupdf
 
 
 def _fitz_quiet_open(path: str):
+    import pymupdf
+
     with _redirect_stderr(_os.devnull):
         return pymupdf.open(path)
 
@@ -50,6 +53,8 @@ def _rect_from_bbox(bbox) -> pymupdf.Rect | None:
     """Convert a 4-element bbox to pymupdf.Rect, returning None for invalid input."""
     if not bbox or len(bbox) < 4:
         return None
+    import pymupdf
+
     try:
         rect = pymupdf.Rect(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
     except Exception:
@@ -408,6 +413,8 @@ def _word_center_inside_rect(word_bbox, block_rect) -> bool:
 
 
 def _word_belongs_to_block(word_bbox, block_rect) -> bool:
+    import pymupdf
+
     word_rect = pymupdf.Rect(*word_bbox)
     return (
         _word_center_inside_rect(word_bbox, block_rect)
@@ -550,6 +557,7 @@ def backfill_span_metadata_from_pdf(
         return raw_blocks
 
     try:
+        import pymupdf
         from collections import defaultdict
 
         # Group blocks by 0-indexed page number
@@ -779,6 +787,8 @@ def backfill_missing_text_from_pdf(
         return raw_blocks
 
     try:
+        import pymupdf
+
         recovered = 0
         unrecovered = 0
         no_layer = 0

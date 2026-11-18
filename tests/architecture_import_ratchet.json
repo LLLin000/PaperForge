@@ -2,45 +2,10 @@
   "heavy_imports": {
     "paperforge.embedding.backends.chroma_backend": [
       "6:chromadb"
-    ],
-    "paperforge.worker.ocr": [
-      "16:pymupdf",
-      "18:PIL"
-    ],
-    "paperforge.worker.ocr_objects": [
-      "15:PIL"
-    ],
-    "paperforge.worker.ocr_pdf_spans": [
-      "17:pymupdf"
     ]
   },
-  "layer_violations": {
-    "paperforge.worker.status": [
-      "1131:paperforge.commands.ocr:_collect_ocr_health_summary"
-    ]
-  },
+  "layer_violations": {},
   "private_imports": {
-    "paperforge.accept_proposal": [
-      "19:paperforge.promote_r:_IMAGE_RE",
-      "19:paperforge.promote_r:_atomic_copy",
-      "19:paperforge.promote_r:_audit_failed",
-      "19:paperforge.promote_r:_cleanup_backup_dir",
-      "19:paperforge.promote_r:_image_facts",
-      "19:paperforge.promote_r:_issue_mentions_object",
-      "19:paperforge.promote_r:_mark_transaction_committed",
-      "19:paperforge.promote_r:_merge_provenance",
-      "19:paperforge.promote_r:_promotion_audit",
-      "19:paperforge.promote_r:_raw_path_has_symlink",
-      "19:paperforge.promote_r:_recover_pending_transaction",
-      "19:paperforge.promote_r:_restore_snapshots",
-      "19:paperforge.promote_r:_sha256_path",
-      "19:paperforge.promote_r:_snapshot_files",
-      "19:paperforge.promote_r:_snapshot_hash",
-      "19:paperforge.promote_r:_write_json_atomic",
-      "37:paperforge.render_audit:_inventory_asset_claim_conflicts",
-      "37:paperforge.render_audit:_inventory_identity_conflicts",
-      "37:paperforge.render_audit:_inventory_rows"
-    ],
     "paperforge.actions.preflight_projection": [
       "25:paperforge.reconcile:_per_paper_intents"
     ],
@@ -62,21 +27,16 @@
       "33:paperforge.worker._utils"
     ],
     "paperforge.commands.ocr": [
-      "129:paperforge.worker._utils",
+      "105:paperforge.worker._utils",
       "17:paperforge.worker.ocr_maintenance:_can_rebuild",
       "30:paperforge.worker._utils",
-      "469:paperforge.worker._utils",
-      "470:paperforge.worker.ocr:_resolve_paddleocr_token",
-      "622:paperforge.worker._utils",
-      "65:paperforge.worker._utils",
-      "811:paperforge.worker._progress"
+      "445:paperforge.worker._utils",
+      "446:paperforge.worker.ocr:_resolve_paddleocr_token",
+      "598:paperforge.worker._utils",
+      "787:paperforge.worker._progress"
     ],
     "paperforge.commands.paper_context": [
       "114:paperforge.worker._utils"
-    ],
-    "paperforge.commands.probe": [
-      "1586:paperforge.lineage:_detect_orphans",
-      "441:paperforge.worker.asset_index:_compute_export_hash"
     ],
     "paperforge.commands.prune": [
       "61:paperforge.lineage:_detect_residuals"
@@ -94,15 +54,6 @@
     ],
     "paperforge.figure_reconciliation": [
       "1524:paperforge.worker.ocr_figures:_collect_same_page_multicolumn_legend_pairs",
-      "17:paperforge.render_audit:_inventory_asset_claim_conflicts",
-      "17:paperforge.render_audit:_inventory_identity_conflicts",
-      "17:paperforge.render_audit:_inventory_rows",
-      "17:paperforge.render_audit:_label",
-      "17:paperforge.render_audit:_page_number",
-      "17:paperforge.render_audit:_position_view",
-      "17:paperforge.render_audit:_read_materialization_provenance",
-      "17:paperforge.render_audit:_render_artifacts",
-      "17:paperforge.render_audit:_snapshot",
       "379:paperforge.lineage:_canonical_pdf_map"
     ],
     "paperforge.lineage": [
@@ -110,11 +61,6 @@
     ],
     "paperforge.plugin.test.fixtures.build_e2e_vault": [
       "197:paperforge.lineage:_resolve_canonical_pdf"
-    ],
-    "paperforge.promote_r": [
-      "26:paperforge.render_audit:_inventory_asset_claim_conflicts",
-      "26:paperforge.render_audit:_inventory_identity_conflicts",
-      "26:paperforge.render_audit:_inventory_rows"
     ],
     "paperforge.services.embedding": [
       "1099:paperforge.embedding.substrate:_has_any_rows",
@@ -141,13 +87,10 @@
       "548:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
-      "2949:paperforge.lineage:_resolve_canonical_pdf"
+      "2953:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
       "231:paperforge.embedding.vectors:_delete_paper_vectors_locked"
-    ],
-    "paperforge.worker.status": [
-      "1131:paperforge.commands.ocr:_collect_ocr_health_summary"
     ],
     "paperforge.worker.sync": [
       "27:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",

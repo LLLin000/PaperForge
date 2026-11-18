@@ -13,9 +13,7 @@ from typing import Callable
 
 from pathlib import Path
 
-import pymupdf
 import requests
-from PIL import Image
 
 from paperforge.adapters.bbt import load_export_rows
 from paperforge.config import paperforge_paths
@@ -719,6 +717,8 @@ def render_pdf_page_cached(
     if not pdf_doc or page_index < 1 or page_index > len(pdf_doc):
         return None
     try:
+        import pymupdf
+
         page = pdf_doc[page_index - 1]
         rect = page.rect
         zoom_x = target_width / rect.width if target_width and rect.width else 2.0
@@ -735,6 +735,8 @@ def crop_block_asset(page_image_path: Path, bbox: list[int], destination: Path) 
     if destination.exists():
         return True
     try:
+        from PIL import Image
+
         with Image.open(page_image_path) as img:
             x1, y1, x2, y2 = (max(0, int(v)) for v in bbox)
             if x2 <= x1 or y2 <= y1:
@@ -2115,6 +2117,8 @@ def postprocess_ocr_result(
     pdf_doc = None
     try:
         if source_pdf and source_pdf.exists():
+            import pymupdf
+
             pdf_doc = pymupdf.open(str(source_pdf))
         for page_payload in all_results:
             for res in page_payload.get("layoutParsingResults", []):
@@ -3347,6 +3351,8 @@ def run_ocr(
                 # uses source_page_count (input fact) instead of page_count
                 # (output fact).
                 try:
+                    import pymupdf
+
                     _src_doc = pymupdf.open(str(resolved_pdf))
                     meta["source_page_count"] = _src_doc.page_count
                     _src_doc.close()
@@ -3355,6 +3361,7 @@ def run_ocr(
                 if meta.get("needs_sanitize"):
                     try:
                         import tempfile
+                        import pymupdf
 
                         doc = pymupdf.open(str(resolved_pdf))
                         _sanitized_temp = Path(tempfile.mktemp(suffix=".pdf"))

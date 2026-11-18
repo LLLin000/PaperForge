@@ -603,3 +603,34 @@ def write_ocr_health(health_root: Path, report: dict[str, Any]) -> None:
 
     health_root.mkdir(parents=True, exist_ok=True)
     write_json(health_root / "ocr_health.json", report)
+
+
+def collect_ocr_health_summary(vault: Path) -> list[dict[str, Any]]:
+    """Scan OCR directories for health/ocr_health.json files and return summaries."""
+    import json
+
+    from paperforge.worker._utils import pipeline_paths
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    if not ocr_root or not ocr_root.exists():
+        return []
+    summaries: list[dict[str, Any]] = []
+    for dir_path in sorted(ocr_root.iterdir()):
+        if not dir_path.is_dir():
+            continue
+        health_path = dir_path / "health" / "ocr_health.json"
+        if health_path.exists():
+            try:
+                health = json.loads(health_path.read_text(encoding="utf-8"))
+                summaries.append({
+                    "key": dir_path.name,
+                    "overall": health.get("overall", "unknown"),
+                    "page_count": health.get("page_count", 0),
+                    "blocks_count": health.get("blocks_count", 0),
+                    "figure_count": health.get("figure_caption_count", 0),
+                    "table_count": health.get("table_caption_count", 0),
+                })
+            except Exception:
+                continue
+    return summaries
