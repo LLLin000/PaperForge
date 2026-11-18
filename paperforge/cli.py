@@ -400,6 +400,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
 
+    p_inspect = sub.add_parser("inspect", help="Inspect end-to-end pipeline state and bottlenecks for one paper")
+    p_inspect.add_argument("query", help="Paper identifier (zotero_key, citation_key, DOI, or title)")
+    p_inspect.add_argument("--json", action="store_true", help="Output as JSON (PFResult envelope)")
+
     p_pc = sub.add_parser("paper-context", help="Get full context for a paper by zotero key, DOI, or citation key")
     p_pc.add_argument("key", help="Paper identifier (zotero key, DOI, or citation key)")
     p_pc.add_argument("--json", action="store_true", help="Output as JSON")
@@ -842,7 +846,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "setup", "selection-sync", "index-refresh", "base-refresh", "read",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
-        "probe",
+        "probe", "inspect",
     }
     if args.command in lightweight_commands:
         _resolve_pipeline()
@@ -1015,6 +1019,11 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if args.command == "paper-status":
         from paperforge.commands.paper_status import run
+
+        return run(args)
+
+    if args.command == "inspect":
+        from paperforge.commands.inspect_paper import run
 
         return run(args)
 

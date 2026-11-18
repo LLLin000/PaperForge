@@ -15,6 +15,7 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "retrieve": "paperforge.commands.retrieve",
     "query-plan": "paperforge.commands.query_plan",
     "paper-status": "paperforge.commands.paper_status",
+    "inspect": "paperforge.commands.inspect_paper",
     "agent-context": "paperforge.commands.agent_context",
     "prune": "paperforge.commands.prune",
     "paper-navigation": "paperforge.commands.paper_navigation",
