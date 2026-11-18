@@ -156,6 +156,16 @@ const LUCIDE_SVG: Record<string, string> = {
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>',
   search:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+  "chevron-down":
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  plus:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+  layers:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>',
+  check:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  "more-horizontal":
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
 };
 
 export function setIcon(parent: HTMLElement, iconId: string): void {
@@ -505,6 +515,41 @@ export class Notice {
   constructor(_msg: string, _timeout?: number) {}
 }
 
+export class Menu {
+  private _items: Array<{ title?: string; icon?: string; onClick?: () => void }> = [];
+  addItem(
+    cb: (item: {
+      setTitle(t: string): unknown;
+      setIcon(i: string): unknown;
+      onClick(fn: () => void): unknown;
+    }) => unknown
+  ): this {
+    const entry: { title?: string; icon?: string; onClick?: () => void } = {};
+    const api = {
+      setTitle(t: string) {
+        entry.title = t;
+        return api;
+      },
+      setIcon(i: string) {
+        entry.icon = i;
+        return api;
+      },
+      onClick(fn: () => void) {
+        entry.onClick = fn;
+        return api;
+      },
+    };
+    cb(api);
+    this._items.push(entry);
+    return this;
+  }
+  addSeparator(): this {
+    return this;
+  }
+  showAtMouseEvent(_ev: MouseEvent): void {}
+  showAtPosition(_pos: { x: number; y: number }): void {}
+}
+
 export class TFile {
   path: string;
   basename: string;
@@ -792,12 +837,16 @@ export async function loadPdfJs(): Promise<unknown> {
               viewport: { width: number; height: number };
             }) => ({
               promise: (async () => {
+                const s = Math.max(0.25, viewport.width / 560);
+                canvasContext.save();
+                canvasContext.scale(s, s);
                 drawSimulatedAcademicPage(
                   canvasContext,
-                  viewport.width,
-                  viewport.height,
+                  560,
+                  490,
                   pageNumber
                 );
+                canvasContext.restore();
               })(),
             }),
             getTextContent: async () => ({

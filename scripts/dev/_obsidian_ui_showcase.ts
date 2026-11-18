@@ -27,7 +27,7 @@ const ZOTERO_DIR = "C:/Users/Researcher/Zotero";
 
 const OVERVIEW_MD = `# PEMF 75 Hz Osteogenic Validation
 
-## 🔍 精读
+## 精读
 
 **一句话总览:** 本文在兔 3D 琼脂糖软骨/成骨共培养模型中验证 75 Hz 脉冲电磁场通过激活 L 型钙通道（Ca2+ 内流峰值出现在 22 min）促进早期成骨分化，且该效应可被硝苯地平（10 µM）完全阻断。
 
@@ -365,6 +365,132 @@ function makeAnnotations(): PdfAnnotationDto[] {
       updated_at: "2026-11-18T09:15:00Z",
       provenance_status: "verified",
     },
+    {
+      ann_id: "ann_u_arrow",
+      paper_id: "KEY_DONE",
+      page: 1,
+      kind: "shape",
+      color: "red",
+      intent: "general",
+      author: "user",
+      exact_text: "",
+      comment: "",
+      tags: [],
+      rects: [[0.58, 0.25, 0.72, 0.39]],
+      style: {
+        shape_type: "arrow",
+        stroke_color: "#d64545",
+        stroke_width: 2.5,
+        points: [
+          [0.58, 0.25],
+          [0.71, 0.39],
+        ],
+      },
+      section_path: "Results > Fig. 1",
+      block_id: "blk_fig1",
+      figure_id: "figure_001",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "deadbeef",
+      created_at: "2026-11-18T09:16:00Z",
+      updated_at: "2026-11-18T09:16:00Z",
+      provenance_status: "verified",
+    },
+    {
+      ann_id: "ann_u_rect",
+      paper_id: "KEY_DONE",
+      page: 1,
+      kind: "shape",
+      color: "purple",
+      intent: "general",
+      author: "user",
+      exact_text: "",
+      comment: "",
+      tags: [],
+      rects: [[0.69, 0.36, 0.77, 0.58]],
+      style: {
+        shape_type: "rect",
+        stroke_color: "#5b45c9",
+        fill_color: "transparent",
+        stroke_width: 2,
+      },
+      section_path: "Results > Fig. 1",
+      block_id: "blk_fig1",
+      figure_id: "figure_001",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "deadbeef",
+      created_at: "2026-11-18T09:17:00Z",
+      updated_at: "2026-11-18T09:17:00Z",
+      provenance_status: "verified",
+    },
+    {
+      ann_id: "ann_u_textbox",
+      paper_id: "KEY_DONE",
+      page: 1,
+      kind: "textbox",
+      color: "transparent",
+      intent: "general",
+      author: "user",
+      exact_text: "",
+      comment: "Peak 75 Hz* (1.8 mT)",
+      tags: [],
+      rects: [[0.53, 0.215, 0.89, 0.27]],
+      style: { font_size: 13, stroke_color: "#5b45c9" },
+      section_path: "Results > Fig. 1",
+      block_id: "blk_fig1",
+      figure_id: "",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "deadbeef",
+      created_at: "2026-11-18T09:18:00Z",
+      updated_at: "2026-11-18T09:18:00Z",
+      provenance_status: "verified",
+    },
+    {
+      ann_id: "ann_u_underline",
+      paper_id: "KEY_DONE",
+      page: 1,
+      kind: "underline",
+      color: "pink",
+      intent: "general",
+      author: "user",
+      exact_text: "co-administration of BAPTA-AM completely blocked ERK1/2",
+      comment: "下划线标记通路特异性阴性阻断证据",
+      tags: [],
+      rects: [[0.52, 0.775, 0.90, 0.805]],
+      section_path: "Results > 3.2 Pathway Specificity",
+      block_id: "blk_04",
+      figure_id: "",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "deadbeef",
+      created_at: "2026-11-18T09:19:00Z",
+      updated_at: "2026-11-18T09:19:00Z",
+      provenance_status: "verified",
+    },
+    {
+      ann_id: "ann_u_note",
+      paper_id: "KEY_DONE",
+      page: 1,
+      kind: "note",
+      color: "yellow",
+      intent: "general",
+      author: "user",
+      exact_text: "",
+      comment: "确认实验室信号发生器 75 Hz 输出谐波 < 2%",
+      tags: [],
+      rects: [[0.46, 0.305, 0.49, 0.345]],
+      section_path: "Results > 3.1 Parameters",
+      block_id: "blk_01",
+      figure_id: "",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "deadbeef",
+      created_at: "2026-11-18T09:20:00Z",
+      updated_at: "2026-11-18T09:20:00Z",
+      provenance_status: "verified",
+    },
   ];
 }
 
@@ -606,6 +732,26 @@ function makeFakePlugin(app: App, snapshot: BaseTableSnapshotDto, opts?: { popul
       annotations: anns,
     }),
     listAnnotations: async () => anns,
+    addAnnotation: async (_k: string, input: Record<string, unknown>) => ({
+      ann_id: "ann_mock_new",
+      paper_id: _k,
+      tags: [],
+      created_at: "2026-11-18T11:22:00Z",
+      updated_at: "2026-11-18T11:22:00Z",
+      provenance_status: "verified",
+      ...input,
+    }),
+    updateAnnotation: async (
+      _k: string,
+      id: string,
+      patch: Record<string, unknown>
+    ) => ({ ...(anns.find((a) => a.ann_id === id) ?? anns[0]), ...patch }),
+    deleteAnnotation: async (_k: string, id: string) => ({
+      deleted: true,
+      ann_id: id,
+      paper_id: _k,
+    }),
+    promoteAnnotation: async () => ({ promoted: true }),
     adoptAnnotation: async (_k: string, id: string) => anns.find((a) => a.ann_id === id)!,
     clearAgentAnnotations: async () => ({ paper_id: "KEY_DONE", deleted_count: 2, deleted_ids: [] }),
     searchRecords: async () => [],
@@ -821,6 +967,7 @@ function buildNativeBaseChrome(
     activeViewName: string;
     filterText: string;
     sortText: string;
+    groupText?: string;
     countText: string;
   }
 ): HTMLElement {
@@ -828,22 +975,28 @@ function buildNativeBaseChrome(
   const toolbar = baseWrap.createDiv({ cls: "pf-ob-bases-toolbar" });
 
   const viewTabs = toolbar.createDiv({ cls: "pf-ob-bases-views" });
-  for (const name of ["控制面板", "待 OCR", "待深度阅读", "高分精读集 (用户视图)"]) {
-    const pill = viewTabs.createEl("span", {
-      cls: `pf-ob-bases-view-pill ${name === opts.activeViewName ? "is-active" : ""}`,
-      text: name,
-    });
-    if (name === "控制面板") pill.setAttr("data-pf-view-type", "paperforge-table");
-  }
+  const viewBtn = viewTabs.createDiv({
+    cls: "pf-ob-bases-view-dropdown",
+    attr: { "data-pf-view-type": "paperforge-table" },
+  });
+  const vtIc = viewBtn.createSpan({ cls: "pf-ob-chip-icon" });
+  setIcon(vtIc, "table");
+  viewBtn.createSpan({ text: opts.activeViewName });
+  const vtCaret = viewBtn.createSpan({ cls: "pf-ob-chip-icon" });
+  setIcon(vtCaret, "chevron-down");
 
   const nativeControls = toolbar.createDiv({ cls: "pf-ob-bases-controls" });
-  for (const [iconId, label] of [
-    ["filter", opts.filterText],
-    ["arrow-up-down", opts.sortText],
-    ["sliders", "属性 (12)"],
-    ["search", opts.countText],
-  ]) {
-    const chip = nativeControls.createEl("span", { cls: "pf-ob-bases-chip" });
+  for (const [iconId, label, isPrimary] of [
+    ["arrow-up-down", opts.sortText, false],
+    ["filter", opts.filterText, false],
+    ["layers", opts.groupText || "分组: 领域", false],
+    ["sliders", "属性", false],
+    ["search", opts.countText, false],
+    ["plus", "新建", true],
+  ] as const) {
+    const chip = nativeControls.createEl("span", {
+      cls: `pf-ob-bases-chip${isPrimary ? " is-primary-btn" : ""}`,
+    });
     const ic = chip.createSpan({ cls: "pf-ob-chip-icon" });
     setIcon(ic, iconId);
     chip.createSpan({ text: label });
@@ -852,13 +1005,34 @@ function buildNativeBaseChrome(
   return baseWrap.createDiv({ cls: "pf-ob-bases-view-mount" });
 }
 
+const PRIORITY_BY_KEY: Record<string, string> = {
+  KEY_DONE: "核心精读",
+  KEY_PROC: "高优待读",
+  KEY_PENDING: "待筛查",
+  KEY_DEEP_WAIT: "核心精读",
+  KEY_FAILED: "待复核",
+  KEY_INCOMPLETE: "待补全",
+  KEY_NOPDF: "仅摘要",
+};
+
 function makeBaseEntries(snapshot: BaseTableSnapshotDto, keys: string[]) {
   return keys.map((k) => {
     const row = snapshot.rows[k];
+    const propMap: Record<string, string> = {
+      "note.zotero_key": k,
+      "note.domain": row?.domain || "",
+      "note.year": row?.year || "",
+      "note.journal": row?.journal || "",
+      "note.impact_factor": row?.impact_factor || "",
+      "note.authors": row?.first_author || "",
+      "note.priority": PRIORITY_BY_KEY[k] || "",
+    };
     return {
       file: new TFile(row?.main_note_path || `${k}.md`),
       getValue: (propId: string) =>
-        propId === "note.zotero_key" ? { data: k, toString: () => k } : null,
+        propId in propMap
+          ? { data: propMap[propId], toString: () => propMap[propId] }
+          : null,
     };
   });
 }
@@ -897,15 +1071,15 @@ export async function renderAllScenes(): Promise<void> {
   const baseApp = new App(makeMockFiles(), VAULT_ROOT);
   setLanguage(baseApp, "zh");
 
-  // ── Scene 01: Base Workbench — All Row States + Native Base Toolbar ────────
+  // ── Scene 01: Base Workbench — Streamlined Single View + Native Grouping ────
   {
     const snap = makeSnapshot("KEY_PROC");
     const app = new App(makeMockFiles(), VAULT_ROOT);
     const plugin = makeFakePlugin(app, snap, { populatedMemory: true });
     const { body } = createScene(
       "01-base-workbench-all-states",
-      "01 · 原生 Obsidian Base 文献工作台（PaperForgeBasesView · type: paperforge-table）",
-      "左侧边栏 library 入口 → Literature Hub.base · 物理读写分离（队列可写 + 机器状态/认知计数只读实时投影）",
+      "01 · Obsidian Bases 文献库单视图工作台（type: paperforge-table · 原生分组与自定义属性列）",
+      "左侧边栏「文献库」入口 → Literature Hub.base · 仅保留单一「文献库」主视图，展示原生分组小圆点、自定义列「课题优先级」、克制状态胶囊与零行尾操作墙",
       1320
     );
     const { mainSlot } = buildObsidianWorkspaceShell(body, {
@@ -913,67 +1087,133 @@ export async function renderAllScenes(): Promise<void> {
       activeRibbon: "base",
     });
     const mount = buildNativeBaseChrome(mainSlot, {
-      activeViewName: "控制面板",
+      activeViewName: "文献库",
       filterText: '筛选: file.ext == "md"',
       sortText: "排序: 年份 ↓",
+      groupText: "分组: 领域",
       countText: "6 篇显示",
     });
     const baseView = new PaperForgeBasesView({} as never, mount, plugin as never);
     (baseView as unknown as { app: App }).app = app;
+    baseView.config = {
+      getOrder: () => [
+        "file.name",
+        "note.first_author",
+        "note.year",
+        "note.journal",
+        "note.impact_factor",
+        "note.priority",
+        "note.ocr_status",
+        "note.annotations",
+      ],
+      getDisplayName: (id: string) => (id === "note.priority" ? "课题优先级" : ""),
+    } as never;
+    const grpOrtho = makeBaseEntries(snap, [
+      "KEY_DONE",
+      "KEY_PROC",
+      "KEY_PENDING",
+      "KEY_INCOMPLETE",
+    ]);
+    const grpSports = makeBaseEntries(snap, ["KEY_FAILED", "KEY_NOPDF"]);
     baseView.data = {
-      data: makeBaseEntries(snap, [
-        "KEY_DONE",
-        "KEY_PROC",
-        "KEY_PENDING",
-        "KEY_FAILED",
-        "KEY_INCOMPLETE",
-        "KEY_NOPDF",
-      ]),
+      groupedData: [
+        {
+          key: { data: "骨科", toString: () => "骨科" },
+          hasKey: () => true,
+          entries: grpOrtho,
+        },
+        {
+          key: { data: "运动医学", toString: () => "运动医学" },
+          hasKey: () => true,
+          entries: grpSports,
+        },
+      ],
+      data: [...grpOrtho, ...grpSports],
     } as never;
     baseView.onload();
     baseView.onDataUpdated();
   }
 
-  // ── Scene 02: Base Filtered Preset View & Empty / Loading Boundary States ──
+  // ── Scene 02: Base Multi-Select Contextual Header Bar & Empty / Dark States ─
   {
     const snap = makeSnapshot("");
     const app = new App(makeMockFiles(), VAULT_ROOT);
     const plugin = makeFakePlugin(app, snap);
     const { body } = createScene(
       "02-base-empty-and-filtered-states",
-      "02 · Base 预设过滤视图（「待深度阅读」）与空结果 / 加载边界态",
-      "Base 原生过滤器直接决定行顺序与可见范围；PaperForgeBasesView 响应空筛选结果与初始加载",
+      "02 · Base 多选表头上下文栏（解析全文）、零命中空态与 AsterLab 暗黑主题预览",
+      "左：勾选多篇条目后在表头滑出上下文操作栏「已选 3 篇 → 解析全文」；右：筛选零命中空态与 AsterLab 暗黑暖灰主题",
       1320
     );
     const grid = body.createDiv({ cls: "pf-doc-grid-2" });
 
-    // Left: Filtered view ("待深度阅读")
+    // Left: Multi-select contextual action bar above table
     const leftCard = grid.createDiv({ cls: "pf-doc-panel" });
-    leftCard.createDiv({ cls: "pf-doc-panel-label", text: "A. 预设过滤视图：待深度阅读" });
+    leftCard.createDiv({
+      cls: "pf-doc-panel-label",
+      text: "A. 多选表头上下文动作栏（Shift+Click 连选 · 批量触发解析全文）",
+    });
     const leftMount = buildNativeBaseChrome(leftCard, {
-      activeViewName: "待深度阅读",
-      filterText: 'analyze == true && ocr_status == "done"',
+      activeViewName: "文献库",
+      filterText: "筛选: 全部文献",
       sortText: "排序: IF ↓",
-      countText: "1 篇显示",
+      groupText: "分组: 无",
+      countText: "4 篇显示",
     });
     const bvLeft = new PaperForgeBasesView({} as never, leftMount, plugin as never);
     (bvLeft as unknown as { app: App }).app = app;
-    bvLeft.data = { data: makeBaseEntries(snap, ["KEY_DEEP_WAIT"]) } as never;
+    bvLeft.data = {
+      data: makeBaseEntries(snap, [
+        "KEY_DONE",
+        "KEY_PENDING",
+        "KEY_FAILED",
+        "KEY_DEEP_WAIT",
+      ]),
+    } as never;
     bvLeft.onload();
+    (bvLeft as unknown as { _selectedKeys: Set<string> })._selectedKeys = new Set([
+      "KEY_DONE",
+      "KEY_PENDING",
+      "KEY_FAILED",
+    ]);
+    bvLeft.render();
 
-    // Right: Empty filtered state
+    // Right: Empty filtered state + AsterLab Dark preview
     const rightCard = grid.createDiv({ cls: "pf-doc-panel" });
-    rightCard.createDiv({ cls: "pf-doc-panel-label", text: "B. 筛选零命中空状态（base_empty_hint）" });
-    const rightMount = buildNativeBaseChrome(rightCard, {
-      activeViewName: "待 OCR",
+    rightCard.createDiv({
+      cls: "pf-doc-panel-label",
+      text: "B. 零命中空状态 & AsterLab Dark（#171614 / #1e1d1a / #a996ff）",
+    });
+    const emptyBox = rightCard.createDiv({ cls: "pf-doc-subbox" });
+    const rightMount = buildNativeBaseChrome(emptyBox, {
+      activeViewName: "文献库",
       filterText: 'domain == "神经科" && ocr_status == "pending"',
       sortText: "排序: 默认",
+      groupText: "分组: 无",
       countText: "0 篇显示",
     });
     const bvRight = new PaperForgeBasesView({} as never, rightMount, plugin as never);
     (bvRight as unknown as { app: App }).app = app;
     bvRight.data = { data: [] } as never;
     bvRight.onload();
+
+    const darkWrap = rightCard.createDiv({ cls: "theme-dark" });
+    const darkScope = darkWrap.createDiv({
+      cls: "pf-scope-asterlab pf-doc-dark-frame",
+    });
+    const darkMount = buildNativeBaseChrome(darkScope, {
+      activeViewName: "文献库",
+      filterText: 'domain == "骨科"',
+      sortText: "排序: IF ↓",
+      groupText: "分组: 无",
+      countText: "2 篇显示",
+    });
+    const bvDark = new PaperForgeBasesView({} as never, darkMount, plugin as never);
+    (bvDark as unknown as { app: App }).app = app;
+    bvDark.data = {
+      data: makeBaseEntries(snap, ["KEY_DONE", "KEY_DEEP_WAIT"]),
+    } as never;
+    bvDark.onload();
   }
 
   // ── Scene 03: Dashboard Global Mode (Healthy vs Unconfigured / Anomalies) ──
@@ -1039,9 +1279,10 @@ export async function renderAllScenes(): Promise<void> {
       rightSidebarTitle: "PaperForge 伴读侧栏",
     });
     const mount = buildNativeBaseChrome(mainSlot, {
-      activeViewName: "控制面板",
+      activeViewName: "文献库",
       filterText: 'domain == "骨科"',
       sortText: "排序: 年份 ↓",
+      groupText: "分组: 无",
       countText: "4 篇显示",
     });
     const bv = new PaperForgeBasesView({} as never, mount, app.plugins.plugins["paperforge"] as never);
@@ -1071,15 +1312,15 @@ export async function renderAllScenes(): Promise<void> {
 
     const { body } = createScene(
       "05-dashboard-paper-mode-living-memory",
-      "05 · Dashboard 单篇伴读模式 & 🧠 5 维度持续演进动态记忆卡片（Phase 3）",
-      "移除旧版 9 字段人工填表按钮，转为「文章概览 + 🧠 动态认知记忆（Read-Before-Speak + Refine-Don't-Append）+ 下一步引导」",
+      "05 · Dashboard 单篇伴读模式与 5 维度持续演进研究认知记忆",
+      "移除旧版 9 字段人工填表，转为「文章概览 + 研究认知记忆（Refine-Don't-Append）+ 渐进式技术标识披露」",
       1260
     );
     const grid = body.createDiv({ cls: "pf-doc-grid-2" });
 
-    // Left: Mature paper with all 5 facets + discussion + complete badge
+    // Left: Mature paper with all 5 facets + discussion + complete badge + expanded disclosure
     const left = grid.createDiv({ cls: "pf-doc-panel pf-doc-sidebar-shell" });
-    left.createDiv({ cls: "pf-doc-panel-label", text: "A. 已精读论文（5 维度动态记忆已演进）" });
+    left.createDiv({ cls: "pf-doc-panel-label", text: "A. 已精读论文（5 维度研究认知记忆 + 高级标识展开态）" });
     const lCont = left.createDiv();
     populateDashboardView(appDone, lCont, snap, (v) => {
       const entry = {
@@ -1093,6 +1334,7 @@ export async function renderAllScenes(): Promise<void> {
       v._currentMode = "paper";
       v._currentPaperKey = "KEY_DONE";
       v._currentPaperEntry = entry;
+      (v as unknown as { _techDetailsExpanded: boolean })._techDetailsExpanded = true;
       v._renderModeHeader("paper");
       v._renderPaperMode();
     });
@@ -1221,72 +1463,89 @@ export async function renderAllScenes(): Promise<void> {
     void v3b;
   }
 
-  // ── Scene 07: PDF Annotator — Human + AI Layer + Simplified Popover ────────
+  // ── Scene 07: Apple Preview Two-Tier PDF Reader + Markup + AI Layer ────────
   {
     const snap = makeSnapshot("");
     const app = new App(makeMockFiles(), VAULT_ROOT);
     const plugin = makeFakePlugin(app, snap, { pdfChanged: false });
     const { body } = createScene(
       "07-pdf-annotator-human-and-ai-layers",
-      "07 · 内置侧车 PDF 阅读器：人类简化高亮 + [🤖 AI 批注层] + 3 级落地视觉形态",
-      "人类划词浮窗已移除 5 枚意图按钮（仅留选色 + 备注）；AI 层区分精确虚线框（Stage 2a/2b）、图表框选（object）与页边括号（Stage 3）及 [✓ 采纳]",
+      "07 · 内置侧车 PDF 阅读器：macOS 预览双层工具栏（高亮 ▾ + 标记）+ 矢量批注与 Zotero 引用拷贝",
+      "顶栏分裂「高亮 | ▾」与可展开「标记」次级工具栏；页内呈现高亮、下划线、SVG 红色箭头/紫色矩形框、T 文本框、便签及左栏「拷贝引用至笔记 / AI 导读」",
       1380
     );
     const { mainSlot } = buildObsidianWorkspaceShell(body, {
       activeTabTitle: "PDF · 75 Hz PEMF Enhances...",
       activeRibbon: "base",
     });
+    mainSlot.style.position = "relative";
     const pdfView = new PaperForgePdfView(new WorkspaceLeaf(), plugin as never);
     (pdfView as unknown as { app: App }).app = app;
     (pdfView as unknown as { contentEl: HTMLElement }).contentEl = mainSlot;
-    (pdfView as unknown as { _scale: number })._scale = 1.05;
+    (pdfView as unknown as { _scale: number })._scale = 0.88;
     await pdfView.setState({ paperKey: "KEY_DONE", page: 1 }, { history: false });
-    const firstPage = pdfView.contentEl.querySelector(".pf-pdf-page") as HTMLElement;
-    pdfView._openCreatePopover({
-      anchorEl: firstPage,
-      page: 1,
-      rects: [[0.072, 0.302, 0.48, 0.34]],
-      kind: "highlight",
-      exactText: "PEMF stimulation at 75 Hz ± 5 µM markedly enhanced",
-    });
-    const popEl = pdfView.contentEl.querySelector(".pf-pdf-popover") as HTMLElement | null;
-    if (popEl) {
-      popEl.style.position = "absolute";
-      popEl.style.right = "345px";
-      popEl.style.top = "370px";
+
+    // Expand Apple Preview secondary Markup toolbar
+    const markupToggle = pdfView.contentEl.querySelector(
+      '[data-pf-testid="pdf-markup-toggle"]'
+    ) as HTMLButtonElement | null;
+    markupToggle?.click();
+    const arrowBtn = pdfView.contentEl.querySelector(
+      '[data-pf-testid="pdf-tool-shape-arrow"]'
+    ) as HTMLButtonElement | null;
+    arrowBtn?.click();
+
+    // Show Highlight split dropdown cleanly anchored inside workspace slot
+    const hlMenuBtn = pdfView.contentEl.querySelector(
+      '[data-pf-testid="pdf-highlight-menu-btn"]'
+    ) as HTMLButtonElement | null;
+    hlMenuBtn?.click();
+    const ddEl = pdfView.contentEl.querySelector(
+      '[data-pf-testid="pdf-highlight-dropdown"]'
+    ) as HTMLElement | null;
+    if (ddEl) {
+      ddEl.style.position = "absolute";
+      ddEl.style.right = "164px";
+      ddEl.style.top = "44px";
     }
-    mainSlot.style.position = "relative";
   }
 
-  // ── Scene 08: PDF Annotator Boundary States ────────────────────────────────
+  // ── Scene 08: PDF Annotator AsterLab Dark + Boundary States ────────────────
   {
     const snap = makeSnapshot("");
     const { body } = createScene(
       "08-pdf-annotator-provenance-and-empty-states",
-      "08 · PDF 阅读器边界态：SHA-256 变更告警 + 关闭 AI 批注层 / 未绑定 PDF 空状态",
-      "左：源文件哈希变更告警（⚠ 原 PDF 文件已变更）且关闭 [🤖 AI 批注层]；右：未打开/缺少规范 PDF 空提示态",
-      1360
+      "08 · PDF 阅读器 AsterLab Dark 模式与边界态：源文件变更告警 + 缩略图侧栏 + 空/缺失提示",
+      "左：AsterLab Dark 暗黑暖灰主题（#171614 / #a996ff），展示「原 PDF 文件已变更」告警与左侧缩略图导航；右：未选文献与缺少 PDF 空态",
+      1380
     );
     const grid = body.createDiv({ cls: "pf-doc-grid-pdf-bounds" });
 
-    // Left: SHA-256 changed + AI layer toggled OFF
+    // Left: AsterLab Dark + SHA-256 changed + Thumbnails tab + AI layer toggled OFF
     const appLeft = new App(makeMockFiles(), VAULT_ROOT);
     const pluginLeft = makeFakePlugin(appLeft, snap, { pdfChanged: true });
-    const leftCard = grid.createDiv({ cls: "pf-doc-panel" });
+    const darkHost = grid.createDiv({ cls: "theme-dark" });
+    const leftCard = darkHost.createDiv({
+      cls: "pf-scope-asterlab pf-doc-panel pf-doc-dark-frame",
+    });
     leftCard.createDiv({
       cls: "pf-doc-panel-label",
-      text: "A. 原 PDF 变更告警 + [🤖 AI 批注层] 已关闭",
+      text: "A. AsterLab Dark · 原 PDF 变更告警 + 缩略图导航 + AI 导读关闭",
     });
     const leftMount = leftCard.createDiv();
     const pdfLeft = new PaperForgePdfView(new WorkspaceLeaf(), pluginLeft as never);
     (pdfLeft as unknown as { app: App }).app = appLeft;
     (pdfLeft as unknown as { contentEl: HTMLElement }).contentEl = leftMount;
-    (pdfLeft as unknown as { _scale: number })._scale = 0.88;
+    (pdfLeft as unknown as { _scale: number })._scale = 0.72;
     await pdfLeft.setState({ paperKey: "KEY_DONE", page: 1 }, { history: false });
     const aiToggleBtn = leftMount.querySelector(
       '[data-pf-testid="pdf-toggle-ai-layer"]'
     ) as HTMLButtonElement | null;
     aiToggleBtn?.click();
+    const thumbsTab = leftMount.querySelector(
+      '[data-pf-testid="pdf-tab-thumbs"]'
+    ) as HTMLButtonElement | null;
+    thumbsTab?.click();
 
     // Right: Empty & Missing PDF states
     const appRight = new App(makeMockFiles(), VAULT_ROOT);

@@ -195,28 +195,28 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
 <style>
   :root {{
     --background-primary: #ffffff;
-    --background-primary-alt: #f8f9fb;
-    --background-secondary: #f4f5f7;
-    --background-secondary-alt: #ebedf0;
-    --background-modifier-border: #e1e4e8;
-    --background-modifier-border-hover: #c9ced6;
-    --background-modifier-hover: rgba(15, 23, 42, 0.05);
-    --text-normal: #1f2328;
-    --text-muted: #59636e;
-    --text-faint: #8c959f;
-    --interactive-normal: #f3f4f6;
-    --interactive-hover: #e5e7eb;
-    --interactive-accent: #7c3aed;
-    --interactive-accent-hover: #6d28d9;
+    --background-primary-alt: #f7f6f3;
+    --background-secondary: #faf9f7;
+    --background-secondary-alt: #f1efea;
+    --background-modifier-border: #e7e3db;
+    --background-modifier-border-hover: #d6d0c5;
+    --background-modifier-hover: rgba(28, 27, 24, 0.05);
+    --text-normal: #1c1b18;
+    --text-muted: #5f5a52;
+    --text-faint: #8f897f;
+    --interactive-normal: #f7f6f3;
+    --interactive-hover: #efece6;
+    --interactive-accent: #5b45c9;
+    --interactive-accent-hover: #4b37ae;
     --text-on-accent: #ffffff;
-    --text-success: #1a7f37;
-    --text-warning: #9a6700;
-    --text-error: #cf222e;
-    --color-green: #1a7f37;
-    --color-red: #cf222e;
-    --color-orange: #bc4c00;
-    --color-purple: #8250df;
-    --color-blue: #0969da;
+    --text-success: #2f7a4f;
+    --text-warning: #7a6233;
+    --text-error: #a3373a;
+    --color-green: #2f7a4f;
+    --color-red: #a3373a;
+    --color-orange: #7a6233;
+    --color-purple: #5b45c9;
+    --color-blue: #3b6fd8;
     --font-interface: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", Inter, system-ui, sans-serif;
     --font-monospace-theme: "Cascadia Code", Consolas, ui-monospace, monospace;
     --font-ui-large: 18px;
@@ -225,20 +225,39 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
     --font-ui-smaller: 11.5px;
     --font-ui-smallest: 10.5px;
     --font-semibold: 600;
-    --radius-s: 5px;
-    --radius-m: 8px;
+    --radius-s: 6px;
+    --radius-m: 10px;
     --radius-l: 12px;
     --size-4-1: 4px;
     --size-4-2: 8px;
     --size-4-3: 12px;
     --size-4-4: 16px;
-    --shadow-s: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --shadow-s: 0 8px 24px rgba(28, 27, 24, 0.08);
+  }}
+  .theme-dark {{
+    --background-primary: #1e1d1a;
+    --background-primary-alt: #171614;
+    --background-secondary: #1e1d1a;
+    --background-secondary-alt: #242320;
+    --background-modifier-border: #37352f;
+    --background-modifier-border-hover: #4a473f;
+    --background-modifier-hover: #2b2925;
+    --text-normal: #f2efe9;
+    --text-muted: #a9a49a;
+    --text-faint: #78736a;
+    --interactive-normal: #242320;
+    --interactive-hover: #2b2925;
+    --interactive-accent: #a996ff;
+    --interactive-accent-hover: #bcabff;
+    --text-on-accent: #1b1533;
+    --shadow-s: 0 10px 28px rgba(0, 0, 0, 0.45);
+    color: #f2efe9;
   }}
   * {{ box-sizing: border-box; }}
   body {{
     margin: 0;
     padding: 24px;
-    background: #eef1f6;
+    background: #efede8;
     color: var(--text-normal);
     font-family: var(--font-interface);
     font-size: var(--font-ui-small);
@@ -297,36 +316,38 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
   }}
   .checkbox-container.is-enabled::after {{ left: 18px; }}
 
-  /* Scene framing */
+  /* Scene framing (AsterLab calm paper editorial) */
   .pf-doc-scene {{
     margin: 0 0 36px 0;
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
+    background: #f7f6f3;
+    border: 1px solid #d6d0c5;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 24px rgba(28, 27, 24, 0.08);
   }}
   .pf-doc-scene-banner {{
-    padding: 10px 16px;
-    background: linear-gradient(90deg, #1e293b 0%, #312e81 100%);
-    color: #f8fafc;
+    padding: 11px 16px;
+    background: #1e1d1a;
+    border-bottom: 1px solid #37352f;
+    color: #f2efe9;
   }}
-  .pf-doc-scene-title {{ font-weight: 600; font-size: 14px; }}
-  .pf-doc-scene-sub {{ font-size: 11.5px; color: #cbd5e1; margin-top: 2px; }}
-  .pf-doc-scene-body {{ padding: 14px; background: #e9edf3; }}
+  .pf-doc-scene-title {{ font-weight: 600; font-size: 14px; color: #f2efe9; }}
+  .pf-doc-scene-sub {{ font-size: 11.5px; color: #a9a49a; margin-top: 2px; }}
+  .pf-doc-scene-body {{ padding: 14px; background: #f7f6f3; }}
 
   /* Obsidian Workspace Chrome */
   .pf-ob-window {{
-    background: var(--background-primary);
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
+    background: var(--pf-surface, var(--background-primary));
+    border: 1px solid var(--pf-border, #e7e3db);
+    border-radius: 10px;
     overflow: hidden;
   }}
   .pf-ob-titlebar {{
     height: 30px; padding: 0 12px;
-    background: #e2e8f0; border-bottom: 1px solid #cbd5e1;
+    background: var(--pf-rail, #f1efea);
+    border-bottom: 1px solid var(--pf-border, #e7e3db);
     display: flex; align-items: center; gap: 12px;
-    font-size: 11.5px; color: #475569; font-weight: 500;
+    font-size: 11.5px; color: var(--pf-text-muted, #5f5a52); font-weight: 500;
   }}
   .pf-ob-titlebar-dots {{ display: flex; gap: 6px; }}
   .pf-ob-titlebar-dots .dot {{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; }}
@@ -336,104 +357,124 @@ def _write_host_html(build_dir: Path, bundle_js: Path) -> Path:
   .pf-ob-workbench {{ display: flex; align-items: stretch; }}
   .pf-ob-ribbon {{
     width: 40px; flex-shrink: 0;
-    background: #f1f5f9; border-right: 1px solid var(--background-modifier-border);
+    background: var(--pf-rail, #f1efea);
+    border-right: 1px solid var(--pf-border, var(--background-modifier-border));
     padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;
   }}
   .pf-ob-ribbon-icon {{
     width: 28px; height: 28px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center; color: #64748b;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--pf-text-muted, #5f5a52);
   }}
   .pf-ob-ribbon-icon.is-active {{
-    background: rgba(124, 58, 237, 0.14);
-    color: var(--interactive-accent);
+    background: var(--pf-accent-soft, rgba(91, 69, 201, 0.12));
+    color: var(--pf-accent, var(--interactive-accent));
   }}
-  .pf-ob-main-leaf {{ flex: 1; min-width: 0; background: var(--background-primary); }}
+  .pf-ob-main-leaf {{
+    flex: 1; min-width: 0;
+    background: var(--pf-surface, var(--background-primary));
+  }}
   .pf-ob-right-sidebar {{
     width: 370px; flex-shrink: 0;
-    background: var(--background-secondary);
-    border-left: 1px solid var(--background-modifier-border);
+    background: var(--pf-canvas, var(--background-secondary));
+    border-left: 1px solid var(--pf-border, var(--background-modifier-border));
   }}
-  .pf-doc-grid-pdf-bounds {{ display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); gap: 14px; align-items: start; }}
+  .pf-doc-grid-pdf-bounds {{ display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(0, 1fr); gap: 14px; align-items: start; }}
   .pf-doc-modal-host .modal {{
     position: static; width: 100% !important; max-width: none !important; box-shadow: none;
-    border: 1px solid var(--background-modifier-border); border-radius: 6px;
+    border: 1px solid var(--pf-border, var(--background-modifier-border)); border-radius: 10px;
   }}
   .pf-ob-tab-header {{
-    height: 34px; background: #f1f5f9;
-    border-bottom: 1px solid var(--background-modifier-border);
+    height: 34px; background: var(--pf-rail, #f1efea);
+    border-bottom: 1px solid var(--pf-border, var(--background-modifier-border));
     display: flex; align-items: flex-end; padding: 0 10px;
   }}
   .pf-ob-tab {{
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 12px; background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
+    padding: 5px 12px;
+    background: var(--pf-surface, var(--background-primary));
+    color: var(--pf-text, var(--text-normal));
+    border: 1px solid var(--pf-border, var(--background-modifier-border));
     border-bottom: none; border-radius: 6px 6px 0 0;
     font-size: 12px; font-weight: 500;
   }}
-  .pf-ob-tab-icon {{ display: inline-flex; color: var(--interactive-accent); }}
+  .pf-ob-tab-icon {{ display: inline-flex; color: var(--pf-accent, var(--interactive-accent)); }}
   .pf-ob-leaf-content {{ padding: 12px 14px; }}
   .pf-ob-sidebar-content {{ padding: 8px; }}
 
-  /* Obsidian Bases Toolbar Simulation */
+  /* Authentic Obsidian 1.12 Bases Toolbar Simulation */
   .pf-ob-bases-container {{
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px; overflow: hidden; background: var(--background-primary);
+    border: 1px solid var(--pf-border, var(--background-modifier-border));
+    border-radius: 10px; overflow: hidden;
+    background: var(--pf-surface, var(--background-primary));
   }}
   .pf-ob-bases-toolbar {{
     display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
-    padding: 8px 12px; background: #f8fafc;
-    border-bottom: 1px solid var(--background-modifier-border);
+    height: 38px; padding: 0 12px;
+    background: var(--pf-elevated, #faf9f7);
+    border-bottom: 1px solid var(--pf-border, var(--background-modifier-border));
   }}
   .pf-ob-bases-views, .pf-ob-bases-controls {{
     display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   }}
-  .pf-ob-bases-view-pill {{
-    padding: 3px 10px; border-radius: 6px; font-size: 12px;
-    color: var(--text-muted); border: 1px solid transparent;
-  }}
-  .pf-ob-bases-view-pill.is-active {{
-    background: var(--background-primary); color: var(--interactive-accent);
-    border-color: var(--background-modifier-border); font-weight: 600;
+  .pf-ob-bases-view-dropdown {{
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 6px; font-size: 12.5px; font-weight: 600;
+    color: var(--pf-text, var(--text-normal));
+    background: var(--pf-surface, var(--background-primary));
+    border: 1px solid var(--pf-border, var(--background-modifier-border));
   }}
   .pf-ob-bases-chip {{
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 8px; border-radius: 10px; font-size: 11px;
-    background: var(--background-primary); border: 1px solid var(--background-modifier-border);
-    color: var(--text-muted);
+    padding: 3px 8px; border-radius: 6px; font-size: 11.5px;
+    background: transparent; border: 1px solid transparent;
+    color: var(--pf-text-muted, var(--text-muted));
+  }}
+  .pf-ob-bases-chip.is-primary-btn {{
+    background: var(--pf-accent, #5b45c9);
+    color: var(--pf-accent-text, #ffffff);
+    font-weight: 500;
   }}
   .pf-ob-chip-icon {{ display: inline-flex; }}
-  .pf-ob-bases-view-mount {{ padding: 10px; }}
+  .pf-ob-bases-view-mount {{ padding: 10px 12px; }}
+
+  /* AsterLab Dark preview wrapper */
+  .theme-dark .pf-doc-dark-frame {{
+    background: #171614;
+    color: #f2efe9;
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid #37352f;
+  }}
+  .theme-dark .pf-doc-dark-frame .pf-doc-panel-label {{
+    color: #a996ff;
+    border-bottom-color: #37352f;
+  }}
 
   /* Grid helpers */
   .pf-doc-grid-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }}
   .pf-doc-grid-3 {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: start; }}
   .pf-doc-panel {{
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
+    background: var(--pf-surface, var(--background-primary));
+    border: 1px solid var(--pf-border, var(--background-modifier-border));
+    border-radius: 10px;
     padding: 10px 12px;
   }}
   .pf-doc-panel-label {{
-    font-size: 12px; font-weight: 600; color: var(--interactive-accent);
+    font-size: 12px; font-weight: 600; color: var(--pf-accent, var(--interactive-accent));
     padding-bottom: 6px; margin-bottom: 8px;
-    border-bottom: 1px dashed var(--background-modifier-border);
+    border-bottom: 1px solid var(--pf-border, var(--background-modifier-border));
   }}
   .pf-doc-subbox {{
-    margin-bottom: 10px; border: 1px solid var(--background-modifier-border);
-    border-radius: 6px; padding: 6px; background: var(--background-primary-alt);
+    margin-bottom: 10px; border: 1px solid var(--pf-border, var(--background-modifier-border));
+    border-radius: 6px; padding: 6px; background: var(--pf-canvas, var(--background-primary-alt));
   }}
   .pf-doc-sidebar-shell .paperforge-status-panel {{ max-height: none; overflow: visible; }}
-  .pf-doc-maint-sample {{ margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--background-modifier-border); }}
+  .pf-doc-maint-sample {{ margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--pf-border, var(--background-modifier-border)); }}
 
-  /* PDF viewer showcase sizing */
+  /* PDF viewer showcase sizing — overlay colors come cleanly from plugin styles.css */
   .pf-pdf-body {{ max-height: 760px; overflow: hidden; }}
   .pf-pdf-scroll {{ overflow: hidden; }}
-  .pf-pdf-ann-box {{ position: absolute; pointer-events: none; border-radius: 3px; }}
-  .pf-pdf-ann--yellow.pf-pdf-ann-kind--highlight {{ background: rgba(253, 224, 71, 0.36); }}
-  .pf-pdf-ann--blue.pf-pdf-ann-kind--area {{ background: rgba(59, 130, 246, 0.14); border: 2px solid #3b82f6; }}
-  .pf-pdf-ann-box.pf-pdf-hl-agent {{ outline: 1.5px dashed #8b5cf6; background: rgba(139, 92, 246, 0.18); }}
-  .pf-pdf-ann-box.pf-pdf-margin-bracket {{ border-left: 5px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); outline: none; }}
-  .pf-pdf-overlay-layer {{ position: absolute; inset: 0; pointer-events: none; }}
   .pf-pdf-page {{ position: relative; margin: 0 auto 12px auto; box-shadow: var(--shadow-s); }}
 
   /* Modal showcase embedding */
