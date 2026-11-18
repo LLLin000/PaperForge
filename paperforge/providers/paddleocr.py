@@ -13,28 +13,20 @@ batch id (one logical execution) with a NEW job id.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 import json
-from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import requests
+
+from paperforge.providers.base import ProviderStatus
 
 DEFAULT_JOB_URL = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
 
 # Provider payloads are dynamic JSON; expose them as object-valued dicts so
 # callers cast at the boundary (no object leaking into annotations).
 JobPayload = dict[str, object]
-
-
-class ProviderStatus(str, Enum):
-    """Normalized provider job state — the only status vocabulary the rest
-    of PaperForge ever sees."""
-
-    QUEUED = "queued"      # submitted, waiting in provider queue
-    RUNNING = "running"    # provider processing
-    DONE = "done"          # provider finished, result URL available
-    FAILED = "failed"      # provider terminal failure
-    UNKNOWN = "unknown"    # unrecognized / unreadable state
 
 
 def normalize_provider_state(state: str) -> ProviderStatus:
@@ -161,9 +153,87 @@ class PaddleOCRProvider:
                 )
         return out
 
-    # ── result fetch ────────────────────────────────────────────────────
+    # ── result fetch & inbound schema normalization ─────────────────────
     def fetch_result(self, result_url: str) -> list[dict[str, object]]:
         """Fetch a JSONL OCR result; one dict per page."""
         resp = self._session.get(result_url, timeout=self._timeout)
         resp.raise_for_status()
         return [json.loads(line) for line in resp.text.splitlines() if line.strip()]
+
+    def extract_result_url(self, job_payload: dict[str, Any]) -> str | None:
+        return extract_paddleocr_result_url(job_payload)
+
+    def iter_page_results(
+        self, all_results: list[dict[str, Any]]
+    ) -> Iterator[dict[str, Any]]:
+        return iter_paddleocr_page_results(all_results)
+
+    def parse_page_blocks(
+        self, paper_id: str, page: int, page_result: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        return parse_paddleocr_page_blocks(paper_id, page, page_result)
+
+    def parse_raw_blocks(
+        self, paper_id: str, all_results: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        return parse_paddleocr_raw_blocks(paper_id, all_results)
+
+
+def extract_paddleocr_result_url(job_payload: dict[str, Any]) -> str | None:
+    """Return the downloadable JSONL URL from a PaddleOCR job payload."""
+    if not isinstance(job_payload, dict):
+        return None
+    result_url = job_payload.get("resultUrl")
+    if not isinstance(result_url, dict):
+        return None
+    json_url = result_url.get("jsonUrl")
+    return str(json_url) if json_url else None
+
+
+def iter_paddleocr_page_results(
+    all_results: list[dict[str, Any]],
+) -> Iterator[dict[str, Any]]:
+    """Yield per-page PaddleOCR layout results across batched API payloads."""
+    for payload in all_results:
+        if not isinstance(payload, dict):
+            continue
+        for page_res in payload.get("layoutParsingResults", []) or []:
+            if isinstance(page_res, dict):
+                yield page_res
+
+
+def parse_paddleocr_page_blocks(
+    paper_id: str, page: int, page_result: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Normalize one PaddleOCR ``layoutParsingResults`` item into raw block rows."""
+    pruned = page_result.get("prunedResult", {}) or {}
+    width = pruned.get("width", 0)
+    height = pruned.get("height", 0)
+    blocks = pruned.get("parsing_res_list", []) or []
+    rows: list[dict[str, Any]] = []
+    for i, block in enumerate(blocks):
+        rows.append(
+            {
+                "paper_id": paper_id,
+                "page": page,
+                "block_id": block.get("block_id", f"p{page}_b{i}"),
+                "raw_label": block.get("block_label", "unknown"),
+                "raw_order": block.get("block_order", i),
+                "bbox": block.get("block_bbox", [0, 0, 0, 0]),
+                "text": block.get("block_content", "") or "",
+                "page_width": width,
+                "page_height": height,
+                "source": "ocr_raw",
+            }
+        )
+    return rows
+
+
+def parse_paddleocr_raw_blocks(
+    paper_id: str, all_results: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Normalize all PaddleOCR result payloads into canonical ``ocr_raw`` rows."""
+    rows: list[dict[str, Any]] = []
+    for page_num, res in enumerate(iter_paddleocr_page_results(all_results), start=1):
+        rows.extend(parse_paddleocr_page_blocks(paper_id, page_num, res))
+    return rows

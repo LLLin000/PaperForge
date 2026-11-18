@@ -6,6 +6,7 @@ import re
 import sqlite3
 from pathlib import Path
 
+from paperforge.embedding.providers import resolve_embedding_provider
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 from paperforge.memory.db import (
     ensure_vec_extension,
@@ -49,7 +50,7 @@ _VEC_META_MAP = {
 
 def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
     """Search chunks via vec0 k-NN on vec_fulltext. Returns list with metadata and similarity scores."""
-    provider = OpenAICompatibleProvider(vault)
+    provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
     query_embedding = provider.encode_single(query)
     n = limit * 3 if expand else limit
     db_path = get_memory_db_path(vault)
@@ -155,7 +156,7 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
 def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True, paper_id: str | None = None) -> list[dict]:
     """Query vec0 tables, enrich with structural coordinates, dedup by unit_id.
     #159 §6: results pass the reader gate (vector lineage current only)."""
-    provider = OpenAICompatibleProvider(vault)
+    provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
     q_emb = provider.encode_single(query)
     n = limit * 2 if expand else limit
 
@@ -232,7 +233,9 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
     # call must not hold .read.lock (it stalls other queries and can exceed
     # the publish barrier's 10s timeout).
     try:
-        query_embedding = OpenAICompatibleProvider(vault).encode_single(query)
+        query_embedding = resolve_embedding_provider(
+            vault, default_cls=OpenAICompatibleProvider
+        ).encode_single(query)
     except Exception:
         query_embedding = None
     db_path = get_memory_db_path(vault)
@@ -341,7 +344,7 @@ def _vec_search(
     """
     logger = logging.getLogger(__name__)
     if query_embedding is None:
-        provider = OpenAICompatibleProvider(vault)
+        provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
         query_embedding = provider.encode_single(query)
     q_emb_json = json.dumps(query_embedding)
 

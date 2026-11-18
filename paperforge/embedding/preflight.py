@@ -6,16 +6,12 @@ from pathlib import Path
 
 def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
     """Check prerequisites for embed build. Returns {ok: bool, error: str, fix: str}."""
+    from paperforge.embedding.providers import check_embedding_provider_prereqs
 
-    # 1. openai package
-    try:
-        import openai  # noqa: F401
-    except ImportError:
-        return {
-            "ok": False,
-            "error": "openai is not installed",
-            "fix": 'Run: pip install "paperforge[vector]"',
-        }
+    # 1. Provider transport dependency (openai_sdk or requests)
+    prereq = check_embedding_provider_prereqs(vault)
+    if not prereq.get("ok"):
+        return prereq
 
     # 3. API key (#173/C1: credential authority; the preflight consumes the
     #    STATUS read model so backend faults are distinguishable from a
@@ -39,9 +35,9 @@ def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
     # secret value is never retrieved here; handlers resolve it.
 
     # 4. OCR done papers
-    from paperforge.worker._utils import pipeline_paths
-    paths = pipeline_paths(vault)
-    idx_path = paths.get("indexes", Path("")) / "formal-library.json" if paths.get("indexes") else None
+    from paperforge.config import paperforge_paths
+
+    idx_path = paperforge_paths(vault).get("index")
     if idx_path and idx_path.exists():
         import json
         data = json.loads(idx_path.read_text(encoding="utf-8"))

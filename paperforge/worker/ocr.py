@@ -2112,6 +2112,7 @@ def postprocess_ocr_result(
     meta["normalize_mode"] = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
     from paperforge.pdf_resolver import resolve_source_pdf
+    from paperforge.providers.paddleocr import iter_paddleocr_page_results
 
     source_pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
     pdf_doc = None
@@ -2120,10 +2121,9 @@ def postprocess_ocr_result(
             import pymupdf
 
             pdf_doc = pymupdf.open(str(source_pdf))
-        for page_payload in all_results:
-            for res in page_payload.get("layoutParsingResults", []):
-                page_num += 1
-                render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc)
+        for res in iter_paddleocr_page_results(all_results):
+            page_num += 1
+            render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc)
     finally:
         if pdf_doc is not None:
             pdf_doc.close()
@@ -3505,15 +3505,16 @@ def run_ocr(
         # payload lacks the result URL, that job falls back to the existing
         # per-job poll (never a single point of failure).
         _batch_states: dict[str, tuple[str, dict]] = {}
-        try:
-            from paperforge.providers.paddleocr import PaddleOCRProvider
+        from paperforge.providers.paddleocr import (
+            PaddleOCRProvider,
+            extract_paddleocr_result_url,
+        )
 
+        try:
             _prov = PaddleOCRProvider(token, job_url, model, optional_payload)
             for _jid, (_st, _pl) in _prov.get_batch_status(batch_id).items():
                 _s = _st.value
-                if _s == "done" and not (
-                    isinstance(_pl.get("resultUrl"), dict) and _pl["resultUrl"].get("jsonUrl")
-                ):
+                if _s == "done" and not _prov.extract_result_url(_pl):
                     continue  # no result URL in batch payload → per-job fetch
                 _batch_states[_jid] = (_s, _pl)
         except Exception:  # noqa: BLE001 — batch observer degrades to per-job
@@ -3537,7 +3538,9 @@ def run_ocr(
                     continue
             if state == "done":
                 try:
-                    result_url = payload["resultUrl"]["jsonUrl"]
+                    result_url = extract_paddleocr_result_url(payload)
+                    if not result_url:
+                        raise KeyError("resultUrl")
                     try:
                         result_response = requests.get(result_url, timeout=120)
                         result_response.raise_for_status()

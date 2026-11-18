@@ -475,37 +475,15 @@ def write_structured_blocks_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 def build_raw_blocks_for_page(paper_id: str, page: int, result: dict) -> list[dict[str, Any]]:
-    pruned = result.get("prunedResult", {})
-    width = pruned.get("width", 0)
-    height = pruned.get("height", 0)
-    blocks = pruned.get("parsing_res_list", [])
-    rows = []
-    for i, block in enumerate(blocks):
-        rows.append(
-            {
-                "paper_id": paper_id,
-                "page": page,
-                "block_id": block.get("block_id", f"p{page}_b{i}"),
-                "raw_label": block.get("block_label", "unknown"),
-                "raw_order": block.get("block_order", i),
-                "bbox": block.get("block_bbox", [0, 0, 0, 0]),
-                "text": block.get("block_content", "") or "",
-                "page_width": width,
-                "page_height": height,
-                "source": "ocr_raw",
-            }
-        )
-    return rows
+    from paperforge.providers.paddleocr import parse_paddleocr_page_blocks
+
+    return parse_paddleocr_page_blocks(paper_id, page, result)
 
 
 def build_raw_blocks_for_result_lines(paper_id: str, all_results: list[dict]) -> list[dict[str, Any]]:
-    rows = []
-    page_num = 0
-    for payload in all_results:
-        for res in payload.get("layoutParsingResults", []):
-            page_num += 1
-            rows.extend(build_raw_blocks_for_page(paper_id, page_num, res))
-    return rows
+    from paperforge.providers.paddleocr import parse_paddleocr_raw_blocks
+
+    return parse_paddleocr_raw_blocks(paper_id, all_results)
 
 
 def write_raw_blocks_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from paperforge.embedding.dim_detect import ensure_vec_tables
+from paperforge.embedding.providers import EmbeddingProvider, resolve_embedding_provider
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
 from paperforge.memory.schema import ensure_schema
@@ -162,10 +163,10 @@ def _validate_embeddings(embeddings: list, texts: list) -> None:
 
 
 def encode_payload(
-    vault: Path, payload: EmbeddingPayload, provider: OpenAICompatibleProvider | None = None
+    vault: Path, payload: EmbeddingPayload, provider: EmbeddingProvider | None = None
 ) -> EncodedPayload:
     if provider is None:
-        provider = OpenAICompatibleProvider(vault)
+        provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
     embeddings = provider.encode(payload.texts)
     _validate_embeddings(embeddings, payload.texts)
     return EncodedPayload(
@@ -178,7 +179,7 @@ def encode_payload(
 
 
 def encode_paper_job(vault: Path, job: PaperEmbeddingJob) -> PaperEncodedBundle:
-    provider = OpenAICompatibleProvider(vault)
+    provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
     encoded_payloads: list[EncodedPayload] = []
     total_chunks = 0
     for payload in job.payloads:

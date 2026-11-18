@@ -49,9 +49,6 @@
       "171:paperforge.worker._utils",
       "183:paperforge.worker._utils"
     ],
-    "paperforge.embedding.preflight": [
-      "42:paperforge.worker._utils"
-    ],
     "paperforge.figure_reconciliation": [
       "1524:paperforge.worker.ocr_figures:_collect_same_page_multicolumn_legend_pairs",
       "379:paperforge.lineage:_canonical_pdf_map"

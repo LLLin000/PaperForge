@@ -8,6 +8,7 @@ from pathlib import Path
 import sqlite3
 from typing import Optional
 
+from paperforge.embedding.providers import resolve_embedding_provider
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) ->
             except Exception:
                 pass
 
-    provider = OpenAICompatibleProvider(vault)
+    provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
     test_vec = provider.encode_single("dimension detection probe")
     dim = len(test_vec)
     logger.info("Detected embedding dimension: %d (model: %s)", dim, getattr(provider, "model", "unknown"))
