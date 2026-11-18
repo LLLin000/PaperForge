@@ -61,6 +61,13 @@ class VaultInitializer:
         """Create Zotero junction/symlink to vault at the resolved system
         dir's Zotero link point."""
         system = Path(self.layout["system"])
+        if system.name == ".paperforge":
+            return SetupStepResult(
+                step="vault_initializer",
+                ok=True,
+                message="Direct zotero_data_dir used (.paperforge layout skips vault junction)",
+                details={"skipped": True, "reason": "direct_zotero_data_dir"},
+            )
         zotero_link = system / "Zotero"
 
         if zotero_link.exists() or zotero_link.is_symlink():
@@ -79,6 +86,7 @@ class VaultInitializer:
                 details={"skipped": True},
             )
 
+        zotero_exists = Path(zotero_path).is_dir()
         try:
             if os.name == "nt":
                 result = subprocess.run(
@@ -90,11 +98,19 @@ class VaultInitializer:
                     timeout=30,
                 )
                 if result.returncode != 0:
+                    err = result.stderr.strip() or result.stdout.strip()
+                    if zotero_exists:
+                        return SetupStepResult(
+                            step="vault_initializer",
+                            ok=True,
+                            message=f"Zotero junction skipped (using direct zotero_data_dir): {zotero_path}",
+                            details={"warning": err, "fallback": "direct_zotero_data_dir"},
+                        )
                     return SetupStepResult(
                         step="vault_initializer",
                         ok=False,
                         message="Failed to create Zotero junction",
-                        error=result.stderr.strip() or result.stdout.strip(),
+                        error=err,
                     )
             else:
                 zotero_link.symlink_to(zotero_path, target_is_directory=True)
@@ -106,6 +122,13 @@ class VaultInitializer:
                 details={"source": str(zotero_link), "target": zotero_path},
             )
         except OSError as exc:
+            if zotero_exists:
+                return SetupStepResult(
+                    step="vault_initializer",
+                    ok=True,
+                    message=f"Zotero junction skipped (using direct zotero_data_dir): {zotero_path}",
+                    details={"warning": str(exc), "fallback": "direct_zotero_data_dir"},
+                )
             return SetupStepResult(
                 step="vault_initializer",
                 ok=False,

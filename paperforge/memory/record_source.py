@@ -11,15 +11,60 @@ from typing import Any, cast
 from paperforge.worker.asset_index import read_index
 
 
+def _configured_zotero_dir(vault: Path) -> Path | None:
+    from paperforge.config import ConfigError, load_config, resolve_paths
+
+    try:
+        snapshot = load_config(vault)
+    except ConfigError:
+        return None
+    val = str(snapshot.values["zotero_data_dir"].value or "").strip()
+    if not val:
+        return None
+    return resolve_paths(vault, snapshot)["zotero_dir"].resolve()
+
+
 def _relative_pdf(vault: Path, value: object) -> Path:
     if not isinstance(value, str) or not value or "\\" in value:
-        raise ValueError("Source must be a vault-relative PDF path using / separators")
-    if (Path(value).is_absolute() or PureWindowsPath(value).is_absolute()
-            or re.search(r"[:#?\x00-\x1f]", value) or ".." in value.split("/")):
-        raise ValueError("Absolute, protocol, traversal and fragment source paths are forbidden")
+        raise ValueError("Source must be a vault or Zotero PDF path using / separators")
+    if "://" in value or re.search(r"[#?\x00-\x1f]", value) or ".." in value.split("/"):
+        raise ValueError("URL, traversal and fragment source paths are forbidden")
+
+    zotero_dir = _configured_zotero_dir(vault)
+    vault_root = vault.resolve()
+
+    if value.startswith("storage:"):
+        if zotero_dir is None:
+            raise ValueError("Zotero directory is not configured for storage: locator")
+        rel = value[len("storage:") :].lstrip("/")
+        resolved = (zotero_dir / "storage" / rel).resolve()
+        if not resolved.is_relative_to(zotero_dir) or resolved.suffix.lower() != ".pdf":
+            raise ValueError("Source must remain inside the Zotero directory and identify a PDF")
+        return resolved
+
+    is_native_abs = Path(value).is_absolute()
+    is_win_abs = PureWindowsPath(value).is_absolute()
+    if is_win_abs and not is_native_abs:
+        raise ValueError("Absolute source path from another platform is forbidden")
+
+    if is_native_abs:
+        resolved = Path(value).resolve()
+        allowed = resolved.is_relative_to(vault_root) or (
+            zotero_dir is not None and resolved.is_relative_to(zotero_dir)
+        )
+        if not allowed or resolved.suffix.lower() != ".pdf":
+            raise ValueError("External absolute source must remain inside Zotero data directory or vault")
+        return resolved
+
+    if ":" in value:
+        raise ValueError("Protocol and drive-colon source paths are forbidden")
+
     resolved = (vault / value).resolve()
-    if not resolved.is_relative_to(vault.resolve()) or resolved.suffix.lower() != ".pdf":
-        raise ValueError("Source must remain inside this vault and identify a PDF")
+    allowed = resolved.is_relative_to(vault_root) or (
+        zotero_dir is not None and resolved.is_relative_to(zotero_dir)
+    )
+    if not allowed or resolved.suffix.lower() != ".pdf":
+        raise ValueError("Source must remain inside this vault or Zotero directory and identify a PDF")
     return resolved
 
 
@@ -33,10 +78,16 @@ def _paper_pdf(vault: Path, paper_id: str, value: object) -> Path:
     canonical = papers[0].get("pdf_path", "")
     if canonical.startswith("[[") and canonical.endswith("]]"):
         canonical = canonical[2:-2]
-    # Canonical paths may be absolute; untrusted record paths may not.
-    canonical_path = Path(canonical)
-    if not canonical_path.is_absolute():
-        canonical_path = vault / canonical
+    if canonical.startswith("storage:"):
+        zotero_dir = _configured_zotero_dir(vault)
+        if zotero_dir is not None:
+            canonical_path = zotero_dir / "storage" / canonical[len("storage:") :].lstrip("/")
+        else:
+            canonical_path = Path("")
+    else:
+        canonical_path = Path(canonical)
+        if not canonical_path.is_absolute():
+            canonical_path = vault / canonical
     if not canonical or canonical_path.resolve() != requested:
         raise ValueError("Source does not belong to this paper's current canonical PDF")
     return requested

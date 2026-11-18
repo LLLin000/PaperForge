@@ -232,8 +232,7 @@ def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = F
             )
             from paperforge.pdf_resolver import resolve_pdf_path
 
-            cfg = load_vault_config(vault)
-            zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+            zotero_dir = paths["zotero_dir"]
             resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
             collection_meta = collection_fields(item.get("collections", []))
             meta_path = paths["ocr"] / item["key"] / "meta.json"

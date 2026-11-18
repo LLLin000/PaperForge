@@ -94,6 +94,41 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
     index_path = paths.get("index")  # canonical formal-library.json
 
     if index_path is None or not index_path.exists():
+        exports_dir = paths.get("exports")
+        if exports_dir is not None and exports_dir.exists():
+            json_exports = sorted(exports_dir.glob("*.json"))
+            if json_exports:
+                from paperforge.adapters.bbt import detect_bbt_export_problem
+
+                for exp in json_exports:
+                    problem = detect_bbt_export_problem(exp)
+                    if problem:
+                        return build_envelope(
+                            module="library", capability_state="missing_input", severity="error",
+                            reason_code="library.bbt_invalid_format",
+                            reason_text=problem,
+                            user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+                            action_primary=build_action_primary(
+                                action_id="library.sync", verb="sync", label="Sync library",
+                            ),
+                            ttl_seconds=TTL_LIBRARY,
+                        )
+            else:
+                bib_exports = sorted(exports_dir.glob("*.bib"))
+                if bib_exports:
+                    return build_envelope(
+                        module="library", capability_state="missing_input", severity="error",
+                        reason_code="library.bbt_invalid_format",
+                        reason_text=(
+                            f"Found {bib_exports[0].name} (.bib), but PaperForge requires "
+                            "'Better BibTeX JSON' (.json). Re-export with Keep updated checked."
+                        ),
+                        user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+                        action_primary=build_action_primary(
+                            action_id="library.sync", verb="sync", label="Sync library",
+                        ),
+                        ttl_seconds=TTL_LIBRARY,
+                    )
         return build_envelope(
             module="library", capability_state="needs_action", severity="warning",
             reason_code="library.index_missing", reason_text="Canonical index has not been built — run sync",

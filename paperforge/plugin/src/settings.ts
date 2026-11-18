@@ -584,102 +584,108 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return text.length > 400 ? `${text.slice(0, 400)}…` : text;
   }
 
+  /** Pick a native OS directory via Electron dialog or hidden webkitdirectory input. */
+  private async _pickFolderPath(hostEl: HTMLElement): Promise<string | null> {
+    try {
+      const electron = require("electron") as {
+        remote?: {
+          dialog?: {
+            showOpenDialog?: (opts: {
+              properties: string[];
+            }) => Promise<{ canceled: boolean; filePaths: string[] }>;
+          };
+        };
+        webUtils?: { getPathForFile?: (file: File) => string };
+      };
+      const dialog = electron?.remote?.dialog;
+      if (dialog?.showOpenDialog) {
+        const res = await dialog.showOpenDialog({
+          properties: ["openDirectory"],
+        });
+        if (!res.canceled && res.filePaths?.[0]) {
+          return res.filePaths[0];
+        }
+        return null;
+      }
+    } catch {
+      // Electron remote unavailable in newer Obsidian builds; use DOM directory input fallback.
+    }
+    return new Promise<string | null>((resolve) => {
+      const picker = hostEl.createEl("input", {
+        attr: {
+          type: "file",
+          webkitdirectory: "",
+          style: "display:none",
+        },
+      }) as HTMLInputElement & { webkitdirectory: boolean };
+      picker.webkitdirectory = true;
+      const cleanup = () => {
+        try {
+          picker.remove();
+        } catch {
+          // ignore
+        }
+      };
+      picker.addEventListener("change", () => {
+        const file = picker.files?.[0] as
+          | (File & { path?: string; webkitRelativePath?: string })
+          | undefined;
+        cleanup();
+        if (!file) {
+          resolve(null);
+          return;
+        }
+        let fullPath = file.path || "";
+        if (!fullPath) {
+          try {
+            const electron = require("electron") as {
+              webUtils?: { getPathForFile?: (f: File) => string };
+            };
+            fullPath = electron?.webUtils?.getPathForFile?.(file) || "";
+          } catch {
+            fullPath = "";
+          }
+        }
+        if (!fullPath) {
+          resolve(null);
+          return;
+        }
+        const rel = (file.webkitRelativePath || "").replace(/\\/g, "/");
+        const parts = rel.split("/").filter(Boolean);
+        let dir = path.dirname(fullPath);
+        for (let i = 1; i < parts.length - 1; i += 1) {
+          dir = path.dirname(dir);
+        }
+        resolve(dir);
+      });
+      picker.addEventListener("cancel", () => {
+        cleanup();
+        resolve(null);
+      });
+      picker.click();
+    });
+  }
+
   private _applyLibraryConfiguration(): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
     this._setupFailureDetail = null;
     const settings = this.plugin.settings;
-    const vaultPath = this._getVaultBasePath();
-    const paths = {
+    const paths: Record<string, string | undefined> = {
       zotero_data_dir: settings.zotero_data_dir,
       system_dir: settings.system_dir,
       resources_dir: settings.resources_dir,
       literature_dir: settings.literature_dir,
       base_dir: settings.base_dir,
     };
-    // #142 / C0: mutations route through the typed config commands; the
-    // plugin never writes paperforge.json.
+    // #142 / C0: mutations route through typed CLI commands; the plugin never
+    // writes paperforge.json directly. Run `setup` FIRST so fresh vaults create
+    // paperforge.json before configSet/configList read it (fixes config.not_found deadlock).
     void (async () => {
       let libraryConfigured = false;
-      // A rejected write is a fact: collect every failure so a partial
-      // configuration can never continue into `setup` as if it were saved.
       const problems: Array<{ key: string; reason: string }> = [];
-      const written: Array<{ key: string; value: string }> = [];
       const envOverridden: string[] = [];
-      const writes: Promise<void>[] = [];
-      for (const [key, value] of Object.entries(paths)) {
-        if (value && value.trim()) {
-          const wanted = value.trim();
-          written.push({ key, value: wanted });
-          writes.push(
-            this.getClient()
-              .configSet(key, wanted)
-              .then(
-                () => undefined,
-                (e) => {
-                  // Ownership: the typed config client already recorded the
-                  // terminal — keep the user-facing reason, no View echo.
-                  problems.push({
-                    key,
-                    reason: this._formatSetupFailure(e),
-                  });
-                }
-              )
-          );
-        }
-      }
-      await Promise.all(writes);
-
-      // Read the canonical config back before claiming success: the
-      // backend owns the truth, not the mirror the form was edited in.
-      if (problems.length === 0 && written.length > 0) {
-        try {
-          const listed = await this.getClient().configList();
-          for (const { key, value } of written) {
-            const field = listed.fields.find((f) => f.key === key);
-            if (!field) {
-              problems.push({ key, reason: "missing from the backend config" });
-              continue;
-            }
-            // stored_value is the file fact; `value` may be an environment
-            // override that later stages would actually consume.
-            const stored = String(field.stored_value ?? "").trim();
-            if (stored !== value) {
-              problems.push({
-                key,
-                reason:
-                  `backend stored ${JSON.stringify(stored)}, expected ` +
-                  JSON.stringify(value) +
-                  (field.source === "environment"
-                    ? ` (environment override ${field.environment ?? "set"} in effect)`
-                    : ""),
-              });
-            }
-            if (
-              field.source === "environment" &&
-              String(field.value ?? "").trim() !== value
-            ) {
-              envOverridden.push(`${key} (${field.environment ?? "env"})`);
-            }
-          }
-        } catch (e) {
-          problems.push({
-            key: "readback",
-            reason: this._formatSetupFailure(e),
-          });
-        }
-      }
-
-      if (problems.length > 0) {
-        this._setupOperation = "failed";
-        this._setupFeedback = t("setup_library_config_failed");
-        this._setupFailureDetail = this._formatConfigFailures(problems);
-        this.display();
-        return;
-      }
-
-      this.display();
 
       let setupClientOwnsFailure = false;
       try {
@@ -708,24 +714,86 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const outcome = await handle.outcome;
         if (!outcome.ok) {
           if (outcome.cancelled) {
-            // User-cancelled stream: the client treats it as an expected
-            // state (no Console error) — the wizard stays neutral too.
             this._setupOperation = "idle";
             this._setupFeedback = t("setup_install_cancelled");
             this.display();
             return;
           }
-          // Ownership: the shared client already recorded the stream
-          // terminal — keep the user-facing failure, no outer echo.
           this._setupOperation = "failed";
           this._setupFeedback = t("setup_library_config_failed");
+          const rawOutcome = outcome as unknown as {
+            error?: unknown;
+            reason?: unknown;
+          };
+          const detail =
+            typeof rawOutcome?.error === "string"
+              ? rawOutcome.error
+              : typeof rawOutcome?.reason === "string"
+                ? rawOutcome.reason
+                : "";
+          if (detail) this._setupFailureDetail = detail;
           this.display();
           return;
         }
+        setupClientOwnsFailure = false;
+
+        // Read back canonical config and sequentially reconcile any overridden/changed fields.
+        let listed = await client.configList();
+        const wantedEntries: Array<{ key: string; value: string }> = [];
+        let patchedAny = false;
+        for (const [key, raw] of Object.entries(paths)) {
+          const wanted = raw?.trim();
+          if (!wanted) continue;
+          wantedEntries.push({ key, value: wanted });
+          const existing = listed.fields.find((f) => f.key === key);
+          if (String(existing?.stored_value ?? "").trim() !== wanted) {
+            patchedAny = true;
+            try {
+              await client.configSet(key, wanted);
+            } catch (e) {
+              problems.push({ key, reason: this._formatSetupFailure(e) });
+            }
+          }
+        }
+
+        if (problems.length === 0 && wantedEntries.length > 0) {
+          if (patchedAny) listed = await client.configList();
+          for (const { key, value } of wantedEntries) {
+            const field = listed.fields.find((f) => f.key === key);
+            if (!field) {
+              problems.push({ key, reason: "missing from the backend config" });
+              continue;
+            }
+            const stored = String(field.stored_value ?? "").trim();
+            if (stored !== value) {
+              problems.push({
+                key,
+                reason:
+                  `backend stored ${JSON.stringify(stored)}, expected ` +
+                  JSON.stringify(value) +
+                  (field.source === "environment"
+                    ? ` (environment override ${field.environment ?? "set"} in effect)`
+                    : ""),
+              });
+            }
+            if (
+              field.source === "environment" &&
+              String(field.value ?? "").trim() !== value
+            ) {
+              envOverridden.push(`${key} (${field.environment ?? "env"})`);
+            }
+          }
+        }
+
+        if (problems.length > 0) {
+          this._setupOperation = "failed";
+          this._setupFeedback = t("setup_library_config_failed");
+          this._setupFailureDetail = this._formatConfigFailures(problems);
+          this.display();
+          return;
+        }
+
         libraryConfigured = true;
-        setupClientOwnsFailure = false;
-        const listed = await client.configList();
-        setupClientOwnsFailure = false;
         applyPathConfigFromList(this.plugin.settings, listed.fields);
         this._setupOperation = "idle";
         this._setupFeedback =
@@ -748,6 +816,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           console.error("PaperForge library sync failed:", error);
           this._setupOperation = "failed";
           this._setupFeedback = t("setup_library_sync_failed");
+          const msg = this._formatSetupFailure(error);
+          if (msg) this._setupFailureDetail = msg;
           this.display();
           return;
         }
@@ -757,8 +827,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupFeedback = t("setup_library_configured");
         this.display();
       } catch (error) {
-        // The shared client owns startup rejections as well as resolved
-        // stream failures. Only pre/post-stream local failures belong here.
         if (!setupClientOwnsFailure) {
           traceConsoleError({
             op: "library.setup",
@@ -773,6 +841,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             ? "setup_library_refresh_failed"
             : "setup_library_config_failed"
         );
+        const detail = this._formatSetupFailure(error);
+        if (detail) this._setupFailureDetail = detail;
         this.display();
       }
     })();
@@ -4163,12 +4233,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Same layout Python resolves: <vault>/<system_dir>/PaperForge/exports.
     // Defaults apply before the config exists, so first-run never waits on
     // hydration (which needs a config to read in the first place).
-    const exportsDir = path.join(
-      vaultPath,
-      settings.system_dir?.trim() || "System",
-      "PaperForge",
-      "exports"
-    );
+    const sysDir = settings.system_dir?.trim() || "System";
+    const sysLeaf = sysDir
+      .replace(/[\\/]+$/, "")
+      .split(/[\\/]/)
+      .pop();
+    const exportsDir =
+      sysLeaf === ".paperforge"
+        ? path.join(vaultPath, sysDir, "exports")
+        : path.join(vaultPath, sysDir, "PaperForge", "exports");
     const zotero = (settings.zotero_data_dir || "").trim();
     const zoteroOk = !!zotero && fs.existsSync(zotero);
     const bbtFiles = this._listBbtExports(exportsDir);
@@ -4288,7 +4361,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "caption",
           text: t("setup_library_zotero_hint"),
         });
-        const input = body.createEl("input", {
+        const inputRow = body.createDiv({ cls: "pf-setup-path-row" });
+        const input = inputRow.createEl("input", {
           cls: "pf-setup-input",
           attr: {
             type: "text",
@@ -4296,12 +4370,44 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         }) as HTMLInputElement;
         input.value = settings.zotero_data_dir || "";
-        input.addEventListener("change", () => {
-          settings.zotero_data_dir = input.value.trim();
+        const applyZoteroDir = (dir: string) => {
+          settings.zotero_data_dir = dir.trim();
+          input.value = settings.zotero_data_dir;
           this._setupOpenStep = null;
           void this.plugin.saveSettings();
           this.display();
-        });
+        };
+        input.addEventListener("change", () => applyZoteroDir(input.value));
+        inputRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_zotero_browse"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            void this._pickFolderPath(body).then((picked) => {
+              if (picked) applyZoteroDir(picked);
+            });
+          });
+        inputRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_zotero_use_default"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            applyZoteroDir(path.join(os.homedir(), "Zotero"));
+          });
+        if (
+          zotero &&
+          (/[/\\]program files(?:\s*\(x86\))?[/\\]/i.test(zotero) ||
+            /zotero\.(?:exe|app)$/i.test(zotero))
+        ) {
+          body.createEl("p", {
+            cls: "pf-setup-warn",
+            text: t("setup_zotero_progfiles_warn"),
+          });
+        }
       } else if (step.id === "bbt") {
         // Better BibTeX must write *into* this folder with "Keep updated":
         // the index hash is computed from the files here, so a dragged copy
@@ -4310,6 +4416,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-setup-form-intro",
           text: t("setup_bbt_export_hint"),
         });
+        if (
+          env.reason?.code === "library.bbt_invalid_format" &&
+          env.reason.text
+        ) {
+          body.createEl("p", {
+            cls: "pf-setup-warn",
+            text: env.reason.text,
+          });
+        }
         const targetRow = body.createDiv({ cls: "pf-setup-path-row" });
         targetRow.createEl("code", {
           cls: "pf-setup-path-value",
@@ -4364,6 +4479,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           })
           .addEventListener("click", () => {
             this._setupOpenStep = null;
+            this._attemptedProbes.delete("library");
+            this._probeModule("library");
             this.display();
           });
 
@@ -4374,21 +4491,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-setup-form-intro",
           text: t("setup_bbt_desc"),
         });
-        const imageBase =
-          "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
         const guideSteps = [
           {
-            img: "bbt-plugin-installed.jpg",
+            badge: "Add-ons",
+            flow: "Tools -> Add-ons -> Better BibTeX JSON",
             title: t("setup_bbt_step1"),
             desc: t("setup_bbt_step1_desc"),
           },
           {
-            img: "bbt-export-dialog.jpg",
+            badge: "Better BibTeX JSON",
+            flow: "Format: Better BibTeX JSON | [x] Keep updated",
             title: t("setup_bbt_step2"),
             desc: t("setup_bbt_step2_desc"),
           },
           {
-            img: "bbt-save-dialog.jpg",
+            badge: "exports/*.json",
+            flow: "Save -> PaperForge/exports/<Collection>.json",
             title: t("setup_bbt_step3"),
             desc: t("setup_bbt_step3_desc"),
           },
@@ -4397,15 +4515,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
           entry.createEl("strong", { text: item.title });
           entry.createEl("p", { text: item.desc });
-          entry
-            .createEl("img", {
-              attr: {
-                src: imageBase + "/" + item.img,
-                alt: item.title,
-                loading: "lazy",
-              },
-            })
-            .addClass("pf-setup-guide-img");
+          const card = entry.createDiv({ cls: "pf-setup-guide-card" });
+          card.createEl("code", { text: item.flow });
         }
       } else {
         body.createEl("p", {

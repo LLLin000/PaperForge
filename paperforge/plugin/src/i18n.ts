@@ -689,6 +689,10 @@ const LANG: Record<string, Record<string, string>> = {
     setup_step_edit: "Edit",
     setup_step_zotero_desc: "The folder Zotero stores its database in.",
     setup_step_zotero_placeholder: "Zotero data directory path",
+    setup_zotero_browse: "Browse folder…",
+    setup_zotero_use_default: "Fill default (~/Zotero)",
+    setup_zotero_progfiles_warn:
+      "Warning: this looks like the Zotero program install folder, not your Zotero Data Directory (which contains zotero.sqlite and storage/). Check Zotero → Settings → Advanced → Files and Folders → Data Directory Location.",
     setup_step_bbt_desc: "Export into the folder below and keep it updated.",
     setup_step_verify_title: "Configure folders",
     setup_step_verify_desc: "Check the folders, then save.",
@@ -1852,6 +1856,10 @@ const LANG: Record<string, Record<string, string>> = {
     setup_step_edit: "修改",
     setup_step_zotero_desc: "Zotero 存放数据库的文件夹。",
     setup_step_zotero_placeholder: "Zotero 数据目录路径",
+    setup_zotero_browse: "选择文件夹…",
+    setup_zotero_use_default: "填入默认 (~/Zotero)",
+    setup_zotero_progfiles_warn:
+      "提示：当前路径看起来像是 Zotero 软件安装目录，而不是「数据目录」（正常数据目录通常在用户目录下，里面有 zotero.sqlite 和 storage 文件夹）。请在 Zotero 的 编辑 → 设置 → 高级 → 文件和文件夹 → 数据目录位置 中查看正确路径。",
     setup_step_bbt_desc: "导出到下面的文件夹，并保持更新。",
     setup_step_verify_title: "配置文件夹",
     setup_step_verify_desc: "确认文件夹后保存。",

@@ -173,7 +173,41 @@ def extract_citation_key(item: dict) -> str:
     return ""
 
 
+def detect_bbt_export_problem(path: Path) -> str | None:
+    """Return an actionable error message if *path* is not a valid BBT JSON export."""
+    try:
+        data = read_json(path)
+    except Exception as exc:
+        return f"Invalid JSON in export file {path.name}: {exc}"
+
+    if isinstance(data, dict) and isinstance(data.get("items"), list):
+        return None
+
+    if isinstance(data, list):
+        if data and isinstance(data[0], dict):
+            sample = data[0]
+            has_csl_shape = "id" in sample and "type" in sample
+            has_bbt_or_pf_shape = any(
+                k in sample for k in ("key", "itemKey", "itemType", "zotero_key")
+            )
+            if has_csl_shape and not has_bbt_or_pf_shape:
+                return (
+                    f"{path.name} is a CSL JSON export, not Better BibTeX JSON. "
+                    "In Zotero, install Better BibTeX, export as 'Better BibTeX JSON' "
+                    "(check 'Keep updated'), and save into the exports folder."
+                )
+        return None
+
+    return (
+        f"{path.name} is not a valid Better BibTeX JSON export "
+        "(missing top-level 'items' array)."
+    )
+
+
 def load_export_rows(path: Path) -> list[dict]:
+    problem = detect_bbt_export_problem(path)
+    if problem:
+        raise ValueError(problem)
     data = read_json(path)
     if isinstance(data, list):
         return data

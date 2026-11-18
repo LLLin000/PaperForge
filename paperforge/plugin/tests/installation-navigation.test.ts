@@ -752,7 +752,6 @@ beforeEach(() => {
   clearNoticeCalls();
 });
 
-
 // ── 13. Issue #77 Finding 4: Localized reason parity ──
 
 describe("localized reason parity (Finding 4)", () => {
@@ -842,7 +841,6 @@ describe("runtime warnings and platformAction rendering (Finding 5)", () => {
     ).toContain("Test guidance");
   });
 });
-
 
 // ── 17. Issue #77 Defect 4: Help card navigation ──
 //   Exercise real _handleCardNavigation('help') through PaperForgeSettingTab.
@@ -956,7 +954,10 @@ describe("help.restore recovery through the Help tab", () => {
       ...createUnknownEnvelope("help"),
       capability_state: "limited",
       severity: "warning",
-      reason: { code: "help.docs_missing", text: "Packaged help source not found" },
+      reason: {
+        code: "help.docs_missing",
+        text: "Packaged help source not found",
+      },
       user_state: "detection_failed",
       capability_kind: "optional",
       updated_at: new Date().toISOString(),
@@ -1008,10 +1009,7 @@ describe("help.restore recovery through the Help tab", () => {
 
     try {
       tab.display();
-      expect(client.probe).not.toHaveBeenCalledWith(
-        "help",
-        expect.anything()
-      );
+      expect(client.probe).not.toHaveBeenCalledWith("help", expect.anything());
       const helpTab = Array.from(
         tab.containerEl.querySelectorAll("button")
       ).find((button) => button.textContent?.trim() === t("tab_help"));
@@ -1033,8 +1031,7 @@ describe("help.restore recovery through the Help tab", () => {
       const restoreButton = Array.from(
         tab.containerEl.querySelectorAll("button")
       ).find(
-        (button) =>
-          button.textContent?.trim() === t("action_help_restore")
+        (button) => button.textContent?.trim() === t("action_help_restore")
       );
       restoreButton?.click();
       // Help content ships inside the Python distribution: restoring it is an
@@ -1074,7 +1071,10 @@ describe("help.restore recovery through the Overview card", () => {
       ...createUnknownEnvelope("help"),
       capability_state: "limited",
       severity: "warning",
-      reason: { code: "help.docs_missing", text: "Packaged help source not found" },
+      reason: {
+        code: "help.docs_missing",
+        text: "Packaged help source not found",
+      },
       user_state: "detection_failed",
       capability_kind: "optional",
       updated_at: new Date().toISOString(),
@@ -1101,9 +1101,9 @@ describe("help.restore recovery through the Overview card", () => {
     restoreButton!.click();
 
     expect(cardClient.launchRuntimeInstaller).toHaveBeenCalledWith(
-        "repair",
-        expect.anything()
-      );
+      "repair",
+      expect.anything()
+    );
   });
 });
 
@@ -1208,7 +1208,6 @@ describe("Issue #77: Back button focus restoration in real DOM", () => {
     const containerEl = globalThis.document.createElement("div");
     globalThis.document.body.appendChild(containerEl);
     tab.containerEl = containerEl;
-
 
     // Provide capability envelopes so the control-center cards render
     const envelope = {
@@ -1548,7 +1547,6 @@ describe("Issue #77 RED Gap 2: installation null-resolver produces setup envelop
       plugin
     );
 
-
     // Spy on _updateCapabilityEnvelope to capture the envelope
     let capturedEnvelope: Record<string, unknown> | null = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1768,7 +1766,8 @@ describe("Issue #356 recovery: openSetupJourney", () => {
       },
     };
     plugin._settingTab = {
-      _handleCardNavigation: (module: string) => calls.push(`navigate:${module}`),
+      _handleCardNavigation: (module: string) =>
+        calls.push(`navigate:${module}`),
       openSetupJourney: () => calls.push("setup-stage-1"),
     };
     expect(plugin.openSetupJourney()).toBe(true);
@@ -1778,5 +1777,97 @@ describe("Issue #356 recovery: openSetupJourney", () => {
       "open",
       "setup-stage-1",
     ]);
+  });
+
+  it("calls client.setup BEFORE configList/configSet/sync on a fresh vault (fixes config.not_found deadlock)", async () => {
+    const app = new App() as unknown as Record<string, any>;
+    app.vault = { adapter: { basePath: "/test/vault" }, getConfig: () => "en" };
+    const callOrder: string[] = [];
+    const fields = [
+      {
+        key: "system_dir",
+        value: "System",
+        stored_value: "System",
+        source: "file",
+      },
+      {
+        key: "resources_dir",
+        value: "Resources",
+        stored_value: "Resources",
+        source: "file",
+      },
+      {
+        key: "literature_dir",
+        value: "Literature",
+        stored_value: "Literature",
+        source: "file",
+      },
+      {
+        key: "base_dir",
+        value: "Bases",
+        stored_value: "Bases",
+        source: "file",
+      },
+      {
+        key: "zotero_data_dir",
+        value: "/zotero/data",
+        stored_value: "/zotero/data",
+        source: "file",
+      },
+    ];
+    const client = {
+      setup: vi.fn(() => {
+        callOrder.push("setup");
+        return {
+          events: (async function* () {
+            yield { event: "result" };
+          })(),
+          outcome: Promise.resolve({ ok: true, cancelled: false, payload: {} }),
+          cancel: vi.fn(),
+        };
+      }),
+      configList: vi.fn(async () => {
+        callOrder.push("configList");
+        return { fields };
+      }),
+      configSet: vi.fn(async (key: string) => {
+        callOrder.push(`configSet:${key}`);
+        return {};
+      }),
+      sync: vi.fn(async () => {
+        callOrder.push("sync");
+        return {};
+      }),
+      probe: vi.fn(async () => createUnknownEnvelope("library")),
+    };
+    const plugin = {
+      settings: {
+        _setup_complete: false,
+        system_dir: "System",
+        resources_dir: "Resources",
+        literature_dir: "Literature",
+        base_dir: "Bases",
+        zotero_data_dir: "/zotero/data",
+        agent_platform: "opencode",
+      },
+      manifest: { version: "2.1.0" },
+      saveSettings: vi.fn().mockResolvedValue(undefined),
+      getClient: () => client,
+      readPaperforgeJson: () => ({}),
+    };
+    const tab = new PaperForgeSettingTab(app as App, plugin as any);
+    tab._setupStage = 2;
+    (tab as any)._applyLibraryConfiguration();
+
+    await vi.waitFor(() => {
+      expect(callOrder).toContain("sync");
+    });
+    expect(callOrder[0]).toBe("setup");
+    expect(callOrder.indexOf("setup")).toBeLessThan(
+      callOrder.indexOf("configList")
+    );
+    expect(callOrder.indexOf("configList")).toBeLessThan(
+      callOrder.indexOf("sync")
+    );
   });
 });
