@@ -142,8 +142,17 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                     else:
                         copied = sync_workspace_visual_assets(paper_ocr_dir, ws_dir, key)
                         assets_copied += len(copied)
-                for candidate_note in (ws_dir / f"{key}.md", domain_dir / f"{key}.md"):
+                seen_notes: set[Path] = set()
+                for candidate_note in (
+                    ws_dir / f"{key}.md",
+                    ws_dir / f"{ws_dir.name}.md",
+                    domain_dir / f"{key}.md",
+                ):
                     if candidate_note.exists() and candidate_note.is_file():
+                        resolved_note = candidate_note.resolve()
+                        if resolved_note in seen_notes:
+                            continue
+                        seen_notes.add(resolved_note)
                         original = candidate_note.read_text(encoding="utf-8")
                         updated, count = rewrite_visual_embeds_for_key(original, key)
                         if count > 0:

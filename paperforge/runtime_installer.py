@@ -28,6 +28,17 @@ MIN_PYTHON = (3, 11)
 # (the same split as paperforge.setup.runtime.VECTOR_CAPABILITY_IMPORTS).
 _VECTOR_IMPORTS = ("openai", "sqlite_vec")
 _PYTHON_VERSION_RE = re.compile(r"Python\s+(\d+)\.(\d+)(?:\.(\d+))?")
+_PRERELEASE_RE = re.compile(r"^(\d+(?:\.\d+)*)[-.]?(alpha|beta|rc|a|b)\.?(\d+)$", re.IGNORECASE)
+
+
+def _normalize_release_version(version: str) -> str:
+    """Normalize SemVer pre-release tags (e.g. ``2.0.0-rc.6``) to PEP 440 (``2.0.0rc6``)."""
+    cleaned = (version or "").strip().lstrip("vV")
+    m = _PRERELEASE_RE.fullmatch(cleaned)
+    if not m:
+        return cleaned
+    phase = {"alpha": "a", "a": "a", "beta": "b", "b": "b", "rc": "rc"}[m.group(2).lower()]
+    return f"{m.group(1)}{phase}{int(m.group(3))}"
 
 
 class RuntimeInstallError(Exception):
@@ -255,8 +266,12 @@ def inspect_runtime(
     pointer_version = pointer.get("paperforge_version") if pointer else None
     if python_exists and isinstance(python_path, str):
         ok, observed, _detail = _fresh_verify(python_path, cwd=cwd)
+        expected_norm = _normalize_release_version(expected_version)
         version_match = bool(
-            ok and observed == expected_version and pointer_version == expected_version
+            ok
+            and observed is not None
+            and _normalize_release_version(observed) == expected_norm
+            and _normalize_release_version(str(pointer_version or "")) == expected_norm
         )
         vector_ready = _vector_imports_ok(python_path, cwd=cwd) if ok else False
 
@@ -455,7 +470,11 @@ def _install_runtime_locked(
                 (created.stderr or created.stdout or "")[-500:],
             )
 
-        spec = f"{wheel}[vector]" if wheel else f"paperforge[vector]=={expected_version}"
+        spec = (
+            f"{wheel}[vector]"
+            if wheel
+            else f"paperforge[vector]=={_normalize_release_version(expected_version)}"
+        )
         try:
             pip = _pip_install(candidate_python, spec, cwd=runtime_dir)
         except (OSError, subprocess.SubprocessError) as exc:
@@ -472,7 +491,11 @@ def _install_runtime_locked(
             )
 
         verified, observed, detail = _fresh_verify(str(candidate_python), cwd=runtime_dir)
-        if not verified or observed is None or observed != expected_version:
+        if (
+            not verified
+            or observed is None
+            or _normalize_release_version(observed) != _normalize_release_version(expected_version)
+        ):
             raise RuntimeInstallError(
                 "runtime.verify_failed",
                 "The candidate runtime did not report the expected PaperForge version.",

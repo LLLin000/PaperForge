@@ -29,6 +29,37 @@ FACET_LABELS: OrderedDict[str, str] = OrderedDict(
 
 CUSTOM_FACET_RE = re.compile(r"^[a-z0-9_]{2,32}$")
 MAX_FACET_CHARS = 4000
+MAX_HISTORY_ENTRIES = 100
+
+
+def _read_card_history(card_path: Path) -> list[dict[str, Any]]:
+    if not card_path.exists():
+        return []
+    try:
+        data = json.loads(card_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return []
+    raw_history = data.get("history", [])
+    if not isinstance(raw_history, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for entry in raw_history:
+        if not isinstance(entry, dict):
+            continue
+        facet_slug = str(entry.get("facet") or "").strip()
+        content = str(entry.get("content") or "").strip()
+        if not facet_slug or not content:
+            continue
+        out.append(
+            {
+                "facet": facet_slug,
+                "label": str(entry.get("label") or facet_label(facet_slug)),
+                "content": content,
+                "revision": int(entry.get("revision") or 1),
+                "created_at": str(entry.get("created_at") or entry.get("updated_at") or ""),
+            }
+        )
+    return out
 
 
 def _utcnow_iso() -> str:
@@ -221,12 +252,24 @@ def refine_memory_facet(
     current_map[slug] = record
 
     if ws_dir is not None:
+        card_path = _card_file_for_workspace(ws_dir)
+        history_entries = _read_card_history(card_path)
+        history_entries.append(
+            {
+                "facet": slug,
+                "label": facet_label(slug),
+                "content": cleaned,
+                "revision": revision,
+                "created_at": now,
+            }
+        )
         card_payload = {
             "paper_id": paper_key,
             "updated_at": now,
             "facets": {f["facet"]: f for f in _sort_facets(current_map)},
+            "history": history_entries[-MAX_HISTORY_ENTRIES:],
         }
-        _atomic_write_json(_card_file_for_workspace(ws_dir), card_payload)
+        _atomic_write_json(card_path, card_payload)
 
     if db_path is not None and db_path.exists():
         with WriterLock(vault_root):
@@ -295,6 +338,13 @@ def get_memory_history(vault: Path, paper_key: str, *, facet: str = "") -> dict[
                             "created_at": str(r["created_at"]),
                         }
                     )
+    if not history:
+        _item, ws_dir = _resolve_workspace_optional(vault_root, paper_key)
+        if ws_dir is not None:
+            sidecar_hist = _read_card_history(_card_file_for_workspace(ws_dir))
+            if slug:
+                sidecar_hist = [h for h in sidecar_hist if h["facet"] == slug]
+            history = list(reversed(sidecar_hist))[:50]
     return {"paper_id": paper_key, "facet": slug, "history": history}
 
 
@@ -308,6 +358,7 @@ def clear_memory_facet(vault: Path, paper_key: str, *, facet: str = "") -> dict[
     if ws_dir is not None:
         card_path = _card_file_for_workspace(ws_dir)
         current_map = _read_card_file(card_path)
+        existing_history = _read_card_history(card_path)
         if slug:
             if slug in current_map:
                 del current_map[slug]
@@ -315,14 +366,14 @@ def clear_memory_facet(vault: Path, paper_key: str, *, facet: str = "") -> dict[
         else:
             removed += len(current_map)
             current_map = {}
-        _atomic_write_json(
-            card_path,
-            {
-                "paper_id": paper_key,
-                "updated_at": _utcnow_iso(),
-                "facets": {f["facet"]: f for f in _sort_facets(current_map)},
-            },
-        )
+        payload: dict[str, Any] = {
+            "paper_id": paper_key,
+            "updated_at": _utcnow_iso(),
+            "facets": {f["facet"]: f for f in _sort_facets(current_map)},
+        }
+        if existing_history:
+            payload["history"] = existing_history
+        _atomic_write_json(card_path, payload)
 
     with contextlib.suppress(FileNotFoundError):
         db_path = get_memory_db_path(vault_root)

@@ -11,6 +11,7 @@ import {
   bootstrapPythonSource,
   installerRun,
   installerShellCommand,
+  normalizePep440Version,
   posixInstallerScript,
   runtimeInstallerShellCommand,
   runtimeInstallerSteps,
@@ -137,6 +138,14 @@ describe("external runtime installer launcher", () => {
     expect(source).toContain("--break-system-packages");
     // The install target is still the user site of the discovered interpreter.
     expect(source).toContain('"--user"');
+  });
+
+  it("normalizes SemVer pre-release tags to PEP 440 for pip and comparisons", () => {
+    expect(normalizePep440Version("2.0.0-rc.6")).toBe("2.0.0rc6");
+    expect(normalizePep440Version("2.0.0-beta.1")).toBe("2.0.0b1");
+    const source = bootstrapPythonSource("2.0.0-rc.6");
+    expect(source).toContain('VERSION = "2.0.0rc6"');
+    expect(source).toContain("if installed == VERSION:");
   });
 
   it("runs the bootstrap before the CLI install step", () => {

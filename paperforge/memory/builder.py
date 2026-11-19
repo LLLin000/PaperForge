@@ -213,25 +213,59 @@ def _import_paper_memory_cards(
         else:
             facet_iter = []
         conn.execute("DELETE FROM paper_memory_cards WHERE zotero_key = ?", (pid,))
+        active_rows: list[tuple[str, str, int, str]] = []
         for slug, entry in facet_iter:
             if not slug or not isinstance(entry, dict):
                 continue
             content = str(entry.get("content") or "").strip()
             if not content:
                 continue
+            rev = int(entry.get("revision") or 1)
+            upd = str(entry.get("updated_at") or "")
             conn.execute(
                 """INSERT OR REPLACE INTO paper_memory_cards
                    (zotero_key, facet, content, revision, updated_at)
                    VALUES (?, ?, ?, ?, ?)""",
-                (
-                    pid,
-                    str(slug),
-                    content,
-                    int(entry.get("revision") or 1),
-                    str(entry.get("updated_at") or ""),
-                ),
+                (pid, str(slug), content, rev, upd),
             )
+            active_rows.append((str(slug), content, rev, upd))
             imported += 1
+
+        raw_history = payload.get("history", [])
+        if isinstance(raw_history, list) and raw_history:
+            conn.execute("DELETE FROM paper_memory_history WHERE zotero_key = ?", (pid,))
+            for hist in raw_history:
+                if not isinstance(hist, dict):
+                    continue
+                h_slug = str(hist.get("facet") or "").strip()
+                h_content = str(hist.get("content") or "").strip()
+                if not h_slug or not h_content:
+                    continue
+                conn.execute(
+                    """INSERT INTO paper_memory_history
+                       (zotero_key, facet, content, revision, created_at)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        pid,
+                        h_slug,
+                        h_content,
+                        int(hist.get("revision") or 1),
+                        str(hist.get("created_at") or hist.get("updated_at") or ""),
+                    ),
+                )
+        elif active_rows:
+            existing_hist = conn.execute(
+                "SELECT 1 FROM paper_memory_history WHERE zotero_key = ? LIMIT 1",
+                (pid,),
+            ).fetchone()
+            if existing_hist is None:
+                for h_slug, h_content, rev, upd in active_rows:
+                    conn.execute(
+                        """INSERT INTO paper_memory_history
+                           (zotero_key, facet, content, revision, created_at)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (pid, h_slug, h_content, rev, upd),
+                    )
     return imported
 
 def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: set[str] | None = None) -> dict:

@@ -4,7 +4,7 @@ import logging
 import re
 from pathlib import Path
 
-from paperforge.config import load_vault_config
+from paperforge.config import resolve_paths
 from paperforge.worker._utils import (
     read_json,
     write_json,
@@ -89,8 +89,9 @@ def repair_pdf_paths(
     fixed = 0
     from paperforge.pdf_resolver import resolve_pdf_path
 
-    cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+    zotero_dir = paths.get("zotero_dir") if isinstance(paths, dict) else None
+    if zotero_dir is None:
+        zotero_dir = resolve_paths(vault)["zotero_dir"]
 
     # Cache export rows by domain to avoid reloading
     domain_exports: dict[str, list[dict]] = {}
