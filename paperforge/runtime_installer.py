@@ -7,20 +7,34 @@ published only after a fresh-process version and dependency check succeeds.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-import contextlib
-import time
-from typing import Any, Iterator
+from typing import Any
 
 from paperforge import __version__
+from paperforge.core.versioning import (
+    MIN_COMPATIBLE_PLUGIN_VERSION,
+    compute_deps_lock_hash,
+    is_version_compatible,
+    normalize_release_version,
+)
 from paperforge.runtime_pointer import pointer_dir, pointer_path, publish_pointer, read_pointer
+from paperforge.runtime_uv import (
+    bootstrap_uv_python,
+    discover_uv,
+    ensure_uv,
+    uv_create_venv,
+    uv_pip_install,
+)
 
 MIN_PYTHON = (3, 11)
 # The `vector` extra installs exactly these; `chromadb` is the opt-in
@@ -28,17 +42,7 @@ MIN_PYTHON = (3, 11)
 # (the same split as paperforge.setup.runtime.VECTOR_CAPABILITY_IMPORTS).
 _VECTOR_IMPORTS = ("openai", "sqlite_vec")
 _PYTHON_VERSION_RE = re.compile(r"Python\s+(\d+)\.(\d+)(?:\.(\d+))?")
-_PRERELEASE_RE = re.compile(r"^(\d+(?:\.\d+)*)[-.]?(alpha|beta|rc|a|b)\.?(\d+)$", re.IGNORECASE)
-
-
-def _normalize_release_version(version: str) -> str:
-    """Normalize SemVer pre-release tags (e.g. ``2.0.0-rc.6``) to PEP 440 (``2.0.0rc6``)."""
-    cleaned = (version or "").strip().lstrip("vV")
-    m = _PRERELEASE_RE.fullmatch(cleaned)
-    if not m:
-        return cleaned
-    phase = {"alpha": "a", "a": "a", "beta": "b", "b": "b", "rc": "rc"}[m.group(2).lower()]
-    return f"{m.group(1)}{phase}{int(m.group(3))}"
+_normalize_release_version = normalize_release_version
 
 
 class RuntimeInstallError(Exception):
@@ -124,10 +128,8 @@ def install_lock(runtime_dir: Path) -> Iterator[Path]:
         os.close(fd)
         yield path
     finally:
-        try:
+        with contextlib.suppress(OSError):
             path.unlink()
-        except OSError:
-            pass
 
 
 def _run(
@@ -159,42 +161,102 @@ def _managed_python(venv_dir: Path) -> Path:
 
 _FALLBACK_PYPI_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
 _FALLBACK_PYPI_HOST = "pypi.tuna.tsinghua.edu.cn"
+_ALIYUN_PYPI_INDEX = "https://mirrors.aliyun.com/pypi/simple"
+_ALIYUN_PYPI_HOST = "mirrors.aliyun.com"
+_MIRROR_FALLBACKS = (
+    (_FALLBACK_PYPI_INDEX, _FALLBACK_PYPI_HOST),
+    (_ALIYUN_PYPI_INDEX, _ALIYUN_PYPI_HOST),
+)
 
 
-def _pip_install(
-    venv_python: Path, spec: str, *, cwd: Path
+def _pip_install_command(
+    venv_python: Path, spec: str, *, cwd: Path, no_deps: bool = False
 ) -> subprocess.CompletedProcess[str]:
-    result = _run(
-        [str(venv_python), "-m", "pip", "install", "--default-timeout=60", spec],
-        cwd=cwd,
-        timeout=1800,
-    )
+    base = [str(venv_python), "-m", "pip", "install", "--default-timeout=60"]
+    if no_deps:
+        base.append("--no-deps")
+    result = _run([*base, spec], cwd=cwd, timeout=1800)
     if (
         result.returncode != 0
         and not os.environ.get("PIP_INDEX_URL")
         and not os.environ.get("PIP_FIND_LINKS")
         and not spec.lower().endswith(".whl")
     ):
-        mirror_result = _run(
-            [
-                str(venv_python),
-                "-m",
-                "pip",
-                "install",
-                "--default-timeout=60",
-                "-i",
-                _FALLBACK_PYPI_INDEX,
-                "--trusted-host",
-                _FALLBACK_PYPI_HOST,
-                spec,
-            ],
-            cwd=cwd,
-            timeout=1800,
-        )
-        if mirror_result.returncode == 0:
-            return mirror_result
-        return mirror_result if (mirror_result.stderr or mirror_result.stdout) else result
+        last_mirror: subprocess.CompletedProcess[str] = result
+        for index_url, trusted_host in _MIRROR_FALLBACKS:
+            mirror_result = _run(
+                [*base, "-i", index_url, "--trusted-host", trusted_host, spec],
+                cwd=cwd,
+                timeout=1800,
+            )
+            if mirror_result.returncode == 0:
+                return mirror_result
+            if mirror_result.stderr or mirror_result.stdout:
+                last_mirror = mirror_result
+        return last_mirror
     return result
+
+
+def _pip_install(
+    venv_python: Path, spec: str, *, cwd: Path
+) -> subprocess.CompletedProcess[str]:
+    return _pip_install_command(venv_python, spec, cwd=cwd, no_deps=False)
+
+
+def _pip_install_no_deps(
+    venv_python: Path, spec: str, *, cwd: Path
+) -> subprocess.CompletedProcess[str]:
+    return _pip_install_command(venv_python, spec, cwd=cwd, no_deps=True)
+
+
+def _site_packages_dir(env_root: Path) -> Path | None:
+    if os.name == "nt":
+        sp = env_root / "Lib" / "site-packages"
+        return sp if sp.is_dir() else None
+    lib_dir = env_root / "lib"
+    if not lib_dir.is_dir():
+        return None
+    for child in sorted(lib_dir.iterdir()):
+        if child.is_dir() and child.name.startswith("python"):
+            sp = child / "site-packages"
+            if sp.is_dir():
+                return sp
+    return None
+
+
+def _copy_or_hardlink(src: str, dst: str) -> None:
+    try:
+        os.link(src, dst)
+    except OSError:
+        shutil.copy2(src, dst)
+
+
+def _clone_site_packages_for_fast_patch(old_root: Path, new_root: Path) -> bool:
+    """Hardlink/copy third-party packages from *old_root* into *new_root*, omitting old paperforge."""
+    old_sp = _site_packages_dir(old_root)
+    new_sp = _site_packages_dir(new_root)
+    if old_sp is None or new_sp is None:
+        return False
+    entries = list(old_sp.iterdir())
+    if len(entries) < 2:
+        return False
+    for entry in entries:
+        lower = entry.name.lower()
+        if lower == "paperforge" or lower.startswith("paperforge-") or lower.startswith("paperforge."):
+            continue
+        if lower in {"__pycache__", ".lock"}:
+            continue
+        target = new_sp / entry.name
+        if target.exists():
+            continue
+        try:
+            if entry.is_dir():
+                shutil.copytree(entry, target, copy_function=_copy_or_hardlink)
+            else:
+                _copy_or_hardlink(str(entry), str(target))
+        except OSError:
+            return False
+    return True
 
 
 def _fresh_verify(python: str, *, cwd: Path) -> tuple[bool, str | None, str | None]:
@@ -252,6 +314,7 @@ def inspect_runtime(
     *,
     home: Path | None = None,
     expected_version: str = __version__,
+    min_engine_version: str | None = None,
     base_python: str | None = None,
 ) -> dict[str, Any]:
     """Inspect the active pointer and its target without modifying either."""
@@ -262,17 +325,32 @@ def inspect_runtime(
     python_exists = bool(python_path and Path(python_path).is_file())
     observed: str | None = None
     version_match = False
+    compat_reason = "runtime_missing"
     vector_ready = False
     pointer_version = pointer.get("paperforge_version") if pointer else None
+    target_deps_hash = compute_deps_lock_hash()
+    pointer_deps_hash = str(pointer.get("deps_lock_hash") or "") if pointer else ""
     if python_exists and isinstance(python_path, str):
         ok, observed, _detail = _fresh_verify(python_path, cwd=cwd)
-        expected_norm = _normalize_release_version(expected_version)
-        version_match = bool(
-            ok
-            and observed is not None
-            and _normalize_release_version(observed) == expected_norm
-            and _normalize_release_version(str(pointer_version or "")) == expected_norm
-        )
+        if ok and observed is not None:
+            core_ok, core_reason = is_version_compatible(
+                core_version=observed,
+                expected_version=expected_version,
+                min_engine_version=min_engine_version,
+                plugin_version=expected_version,
+                min_plugin_version=MIN_COMPATIBLE_PLUGIN_VERSION,
+            )
+            ptr_ok, ptr_reason = is_version_compatible(
+                core_version=str(pointer_version or ""),
+                expected_version=expected_version,
+                min_engine_version=min_engine_version,
+                plugin_version=expected_version,
+                min_plugin_version=MIN_COMPATIBLE_PLUGIN_VERSION,
+            )
+            version_match = bool(core_ok and ptr_ok)
+            compat_reason = "ok" if version_match else (core_reason if not core_ok else ptr_reason)
+        else:
+            compat_reason = "verify_failed"
         vector_ready = _vector_imports_ok(python_path, cwd=cwd) if ok else False
 
     ready = bool(pointer and python_exists and version_match and vector_ready)
@@ -285,8 +363,16 @@ def inspect_runtime(
         "python_exists": python_exists,
         "paperforge_version": observed,
         "version_matches_expected": version_match,
+        "compatible": version_match,
+        "compat_reason": compat_reason,
+        "min_engine_version": min_engine_version,
+        "deps_lock_hash": target_deps_hash,
+        "deps_lock_matches": bool(
+            target_deps_hash and pointer_deps_hash and pointer_deps_hash == target_deps_hash
+        ),
         "vector_ready": vector_ready,
         "system_python": discover_base_python(base_python, cwd=cwd),
+        "uv_path": discover_uv(runtime_dir),
         "runtime_ready": ready,
         "runtime_state": "ready" if ready else "attention" if pointer else "missing",
         "installer": "paperforge runtime install --expected-version <version>",
@@ -370,10 +456,12 @@ def _discard_candidate(candidate: Path, runtime_dir: Path) -> None:
 def install_runtime(
     *,
     expected_version: str = __version__,
+    min_engine_version: str | None = None,
     home: Path | None = None,
     base_python: str | None = None,
     force: bool = False,
     wheel: Path | None = None,
+    allow_uv: bool = True,
 ) -> RuntimeInstallResult:
     """Install under the machine-wide lock.
 
@@ -392,20 +480,24 @@ def install_runtime(
     with install_lock(runtime_dir):
         return _install_runtime_locked(
             expected_version=expected_version,
+            min_engine_version=min_engine_version,
             home=home,
             base_python=base_python,
             force=force,
             wheel=wheel,
+            allow_uv=allow_uv,
         )
 
 
 def _install_runtime_locked(
     *,
     expected_version: str = __version__,
+    min_engine_version: str | None = None,
     home: Path | None = None,
     base_python: str | None = None,
     force: bool = False,
     wheel: Path | None = None,
+    allow_uv: bool = True,
 ) -> RuntimeInstallResult:
     """Install and verify a candidate runtime, then atomically publish it.
 
@@ -430,20 +522,36 @@ def _install_runtime_locked(
             )
         force = True
 
-    base_python = discover_base_python(base_python, cwd=runtime_dir)
-    if not base_python:
+    uv_exe = discover_uv(runtime_dir) if allow_uv else None
+    python_source = "system"
+    installer_backend = "pip"
+
+    base_python_resolved = discover_base_python(base_python, cwd=runtime_dir)
+    if not base_python_resolved and allow_uv:
+        uv_exe = uv_exe or ensure_uv(runtime_dir, allow_download=True)
+        if uv_exe:
+            managed_py = bootstrap_uv_python(uv_exe, runtime_dir, python_spec="3.12")
+            if managed_py:
+                base_python_resolved = managed_py
+                python_source = "uv_managed"
+                installer_backend = "uv"
+
+    if not base_python_resolved:
         raise RuntimeInstallError(
             "runtime.no_python",
             "No Python 3.11+ found. Install Python, then run the PaperForge runtime installer again.",
         )
-    if not _is_minimum_python(base_python, cwd=runtime_dir):
+    if python_source == "system" and not _is_minimum_python(base_python_resolved, cwd=runtime_dir):
         raise RuntimeInstallError(
-            "runtime.python_too_old", "The selected Python interpreter is older than 3.11.", base_python
+            "runtime.python_too_old", "The selected Python interpreter is older than 3.11.", base_python_resolved
         )
 
     if not force and wheel is None:
         current = inspect_runtime(
-            home=home, expected_version=expected_version, base_python=base_python
+            home=home,
+            expected_version=expected_version,
+            min_engine_version=min_engine_version,
+            base_python=base_python_resolved,
         )
         if current["runtime_ready"]:
             pointer = current["pointer"]
@@ -454,15 +562,41 @@ def _install_runtime_locked(
                 python_path=str(current["python_path"]),
                 environment_root=str(pointer["environment_root"]),
                 paperforge_version=str(current["paperforge_version"]),
-                base_python=base_python,
+                base_python=base_python_resolved,
                 actions_taken=["already_ready"],
             )
+
+    target_deps_hash = compute_deps_lock_hash()
+    old_pointer = read_pointer(home)
+    old_root = (
+        Path(str(old_pointer["environment_root"]))
+        if old_pointer and old_pointer.get("environment_root")
+        else None
+    )
+    can_fast_patch = bool(
+        not force
+        and wheel is None
+        and target_deps_hash
+        and old_pointer
+        and old_pointer.get("deps_lock_hash") == target_deps_hash
+        and old_root is not None
+        and old_root.is_dir()
+    )
 
     candidate = runtime_dir / f".venv-candidate-{uuid.uuid4().hex}"
     candidate_python = _managed_python(candidate)
     installed = False
+    actions = [
+        "candidate_created",
+        "paperforge_installed",
+        "runtime_verified",
+        "pointer_published",
+    ]
     try:
-        created = _run([base_python, "-m", "venv", str(candidate)], cwd=runtime_dir, timeout=180)
+        if installer_backend == "uv" and uv_exe:
+            created = uv_create_venv(uv_exe, candidate, python=base_python_resolved, runtime_dir=runtime_dir)
+        else:
+            created = _run([base_python_resolved, "-m", "venv", str(candidate)], cwd=runtime_dir, timeout=180)
         if created.returncode != 0 or not candidate_python.is_file():
             raise RuntimeInstallError(
                 "runtime.venv_failed",
@@ -470,31 +604,70 @@ def _install_runtime_locked(
                 (created.stderr or created.stdout or "")[-500:],
             )
 
-        spec = (
-            f"{wheel}[vector]"
-            if wheel
-            else f"paperforge[vector]=={_normalize_release_version(expected_version)}"
-        )
-        try:
-            pip = _pip_install(candidate_python, spec, cwd=runtime_dir)
-        except (OSError, subprocess.SubprocessError) as exc:
-            raise RuntimeInstallError(
-                "runtime.pip_failed",
-                "Failed to run pip in the candidate runtime.",
-                str(exc),
-            ) from exc
-        if pip.returncode != 0:
-            raise RuntimeInstallError(
-                "runtime.pip_failed",
-                "Failed to install PaperForge into the candidate runtime.",
-                (pip.stderr or pip.stdout or "")[-800:],
-            )
+        norm_ver = _normalize_release_version(expected_version)
+        full_spec = f"{wheel}[vector]" if wheel else f"paperforge[vector]=={norm_ver}"
+        fast_patched = False
+
+        if can_fast_patch and old_root is not None and _clone_site_packages_for_fast_patch(old_root, candidate):
+            patch_spec = f"paperforge=={norm_ver}"
+            if installer_backend == "uv" and uv_exe:
+                patch_res = uv_pip_install(
+                    uv_exe, candidate_python, patch_spec, runtime_dir=runtime_dir, no_deps=True
+                )
+            else:
+                patch_res = _pip_install_no_deps(candidate_python, patch_spec, cwd=runtime_dir)
+            if patch_res.returncode == 0:
+                v_ok, obs_ver, _ = _fresh_verify(str(candidate_python), cwd=runtime_dir)
+                if (
+                    v_ok
+                    and obs_ver is not None
+                    and _normalize_release_version(obs_ver) == norm_ver
+                    and _vector_imports_ok(str(candidate_python), cwd=runtime_dir)
+                ):
+                    fast_patched = True
+                    actions.insert(1, "fast_patch_deps_reused")
+            if not fast_patched:
+                # Re-create pristine candidate cleanly before falling back to full install.
+                _discard_candidate(candidate, runtime_dir)
+                if installer_backend == "uv" and uv_exe:
+                    created = uv_create_venv(
+                        uv_exe, candidate, python=base_python_resolved, runtime_dir=runtime_dir
+                    )
+                else:
+                    created = _run(
+                        [base_python_resolved, "-m", "venv", str(candidate)], cwd=runtime_dir, timeout=180
+                    )
+                if created.returncode != 0 or not candidate_python.is_file():
+                    raise RuntimeInstallError(
+                        "runtime.venv_failed",
+                        "Failed to create the PaperForge candidate environment.",
+                        (created.stderr or created.stdout or "")[-500:],
+                    )
+
+        if not fast_patched:
+            try:
+                if installer_backend == "uv" and uv_exe:
+                    pip = uv_pip_install(uv_exe, candidate_python, full_spec, runtime_dir=runtime_dir)
+                else:
+                    pip = _pip_install(candidate_python, full_spec, cwd=runtime_dir)
+            except (OSError, subprocess.SubprocessError) as exc:
+                raise RuntimeInstallError(
+                    "runtime.pip_failed",
+                    "Failed to run pip in the candidate runtime.",
+                    str(exc),
+                ) from exc
+            if pip.returncode != 0:
+                raise RuntimeInstallError(
+                    "runtime.pip_failed",
+                    "Failed to install PaperForge into the candidate runtime.",
+                    (pip.stderr or pip.stdout or "")[-800:],
+                )
 
         verified, observed, detail = _fresh_verify(str(candidate_python), cwd=runtime_dir)
         if (
             not verified
             or observed is None
-            or _normalize_release_version(observed) != _normalize_release_version(expected_version)
+            or _normalize_release_version(observed) != norm_ver
         ):
             raise RuntimeInstallError(
                 "runtime.verify_failed",
@@ -512,15 +685,12 @@ def _install_runtime_locked(
             python_path=str(candidate_python.resolve()),
             environment_root=str(candidate.resolve()),
             paperforge_version=observed,
+            deps_lock_hash=target_deps_hash or None,
+            installer_backend=installer_backend,
+            python_source=python_source,
             home=home,
         )
         installed = True
-        actions = [
-            "candidate_created",
-            "paperforge_installed",
-            "runtime_verified",
-            "pointer_published",
-        ]
         pruned = _prune_environments(runtime_dir, candidate)
         if pruned:
             actions.append(f"environments_pruned:{pruned}")
@@ -531,7 +701,7 @@ def _install_runtime_locked(
             python_path=str(candidate_python.resolve()),
             environment_root=str(candidate.resolve()),
             paperforge_version=observed,
-            base_python=base_python,
+            base_python=base_python_resolved,
             actions_taken=actions,
         )
     except RuntimeInstallError:

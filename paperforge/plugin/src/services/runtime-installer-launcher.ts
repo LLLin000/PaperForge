@@ -229,3 +229,219 @@ export function installerRun(
   }
   return { command: "/bin/sh", args: [options.scriptPath] };
 }
+
+// ── Zero-Python uv bootstrap installer (Phase 3) ─────────────────────────────
+
+export function uvInstallDir(home = os.homedir()): string {
+  return path.join(home, ".paperforge", "runtime", "bin");
+}
+
+export function uvBinaryPath(
+  home = os.homedir(),
+  platform: NodeJS.Platform = process.platform
+): string {
+  return path.join(uvInstallDir(home), platform === "win32" ? "uv.exe" : "uv");
+}
+
+export function uvCacheDir(home = os.homedir()): string {
+  return path.join(home, ".paperforge", "runtime", "cache", "uv");
+}
+
+export function uvPythonInstallDir(home = os.homedir()): string {
+  return path.join(home, ".paperforge", "runtime", "python");
+}
+
+export function uvBootstrapVenvDir(home = os.homedir()): string {
+  return path.join(home, ".paperforge", "runtime", ".bootstrap-uv");
+}
+
+export interface UvInstallerOptions {
+  action: RuntimeInstallerAction;
+  version: string;
+  home?: string;
+  uvPath?: string | null;
+  arch?: string;
+  platform?: NodeJS.Platform;
+  logPath?: string;
+}
+
+function psSingleQuote(value: string): string {
+  return "'" + value.replace(/'/g, "''") + "'";
+}
+
+function shSingleQuote(value: string): string {
+  return "'" + value.replace(/'/g, "'\"'\"'") + "'";
+}
+
+function uvTargetTriple(platform: NodeJS.Platform, arch: string): string {
+  const normArch =
+    arch === "arm64" || arch === "aarch64" ? "aarch64" : "x86_64";
+  if (platform === "win32") return `${normArch}-pc-windows-msvc`;
+  if (platform === "darwin") return `${normArch}-apple-darwin`;
+  return `${normArch}-unknown-linux-gnu`;
+}
+
+export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
+  const home = opts.home ?? os.homedir();
+  const pep440 = normalizePep440Version(opts.version);
+  const spec = pep440 ? `paperforge[vector]==${pep440}` : "paperforge[vector]";
+  const target = uvTargetTriple("win32", opts.arch ?? process.arch);
+  const binDir = uvInstallDir(home);
+  const uvDest = uvBinaryPath(home, "win32");
+  const cacheDir = uvCacheDir(home);
+  const pyDir = uvPythonInstallDir(home);
+  const bootDir = uvBootstrapVenvDir(home);
+  const logFile = opts.logPath ?? installerLogPath(home);
+  const uvSeed = opts.uvPath ?? "";
+
+  const lines = [
+    "$ErrorActionPreference = 'Stop'",
+    `New-Item -ItemType Directory -Force -Path ${psSingleQuote(path.dirname(logFile))} | Out-Null`,
+    `$logFile = ${psSingleQuote(logFile)}`,
+    `$env:UV_CACHE_DIR = ${psSingleQuote(cacheDir)}`,
+    `$env:UV_PYTHON_INSTALL_DIR = ${psSingleQuote(pyDir)}`,
+    "$env:UV_LINK_MODE = 'hardlink'",
+    "$env:UV_PYTHON_DOWNLOADS = 'automatic'",
+    `New-Item -ItemType Directory -Force -Path ${psSingleQuote(binDir)} | Out-Null`,
+    `New-Item -ItemType Directory -Force -Path ${psSingleQuote(cacheDir)} | Out-Null`,
+    `New-Item -ItemType Directory -Force -Path ${psSingleQuote(pyDir)} | Out-Null`,
+    "try {",
+    `  $uvBin = ${psSingleQuote(uvSeed)}`,
+    `  if (-not $uvBin -or -not (Test-Path $uvBin)) { $uvBin = ${psSingleQuote(uvDest)} }`,
+    "  if (-not (Test-Path $uvBin)) {",
+    `    $zipPath = Join-Path $env:TEMP ('uv-' + [guid]::NewGuid().ToString('N') + '.zip')`,
+    `    $extDir = Join-Path $env:TEMP ('uv-ext-' + [guid]::NewGuid().ToString('N'))`,
+    `    $urls = @('https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.zip', 'https://mirror.ghproxy.com/https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.zip')`,
+    "    $downloaded = $false",
+    "    foreach ($u in $urls) { try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zipPath; $downloaded = $true; break } catch {} }",
+    "    if (-not $downloaded) { throw 'Failed to download portable uv.' }",
+    "    Expand-Archive -Path $zipPath -DestinationPath $extDir -Force",
+    "    $found = Get-ChildItem -Path $extDir -Recurse -Filter 'uv.exe' | Select-Object -First 1",
+    "    if (-not $found) { throw 'uv.exe not found inside archive.' }",
+    "    Copy-Item -Force $found.FullName $uvBin",
+    "    Remove-Item -Force -ErrorAction SilentlyContinue $zipPath",
+    "    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $extDir",
+    "  }",
+    "  $pyOk = $false",
+    "  try { & $uvBin python install 3.12 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host; if ($LASTEXITCODE -eq 0) { $pyOk = $true } } catch {}",
+    "  if (-not $pyOk) {",
+    "    $env:UV_PYTHON_INSTALL_MIRROR = 'https://registry.npmmirror.com/-/binary/python-build-standalone'",
+    "    & $uvBin python install 3.12 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host",
+    "    if ($LASTEXITCODE -ne 0) { throw 'uv python install 3.12 failed.' }",
+    "  }",
+    `  $bootDir = ${psSingleQuote(bootDir)}`,
+    "  & $uvBin venv --clear --python 3.12 $bootDir 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host",
+    "  if ($LASTEXITCODE -ne 0) { throw 'uv venv failed.' }",
+    "  $bootPy = Join-Path $bootDir 'Scripts\\python.exe'",
+    `  $spec = ${psSingleQuote(spec)}`,
+    "  $installed = $false",
+    "  foreach ($idx in @('', 'https://pypi.tuna.tsinghua.edu.cn/simple', 'https://mirrors.aliyun.com/pypi/simple/')) {",
+    "    try {",
+    "      if ($idx) { & $uvBin pip install --python $bootPy --upgrade --index-url $idx $spec 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host }",
+    "      else { & $uvBin pip install --python $bootPy --upgrade $spec 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host }",
+    "      if ($LASTEXITCODE -eq 0) { $installed = $true; break }",
+    "    } catch {}",
+    "  }",
+    "  if (-not $installed) { throw 'uv pip install failed across mirrors.' }",
+    `  & $bootPy -m paperforge runtime ${opts.action} --expected-version ${psSingleQuote(pep440 || opts.version)} 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host`,
+    "  if ($LASTEXITCODE -ne 0) { throw 'paperforge runtime command failed.' }",
+    `  $done = ${psSingleQuote(INSTALLER_FINISHED_MARKER)}`,
+    "  $done | Out-File -FilePath $logFile -Append -Encoding utf8",
+    "  Write-Host $done",
+    "} catch {",
+    "  $errMsg = $_.Exception.Message",
+    "  $errMsg | Out-File -FilePath $logFile -Append -Encoding utf8",
+    `  $fail = ${psSingleQuote(INSTALLER_FAILED_MARKER)}`,
+    "  $fail | Out-File -FilePath $logFile -Append -Encoding utf8",
+    "  Write-Host $errMsg",
+    "  Write-Host $fail",
+    "  exit 1",
+    "}",
+    "",
+  ];
+  return lines.join("\r\n");
+}
+
+export function posixUvInstallerScript(opts: UvInstallerOptions): string {
+  const home = opts.home ?? os.homedir();
+  const platform = opts.platform === "darwin" ? "darwin" : "linux";
+  const pep440 = normalizePep440Version(opts.version);
+  const spec = pep440 ? `paperforge[vector]==${pep440}` : "paperforge[vector]";
+  const target = uvTargetTriple(platform, opts.arch ?? process.arch);
+  const binDir = uvInstallDir(home);
+  const uvDest = uvBinaryPath(home, platform);
+  const cacheDir = uvCacheDir(home);
+  const pyDir = uvPythonInstallDir(home);
+  const bootDir = uvBootstrapVenvDir(home);
+  const logFile = opts.logPath ?? installerLogPath(home);
+  const uvSeed = opts.uvPath ?? "";
+
+  return [
+    "#!/bin/sh",
+    "set -eu",
+    `LOG_FILE=${shSingleQuote(logFile)}`,
+    `mkdir -p "$(dirname "$LOG_FILE")" ${shSingleQuote(binDir)} ${shSingleQuote(cacheDir)} ${shSingleQuote(pyDir)}`,
+    `export UV_CACHE_DIR=${shSingleQuote(cacheDir)}`,
+    `export UV_PYTHON_INSTALL_DIR=${shSingleQuote(pyDir)}`,
+    'export UV_LINK_MODE="hardlink"',
+    'export UV_PYTHON_DOWNLOADS="automatic"',
+    "on_exit() {",
+    "  rc=$?",
+    '  if [ "$rc" -ne 0 ]; then',
+    `    printf '%s\\n' ${shSingleQuote(INSTALLER_FAILED_MARKER)} >> "$LOG_FILE"`,
+    `    printf '%s\\n' ${shSingleQuote(INSTALLER_FAILED_MARKER)}`,
+    "  fi",
+    "}",
+    "trap on_exit EXIT",
+    `UV_BIN=${shSingleQuote(uvSeed)}`,
+    `if [ -z "$UV_BIN" ] || [ ! -x "$UV_BIN" ]; then UV_BIN=${shSingleQuote(uvDest)}; fi`,
+    'if [ ! -x "$UV_BIN" ]; then',
+    '  TMP_DIR="$(mktemp -d)"',
+    '  ARC="$TMP_DIR/uv.tar.gz"',
+    `  URL1="https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.tar.gz"`,
+    `  URL2="https://mirror.ghproxy.com/$URL1"`,
+    '  curl -fsSL "$URL1" -o "$ARC" || curl -fsSL "$URL2" -o "$ARC"',
+    '  tar -xzf "$ARC" -C "$TMP_DIR"',
+    '  FOUND="$(find "$TMP_DIR" -type f -name uv | head -n 1)"',
+    '  cp "$FOUND" "$UV_BIN" && chmod +x "$UV_BIN"',
+    '  rm -rf "$TMP_DIR"',
+    "fi",
+    'if ! "$UV_BIN" python install 3.12 >> "$LOG_FILE" 2>&1; then',
+    '  UV_PYTHON_INSTALL_MIRROR="https://registry.npmmirror.com/-/binary/python-build-standalone" "$UV_BIN" python install 3.12 >> "$LOG_FILE" 2>&1',
+    "fi",
+    `BOOT_DIR=${shSingleQuote(bootDir)}`,
+    '"$UV_BIN" venv --clear --python 3.12 "$BOOT_DIR" >> "$LOG_FILE" 2>&1',
+    'BOOT_PY="$BOOT_DIR/bin/python"',
+    `SPEC=${shSingleQuote(spec)}`,
+    '"$UV_BIN" pip install --python "$BOOT_PY" --upgrade "$SPEC" >> "$LOG_FILE" 2>&1 || \\',
+    '  "$UV_BIN" pip install --python "$BOOT_PY" --upgrade --index-url "https://pypi.tuna.tsinghua.edu.cn/simple" "$SPEC" >> "$LOG_FILE" 2>&1 || \\',
+    '  "$UV_BIN" pip install --python "$BOOT_PY" --upgrade --index-url "https://mirrors.aliyun.com/pypi/simple/" "$SPEC" >> "$LOG_FILE" 2>&1',
+    `"$BOOT_PY" -m paperforge runtime ${opts.action} --expected-version ${shSingleQuote(pep440 || opts.version)} >> "$LOG_FILE" 2>&1`,
+    `printf '%s\\n' ${shSingleQuote(INSTALLER_FINISHED_MARKER)} >> "$LOG_FILE"`,
+    `printf '%s\\n' ${shSingleQuote(INSTALLER_FINISHED_MARKER)}`,
+    "",
+  ].join("\n");
+}
+
+export function uvInstallerScript(opts: UvInstallerOptions): string {
+  const plat = opts.platform ?? process.platform;
+  return plat === "win32"
+    ? windowsUvInstallerScript(opts)
+    : posixUvInstallerScript(opts);
+}
+
+export function uvInstallerRun(
+  platform: NodeJS.Platform,
+  scriptPath: string
+): InstallerRun {
+  if (platform === "win32") {
+    return {
+      command: "powershell.exe",
+      args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath],
+    };
+  }
+  return {
+    command: "/bin/sh",
+    args: [scriptPath],
+  };
+}

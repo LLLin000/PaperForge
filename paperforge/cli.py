@@ -577,6 +577,20 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Output as JSON",
     )
+    p_skill_sync = p_skill_sp.add_parser(
+        "sync", help="Safely auto-upgrade deployed paperforge skill if unmodified by user"
+    )
+    p_skill_sync.add_argument(
+        "--to",
+        metavar="DIR",
+        default=".agents/skills",
+        help="Vault-relative skill directory to sync (default: .agents/skills)",
+    )
+    p_skill_sync.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON",
+    )
 
     # Layer 4 gateway commands
     p_versions = sub.add_parser(
@@ -776,6 +790,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--expected-version",
         help="Expected PaperForge package version; installation probe reports a mismatch",
     )
+    p_probe.add_argument(
+        "--min-engine-version",
+        help="Minimum compatible PaperForge engine version declared by the client",
+    )
 
 
     # Runtime lifecycle is independent of any Obsidian vault.
@@ -791,6 +809,7 @@ def build_parser() -> argparse.ArgumentParser:
     ):
         command = runtime_sub.add_parser(action, help=description)
         command.add_argument("--expected-version", metavar="VERSION")
+        command.add_argument("--min-engine-version", metavar="VERSION")
         command.add_argument("--base-python", metavar="PYTHON")
         command.add_argument("--wheel", metavar="WHEEL", help="Install an explicit .whl file")
         command.add_argument("--json", action="store_true", help="Output result as JSON")
@@ -799,6 +818,7 @@ def build_parser() -> argparse.ArgumentParser:
         "status", help="Report the active managed runtime without changing it"
     )
     p_runtime_status.add_argument("--expected-version", metavar="VERSION")
+    p_runtime_status.add_argument("--min-engine-version", metavar="VERSION")
     p_runtime_status.add_argument("--base-python", metavar="PYTHON")
     p_runtime_status.add_argument("--json", action="store_true", help="Output result as JSON")
 
@@ -1369,6 +1389,7 @@ def _run_runtime_command(args: argparse.Namespace) -> int:
 
     action = args.runtime_action
     expected_version = args.expected_version or __version__
+    min_engine_version = getattr(args, "min_engine_version", None)
     base_python = args.base_python
     json_output = bool(args.json)
 
@@ -1376,6 +1397,7 @@ def _run_runtime_command(args: argparse.Namespace) -> int:
         if action == "status":
             result = inspect_runtime(
                 expected_version=expected_version,
+                min_engine_version=min_engine_version,
                 base_python=base_python,
             )
             if json_output:
@@ -1392,6 +1414,7 @@ def _run_runtime_command(args: argparse.Namespace) -> int:
 
         result = install_runtime(
             expected_version=expected_version,
+            min_engine_version=min_engine_version,
             base_python=base_python,
             force=action == "repair",
             wheel=Path(args.wheel) if args.wheel else None,
@@ -1417,10 +1440,22 @@ def _run_runtime_command(args: argparse.Namespace) -> int:
 # paths command
 # ---------------------------------------------------------------------------
 def _run_skill(args: argparse.Namespace) -> int:
-    """Handle `paperforge skill deploy [--to DIR]`."""
+    """Handle `paperforge skill deploy|sync [--to DIR]`."""
     vault = args.vault_path
-    if getattr(args, "skill_action", None) != "deploy":
-        print(f"Error: unknown skill action {getattr(args, 'skill_action', None)}", file=sys.stderr)
+    skill_action = getattr(args, "skill_action", None)
+    if skill_action == "sync":
+        from paperforge.services.skill_deploy import sync_skills_if_unmodified
+
+        res = sync_skills_if_unmodified(vault, target_dir=getattr(args, "to", None))
+        if getattr(args, "json", False):
+            print(json.dumps({"ok": not res["errors"], **res}, ensure_ascii=False))
+        else:
+            print(f"skill sync: {res['status']} ({vault / res['target_dir'] / 'paperforge'})")
+            for err in res["errors"]:
+                print(f"  error: {err}", file=sys.stderr)
+        return 0 if not res["errors"] else 1
+    if skill_action != "deploy":
+        print(f"Error: unknown skill action {skill_action}", file=sys.stderr)
         return 2
     from paperforge.services.skill_deploy import deploy_skills
 

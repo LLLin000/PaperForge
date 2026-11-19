@@ -32,13 +32,19 @@ from paperforge.probes.memory import probe_memory
 from paperforge.probes.ocr import paper_pipeline_versions, probe_ocr
 
 
-def _run_probe_all(vault: Path, *, json_output: bool, expected_version: str | None = None) -> int:
+def _run_probe_all(
+    vault: Path,
+    *,
+    json_output: bool,
+    expected_version: str | None = None,
+    min_engine_version: str | None = None,
+) -> int:
     """#140/#148: probe all reads each base capability exactly once,
     derives the maintenance projection from those exact envelopes (zero
     re-probe), and returns the six-module envelope map. A failing probe
     degrades to its own detection_failed envelope; never aborts.
-    The plugin's expected package version gates installation readiness so
-    the RC4 pointer is never reported ready under an rc5 bundle."""
+    The plugin's expected package version / min-engine baseline gates installation
+    readiness so stale pointers are caught safely."""
     import json as _json
 
     try:
@@ -47,9 +53,17 @@ def _run_probe_all(vault: Path, *, json_output: bool, expected_version: str | No
         lineage_snapshot = _pl(vault)
     except Exception:  # noqa: BLE001
         lineage_snapshot = None
-    modules = _maintenance._probe_base_modules(
-        vault, lineage=lineage_snapshot, installation_expected_version=expected_version
-    )
+    if min_engine_version is None:
+        modules = _maintenance._probe_base_modules(
+            vault, lineage=lineage_snapshot, installation_expected_version=expected_version
+        )
+    else:
+        modules = _maintenance._probe_base_modules(
+            vault,
+            lineage=lineage_snapshot,
+            installation_expected_version=expected_version,
+            installation_min_engine_version=min_engine_version,
+        )
     modules["maintenance"] = derive_maintenance(modules, vault, lineage=lineage_snapshot)
     aggregate = {
         "schema_version": SCHEMA_VERSION,
@@ -74,10 +88,19 @@ def run(args: Any) -> int:
             vault,
             json_output=bool(getattr(args, "json", False)),
             expected_version=getattr(args, "expected_version", None),
+            min_engine_version=getattr(args, "min_engine_version", None),
         )
 
     if module == "installation":
-        envelope = probe_installation(vault, expected_version=getattr(args, "expected_version", None))
+        min_engine = getattr(args, "min_engine_version", None)
+        if min_engine is None:
+            envelope = probe_installation(vault, expected_version=getattr(args, "expected_version", None))
+        else:
+            envelope = probe_installation(
+                vault,
+                expected_version=getattr(args, "expected_version", None),
+                min_engine_version=min_engine,
+            )
     elif module == "library":
         last_code: int | None = getattr(args, "last_operation_exit_code", None)
         envelope = probe_library(vault, last_operation_exit_code=last_code)

@@ -29,8 +29,10 @@
 | `paperforge/commands/config.py`         | `paperforge config` 8 动词 CLI 适配器         | `run()`（处理 `list/get/set/unset/validate/paths/init/migrate` 并包装 `PFResult`）                                                                                                  |
 | `paperforge/credentials.py`             | 密钥环与规范环境变量凭据权威                  | `CredentialKey`、`CredentialStatus`、`CredentialError`、`resolve()`、`store()`、`delete()`、`status()`                                                                              |
 | `paperforge/commands/auth.py`           | `paperforge auth` CLI 适配器                  | `run_status()`、`run_set()`、`run_delete()`、`run_migrate()`、`LEGACY_NAMES`                                                                                                        |
+| `paperforge/core/versioning.py`         | 四维版本兼容区间与依赖锁指纹契约              | `MIN_ENGINE_VERSION`、`normalize_release_version()`、`is_version_compatible()`、`compute_deps_lock_hash()`                                                                          |
 | `paperforge/runtime_pointer.py`         | `~/.paperforge/runtime/pointer.json` 读写边界 | `POINTER_SCHEMA_VERSION`、`pointer_dir()`、`pointer_path()`、`read_pointer()`、`publish_pointer()`                                                                                  |
-| `paperforge/runtime_installer.py`       | 独立受管运行时构建、校验与剪枝                | `install_runtime()`、`inspect_runtime()`、`install_lock()`、`_normalize_release_version()`、`RuntimeInstallError`                                                                   |
+| `paperforge/runtime_uv.py`              | 便携 `uv` 引导与零前置托管 Python 构建器      | `discover_uv()`、`ensure_uv()`、`bootstrap_uv_python()`、`uv_create_venv()`、`uv_pip_install()`                                                                                     |
+| `paperforge/runtime_installer.py`       | 独立受管运行时构建、微调校验与剪枝            | `install_runtime()`、`inspect_runtime()`、`install_lock()`、`RuntimeInstallError`（支持 `deps_lock_hash` `--no-deps` 快修与 `uv` 自动兜底）                                         |
 | `paperforge/commands/runtime_health.py` | `runtime-health` CLI 适配器                   | `run()`，输出 `PFResult` 或分层终端摘要                                                                                                                                             |
 | `paperforge/memory/runtime_health.py`   | 记忆层 5 维度健康检查                         | `get_runtime_health()`、`_runtime_identity()`                                                                                                                                       |
 | `paperforge/worker/status.py`           | Vault 全量诊断 `doctor` 与基础 `status`       | `run_doctor()`、`_query_resolved_version()`、`_query_resolved_package()`                                                                                                            |
@@ -55,7 +57,9 @@
 | `tests/harness/test_a03_config_authority.py`      | 端到端 CLI 验证 `config set` 落盘、`config paths` 解析、`../escape` 拒绝后文件字节零变化及跨进程持久化                              |
 | `tests/harness/test_a04_config_migration.py`      | 验证 v1 顶层路径键与 `agent_key` 无损迁移至 Schema v2、未知字段保留、派生字段删除及二次迁移字节幂等性                               |
 | `tests/harness/test_a05_credential_authority.py`  | 验证 `auth set --stdin` 仅入 Keyring，绝不出现在进程 `argv` 或 Vault 任何文件中                                                     |
-| `tests/test_runtime_installer.py`                 | 验证候选环境创建与验证先于指针发布、失败自动丢弃候选并保留旧指针、安装并发锁拦截及保留最近 1 个旧环境剪枝                           |
+| `tests/unit/core/test_versioning.py`              | 验证 SemVer/PEP 440 归一、`minEngineVersion` 兼容区间判定及确定性 `depsLockHash` 依赖哈希计算                                       |
+| `tests/unit/test_runtime_uv.py`                   | 验证 `uv` 平台包选择、防路径穿越解压、环境缓存目录与 `python install` / `uv pip install` 国内镜像兜底                               |
+| `tests/test_runtime_installer.py`                 | 验证候选环境创建与验证先于指针发布、失败自动丢弃候选并保留旧指针、安装并发锁、同 `depsLockHash` 快修与 `uv` 兜底及旧环境剪枝        |
 | `tests/test_runtime_pointer.py`                   | 验证 `pointer.json` 原子发布无残留 `.tmp`、四字段全校验与绝对路径要求                                                               |
 | `tests/test_runtime_pointer_version_authority.py` | 回归 `#267`：在 CWD 存在伪造源码包的子进程中，验证 `publish_pointer()` 以环境安装的 `dist-info` 元数据版本为准                      |
 | `tests/test_doctor.py`                            | 验证无指针时不触发目标解释器探针、缺失/版本不一致/依赖缺失诊断分支及 JSON 输出契约                                                  |

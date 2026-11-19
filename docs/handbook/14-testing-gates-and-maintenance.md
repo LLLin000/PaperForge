@@ -154,8 +154,11 @@ flowchart TD
 
 维护者在评审升级机制改动时，必须严格区分 [docs/INSTALL-AND-UPDATE-ARCHITECTURE.md](../INSTALL-AND-UPDATE-ARCHITECTURE.md) 中的两阶段状态：
 
-- **已上线（Phase 1 实装契约）**：`paperforge/runtime_installer.py` 的 `_normalize_release_version` 与前端 `runtime-installer-launcher.ts` 的 `normalizePep440Version` 已统一 SemVer 预发布标记（如 `2.0.0-rc.6` 对齐 PEP 440 `2.0.0rc6`）；候选环境验证完成后由 `paperforge/runtime_pointer.py` 的 `publish_pointer` 原子写入用户主目录 `.paperforge` 下 `runtime` 子目录中的 `pointer.json`，保留上一份可用环境供快速回滚。
-- **规划蓝图（Phase 2/3，状态仍为"设计蓝图 / 待评审定稿"）**：`uv` + `python-build-standalone` 零前置托管 Python、全局 Wheel 硬链接极速热修、四维版本字段（`minEngineVersion` / `depsLockHash` / `skillTreeDigest`）解耦机制尚未上线；在此之前，前后端版本仍保持 1:1 对齐校验。
+- **已上线（Phase 1 + Phase 2 + Phase 3 代码与单测契约已入库）**：
+  - `paperforge/core/versioning.py` 与前端 `runtime-installer-launcher.ts` 的 `normalizePep440Version` 统一 SemVer/PEP 440 归一化并支持 `minEngineVersion` 兼容区间与 `deps_lock_hash` 计算；
+  - `paperforge/runtime_pointer.py` 的 `publish_pointer` 原子发布 `pointer.json`（保留可选 `deps_lock_hash` / `installer_backend` / `python_source` 元数据并保留最近 1 份可用环境回滚）；
+  - `paperforge/runtime_installer.py` 与 `paperforge/runtime_uv.py` 支持同依赖哈希 `--no-deps` 极速热修、阿里云兜底镜像以及无系统 Python 时的便携 `uv` 托管 Python 3.12 自动引导；`paperforge skill sync` 按状态摘要自动无损升级未修改 Skill。
+- **持续跟进（端到端真实环境验收）**：真实桌面 Vault 首装与 UI 热修体感验收、CI `all-checks` 跨平台全绿保护均以该契约为基线持续验证。
 
 ### 4.3 本地预演 (`ci_local.py`) 与 OCR 诊断字段语义
 

@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.0rc6` | **章节数**：`14` | **分册指纹**：`sha256:3ef70098581a25e1`
+> **版本**：`2.0.0rc6` | **章节数**：`14` | **分册指纹**：`sha256:9430c82ddcbc3f4d`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 
@@ -363,8 +363,10 @@ CI 门禁 `scripts/check_module_graph.py --check` 对 `paperforge/` 下所有 `.
 | `paperforge/commands/config.py`         | `paperforge config` 8 动词 CLI 适配器         | `run()`（处理 `list/get/set/unset/validate/paths/init/migrate` 并包装 `PFResult`）                                                                                                  |
 | `paperforge/credentials.py`             | 密钥环与规范环境变量凭据权威                  | `CredentialKey`、`CredentialStatus`、`CredentialError`、`resolve()`、`store()`、`delete()`、`status()`                                                                              |
 | `paperforge/commands/auth.py`           | `paperforge auth` CLI 适配器                  | `run_status()`、`run_set()`、`run_delete()`、`run_migrate()`、`LEGACY_NAMES`                                                                                                        |
+| `paperforge/core/versioning.py`         | 四维版本兼容区间与依赖锁指纹契约              | `MIN_ENGINE_VERSION`、`normalize_release_version()`、`is_version_compatible()`、`compute_deps_lock_hash()`                                                                          |
 | `paperforge/runtime_pointer.py`         | `~/.paperforge/runtime/pointer.json` 读写边界 | `POINTER_SCHEMA_VERSION`、`pointer_dir()`、`pointer_path()`、`read_pointer()`、`publish_pointer()`                                                                                  |
-| `paperforge/runtime_installer.py`       | 独立受管运行时构建、校验与剪枝                | `install_runtime()`、`inspect_runtime()`、`install_lock()`、`_normalize_release_version()`、`RuntimeInstallError`                                                                   |
+| `paperforge/runtime_uv.py`              | 便携 `uv` 引导与零前置托管 Python 构建器      | `discover_uv()`、`ensure_uv()`、`bootstrap_uv_python()`、`uv_create_venv()`、`uv_pip_install()`                                                                                     |
+| `paperforge/runtime_installer.py`       | 独立受管运行时构建、微调校验与剪枝            | `install_runtime()`、`inspect_runtime()`、`install_lock()`、`RuntimeInstallError`（支持 `deps_lock_hash` `--no-deps` 快修与 `uv` 自动兜底）                                         |
 | `paperforge/commands/runtime_health.py` | `runtime-health` CLI 适配器                   | `run()`，输出 `PFResult` 或分层终端摘要                                                                                                                                             |
 | `paperforge/memory/runtime_health.py`   | 记忆层 5 维度健康检查                         | `get_runtime_health()`、`_runtime_identity()`                                                                                                                                       |
 | `paperforge/worker/status.py`           | Vault 全量诊断 `doctor` 与基础 `status`       | `run_doctor()`、`_query_resolved_version()`、`_query_resolved_package()`                                                                                                            |
@@ -389,7 +391,9 @@ CI 门禁 `scripts/check_module_graph.py --check` 对 `paperforge/` 下所有 `.
 | `tests/harness/test_a03_config_authority.py`      | 端到端 CLI 验证 `config set` 落盘、`config paths` 解析、`../escape` 拒绝后文件字节零变化及跨进程持久化                              |
 | `tests/harness/test_a04_config_migration.py`      | 验证 v1 顶层路径键与 `agent_key` 无损迁移至 Schema v2、未知字段保留、派生字段删除及二次迁移字节幂等性                               |
 | `tests/harness/test_a05_credential_authority.py`  | 验证 `auth set --stdin` 仅入 Keyring，绝不出现在进程 `argv` 或 Vault 任何文件中                                                     |
-| `tests/test_runtime_installer.py`                 | 验证候选环境创建与验证先于指针发布、失败自动丢弃候选并保留旧指针、安装并发锁拦截及保留最近 1 个旧环境剪枝                           |
+| `tests/unit/core/test_versioning.py`              | 验证 SemVer/PEP 440 归一、`minEngineVersion` 兼容区间判定及确定性 `depsLockHash` 依赖哈希计算                                       |
+| `tests/unit/test_runtime_uv.py`                   | 验证 `uv` 平台包选择、防路径穿越解压、环境缓存目录与 `python install` / `uv pip install` 国内镜像兜底                               |
+| `tests/test_runtime_installer.py`                 | 验证候选环境创建与验证先于指针发布、失败自动丢弃候选并保留旧指针、安装并发锁、同 `depsLockHash` 快修与 `uv` 兜底及旧环境剪枝        |
 | `tests/test_runtime_pointer.py`                   | 验证 `pointer.json` 原子发布无残留 `.tmp`、四字段全校验与绝对路径要求                                                               |
 | `tests/test_runtime_pointer_version_authority.py` | 回归 `#267`：在 CWD 存在伪造源码包的子进程中，验证 `publish_pointer()` 以环境安装的 `dist-info` 元数据版本为准                      |
 | `tests/test_doctor.py`                            | 验证无指针时不触发目标解释器探针、缺失/版本不一致/依赖缺失诊断分支及 JSON 输出契约                                                  |
@@ -1143,7 +1147,7 @@ flowchart TD
 
 1. **`installation`（仅探测 Python Core，不受 Vault 配置缺失或损坏影响）**：
    - `sys.version_info[:2] < (3, 11)` → `installation.python_version_unsupported`（`limited`, `action_required`, `foundation.update_python`）
-   - `expected_version` 与 `PAPERFORGE_VERSION` 经 `normalize_release_version()`（将 `2.0.0-rc.2` 统一为 `2.0.0rc2`）后不匹配 → `installation.version_mismatch`（`needs_action`, `foundation.update`）
+   - `expected_version` 与 `PAPERFORGE_VERSION` 经 `normalize_release_version()`（将 `2.0.0-rc.2` 统一为 `2.0.0rc2`）及可选 `--min-engine-version` 兼容区间（`paperforge/core/versioning.py` 的 `is_version_compatible()`）判定不兼容 → `installation.version_mismatch`（`needs_action`, `foundation.update`）
    - `read_pointer()` 为 `None` → `installation.runtime_pointer_missing`（`needs_action`, `foundation.setup`）
    - 指针 `paperforge_version` 与当前包版本经规范化后不等 → `installation.runtime_pointer_stale`（`needs_action`, `foundation.update`, `SAFETY_DESTRUCTIVE`, `confirmation_required=True`）
    - `Path(pointer["python_path"]).is_file()` 为假 → `installation.runtime_executable_missing`（`needs_action`, `foundation.update`）
@@ -3521,7 +3525,8 @@ sequenceDiagram
 
 | CLI 命令                                              | 参数                                                        | 行为与说明                                                                                                         |
 | :---------------------------------------------------- | :---------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
-| `paperforge skill deploy`                             | `[--to DIR]` `[--overwrite]` `[--json]`                     | 部署打包的 `paperforge` 技能树至 `<vault>/<DIR>/paperforge`                                                        |
+| `paperforge skill deploy`                             | `[--to DIR]` `[--overwrite]` `[--json]`                     | 部署打包的 `paperforge` 技能树至 `<vault>/<DIR>/paperforge` 并写入状态摘要                                         |
+| `paperforge skill sync`                               | `[--to DIR]` `[--json]`                                     | 基于 `skill-deploy-state.json` 哈希自动无损更新未改动技能，同时保护用户自定义改动                                  |
 | `paperforge deep-reading`                             | `[--json]`                                                  | 只读扫描精读队列，返回 `{queue, summary: {total, ready, blocked}}`                                                 |
 | `paperforge deep-finalize <zotero_key>`               | `[--json]`                                                  | 校验正式笔记 `## 🔍 精读` 完整度后更新 `deep_reading_status: "done"` 并刷新规范索引                                |
 | `python -m paperforge.worker.discussion record <KEY>` | `--vault PATH --agent NAME --model MODEL [--qa-pairs JSON]` | 原子带锁追加结构化 Q&A 会话至 `<ai_path>/discussion.md`                                                            |
@@ -3846,7 +3851,7 @@ sequenceDiagram
 | **Action 安全二次确认**          | `paperforge/plugin/src/settings.ts` & `PaperForgeConfirmModal`                                       | 当 `ProbeEnvelope.action_primary` 声明 `safety_class !== "safe"` 且 `confirmation_required === true` 时，点击按钮强制拦截并弹出模态框，用户显式确认后才调用 `runAction` / `streamAction`                                                                                           |
 | **上下文识别 Fail-Closed**       | `paperforge/plugin/src/views/dashboard.ts` (`_resolveModeForFile`)                                   | 当 `client.resolvePaperContext(path)` 失败或返回未知类型时，一律回退 `mode = "global"`，绝不根据文件名/文件夹结构做启发式猜测                                                                                                                                                      |
 | **安装器无控制台超时兜底**       | `paperforge/plugin/src/services/runtime-installer-launcher.ts` & `settings.ts`                       | 脚本无黑框运行避免无桌面宿主挂死；前端 3s 轮询同时检查 `pointer.json` 与 `installer.log` 失败标记；一旦出现 `[PaperForge] Installer step failed.` 立即中止等待并高亮日志尾巴                                                                                                       |
-| **版本规范化一致性**             | `normalizePep440Version`                                                                             | 将插件侧 SemVer 字符串（如 `v2.0.0-rc.6` 或 `2.0.0rc6`）无损归一化为 PEP 440 版本标识（`2.0.0rc6`），与 Python `pip` 和 `runtime_installer` 对齐，防止预发布版本号匹配失败触发死循环升级                                                                                           |
+| **版本规范化与零前置引导**       | `normalizePep440Version`、`manifest.json` (`minEngineVersion`) & `uvInstallerScript`                 | 将插件侧 SemVer 字符串归一化为 PEP 440（`2.0.0rc6`），通过 `--min-engine-version` 透传兼容窗口避免 UI 热修触发后端全量重建；无系统 Python 时在 `allowUvDownload` 下经便携 `uv` 自动引导托管 Python 3.12（见 `paperforge/plugin/tests/uv-installer-bootstrap.test.ts`）             |
 | **面板级键盘与视图生命周期防护** | `OcrWorkspaceView._closed`、`PaperForgeStatusView._ctrlEnterScope`、`PaperForgePdfView._loadVersion` | 视图关闭或重新打开时立即递增 `_loadGeneration` / `_loadVersion` 并置位 `_closed`，丢弃一切在途异步回填与陈旧 DOM 渲染；同时无条件弹出焦点作用域键盘监听，防止快捷键泄漏                                                                                                            |
 
 ---
@@ -4045,8 +4050,11 @@ flowchart TD
 
 维护者在评审升级机制改动时，必须严格区分 [docs/INSTALL-AND-UPDATE-ARCHITECTURE.md](INSTALL-AND-UPDATE-ARCHITECTURE.md) 中的两阶段状态：
 
-- **已上线（Phase 1 实装契约）**：`paperforge/runtime_installer.py` 的 `_normalize_release_version` 与前端 `runtime-installer-launcher.ts` 的 `normalizePep440Version` 已统一 SemVer 预发布标记（如 `2.0.0-rc.6` 对齐 PEP 440 `2.0.0rc6`）；候选环境验证完成后由 `paperforge/runtime_pointer.py` 的 `publish_pointer` 原子写入用户主目录 `.paperforge` 下 `runtime` 子目录中的 `pointer.json`，保留上一份可用环境供快速回滚。
-- **规划蓝图（Phase 2/3，状态仍为"设计蓝图 / 待评审定稿"）**：`uv` + `python-build-standalone` 零前置托管 Python、全局 Wheel 硬链接极速热修、四维版本字段（`minEngineVersion` / `depsLockHash` / `skillTreeDigest`）解耦机制尚未上线；在此之前，前后端版本仍保持 1:1 对齐校验。
+- **已上线（Phase 1 + Phase 2 + Phase 3 代码与单测契约已入库）**：
+  - `paperforge/core/versioning.py` 与前端 `runtime-installer-launcher.ts` 的 `normalizePep440Version` 统一 SemVer/PEP 440 归一化并支持 `minEngineVersion` 兼容区间与 `deps_lock_hash` 计算；
+  - `paperforge/runtime_pointer.py` 的 `publish_pointer` 原子发布 `pointer.json`（保留可选 `deps_lock_hash` / `installer_backend` / `python_source` 元数据并保留最近 1 份可用环境回滚）；
+  - `paperforge/runtime_installer.py` 与 `paperforge/runtime_uv.py` 支持同依赖哈希 `--no-deps` 极速热修、阿里云兜底镜像以及无系统 Python 时的便携 `uv` 托管 Python 3.12 自动引导；`paperforge skill sync` 按状态摘要自动无损升级未修改 Skill。
+- **持续跟进（端到端真实环境验收）**：真实桌面 Vault 首装与 UI 热修体感验收、CI `all-checks` 跨平台全绿保护均以该契约为基线持续验证。
 
 #### 4.3 本地预演 (`ci_local.py`) 与 OCR 诊断字段语义
 

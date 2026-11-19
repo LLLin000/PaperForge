@@ -27,6 +27,7 @@ def _probe_base_modules(
     vault: Path,
     lineage: dict[str, Any] | None = None,
     installation_expected_version: str | None = None,
+    installation_min_engine_version: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     """#140: fixed dispatcher — each base reader runs exactly once, in
     PROBE_ORDER, sequentially. An unexpected reader exception becomes that
@@ -48,11 +49,17 @@ def _probe_base_modules(
                 except TypeError:
                     modules[mod_name] = probe_fn(vault)
             elif mod_name == "installation":
-                if installation_expected_version is None:
+                if installation_expected_version is None and installation_min_engine_version is None:
                     modules[mod_name] = probe_fn(vault)
-                else:
+                elif installation_min_engine_version is None:
                     modules[mod_name] = probe_fn(
                         vault, expected_version=installation_expected_version
+                    )
+                else:
+                    modules[mod_name] = probe_fn(
+                        vault,
+                        expected_version=installation_expected_version,
+                        min_engine_version=installation_min_engine_version,
                     )
             else:
                 modules[mod_name] = probe_fn(vault)

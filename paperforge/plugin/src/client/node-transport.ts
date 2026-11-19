@@ -38,6 +38,9 @@ import {
   installerRun,
   installerShellCommand,
   posixInstallerScript,
+  uvBinaryPath,
+  uvInstallerRun,
+  uvInstallerScript,
   windowsInstallerScript,
   type RuntimeInstallerAction,
 } from "../services/runtime-installer-launcher";
@@ -604,22 +607,54 @@ export class NodeProcessTransport implements Transport {
     reapExecuteChildrenImpl();
   }
 
+  /** Discover portable or system-installed uv binary without spawning child processes. */
+  discoverUv(): string | null {
+    const localUv = uvBinaryPath(os.homedir(), process.platform);
+    if (fs.existsSync(localUv)) return localUv;
+    const pathVar = (paperforgeEnrichedEnv().PATH ?? "").split(path.delimiter);
+    const exeName = process.platform === "win32" ? "uv.exe" : "uv";
+    for (const dir of pathVar) {
+      if (!dir) continue;
+      const candidate = path.join(dir, exeName);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+    return null;
+  }
+
   /**
    * Open the external installer in a terminal window: pip --user installs the
    * CLI, then the CLI creates/verifies the runtime and publishes the pointer.
+   * When no system Python 3.11+ exists and uv is present or auto-download is
+   * allowed, falls back to the portable uv zero-Python bootstrapper.
    * Obsidian only watches the pointer; it never installs anything itself.
    */
   launchRuntimeInstaller(
     action: RuntimeInstallerAction,
-    version: string
+    version: string,
+    options?: { allowUvDownload?: boolean }
   ): { ok: boolean; python?: string; error?: string; logPath?: string } {
+    const logPath = this._installerLogPath();
     const python = this.discoverBasePython();
     if (!python) {
-      return {
-        ok: false,
-        error:
-          "No Python 3.11+ found. Install Python from python.org, then retry.",
-      };
+      if (!options?.allowUvDownload) {
+        return {
+          ok: false,
+          error:
+            "No Python 3.11+ found. Install Python from python.org, then retry.",
+        };
+      }
+      const uv = this.discoverUv();
+      const scriptPath = this._writeInstallerScript(
+        uvInstallerScript({
+          action,
+          version,
+          uvPath: uv,
+          logPath,
+        }),
+        process.platform === "win32" ? "ps1" : "sh"
+      );
+      const run = uvInstallerRun(process.platform, scriptPath);
+      return this._spawnDetachedInstaller(run, logPath, uv ?? "uv");
     }
     // The bootstrap step makes the CLI exist (and skips pip when it already
     // does); the CLI then owns the runtime. A source checkout or a private
@@ -644,7 +679,14 @@ export class NodeProcessTransport implements Transport {
       comSpec: process.env.ComSpec,
       scriptPath,
     });
-    const logPath = this._installerLogPath();
+    return this._spawnDetachedInstaller(run, logPath, python);
+  }
+
+  private _spawnDetachedInstaller(
+    run: { command: string; args: string[] },
+    logPath: string,
+    python: string
+  ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     let log: number | undefined;
     try {
       fs.mkdirSync(path.dirname(logPath), { recursive: true });

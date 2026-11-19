@@ -39,6 +39,7 @@ export const VIEW_TYPE_PF_BASE_TABLE = "paperforge-table";
 // Built-in Lucide id: a custom addIcon(<svg>) string renders a nested SVG
 // inside Obsidian's wrapper and collapses to a tiny box in the ribbon.
 export const PF_ICON_ID = "book-open";
+export const DEFAULT_MIN_ENGINE_VERSION = "2.0.0rc6";
 // ── Action definitions ──
 
 export interface ActionDef {

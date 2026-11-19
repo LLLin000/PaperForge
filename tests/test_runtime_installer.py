@@ -320,3 +320,143 @@ def test_pip_install_falls_back_to_pypi_mirror_on_failure(tmp_path: Path, monkey
     assert "-i" not in calls[0]
     assert runtime_installer._FALLBACK_PYPI_INDEX in calls[1]
 
+
+def test_pip_install_falls_back_to_aliyun_after_tuna_fails(tmp_path: Path, monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], *, cwd: Path, timeout: int = 300) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        if runtime_installer._ALIYUN_PYPI_INDEX in command:
+            return subprocess.CompletedProcess(command, 0, "ok aliyun", "")
+        return subprocess.CompletedProcess(command, 1, "", "mirror timeout")
+
+    monkeypatch.delenv("PIP_INDEX_URL", raising=False)
+    monkeypatch.delenv("PIP_FIND_LINKS", raising=False)
+    monkeypatch.setattr(runtime_installer, "_run", fake_run)
+
+    result = runtime_installer._pip_install(tmp_path / "python", "paperforge[vector]==2.0.0", cwd=tmp_path)
+
+    assert result.returncode == 0
+    assert len(calls) == 3
+    assert runtime_installer._FALLBACK_PYPI_INDEX in calls[1]
+    assert runtime_installer._ALIYUN_PYPI_INDEX in calls[2]
+
+
+def test_install_runtime_fast_patches_when_deps_lock_hash_matches(tmp_path: Path, monkeypatch) -> None:
+    runtime_dir = pointer_dir(tmp_path)
+    old_env = runtime_dir / ".venv-candidate-old"
+    if os.name == "nt":
+        old_py = old_env / "Scripts" / "python.exe"
+        old_sp = old_env / "Lib" / "site-packages"
+    else:
+        old_py = old_env / "bin" / "python"
+        old_sp = old_env / "lib" / "python3.12" / "site-packages"
+    old_py.parent.mkdir(parents=True, exist_ok=True)
+    old_py.write_bytes(b"old-py")
+    (old_sp / "openai").mkdir(parents=True, exist_ok=True)
+    (old_sp / "openai" / "__init__.py").write_text("# cached", encoding="utf-8")
+    (old_sp / "sqlite_vec").mkdir(parents=True, exist_ok=True)
+    (old_sp / "sqlite_vec" / "__init__.py").write_text("# cached", encoding="utf-8")
+    (old_sp / "paperforge").mkdir(parents=True, exist_ok=True)
+    (old_sp / "paperforge" / "__init__.py").write_text("__version__ = '2.0.0'", encoding="utf-8")
+
+    deps_hash = runtime_installer.compute_deps_lock_hash()
+    publish_pointer(
+        python_path=str(old_py),
+        environment_root=str(old_env),
+        paperforge_version="2.0.0",
+        deps_lock_hash=deps_hash,
+        home=tmp_path,
+    )
+
+    def fake_venv(command: list[str], *, cwd: Path | None = None, timeout: int = 300):
+        del cwd, timeout
+        if command[-1] == "--version":
+            return subprocess.CompletedProcess(command, 0, "Python 3.12.4\n", "")
+        if command[1:3] == ["-m", "venv"]:
+            venv_dir = Path(command[-1])
+            py = venv_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            sp = venv_dir / ("Lib/site-packages" if os.name == "nt" else "lib/python3.12/site-packages")
+            py.parent.mkdir(parents=True, exist_ok=True)
+            sp.mkdir(parents=True, exist_ok=True)
+            py.write_bytes(b"new-py")
+            return subprocess.CompletedProcess(command, 0, "", "")
+        raise AssertionError(f"unexpected command: {command!r}")
+
+    no_deps_specs: list[str] = []
+    full_pip_specs: list[str] = []
+    monkeypatch.setattr(runtime_installer, "_run", fake_venv)
+    monkeypatch.setattr(
+        runtime_installer,
+        "_pip_install_no_deps",
+        lambda py, spec, *, cwd: no_deps_specs.append(spec) or subprocess.CompletedProcess([str(py)], 0, "", ""),
+    )
+    monkeypatch.setattr(
+        runtime_installer,
+        "_pip_install",
+        lambda py, spec, *, cwd: full_pip_specs.append(spec) or subprocess.CompletedProcess([str(py)], 0, "", ""),
+    )
+    monkeypatch.setattr(
+        runtime_installer,
+        "_fresh_verify",
+        lambda py, *, cwd=None: (True, "2.1.0", None),
+    )
+    monkeypatch.setattr(runtime_installer, "_vector_imports_ok", lambda py, *, cwd=None: True)
+
+    res = runtime_installer.install_runtime(
+        expected_version="2.1.0", home=tmp_path, base_python="python-test"
+    )
+    assert res.ok is True
+    assert no_deps_specs == ["paperforge==2.1.0"]
+    assert full_pip_specs == []
+    assert "fast_patch_deps_reused" in res.actions_taken
+    new_root = Path(res.environment_root)
+    new_sp = new_root / ("Lib/site-packages" if os.name == "nt" else "lib/python3.12/site-packages")
+    assert (new_sp / "openai" / "__init__.py").is_file()
+    assert not (new_sp / "paperforge" / "__init__.py").exists()
+
+    # Decoupled min_engine_version accepts newer plugin patches
+    status = runtime_installer.inspect_runtime(
+        home=tmp_path, expected_version="2.1.4", min_engine_version="2.1.0", base_python="python-test"
+    )
+    assert status["runtime_ready"] is True
+    assert status["compatible"] is True
+    assert status["deps_lock_matches"] is True
+
+
+def test_install_runtime_bootstraps_via_uv_when_no_system_python(tmp_path: Path, monkeypatch) -> None:
+    runtime_dir = pointer_dir(tmp_path)
+    managed_py = runtime_dir / "python" / "cpython-3.12" / ("python.exe" if os.name == "nt" else "bin/python3")
+    managed_py.parent.mkdir(parents=True, exist_ok=True)
+    managed_py.write_bytes(b"uv-py")
+
+    monkeypatch.setattr(runtime_installer, "discover_base_python", lambda *a, **kw: None)
+    monkeypatch.setattr(runtime_installer, "discover_uv", lambda *a, **kw: None)
+    monkeypatch.setattr(runtime_installer, "ensure_uv", lambda *a, **kw: "uv-test")
+    monkeypatch.setattr(runtime_installer, "bootstrap_uv_python", lambda *a, **kw: str(managed_py))
+
+    def fake_uv_venv(uv_exe: str, candidate_dir: Path, *, python=None, runtime_dir: Path, run_fn=None):
+        py = candidate_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        py.parent.mkdir(parents=True, exist_ok=True)
+        py.write_bytes(b"venv-py")
+        return subprocess.CompletedProcess([uv_exe], 0, "", "")
+
+    uv_specs: list[str] = []
+    monkeypatch.setattr(runtime_installer, "uv_create_venv", fake_uv_venv)
+    monkeypatch.setattr(
+        runtime_installer,
+        "uv_pip_install",
+        lambda uv_exe, py, spec, *, runtime_dir, no_deps=False, run_fn=None: uv_specs.append(spec)
+        or subprocess.CompletedProcess([uv_exe], 0, "", ""),
+    )
+    monkeypatch.setattr(runtime_installer, "_fresh_verify", lambda py, *, cwd=None: (True, "2.1.0", None))
+    monkeypatch.setattr(runtime_installer, "_vector_imports_ok", lambda py, *, cwd=None: True)
+
+    res = runtime_installer.install_runtime(expected_version="2.1.0", home=tmp_path)
+    assert res.ok is True
+    assert uv_specs == ["paperforge[vector]==2.1.0"]
+    ptr = read_pointer(home=tmp_path)
+    assert ptr is not None
+    assert ptr.get("installer_backend") == "uv"
+    assert ptr.get("python_source") == "uv_managed"
+
