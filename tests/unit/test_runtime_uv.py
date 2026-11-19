@@ -47,3 +47,75 @@ def test_safe_extract_uv_binary_extracts_exact_executable_from_zip(tmp_path: Pat
     assert dest.read_bytes() == b"uv-binary-bytes"
     assert not (tmp_path / "evil.txt").exists()
     assert not (tmp_path.parent / "evil.txt").exists()
+
+
+def test_pinned_uv_checksums_and_fail_closed_verification(tmp_path: Path, monkeypatch) -> None:
+    import hashlib
+
+    import pytest
+
+    assert runtime_uv.UV_VERSION == "0.13.9"
+    assert len(runtime_uv.UV_ASSET_SHA256) == 6
+    for digest in runtime_uv.UV_ASSET_SHA256.values():
+        assert len(digest) == 64
+        assert digest == digest.lower()
+
+    urls = runtime_uv.uv_download_urls(system="Linux", machine="x86_64")
+    assert all("/releases/download/0.13.9/" in u for u in urls)
+    assert all("latest" not in u for u in urls)
+
+    # Build a valid small zip archive containing uv / uv.exe
+    buf = io.BytesIO()
+    exe_name = "uv.exe" if os.name == "nt" else "uv"
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr(exe_name, b"trusted-uv-payload")
+    good_zip = buf.getvalue()
+    good_sha = hashlib.sha256(good_zip).hexdigest()
+
+    # Checksum mismatch raises Fail-Closed without extracting
+    with pytest.raises(RuntimeError, match="checksum mismatch"):
+        runtime_uv.verify_uv_archive_sha256(b"tampered", "uv-x86_64-pc-windows-msvc.zip")
+
+    # ensure_uv skips poisoned mirror 1 and accepts verified mirror 2
+    monkeypatch.setattr(runtime_uv.shutil, "which", lambda _name: None)
+    asset_name, _ = runtime_uv.uv_asset_name()
+    monkeypatch.setitem(runtime_uv.UV_ASSET_SHA256, asset_name, good_sha)
+    if asset_name.endswith(".tar.gz"):
+        import tarfile
+
+        tbuf = io.BytesIO()
+        with tarfile.open(fileobj=tbuf, mode="w:gz") as tf:
+            info = tarfile.TarInfo(name=exe_name)
+            data = b"trusted-uv-payload"
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+        good_payload = tbuf.getvalue()
+        monkeypatch.setitem(
+            runtime_uv.UV_ASSET_SHA256, asset_name, hashlib.sha256(good_payload).hexdigest()
+        )
+    else:
+        good_payload = good_zip
+
+    responses = [b"poisoned-binary-payload", good_payload]
+
+    class _Resp:
+        def __init__(self, data: bytes) -> None:
+            self._data = data
+
+        def read(self) -> bytes:
+            return self._data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    monkeypatch.setattr(
+        runtime_uv.urllib.request,
+        "urlopen",
+        lambda req, timeout=45: _Resp(responses.pop(0)),
+    )
+    resolved = runtime_uv.ensure_uv(tmp_path, allow_download=True)
+    assert resolved is not None
+    assert Path(resolved).read_bytes() == b"trusted-uv-payload"

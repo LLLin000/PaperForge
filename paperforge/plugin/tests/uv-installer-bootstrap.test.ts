@@ -39,7 +39,9 @@ describe("zero-Python uv installer bootstrapper", () => {
     expect(script).toContain("UV_CACHE_DIR");
     expect(script).toContain("UV_PYTHON_INSTALL_DIR");
     expect(script).toContain("UV_LINK_MODE = 'hardlink'");
-    expect(script).toContain("astral-sh/uv/releases/latest/download/uv-");
+    expect(script).toContain("astral-sh/uv/releases/download/0.13.9/uv-");
+    expect(script).not.toContain("releases/latest/download");
+    expect(script).toContain("Get-FileHash -Algorithm SHA256");
     expect(script).toContain(
       "https://registry.npmmirror.com/-/binary/python-build-standalone"
     );
@@ -64,6 +66,9 @@ describe("zero-Python uv installer bootstrapper", () => {
     });
     expect(script).toContain("#!/bin/sh");
     expect(script).not.toContain("trap 'fail' ERR");
+    expect(script).not.toContain("releases/latest/download");
+    expect(script).toContain("astral-sh/uv/releases/download/0.13.9/uv-");
+    expect(script).toContain("verify_sha256");
     expect(script).toContain("trap on_exit EXIT");
     expect(script).toContain("x86_64-unknown-linux-gnu.tar.gz");
     expect(script).toContain("paperforge[vector]==2.0.0rc6");
