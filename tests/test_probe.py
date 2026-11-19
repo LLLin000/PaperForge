@@ -1791,3 +1791,23 @@ def test_persisted_ocr_is_history_not_live_worker(tmp_path, monkeypatch):
     assert result["activity_state"] == "idle"
     assert result["historical_activity"] == {"current": 0, "total": 1, "unsettled": 1}
     assert meta.read_text(encoding="utf-8") == original
+
+
+def test_probe_installation_accepts_ui_patch_when_min_engine_satisfied(tmp_path, monkeypatch):
+    from paperforge import __version__ as pf_ver
+    from paperforge.probes.installation import probe_installation
+
+    py_exe = tmp_path / "python.exe"
+    py_exe.write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        "paperforge.runtime_pointer.read_pointer",
+        lambda: {"python_path": str(py_exe), "paperforge_version": pf_ver, "environment_root": str(tmp_path), "schema_version": 1},
+    )
+
+    ready_env = probe_installation(tmp_path, expected_version="2.9.9", min_engine_version=pf_ver)
+    assert ready_env["capability_state"] == "ready"
+    assert ready_env["reason"]["code"] == "installation.ready"
+
+    stale_env = probe_installation(tmp_path, expected_version="9.9.9", min_engine_version="9.9.0")
+    assert stale_env["capability_state"] == "needs_action"
+    assert stale_env["reason"]["code"] == "installation.version_mismatch"

@@ -776,6 +776,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--expected-version",
         help="Expected PaperForge package version; installation probe reports a mismatch",
     )
+    p_probe.add_argument(
+        "--min-engine-version",
+        help="Minimum compatible PaperForge engine version declared by the client",
+    )
 
 
     # Runtime lifecycle is independent of any Obsidian vault.
@@ -791,6 +795,7 @@ def build_parser() -> argparse.ArgumentParser:
     ):
         command = runtime_sub.add_parser(action, help=description)
         command.add_argument("--expected-version", metavar="VERSION")
+        command.add_argument("--min-engine-version", metavar="VERSION")
         command.add_argument("--base-python", metavar="PYTHON")
         command.add_argument("--wheel", metavar="WHEEL", help="Install an explicit .whl file")
         command.add_argument("--json", action="store_true", help="Output result as JSON")
@@ -799,6 +804,7 @@ def build_parser() -> argparse.ArgumentParser:
         "status", help="Report the active managed runtime without changing it"
     )
     p_runtime_status.add_argument("--expected-version", metavar="VERSION")
+    p_runtime_status.add_argument("--min-engine-version", metavar="VERSION")
     p_runtime_status.add_argument("--base-python", metavar="PYTHON")
     p_runtime_status.add_argument("--json", action="store_true", help="Output result as JSON")
 
