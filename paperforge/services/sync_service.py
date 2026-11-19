@@ -143,7 +143,10 @@ class SyncService:
             return []
 
         rows = []
-        for f in sorted(exports_dir.glob("*.json")):
+        json_files = sorted(
+            p for p in exports_dir.iterdir() if p.is_file() and p.suffix.lower() == ".json"
+        )
+        for f in json_files:
             try:
                 rows.extend(load_export_rows(f))
             except Exception as e:
@@ -384,6 +387,17 @@ class SyncService:
                 rows = self.load_exports()
             if not rows:
                 _export_code = "BBT_EXPORT_NOT_FOUND"
+        except PermissionError as exc:
+            return PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.SYNC_FAILED,
+                    message=f"Permission denied reading exports directory: {exc}",
+                    details={"phase": "load_exports", "exception_type": type(exc).__name__},
+                ),
+            )
         except Exception:
             _export_code = "BBT_EXPORT_INVALID"
 

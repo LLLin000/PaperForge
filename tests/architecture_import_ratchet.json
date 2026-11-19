@@ -71,9 +71,9 @@
       "735:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
-      "241:paperforge.worker._utils",
-      "428:paperforge.worker._domain",
-      "517:paperforge.worker._utils"
+      "244:paperforge.worker._utils",
+      "442:paperforge.worker._domain",
+      "531:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"

@@ -178,6 +178,52 @@ def runtime_abi_tag() -> str:
     return f"py{sys.version_info[0]}{sys.version_info[1]}-{sys.platform}-{mach}"
 
 
+_REQ_CLAUSE_RE = re.compile(r"^\s*(===|==|~=|>=|<=|!=|>|<)\s*([^\s,;]+)\s*$")
+_REQ_SPLIT_RE = re.compile(r"^([A-Za-z0-9._-]+)(?:\[[^\]]*\])?\s*(.*)$")
+
+
+def _clause_satisfied(installed_ver: str, op: str, target_ver: str) -> bool:
+    """Evaluate a single PEP 440 specifier clause without external dependencies."""
+    if op == "===":
+        return installed_ver.strip() == target_ver.strip()
+    try:
+        inst_t = parse_release_tuple(installed_ver)
+        tgt_t = parse_release_tuple(target_ver)
+    except ValueError:
+        return True
+    if op == "==":
+        return inst_t == tgt_t
+    if op == "!=":
+        return inst_t != tgt_t
+    if op == ">=":
+        return inst_t >= tgt_t
+    if op == "<=":
+        return inst_t <= tgt_t
+    if op == ">":
+        return inst_t > tgt_t
+    if op == "<":
+        return inst_t < tgt_t
+    if op == "~=":
+        parts = [int(p) for p in re.split(r"[^0-9]+", target_ver.strip()) if p][:3]
+        upper = (parts[0], parts[1] + 1, 0, 0, 0, 0) if len(parts) >= 2 else (parts[0] + 1, 0, 0, 0, 0, 0)
+        return tgt_t <= inst_t < upper
+    return True
+
+
+def _req_specifiers_satisfied(installed_ver: str, spec_expr: str) -> bool:
+    """Evaluate comma-separated PEP 440 specifiers cleanly using stdlib only."""
+    for clause in spec_expr.split(","):
+        clause = clause.strip()
+        if not clause:
+            continue
+        m = _REQ_CLAUSE_RE.match(clause)
+        if not m:
+            continue
+        if not _clause_satisfied(installed_ver, m.group(1), m.group(2)):
+            return False
+    return True
+
+
 def installed_deps_satisfy_declarations(
     site_packages: Path,
     pyproject_path: Path | None = None,
@@ -202,24 +248,27 @@ def installed_deps_satisfy_declarations(
     candidate = pyproject_path or (Path(__file__).resolve().parents[2] / "pyproject.toml")
     if not candidate.is_file():
         return True
-    try:
-        from packaging.requirements import Requirement
-    except ImportError:
-        return True
 
     data = tomllib.loads(candidate.read_text(encoding="utf-8"))
     project = data.get("project") or {}
     opt = project.get("optional-dependencies") or {}
     raw_reqs = [*(project.get("dependencies") or []), *(opt.get("vector") or [])]
     for raw in raw_reqs:
-        try:
-            req = Requirement(str(raw))
-        except Exception:  # noqa: BLE001
+        req_str = str(raw).strip()
+        if not req_str:
             continue
-        if req.marker and not req.marker.evaluate({"extra": "vector"}):
+        parts = req_str.split(";", 1)
+        marker = parts[1].strip().lower() if len(parts) > 1 else ""
+        if "legacy-vector" in marker or ("extra" in marker and "vector" not in marker):
             continue
-        norm_name = re.sub(r"[-_.]+", "-", req.name).lower()
+        m = _REQ_SPLIT_RE.match(parts[0].strip())
+        if not m:
+            continue
+        norm_name = re.sub(r"[-_.]+", "-", m.group(1)).lower()
+        spec_expr = m.group(2).strip()
         ver = installed_versions.get(norm_name)
-        if not ver or not req.specifier.contains(ver, prereleases=True):
+        if not ver:
+            return False
+        if spec_expr and not _req_specifiers_satisfied(ver, spec_expr):
             return False
     return True
