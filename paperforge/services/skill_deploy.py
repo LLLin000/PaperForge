@@ -6,15 +6,64 @@ All deployments are vault-local only.
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import shutil
 from pathlib import Path
-
-logger = logging.getLogger(__name__)
 
 # Skill target dir is caller-chosen (agents know their harness).  Only the
 # shared default lives here, from paperforge.config.
 from paperforge.config import AGENT_SHARED_SKILL_DIR
+
+logger = logging.getLogger(__name__)
+
+
+def _skill_state_path(vault: Path) -> Path:
+    try:
+        from paperforge.config import paperforge_paths
+
+        return paperforge_paths(vault)["paperforge"] / "indexes" / "skill-deploy-state.json"
+    except Exception:  # noqa: BLE001 — fallback when called on unconfigured vault
+        for cand in (vault / ".paperforge", vault / "System" / "PaperForge"):
+            if cand.exists():
+                return cand / "indexes" / "skill-deploy-state.json"
+        return vault / ".paperforge" / "indexes" / "skill-deploy-state.json"
+
+
+def _read_skill_state(vault: Path) -> dict:
+    path = _skill_state_path(vault)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_skill_state(vault: Path, target_rel: str, digest: str) -> None:
+    if not digest:
+        return
+    try:
+        from paperforge import __version__ as pf_version
+    except Exception:  # noqa: BLE001
+        pf_version = ""
+    path = _skill_state_path(vault)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        state = _read_skill_state(vault)
+        targets = state.get("targets")
+        if not isinstance(targets, dict):
+            targets = {}
+        targets[target_rel] = {
+            "deployed_digest": digest,
+            "paperforge_version": pf_version,
+        }
+        state["targets"] = targets
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(str(tmp), str(path))
+    except OSError:
+        pass
 
 
 def _resolve_source_root() -> Path:
@@ -100,6 +149,8 @@ def deploy_skills(
                 skill_deployed = True
             except Exception as e:
                 errors.append(f"Skill deploy failed: {e}")
+        if skill_deployed and not errors:
+            _write_skill_state(vault, target_dir, _skill_tree_digest(src_skill))
     else:
         errors.append("Skills source not found in package")
 
@@ -122,6 +173,73 @@ def deploy_skills(
         "already_exists": already_exists,
         "noop": noop,
         "errors": errors,
+    }
+
+
+def sync_skills_if_unmodified(
+    vault: Path,
+    target_dir: str | None = None,
+) -> dict:
+    """Safely upgrade deployed Vault skills only if untouched since last official deploy."""
+    target_rel = target_dir or AGENT_SHARED_SKILL_DIR
+    target = _validate_target(vault, target_rel)
+    if target is None:
+        return {
+            "synced": False,
+            "status": "error",
+            "target_dir": target_rel,
+            "errors": [f"target dir must stay inside the vault (got {target_rel!r})"],
+        }
+
+    source_root = _resolve_source_root()
+    src_skill = source_root / "skills" / "paperforge"
+    if not src_skill.exists():
+        return {
+            "synced": False,
+            "status": "error",
+            "target_dir": target_rel,
+            "errors": ["Skills source not found in package"],
+        }
+
+    dst_skill = target / "paperforge"
+    if not dst_skill.exists():
+        return {
+            "synced": False,
+            "status": "not_deployed",
+            "target_dir": target_rel,
+            "errors": [],
+        }
+
+    src_digest = _skill_tree_digest(src_skill)
+    dst_digest = _skill_tree_digest(dst_skill)
+    if dst_digest == src_digest:
+        _write_skill_state(vault, target_rel, src_digest)
+        return {
+            "synced": False,
+            "status": "up_to_date",
+            "target_dir": target_rel,
+            "errors": [],
+        }
+
+    state = _read_skill_state(vault)
+    targets = state.get("targets") if isinstance(state.get("targets"), dict) else {}
+    recorded = targets.get(target_rel) if isinstance(targets, dict) else None
+    recorded_digest = str(recorded.get("deployed_digest", "") or "") if isinstance(recorded, dict) else ""
+
+    if recorded_digest and dst_digest == recorded_digest:
+        res = deploy_skills(vault, overwrite=True, target_dir=target_rel)
+        return {
+            "synced": bool(res.get("skill_deployed") and not res.get("errors")),
+            "status": "updated" if not res.get("errors") else "error",
+            "target_dir": target_rel,
+            "errors": list(res.get("errors") or []),
+        }
+
+    return {
+        "synced": False,
+        "status": "customized_preserved",
+        "target_dir": target_rel,
+        "errors": [],
     }
 
 

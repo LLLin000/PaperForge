@@ -88,3 +88,52 @@ def test_skill_deploy_cli_preserves_and_replaces_only_managed_files(tmp_path: Pa
     errors = escaped_data["errors"]
     assert isinstance(errors, list) and errors
     assert not (tmp_path / "escape").exists()
+
+
+def test_skill_sync_auto_updates_unmodified_and_preserves_customized(tmp_path: Path, monkeypatch) -> None:
+    from paperforge.services.skill_deploy import (
+        _skill_tree_digest,
+        _write_skill_state,
+        deploy_skills,
+        sync_skills_if_unmodified,
+    )
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+
+    # Initial deploy writes shipped digest ledger
+    deployed = deploy_skills(vault)
+    assert deployed["skill_deployed"] is True
+    dst_skill = vault / ".agents" / "skills" / "paperforge" / "SKILL.md"
+    assert sync_skills_if_unmodified(vault)["status"] == "up_to_date"
+
+    # Simulate an older untouched official skill version on disk (hash == recorded)
+    dst_skill.write_text("# older official release", encoding="utf-8")
+    _write_skill_state(vault, ".agents/skills", _skill_tree_digest(dst_skill.parent))
+    synced = sync_skills_if_unmodified(vault)
+    assert synced["status"] == "updated"
+    assert synced["synced"] is True
+    assert "# older official release" not in dst_skill.read_text(encoding="utf-8")
+
+    # User customizes the deployed skill -> must be preserved, never overwritten
+    dst_skill.write_text("# user custom skill notes", encoding="utf-8")
+    preserved = sync_skills_if_unmodified(vault)
+    assert preserved["status"] == "customized_preserved"
+    assert preserved["synced"] is False
+    assert dst_skill.read_text(encoding="utf-8") == "# user custom skill notes"
+
+    # CLI route `paperforge skill sync --json` works cleanly too
+    repo_root = Path(__file__).resolve().parents[2]
+    proc = subprocess.run(
+        [sys.executable, "-m", "paperforge", "--vault", str(vault), "skill", "sync", "--json"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(proc.stdout)
+    assert payload["ok"] is True
+    assert payload["status"] == "customized_preserved"

@@ -71,6 +71,9 @@ def publish_pointer(
     python_path: str | None = None,
     environment_root: str | None = None,
     paperforge_version: str | None = None,
+    deps_lock_hash: str | None = None,
+    installer_backend: str | None = None,
+    python_source: str | None = None,
     home: Path | None = None,
 ) -> Path:
     """Atomically publish the runtime pointer (tmp + os.replace) — the ONLY
@@ -94,7 +97,15 @@ def publish_pointer(
         except Exception:  # noqa: BLE001 - metadata is best-effort
             paperforge_version = __version__
 
-    payload = {
+    if deps_lock_hash is None:
+        try:
+            from paperforge.core.versioning import compute_deps_lock_hash
+
+            deps_lock_hash = compute_deps_lock_hash() or None
+        except Exception:  # noqa: BLE001 - best-effort additive fingerprint
+            deps_lock_hash = None
+
+    payload: dict[str, object] = {
         "schema_version": POINTER_SCHEMA_VERSION,
         "python_path": python_path or sys.executable,
         "environment_root": environment_root or str(
@@ -102,6 +113,12 @@ def publish_pointer(
         ),
         "paperforge_version": paperforge_version,
     }
+    if deps_lock_hash:
+        payload["deps_lock_hash"] = deps_lock_hash
+    if installer_backend:
+        payload["installer_backend"] = installer_backend
+    if python_source:
+        payload["python_source"] = python_source
     path = pointer_path(home)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".json.tmp")
