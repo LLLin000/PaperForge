@@ -11540,3 +11540,528 @@ input[type="checkbox"].pf-switch:checked::after {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   v4 Obsidian-Native Unification & Scoped Settings / Minimal Sidebar Layer
+   ========================================================================== */
+
+.pf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pf-is-filtered-out {
+  display: none !important;
+}
+
+/* ── 1. Scoped Settings & Modal Styles (zero host container leaks) ── */
+.pf-settings-scope .paperforge-settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pf-settings-scope .paperforge-settings-tab {
+  padding: 6px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.pf-settings-scope .paperforge-settings-tab--active {
+  color: var(--text-accent);
+  border-bottom-color: var(--text-accent);
+}
+
+.pf-settings-scope .paperforge-tab-content {
+  display: none;
+}
+
+.pf-settings-scope .paperforge-tab-content--active {
+  display: block;
+}
+
+.pf-settings-scope .paperforge-skills-collapse-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px 0;
+  margin: 0;
+}
+
+.pf-settings-scope .paperforge-skills-collapse-header h4 {
+  margin: 0;
+}
+
+.pf-settings-scope .paperforge-skills-collapse-content {
+  margin: 0;
+  padding: 0;
+}
+
+.pf-settings-scope .paperforge-skills-group {
+  margin-bottom: 10px;
+}
+
+.pf-settings-scope .paperforge-skills-group:last-child {
+  margin-bottom: 0;
+}
+
+.pf-settings-scope .paperforge-release-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.pf-settings-scope .paperforge-release-header {
+  margin-bottom: 8px;
+}
+
+.pf-settings-scope .paperforge-release-date {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.pf-settings-scope .paperforge-release-section {
+  margin-bottom: 6px;
+}
+
+.pf-settings-scope .paperforge-release-label {
+  font-weight: 600;
+  color: var(--text-accent);
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+
+.pf-settings-scope .paperforge-release-item {
+  font-size: 13px;
+  margin-left: 8px;
+  color: var(--text-muted);
+}
+
+.pf-settings-scope .paperforge-release-item-bold {
+  font-size: 13px;
+  margin-left: 8px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.paperforge-modal .paperforge-release-recommended,
+.pf-settings-scope .paperforge-release-recommended {
+  background: rgba(var(--color-orange-rgb, 255, 166, 0), 0.08);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.pf-settings-scope .paperforge-manual-links {
+  margin-top: 8px;
+}
+
+.pf-settings-scope .paperforge-manual-links a {
+  color: var(--text-accent);
+}
+
+.paperforge-modal .paperforge-modal-item {
+  font-size: 13px;
+  margin-left: 8px;
+  color: var(--text-muted);
+}
+
+.pf-settings-scope .paperforge-migration-warning {
+  border: 1px solid var(--text-warning);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: rgba(var(--color-yellow-rgb, 255, 208, 0), 0.08);
+  color: var(--text-warning);
+  font-size: 13px;
+}
+
+.pf-settings-scope .paperforge-migration-warning strong {
+  color: var(--text-warning);
+}
+
+.pf-settings-scope .paperforge-migration-warning code {
+  background: var(--background-modifier-border);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.pf-settings-scope .pf-maintenance-inbox {
+  margin-bottom: 20px;
+  container-type: inline-size;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 12px 0;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-summary {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--pf-border);
+  border-radius: 8px;
+  background: var(--pf-surface);
+  flex-wrap: wrap;
+}
+
+@container (max-width: 730px) {
+  .pf-settings-scope .pf-maintenance-inbox-item {
+    flex-direction: column;
+  }
+  .pf-settings-scope .pf-maintenance-inbox-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item--dismissed {
+  opacity: 0.45;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-module {
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-accent);
+  padding: 0;
+  font-size: inherit;
+  text-align: left;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-module:hover {
+  text-decoration: underline;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-reason {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-activity {
+  font-size: 11px;
+  color: var(--text-accent);
+  margin-top: 2px;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--background-modifier-border);
+  white-space: nowrap;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-badge--warn {
+  background: rgba(var(--color-yellow-rgb), 0.15);
+  color: var(--text-warning);
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-badge--error {
+  background: rgba(var(--color-red-rgb), 0.12);
+  color: var(--text-error);
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-badge--unknown {
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-action {
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.pf-settings-scope .pf-maintenance-inbox-item-dismiss {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.paperforge-modal .paperforge-confirm-effect {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.paperforge-modal .paperforge-confirm-effect-label {
+  font-weight: 600;
+}
+
+.paperforge-modal .paperforge-confirm-actions,
+.paperforge-modal .paperforge-issue-draft-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.paperforge-modal .paperforge-issue-draft-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.paperforge-modal .paperforge-issue-draft-field {
+  margin-bottom: 12px;
+}
+
+.paperforge-modal .paperforge-issue-draft-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.paperforge-modal .paperforge-issue-draft-input,
+.paperforge-modal .paperforge-issue-draft-textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.paperforge-modal .paperforge-issue-draft-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.paperforge-modal .paperforge-issue-draft-preview {
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.paperforge-modal .paperforge-issue-draft-preview-label {
+  font-weight: 600;
+}
+
+.paperforge-modal .paperforge-issue-draft-included {
+  color: var(--text-success);
+  margin-bottom: 2px;
+}
+
+.paperforge-modal .paperforge-issue-draft-redacted {
+  color: var(--text-warning);
+}
+
+.pf-settings-scope .pf-diag-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.pf-settings-scope .pf-diag-table tr + tr {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.pf-settings-scope .pf-diag-label {
+  padding: 4px 8px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  vertical-align: top;
+  width: 140px;
+}
+
+.pf-settings-scope .pf-diag-value {
+  padding: 4px 8px;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+}
+
+.pf-setup-wizard-modal {
+  width: min(760px, 92vw);
+}
+
+/* ── 2. Control Center Topbar Quick-Filter Search (Obsidian Search Field) ── */
+.pf-cc-topbar .pf-cc-quick-filter {
+  margin-left: auto;
+  flex: 0 1 220px;
+  min-width: 150px;
+}
+
+.pf-cc-topbar .pf-cc-quick-filter input.pf-cc-filter-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 10px 0 28px;
+  font-size: 12.5px;
+  border-radius: 7px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-elevated);
+  color: var(--pf-text);
+  box-shadow: var(--pf-well-inset);
+}
+
+.pf-cc-topbar .pf-cc-quick-filter input.pf-cc-filter-input:focus {
+  border-color: var(--pf-accent);
+  background: var(--pf-surface);
+  outline: none;
+}
+
+/* ── 3. Companion Sidebar: Native .nav-header & Flat Minimal Hairline Sections ── */
+.paperforge-status-panel .paperforge-header.nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 2px 6px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.paperforge-status-panel .paperforge-nav-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.paperforge-status-panel .paperforge-nav-actions .clickable-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--pf-ease-out),
+    color 140ms var(--pf-ease-out);
+}
+
+.paperforge-status-panel .paperforge-nav-actions .clickable-icon:hover {
+  background: var(--pf-hover);
+  color: var(--pf-text);
+}
+
+/* Flat Minimal-Theme sidebar rhythm (replaces nested stacked boxes) */
+.paperforge-status-panel
+  :is(
+    .paperforge-paper-overview,
+    .pf-living-memory-card,
+    .paperforge-discussion-card,
+    .paperforge-technical-details,
+    .paperforge-library-snapshot,
+    .paperforge-system-status,
+    .paperforge-global-actions,
+    .paperforge-issue-summary,
+    .paperforge-workflow-overview,
+    .paperforge-ocr-section,
+    .paperforge-collection-actions
+  ) {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--pf-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 12px 0 !important;
+}
+
+.paperforge-status-panel .paperforge-next-step-card {
+  background: var(--pf-elevated) !important;
+  border: 1px solid var(--pf-border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  margin: 10px 0 !important;
+  padding: 10px 12px !important;
+}
+
+.paperforge-status-panel .paperforge-paper-header {
+  padding: 2px 0 8px;
+}
+
+.paperforge-status-panel .paperforge-status-strip {
+  padding: 0 0 12px;
+  margin: 0;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.paperforge-status-panel .paperforge-paper-overview-header,
+.paperforge-status-panel .pf-living-memory-header,
+.paperforge-status-panel .paperforge-discussion-header {
+  padding: 0;
+  margin-bottom: 6px;
+  border: none;
+}
+
+.paperforge-status-panel .paperforge-expand-icon svg {
+  transition: transform 160ms var(--pf-ease-in-out);
+}
+
+.paperforge-status-panel .paperforge-expand-icon.is-expanded svg {
+  transform: rotate(180deg);
+}
+
+.paperforge-status-panel .paperforge-search-section {
+  padding-top: 12px;
+}
+
+.paperforge-status-panel .paperforge-search-input-row {
+  height: 32px;
+  border-radius: 7px;
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+  box-shadow: var(--pf-well-inset);
+}
+
+.paperforge-status-panel .paperforge-search-input-row:focus-within {
+  border-color: var(--pf-accent);
+  background: var(--pf-surface);
+}

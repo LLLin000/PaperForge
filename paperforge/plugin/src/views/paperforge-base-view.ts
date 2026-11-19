@@ -9,6 +9,10 @@ import type {
   PaperForgeClient,
 } from "../client/paperforge-client";
 import { createPfIconBtn, setPfIcon } from "./icons";
+import {
+  bindObsidianHoverPreview,
+  openUnifiedPaperContextMenu,
+} from "./paper-interactions";
 
 export interface PaperForgeBasesHost {
   app: obsidian.App;
@@ -22,6 +26,10 @@ export interface PaperForgeBasesHost {
     paperKey: string,
     opts?: { page?: number; annId?: string }
   ): Promise<void>;
+  openPaperSplitReading?: (
+    paperKey: string,
+    notePath?: string
+  ) => Promise<void>;
   requestOcrRun(scopeOrSkipConfirm?: ActionScope | boolean): Promise<void>;
   triggerManualSync(): void;
   openOcrDiagnostic(paperKey?: string): void;
@@ -537,6 +545,12 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           e.stopPropagation();
           this._openNote(row.main_note_path);
         });
+        bindObsidianHoverPreview(
+          this.app ?? this.plugin.app,
+          titleBtn,
+          "paperforge",
+          row.main_note_path
+        );
         break;
       }
       case "first_author":
@@ -613,52 +627,31 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   }
 
   private _openRowContextMenu(event: MouseEvent, row: BasePaperRowDto): void {
-    const MenuCtor = (obsidian as Record<string, unknown>).Menu as
-      | (new () => {
-          addItem: (
-            cb: (item: {
-              setTitle: (t: string) => unknown;
-              setIcon?: (i: string) => unknown;
-              onClick: (cb: () => void) => unknown;
-            }) => void
-          ) => void;
-          showAtMouseEvent: (e: MouseEvent) => void;
-        })
-      | undefined;
-    if (typeof MenuCtor !== "function") return;
-    event.preventDefault();
-    const menu = new MenuCtor();
-    menu.addItem((item) => {
-      item.setTitle("打开文献笔记");
-      item.onClick(() => this._openNote(row.main_note_path));
+    openUnifiedPaperContextMenu(event, {
+      key: row.zotero_key,
+      title: row.title,
+      notePath: row.main_note_path,
+      hasPdf: row.has_pdf,
+      needsDiagnostic:
+        row.needs_diagnostic ||
+        row.ocr_status === "failed" ||
+        row.ocr_status === "done_incomplete",
+      onOpenNote: () => this._openNote(row.main_note_path),
+      onOpenPdf: () => void this.plugin.openPaperPdf(row.zotero_key),
+      onOpenSplit: this.plugin.openPaperSplitReading
+        ? () =>
+            void this.plugin.openPaperSplitReading!(
+              row.zotero_key,
+              row.main_note_path
+            )
+        : undefined,
+      onRunOcr: () =>
+        void this.plugin.requestOcrRun({
+          kind: "papers",
+          keys: [row.zotero_key],
+        }),
+      onOpenDiagnostic: () => this.plugin.openOcrDiagnostic(row.zotero_key),
     });
-    if (row.has_pdf) {
-      menu.addItem((item) => {
-        item.setTitle("打开 PDF");
-        item.onClick(() => void this.plugin.openPaperPdf(row.zotero_key));
-      });
-    }
-    menu.addItem((item) => {
-      item.setTitle(t("base_run_selected_ocr") || "解析全文");
-      item.onClick(
-        () =>
-          void this.plugin.requestOcrRun({
-            kind: "papers",
-            keys: [row.zotero_key],
-          })
-      );
-    });
-    if (
-      row.needs_diagnostic ||
-      row.ocr_status === "failed" ||
-      row.ocr_status === "done_incomplete"
-    ) {
-      menu.addItem((item) => {
-        item.setTitle("查看解析诊断");
-        item.onClick(() => this.plugin.openOcrDiagnostic(row.zotero_key));
-      });
-    }
-    menu.showAtMouseEvent(event);
   }
 
   render(): void {

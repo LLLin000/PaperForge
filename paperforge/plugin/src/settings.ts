@@ -262,6 +262,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       resources_dir: s.resources_dir || "Resources",
       literature_dir: s.literature_dir || "Literature",
       base_dir: s.base_dir || "Bases",
+      skill_dir: String(s.skill_dir || ".agents/skills"),
       zotero_data_dir: s.zotero_data_dir || "",
     };
   }
@@ -296,7 +297,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._displayInProgress = true;
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.classList?.add("pf-settings-shell");
+    containerEl.classList?.add("pf-settings-shell", "pf-settings-scope");
     this._refreshPfConfig();
     if (this._initialDisplay) {
       this._restoreNavMemory();
@@ -322,80 +323,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (this.activeTab === "help" && !this._attemptedProbes.has("help")) {
       this._attemptedProbes.add("help");
       this._probeModule("help");
-    }
-
-    // Inject tab CSS once
-    if (!document.getElementById("paperforge-tab-styles")) {
-      const style = document.createElement("style");
-      style.id = "paperforge-tab-styles";
-      style.textContent = `
-                .paperforge-settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--background-modifier-border); }
-                .paperforge-settings-tab { padding: 6px 16px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-muted); }
-                .paperforge-settings-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
-                .paperforge-tab-content { display: none; }
-                .paperforge-tab-content--active { display: block; }
-                .paperforge-skills-collapse-header { display: flex !important; align-items: center; cursor: pointer; padding: 6px 0 !important; margin: 0 !important; }
-                .paperforge-skills-collapse-header h4 { margin: 0 !important; }
-                .paperforge-skills-collapse-content { margin: 0 !important; padding: 0 !important; }
-                .paperforge-skills-group { margin-bottom: 10px; }
-                .paperforge-skills-group:last-child { margin-bottom: 0; }
-                .vertical-tab-content-container { overflow-y: scroll !important; }
-                .paperforge-release-card { border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-                .paperforge-release-header { margin-bottom: 8px; }
-                .paperforge-release-date { color: var(--text-muted); font-size: 12px; }
-                .paperforge-release-section { margin-bottom: 6px; }
-                .paperforge-release-label { font-weight: 600; color: var(--text-accent); margin-bottom: 2px; font-size: 13px; }
-                .paperforge-release-item { font-size: 13px; margin-left: 8px; color: var(--text-muted); }
-                .paperforge-release-item-bold { font-size: 13px; margin-left: 8px; font-weight: 600; color: var(--text-normal); }
-                .paperforge-release-recommended { background: rgba(var(--color-orange-rgb, 255,166,0), 0.08); border-radius: 4px; padding: 6px 8px; }
-                .paperforge-manual-links { margin-top: 8px; }
-                .paperforge-manual-links a { color: var(--text-accent); }
-                .paperforge-modal-item { font-size: 13px; margin-left: 8px; color: var(--text-muted); }
-                .paperforge-migration-warning { border: 1px solid var(--text-warning); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; background: rgba(var(--color-yellow-rgb, 255, 208, 0), 0.08); color: var(--text-warning); font-size: 13px; }
-                .paperforge-migration-warning strong { color: var(--text-warning); }
-                .paperforge-migration-warning code { background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; }
-                .pf-maintenance-inbox { margin-bottom: 24px; container-type: inline-size; }
-                .pf-maintenance-inbox-empty { color: var(--text-muted); font-style: italic; padding: 12px 0; }
-                .pf-maintenance-inbox-summary { font-weight: 600; margin-bottom: 8px; }
-                .pf-maintenance-inbox-list { display: flex; flex-direction: column; gap: 8px; }
-                .pf-maintenance-inbox-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-primary); flex-wrap: wrap; }
-                @container (max-width: 730px) { .pf-maintenance-inbox-item { flex-direction: column; } .pf-maintenance-inbox-item-actions { width: 100%; justify-content: flex-end; } }
-                .pf-maintenance-inbox-item--dismissed { opacity: 0.45; }
-                .pf-maintenance-inbox-item-info { flex: 1; min-width: 0; }
-                .pf-maintenance-inbox-item-module { font-weight: 600; cursor: pointer; background: none; border: none; color: var(--text-accent); padding: 0; font-size: inherit; text-align: left; }
-                .pf-maintenance-inbox-item-module:hover { text-decoration: underline; }
-                .pf-maintenance-inbox-item-reason { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-                .pf-maintenance-inbox-item-activity { font-size: 11px; color: var(--text-accent); margin-top: 2px; }
-                .pf-maintenance-inbox-item-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
-                .pf-maintenance-inbox-item-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--background-modifier-border); white-space: nowrap; }
-                .pf-maintenance-inbox-item-badge--warn { background: rgba(var(--color-yellow-rgb),0.15); color: var(--text-warning); }
-                .pf-maintenance-inbox-item-badge--error { background: rgba(var(--color-red-rgb),0.12); color: var(--text-error); }
-                .pf-maintenance-inbox-item-badge--unknown { background: var(--background-modifier-border); color: var(--text-muted); }
-                .pf-maintenance-inbox-item-action { font-size: 12px; padding: 3px 10px; cursor: pointer; }
-                .pf-maintenance-inbox-item-dismiss { font-size: 11px; padding: 2px 6px; background: none; border: 1px solid var(--background-modifier-border); border-radius: 4px; cursor: pointer; color: var(--text-muted); }
-                .paperforge-confirm-effect { margin: 8px 0; font-size: 13px; }
-                .paperforge-confirm-effect-label { font-weight: 600; }
-                .paperforge-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-                .paperforge-issue-draft-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
-                .paperforge-issue-draft-field { margin-bottom: 12px; }
-                .paperforge-issue-draft-field label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 13px; }
-                .paperforge-issue-draft-input { width: 100%; padding: 6px 8px; border: 1px solid var(--background-modifier-border); border-radius: 4px; font-size: 13px; }
-                .paperforge-issue-draft-textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--background-modifier-border); border-radius: 4px; font-size: 13px; resize: vertical; min-height: 120px; }
-                .paperforge-issue-draft-preview { margin: 12px 0; padding: 8px 12px; background: var(--background-secondary); border-radius: 6px; font-size: 12px; }
-                .paperforge-issue-draft-preview-label { font-weight: 600; }
-                .paperforge-issue-draft-included { color: var(--text-success); margin-bottom: 2px; }
-                .paperforge-issue-draft-redacted { color: var(--text-warning); }
-                .paperforge-issue-draft-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-                .pf-diag-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                .pf-diag-table tr + tr { border-top: 1px solid var(--background-modifier-border); }
-                .pf-diag-label { padding: 4px 8px; color: var(--text-muted); white-space: nowrap; vertical-align: top; width: 140px; }
-                .pf-diag-value { padding: 4px 8px; color: var(--text-normal); font-family: var(--font-monospace); }
-                .pf-sr-diagnostics { margin-top: 16px; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; }
-                .pf-sr-diagnostics summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text-muted); }
-                .pf-sr-diagnostics summary:hover { color: var(--text-normal); }
-                .pf-sr-diagnostics-body { margin-top: 8px; }
-            `;
-      document.head.appendChild(style);
     }
 
     // Issue #79: render persisted migration warnings (visible after restart)
@@ -469,6 +396,29 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.display();
       });
     });
+
+    if (onOverview) {
+      const filterWrap = topbar.createDiv({
+        cls: "search-input-container pf-cc-quick-filter",
+      });
+      const filterInput = filterWrap.createEl("input", {
+        cls: "pf-cc-filter-input",
+        attr: {
+          type: "search",
+          placeholder:
+            langFromApp(this.app) === "zh"
+              ? "筛选模块或配置…"
+              : "Filter settings…",
+          "aria-label":
+            langFromApp(this.app) === "zh"
+              ? "筛选模块或配置"
+              : "Filter settings",
+        },
+      }) as HTMLInputElement;
+      filterInput.addEventListener("input", () => {
+        this._applyOverviewQuickFilter(containerEl, filterInput.value);
+      });
+    }
 
     // --- Tab content containers ---
     tabs.forEach((tab) => {
@@ -3893,25 +3843,66 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
-  /** Derive Agent availability from the selected platform's deployed skill. */
-  _getAgentPlaceholderEnvelope(): ProbeEnvelope {
-    const platform = this.plugin.settings.agent_platform || "opencode";
-    const directories: Record<string, string> = {
-      opencode: ".opencode/skills",
-      claude: ".claude/skills",
-      codex: ".codex/skills",
-      cursor: ".cursor/skills",
-      windsurf: ".windsurf/skills",
-      github_copilot: ".github/skills",
-      gemini: ".gemini/skills",
+  private _applyOverviewQuickFilter(
+    containerEl: HTMLElement,
+    rawQuery: string
+  ): void {
+    const q = rawQuery.trim().toLowerCase();
+    const MODULE_KEYWORDS: Record<string, string> = {
+      installation: "runtime python core 环境 安装 更新",
+      library: "zotero bbt pdf sync exports 同步 文献库 路径",
+      ocr: "paddle ocr fulltext 解析 扫描",
+      memory: "vector embedding sqlite search api 向量 检索 认知",
+      agent: "claude codex opencode cursor skill agents 技能",
     };
-    const skill = path.join(
-      this._getVaultBasePath(),
-      directories[platform] ?? directories.opencode,
-      "paperforge",
-      "SKILL.md"
+    const cards = Array.from(
+      containerEl.querySelectorAll<HTMLElement>(
+        ".pf-cc-module-card, .pf-maintenance-inbox-item"
+      )
     );
-    const deployed = fs.existsSync(skill);
+    for (const card of cards) {
+      if (!q) {
+        card.classList.remove("pf-is-filtered-out");
+        card.style.display = "";
+        continue;
+      }
+      const mod = card.getAttribute("data-module") || "";
+      const haystack = (
+        (card.textContent || "") +
+        " " +
+        mod +
+        " " +
+        (MODULE_KEYWORDS[mod] || "")
+      ).toLowerCase();
+      const matched = haystack.includes(q);
+      if (matched) {
+        card.classList.remove("pf-is-filtered-out");
+        card.style.display = "";
+      } else {
+        card.classList.add("pf-is-filtered-out");
+        card.style.display = "none";
+      }
+    }
+  }
+
+  /** Derive Agent availability from the shared .agents/skills or legacy per-platform skill dir. */
+  _getAgentPlaceholderEnvelope(): ProbeEnvelope {
+    const vaultBase = this._getVaultBasePath();
+    const platform = this.plugin.settings.agent_platform || "opencode";
+    const configuredSkillDir = String(
+      this._pfConfig?.skill_dir ||
+        this.plugin.settings.skill_dir ||
+        ".agents/skills"
+    );
+    const legacyDir =
+      AGENT_PLATFORM_SKILL_DIRS[platform] ?? AGENT_PLATFORM_SKILL_DIRS.opencode;
+    const candidateDirs =
+      configuredSkillDir === legacyDir
+        ? [configuredSkillDir]
+        : [configuredSkillDir, legacyDir];
+    const deployed = candidateDirs.some((dir) =>
+      fs.existsSync(path.join(vaultBase, dir, "paperforge", "SKILL.md"))
+    );
     return {
       schema_version: 2,
       module: "agent",

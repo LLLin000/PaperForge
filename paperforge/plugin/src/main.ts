@@ -57,7 +57,10 @@ import {
   PaperForgePdfView,
   type PdfAnnotatorOpenState,
 } from "./views/pdf-annotator";
-import { PaperForgeConfirmModal } from "./views/modals";
+import {
+  PaperForgeConfirmModal,
+  PaperForgeSetupWizardModal,
+} from "./views/modals";
 import {
   applyPathConfigFromList,
   isConfigHydrated,
@@ -439,6 +442,60 @@ export default class PaperForgePlugin extends Plugin {
       name: "Open OCR Workspace",
       callback: () => OcrWorkspaceView.open(this as any),
     });
+    this.addCommand({
+      id: "focus-companion-search",
+      name: "Focus Companion search",
+      callback: async () => {
+        const view = await PaperForgeStatusView.open(this as any);
+        view?._searchInput?.focus();
+      },
+    });
+    this.addCommand({
+      id: "open-paper-split-reading",
+      name: "Open current paper in split PDF and Note view",
+      callback: async () => {
+        const activeLeaf = (
+          this.app.workspace as unknown as {
+            activeLeaf?: {
+              view?: {
+                getViewType?: () => string;
+                getState?: () => Record<string, unknown>;
+              };
+            } | null;
+          }
+        ).activeLeaf;
+        if (activeLeaf?.view?.getViewType?.() === VIEW_TYPE_PAPERFORGE_PDF) {
+          const k = String(activeLeaf.view.getState?.()?.paperKey ?? "").trim();
+          if (k) {
+            await this.openPaperSplitReading(k);
+            return;
+          }
+        }
+        const activeFile = this.app.workspace.getActiveFile?.();
+        if (activeFile?.path) {
+          const ctx = await this.getClient()
+            .resolvePaperContext(activeFile.path)
+            .catch(() => null);
+          if (ctx?.kind === "paper" && ctx.zotero_key) {
+            await this.openPaperSplitReading(ctx.zotero_key, activeFile.path);
+            return;
+          }
+        }
+        new Notice(t("paper_note_missing") || "No active paper selected.");
+      },
+    });
+
+    (
+      this.app.workspace as unknown as {
+        registerHoverLinkSource?: (
+          id: string,
+          info: { display: string; defaultMod?: boolean }
+        ) => void;
+      }
+    )?.registerHoverLinkSource?.("paperforge", {
+      display: "PaperForge",
+      defaultMod: true,
+    });
 
     for (const a of ACTIONS) {
       // #99 (owner decision): redo is internal-only — never a user command.
@@ -711,6 +768,58 @@ export default class PaperForgePlugin extends Plugin {
     if (existing && opts?.page && existing.view instanceof PaperForgePdfView) {
       existing.view.scrollToPage(opts.page, opts.annId);
     }
+  }
+
+  /** Open PDF reader side-by-side with its formal Markdown note in a vertical split. */
+  async openPaperSplitReading(
+    paperKey: string,
+    notePath?: string
+  ): Promise<void> {
+    if (!paperKey) return;
+    await this.openPaperPdf(paperKey);
+    let targetPath =
+      notePath ||
+      this._baseSnapshotCache?.rows?.[paperKey]?.main_note_path ||
+      "";
+    if (!targetPath) {
+      try {
+        const dash = await this.getClient().dashboardStats();
+        const found = (dash?.items ?? []).find(
+          (it: {
+            zotero_key?: string;
+            main_note_path?: string;
+            note_path?: string;
+          }) => it?.zotero_key === paperKey
+        );
+        targetPath = String(
+          found?.main_note_path || found?.note_path || ""
+        ).trim();
+      } catch {
+        // Ignore fallback lookup errors
+      }
+    }
+    if (!targetPath) return;
+    const splitLeaf = this.app.workspace.getLeaf("split", "vertical");
+    const file = this.app.vault.getAbstractFileByPath?.(targetPath);
+    if (file && "extension" in file && splitLeaf) {
+      await splitLeaf.openFile(file as any);
+      await this.app.workspace.revealLeaf(splitLeaf);
+      return;
+    }
+    await this.app.workspace.openLinkText?.(targetPath, "", "split");
+  }
+
+  /** Open the 4-stage setup wizard inside a dedicated Obsidian modal. */
+  openSetupWizardModal(): boolean {
+    if (!this._settingTab) return false;
+    (this._settingTab as unknown as { _setupStage: number })._setupStage = 1;
+    (
+      this._settingTab as unknown as {
+        _setupJourneyDismissedForSession?: boolean;
+      }
+    )._setupJourneyDismissedForSession = false;
+    new PaperForgeSetupWizardModal(this.app, this._settingTab as any).open();
+    return true;
   }
 
   getBaseSnapshotCache(): BaseTableSnapshotDto | null {

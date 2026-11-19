@@ -12,6 +12,8 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   VIEW_TYPE_PAPERFORGE,
+  VIEW_TYPE_PAPERFORGE_PDF,
+  VIEW_TYPE_OCR_WORKSPACE,
   ACTIONS,
   ActionDef,
   PaperForgeSettings,
@@ -41,7 +43,11 @@ import {
 } from "../client/trace";
 import type { PaperForgeClient } from "../client";
 import { ResearchRecordModal } from "./research-record";
-import { setPfIcon, type PfIconName } from "./icons";
+import { createPfIconBtn, setPfIcon, type PfIconName } from "./icons";
+import {
+  bindObsidianHoverPreview,
+  openUnifiedPaperContextMenu,
+} from "./paper-interactions";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -117,6 +123,32 @@ export class PaperForgeStatusView extends ItemView {
   _searchActiveIndex: number = -1;
   _searchDeep = false;
   _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+  private _resolvedFileCache = new Map<
+    string,
+    {
+      mode: "global" | "paper" | "collection";
+      filePath: string | null;
+      key: string | null;
+      domain: string | null;
+    }
+  >();
+  private _overviewTextCache = new Map<string, string>();
+  private _memoryCardCache = new Map<string, PaperMemoryCardDto>();
+  private _scrollOffsets = new Map<string, number>();
+
+  private _setBoundedCache<K, V>(
+    cache: Map<K, V>,
+    key: K,
+    value: V,
+    limit = 128
+  ): void {
+    if (cache.has(key)) cache.delete(key);
+    cache.set(key, value);
+    if (cache.size > limit) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
+  }
   // ── Scoped Ctrl+Enter (#356): one Scope for the life of this view.
   // The global keymap owns Ctrl+Enter (editor:open-link-in-new-leaf) and
   // stops it before the search input's keydown listener, so the input
@@ -159,18 +191,24 @@ export class PaperForgeStatusView extends ItemView {
     this._fetchVersion();
     void this._bootstrapDashboard();
 
-    // Global "/" keyboard shortcut to focus search input
+    // Companion-scoped "/" shortcut (never hijacks Obsidian CodeMirror or external inputs)
     this._onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        // Only focus search when not already in an input/textarea
-        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-        if (tag !== "input" && tag !== "textarea") {
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName?.toLowerCase();
+        if (
+          tag !== "input" &&
+          tag !== "textarea" &&
+          tag !== "select" &&
+          !target?.isContentEditable &&
+          !target?.closest?.(".cm-editor, [contenteditable='true']")
+        ) {
           e.preventDefault();
           this._searchInput?.focus();
         }
       }
     };
-    document.addEventListener("keydown", this._onKeyDown);
+    this.containerEl.addEventListener("keydown", this._onKeyDown);
   }
   async onClose() {
     if (this._modeSubscribers && this._modeSubscribers.length > 0) {
@@ -178,7 +216,11 @@ export class PaperForgeStatusView extends ItemView {
         if (sub.event === "active-leaf-change") {
           this.app.workspace.off("active-leaf-change", sub.ref);
         } else if (sub.event === "modify") {
-          this.app.vault.off("modify", sub.ref);
+          (
+            this.app.vault as unknown as {
+              off?: (ev: string, ref: unknown) => void;
+            }
+          )?.off?.("modify", sub.ref);
         } else if (sub.event === "paperforge:state-changed") {
           this.app.workspace.offref?.(sub.ref);
         }
@@ -189,15 +231,18 @@ export class PaperForgeStatusView extends ItemView {
       clearTimeout(this._leafChangeTimer);
       this._leafChangeTimer = null;
     }
-    // Remove global keydown listener
     if (this._onKeyDown) {
-      document.removeEventListener("keydown", this._onKeyDown);
+      this.containerEl.removeEventListener("keydown", this._onKeyDown);
       this._onKeyDown = null;
     }
     // Release the scoped Ctrl+Enter (focus-pushed; blur may never fire on
     // close, so pop unconditionally — never leaks a global chord). Also
     // detach the focus/blur listeners so a dead input cannot re-push.
     this._resetSearchView();
+    this._resolvedFileCache.clear();
+    this._overviewTextCache.clear();
+    this._memoryCardCache.clear();
+    this._scrollOffsets.clear();
     this._cachedItems = null;
     this._cachedStats = null;
   }
@@ -224,35 +269,74 @@ export class PaperForgeStatusView extends ItemView {
     const root = this.containerEl;
     root.empty();
     root.addClass("paperforge-status-panel");
-    const header = root.createEl("div", { cls: "paperforge-header" });
+    const header = root.createEl("div", {
+      cls: "paperforge-header nav-header",
+    });
     const headerLeft = header.createEl("div", {
       cls: "paperforge-header-left",
     });
-    const logoEl = headerLeft.createEl("div", {
-      cls: "paperforge-header-logo",
-    });
-    setPfIcon(logoEl, "book-open", 14);
     this._modeContextEl = headerLeft.createEl("div", {
       cls: "paperforge-mode-context",
     });
     this._headerTitle = headerLeft.createEl("h3", {
-      cls: "paperforge-header-title",
+      cls: "paperforge-header-title pf-sr-only",
       text: "PaperForge",
     });
     this._versionBadge = headerLeft.createEl("span", {
-      cls: "paperforge-header-badge",
+      cls: "paperforge-header-badge pf-sr-only",
       text: "v\u2014",
     });
-    const refreshBtn = header.createEl("button", {
-      cls: "paperforge-header-refresh",
-      attr: { "aria-label": "Refresh" },
+    const navActions = header.createEl("div", {
+      cls: "nav-buttons-container paperforge-nav-actions",
     });
-    setPfIcon(refreshBtn, "refresh-cw", 14);
+    const hubAction = createPfIconBtn(navActions, {
+      icon: "layout-grid",
+      label: t("dash_open_hub") || "Open Literature Hub",
+      size: 14,
+      cls: "clickable-icon nav-action-button paperforge-nav-action",
+      testid: "companion-open-hub",
+    });
+    hubAction.addEventListener("click", () => {
+      const pf = (
+        this.app as unknown as {
+          plugins?: { plugins?: Record<string, unknown> };
+        }
+      )?.plugins?.plugins?.["paperforge"] as
+        | { openLiteratureBase?: () => Promise<void> }
+        | undefined;
+      void pf?.openLiteratureBase?.();
+    });
+    const refreshBtn = createPfIconBtn(navActions, {
+      icon: "refresh-cw",
+      label: "Refresh",
+      size: 14,
+      cls: "clickable-icon nav-action-button paperforge-header-refresh",
+      testid: "companion-refresh",
+    });
     refreshBtn.addEventListener("click", () => {
       void (async () => {
         await this._invalidateIndex();
         await this._detectAndSwitch();
       })();
+    });
+    const settingsBtn = createPfIconBtn(navActions, {
+      icon: "sliders",
+      label: "PaperForge Settings",
+      size: 14,
+      cls: "clickable-icon nav-action-button paperforge-nav-action",
+      testid: "companion-open-settings",
+    });
+    settingsBtn.addEventListener("click", () => {
+      const setting = (
+        this.app as unknown as {
+          setting?: {
+            open?: () => void;
+            openTabById?: (id: string) => void;
+          };
+        }
+      )?.setting;
+      setting?.openTabById?.("paperforge");
+      setting?.open?.();
     });
     this._messageEl = root.createEl("div", {
       cls: "paperforge-message",
@@ -589,6 +673,9 @@ export class PaperForgeStatusView extends ItemView {
   async _invalidateIndex() {
     // The canonical list is a client payload now — invalidation is a quiet
     // re-fetch, never a direct file re-read.
+    this._resolvedFileCache.clear();
+    this._overviewTextCache.clear();
+    this._memoryCardCache.clear();
     await this._loadDashboardData(true);
   }
 
@@ -606,27 +693,88 @@ export class PaperForgeStatusView extends ItemView {
     if (!file)
       return { mode: "global", filePath: null, key: null, domain: null };
     const filePath = file.path as string;
+    const cached = this._resolvedFileCache.get(filePath);
+    if (cached) {
+      return cached;
+    }
+    let resolvedOk = false;
     const identity = await this._getClient()
       ?.resolvePaperContext(filePath)
+      .then((res) => {
+        resolvedOk = true;
+        return res;
+      })
       .catch(() => null);
+    let outcome: {
+      mode: "global" | "paper" | "collection";
+      filePath: string | null;
+      key: string | null;
+      domain: string | null;
+    };
     if (identity && identity.kind === "paper" && identity.zotero_key) {
-      return {
+      outcome = {
         mode: "paper",
         filePath,
         key: identity.zotero_key,
         domain: null,
       };
-    }
-    if (identity && identity.kind === "domain" && identity.domain) {
-      return {
+    } else if (identity && identity.kind === "domain" && identity.domain) {
+      outcome = {
         mode: "collection",
         filePath,
         key: null,
         domain: identity.domain,
       };
+    } else {
+      // Fail-closed: unresolved identity -> global mode, no filename inference.
+      outcome = { mode: "global", filePath, key: null, domain: null };
     }
-    // Fail-closed: unresolved identity -> global mode, no filename inference.
-    return { mode: "global", filePath, key: null, domain: null };
+    if (resolvedOk) {
+      this._setBoundedCache(this._resolvedFileCache, filePath, outcome);
+    }
+    return outcome;
+  }
+
+  async _resolveWorkspaceContext(activeLeaf?: WorkspaceLeaf | null): Promise<
+    | "keep"
+    | {
+        mode: "global" | "paper" | "collection";
+        filePath: string | null;
+        key: string | null;
+        domain: string | null;
+      }
+  > {
+    const leaf =
+      activeLeaf ??
+      (
+        this.app?.workspace as unknown as {
+          activeLeaf?: WorkspaceLeaf | null;
+        }
+      )?.activeLeaf ??
+      null;
+    const viewType = leaf?.view?.getViewType?.() ?? "";
+    if (
+      (viewType === VIEW_TYPE_PAPERFORGE ||
+        viewType === VIEW_TYPE_OCR_WORKSPACE) &&
+      this._currentMode
+    ) {
+      return "keep";
+    }
+    if (viewType === VIEW_TYPE_PAPERFORGE_PDF) {
+      const pdfState = (
+        leaf?.view as { getState?: () => Record<string, unknown> } | undefined
+      )?.getState?.();
+      const pdfKey = String(pdfState?.paperKey ?? "").trim();
+      if (pdfKey) {
+        return {
+          mode: "paper",
+          filePath: `pdf:${pdfKey}`,
+          key: pdfKey,
+          domain: null,
+        };
+      }
+    }
+    return this._resolveModeForFile(this.app.workspace.getActiveFile());
   }
 
   /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
@@ -638,9 +786,11 @@ export class PaperForgeStatusView extends ItemView {
   }) {
     // One leaf change = one paper-lookup: callers that already resolved
     // (leaf-change debounce) commit their result; no second subprocess.
-    resolved ??= await this._resolveModeForFile(
-      this.app.workspace.getActiveFile()
-    );
+    if (!resolved) {
+      const ctx = await this._resolveWorkspaceContext();
+      if (ctx === "keep") return;
+      resolved = ctx;
+    }
     this._currentDomain = resolved.domain || null;
     this._currentPaperKey = resolved.key || null;
     this._currentPaperEntry = resolved.key
@@ -654,6 +804,10 @@ export class PaperForgeStatusView extends ItemView {
     if (this._currentMode === mode && this._currentFilePath === filePath) {
       await this._refreshCurrentMode();
       return;
+    }
+    if (this._contentEl && this._currentMode) {
+      const prevScrollKey = `${this._currentMode}:${this._currentPaperKey || this._currentDomain || ""}`;
+      this._scrollOffsets.set(prevScrollKey, this._contentEl.scrollTop);
     }
     this._currentMode = mode as "global" | "paper" | "collection";
     this._currentFilePath = filePath;
@@ -678,6 +832,9 @@ export class PaperForgeStatusView extends ItemView {
         this._renderVersionMode();
         break;
     }
+    const nextScrollKey = `${mode}:${this._currentPaperKey || this._currentDomain || ""}`;
+    const savedOffset = this._scrollOffsets.get(nextScrollKey) ?? 0;
+    this._contentEl.scrollTop = savedOffset;
   }
 
   /* ── Global Mode Render: System Homepage ── */
@@ -1006,6 +1163,32 @@ export class PaperForgeStatusView extends ItemView {
       navigator.clipboard.writeText(entry.title || "");
       new Notice("Title copied");
     });
+    const noteLink = entry.main_note_path || entry.note_path || null;
+    bindObsidianHoverPreview(this.app, titleEl, "paperforge", noteLink);
+    header.addEventListener("contextmenu", (ev: MouseEvent) => {
+      const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
+        "paperforge"
+      ];
+      openUnifiedPaperContextMenu(ev, {
+        key: key!,
+        title: entry.title || key!,
+        notePath: noteLink,
+        hasPdf: Boolean(entry.pdf_path || entry.has_pdf),
+        onOpenNote: () => {
+          if (noteLink) void this.app.workspace.openLinkText(noteLink, "");
+        },
+        onOpenPdf: () => void pfPlugin?.openPaperPdf?.(key),
+        onOpenSplit:
+          typeof pfPlugin?.openPaperSplitReading === "function"
+            ? () => void pfPlugin.openPaperSplitReading(key, noteLink)
+            : undefined,
+        onRunOcr:
+          typeof pfPlugin?.requestOcrRun === "function"
+            ? () =>
+                void pfPlugin.requestOcrRun({ kind: "papers", keys: [key!] })
+            : undefined,
+      });
+    });
     const meta = header.createEl("div", { cls: "paperforge-paper-meta" });
     if (entry.authors && entry.authors.length > 0) {
       meta.createEl("span", {
@@ -1110,6 +1293,27 @@ export class PaperForgeStatusView extends ItemView {
           new Notice("[!!] PDF not found: " + targetPath, 6000);
         }
       });
+      if (noteLink) {
+        const splitBtn = stripRight.createEl("button", {
+          cls: "paperforge-contextual-btn",
+          attr: { "data-pf-testid": "open-split-reading" },
+        });
+        const splitIcon = splitBtn.createEl("span", {
+          cls: "paperforge-contextual-btn-icon",
+        });
+        setPfIcon(splitIcon, "columns-2", 14);
+        splitBtn.createEl("span", {
+          text: "\u5206\u680F\u7CBE\u8BFB",
+        });
+        splitBtn.addEventListener("click", () => {
+          const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
+            "paperforge"
+          ];
+          if (key && typeof pfPlugin?.openPaperSplitReading === "function") {
+            void pfPlugin.openPaperSplitReading(key, noteLink);
+          }
+        });
+      }
     }
     // Version history button — always visible, versions mode handles empty state
     const verBtn = stripRight.createEl("button", {
@@ -1199,15 +1403,13 @@ export class PaperForgeStatusView extends ItemView {
     void this._loadLivingMemoryInto(body, paperKey);
   }
 
-  private async _loadLivingMemoryInto(
+  private _renderLivingMemoryBody(
     body: HTMLElement,
-    paperKey: string
-  ): Promise<void> {
+    card: PaperMemoryCardDto | null | undefined
+  ): void {
     body.empty();
-    const client = this._getClient() as unknown as {
-      getMemoryCard?: (key: string) => Promise<PaperMemoryCardDto>;
-    } | null;
-    if (typeof client?.getMemoryCard !== "function") {
+    const facets = Array.isArray(card?.facets) ? card.facets : [];
+    if (facets.length === 0) {
       body.createEl("div", {
         cls: "pf-living-memory-empty",
         text:
@@ -1216,53 +1418,61 @@ export class PaperForgeStatusView extends ItemView {
       });
       return;
     }
+    for (const f of facets) {
+      const item = body.createEl("div", {
+        cls: "pf-living-memory-facet",
+        attr: { "data-facet": f.facet },
+      });
+      const fHead = item.createEl("div", {
+        cls: "pf-living-memory-facet-head",
+      });
+      fHead.createEl("span", {
+        cls: "pf-living-memory-facet-label",
+        text: f.label || f.facet,
+      });
+      const dateLabel = f.updated_at ? f.updated_at.slice(5, 10) : "";
+      if (dateLabel) {
+        fHead.createEl("span", {
+          cls: "pf-living-memory-facet-date pf-tnum",
+          text: dateLabel,
+          attr: { title: `\u7B2C ${f.revision || 1} \u6B21\u6C89\u6DC0` },
+        });
+      }
+      item.createEl("div", {
+        cls: "pf-living-memory-facet-body",
+        text: f.content,
+      });
+    }
+  }
+
+  private async _loadLivingMemoryInto(
+    body: HTMLElement,
+    paperKey: string
+  ): Promise<void> {
+    const cached = this._memoryCardCache.get(paperKey);
+    if (cached) {
+      this._renderLivingMemoryBody(body, cached);
+    } else {
+      body.empty();
+    }
+    const client = this._getClient() as unknown as {
+      getMemoryCard?: (key: string) => Promise<PaperMemoryCardDto>;
+    } | null;
+    if (typeof client?.getMemoryCard !== "function") {
+      if (!cached) {
+        this._renderLivingMemoryBody(body, null);
+      }
+      return;
+    }
     try {
       const card = await client.getMemoryCard(paperKey);
+      this._setBoundedCache(this._memoryCardCache, paperKey, card);
       if (this._currentPaperKey !== paperKey) return;
-      body.empty();
-      const facets = Array.isArray(card?.facets) ? card.facets : [];
-      if (facets.length === 0) {
-        body.createEl("div", {
-          cls: "pf-living-memory-empty",
-          text:
-            t("living_memory_empty") ||
-            "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
-        });
-        return;
-      }
-      for (const f of facets) {
-        const item = body.createEl("div", {
-          cls: "pf-living-memory-facet",
-          attr: { "data-facet": f.facet },
-        });
-        const fHead = item.createEl("div", {
-          cls: "pf-living-memory-facet-head",
-        });
-        fHead.createEl("span", {
-          cls: "pf-living-memory-facet-label",
-          text: f.label || f.facet,
-        });
-        const dateLabel = f.updated_at ? f.updated_at.slice(5, 10) : "";
-        if (dateLabel) {
-          fHead.createEl("span", {
-            cls: "pf-living-memory-facet-date pf-tnum",
-            text: dateLabel,
-            attr: { title: `\u7B2C ${f.revision || 1} \u6B21\u6C89\u6DC0` },
-          });
-        }
-        item.createEl("div", {
-          cls: "pf-living-memory-facet-body",
-          text: f.content,
-        });
-      }
+      this._renderLivingMemoryBody(body, card);
     } catch {
-      body.empty();
-      body.createEl("div", {
-        cls: "pf-living-memory-empty",
-        text:
-          t("living_memory_empty") ||
-          "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
-      });
+      if (!cached) {
+        this._renderLivingMemoryBody(body, null);
+      }
     }
   }
 
@@ -1284,12 +1494,42 @@ export class PaperForgeStatusView extends ItemView {
     const body = card.createEl("div", {
       cls: "paperforge-paper-overview-body",
     });
+    const notePath = entry.main_note_path || entry.note_path;
+    const cachedExcerpt = notePath
+      ? this._overviewTextCache.get(notePath)
+      : undefined;
     const excerptEl = body.createEl("div", {
       cls: "paperforge-paper-overview-excerpt",
-      text: "\u52A0\u8F7D\u4E2D...",
+      text: cachedExcerpt ? "" : "\u52A0\u8F7D\u4E2D...",
     });
-    const notePath = entry.main_note_path || entry.note_path;
+    const renderExtracted = (extracted: string) => {
+      const oldToggle = body.querySelector(".paperforge-expand-container");
+      if (oldToggle) oldToggle.remove();
+      const truncated =
+        extracted.length > 200 ? extracted.slice(0, 200) + "..." : extracted;
+      excerptEl.setText(truncated);
+      if (extracted.length > 200) {
+        const expandContainer = body.createEl("div", {
+          cls: "paperforge-expand-container",
+        });
+        const expandBtn = expandContainer.createEl("button", {
+          cls: "paperforge-expand-icon",
+          title: "\u5C55\u5F00/\u6536\u8D77",
+        });
+        setPfIcon(expandBtn, "chevron-down", 14);
+        let expanded = false;
+        expandContainer.addEventListener("click", () => {
+          excerptEl.setText(expanded ? truncated : extracted);
+          expandBtn.classList.toggle("is-expanded", !expanded);
+          expanded = !expanded;
+        });
+      }
+    };
+    if (cachedExcerpt) {
+      renderExtracted(cachedExcerpt);
+    }
     if (notePath) {
+      const activeKey = this._currentPaperKey;
       const readNote = async (): Promise<string | null> => {
         if (!(await this.app.vault.adapter.exists(notePath))) return null;
         const noteFile = this.app.vault.getAbstractFileByPath(notePath);
@@ -1299,44 +1539,31 @@ export class PaperForgeStatusView extends ItemView {
       };
       void readNote()
         .then((content: string | null) => {
+          if (this._currentPaperKey && this._currentPaperKey !== activeKey)
+            return;
           if (content === null) {
             excerptEl.setText(t("paper_note_missing"));
             return;
           }
           const extracted = this._extractOverviewFromNote(content);
           if (extracted) {
-            const truncated =
-              extracted.length > 200
-                ? extracted.slice(0, 200) + "..."
-                : extracted;
-            excerptEl.setText(truncated);
-            if (extracted.length > 200) {
-              const expandContainer = body.createEl("div", {
-                cls: "paperforge-expand-container",
-              });
-              const expandBtn = expandContainer.createEl("button", {
-                cls: "paperforge-expand-icon",
-                title: "\u5C55\u5F00/\u6536\u8D77",
-              });
-              expandBtn.innerHTML =
-                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-              let expanded = false;
-              expandContainer.addEventListener("click", () => {
-                excerptEl.setText(expanded ? truncated : extracted);
-                expandBtn.innerHTML = expanded
-                  ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
-                  : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
-                expanded = !expanded;
-              });
+            this._setBoundedCache(this._overviewTextCache, notePath, extracted);
+            if (extracted !== cachedExcerpt) {
+              renderExtracted(extracted);
             }
           } else {
+            this._overviewTextCache.delete(notePath);
             excerptEl.setText(
               "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
             );
           }
         })
         .catch(() => {
-          excerptEl.setText("\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9");
+          if (!cachedExcerpt) {
+            excerptEl.setText(
+              "\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9"
+            );
+          }
         });
     } else {
       excerptEl.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8");
@@ -3597,6 +3824,39 @@ export class PaperForgeStatusView extends ItemView {
         );
       };
       card.addEventListener("click", openResult);
+      bindObsidianHoverPreview(this.app, card, "paperforge", resolvedPath);
+      if (zoteroKey) {
+        card.addEventListener("contextmenu", (ev: MouseEvent) => {
+          const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
+            "paperforge"
+          ];
+          openUnifiedPaperContextMenu(ev, {
+            key: zoteroKey,
+            title: titleText,
+            notePath: resolvedPath,
+            hasPdf: rec["has_pdf"] === true,
+            onOpenNote: () =>
+              void this._openSearchResultByKey(resolvedPath, zoteroKey, false),
+            onOpenPdf: () => void pfPlugin?.openPaperPdf?.(zoteroKey),
+            onOpenSplit:
+              typeof pfPlugin?.openPaperSplitReading === "function"
+                ? () =>
+                    void pfPlugin.openPaperSplitReading(
+                      zoteroKey,
+                      resolvedPath || undefined
+                    )
+                : undefined,
+            onRunOcr:
+              typeof pfPlugin?.requestOcrRun === "function"
+                ? () =>
+                    void pfPlugin.requestOcrRun({
+                      kind: "papers",
+                      keys: [zoteroKey],
+                    })
+                : undefined,
+          });
+        });
+      }
 
       // Enter key on card opens the note
       card.addEventListener("keydown", (e: KeyboardEvent) => {
@@ -3905,41 +4165,65 @@ export class PaperForgeStatusView extends ItemView {
 
   /* ── Event Subscriptions (D-08, D-09, D-19) ── */
   _setupEventSubscriptions() {
-    const leafHandler = this.app.workspace.on("active-leaf-change", () => {
-      if (this._leafChangeTimer) clearTimeout(this._leafChangeTimer);
-      this._leafChangeTimer = setTimeout(() => {
-        void (async () => {
-          const resolved = await this._resolveModeForFile(
-            this.app.workspace.getActiveFile()
-          );
-          const nextMode = resolved.mode;
-          const nextFilePath = resolved.filePath;
-          if (
-            this._currentMode === nextMode &&
-            this._currentFilePath === nextFilePath
-          ) {
-            return;
-          }
-          await this._detectAndSwitch(resolved);
-        })();
-      }, 300);
-    });
+    const leafHandler = this.app.workspace.on(
+      "active-leaf-change",
+      (leaf?: WorkspaceLeaf | null) => {
+        if (this._leafChangeTimer) clearTimeout(this._leafChangeTimer);
+        this._leafChangeTimer = setTimeout(() => {
+          void (async () => {
+            const resolved = await this._resolveWorkspaceContext(leaf);
+            if (resolved === "keep") return;
+            const nextMode = resolved.mode;
+            const nextFilePath = resolved.filePath;
+            if (
+              this._currentMode === nextMode &&
+              this._currentFilePath === nextFilePath
+            ) {
+              return;
+            }
+            await this._detectAndSwitch(resolved);
+          })();
+        }, 60);
+      }
+    );
     this._modeSubscribers.push({
       event: "active-leaf-change",
       ref: leafHandler,
     });
+    const modifyRef = (
+      this.app.vault as unknown as {
+        on?: (ev: string, cb: (file: { path?: string }) => void) => unknown;
+      }
+    )?.on?.("modify", (file) => {
+      if (file?.path) {
+        this._overviewTextCache.delete(file.path);
+      }
+    });
+    if (modifyRef) {
+      this._modeSubscribers.push({
+        event: "modify",
+        ref: modifyRef,
+      });
+    }
     const stateRef = (
       this.app.workspace as unknown as {
         on?: (ev: string, cb: (payload?: unknown) => void) => unknown;
       }
     )?.on?.("paperforge:state-changed", (payload?: unknown) => {
+      const changed = (payload as { changedKeys?: string[] } | undefined)
+        ?.changedKeys;
+      if (Array.isArray(changed) && changed.length > 0) {
+        for (const k of changed) {
+          this._memoryCardCache.delete(k);
+        }
+      } else {
+        this._memoryCardCache.clear();
+      }
       if (
         this._currentMode === "paper" &&
         this._currentPaperKey &&
         this._livingMemoryBodyEl
       ) {
-        const changed = (payload as { changedKeys?: string[] } | undefined)
-          ?.changedKeys;
         if (
           !Array.isArray(changed) ||
           changed.length === 0 ||
@@ -3964,11 +4248,11 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Static: open or reveal view ── */
-  static async open(plugin: IPluginRef) {
+  static async open(plugin: IPluginRef): Promise<PaperForgeStatusView | null> {
     const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
     if (leaves.length > 0) {
       await plugin.app.workspace.revealLeaf(leaves[0]);
-      return;
+      return (leaves[0].view as PaperForgeStatusView | undefined) ?? null;
     }
     // Main-area tab (same as the OCR workspace): a sidebar leaf has a fixed
     // width, so the dashboard could not follow the window.
@@ -3979,6 +4263,8 @@ export class PaperForgeStatusView extends ItemView {
         active: true,
       } as any);
       await plugin.app.workspace.revealLeaf(leaf);
+      return (leaf.view as PaperForgeStatusView | undefined) ?? null;
     }
+    return null;
   }
 }

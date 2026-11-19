@@ -729,3 +729,65 @@ export class PaperForgeIssueDraftModal extends Modal {
     }
   }
 }
+
+export interface SetupJourneyModalHost {
+  plugin?: { settings?: PaperForgeSettings };
+  settings?: PaperForgeSettings;
+  _renderSetupJourney(containerEl: HTMLElement): void;
+  display(): void;
+}
+
+/**
+ * Focused Setup Wizard modal so the 4-stage onboarding journey stays inside a
+ * dedicated dialog instead of hijacking Settings' native single-page flow.
+ */
+export class PaperForgeSetupWizardModal extends Modal {
+  private readonly _settingTab: SetupJourneyModalHost;
+  private _origDisplay: (() => void) | null = null;
+  private _closing = false;
+
+  constructor(app: App, settingTab: SetupJourneyModalHost) {
+    super(app);
+    this._settingTab = settingTab;
+  }
+
+  private _renderBody(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    this._settingTab._renderSetupJourney(contentEl);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.addClass("paperforge-modal", "pf-setup-wizard-modal");
+    this._origDisplay = this._settingTab.display;
+    const origDisplay = this._origDisplay;
+    const tabAny = this._settingTab as unknown as {
+      _setupJourneyDismissedForSession?: boolean;
+    };
+    this._settingTab.display = () => {
+      if (this._closing) return;
+      const currentSettings =
+        this._settingTab.plugin?.settings ?? this._settingTab.settings;
+      if (
+        currentSettings?._setup_complete === true ||
+        tabAny._setupJourneyDismissedForSession === true
+      ) {
+        this.close();
+        origDisplay.call(this._settingTab);
+        return;
+      }
+      this._renderBody();
+    };
+    this._renderBody();
+  }
+
+  onClose(): void {
+    this._closing = true;
+    if (this._origDisplay) {
+      this._settingTab.display = this._origDisplay;
+      this._origDisplay = null;
+    }
+    this.contentEl.empty();
+  }
+}

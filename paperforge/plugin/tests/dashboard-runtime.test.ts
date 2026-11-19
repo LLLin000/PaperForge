@@ -69,6 +69,10 @@ vi.mock("obsidian", () => {
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
 import { ResearchRecordCaptureModal } from "../src/views/research-record";
+import {
+  VIEW_TYPE_PAPERFORGE,
+  VIEW_TYPE_PAPERFORGE_PDF,
+} from "../src/constants";
 import { TFile } from "obsidian";
 import { PaperForgeClient } from "../src/client/paperforge-client";
 import { execFile } from "node:child_process";
@@ -667,6 +671,133 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
       )?.value
     ).toBe(query);
     expect(search).toHaveBeenCalledWith(query);
+    await view.onClose();
+  });
+
+  it("never steals '/' keystrokes from CodeMirror contenteditable editors outside Companion", async () => {
+    const view = makeLifecycleView(
+      {
+        dashboardStats: vi.fn(async () => ({
+          stats: { papers: 1 },
+          permissions: { can_sync: true },
+          items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+        })),
+        backendVersion: vi.fn(async () => "2.0.0rc6"),
+        credentialAvailable: vi.fn(async () => false),
+        resolvePaperContext: vi.fn(async () => ({
+          kind: "paper",
+          zotero_key: "K1",
+          entry: null,
+        })),
+      },
+      { path: "Resources/K1/K1.md", extension: "md" }
+    );
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(
+        view.containerEl.querySelector(".paperforge-search-input")
+      ).not.toBeNull();
+    });
+    const focusSpy = vi.spyOn(view._searchInput!, "focus");
+
+    const cmEditor = document.createElement("div");
+    cmEditor.className = "cm-editor";
+    const cmContent = document.createElement("div");
+    cmContent.className = "cm-content";
+    cmContent.setAttribute("contenteditable", "true");
+    cmEditor.appendChild(cmContent);
+    document.body.appendChild(cmEditor);
+
+    const extEvent = new KeyboardEvent("keydown", {
+      key: "/",
+      bubbles: true,
+      cancelable: true,
+    });
+    cmContent.dispatchEvent(extEvent);
+    expect(extEvent.defaultPrevented).toBe(false);
+    expect(focusSpy).not.toHaveBeenCalled();
+
+    const innerEvent = new KeyboardEvent("keydown", {
+      key: "/",
+      bubbles: true,
+      cancelable: true,
+    });
+    view.containerEl.dispatchEvent(innerEvent);
+    expect(innerEvent.defaultPrevented).toBe(true);
+    expect(focusSpy).toHaveBeenCalledOnce();
+
+    cmEditor.remove();
+    await view.onClose();
+  });
+
+  it("keeps Companion locked on PDF reader paperKey across PDF <-> Companion focus and reuses file resolution LRU cache", async () => {
+    const dashboardStats = vi.fn(async () => ({
+      stats: { papers: 1 },
+      permissions: { can_sync: true },
+      items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+    }));
+    const resolvePaperContext = vi.fn(async (p: string) =>
+      p.includes("K1")
+        ? { kind: "paper", zotero_key: "K1", entry: null }
+        : { kind: "none" }
+    );
+    let activeFile: any = { path: "Resources/K1/K1.md", extension: "md" };
+    let activeLeafChanged: ((leaf?: any) => void) | undefined;
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion: vi.fn(async () => "2.0.0rc6"),
+        credentialAvailable: vi.fn(async () => false),
+        resolvePaperContext,
+      },
+      activeFile
+    );
+    view.app.workspace.getActiveFile = () => activeFile;
+    view.app.workspace.on = (event: string, handler: (leaf?: any) => void) => {
+      if (event === "active-leaf-change") activeLeafChanged = handler;
+      return {};
+    };
+    view.app.workspace.off = vi.fn();
+
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(view._currentMode).toBe("paper");
+      expect(view._currentPaperKey).toBe("K1");
+    });
+    expect(resolvePaperContext).toHaveBeenCalledTimes(1);
+
+    // Focusing built-in PaperForge PDF reader (even when getActiveFile() is null) keeps Paper Mode
+    activeFile = null;
+    const pdfLeaf = {
+      view: {
+        getViewType: () => VIEW_TYPE_PAPERFORGE_PDF,
+        getState: () => ({ paperKey: "K1", page: 2 }),
+      },
+    };
+    activeLeafChanged?.(pdfLeaf);
+    await vi.waitFor(() => {
+      expect(view._currentFilePath).toBe("pdf:K1");
+    });
+    expect(view._currentMode).toBe("paper");
+    expect(view._currentPaperKey).toBe("K1");
+
+    // Clicking inside Companion itself preserves current paper context
+    const selfLeaf = {
+      view: { getViewType: () => VIEW_TYPE_PAPERFORGE },
+    };
+    activeLeafChanged?.(selfLeaf);
+    await new Promise((r) => setTimeout(r, 90));
+    expect(view._currentMode).toBe("paper");
+    expect(view._currentPaperKey).toBe("K1");
+
+    // Switching back to the previously resolved file uses LRU cache (no extra resolvePaperContext call)
+    activeFile = { path: "Resources/K1/K1.md", extension: "md" };
+    activeLeafChanged?.({ view: { getViewType: () => "markdown" } });
+    await vi.waitFor(() => {
+      expect(view._currentFilePath).toBe("Resources/K1/K1.md");
+    });
+    expect(resolvePaperContext).toHaveBeenCalledTimes(1);
+
     await view.onClose();
   });
 });
