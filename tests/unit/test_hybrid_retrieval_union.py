@@ -127,9 +127,13 @@ def test_retrieve_deep_real_bm25_without_vectors_and_missing_db(
 ) -> None:
     """Real unmocked `retrieve --deep`: safe empty return before DB exists, and real BM25 hits without vectors."""
     import shutil
+
     import pymupdf
+
     from paperforge.config import load_config, resolve_paths
+    from paperforge.core.stat_cache import cached_sha256_hex
     from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
+    from paperforge.worker.ocr_hash import compute_ocr_result_hash
     from tests.conftest import EXPORT_FIXTURE, OCR_FIXTURE
 
     canonical_test_config(tmp_path, system_dir=".paperforge")
@@ -155,10 +159,18 @@ def test_retrieve_deep_real_bm25_without_vectors_and_missing_db(
     key = "TSTONE001"
     ocr_target = paths["ocr"] / key
     shutil.copytree(OCR_FIXTURE, ocr_target, dirs_exist_ok=True)
+    # Recompute raw/published hashes on disk so CRLF vs LF checkout differences
+    # across Windows/Linux/macOS do not trip provenance_raw_mismatch or stale identity.
     meta_file = ocr_target / "meta.json"
     meta_obj = json.loads(meta_file.read_text(encoding="utf-8"))
     meta_obj["raw_version"]["pdf_fingerprint"] = compute_pdf_fingerprint(pdf_path)
+    meta_obj["raw_version"]["raw_blocks_hash"] = "sha256:" + cached_sha256_hex(
+        ocr_target / "canonical" / "blocks.raw.jsonl"
+    )
     meta_file.write_text(json.dumps(meta_obj), encoding="utf-8")
+    published_hash = compute_ocr_result_hash(ocr_target)
+    assert published_hash
+    (ocr_target / "index" / "result-hash.txt").write_text(published_hash, encoding="utf-8")
 
     assert cli_main(["--vault", str(tmp_path), "sync", "--json"]) == 0
     assert cli_main(["--vault", str(tmp_path), "memory", "build", "--json"]) == 0
