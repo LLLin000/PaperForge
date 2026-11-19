@@ -186,7 +186,7 @@ flowchart TD
 
 1. **`installation`（仅探测 Python Core，不受 Vault 配置缺失或损坏影响）**：
    - `sys.version_info[:2] < (3, 11)` → `installation.python_version_unsupported`（`limited`, `action_required`, `foundation.update_python`）
-   - `expected_version` 与 `PAPERFORGE_VERSION` 经 `normalize_release_version()`（将 `2.0.0-rc.2` 统一为 `2.0.0rc2`）后不匹配 → `installation.version_mismatch`（`needs_action`, `foundation.update`）
+   - `expected_version` 与 `PAPERFORGE_VERSION` 经 `normalize_release_version()`（将 `2.0.0-rc.2` 统一为 `2.0.0rc2`）及可选 `--min-engine-version` 兼容区间（`paperforge/core/versioning.py` 的 `is_version_compatible()`）判定不兼容 → `installation.version_mismatch`（`needs_action`, `foundation.update`）
    - `read_pointer()` 为 `None` → `installation.runtime_pointer_missing`（`needs_action`, `foundation.setup`）
    - 指针 `paperforge_version` 与当前包版本经规范化后不等 → `installation.runtime_pointer_stale`（`needs_action`, `foundation.update`, `SAFETY_DESTRUCTIVE`, `confirmation_required=True`）
    - `Path(pointer["python_path"]).is_file()` 为假 → `installation.runtime_executable_missing`（`needs_action`, `foundation.update`）

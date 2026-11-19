@@ -224,7 +224,8 @@ sequenceDiagram
 
 | CLI 命令                                              | 参数                                                        | 行为与说明                                                                                                         |
 | :---------------------------------------------------- | :---------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
-| `paperforge skill deploy`                             | `[--to DIR]` `[--overwrite]` `[--json]`                     | 部署打包的 `paperforge` 技能树至 `<vault>/<DIR>/paperforge`                                                        |
+| `paperforge skill deploy`                             | `[--to DIR]` `[--overwrite]` `[--json]`                     | 部署打包的 `paperforge` 技能树至 `<vault>/<DIR>/paperforge` 并写入状态摘要                                         |
+| `paperforge skill sync`                               | `[--to DIR]` `[--json]`                                     | 基于 `skill-deploy-state.json` 哈希自动无损更新未改动技能，同时保护用户自定义改动                                  |
 | `paperforge deep-reading`                             | `[--json]`                                                  | 只读扫描精读队列，返回 `{queue, summary: {total, ready, blocked}}`                                                 |
 | `paperforge deep-finalize <zotero_key>`               | `[--json]`                                                  | 校验正式笔记 `## 🔍 精读` 完整度后更新 `deep_reading_status: "done"` 并刷新规范索引                                |
 | `python -m paperforge.worker.discussion record <KEY>` | `--vault PATH --agent NAME --model MODEL [--qa-pairs JSON]` | 原子带锁追加结构化 Q&A 会话至 `<ai_path>/discussion.md`                                                            |

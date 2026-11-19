@@ -7,9 +7,9 @@
 ## 1. 安装与运行前检查（当前 `v2.0.0rc6`）
 
 > [!NOTE]
-> 当前版本（`2.0.0rc6`）需本机先安装一次 **Python 3.11+** 作为引导环境；PaperForge 会在用户主目录 `.paperforge/runtime/` 下自动创建独立隔离环境并写入 `pointer.json`，不会污染你的系统包（`uv` 免 Python 自动引导方案仍在 [跨平台安装与热更架构设计](INSTALL-AND-UPDATE-ARCHITECTURE.md) 蓝图规划中）。
+> PaperForge 会在用户主目录 `.paperforge/runtime/` 下维护完全隔离的受管 Python 运行时并写入 `pointer.json`，不会污染系统包。若桌面端尚未安装本机 Python 3.11+，在 Obsidian 设置 → PaperForge 向导点击安装时会自动启用便携 `uv` 下载托管 Python 3.12 并完成引导（也支持按下面终端命令显式执行；详见 [跨平台安装与热更架构设计](INSTALL-AND-UPDATE-ARCHITECTURE.md)）。
 
-1. 桌面端已安装 **Python 3.11+**，且已在 Obsidian 设置 → PaperForge 向导点击安装、或在终端执行受管运行时安装：
+1. 桌面端点击向导一键安装（推荐，自动处理零 Python 环境与 `uv` 缓存），**或者**在已安装 Python 3.11+ 的终端显式安装受管运行时：
    ```bash
    python -m pip install --user "paperforge==2.0.0rc6"
    python -m paperforge runtime install --expected-version 2.0.0rc6

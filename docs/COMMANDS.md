@@ -22,6 +22,7 @@ paperforge query-plan "<query>" --intent locate|discover|content --json
 ```
 
 返回 JSON：
+
 - `data.intent` — 回显检索意图
 - `data.query` — 规范化后的检索 query
 - `data.scope` — `paper`（单篇）| `library`（全库）
@@ -80,6 +81,7 @@ paperforge retrieve "<query>" --paper <KEY> --deep --json   # 单篇混合检索
 ---
 
 ## 命令矩阵（Agent / CLI）
+
 ---
 
 ## CLI 命令
@@ -90,13 +92,22 @@ The runtime CLI installs and verifies the machine-wide PaperForge Core independe
 
 ```bash
 python -m pip install --user --upgrade "paperforge==<VERSION>"
-python -m paperforge runtime status --expected-version <VERSION> --json
+python -m paperforge runtime status --expected-version <VERSION> [--min-engine-version <MIN_ENGINE>] --json
 python -m paperforge runtime install --expected-version <VERSION>
 python -m paperforge runtime update --expected-version <VERSION>
 python -m paperforge runtime repair --expected-version <VERSION>
 ```
 
-`install` leaves an already-ready runtime untouched. `update` publishes only a verified candidate; `repair` forces a fresh candidate. Failed candidates do not replace the active pointer. Python alone publishes the pointer.
+`install` leaves an already-ready runtime untouched. `update` publishes only a verified candidate (using `--no-deps` fast-patch when `deps_lock_hash` matches, or full rebuild / portable `uv` fallback); `repair` forces a fresh candidate. Failed candidates do not replace the active pointer. Python alone publishes the pointer.
+
+### `paperforge skill`
+
+```bash
+paperforge skill deploy [--to DIR] [--overwrite] [--json]
+paperforge skill sync [--to DIR] [--json]
+```
+
+`deploy` copies packaged Vault skills into `<vault>/<DIR>/paperforge` and records file hashes in `skill-deploy-state.json`. `sync` automatically updates unmodified Vault skills on engine upgrades while preserving user-customized skills.
 
 ### `paperforge paths`
 
@@ -192,7 +203,6 @@ paperforge ocr rebuild --resume     # 跳过已有检查点的文献
 插件的论文/集合入口在确认前冻结论文 key 集合；空集合不能启动。全库入口明确显示“整个文献库”和影响数量，并要求确认。停止只阻止新提交、停止本地监看；已提交的服务端 OCR 任务仍会继续，可用 `paperforge ocr status` 查看。
 
 OCR listing is read-only: canonical indexed papers appear even before an OCR directory exists (`pending` when the PDF resolves, `nopdf` otherwise). Existing OCR records remain visible. OCR Workspace labels saved progress separately from a current local operation; only an operation owned by the current window offers Stop. A saved queued/running record does not prove a live local worker or remote completion/termination. Consent-required follow-ups remain unstarted until reviewed; their notice is not a vector-ready claim.
-
 
 ### `paperforge render`
 
@@ -311,6 +321,7 @@ paperforge inspect XGT9Z257 --json
 检查阶段（按流水线顺序）：`source`（索引与 PDF 解析）→ `lineage`（文献笔记与状态）→ `ocr`（`blocks.raw.jsonl`、管线版本陈旧度、离线可重建性与健康度）→ `objects_and_render`（图表清单、`render/fulltext.md` 与一致性审计）→ `memory`（`paperforge.db` schema、units 计数与 freshness）→ `vectors`（`vec_body_meta` / `vec_objects_meta` 与配置模型）。
 
 特点：
+
 - **严格只读**：不写任何文件，不获取 Barrier/Writer 锁；若 `paperforge.db` 存在，仅以 SQLite `?mode=ro` 只读方式查询。
 - 返回 `diagnosis.overall`（`healthy` | `degraded` | `action_needed`）、`diagnosis.bottleneck_stage`、`diagnosis.findings` 以及可执行建议命令（如离线 `ocr.rebuild_derived` 或 `paperforge memory build`）；多候选模糊匹配时返回 `resolved: false` 与候选列表，未找到时退出码为 `1`（`PATH_NOT_FOUND`）。
 
@@ -360,7 +371,6 @@ JSONL 是权威来源，每次查询重新读取；成功保存或修正后立�
 
 插件单篇论文面板提供“保存研究记录”和论文／研究记录两个搜索分区。保存显示持久 ID，详情支持重新核验后打开 PDF 物理页及追加修正。无需 Embedding，不代表任意语义问句检索或 OCR 内容质量验收。
 
-
 ### `paperforge annotations`
 
 无损旁路 PDF 批注子系统（读写 `<workspace>/annotations.jsonl` 并同步至 `paperforge.db` 的 `paper_annotations` 表；严格只读原 PDF，不改写原始文件字节）：
@@ -384,7 +394,6 @@ paperforge migrate-storage --dry-run --json   # 预览待迁移项与受影响�
 paperforge migrate-storage --json             # 执行存储迁移与 paperforge.json system_dir 更新
 ```
 
-
 ### `paperforge prune`
 
 ```bash
@@ -402,6 +411,7 @@ paperforge memory build --json       # JSON 输出
 paperforge memory status             # 查看 memory DB 状态
 paperforge memory status --json      # JSON 输出
 ```
+
 ### `paperforge project-log`
 
 ```bash
@@ -543,4 +553,3 @@ $env:PAPERFORGE_REAL_OCR_VAULT="D:\path\to\Literature-hub"; $env:PAPERFORGE_REAL
 ```
 
 不设置环境变量时，真实文献测试自动 SKIP。
-
