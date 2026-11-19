@@ -994,7 +994,8 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
     # the #137 NDJSON stream.  Without this stream the controller's
     # fail-closed parser reports "EOF without terminal event" even on a
     # successful run (contract break).  json mode keeps the single PFResult.
-    _stream = not json_output and ocr_action in (None, "run") and not diagnose_only
+    force_stream = bool(getattr(args, "stream", False))
+    _stream = (force_stream or not json_output) and ocr_action in (None, "run") and not diagnose_only
     if _stream:
         from paperforge.core.cancellation import make_cancellation_token
         from paperforge.core.ndjson import emit_progress, emit_start, emit_terminal

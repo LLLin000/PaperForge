@@ -225,6 +225,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output result as JSON (PFResult envelope)",
     )
     p_ocr.add_argument(
+        "--stream",
+        action="store_true",
+        help="Emit #137 NDJSON progress stream even if --json is also supplied",
+    )
+    p_ocr.add_argument(
         "--key",
         metavar="KEY",
         help="Process specific Zotero key",
@@ -244,10 +249,12 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
     run_parser.add_argument("--keys-file", default=None, metavar="PATH",
                             help="File of paper keys (CRLF/BOM tolerated, deduped — P0-4)")
+    run_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
     redo_parser.add_argument("--dry-run", action="store_true", help="List papers that would be reset without making changes")
+    redo_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
     redo_parser.add_argument("keys", nargs="*", metavar="KEY",
         help="Paper keys to redo (all redoable if empty)")
     redo_parser.set_defaults(ocr_action="redo")
@@ -264,6 +271,7 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_parser.add_argument("--status", metavar="STATUS", help="Filter by OCR status (done, done_degraded, failed)")
     rebuild_parser.add_argument("--dry-run", action="store_true", help="List papers that would be rebuilt without executing")
     rebuild_parser.add_argument("--resume", action="store_true", help="Skip papers already in checkpoint")
+    rebuild_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
     parallel_group = rebuild_parser.add_mutually_exclusive_group()
     parallel_group.add_argument("--parallel", type=int, nargs="?", const=4, default=4, metavar="N",
         help="Number of parallel workers (default: 4)")
@@ -303,6 +311,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_embed_sp = p_embed.add_subparsers(dest="embed_subcommand", required=True)
     p_embed_build = p_embed_sp.add_parser("build", help="Build vector index from OCR fulltext")
     p_embed_build.add_argument("--json", action="store_true")
+    p_embed_build.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream even with --json")
     # P0-2: --force and --resume are mutually exclusive — a force rebuild
     # clears the candidate's vector tables, so any resume hash-skip would
     # silently drop those papers' vectors from the published DB.
@@ -538,6 +547,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit the #137 NDJSON machine stream (start/phase/item_result/terminal)",
     )
     p_setup.add_argument(
+        "--stream",
+        action="store_true",
+        help="Explicitly enable #137 NDJSON machine stream",
+    )
+    p_setup.add_argument(
         "--modular",
         action="store_true",
         help="Use modular setup components (v2.1+)",
@@ -691,6 +705,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_action_run.add_argument("--follow", choices=["none", "auto"], default="none",
                               help="Follow-up mode: auto runs automatic-local descendants inline")
     p_action_run.add_argument("--json", action="store_true", help="Output as JSON")
+    p_action_run.add_argument("--stream", action="store_true", help="Force #137 NDJSON machine stream")
     p_action_preflight = action_sub.add_parser(
         "preflight", help="Observe availability + per-paper applicability WITHOUT executing (M2-C)"
     )
@@ -898,6 +913,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_mc_snap = p_mc_sub.add_parser("base-snapshot", help="Fast read-only snapshot for Obsidian Base views")
     p_mc_snap.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_daemon = sub.add_parser("daemon", help="Run persistent stdio JSON-RPC daemon for low-latency IPC")
+    p_daemon.add_argument("--stdio", action="store_true", default=True, help="Serve JSON-RPC over stdin/stdout")
+    p_daemon.add_argument("--idle-timeout", type=int, default=300, metavar="SEC",
+                          help="Auto-exit after SEC seconds idle (default: 300; 0 disables)")
     return parser
 
 # ---------------------------------------------------------------------------
@@ -953,6 +973,12 @@ def _run_cli(argv: list[str] | None = None) -> int:
     from paperforge.core import timing
 
     timing.set_command(str(args.command))
+    if args.command == "daemon":
+        from paperforge.commands.daemon import run as run_daemon
+
+        configure_logging(verbose=getattr(args, "verbose", False))
+        return run_daemon(args)
+
     if args.command == "runtime":
         configure_logging(verbose=getattr(args, "verbose", False))
         return _run_runtime_command(args)
@@ -1314,7 +1340,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         )
         return plan.execute(
             json_output=getattr(args, "json_output", False),
-            ndjson=getattr(args, "json", False),
+            ndjson=bool(getattr(args, "stream", False) or getattr(args, "json", False)),
         )
 
     if args.command == "probe":

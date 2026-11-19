@@ -200,6 +200,8 @@ def run_dispatch(args: argparse.Namespace) -> int:
     derives the next layer and the generic chain runner executes
     automatic-local children inline, pends the rest."""
     json_output = bool(getattr(args, "json", False))
+    force_stream = bool(getattr(args, "stream", False))
+    emit_structured = json_output or force_stream
     action_id = args.action_id
     confirmed = getattr(args, "confirm", None)
     follow = getattr(args, "follow", "none")
@@ -207,7 +209,7 @@ def run_dispatch(args: argparse.Namespace) -> int:
     request = ActionRequest(action_id=action_id, scope=_parse_scope(args))
 
     spec = ACTION_REGISTRY.get(action_id)
-    is_stream = json_output and (spec is not None and spec.execution_mode == "stream")
+    is_stream = force_stream or (json_output and (spec is not None and spec.execution_mode == "stream"))
 
     execution_hooks = None
     if is_stream:
@@ -254,7 +256,7 @@ def run_dispatch(args: argparse.Namespace) -> int:
         )
     except ActionError as exc:
         result = _error_result("action run", exc.code, str(exc), data=exc.data)
-        if json_output:
+        if emit_structured:
             if is_stream:
                 emit_terminal("error", action_id, result)
             else:
@@ -267,7 +269,7 @@ def run_dispatch(args: argparse.Namespace) -> int:
         from paperforge.actions.runner import cancelled_result
 
         result = cancelled_result("action run", str(exc))
-        if json_output:
+        if emit_structured:
             if is_stream:
                 emit_terminal("cancelled", action_id, result)
             else:
@@ -279,7 +281,7 @@ def run_dispatch(args: argparse.Namespace) -> int:
 
     restore()
     if result.error is not None and result.error.code == ErrorCode.ACTION_CANCELLED:
-        if json_output:
+        if emit_structured:
             if is_stream:
                 emit_terminal("cancelled", action_id, result)
             else:
@@ -308,7 +310,7 @@ def run_dispatch(args: argparse.Namespace) -> int:
     if result.ok and follow == "auto":
         _run_descendants(args, request, context, result)
 
-    if json_output:
+    if emit_structured:
         if is_stream:
             emit_terminal("result" if result.ok else "error", action_id, result)
         else:
@@ -380,8 +382,8 @@ def run(args: argparse.Namespace) -> int:
 
             result = cancelled_result("action run", str(exc))
             spec = ACTION_REGISTRY.get(getattr(args, "action_id", ""))
-            if getattr(args, "json", False):
-                if spec is not None and spec.execution_mode == "stream":
+            if getattr(args, "json", False) or getattr(args, "stream", False):
+                if getattr(args, "stream", False) or (spec is not None and spec.execution_mode == "stream"):
                     from paperforge.core.ndjson import emit_terminal
 
                     emit_terminal("cancelled", spec.action_id, result)

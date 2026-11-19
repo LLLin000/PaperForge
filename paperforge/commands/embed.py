@@ -115,6 +115,9 @@ def run(args: argparse.Namespace) -> int:
     # configuration authority — never read here.
     from paperforge.services.embedding import assess_embedding_preconditions
 
+    stream_mode = bool(getattr(args, "stream", False))
+    single_json = bool(getattr(args, "json", False)) and not stream_mode
+
     preflight = assess_embedding_preconditions(vault)
     if not preflight["ok"]:
         result = PFResult(
@@ -124,7 +127,7 @@ def run(args: argparse.Namespace) -> int:
             error=PFError(code=ErrorCode.VALIDATION_ERROR, message=preflight["error"]),
             data={"fix": preflight.get("fix", "")},
         )
-        if args.json:
+        if single_json:
             print(result.to_json())
         else:
             # #137: stream chosen → exactly-one terminal, then EOF.
@@ -144,7 +147,7 @@ def run(args: argparse.Namespace) -> int:
                 code=ErrorCode.PATH_NOT_FOUND, message="Canonical index not found. Run paperforge sync first."
             ),
         )
-        if args.json:
+        if single_json:
             print(result.to_json())
         else:
             # #137: stream chosen → exactly-one terminal, then EOF.
@@ -165,6 +168,6 @@ def run(args: argparse.Namespace) -> int:
         keys=getattr(args, "keys", None),
         force=getattr(args, "force", False),
         resume=getattr(args, "resume", False),
-        json=bool(getattr(args, "json", False)),
+        json=single_json,
     )
 

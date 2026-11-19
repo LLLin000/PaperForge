@@ -400,6 +400,8 @@ export interface NodeProcessTransportOptions {
   execFileSyncFn?: typeof execFileSync;
   /** Installer log destination (tests point this at a temp file). */
   installerLogPath?: () => string;
+  /** Keep a warm stdio daemon alive across short execute() RPCs (default: true unless custom spawnFn is injected). */
+  useDaemon?: boolean;
 }
 
 /** Interpreter names to probe, most specific first. */
@@ -430,6 +432,21 @@ function reapExecuteChildrenImpl(): void {
   }
 }
 
+interface PendingDaemonRpc {
+  resolve: (stdout: string) => void;
+  reject: (err: Error) => void;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+interface DaemonSession {
+  key: string;
+  child: ChildProcess;
+  nextId: number;
+  buffer: string;
+  settledAny: boolean;
+  pending: Map<number, PendingDaemonRpc>;
+}
+
 export class NodeProcessTransport implements Transport {
   /** In-flight Python children from both result and stream execution. */
   static executeChildren: ExecuteChildRegistry = executeChildRegistry;
@@ -443,12 +460,16 @@ export class NodeProcessTransport implements Transport {
   private readonly _spawnFn: typeof spawn;
   private readonly _execFileSyncFn: typeof execFileSync;
   private readonly _installerLogPath: () => string;
+  private readonly _useDaemon: boolean;
+  private _daemonSupported = true;
+  private _daemon: DaemonSession | null = null;
 
   constructor(options: NodeProcessTransportOptions) {
     this._vaultPath = options.vaultPath;
     this._spawnFn = options.spawnFn ?? spawn;
     this._execFileSyncFn = options.execFileSyncFn ?? execFileSync;
     this._installerLogPath = options.installerLogPath ?? installerLogPath;
+    this._useDaemon = options.useDaemon ?? options.spawnFn === undefined;
   }
 
   /** Resolve the interpreter from Python's published runtime pointer. */
@@ -665,10 +686,219 @@ export class NodeProcessTransport implements Transport {
     fs.writeFileSync(file, content, { encoding: "utf-8", mode: 0o755 });
     return file;
   }
+  private _ensureDaemonSession(py: {
+    path: string;
+    args: string[];
+  }): DaemonSession {
+    const key = `${py.path}\0${py.args.join("\0")}`;
+    if (
+      this._daemon &&
+      this._daemon.key === key &&
+      this._daemon.child.exitCode == null &&
+      this._daemon.child.signalCode == null
+    ) {
+      return this._daemon;
+    }
+    this.shutdownDaemon();
+
+    const env = paperforgeEnrichedEnv();
+    const child = this._spawnFn(
+      py.path,
+      [
+        ...py.args,
+        "-m",
+        "paperforge",
+        "daemon",
+        "--stdio",
+        "--idle-timeout",
+        "300",
+      ],
+      {
+        cwd: os.tmpdir(),
+        shell: false,
+        windowsHide: true,
+        env,
+        stdio: ["pipe", "pipe", "pipe"],
+      }
+    );
+    executeChildRegistry.set(child, null);
+
+    const session: DaemonSession = {
+      key,
+      child,
+      nextId: 1,
+      buffer: "",
+      settledAny: false,
+      pending: new Map(),
+    };
+    this._daemon = session;
+
+    if (typeof child.stdout?.setEncoding === "function") {
+      child.stdout.setEncoding("utf-8");
+    }
+    child.stdout?.on("data", (chunk: string | Buffer) => {
+      session.buffer += chunk.toString();
+      const lines = session.buffer.split("\n");
+      session.buffer = lines.pop() ?? "";
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        let msg: {
+          id?: unknown;
+          exit_code?: unknown;
+          stdout?: unknown;
+          stderr?: unknown;
+        };
+        try {
+          msg = JSON.parse(line);
+        } catch {
+          continue;
+        }
+        const rpcId = typeof msg.id === "number" ? msg.id : Number(msg.id);
+        const rpc = session.pending.get(rpcId);
+        if (!rpc) continue;
+        session.pending.delete(rpcId);
+        if (rpc.timer) clearTimeout(rpc.timer);
+        session.settledAny = true;
+
+        const code = typeof msg.exit_code === "number" ? msg.exit_code : 0;
+        const stdout = typeof msg.stdout === "string" ? msg.stdout : "";
+        const stderr = typeof msg.stderr === "string" ? msg.stderr : "";
+        if (code === 0) {
+          rpc.resolve(stdout);
+        } else {
+          const err = new Error(
+            `PaperForge command failed (exit code ${code}): ${stderr || "daemon rpc"}`
+          ) as Error & { exitCode: number; stderr: string; stdout: string };
+          err.exitCode = code;
+          err.stderr = stderr;
+          err.stdout = stdout;
+          rpc.reject(err);
+        }
+      }
+    });
+
+    if (typeof child.stderr?.setEncoding === "function") {
+      child.stderr.setEncoding("utf-8");
+    }
+    // Drain daemon stderr so OS pipe never fills on diagnostics.
+    child.stderr?.on("data", () => {});
+
+    const failPending = (reason: string): void => {
+      executeChildRegistry.delete(child);
+      if (this._daemon === session) {
+        this._daemon = null;
+      }
+      for (const [id, rpc] of session.pending.entries()) {
+        session.pending.delete(id);
+        if (rpc.timer) clearTimeout(rpc.timer);
+        rpc.reject(
+          Object.assign(new Error(reason), {
+            daemonUnavailable: !session.settledAny,
+          })
+        );
+      }
+    };
+
+    child.on("close", (code: number | null) => {
+      failPending(`PaperForge daemon exited unexpectedly (code=${code})`);
+    });
+    child.on("error", (err: Error) => {
+      failPending(`PaperForge daemon error: ${err.message}`);
+    });
+
+    return session;
+  }
+
+  shutdownDaemon(): void {
+    const active = this._daemon;
+    this._daemon = null;
+    if (!active) return;
+    executeChildRegistry.delete(active.child);
+    if (active.child.exitCode == null && active.child.signalCode == null) {
+      hardKill(active.child);
+    }
+  }
+
+  private async _executeDaemon(
+    py: { path: string; args: string[] },
+    argv: string[],
+    options?: ExecuteOptions
+  ): Promise<string> {
+    const session = this._ensureDaemonSession(py);
+    const id = session.nextId++;
+    const timeout = options?.timeoutMs ?? 120000;
+    const payload =
+      JSON.stringify({
+        id,
+        vault: this._vaultPath,
+        argv,
+        stdin: options?.stdin ?? null,
+      }) + "\n";
+
+    return new Promise<string>((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      if (timeout > 0) {
+        timer = setTimeout(() => {
+          session.pending.delete(id);
+          const timeoutErr = new Error(
+            `PaperForge command timed out after ${timeout}ms: ${argv.join(" ")}`
+          ) as Error & { timedOut: boolean };
+          timeoutErr.timedOut = true;
+          // Kill the warm daemon so the wedged in-process request cannot leak state.
+          this.shutdownDaemon();
+          reject(timeoutErr);
+        }, timeout);
+      }
+
+      session.pending.set(id, { resolve, reject, timer });
+      try {
+        session.child.stdin?.write(payload);
+      } catch (err) {
+        session.pending.delete(id);
+        if (timer) clearTimeout(timer);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    });
+  }
+
   async execute(argv: string[], options?: ExecuteOptions): Promise<string> {
     const py = options?.pythonExe
       ? { path: options.pythonExe, args: [] as string[] }
       : await this.resolvePython();
+
+    const canUseDaemon =
+      this._useDaemon &&
+      this._daemonSupported &&
+      !options?.pythonExe &&
+      !options?.env &&
+      argv[0] !== "runtime" &&
+      argv[0] !== "daemon";
+
+    if (canUseDaemon) {
+      try {
+        return await this._executeDaemon(py, argv, options);
+      } catch (err: unknown) {
+        const unavailable =
+          err !== null &&
+          typeof err === "object" &&
+          "daemonUnavailable" in err &&
+          Boolean((err as { daemonUnavailable?: unknown }).daemonUnavailable);
+        if (!unavailable) {
+          throw err;
+        }
+        // Runtime binary might be older without `daemon` subcommand: fall back once cleanly.
+        this._daemonSupported = false;
+      }
+    }
+    return this._executeSpawn(py, argv, options);
+  }
+
+  private _executeSpawn(
+    py: { path: string; args: string[] },
+    argv: string[],
+    options?: ExecuteOptions
+  ): Promise<string> {
     const env = options?.env ?? paperforgeEnrichedEnv();
     const timeout = options?.timeoutMs ?? 120000;
 

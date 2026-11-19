@@ -544,6 +544,29 @@ export class PaperForgeClient {
     this._inFlightReads.clear();
   }
 
+  /** Evict cached reads scoped to a single paper without clearing global probes. */
+  invalidatePaperScope(paperKey: string): void {
+    const clean = paperKey.trim();
+    if (!clean) {
+      this.invalidateCache();
+      return;
+    }
+    const candidates = new Set<string>([
+      `paper-status:${clean}`,
+      `paper-context:${clean}`,
+    ]);
+    for (const key of [...this._cache.keys()]) {
+      if (candidates.has(key) || key.includes(`:${clean}:`)) {
+        this._cache.delete(key);
+      }
+    }
+    for (const key of [...this._inFlightReads.keys()]) {
+      if (candidates.has(key) || key.includes(`:${clean}:`)) {
+        this._inFlightReads.delete(key);
+      }
+    }
+  }
+
   /**
    * Internal cached read engine:
    * 1. Returns fresh cached value if epoch matches and not expired.
@@ -2069,7 +2092,7 @@ export class PaperForgeClient {
         timeoutMs: 30000,
       });
     } finally {
-      this.invalidateCache();
+      this.invalidatePaperScope(paperKey);
     }
   }
 
@@ -2099,7 +2122,7 @@ export class PaperForgeClient {
     try {
       return await this._executePfResult<PdfAnnotationDto>(argv);
     } finally {
-      this.invalidateCache();
+      this.invalidatePaperScope(paperKey);
     }
   }
 
@@ -2114,7 +2137,7 @@ export class PaperForgeClient {
         paper_id: string;
       }>(["annotations", "delete", paperKey, annId, "--json"]);
     } finally {
-      this.invalidateCache();
+      this.invalidatePaperScope(paperKey);
     }
   }
 
@@ -2130,7 +2153,7 @@ export class PaperForgeClient {
     try {
       return await this._executePfResult<Record<string, unknown>>(argv);
     } finally {
-      this.invalidateCache();
+      this.invalidatePaperScope(paperKey);
     }
   }
 
@@ -2164,7 +2187,7 @@ export class PaperForgeClient {
         "--json",
       ]);
     } finally {
-      this.invalidateCache();
+      this.invalidatePaperScope(paperKey);
     }
   }
 
@@ -2178,7 +2201,7 @@ export class PaperForgeClient {
     try {
       return await this._executePfResult<ClearAgentAnnotationsResultDto>(argv);
     } finally {
-      this.invalidateCache();
+      this.invalidatePaperScope(paperKey);
     }
   }
 
