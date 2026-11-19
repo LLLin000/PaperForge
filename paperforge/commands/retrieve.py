@@ -8,6 +8,10 @@ from pathlib import Path
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
+# Lazy-loaded by run(); declared here so callers/tests can patch either this
+# module attribute or paperforge.embedding.search.* directly.
+hybrid_search = None
+merge_retrieve = None
 
 
 def _looks_generic_chunk(text: str) -> bool:
@@ -127,7 +131,8 @@ def run(args: argparse.Namespace) -> int:
     # ── @ Deep Search mode: query rewrite + hybrid retrieval ──────
     if deep:
         try:
-            raw_chunks = _embedding_search.hybrid_search(vault, query, limit=limit, paper_id=paper_key)
+            hybrid_fn = hybrid_search if callable(hybrid_search) else _embedding_search.hybrid_search
+            raw_chunks = hybrid_fn(vault, query, limit=limit, paper_id=paper_key)
             # #159 §6 reader gate: never serve a mismatched/unknown chain, while
             # permitting BM25-only hits when vectors are not built.
             from paperforge.reader_gate import filter_readable
@@ -199,7 +204,8 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        chunks = _embedding_search.merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
+        merge_fn = merge_retrieve if callable(merge_retrieve) else _embedding_search.merge_retrieve
+        chunks = merge_fn(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
         # #159 §6 reader gate: never serve a mismatched/unknown chain.
         from paperforge.reader_gate import filter_readable
 

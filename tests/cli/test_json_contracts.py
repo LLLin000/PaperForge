@@ -160,12 +160,13 @@ class TestRetrieveJson:
     """Contract: 'paperforge retrieve --json' returns PFResult with data.matches."""
 
     ENVELOPE_KEYS = {"ok", "command", "version", "data", "error"}
+    OPTIONAL_ENVELOPE_KEYS = {"warnings", "next_actions"}
 
     def test_retrieve_no_memory_db_returns_error(self, cli_invoker):
         """retrieve on a vault without memory DB returns ok:false with error."""
         result = cli_invoker(["retrieve", "test", "--json"])
         parsed = assert_valid_json(result.stdout)
-        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS, self.OPTIONAL_ENVELOPE_KEYS)
         assert parsed["ok"] is False
         assert "code" in parsed["error"], "error.code is missing"
         assert "message" in parsed["error"], "error.message is missing"
@@ -175,7 +176,7 @@ class TestRetrieveJson:
         """retrieve --json output has data.matches key when successful."""
         result = cli_invoker(["retrieve", "test", "--json"])
         parsed = assert_valid_json(result.stdout)
-        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS, self.OPTIONAL_ENVELOPE_KEYS)
         if parsed["ok"]:
             data = parsed["data"]
             assert "matches" in data, "data.matches key is missing"
@@ -189,7 +190,7 @@ class TestRetrieveJson:
         """retrieve --deep --json is accepted (may return empty results on minimal vault)."""
         result = cli_invoker(["retrieve", "test", "--deep", "--json"])
         parsed = assert_valid_json(result.stdout)
-        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS, self.OPTIONAL_ENVELOPE_KEYS)
         # --deep may succeed (ok:true) or fail (ok:false) depending on vault state — just validate shape
         if parsed["ok"]:
             assert "matches" in parsed["data"], "data.matches key is missing"
