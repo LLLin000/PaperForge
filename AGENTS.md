@@ -17,6 +17,7 @@ The order is:
 raw blocks → build structured (seed roles) → pre_match_normalize → figure/table matching → post_match_normalize → apply_object_writebacks → write inventory → extract objects → render
 
 Key invariants:
+
 - **writeback before write_inventory** — `apply_object_writebacks` stamps `associated_text_block_ids` onto the in-memory figure inventory. If inventory is written before writeback runs, those claims are lost from disk. The in-memory `figure_inventory` dict is the one source of truth during a session; the JSON file is a checkpoint.
 - **matching on candidate roles, not final roles** — V3 runs matching with `role_candidate` set but `role` still at `seed_role`. The matching code uses `_match_role()` which reads `role_candidate → role → seed_role` in priority order. This is intentional: it lets figure/table matching see caption candidates before normalize hard-commits their role.
 
@@ -74,12 +75,15 @@ The packaged `paperforge/skills/` directory is the source of the PaperForge skil
 
 ## Reference
 
-| Topic | Location |
-|-------|----------|
-| Architecture | `docs/ARCHITECTURE.md` |
-| Getting started | `docs/getting-started.md` |
-| Command docs | `docs/COMMANDS.md` |
-| User manual | `docs/user-manual.md` |
-| UI & Base Design | `docs/OBSIDIAN-UI-AND-BASE-DESIGN.md` |
-| Install & Update | `docs/INSTALL-AND-UPDATE-ARCHITECTURE.md` |
-| Migration guide | `docs/MIGRATION-v1.2.md` |
+| Topic                            | Location                                  |
+| -------------------------------- | ----------------------------------------- |
+| Technical reference (compiled)   | `docs/PAPERFORGE-TECHNICAL-REFERENCE.md`  |
+| Subsystem handbook (14 chapters) | `docs/handbook/`                          |
+| Documentation index              | `docs/README.md`                          |
+| Architecture                     | `docs/ARCHITECTURE.md`                    |
+| Getting started                  | `docs/getting-started.md`                 |
+| Command docs                     | `docs/COMMANDS.md`                        |
+| User manual                      | `docs/user-manual.md`                     |
+| UI & Base Design                 | `docs/OBSIDIAN-UI-AND-BASE-DESIGN.md`     |
+| Install & Update                 | `docs/INSTALL-AND-UPDATE-ARCHITECTURE.md` |
+| Migration guide                  | `docs/MIGRATION-v1.2.md`                  |
