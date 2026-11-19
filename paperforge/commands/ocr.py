@@ -104,9 +104,9 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
         "legacy_backfilled": [],
     }
     try:
-        from paperforge.config import load_vault_config
+        from paperforge.config import load_vault_config, paperforge_paths
         cfg = load_vault_config(vault)
-        ocr_root = vault / cfg["system_dir"] / "PaperForge" / "ocr"
+        ocr_root = paperforge_paths(vault, cfg)["ocr"]
         if ocr_root.exists():
             from paperforge.worker._utils import read_json
             _version_papers = []
@@ -370,9 +370,13 @@ def _collect_batch_unsettled(vault: Path, batch_id: str) -> list[str]:
     the batch are never re-OCR'd."""
     import json as _json
 
+    from paperforge.config import fallback_paperforge_dir, paperforge_paths
     from paperforge.worker.ocr import OCR_SETTLED_STATUSES
 
-    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    try:
+        ocr_root = paperforge_paths(vault)["ocr"]
+    except Exception:
+        ocr_root = fallback_paperforge_dir(vault) / "ocr"
     if not ocr_root.exists():
         return []
     keys: list[str] = []

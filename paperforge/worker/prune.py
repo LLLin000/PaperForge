@@ -46,8 +46,10 @@ def _collect_orphan_candidates(lit_dir: Path, fresh_keys: set[str]) -> list[dict
 
 
 def _resolve_ocr_dir(vault: Path, key: str) -> Path:
+    from paperforge.config import fallback_paperforge_dir
+
     cfg = paperforge_paths(vault)
-    ocr_root = cfg.get("ocr", vault / "System" / "PaperForge" / "ocr")
+    ocr_root = cfg.get("ocr", fallback_paperforge_dir(vault) / "ocr")
     return ocr_root / key
 
 

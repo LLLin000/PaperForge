@@ -30,10 +30,10 @@
       "111:paperforge.worker._utils",
       "17:paperforge.worker.ocr_maintenance:_can_rebuild",
       "30:paperforge.worker._utils",
-      "451:paperforge.worker._utils",
-      "452:paperforge.worker.ocr:_resolve_paddleocr_token",
-      "604:paperforge.worker._utils",
-      "793:paperforge.worker._progress"
+      "455:paperforge.worker._utils",
+      "456:paperforge.worker.ocr:_resolve_paddleocr_token",
+      "608:paperforge.worker._utils",
+      "797:paperforge.worker._progress"
     ],
     "paperforge.commands.paper_context": [
       "116:paperforge.worker._utils"
@@ -50,8 +50,8 @@
       "183:paperforge.worker._utils"
     ],
     "paperforge.figure_reconciliation": [
-      "1524:paperforge.worker.ocr_figures:_collect_same_page_multicolumn_legend_pairs",
-      "379:paperforge.lineage:_canonical_pdf_map"
+      "1580:paperforge.worker.ocr_figures:_collect_same_page_multicolumn_legend_pairs",
+      "430:paperforge.lineage:_canonical_pdf_map"
     ],
     "paperforge.lineage": [
       "1200:paperforge.embedding._config"
@@ -60,8 +60,8 @@
       "197:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.services.embedding": [
-      "1099:paperforge.embedding.substrate:_has_any_rows",
-      "1196:paperforge.embedding.build_state:_dict_to_build_state",
+      "1105:paperforge.embedding.substrate:_has_any_rows",
+      "1202:paperforge.embedding.build_state:_dict_to_build_state",
       "227:paperforge.lineage:_vec_dimension_from_ddl",
       "348:paperforge.embedding._config",
       "407:paperforge.embedding.substrate:_has_any_rows",
@@ -71,9 +71,9 @@
       "735:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
-      "243:paperforge.worker._utils",
-      "430:paperforge.worker._domain",
-      "519:paperforge.worker._utils"
+      "241:paperforge.worker._utils",
+      "428:paperforge.worker._domain",
+      "517:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"
@@ -87,7 +87,7 @@
       "2976:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
-      "233:paperforge.embedding.vectors:_delete_paper_vectors_locked"
+      "235:paperforge.embedding.vectors:_delete_paper_vectors_locked"
     ],
     "paperforge.worker.sync": [
       "27:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",

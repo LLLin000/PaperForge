@@ -1280,6 +1280,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
             "system_dir" not in _cfg
             and not (vault / "paperforge.json").exists()
             and not (vault / "System" / "PaperForge").exists()
+            and not (vault / ".paperforge").exists()
         ):
             _cfg["system_dir"] = ".paperforge"
         _zotero = getattr(args, "zotero_data", None)

@@ -68,16 +68,18 @@ def _open_readonly_db(db_path: Path) -> tuple[sqlite3.Connection | None, bool]:
 
 
 def _resolve_vault_context(vault: Path) -> tuple[Path, Path, str | None]:
+    from paperforge.config import fallback_paperforge_dir
+
     try:
         paths = paperforge_paths(vault)
         ocr_root = Path(paths["ocr"])
     except ConfigError:
-        ocr_root = vault / "System" / "PaperForge" / "ocr"
+        ocr_root = fallback_paperforge_dir(vault) / "ocr"
 
     try:
         db_path = get_memory_db_path(vault)
     except (ConfigError, FileNotFoundError):
-        db_path = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+        db_path = fallback_paperforge_dir(vault) / "indexes" / "paperforge.db"
 
     configured_model: str | None = None
     try:

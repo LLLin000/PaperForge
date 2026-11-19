@@ -930,7 +930,13 @@ def run_embedding_build(
                             continue
                         vault / fulltext_rel
 
-                        ocr_root = vault / "System" / "PaperForge" / "ocr" / key
+                        from paperforge.config import fallback_paperforge_dir, paperforge_paths
+
+                        try:
+                            ocr_base = paperforge_paths(vault)["ocr"]
+                        except Exception:
+                            ocr_base = fallback_paperforge_dir(vault) / "ocr"
+                        ocr_root = ocr_base / key
                         has_files = (ocr_root / "structure" / "blocks.structured.jsonl").exists() and (
                             ocr_root / "index" / "structure-tree.json"
                         ).exists()

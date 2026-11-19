@@ -76,7 +76,9 @@ class EnvChecker:
 
     def get_exports_dir(self) -> Path:
         """Get exports directory based on user config."""
-        return self.vault / self.system_dir / "PaperForge" / "exports"
+        from paperforge.config import resolve_paperforge_dir
+
+        return resolve_paperforge_dir(self.vault, self.system_dir) / "exports"
 
     def check_python(self) -> CheckResult:
         r = self.results["python"]

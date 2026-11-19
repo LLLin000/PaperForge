@@ -135,11 +135,9 @@ class SyncService:
 
     def load_exports(self) -> list[dict]:
         """Load all BBT export JSON files."""
-        from paperforge.config import load_vault_config
+        from paperforge.config import paperforge_paths
 
-        cfg = load_vault_config(self.vault)
-        system_dir = self.vault / cfg.get("system_dir", "99_System")
-        exports_dir = system_dir / "PaperForge" / "exports"
+        exports_dir = paperforge_paths(self.vault)["exports"]
         if not exports_dir.exists():
             logger.warning("Exports directory not found: %s", exports_dir)
             return []

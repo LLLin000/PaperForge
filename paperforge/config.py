@@ -785,6 +785,23 @@ def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
 # Path resolution
 # ---------------------------------------------------------------------------
 
+def resolve_paperforge_dir(vault: Path, system_dir: str) -> Path:
+    """Resolve the PaperForge system root from *vault* and configured *system_dir*."""
+    sys_rel = str(system_dir).strip() or "System"
+    system = Path(vault) / sys_rel
+    return system if Path(sys_rel).name == ".paperforge" else system / "PaperForge"
+
+
+def fallback_paperforge_dir(vault: Path) -> Path:
+    """Resolve PaperForge dir for fail-closed/configless fallbacks (preferring ``.paperforge``)."""
+    root = Path(vault).expanduser().resolve()
+    dot_pf = root / ".paperforge"
+    legacy_pf = root / "System" / "PaperForge"
+    if dot_pf.exists() or not legacy_pf.exists():
+        return dot_pf
+    return legacy_pf
+
+
 def resolve_paths(vault: Path, snapshot: ConfigSnapshot | None = None) -> dict[str, Path]:
     """Return the complete D-Path inventory from resolved configuration."""
     snap = snapshot if snapshot is not None else load_config(vault)
@@ -793,7 +810,7 @@ def resolve_paths(vault: Path, snapshot: ConfigSnapshot | None = None) -> dict[s
     vault = Path(vault).expanduser().resolve()
     sys_rel = str(values["system_dir"]).strip()
     system = vault / sys_rel
-    paperforge = system if Path(sys_rel).name == ".paperforge" else system / "PaperForge"
+    paperforge = resolve_paperforge_dir(vault, sys_rel)
     resources = vault / str(values["resources_dir"])
     literature = resources / str(values["literature_dir"])
     control = resources / str(values["control_dir"])

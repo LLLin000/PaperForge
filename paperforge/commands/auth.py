@@ -267,10 +267,17 @@ def _discover_sources(args: argparse.Namespace) -> list[dict[str, Any]]:
 
     if source == "dotenv":
         vault: Path = args.vault_path
-        candidates = [
-            vault / ".env",
-            vault / "System" / "PaperForge" / ".env",
-        ]
+        from paperforge.config import fallback_paperforge_dir, paperforge_paths
+
+        candidates = [vault / ".env"]
+        try:
+            pf_dir = paperforge_paths(vault)["paperforge"]
+        except Exception:
+            pf_dir = fallback_paperforge_dir(vault)
+        candidates.append(pf_dir / ".env")
+        legacy_pf_env = vault / "System" / "PaperForge" / ".env"
+        if legacy_pf_env not in candidates:
+            candidates.append(legacy_pf_env)
         for path in candidates:
             values = _dotenv_values(path)
             for name, value in values.items():

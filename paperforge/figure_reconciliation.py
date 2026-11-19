@@ -11,8 +11,59 @@ import hashlib
 import json
 import os
 import re
+import sys
+import tempfile
 from pathlib import Path
 from typing import Any
+
+_ORIG_GETTEMPDIR = tempfile.gettempdir
+
+
+def _durable_staging_dir() -> Path:
+    """User-local durable staging root outside the Obsidian vault."""
+    if sys.platform == "win32":
+        local_app = os.environ.get("LOCALAPPDATA", "").strip()
+        if local_app:
+            return Path(local_app) / "PaperForge" / "staging"
+        return Path.home() / "AppData" / "Local" / "PaperForge" / "staging"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "PaperForge" / "staging"
+    state_home = os.environ.get("XDG_STATE_HOME", "").strip()
+    base = Path(state_home) if state_home else (Path.home() / ".local" / "share")
+    return base / "paperforge" / "staging"
+
+
+def reconcile_staging_write_base() -> Path:
+    """Return the writable base directory for R/P reconciliation staging."""
+    explicit = os.environ.get("PAPERFORGE_STAGING_DIR", "").strip()
+    if explicit:
+        return Path(explicit)
+    if tempfile.gettempdir is not _ORIG_GETTEMPDIR:
+        return Path(tempfile.gettempdir()) / "paperforge-staging"
+    durable = _durable_staging_dir()
+    try:
+        durable.mkdir(parents=True, exist_ok=True)
+        return durable
+    except OSError:
+        return Path(tempfile.gettempdir()) / "paperforge-staging"
+
+
+def reconcile_staging_search_bases() -> list[Path]:
+    """Return ordered staging search roots (durable local-data + temp fallback)."""
+    explicit = os.environ.get("PAPERFORGE_STAGING_DIR", "").strip()
+    if explicit:
+        return [Path(explicit)]
+    if tempfile.gettempdir is not _ORIG_GETTEMPDIR:
+        return [Path(tempfile.gettempdir()) / "paperforge-staging"]
+    bases = [_durable_staging_dir(), Path(tempfile.gettempdir()) / "paperforge-staging"]
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for base in bases:
+        resolved = base.resolve(strict=False)
+        if resolved not in seen:
+            seen.add(resolved)
+            unique.append(base)
+    return unique
 
 from paperforge.render_audit import (
     audit_label as _label,
@@ -1245,9 +1296,9 @@ def stage_reconciliation(
     Default production_write is False.  --apply-r is not honored here; promoter
     is deliberately absent in this staging-only build.
     """
-    import tempfile
     import time
 
+    from paperforge.config import paperforge_paths, resolve_vault
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     root = ocr_root / paper_key
@@ -1269,16 +1320,21 @@ def stage_reconciliation(
         src_pdf = str(meta.get("source_pdf") or "")
     except (OSError, TypeError, ValueError):
         src_pdf = ""
-    vault = ocr_root.parent.parent.parent  # vault is 3 up from ocr
-    # Fallback vault via ocr_root.parents[2]
-    # Use the same resolver that handles Zotero
+    vault = resolve_vault(cwd=ocr_root)
+    # Honor configured zotero_data_dir via resolve_paths before conventional locations.
     from pathlib import Path as _P
-    # Zotero storage is per-machine; never guess one developer's drive. Honour
-    # the configured data dir, then the two conventional locations.
+    zot_candidates: list[Path] = []
+    try:
+        cfg_zot = paperforge_paths(vault).get("zotero_dir")
+        if cfg_zot is not None:
+            zot_candidates.append(_P(cfg_zot))
+    except Exception:
+        pass
     configured = os.environ.get("ZOTERO_DATA_DIR") or os.environ.get(
         "PAPERFORGE_ZOTERO_DATA"
     )
-    zot_candidates = [_P(configured)] if configured else []
+    if configured:
+        zot_candidates.append(_P(configured))
     zot_candidates += [_P.home() / "Zotero", _P.home() / "Documents" / "Zotero"]
     zot = next((p for p in zot_candidates if p.is_dir()), _P.home())
     pdf_path = None
@@ -1308,7 +1364,7 @@ def stage_reconciliation(
         fig_inventory = {}
     run_id = f"{int(time.time())}_{paper_key}"
     if staging_root is None:
-        staging_root = Path(tempfile.gettempdir()) / "paperforge-staging" / run_id
+        staging_root = reconcile_staging_write_base() / run_id
     staging_root = Path(staging_root) / paper_key
     staging_root.mkdir(parents=True, exist_ok=True)
     asset_staging = staging_root / "assets"

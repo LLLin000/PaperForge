@@ -272,34 +272,36 @@ def _accept_proposal_unlocked(
             "label": label,
         }
 
-    staging_base = Path(tempfile.gettempdir()) / "paperforge-staging"
+    from paperforge.figure_reconciliation import reconcile_staging_search_bases
+
     pattern = f"*_{paper_key}/{paper_key}/previews/figure_{label}"
     candidates: list[tuple[Path, bytes]] = []
-    if staging_base.is_dir() and not staging_base.is_symlink():
-        for directory in sorted(
-            staging_base.glob(pattern), key=lambda path: path.as_posix()
-        ):
-            plan_candidate = directory / "final-plan.json"
-            try:
-                relative_directory = directory.relative_to(staging_base).as_posix()
-                relative_plan = plan_candidate.relative_to(staging_base).as_posix()
-            except (OSError, ValueError):
-                continue
-            if (
-                not directory.is_dir()
-                or directory.is_symlink()
-                or _raw_path_has_symlink(staging_base, relative_directory)
-                or not plan_candidate.is_file()
-                or plan_candidate.is_symlink()
-                or _raw_path_has_symlink(staging_base, relative_plan)
+    for staging_base in reconcile_staging_search_bases():
+        if staging_base.is_dir() and not staging_base.is_symlink():
+            for directory in sorted(
+                staging_base.glob(pattern), key=lambda path: path.as_posix()
             ):
-                continue
-            try:
-                candidate_plan_bytes = plan_candidate.read_bytes()
-            except (OSError, UnicodeError):
-                continue
-            if hashlib.sha256(candidate_plan_bytes).hexdigest() == plan_hash:
-                candidates.append((directory, candidate_plan_bytes))
+                plan_candidate = directory / "final-plan.json"
+                try:
+                    relative_directory = directory.relative_to(staging_base).as_posix()
+                    relative_plan = plan_candidate.relative_to(staging_base).as_posix()
+                except (OSError, ValueError):
+                    continue
+                if (
+                    not directory.is_dir()
+                    or directory.is_symlink()
+                    or _raw_path_has_symlink(staging_base, relative_directory)
+                    or not plan_candidate.is_file()
+                    or plan_candidate.is_symlink()
+                    or _raw_path_has_symlink(staging_base, relative_plan)
+                ):
+                    continue
+                try:
+                    candidate_plan_bytes = plan_candidate.read_bytes()
+                except (OSError, UnicodeError):
+                    continue
+                if hashlib.sha256(candidate_plan_bytes).hexdigest() == plan_hash:
+                    candidates.append((directory, candidate_plan_bytes))
     if not candidates:
         return {
             "ok": False,

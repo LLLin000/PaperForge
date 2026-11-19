@@ -43,7 +43,13 @@ def _resolve_source_pdf_for_rebuild(vault: Path, key: str, meta: dict) -> Path |
         if pdfs:
             return pdfs[0]
 
-    local = vault / "System" / "PaperForge" / "ocr" / key / "source.pdf"
+    from paperforge.config import fallback_paperforge_dir, paperforge_paths
+
+    try:
+        ocr_root = paperforge_paths(vault)["ocr"]
+    except Exception:
+        ocr_root = fallback_paperforge_dir(vault) / "ocr"
+    local = ocr_root / key / "source.pdf"
     if local.exists():
         return local
 

@@ -53,7 +53,12 @@ def run(args) -> int:
 
 def _dashboard_from_db(vault: Path) -> dict | None:
     """Build dashboard stats from paperforge.db. Returns None if DB unavailable."""
-    db_path = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    from paperforge.memory.db import get_memory_db_path
+
+    try:
+        db_path = get_memory_db_path(vault)
+    except Exception:
+        return None
     if not db_path.exists():
         return None
     try:
@@ -103,7 +108,7 @@ def _check_permissions(vault: Path) -> dict:
     can_ocr = credential_status(CredentialKey("ocr")).state == "available"
 
     can_copy_context = False
-    pf_dir = paths.get("paperforge", vault / cfg["system_dir"] / "PaperForge")
+    pf_dir = paths["paperforge"]
     if pf_dir.exists():
         # #221: a stats verb must not create directories in the canonical tree;
         # it reports whether the location is writable, and creating the parent

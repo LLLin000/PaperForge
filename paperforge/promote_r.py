@@ -22,7 +22,10 @@ from typing import Any
 # The reconciliation module owns the input fingerprint it writes into every staged
 # manifest and plan; this module verifies that value.  It used to carry a second
 # copy, so changing one side only silently marked every staged plan stale.
-from paperforge.figure_reconciliation import reconcile_snapshot_hash as _snapshot_hash
+from paperforge.figure_reconciliation import (
+    reconcile_snapshot_hash as _snapshot_hash,
+    reconcile_staging_search_bases as _staging_search_bases,
+)
 from paperforge.render_audit import (
     audit_paper,
     inventory_asset_claim_conflicts as _inventory_asset_claim_conflicts,
@@ -186,16 +189,16 @@ def _find_staging_root(
         nested = candidate / paper_key
         return nested if (nested / _MANIFEST_NAME).is_file() else None
 
-    base = Path(tempfile.gettempdir()) / "paperforge-staging"
-    if not base.is_dir():
-        return None
     candidates: list[Path] = []
-    for run in base.iterdir():
-        if not run.is_dir():
+    for base in _staging_search_bases():
+        if not base.is_dir():
             continue
-        candidate = run / paper_key
-        if (candidate / _MANIFEST_NAME).is_file():
-            candidates.append(candidate)
+        for run in base.iterdir():
+            if not run.is_dir():
+                continue
+            candidate = run / paper_key
+            if (candidate / _MANIFEST_NAME).is_file():
+                candidates.append(candidate)
     return max(candidates, key=lambda path: (path / _MANIFEST_NAME).stat().st_mtime_ns) if candidates else None
 
 

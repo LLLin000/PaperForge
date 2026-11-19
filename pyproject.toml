@@ -107,8 +107,8 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = ["B904"]  # raise-within-try is intentional in many worker error paths
 
 [tool.ruff.lint.per-file-ignores]
-# Pre-existing: undefined names in sync.py (run_search_sources, run_ingest_candidates)
-"paperforge/worker/sync.py" = ["F821", "B007", "E501"]
+# Pre-existing style ignores on worker sync
+"paperforge/worker/sync.py" = ["B007", "E501"]
 # Pre-existing: style suggestions not part of dead code removal
 "paperforge/worker/ocr.py" = ["SIM102", "E501", "B905"]
 "paperforge/worker/repair.py" = ["SIM102"]

@@ -298,7 +298,12 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
     retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("valid_total_chunks", 0) > 0)
     ocr_evidence_available = False
     try:
-        ocr_root = vault / "System" / "PaperForge" / "ocr"
+        from paperforge.config import fallback_paperforge_dir, paperforge_paths
+
+        try:
+            ocr_root = paperforge_paths(vault)["ocr"]
+        except Exception:
+            ocr_root = fallback_paperforge_dir(vault) / "ocr"
         if ocr_root.exists():
             ocr_evidence_available = any(
                 (paper_dir / "index" / "role-index.json").exists()

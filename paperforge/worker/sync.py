@@ -916,34 +916,6 @@ def _coerce_source_name(value: str) -> str:
     return aliases.get(text, text)
 
 
-def run_search_command(vault: Path, args) -> int:
-    paths = pipeline_paths(vault)
-    paths["search_tasks"].mkdir(parents=True, exist_ok=True)
-    task_id = f"search-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-    sources = args.sources or ["pubmed_search", "openalex_search", "arxiv_search"]
-    task = {
-        "task_id": task_id,
-        "query": args.query,
-        "domain": args.domain,
-        "recommended_collection": args.recommended_collection or "",
-        "requester_skill": args.requester_skill or "",
-        "request_context": args.request_context or "",
-        "sources": sources,
-        "limit": args.limit,
-        "recommend_reason": args.recommend_reason or "围绕检索主题补充候选文献",
-        "candidate_source_type": "external_search",
-    }
-    task_path = paths["search_tasks"] / f"{task_id}.json"
-    write_json(task_path, task)
-    print(f"search: task written -> {task_path}")
-    code = run_search_sources(vault)
-    if code:
-        return code
-    if not args.skip_ingest:
-        return run_ingest_candidates(vault)
-    return 0
-
-
 def normalize_candidate_payload(row: dict) -> dict:
     normalized = {key: _normalize_candidate_value(value) for key, value in adapt_candidate_event(row).items()}
     normalized["candidate_id"] = str(normalized.get("candidate_id", "") or "").strip() or candidate_id_from_payload(

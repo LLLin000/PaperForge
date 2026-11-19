@@ -496,7 +496,10 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>"
         )
 
-    exports_dir = system_dir / "PaperForge" / "exports"
+    from paperforge.config import paperforge_paths
+
+    resolved = paperforge_paths(vault, cfg)
+    exports_dir = resolved["exports"]
     if exports_dir.exists():
         add_check("BBT 导出", "pass", "exports 目录存在")
     else:
@@ -1138,7 +1141,9 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         "legacy_backfilled_count": 0, "legacy_backfilled_keys": [],
     }
     try:
-        ocr_root = vault / cfg["system_dir"] / "PaperForge" / "ocr"
+        from paperforge.config import paperforge_paths as _pf_paths
+
+        ocr_root = _pf_paths(vault, cfg)["ocr"]
         if ocr_root.exists():
             papers = []
             for paper_dir in ocr_root.iterdir():

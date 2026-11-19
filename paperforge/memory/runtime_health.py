@@ -64,8 +64,10 @@ def _check_bootstrap(vault: Path) -> dict:
         return _layer("blocked", [f"Cannot read paperforge.json: {e}"],
                       "Fix paperforge.json syntax",
                       "paperforge doctor")
+    from paperforge.config import resolve_paperforge_dir
+
     system_dir = cfg.get("vault_config", {}).get("system_dir") or cfg.get("system_dir", "System")
-    pf_root = vault / system_dir / "PaperForge"
+    pf_root = resolve_paperforge_dir(vault, str(system_dir))
     if not pf_root.exists():
         return _layer("degraded", [f"PaperForge directory not found at {pf_root}"],
                       "Run setup to create directory structure",
@@ -74,7 +76,7 @@ def _check_bootstrap(vault: Path) -> dict:
 
 
 def _check_read(vault: Path) -> dict:
-    from paperforge.config import paperforge_paths
+    from paperforge.config import fallback_paperforge_dir, paperforge_paths
     from paperforge.memory.db import get_memory_db_path
 
     paths = paperforge_paths(vault)
@@ -90,7 +92,7 @@ def _check_read(vault: Path) -> dict:
                       "Run paperforge memory build",
                       "paperforge memory build")
 
-    logs_dir = paths.get("paperforge", vault / "System" / "PaperForge") / "logs"
+    logs_dir = paths.get("paperforge", fallback_paperforge_dir(vault)) / "logs"
     if not logs_dir.exists():
         return _layer("degraded", ["JSONL logs directory missing"],
                       "Create logs directory or run sync",
@@ -100,9 +102,9 @@ def _check_read(vault: Path) -> dict:
 
 
 def _check_write(vault: Path) -> dict:
-    from paperforge.config import paperforge_paths
+    from paperforge.config import fallback_paperforge_dir, paperforge_paths
     paths = paperforge_paths(vault)
-    pf_root = paths.get("paperforge", vault / "System" / "PaperForge")
+    pf_root = paths.get("paperforge", fallback_paperforge_dir(vault))
     logs_dir = pf_root / "logs"
     evidence = []
     try:
