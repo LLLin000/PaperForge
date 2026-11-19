@@ -31,9 +31,9 @@ PaperForge 采用 **Python Core Single Authority（Python 核心单一权威）+
 | `paperforge/__init__.py`                            | 包版本定义                      | 定义源码基准版本 `__version__`（当前 `"2.0.0rc6"`）                                                                                                      |
 | `paperforge/config.py`                              | 配置解析与 Vault 路径单一权威   | `load_config()`、`resolve_paths()`、`paperforge_paths()`、`resolve_paperforge_dir()`、`fallback_paperforge_dir()`、`resolve_vault()`、`LEGACY_PATH_KEYS` |
 | `paperforge/core/stat_cache.py`                     | 库外 STAT 指纹 SHA-256 缓存     | `cached_sha256_hex()`、`cached_concat_sha256_hex()`（SQLite WAL 于 OS 用户缓存目录，含 2s Racy-Git 保护，恪守 X13 零写 Vault）                           |
-| `paperforge/services/storage_migration.py`          | v1→v2 隐藏存储引擎迁移服务      | `migrate_vault_storage()`、`rewrite_visual_embeds_for_key()`                                                                                             |
+| `paperforge/services/storage_migration.py`          | v1→v2 隐藏存储引擎事务迁移服务  | `migrate_vault_storage()`（precheck + `.migration-journal.json` 回滚）、`rewrite_visual_embeds_for_key()`                                                |
 | `paperforge/commands/migrate_storage.py`            | `migrate-storage` CLI 适配器    | `run()`，输出 `PFResult` 或人类可读摘要                                                                                                                  |
-| `paperforge/worker/asset_index.py`                  | 规范索引与论文工作区物化        | `build_index()`、`refresh_index_entry()`、`sync_workspace_visual_assets()`、`_build_entry()`                                                             |
+| `paperforge/worker/asset_index.py`                  | 规范索引与论文工作区物化        | `build_index()`、`refresh_index_entry()`、`sync_workspace_visual_assets()`、`cleanup_or_preserve_workspace_fulltext()`、`_build_entry()`                 |
 | `paperforge/worker/paper_meta.py`                   | 单论文工作区元数据读写          | `write_paper_meta()`、`read_paper_meta()`（`SCHEMA_VERSION = 1`）                                                                                        |
 | `paperforge/worker/base_views.py`                   | Obsidian `.base` 视图生成与清洗 | `ensure_base_views()`、`build_base_views()`、`merge_base_views()`、`RETIRED_PF_VIEWS`                                                                    |
 | `paperforge/worker/ocr_artifacts.py`                | 单论文 OCR 存储路径与缓存清理   | `artifact_paths_for_root()`、`OCRArtifactPaths`、`cleanup_ocr_artifact_cache()`                                                                          |
@@ -50,16 +50,17 @@ PaperForge 采用 **Python Core Single Authority（Python 核心单一权威）+
 
 ### 2.2 配套单元测试与门禁测试
 
-| 测试文件路径                                    | 验证目标与断言重点                                                                                                                                          |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tests/test_module_graph.py`                    | 验证 `scripts/check_module_graph.py` 的导入解析、Tarjan 环检测（R1）、跨包私有导入（R2）、跨模块私有成员访问（R2b）、层级违规（R3）及顶层重库拦截（R4）逻辑 |
-| `tests/test_architecture_boundaries.py`         | 扫描 `paperforge/actions/`、`paperforge/services/`、`paperforge/materialization/`，断言 `KNOWN_EXEMPTIONS` 为空，杜绝后台层反向导入 `paperforge.commands.*` |
-| `tests/test_import_weight.py`                   | 在干净子进程中导入 `paperforge.worker.ocr`，断言 `sys.modules` 中不含 `torch`、`chromadb`、`pdfplumber`、`fitz`、`pymupdf`、`PIL`                           |
-| `tests/unit/test_dot_paperforge_and_scale.py`   | 验证 `resolve_paths()` 对 `.paperforge` 的叶子折叠、单论文前缀图像物化、工作区隐藏 `fulltext.md` 清理、`SyncService` 快路径与 `migrate-storage` 端到端行为  |
-| `tests/unit/test_path_authority_and_staging.py` | 验证自定义 `system_dir` / `.paperforge` 路径权威解析无旁路、及外置 OS 用户数据目录 R/P 舞台写入与遗留 `<tmp>` 回退检索                                      |
-| `tests/unit/test_stat_cache_and_fastpaths.py`   | 验证 `stat_cache` 2s Racy-Git 失效窗口、`read_index` `(size, mtime_ns)` 缓存与 `annotations.jsonl` 压缩前后端一致性                                         |
-| `tests/unit/test_upgrade_resilience.py`         | 验证外置 `zotero_data_dir` 修复、标题命名旧笔记重命名迁移、以及 `paperforge.db` 销毁重建后由 `ai/memory-card.json` 无损恢复记忆历史                         |
-| `tests/unit/worker/test_trash.py`               | 钉住 2026-08-14 事故回归：断言空路径/`.`/`..`/`allowed_root` 本身及越界路径触发 `DangerousPathError`，`trash_remove` 仅移动到 `.paperforge/trash/` 且可恢复 |
+| 测试文件路径                                    | 验证目标与断言重点                                                                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tests/test_module_graph.py`                    | 验证 `scripts/check_module_graph.py` 的导入解析、Tarjan 环检测（R1）、跨包私有导入（R2）、跨模块私有成员访问（R2b）、层级违规（R3）及顶层重库拦截（R4）逻辑  |
+| `tests/test_architecture_boundaries.py`         | 扫描 `paperforge/actions/`、`paperforge/services/`、`paperforge/materialization/`，断言 `KNOWN_EXEMPTIONS` 为空，杜绝后台层反向导入 `paperforge.commands.*`  |
+| `tests/test_import_weight.py`                   | 在干净子进程中导入 `paperforge.worker.ocr`，断言 `sys.modules` 中不含 `torch`、`chromadb`、`pdfplumber`、`fitz`、`pymupdf`、`PIL`                            |
+| `tests/unit/test_dot_paperforge_and_scale.py`   | 验证 `resolve_paths()` 对 `.paperforge` 的叶子折叠、单论文前缀图像物化、工作区隐藏 `fulltext.md` 清理、`SyncService` 快路径与 `migrate-storage` 端到端行为   |
+| `tests/unit/test_storage_migration_safety.py`   | 验证 `migrate-storage` 事务回滚（坏 `paperforge.json` 事前拦截、`set_config` 失败逆向恢复目录与笔记）、幂等复跑及工作区用户编辑过 `fulltext.md` 无损入回收站 |
+| `tests/unit/test_path_authority_and_staging.py` | 验证自定义 `system_dir` / `.paperforge` 路径权威解析无旁路、及外置 OS 用户数据目录 R/P 舞台写入与遗留 `<tmp>` 回退检索                                       |
+| `tests/unit/test_stat_cache_and_fastpaths.py`   | 验证 `stat_cache` 2s Racy-Git 失效窗口、`read_index` `(size, mtime_ns)` 缓存与 `annotations.jsonl` 压缩前后端一致性                                          |
+| `tests/unit/test_upgrade_resilience.py`         | 验证外置 `zotero_data_dir` 修复、标题命名旧笔记重命名迁移、以及 `paperforge.db` 销毁重建后由 `ai/memory-card.json` 无损恢复记忆历史                          |
+| `tests/unit/worker/test_trash.py`               | 钉住 2026-08-14 事故回归：断言空路径/`.`/`..`/`allowed_root` 本身及越界路径触发 `DangerousPathError`，`trash_remove` 仅移动到 `.paperforge/trash/` 且可恢复  |
 
 ---
 
@@ -219,13 +220,13 @@ CI 门禁 `scripts/check_module_graph.py --check` 对 `paperforge/` 下所有 `.
 
 ### 4.2 v1 → `.paperforge` 隐藏存储迁移执行链路（`migrate-storage`）
 
-`migrate_vault_storage(vault, dry_run=False)` 必须严格遵循以下 5 步顺序不变量，以保证迁移可幂等重试且不覆盖用户手工笔记或更新的文件：
+`migrate_vault_storage(vault, dry_run=False)` 必须严格遵循以下 Fail-Closed 与事务回滚顺序不变量，以保证迁移可幂等重试、不损坏配置且不静默丢弃用户编辑：
 
-1. **解析源与目标路径**：尝试通过 `load_config(vault)` + `resolve_paths(vault, snapshot)` 获取当前 `system`、`paperforge` 与 `literature` 路径；若配置不可用，则按传统默认路径 `System/PaperForge` 与 `Resources/Literature` 回退，目标引擎目录固定为 `vault / ".paperforge"`。
-2. **迁移引擎子树与本地 Zotero**：调用 `_move_tree_entries(old_pf, target_pf)` 递归移动条目——目标不存在时直接 `shutil.move`，同名目录则递归合并且绝不覆盖已存在文件（计入 `entries_skipped_existing`），搬空后清理空源目录。若 `old_sys / "Zotero"` 存在、非符号链接且目标 `.paperforge/Zotero` 不存在，则一并迁移。
+1. **配置预检与解析源/目标路径**：若已有 `paperforge.json` 却损坏/无法解析，非 `--dry-run` 模式在移动任何目录前直接 Fail-Closed 抛出 `ConfigError`；若无配置文件则按传统默认路径 `System/PaperForge` 与 `Resources/Literature` 回退，目标引擎目录固定为 `vault / ".paperforge"`。同时检测若 `old_sys.resolve() == target_pf.resolve()`，仅补齐残余资产/重写并幂等返回。
+2. **日志落盘与迁移引擎子树（`.migration-journal.json`）**：写入 `target_pf / ".migration-journal.json"`（记录 `status="in_progress"`、`moved_pairs` 与 `rewritten_notes`），调用 `_move_tree_entries(old_pf, target_pf)` 递归移动条目——目标不存在时直接 `shutil.move`，同名目录则递归合并且绝不覆盖已存在文件（计入 `entries_skipped_existing`），搬空后清理空源目录；若 `old_sys / "Zotero"` 存在、非符号链接且目标 `.paperforge/Zotero` 不存在则一并迁移。
 3. **物化单论文裁剪资产**：遍历 `<literature>/<domain>/<KEY> - <Title>/` 工作区，非 `dry_run` 模式下调用 `sync_workspace_visual_assets(paper_ocr_dir, ws_dir, key)`，将 `.paperforge/ocr/<KEY>/assets/{figures,tables}/*.jpg` 以 size + mtime 守卫增量拷贝为 `<workspace>/assets/<KEY>_*.jpg`（绝不覆盖 `<KEY>_ann_*.jpg` 截图）。
-4. **重写 Markdown 嵌入链接与清理冗余全文**：对工作区内的 `{key}.md`、`{ws_dir.name}.md` 与领域目录下 `{key}.md`（去重后）执行正则 `_VISUAL_MD_EMBED_RE` 匹配，将 `![[.../figure_001.md|别名]]` 或 `.jpg` 统一重写为 `![[<KEY>_figure_001.jpg|别名]]` 并以 `write_text_atomic()` 落盘；随后删除工作区冗余的 `fulltext.md` 镜像。
-5. **原子更新配置与清理残余**：调用 `set_config(vault_root, "system_dir", ".paperforge")` 写入 Schema v2 配置，并仅在目录为空且不等于 `.paperforge` 时移除旧 `old_pf` 与 `old_sys`。
+4. **重写嵌入链接与哈希护栏清理工作区全文**：对工作区内的 `{key}.md`、`{ws_dir.name}.md` 与领域目录下 `{key}.md`（去重后）在首次修改前记录原字节备份于日志事务上下文，将 `![[.../figure_001.md|别名]]` 或 `.jpg` 统一重写为 `![[<KEY>_figure_001.jpg|别名]]` 并以 `write_text_atomic()` 落盘；随后调用 `cleanup_or_preserve_workspace_fulltext()` 检查工作区 `fulltext.md`——**仅当原字节或 LF 归一化 SHA-256 与 `.paperforge/ocr/<KEY>/fulltext.md` 或 `.pre-rebuild` 一致时才物理 `unlink()`**，若包含用户手工修改或缺失权威 OCR 副本，则通过 `trash_remove(..., operation="workspace_fulltext_preserve")` 无损移入 `.paperforge/trash/`。
+5. **原子更新配置、失败回滚与清理残余**：调用 `set_config(vault_root, "system_dir", ".paperforge")` 写入 Schema v2 配置；若此步抛出异常，事务层逆向复原所有被重写笔记的原字节、按 `moved_pairs` 逆序归位已迁移文件，并将 `.migration-journal.json` 置为 `"rolled_back"` 后向上抛出异常。成功后再将日志置为 `"completed"` 并移除已清空且不等于 `.paperforge` 的旧目录。
 
 ---
 
@@ -275,7 +276,7 @@ CI 门禁 `scripts/check_module_graph.py --check` 对 `paperforge/` 下所有 `.
    - `AGENTS.md` 若在 Vault 根目录已存在，则 `deploy_skills()` 与 `AgentInstaller.deploy_agent_config()` 均保留用户定制版本不覆盖。
 3. **只读索引构建与隐藏引擎隔离（`paperforge/worker/asset_index.py`）**：
    - 遵循 SSOT 边界：OCR 子系统是 `meta.json` 的唯一写入者；`_build_entry()` 读取到损坏的 `meta.json` 时标记 `_meta_unreadable=True` 并导出 `ocr_status="unknown"`，绝不自动覆盖修复 `meta.json`。
-   - 当检测到 `Path(str(paths["paperforge"])).name == ".paperforge"` 时，`_build_entry()` 与 `_sync_workspace_fulltexts()` 均主动删除工作区内冗余 `fulltext.md` 副本。
+   - 当检测到 `Path(str(paths["paperforge"])).name == ".paperforge"` 时，`_build_entry()` 与 `_sync_workspace_fulltexts()` 均调用 `cleanup_or_preserve_workspace_fulltext()` 清理工作区内冗余 `fulltext.md`：仅当原始或 LF 归一化 SHA-256 与 OCR 输出一致时才直接 `unlink()`，若存在用户手工修改或缺失比对源则移入 `.paperforge/trash/`。
 4. **棘轮只缩不扩不变量（`scripts/check_module_graph.py`）**：
    - 静态分析的局限性（如动态 `importlib`、`__import__`、`getattr` 及运行期 monkeypatch）由运行时测试 `tests/test_import_weight.py` 补位覆盖，不允许用动态导入绕过 R1–R4 约束。
 

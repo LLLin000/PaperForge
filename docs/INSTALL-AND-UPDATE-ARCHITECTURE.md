@@ -2,7 +2,13 @@
 
 > **定位**：面向维护者与工程演进的架构设计文档（**设计蓝图 / 待评审定稿**）。  
 > **适用范围**：Obsidian 桌面端全平台（**Windows x64/ARM64、macOS Apple Silicon/Intel、Linux x64/ARM64**；移动端 iOS/Android 暂不纳入）。  
-> **当前基线版本**：`2.0.0rc6`（[__init__.py](../paperforge/__init__.py) / [manifest.json](../paperforge/plugin/manifest.json)）。
+> **当前基线版本**：`2.0.0rc6`（[**init**.py](../paperforge/__init__.py) / [manifest.json](../paperforge/plugin/manifest.json)）。
+
+> [!IMPORTANT]
+> **已上线现状（`v2.0.0rc6` / Phase 1）与远期演进蓝图（`v2.1` / Phase 2–3）边界说明：**
+>
+> - **当前已上线（Phase 1 实装基线）**：桌面端仍要求用户本机**前置安装一次 Python 3.11+** 作为引导器（`pip install` + `paperforge runtime install --expected-version <VER>`），由 Python `runtime_installer` 在 `~/.paperforge/runtime/` 下创建隔离虚拟环境并原子写入 `pointer.json`；插件 `NodeProcessTransport` 通过读取 `pointer.json` 并按 SemVer→PEP 440 1:1 对齐版本校验运行（见 `scripts/check_version_sync.py`）。
+> - **本文设计的目标架构（v2.1 Blueprint，尚未上线）**：下文中关于内嵌 `uv` 静态引导免装 Python、Wheel 硬链接秒级热修，以及 `minEngineVersion` / `depsLockHash` 与插件解耦升级的方案属于 **v2.1 待评审实现蓝图**，尚未合入当前 `NodeProcessTransport` 与 `runtime_installer.py`。
 
 ---
 
@@ -28,13 +34,13 @@
 
 在设计升级机制前，必须明确“什么跟着 Vault 走、什么必须留在本机 OS 目录、什么昂贵不可丢、什么随时可丢弃重建”：
 
-| 层级 | 组件 | 存储位置 | 体积 / 频次 | 权威性 & 多设备同步属性 |
-| :--- | :--- | :--- | :--- | :--- |
-| **L1 前端插件** | `main.js`、`styles.css`、`manifest.json` | `<vault>/.obsidian/plugins/paperforge/` | `~600 KB`<br>最高频更新 | 随 Vault 跨设备同步（`isDesktopOnly: true`），只读消费后端契约 |
-| **L2 Python 解释器** | CPython 3.12（`python.exe` / `python3`） | **OS 本机用户目录**（见 §5 矩阵） | `~65 MB`<br>极低频更新 | **严禁放入 Vault**：跨 OS 不可共享，且小文件极多会拖垮同步网盘 |
-| **L3 引擎与原生依赖** | `paperforge`（纯 Python Wheel）+ `pymupdf`、`pillow`、`sqlite-vec`、`openai`、`keyring` | **OS 本机目录**（独立版本化 `envs/<ver>-<hash>/` + 全局 Wheel 缓存） | 依赖 `~150 MB`<br>业务包 `~400 KB` | L3 代码高频更新、重依赖低频更新；通过 `pointer.json` 原子指针暴露给 L1 |
-| **L4 Vault 协同资产** | Agent Skill 树（`.agents/skills/paperforge/SKILL.md`）、配置（`.paperforge/config/`） | Vault 内部 | `< 200 KB`<br>随后端升级 | 跨设备同步；升级需尊重用户本地改写（先验摘要再覆写） |
-| **L5 派生索引与渲染缓存** | `paperforge.db`（FTS5 + Vec0）、`ocr/<KEY>/render/`、`structure/` | Vault `.paperforge/` 内部 | 数十 MB ~ GB<br>按需演化 | **可丢弃重建的派生层**：真实来源（BBT 导出、`annotations.jsonl`、`memory-card.json`、`blocks.raw.jsonl`）全在独立侧车文件 |
+| 层级                      | 组件                                                                                    | 存储位置                                                             | 体积 / 频次                        | 权威性 & 多设备同步属性                                                                                                   |
+| :------------------------ | :-------------------------------------------------------------------------------------- | :------------------------------------------------------------------- | :--------------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| **L1 前端插件**           | `main.js`、`styles.css`、`manifest.json`                                                | `<vault>/.obsidian/plugins/paperforge/`                              | `~600 KB`<br>最高频更新            | 随 Vault 跨设备同步（`isDesktopOnly: true`），只读消费后端契约                                                            |
+| **L2 Python 解释器**      | CPython 3.12（`python.exe` / `python3`）                                                | **OS 本机用户目录**（见 §5 矩阵）                                    | `~65 MB`<br>极低频更新             | **严禁放入 Vault**：跨 OS 不可共享，且小文件极多会拖垮同步网盘                                                            |
+| **L3 引擎与原生依赖**     | `paperforge`（纯 Python Wheel）+ `pymupdf`、`pillow`、`sqlite-vec`、`openai`、`keyring` | **OS 本机目录**（独立版本化 `envs/<ver>-<hash>/` + 全局 Wheel 缓存） | 依赖 `~150 MB`<br>业务包 `~400 KB` | L3 代码高频更新、重依赖低频更新；通过 `pointer.json` 原子指针暴露给 L1                                                    |
+| **L4 Vault 协同资产**     | Agent Skill 树（`.agents/skills/paperforge/SKILL.md`）、配置（`.paperforge/config/`）   | Vault 内部                                                           | `< 200 KB`<br>随后端升级           | 跨设备同步；升级需尊重用户本地改写（先验摘要再覆写）                                                                      |
+| **L5 派生索引与渲染缓存** | `paperforge.db`（FTS5 + Vec0）、`ocr/<KEY>/render/`、`structure/`                       | Vault `.paperforge/` 内部                                            | 数十 MB ~ GB<br>按需演化           | **可丢弃重建的派生层**：真实来源（BBT 导出、`annotations.jsonl`、`memory-card.json`、`blocks.raw.jsonl`）全在独立侧车文件 |
 
 > **关键设计约束**：L1 随 Vault 跨机漂移，L2/L3 绑定当前电脑 OS 与 CPU 架构，L4/L5 在 Vault 内共享。只要遵守这一物理边界，**多台电脑之间（如办公室 Windows 台式机 + 家里 MacBook）就不会发生二进制污染**。
 
@@ -67,15 +73,15 @@
 
 针对 Obsidian 桌面插件形态，我们评估了社区常见的四类架构路径：
 
-| 对比维度 | 方案 A：系统 Python + `venv` + `pip`（现状） | 方案 B：PyInstaller / Nuitka 单包二进制（GitHub Releases） | **方案 C：`uv` 静态引导 + 托管绿版 Python + 硬链接缓存 + 蓝绿指针（推荐）** | 方案 D：Docker / 常驻后台服务安装器 |
-| :--- | :--- | :--- | :--- | :--- |
-| **用户前置依赖** | 需自装 Python 3.11+（新手阻力极大） | 零前置 | **零前置**（`uv` 自动按需拉取免安装 `python-build-standalone`） | 需装 Docker 或系统守护服务（不可接受） |
-| **首次冷启动耗时** | 1~3 分钟（需先引导装 Python） | 1~3 分钟（下载 ~120MB 压缩包） | **8~15 秒**（并行下载 Wheel + 毫秒级硬链接解包） | 数分钟 |
-| **1 行代码热修耗时** | 30~90 秒（重装全量依赖） | **1~3 分钟（必须重下 ~120MB 整包）** | **1.5~3 秒**（重依赖走全局硬链接 0 字节下载，仅更 ~400KB 包） | ~1 分钟 |
-| **macOS Gatekeeper / 杀软误报** | 无（官方 Python 签名） | **极高**：未买 $99 Apple 公证会被“已损坏/无法验证开发者”拦截；Win Defender 对 PyInstaller 引导头常误报 | **极低**：`uv` 与 Python 均来自官方/Astral 正式发布渠道且支持 SHA-256 校验，无冻结自解压外壳 | 中 |
-| **CI 构建成本** | 仅需发布纯 Python `py3-none-any.whl` | **极重**：需维护 Win x64 / Win ARM64 / macOS arm64 / macOS x64 / Linux 五套交叉编译打包矩阵 | **极轻**：`paperforge` 仍是纯 Python Wheel（跨平台仅 1 个包！），C 扩展直接复用 PyPI 官方预编译 Wheel | 重 |
-| **国内网络体验** | 依赖用户自行配 pip 镜像 | 依赖 GitHub Release 大文件镜像/代理，极易断流 | **可控**：自动探测连通性，超时自动回退清华 TUNA / 阿里云镜像 + 国内可用源下载 `uv` / Python | 差 |
-| **热更新防文件锁** | 若用独立候选目录则安全，否则极易锁死 | Windows 无法覆盖运行中 `.exe`，需额外两阶段自替换重启逻辑 | **天然安全**：独立 `envs/<id>/` + 原子切换 `pointer.json` | 需停服务 |
+| 对比维度                        | 方案 A：系统 Python + `venv` + `pip`（现状） | 方案 B：PyInstaller / Nuitka 单包二进制（GitHub Releases）                                             | **方案 C：`uv` 静态引导 + 托管绿版 Python + 硬链接缓存 + 蓝绿指针（推荐）**                           | 方案 D：Docker / 常驻后台服务安装器    |
+| :------------------------------ | :------------------------------------------- | :----------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- | :------------------------------------- |
+| **用户前置依赖**                | 需自装 Python 3.11+（新手阻力极大）          | 零前置                                                                                                 | **零前置**（`uv` 自动按需拉取免安装 `python-build-standalone`）                                       | 需装 Docker 或系统守护服务（不可接受） |
+| **首次冷启动耗时**              | 1~3 分钟（需先引导装 Python）                | 1~3 分钟（下载 ~120MB 压缩包）                                                                         | **8~15 秒**（并行下载 Wheel + 毫秒级硬链接解包）                                                      | 数分钟                                 |
+| **1 行代码热修耗时**            | 30~90 秒（重装全量依赖）                     | **1~3 分钟（必须重下 ~120MB 整包）**                                                                   | **1.5~3 秒**（重依赖走全局硬链接 0 字节下载，仅更 ~400KB 包）                                         | ~1 分钟                                |
+| **macOS Gatekeeper / 杀软误报** | 无（官方 Python 签名）                       | **极高**：未买 $99 Apple 公证会被“已损坏/无法验证开发者”拦截；Win Defender 对 PyInstaller 引导头常误报 | **极低**：`uv` 与 Python 均来自官方/Astral 正式发布渠道且支持 SHA-256 校验，无冻结自解压外壳          | 中                                     |
+| **CI 构建成本**                 | 仅需发布纯 Python `py3-none-any.whl`         | **极重**：需维护 Win x64 / Win ARM64 / macOS arm64 / macOS x64 / Linux 五套交叉编译打包矩阵            | **极轻**：`paperforge` 仍是纯 Python Wheel（跨平台仅 1 个包！），C 扩展直接复用 PyPI 官方预编译 Wheel | 重                                     |
+| **国内网络体验**                | 依赖用户自行配 pip 镜像                      | 依赖 GitHub Release 大文件镜像/代理，极易断流                                                          | **可控**：自动探测连通性，超时自动回退清华 TUNA / 阿里云镜像 + 国内可用源下载 `uv` / Python           | 差                                     |
+| **热更新防文件锁**              | 若用独立候选目录则安全，否则极易锁死         | Windows 无法覆盖运行中 `.exe`，需额外两阶段自替换重启逻辑                                              | **天然安全**：独立 `envs/<id>/` + 原子切换 `pointer.json`                                             | 需停服务                               |
 
 **为什么坚决淘汰“PyInstaller 打包单个 `.exe`/`.app`”？**  
 看起来“一个安装包直接跑”似乎很美，但在科研高频迭代场景是**热修灾难**：改一句正则或修一个排版 Bug，CI 要跑 5 个平台编 15 分钟，用户要在国内环境下重新拖一个 120MB 的未公证压缩包，还可能被 Windows Defender 隔离。而 **方案 C（`uv` + 绿版 Python）** 既拥有**“用户电脑不用装 Python”的零门槛**，又完全保留了**“纯 Python `~400 KB` Wheel 秒级增量发布”的极速热修红利**。
@@ -171,6 +177,7 @@ sequenceDiagram
 ### 4.4 镜像容错与防断流策略（适配国内科研网络）
 
 安装器内置轻量级 2 秒测速探测（可由用户设置覆盖，也支持企业代理 `HTTP_PROXY`/`HTTPS_PROXY` 环境变量自动透传）：
+
 1. **`uv` 二进制获取**：优先包内自带校验清单 + GitHub Release 直链 / 镜像代理；首次拉取后缓存到 OS 用户目录永久复用。
 2. **绿版 Python 下载（`python-build-standalone`）**：默认走 GitHub Release；若 3 秒首包超时，自动切换国内镜像源（如 `UV_PYTHON_INSTALL_MIRROR` 指向高校/云加速镜像），并强校验官方 SHA-256。
 3. **PyPI 包拉取**：按顺序探测 `pypi.org/simple` 与清华 `pypi.tuna.tsinghua.edu.cn/simple` / 阿里云 `mirrors.aliyun.com/pypi/simple`；且开启全局 `UV_CACHE_DIR`，常用重依赖只在首次下载一次。
@@ -194,15 +201,15 @@ sequenceDiagram
 
 ### 5.1 跨平台目录与链接策略矩阵
 
-| 路径项 | Windows (10/11 x64 & ARM64) | macOS (Apple Silicon & Intel) | Linux (x64 & ARM64) |
-| :--- | :--- | :--- | :--- |
-| **引擎根目录**<br>(`RUNTIME_HOME`) | `%LOCALAPPDATA%\PaperForge\runtime\` | `~/Library/Application Support/PaperForge/runtime/` | `${XDG_DATA_HOME:-~/.local/share}/paperforge/runtime/`<br>*(兼容迁移旧版 `~/.paperforge/runtime/`)* |
-| **便携 `uv` 位置** | `<RUNTIME_HOME>\bin\uv.exe` | `<RUNTIME_HOME>/bin/uv` (`chmod +x`) | `<RUNTIME_HOME>/bin/uv` (`chmod +x`) |
-| **托管绿版 Python** | `<RUNTIME_HOME>\python\` | `<RUNTIME_HOME>/python/` | `<RUNTIME_HOME>/python/` |
-| **全局硬链接缓存** | `<RUNTIME_HOME>\cache\uv`（NTFS Hardlink） | `<RUNTIME_HOME>/cache/uv`（APFS `clonefile` COW） | `<RUNTIME_HOME>/cache/uv`（Hardlink / Reflink） |
-| **版本化运行时** | `<RUNTIME_HOME>\envs\<ver>-<hash>\Scripts\python.exe` | `<RUNTIME_HOME>/envs/<ver>-<hash>/bin/python3` | `<RUNTIME_HOME>/envs/<ver>-<hash>/bin/python3` |
-| **原子切换指针** | `<RUNTIME_HOME>\pointer.json` | `<RUNTIME_HOME>/pointer.json` | `<RUNTIME_HOME>/pointer.json` |
-| **跨盘符退化处理** | 保证 `cache` 与 `envs` 同在 `RUNTIME_HOME` 同分区下，确保 NTFS 硬链接 100% 命中，不退化为慢拷贝 | 保证同卷 APFS，几乎零额外磁盘开销 | 若 `/tmp` 与 `$HOME` 分区不同，`UV_CACHE_DIR` 固定设于 `RUNTIME_HOME` 下避免跨挂载点复制 |
+| 路径项                             | Windows (10/11 x64 & ARM64)                                                                     | macOS (Apple Silicon & Intel)                       | Linux (x64 & ARM64)                                                                                 |
+| :--------------------------------- | :---------------------------------------------------------------------------------------------- | :-------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| **引擎根目录**<br>(`RUNTIME_HOME`) | `%LOCALAPPDATA%\PaperForge\runtime\`                                                            | `~/Library/Application Support/PaperForge/runtime/` | `${XDG_DATA_HOME:-~/.local/share}/paperforge/runtime/`<br>_(兼容迁移旧版 `~/.paperforge/runtime/`)_ |
+| **便携 `uv` 位置**                 | `<RUNTIME_HOME>\bin\uv.exe`                                                                     | `<RUNTIME_HOME>/bin/uv` (`chmod +x`)                | `<RUNTIME_HOME>/bin/uv` (`chmod +x`)                                                                |
+| **托管绿版 Python**                | `<RUNTIME_HOME>\python\`                                                                        | `<RUNTIME_HOME>/python/`                            | `<RUNTIME_HOME>/python/`                                                                            |
+| **全局硬链接缓存**                 | `<RUNTIME_HOME>\cache\uv`（NTFS Hardlink）                                                      | `<RUNTIME_HOME>/cache/uv`（APFS `clonefile` COW）   | `<RUNTIME_HOME>/cache/uv`（Hardlink / Reflink）                                                     |
+| **版本化运行时**                   | `<RUNTIME_HOME>\envs\<ver>-<hash>\Scripts\python.exe`                                           | `<RUNTIME_HOME>/envs/<ver>-<hash>/bin/python3`      | `<RUNTIME_HOME>/envs/<ver>-<hash>/bin/python3`                                                      |
+| **原子切换指针**                   | `<RUNTIME_HOME>\pointer.json`                                                                   | `<RUNTIME_HOME>/pointer.json`                       | `<RUNTIME_HOME>/pointer.json`                                                                       |
+| **跨盘符退化处理**                 | 保证 `cache` 与 `envs` 同在 `RUNTIME_HOME` 同分区下，确保 NTFS 硬链接 100% 命中，不退化为慢拷贝 | 保证同卷 APFS，几乎零额外磁盘开销                   | 若 `/tmp` 与 `$HOME` 分区不同，`UV_CACHE_DIR` 固定设于 `RUNTIME_HOME` 下避免跨挂载点复制            |
 
 > **兼容历史环境**：若检测用户已有老版本 `~/.paperforge/runtime/pointer.json`，启动时按旧路径只读兼容并优先迁移；卸载或切换后旧文件按 `keep_previous=1` 自动回收，绝不破坏用户现有数据。
 

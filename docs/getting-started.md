@@ -4,11 +4,19 @@
 
 ---
 
-## 1. 安装后检查
+## 1. 安装与运行前检查（当前 `v2.0.0rc6`）
 
-1. Obsidian 已打开当前 Vault
-2. PaperForge 插件已在设置中启用
-3. Python 运行时已确认（设置面板 --> 验证）
+> [!NOTE]
+> 当前版本（`2.0.0rc6`）需本机先安装一次 **Python 3.11+** 作为引导环境；PaperForge 会在用户主目录 `.paperforge/runtime/` 下自动创建独立隔离环境并写入 `pointer.json`，不会污染你的系统包（`uv` 免 Python 自动引导方案仍在 [跨平台安装与热更架构设计](INSTALL-AND-UPDATE-ARCHITECTURE.md) 蓝图规划中）。
+
+1. 桌面端已安装 **Python 3.11+**，且已在 Obsidian 设置 → PaperForge 向导点击安装、或在终端执行受管运行时安装：
+   ```bash
+   python -m pip install --user "paperforge==2.0.0rc6"
+   python -m paperforge runtime install --expected-version 2.0.0rc6
+   ```
+   （将 `2.0.0rc6` 替换为插件设置面板展示的当前版本号）
+2. Obsidian 已打开当前 Vault，且 PaperForge 插件已在社区插件设置中启用
+3. Python 运行时已确认就绪（Obsidian 设置面板 → PaperForge Control Center → 验证通过 `pointer.json` 隔离环境）
 
 ---
 
@@ -29,6 +37,7 @@
 打开 Dashboard（`Ctrl+P` -> `PaperForge: Open Main Panel`），点击 **Sync Library**。
 
 或者终端执行：
+
 ```bash
 paperforge sync
 ```
@@ -64,6 +73,7 @@ OCR 结果保存在隐藏引擎目录 `.paperforge/ocr/<key>/`（或旧版 `Syst
 OCR 完成后，把 formal note 的 `analyze` 改为 `true`。
 
 确认就绪：
+
 ```bash
 paperforge deep-reading
 ```
