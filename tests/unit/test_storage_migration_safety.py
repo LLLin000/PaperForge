@@ -196,3 +196,137 @@ def test_force_rebuild_and_single_entry_refresh_preserve_modified_fulltext_and_s
     assert len(trashed_after_refresh) == 1
     assert restore_trash(tmp_path, trashed_after_refresh[0]["trash_id"]) == (ws / "fulltext.md").resolve()
     assert (ws / "fulltext.md").read_bytes() == edited_refresh
+
+
+def test_migration_fault_injection_rolls_back_on_nth_move_asset_note_or_journal_recovery(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from paperforge.services import storage_migration
+    from paperforge.services.storage_migration import rollback_incomplete_migration
+
+    # --- Fault 1: fail on 2nd tree entry move -> 1st move must roll back ---
+    vault1 = tmp_path / "v1"
+    vault1.mkdir()
+    canonical_test_config(vault1, system_dir="System")
+    m1 = vault1 / "System" / "PaperForge" / "ocr" / "A01" / "meta.json"
+    m2 = vault1 / "System" / "PaperForge" / "indexes" / "state.json"
+    m1.parent.mkdir(parents=True)
+    m2.parent.mkdir(parents=True)
+    m1.write_text('{"zotero_key": "A01"}', encoding="utf-8")
+    m2.write_text('{"ok": true}', encoding="utf-8")
+
+    orig_move = storage_migration.shutil.move
+    forward_moves = 0
+
+    def _fail_second_move(src: str, dst: str) -> str:
+        nonlocal forward_moves
+        if ".paperforge" in Path(dst).parts:
+            forward_moves += 1
+            if forward_moves >= 2:
+                raise OSError("injected move failure")
+        return orig_move(src, dst)
+
+    monkeypatch.setattr(storage_migration.shutil, "move", _fail_second_move)
+    with pytest.raises(RuntimeError, match="rolled back"):
+        migrate_vault_storage(vault1, dry_run=False)
+    monkeypatch.undo()
+    assert m1.exists()
+    assert m2.exists()
+    assert load_config(vault1).values["system_dir"].value == "System"
+    assert json.loads((vault1 / ".paperforge" / ".migration-journal.json").read_text(encoding="utf-8"))["state"] == "rolled_back"
+
+    # --- Fault 2: fail on 2nd visual asset materialization -> 1st asset & moved dir roll back ---
+    vault2 = tmp_path / "v2"
+    vault2.mkdir()
+    canonical_test_config(vault2, system_dir="System")
+    for k in ("B01", "B02"):
+        fig = vault2 / "System" / "PaperForge" / "ocr" / k / "assets" / "figures" / "figure_001.jpg"
+        fig.parent.mkdir(parents=True)
+        fig.write_bytes(k.encode())
+        ws = vault2 / "Resources" / "Literature" / "Ortho" / f"{k} - Paper"
+        ws.mkdir(parents=True)
+
+    orig_sync_assets = storage_migration.sync_workspace_visual_assets
+    asset_calls = 0
+
+    def _fail_second_asset(paper_ocr_dir: Path, ws_dir: Path, key: str) -> list[str]:
+        nonlocal asset_calls
+        asset_calls += 1
+        if asset_calls == 2:
+            raise OSError("disk full during asset copy")
+        return orig_sync_assets(paper_ocr_dir, ws_dir, key)
+
+    monkeypatch.setattr(storage_migration, "sync_workspace_visual_assets", _fail_second_asset)
+    with pytest.raises(RuntimeError, match="rolled back"):
+        migrate_vault_storage(vault2, dry_run=False)
+    monkeypatch.undo()
+    assert not (
+        vault2 / "Resources" / "Literature" / "Ortho" / "B01 - Paper" / "assets" / "B01_figure_001.jpg"
+    ).exists()
+    assert (vault2 / "System" / "PaperForge" / "ocr" / "B01" / "assets" / "figures" / "figure_001.jpg").exists()
+
+    # --- Fault 3: fail on 2nd note rewrite -> 1st note restored cleanly ---
+    vault3 = tmp_path / "v3"
+    vault3.mkdir()
+    canonical_test_config(vault3, system_dir="System")
+    notes_orig: dict[Path, str] = {}
+    for k in ("C01", "C02"):
+        ws = vault3 / "Resources" / "Literature" / "Ortho" / f"{k} - Paper"
+        ws.mkdir(parents=True)
+        n = ws / f"{k}.md"
+        txt = f"---\ntitle: {k}\n---\n![[render/figures/figure_001.md]]\n"
+        n.write_text(txt, encoding="utf-8")
+        notes_orig[n] = txt
+    (vault3 / "System" / "PaperForge" / "ocr" / "C01").mkdir(parents=True)
+
+    orig_write_text = storage_migration.write_text_atomic
+    write_calls = 0
+
+    def _fail_second_note(path: Path, text: str) -> None:
+        nonlocal write_calls
+        write_calls += 1
+        if write_calls == 2:
+            raise OSError("injected note write failure")
+        orig_write_text(path, text)
+
+    monkeypatch.setattr(storage_migration, "write_text_atomic", _fail_second_note)
+    with pytest.raises(RuntimeError, match="rolled back"):
+        migrate_vault_storage(vault3, dry_run=False)
+    monkeypatch.undo()
+    for note_p, expected_txt in notes_orig.items():
+        assert note_p.read_text(encoding="utf-8") == expected_txt
+
+    # --- Fault 4: hard-crash journal recovery via rollback_incomplete_migration() ---
+    vault4 = tmp_path / "v4"
+    vault4.mkdir()
+    canonical_test_config(vault4, system_dir="System")
+    src_meta = vault4 / "System" / "PaperForge" / "ocr" / "D01" / "meta.json"
+    dst_meta = vault4 / ".paperforge" / "ocr" / "D01" / "meta.json"
+    dst_meta.parent.mkdir(parents=True)
+    dst_meta.write_text('{"zotero_key": "D01"}', encoding="utf-8")
+    ws4_note = vault4 / "Resources" / "Literature" / "Ortho" / "D01 - Paper" / "D01.md"
+    ws4_note.parent.mkdir(parents=True)
+    ws4_note.write_text("![[D01_figure_001.jpg]]\n", encoding="utf-8")
+    journal4 = vault4 / ".paperforge" / ".migration-journal.json"
+    journal4.write_text(
+        json.dumps(
+            {
+                "state": "in_progress",
+                "previous_system_dir": "System",
+                "moved_pairs": [{"src": str(src_meta.parent), "dst": str(dst_meta.parent)}],
+                "rewritten_notes": [
+                    {"path": str(ws4_note), "original_text": "![[render/figures/figure_001.md]]\n"}
+                ],
+                "created_assets": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rec = rollback_incomplete_migration(vault4)
+    assert rec["recovered"] is True
+    assert rec["state"] == "rolled_back"
+    assert src_meta.exists()
+    assert not dst_meta.exists()
+    assert ws4_note.read_text(encoding="utf-8") == "![[render/figures/figure_001.md]]\n"
+    assert json.loads(journal4.read_text(encoding="utf-8"))["state"] == "rolled_back"
