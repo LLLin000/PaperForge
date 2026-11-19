@@ -417,7 +417,7 @@ def _build_entry(
                     )
 
     if note_path.parent.exists():
-        for stale_note in note_path.parent.glob(f"{key}*.md"):
+        for stale_note in note_path.parent.glob(f"{key} - *.md"):
             if stale_note != note_path:
                 stale_note.unlink()
 
@@ -454,10 +454,17 @@ def _build_entry(
     # inside <workspace>/assets/ so Obsidian displays images natively without scanning .paperforge/.
     sync_workspace_visual_assets(paths["ocr"] / key, workspace_dir, key)
     # ponytail: size + mtime guard avoids I/O on unchanged fulltext.
-    # When engine lives in hidden .paperforge/, keep fulltext internal (never expose workspace copy).
+    # When engine lives in hidden .paperforge/, keep fulltext internal (never expose workspace copy)
+    # while ALWAYS checking cleanup_or_preserve_workspace_fulltext so user edits go to trash instead of unlink().
     if hidden_engine or not source_fulltext.exists():
         if stale_workspace_fulltext.exists():
-            stale_workspace_fulltext.unlink()
+            cleanup_or_preserve_workspace_fulltext(
+                workspace_dir,
+                vault=vault,
+                ocr_paper_dir=paths["ocr"] / key,
+                lit_root=paths["literature"],
+                paper_key=key,
+            )
     else:
         try:
             src = source_fulltext.stat()
@@ -471,7 +478,13 @@ def _build_entry(
         )
         if fulltext_changed:
             if stale_workspace_fulltext.exists():
-                stale_workspace_fulltext.unlink()
+                cleanup_or_preserve_workspace_fulltext(
+                    workspace_dir,
+                    vault=vault,
+                    ocr_paper_dir=paths["ocr"] / key,
+                    lit_root=paths["literature"],
+                    paper_key=key,
+                )
             shutil.copy2(str(source_fulltext), str(stale_workspace_fulltext))
 
     fulltext_exists = source_fulltext.exists()

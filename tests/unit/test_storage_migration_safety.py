@@ -125,3 +125,74 @@ def test_interrupted_and_repeat_migration_is_idempotent(tmp_path: Path) -> None:
     assert second["config_updated"] is True
     assert second["entries_moved"] == 0
     assert already_k2.exists()
+
+
+def test_force_rebuild_and_single_entry_refresh_preserve_modified_fulltext_and_sibling_notes(
+    tmp_path: Path,
+) -> None:
+    from paperforge.worker.asset_index import build_index, refresh_index_entry
+
+    canonical_test_config(tmp_path, system_dir=".paperforge")
+    pf_dir = tmp_path / ".paperforge"
+    (pf_dir / "exports").mkdir(parents=True, exist_ok=True)
+    ocr_dir = pf_dir / "ocr" / "RBFT01"
+    ocr_dir.mkdir(parents=True, exist_ok=True)
+    (ocr_dir / "fulltext.md").write_text("# Official OCR Text\n", encoding="utf-8")
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key": "RBFT01", "ocr_status": "done"}', encoding="utf-8"
+    )
+    (pf_dir / "exports" / "Ortho.json").write_text(
+        json.dumps(
+            {
+                "items": [
+                    {
+                        "key": "RBFT01",
+                        "citationKey": "rbft2026",
+                        "title": "Preserved Fulltext Study",
+                        "date": "2026",
+                        "publicationTitle": "J Bone",
+                        "creators": [{"creatorType": "author", "lastName": "Lin"}],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert build_index(tmp_path) == 1
+    domain_dir = tmp_path / "Resources" / "Literature" / "Ortho"
+    ws = next(domain_dir.glob("RBFT01 - *"))
+
+    # Sibling user note whose name shares the key prefix must not be touched
+    sibling_note = domain_dir / "RBFT01_reading_scratch.md"
+    sibling_note.write_text("# Keep me\n", encoding="utf-8")
+
+    # Case 1: force_rebuild=True moves user-modified fulltext into trash (restorable)
+    edited_rebuild = b"# Official OCR Text\n\nCustom user edits during rebuild.\n"
+    (ws / "fulltext.md").write_bytes(edited_rebuild)
+    assert build_index(tmp_path, force_rebuild=True) == 1
+    assert not (ws / "fulltext.md").exists()
+    assert sibling_note.read_text(encoding="utf-8") == "# Keep me\n"
+
+    trashed_after_rebuild = [e for e in list_trash(tmp_path) if e.get("paper_key") == "RBFT01"]
+    assert len(trashed_after_rebuild) == 1
+    assert trashed_after_rebuild[0]["operation"] == "workspace_fulltext_preserve"
+    first_trash_id = trashed_after_rebuild[0]["trash_id"]
+    assert restore_trash(tmp_path, first_trash_id) == (ws / "fulltext.md").resolve()
+    assert (ws / "fulltext.md").read_bytes() == edited_rebuild
+
+    # Case 2: single-entry refresh_index_entry also preserves modified fulltext in trash
+    edited_refresh = b"# Official OCR Text\n\nCustom user edits during refresh.\n"
+    (ws / "fulltext.md").write_bytes(edited_refresh)
+    assert refresh_index_entry(tmp_path, "RBFT01") is True
+    assert not (ws / "fulltext.md").exists()
+    assert sibling_note.read_text(encoding="utf-8") == "# Keep me\n"
+
+    trashed_after_refresh = [
+        e
+        for e in list_trash(tmp_path)
+        if e.get("paper_key") == "RBFT01" and e.get("trash_id") != first_trash_id
+    ]
+    assert len(trashed_after_refresh) == 1
+    assert restore_trash(tmp_path, trashed_after_refresh[0]["trash_id"]) == (ws / "fulltext.md").resolve()
+    assert (ws / "fulltext.md").read_bytes() == edited_refresh
