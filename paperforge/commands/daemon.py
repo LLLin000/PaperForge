@@ -95,6 +95,7 @@ def _execute_request(
     in_buf = io.StringIO(stdin_text)
 
     from paperforge import cli
+    from paperforge.core import timing
 
     orig_stdin, orig_stdout, orig_stderr = sys.stdin, sys.stdout, sys.stderr
     saved_handlers = _redirect_stream_handlers(err_buf, (orig_stdout, orig_stderr, real_stdout, real_stderr))
@@ -103,6 +104,7 @@ def _execute_request(
         sys.stdin = in_buf
         sys.stdout = out_buf
         sys.stderr = err_buf
+        timing.reset()
         try:
             exit_code = int(cli.main(argv))
         except SystemExit as exc:

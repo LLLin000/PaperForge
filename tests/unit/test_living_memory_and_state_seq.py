@@ -176,3 +176,37 @@ def test_build_entry_skips_redundant_disk_write_when_note_unchanged(tmp_path: Pa
 
     _build_entry(item, vault, paths, "Ortho", zot_dir)
     assert note_path.stat().st_mtime_ns == old_ns
+
+
+def test_bump_state_seq_is_lossless_under_concurrent_subprocesses(tmp_path: Path):
+    import concurrent.futures
+    import subprocess
+    import sys
+
+    vault, _, _ = _make_vault(tmp_path, key="SEQ00001")
+    seq0 = read_state_seq(vault)["seq"]
+    assert seq0 >= 1
+    idx_dir = vault / ".paperforge" / "indexes"
+    idx_dir.mkdir(parents=True, exist_ok=True)
+
+    worker_code = (
+        "import sys; from pathlib import Path; "
+        "from paperforge.services.state_signal import bump_state_seq_in_dir; "
+        "d = Path(sys.argv[1]); n = int(sys.argv[2]); "
+        "[bump_state_seq_in_dir(d, reason=f'w{sys.argv[3]}', changed_keys=[f'K{i}']) for i in range(n)]"
+    )
+
+    def _run_worker(wid: int) -> None:
+        subprocess.run(
+            [sys.executable, "-c", worker_code, str(idx_dir), "5", str(wid)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        futs = [pool.submit(_run_worker, wid) for wid in range(4)]
+        for fut in futs:
+            fut.result()
+
+    assert read_state_seq(vault)["seq"] == seq0 + 20

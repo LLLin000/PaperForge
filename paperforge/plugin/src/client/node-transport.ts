@@ -815,6 +815,11 @@ export class NodeProcessTransport implements Transport {
     this._daemon = null;
     if (!active) return;
     executeChildRegistry.delete(active.child);
+    for (const [id, rpc] of active.pending.entries()) {
+      active.pending.delete(id);
+      if (rpc.timer) clearTimeout(rpc.timer);
+      rpc.reject(new Error("PaperForge daemon shut down"));
+    }
     if (active.child.exitCode == null && active.child.signalCode == null) {
       hardKill(active.child);
     }

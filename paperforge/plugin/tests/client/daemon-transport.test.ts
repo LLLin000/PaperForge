@@ -204,4 +204,86 @@ describe("NodeProcessTransport warm daemon & scoped invalidation", () => {
     expect(executed).toHaveLength(5);
     expect(executed[4]).toEqual(["paper-status", "K1", "--json"]);
   });
+
+  it("multiplexes concurrent execute calls out-of-order and rejects siblings cleanly on shutdownDaemon respawn", async () => {
+    const firstChild = new MockChildProcess();
+    const queuedChunks: Array<{ id: number; argv: string[] }> = [];
+    firstChild.stdin.write = vi.fn((chunk: string) => {
+      firstChild.writes.push(chunk);
+      const req = JSON.parse(chunk.trim()) as { id: number; argv: string[] };
+      queuedChunks.push(req);
+      if (queuedChunks.length === 2) {
+        // Emit response for id=2 BEFORE id=1 to prove id-correlation works out of order
+        queueMicrotask(() => {
+          firstChild.stdout.emit(
+            "data",
+            JSON.stringify({
+              id: queuedChunks[1].id,
+              exit_code: 0,
+              stdout: "second",
+              stderr: "",
+            }) +
+              "\n" +
+              JSON.stringify({
+                id: queuedChunks[0].id,
+                exit_code: 0,
+                stdout: "first",
+                stderr: "",
+              }) +
+              "\n"
+          );
+        });
+      }
+      return true;
+    });
+
+    const respawnChild = new MockChildProcess();
+    respawnChild.stdin.write = vi.fn((chunk: string) => {
+      respawnChild.writes.push(chunk);
+      const req = JSON.parse(chunk.trim()) as { id: number };
+      queueMicrotask(() => {
+        respawnChild.stdout.emit(
+          "data",
+          JSON.stringify({
+            id: req.id,
+            exit_code: 0,
+            stdout: "fresh-daemon",
+            stderr: "",
+          }) + "\n"
+        );
+      });
+      return true;
+    });
+
+    const mockSpawn = vi
+      .fn()
+      .mockReturnValueOnce(firstChild)
+      .mockReturnValueOnce(respawnChild);
+
+    const transport = new NodeProcessTransport({
+      vaultPath,
+      spawnFn: mockSpawn as unknown as typeof import("child_process").spawn,
+      useDaemon: true,
+    });
+
+    const [a, b] = await Promise.all([
+      transport.execute(["config", "paths", "--json"]),
+      transport.execute(["probe", "ocr", "--json"]),
+    ]);
+    expect(a).toBe("first");
+    expect(b).toBe("second");
+    expect(mockSpawn).toHaveBeenCalledTimes(1);
+
+    // Trigger an in-flight RPC that stalls, then shut down daemon -> sibling rejects immediately (never hangs)
+    const hungPromise = transport.execute(["probe", "library", "--json"]);
+    await vi.waitFor(() => expect(firstChild.writes).toHaveLength(3));
+    transport.shutdownDaemon();
+    await expect(hungPromise).rejects.toThrow(/shut down/i);
+
+    // Subsequent call automatically respawns a fresh warm daemon
+    const afterRespawn = await transport.execute(["config", "paths", "--json"]);
+    expect(afterRespawn).toBe("fresh-daemon");
+    expect(mockSpawn).toHaveBeenCalledTimes(2);
+    transport.shutdownDaemon();
+  });
 });

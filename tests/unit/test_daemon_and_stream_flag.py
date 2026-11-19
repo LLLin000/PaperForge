@@ -145,3 +145,63 @@ def test_cli_stream_flag_accepted_across_streaming_commands() -> None:
     for argv in cases:
         ns = parser.parse_args(argv)
         assert getattr(ns, "stream", False) is True, f"--stream missing for {argv!r}"
+
+
+def test_daemon_stdio_resets_timing_and_advances_state_seq(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from paperforge.core import timing
+    from paperforge.services.state_signal import read_state_seq
+
+    vault = tmp_path / "vault"
+    vault.mkdir(parents=True, exist_ok=True)
+    bootstrap_config(vault)
+    ws = vault / "Resources" / "Literature" / "Ortho" / "DMEM001 - Test"
+    ws.mkdir(parents=True)
+    indexes = vault / ".paperforge" / "indexes"
+    indexes.mkdir(parents=True)
+    (indexes / "formal-library.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "items": [{"zotero_key": "DMEM001", "paper_root": "Resources/Literature/Ortho/DMEM001 - Test/"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with timing.phase("stale.leak.phase"):
+        pass
+    assert "stale.leak.phase" in timing.summary()
+
+    requests = "\n".join(
+        [
+            json.dumps(
+                {
+                    "id": 1,
+                    "vault": str(vault),
+                    "argv": ["memory-card", "refine", "DMEM001", "--facet", "idea_logic", "--content", "Via daemon", "--json"],
+                }
+            ),
+            json.dumps({"id": 2, "vault": str(vault), "argv": ["config", "paths", "--json"]}),
+            json.dumps({"id": 3, "op": "shutdown"}),
+        ]
+    ) + "\n"
+
+    out_buf = io.StringIO()
+    err_buf = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", io.StringIO(requests))
+    monkeypatch.setattr(sys, "stdout", out_buf)
+    monkeypatch.setattr(sys, "stderr", err_buf)
+
+    assert serve_stdio(idle_timeout=0) == 0
+    responses = [json.loads(line) for line in out_buf.getvalue().splitlines() if line.strip()]
+    assert responses[0]["exit_code"] == 0
+    assert json.loads(responses[0]["stdout"])["ok"] is True
+    assert responses[1]["exit_code"] == 0
+    assert "stale.leak.phase" not in timing.summary()
+
+    seq = read_state_seq(vault)
+    assert seq["seq"] == 1
+    assert seq["reason"] == "memory_card.refine"
+    assert seq["changed_keys"] == ["DMEM001"]
