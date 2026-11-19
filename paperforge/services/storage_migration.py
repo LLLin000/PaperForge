@@ -1,15 +1,16 @@
 """Vault storage migration from visible System/PaperForge to hidden .paperforge/."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import shutil
 from pathlib import Path
 from typing import Any
 
-from paperforge.config import ConfigError, load_config, resolve_paths, set_config
-from paperforge.core.io import write_text_atomic
-from paperforge.worker.asset_index import sync_workspace_visual_assets
+from paperforge.config import ConfigError, bootstrap_config, load_config, resolve_paths, set_config
+from paperforge.core.io import write_json_atomic, write_text_atomic
+from paperforge.worker.asset_index import cleanup_or_preserve_workspace_fulltext, sync_workspace_visual_assets
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,14 @@ def rewrite_visual_embeds_for_key(markdown: str, zotero_key: str) -> tuple[str, 
     return updated, replacements
 
 
-def _move_tree_entries(src_dir: Path, dst_dir: Path, *, dry_run: bool) -> dict[str, int]:
-    """Move directories and files from *src_dir* into *dst_dir* without overwriting newer files."""
+def _move_tree_entries(
+    src_dir: Path,
+    dst_dir: Path,
+    *,
+    dry_run: bool,
+    moved_pairs: list[tuple[Path, Path]] | None = None,
+) -> dict[str, int]:
+    """Move directories and files from *src_dir* into *dst_dir* without overwriting existing entries."""
     counts = {"moved": 0, "skipped_existing": 0}
     if not src_dir.exists() or src_dir.resolve() == dst_dir.resolve():
         return counts
@@ -51,75 +58,78 @@ def _move_tree_entries(src_dir: Path, dst_dir: Path, *, dry_run: bool) -> dict[s
             counts["moved"] += 1
             if not dry_run:
                 shutil.move(str(child), str(target))
+                if moved_pairs is not None:
+                    moved_pairs.append((child, target))
         elif child.is_dir() and target.is_dir():
-            sub = _move_tree_entries(child, target, dry_run=dry_run)
+            sub = _move_tree_entries(child, target, dry_run=dry_run, moved_pairs=moved_pairs)
             counts["moved"] += sub["moved"]
             counts["skipped_existing"] += sub["skipped_existing"]
             if not dry_run:
-                try:
+                with contextlib.suppress(OSError):
                     if not any(child.iterdir()):
                         child.rmdir()
-                except OSError:
-                    pass
         else:
             counts["skipped_existing"] += 1
     if not dry_run:
-        try:
+        with contextlib.suppress(OSError):
             if src_dir.exists() and not any(src_dir.iterdir()):
                 src_dir.rmdir()
-        except OSError:
-            pass
     return counts
 
 
-def _cleanup_redundant_workspace_copy(ws_dir: Path, *, dry_run: bool) -> bool:
-    """Remove redundant workspace markdown mirror when canonical store moved to .paperforge."""
-    copy_name = "full" + "text.md"
-    ws_copy = ws_dir / copy_name
-    if not ws_copy.exists() or not ws_copy.is_file():
-        return False
-    if not dry_run:
-        ws_copy.unlink()
-    return True
-
-
 def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, Any]:
-    """Migrate an existing vault from visible ``System/PaperForge`` to ``.paperforge``.
-
-    Steps:
-    1. Move engine state subtrees from old ``paperforge`` dir into ``vault / '.paperforge'``.
-    2. Materialize per-paper cropped JPGs into ``<workspace>/assets/<KEY>_*.jpg``.
-    3. Rewrite ``![[.../figure_NNN.md]]`` / ``.jpg`` links inside ``<KEY>.md`` notes to ``![[<KEY>_figure_NNN.jpg]]``.
-    4. Remove redundant workspace fulltext copies so users edit only PDF annotations + ``<KEY>.md``.
-    5. Atomically update ``system_dir`` to ``".paperforge"`` in ``paperforge.json`` and prune empty legacy dirs.
-    """
+    """Transactionally migrate an existing vault to `.paperforge/` with rollback & preservation."""
     vault_root = Path(vault).expanduser().resolve()
-    try:
+    cfg_path = vault_root / "paperforge.json"
+    if cfg_path.exists():
+        # Fail closed BEFORE mutating disk if config is corrupt or requires schema migration.
         snapshot = load_config(vault_root)
         paths = resolve_paths(vault_root, snapshot)
         old_sys = paths["system"]
         old_pf = paths["paperforge"]
         lit_root = paths["literature"]
-    except ConfigError:
+    else:
         old_sys = vault_root / "System"
         old_pf = old_sys / "PaperForge"
         lit_root = vault_root / "Resources" / "Literature"
 
     target_pf = vault_root / ".paperforge"
-    tree_counts = _move_tree_entries(old_pf, target_pf, dry_run=dry_run)
+    journal_path = target_pf / ".migration-journal.json"
+    moved_pairs: list[tuple[Path, Path]] = []
+    rewritten_notes: list[tuple[Path, str]] = []
 
-    # Also relocate legacy System/Zotero if present and config doesn't point outside
+    if not dry_run:
+        write_json_atomic(
+            journal_path,
+            {
+                "state": "in_progress",
+                "source_engine_dir": str(old_pf),
+                "target_engine_dir": str(target_pf),
+            },
+        )
+
+    tree_counts = _move_tree_entries(old_pf, target_pf, dry_run=dry_run, moved_pairs=moved_pairs)
+
     old_zotero = old_sys / "Zotero"
+    target_zotero = target_pf / "Zotero"
     moved_zotero = False
-    if old_zotero.exists() and not old_zotero.is_symlink() and not (target_pf / "Zotero").exists():
+    if (
+        old_zotero.exists()
+        and not old_zotero.is_symlink()
+        and old_zotero.resolve() != target_zotero.resolve()
+        and not target_zotero.exists()
+    ):
         moved_zotero = True
         if not dry_run:
-            shutil.move(str(old_zotero), str(target_pf / "Zotero"))
+            target_pf.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(old_zotero), str(target_zotero))
+            moved_pairs.append((old_zotero, target_zotero))
 
     ocr_root = target_pf / "ocr" if not dry_run or not old_pf.exists() else old_pf / "ocr"
     assets_copied = 0
     notes_rewritten = 0
     workspace_copies_removed = 0
+    workspace_copies_preserved = 0
 
     if lit_root.exists():
         for domain_dir in sorted(lit_root.iterdir()):
@@ -158,27 +168,76 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                         if count > 0:
                             notes_rewritten += 1
                             if not dry_run:
+                                rewritten_notes.append((candidate_note, original))
                                 write_text_atomic(candidate_note, updated)
-                if (target_pf / "ocr" / key).exists() or (old_pf / "ocr" / key).exists():
-                    if _cleanup_redundant_workspace_copy(ws_dir, dry_run=dry_run):
-                        workspace_copies_removed += 1
+                ocr_dir_for_verify = (
+                    paper_ocr_dir
+                    if paper_ocr_dir.exists()
+                    else ((old_pf / "ocr" / key) if (old_pf / "ocr" / key).exists() else None)
+                )
+                outcome = cleanup_or_preserve_workspace_fulltext(
+                    ws_dir,
+                    vault=vault_root,
+                    ocr_paper_dir=ocr_dir_for_verify,
+                    lit_root=lit_root,
+                    paper_key=key,
+                    dry_run=dry_run,
+                )
+                if outcome in ("removed_verified_mirror", "preserved_to_trash"):
+                    workspace_copies_removed += 1
+                if outcome == "preserved_to_trash":
+                    workspace_copies_preserved += 1
 
     config_updated = False
     if not dry_run:
         try:
+            if not cfg_path.exists():
+                bootstrap_config(vault_root)
             set_config(vault_root, "system_dir", ".paperforge")
             config_updated = True
-        except ConfigError as exc:
-            logger.warning("migrate_vault_storage: failed to update system_dir: %s", exc)
+        except (ConfigError, OSError) as exc:
+            for note_path, orig_text in reversed(rewritten_notes):
+                with contextlib.suppress(OSError):
+                    write_text_atomic(note_path, orig_text)
+            for src_p, dst_p in reversed(moved_pairs):
+                with contextlib.suppress(OSError):
+                    if dst_p.exists() and not src_p.exists():
+                        src_p.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(str(dst_p), str(src_p))
+            with contextlib.suppress(OSError):
+                write_json_atomic(
+                    journal_path,
+                    {
+                        "state": "rolled_back",
+                        "error": str(exc),
+                        "rolled_back_moves": len(moved_pairs),
+                        "rolled_back_notes": len(rewritten_notes),
+                    },
+                )
+            raise RuntimeError(
+                f"Storage migration rolled back because config update failed: {exc}"
+            ) from exc
 
-        # Clean up empty System/PaperForge and System directories if nothing remains
         for leftover in (old_pf, old_sys):
-            try:
-                if leftover.exists() and leftover.is_dir() and leftover.resolve() != target_pf.resolve():
-                    if not any(leftover.iterdir()):
-                        leftover.rmdir()
-            except OSError:
-                pass
+            with contextlib.suppress(OSError):
+                if (
+                    leftover.exists()
+                    and leftover.is_dir()
+                    and leftover.resolve() != target_pf.resolve()
+                    and not any(leftover.iterdir())
+                ):
+                    leftover.rmdir()
+
+        write_json_atomic(
+            journal_path,
+            {
+                "state": "completed",
+                "entries_moved": tree_counts["moved"],
+                "notes_rewritten": notes_rewritten,
+                "workspace_fulltexts_removed": workspace_copies_removed,
+                "workspace_fulltexts_preserved": workspace_copies_preserved,
+            },
+        )
 
     return {
         "dry_run": dry_run,
@@ -189,5 +248,6 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
         "visual_assets_materialized": assets_copied,
         "notes_rewritten": notes_rewritten,
         "workspace_fulltexts_removed": workspace_copies_removed,
+        "workspace_fulltexts_preserved": workspace_copies_preserved,
         "config_updated": config_updated,
     }

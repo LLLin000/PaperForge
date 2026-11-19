@@ -1208,9 +1208,15 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         legacy_flags = _legacy_control_flags(paths, key)
 
         if workspace_dir.exists():
-            stale_workspace_fulltext = workspace_dir / "fulltext.md"
-            if stale_workspace_fulltext.exists():
-                stale_workspace_fulltext.unlink()
+            from paperforge.worker.asset_index import cleanup_or_preserve_workspace_fulltext
+
+            cleanup_or_preserve_workspace_fulltext(
+                workspace_dir,
+                vault=vault,
+                ocr_paper_dir=(paths["ocr"] / key) if paths.get("ocr") else None,
+                lit_root=paths["literature"],
+                paper_key=key,
+            )
             if main_note_path.exists() and any(value is not None for value in legacy_flags.values()):
                 try:
                     workspace_content = main_note_path.read_text(encoding="utf-8")

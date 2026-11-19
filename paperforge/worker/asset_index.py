@@ -24,6 +24,7 @@ Design decisions (see Phase 23 context):
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import logging
 import os
@@ -711,19 +712,97 @@ def sync_workspace_visual_assets(
     return materialized
 
 
+def cleanup_or_preserve_workspace_fulltext(
+    ws_dir: Path,
+    *,
+    vault: Path,
+    ocr_paper_dir: Path | None,
+    lit_root: Path,
+    paper_key: str,
+    dry_run: bool = False,
+) -> str:
+    """Remove workspace fulltext.md only if it matches OCR output; else quarantine to trash."""
+    ws_ft = ws_dir / "fulltext.md"
+    if not ws_ft.exists() or not ws_ft.is_file():
+        return "none"
+    try:
+        ws_bytes = ws_ft.read_bytes()
+    except OSError:
+        return "none"
+    ws_sha = hashlib.sha256(ws_bytes).hexdigest()
+    ws_lf_sha = hashlib.sha256(ws_bytes.replace(b"\r\n", b"\n")).hexdigest()
+
+    known_digests: set[str] = set()
+    if ocr_paper_dir is not None and ocr_paper_dir.exists():
+        candidates: list[Path] = [
+            ocr_paper_dir / "fulltext.md",
+            ocr_paper_dir / "render" / "fulltext.md",
+        ]
+        versions_dir = ocr_paper_dir / "versions"
+        if versions_dir.is_dir():
+            candidates.extend(versions_dir.glob("*/fulltext.md"))
+        backups_dir = ocr_paper_dir / "backups"
+        if backups_dir.is_dir():
+            candidates.extend(backups_dir.glob("fulltext.pre-rebuild.*.md"))
+        for cand in candidates:
+            if not cand.is_file():
+                continue
+            try:
+                raw_bytes = cand.read_bytes()
+            except OSError:
+                continue
+            known_digests.add(hashlib.sha256(raw_bytes).hexdigest())
+            known_digests.add(hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest())
+        meta_path = ocr_paper_dir / "meta.json"
+        if meta_path.is_file():
+            try:
+                meta_obj = json.loads(meta_path.read_text(encoding="utf-8"))
+                mhash = str(meta_obj.get("machine_fulltext_hash") or "").strip()
+                if mhash.startswith("sha256:"):
+                    mhash = mhash[len("sha256:") :]
+                if mhash:
+                    known_digests.add(mhash)
+            except (OSError, json.JSONDecodeError, AttributeError):
+                pass
+
+    if ws_sha in known_digests or ws_lf_sha in known_digests:
+        if not dry_run:
+            ws_ft.unlink()
+        return "removed_verified_mirror"
+
+    if not dry_run:
+        from paperforge.worker.trash import trash_remove
+
+        trash_remove(
+            ws_ft,
+            vault=vault,
+            allowed_root=lit_root,
+            operation="workspace_fulltext_preserve",
+            paper_key=paper_key,
+        )
+    return "preserved_to_trash"
+
+
 def _sync_workspace_fulltexts(items: list[dict], vault: Path, paths: dict, verbose: bool = False) -> None:
     hidden_engine = Path(str(paths["paperforge"])).name == ".paperforge"
+    lit_root = Path(paths.get("literature") or (vault / "Resources" / "Literature"))
     for entry in items:
         ws_dir_rel = entry.get("paper_root", "")
         if not ws_dir_rel:
             continue
         ws_dir = vault / ws_dir_rel
         ws_ft = ws_dir / "fulltext.md"
+        key = str(entry.get("zotero_key") or "")
         if hidden_engine and ws_ft.exists():
-            ws_ft.unlink()
+            cleanup_or_preserve_workspace_fulltext(
+                ws_dir,
+                vault=vault,
+                ocr_paper_dir=(paths["ocr"] / key) if key and paths.get("ocr") else None,
+                lit_root=lit_root,
+                paper_key=key,
+            )
         if entry.get("ocr_status") not in ("done", "done_degraded"):
             continue
-        key = str(entry.get("zotero_key") or "")
         if key:
             sync_workspace_visual_assets(paths["ocr"] / key, ws_dir, key)
         if hidden_engine:
