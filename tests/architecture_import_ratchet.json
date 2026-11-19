@@ -84,7 +84,7 @@
       "633:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
-      "2976:paperforge.lineage:_resolve_canonical_pdf"
+      "3004:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
       "235:paperforge.embedding.vectors:_delete_paper_vectors_locked"

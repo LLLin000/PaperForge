@@ -225,6 +225,28 @@ export interface PaperMemoryCardDto {
   facets: MemoryFacetDto[];
 }
 
+export interface MemoryHistoryEntryDto {
+  facet: string;
+  label: string;
+  content: string;
+  revision: number;
+  created_at: string;
+}
+
+export interface ClearMemoryFacetResultDto {
+  paper_id: string;
+  facet: string;
+  removed: number;
+}
+
+export interface VersionsResetLiveResultDTO {
+  intent: string;
+  key: string;
+  source_path: string;
+  target_path: string;
+  provenance_cleared: boolean;
+}
+
 export interface BasePaperRowDto {
   zotero_key: string;
   title: string;
@@ -1369,6 +1391,24 @@ export class PaperForgeClient {
     }
   }
 
+  /** Reset live display fulltext back to canonical fulltext and clear restore_provenance. */
+  async versionsResetLive(key: string): Promise<VersionsResetLiveResultDTO> {
+    try {
+      const data = await this._executePfResult<
+        Partial<VersionsResetLiveResultDTO>
+      >(["versions", "reset-live", "--key", key, "--json"]);
+      return {
+        intent: data?.intent ?? "versions-reset-live",
+        key: data?.key ?? key,
+        source_path: data?.source_path ?? "",
+        target_path: data?.target_path ?? "",
+        provenance_cleared: data?.provenance_cleared === true,
+      };
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
   /** Python-authoritative note workflow flag mutation
    * (`note set-flag`). The dashboard workflow toggles (do_ocr/analyze)
    * must NEVER write Obsidian frontmatter client-side — the note is
@@ -2214,6 +2254,63 @@ export class PaperForgeClient {
       paperKey,
       "--json",
     ]);
+  }
+
+  async refineMemoryCard(
+    paperKey: string,
+    facet: string,
+    content: string
+  ): Promise<PaperMemoryCardDto> {
+    try {
+      const data = await this._executePfResult<
+        { card?: PaperMemoryCardDto } & PaperMemoryCardDto
+      >([
+        "memory-card",
+        "refine",
+        paperKey,
+        "--facet",
+        facet,
+        "--content",
+        content,
+        "--json",
+      ]);
+      return data.card ?? data;
+    } finally {
+      this.invalidatePaperScope(paperKey);
+    }
+  }
+
+  async getMemoryCardHistory(
+    paperKey: string,
+    facet?: string
+  ): Promise<MemoryHistoryEntryDto[]> {
+    const argv = ["memory-card", "history", paperKey];
+    if (facet) {
+      argv.push("--facet", facet);
+    }
+    argv.push("--json");
+    const data = await this._executePfResult<{
+      history?: MemoryHistoryEntryDto[];
+    }>(argv);
+    return Array.isArray(data?.history) ? data.history : [];
+  }
+
+  async clearMemoryFacet(
+    paperKey: string,
+    facet: string
+  ): Promise<ClearMemoryFacetResultDto> {
+    try {
+      return await this._executePfResult<ClearMemoryFacetResultDto>([
+        "memory-card",
+        "clear",
+        paperKey,
+        "--facet",
+        facet,
+        "--json",
+      ]);
+    } finally {
+      this.invalidatePaperScope(paperKey);
+    }
   }
 
   async getBaseTableSnapshot(): Promise<BaseTableSnapshotDto> {

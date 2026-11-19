@@ -19,8 +19,11 @@ touched.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime
+import os
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -416,6 +419,62 @@ def _run_restore(vault: Path, key: str, label: str, version: str) -> int:
     return 0
 
 
+def _run_reset_live(vault: Path, key: str, version: str) -> int:
+    """Reset display fulltext back to canonical fulltext and clear restore_provenance."""
+    if not key:
+        print(_err(version, "reset-live requires --key").to_json())
+        return 1
+    root = _paper_root(vault, key)
+    if root is None or not root.is_dir():
+        print(_err(version, f"unknown paper key: {key}").to_json())
+        return 1
+    canonical_str = _safe_artifact_path(root, root / "fulltext.md")
+    target_str = _safe_artifact_path(root, root / "render" / "fulltext.md")
+    if canonical_str is None or target_str is None:
+        print(_err(version, f"unsafe artifact path for {key}").to_json())
+        return 1
+    canonical = Path(canonical_str)
+    target = Path(target_str)
+    if not canonical.is_file():
+        print(_err(version, f"canonical fulltext not found for {key}").to_json())
+        return 1
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        payload_bytes = canonical.read_bytes()
+        fd, tmp_name = tempfile.mkstemp(prefix=".reset-", suffix=".tmp", dir=str(target.parent))
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(payload_bytes)
+            os.replace(tmp_path, target)
+        except Exception:
+            with contextlib.suppress(OSError):
+                tmp_path.unlink()
+            raise
+    except OSError as exc:
+        print(_err(version, f"reset-live failed: {exc}").to_json())
+        return 1
+    try:
+        from paperforge.worker.ocr import clear_restore_provenance
+
+        provenance_cleared = clear_restore_provenance(vault, key)
+    except Exception:
+        provenance_cleared = False
+    print(
+        _ok(
+            version,
+            {
+                "intent": "versions-reset-live",
+                "key": key,
+                "source_path": str(canonical),
+                "target_path": str(target),
+                "provenance_cleared": provenance_cleared,
+            },
+        ).to_json()
+    )
+    return 0
+
+
 def run(args: argparse.Namespace) -> int:
     from paperforge import __version__
     from paperforge.config import resolve_vault
@@ -437,6 +496,9 @@ def run(args: argparse.Namespace) -> int:
             return _run_paths(vault, args.key, getattr(args, "label", "") or "", __version__)
         if command == "restore":
             return _run_restore(vault, args.key, getattr(args, "label", "") or "", __version__)
+        if command == "reset-live":
+            key = (getattr(args, "key", "") or getattr(args, "key_pos", "") or "").strip()
+            return _run_reset_live(vault, key, __version__)
         print(_err(__version__, f"unknown versions subcommand: {command}").to_json())
         return 1
     except Exception as exc:

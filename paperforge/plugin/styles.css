@@ -12065,3 +12065,119 @@ input[type="checkbox"].pf-switch:checked::after {
   border-color: var(--pf-accent);
   background: var(--pf-surface);
 }
+
+/* ── Living Paper Memory Interactive Editing & History Modal ── */
+.pf-living-memory-facet-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-living-memory-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.78;
+  transition: opacity 120ms ease;
+}
+
+.pf-living-memory-facet:hover .pf-living-memory-actions,
+.pf-living-memory-facet:focus-within .pf-living-memory-actions {
+  opacity: 1;
+}
+
+.pf-living-memory-action-btn {
+  border: 0;
+  background: transparent;
+  color: var(--pf-text-muted);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pf-living-memory-action-btn:hover {
+  background: var(--pf-elevated);
+  color: var(--pf-text);
+}
+
+.pf-living-memory-action-btn--danger:hover {
+  color: var(--text-error, #d9534f);
+}
+
+.pf-living-memory-editor {
+  width: 100%;
+  min-height: 76px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  border-radius: 6px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-elevated);
+  color: var(--pf-text);
+  resize: vertical;
+}
+
+.pf-living-memory-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pf-living-memory-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--pf-border);
+}
+
+.pf-living-memory-chip {
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--pf-border);
+  background: transparent;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+}
+
+.pf-living-memory-chip:hover {
+  border-color: var(--pf-accent);
+  color: var(--pf-text);
+}
+
+.pf-memory-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.pf-memory-history-row {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+}
+
+.pf-memory-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  color: var(--pf-text-muted);
+}
+
+.pf-memory-history-content {
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  color: var(--pf-text);
+}

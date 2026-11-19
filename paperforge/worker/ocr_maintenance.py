@@ -70,9 +70,24 @@ class OCRMaintenanceRow:
         error_stage: str = "",
         error_summary: str = "",
         degraded_reasons: list[str] | None = None,
+        submission_state: str = "",
+        has_job_id: bool = False,
     ) -> dict:
         """Map raw OCR state to display fields for the maintenance tab."""
         is_degraded = health_overall in ("yellow", "red") or status == "done_degraded"
+
+        if submission_state == "submitting" and not has_job_id and status not in ("done", "done_degraded"):
+            return dict(
+                display_action="retry_ocr",
+                display_label="重新提交",
+                display_label_key="ocr_action_resubmit",
+                display_reason="上次上传中断，远端任务未确认",
+                display_reason_key="submitting_unconfirmed",
+                display_group="action_needed",
+                display_severity="warning",
+                visible_in_maintenance=True,
+                show_in_base=True,
+            )
 
         if status in ("pending",):
             return dict(display_action="none", display_label="等待处理", display_label_key="",
@@ -266,6 +281,11 @@ def _recommended_action(meta: dict, has_raw: bool, has_source_meta: bool) -> str
     emits an action wire."""
     version = _detect_version(meta, has_raw, has_source_meta)
     status = str(meta.get("ocr_status", "") or "").lower()
+    sub_state = str(meta.get("submission_state", "") or "").lower()
+    has_job_id = bool(str(meta.get("ocr_job_id", "") or "").strip())
+
+    if sub_state == "submitting" and not has_job_id and status not in ("done", "done_degraded"):
+        return "redo"
 
     if status == "failed":
         stage = _error_stage(meta)
@@ -323,6 +343,9 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
         can_rebuild = _can_rebuild(meta, has_raw, has_source_meta, has_structured)
         rec_action = _recommended_action(meta, has_raw, has_source_meta)
 
+        submission_state = str(meta.get("submission_state", "") or "").lower()
+        has_job_id = bool(str(meta.get("ocr_job_id", "") or "").strip())
+
         # Compute display fields for hash
         df = OCRMaintenanceRow.compute_display_fields(
             status=status, health_overall=health_overall,
@@ -330,6 +353,8 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
             error_stage=_error_stage(meta),
             error_summary=_error_summary(meta),
             degraded_reasons=health.get("degraded_reasons", []) or [],
+            submission_state=submission_state,
+            has_job_id=has_job_id,
         )
 
         err_summary = _error_summary(meta)
@@ -345,6 +370,8 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
             str(can_redo), str(can_rebuild),
             _error_stage(meta),
             str(health.get("degraded_reasons", [])),
+            submission_state,
+            str(has_job_id),
         ])
         manifest[key] = hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
@@ -456,6 +483,8 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             error_stage=meta.get("error_stage", ""),
             error_summary=_error_summary(meta),
             degraded_reasons=degraded_reasons,
+            submission_state=str(meta.get("submission_state", "") or "").lower(),
+            has_job_id=bool(str(meta.get("ocr_job_id", "") or "").strip()),
         )
         row.display_action = df["display_action"]
         row.display_label = df["display_label"]

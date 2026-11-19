@@ -415,6 +415,34 @@ def record_restore_provenance(vault: Path, key: str, provenance: dict) -> bool:
     return True
 
 
+def clear_restore_provenance(vault: Path, key: str) -> bool:
+    """Clear validated display-restore provenance when resetting live display."""
+    if not key or key in {".", ".."} or "/" in key or "\\" in key:
+        return False
+    paths = pipeline_paths(vault)
+    meta_path = paths["ocr"] / key / "meta.json"
+    if not meta_path.exists():
+        return True
+    try:
+        meta = read_json(meta_path)
+    except Exception:  # noqa: BLE001 — never replace unreadable OCR metadata
+        return False
+    if not isinstance(meta, dict):
+        return False
+    stored_key = meta.get("zotero_key")
+    if stored_key not in (None, "", key):
+        return False
+    if "restore_provenance" not in meta:
+        return True
+    updated = dict(meta)
+    updated.pop("restore_provenance", None)
+    try:
+        write_json(meta_path, updated)
+    except OSError:
+        return False
+    return True
+
+
 def _read_meta_or_empty(meta_path: Path) -> dict:
     try:
         return read_json(meta_path) if meta_path.exists() else {}

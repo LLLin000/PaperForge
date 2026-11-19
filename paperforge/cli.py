@@ -606,6 +606,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_versions_restore.add_argument("--key", required=True, metavar="KEY")
     p_versions_restore.add_argument("--label", required=True, metavar="LABEL")
     p_versions_restore.add_argument("--json", action="store_true", help="Output JSON")
+    p_versions_reset = p_versions_sub.add_parser(
+        "reset-live",
+        help="Reset display fulltext back to canonical fulltext and clear restore provenance",
+    )
+    p_versions_reset.add_argument("key_pos", nargs="?", default="", metavar="KEY")
+    p_versions_reset.add_argument("--key", default="", metavar="KEY")
+    p_versions_reset.add_argument("--json", action="store_true", help="Output JSON")
 
     p_note = sub.add_parser(
         "note",

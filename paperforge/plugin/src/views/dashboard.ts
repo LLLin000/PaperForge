@@ -3,6 +3,7 @@ import {
   WorkspaceLeaf,
   Notice,
   MarkdownRenderer,
+  Modal,
   App,
   TFile,
   Platform,
@@ -30,6 +31,7 @@ import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { checkOrphanState } from "./modals";
 import { orchestrateFromSync } from "../services/next-actions-bridge";
 import {
+  type MemoryHistoryEntryDto,
   type PaperMemoryCardDto,
   type PaperVersionInfoDTO,
   type VersionEntryDTO,
@@ -1405,10 +1407,93 @@ export class PaperForgeStatusView extends ItemView {
 
   private _renderLivingMemoryBody(
     body: HTMLElement,
-    card: PaperMemoryCardDto | null | undefined
+    card: PaperMemoryCardDto | null | undefined,
+    paperKeyArg?: string
   ): void {
     body.empty();
+    const activeKey = (
+      paperKeyArg ??
+      card?.paper_id ??
+      this._currentPaperKey ??
+      ""
+    ).trim();
+    const client = this._getClient() as unknown as {
+      refineMemoryCard?: (
+        key: string,
+        facet: string,
+        content: string
+      ) => Promise<PaperMemoryCardDto>;
+      getMemoryCardHistory?: (
+        key: string,
+        facet?: string
+      ) => Promise<MemoryHistoryEntryDto[]>;
+      clearMemoryFacet?: (
+        key: string,
+        facet: string
+      ) => Promise<{ removed?: number }>;
+    } | null;
+    const canEdit =
+      Boolean(activeKey) && typeof client?.refineMemoryCard === "function";
+
+    const openInlineEditor = (
+      hostEl: HTMLElement,
+      facet: string,
+      facetLabel: string,
+      initialContent: string
+    ): void => {
+      if (!canEdit || !client?.refineMemoryCard) return;
+      hostEl.empty();
+      const editor = hostEl.createEl("textarea", {
+        cls: "pf-living-memory-editor",
+        attr: {
+          "data-pf-testid": `memory-facet-editor-${facet}`,
+          placeholder: `记录该论文的「${facetLabel}」要点…`,
+        },
+      });
+      editor.value = initialContent;
+      const actionBar = hostEl.createEl("div", {
+        cls: "pf-living-memory-editor-actions",
+      });
+      const cancelBtn = actionBar.createEl("button", {
+        cls: "btn-secondary pf-living-memory-action-btn",
+        attr: { type: "button", "data-pf-testid": "memory-facet-cancel" },
+        text: "取消",
+      });
+      const saveBtn = actionBar.createEl("button", {
+        cls: "btn-primary pf-living-memory-action-btn",
+        attr: { type: "button", "data-pf-testid": "memory-facet-save" },
+        text: "保存",
+      });
+      cancelBtn.addEventListener("click", () => {
+        this._renderLivingMemoryBody(body, card, activeKey);
+      });
+      saveBtn.addEventListener("click", () => {
+        const nextVal = editor.value.trim();
+        if (!nextVal) {
+          new Notice("记忆内容不能为空");
+          return;
+        }
+        saveBtn.disabled = true;
+        cancelBtn.disabled = true;
+        void client.refineMemoryCard!(activeKey, facet, nextVal)
+          .then((updated) => {
+            this._setBoundedCache(this._memoryCardCache, activeKey, updated);
+            this._renderLivingMemoryBody(body, updated, activeKey);
+          })
+          .catch((err: unknown) => {
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            new Notice(
+              "保存记忆失败: " +
+                (err instanceof Error ? err.message : String(err)),
+              5000
+            );
+          });
+      });
+    };
+
     const facets = Array.isArray(card?.facets) ? card.facets : [];
+    const populatedKeys = new Set(facets.map((f) => f.facet));
     if (facets.length === 0) {
       body.createEl("div", {
         cls: "pf-living-memory-empty",
@@ -1416,32 +1501,129 @@ export class PaperForgeStatusView extends ItemView {
           t("living_memory_empty") ||
           "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
       });
-      return;
-    }
-    for (const f of facets) {
-      const item = body.createEl("div", {
-        cls: "pf-living-memory-facet",
-        attr: { "data-facet": f.facet },
-      });
-      const fHead = item.createEl("div", {
-        cls: "pf-living-memory-facet-head",
-      });
-      fHead.createEl("span", {
-        cls: "pf-living-memory-facet-label",
-        text: f.label || f.facet,
-      });
-      const dateLabel = f.updated_at ? f.updated_at.slice(5, 10) : "";
-      if (dateLabel) {
-        fHead.createEl("span", {
-          cls: "pf-living-memory-facet-date pf-tnum",
-          text: dateLabel,
-          attr: { title: `\u7B2C ${f.revision || 1} \u6B21\u6C89\u6DC0` },
+    } else {
+      for (const f of facets) {
+        const item = body.createEl("div", {
+          cls: "pf-living-memory-facet",
+          attr: { "data-facet": f.facet },
         });
+        const fHead = item.createEl("div", {
+          cls: "pf-living-memory-facet-head",
+        });
+        fHead.createEl("span", {
+          cls: "pf-living-memory-facet-label",
+          text: f.label || f.facet,
+        });
+        const metaWrap = fHead.createEl("div", {
+          cls: "pf-living-memory-facet-meta",
+        });
+        const dateLabel = f.updated_at ? f.updated_at.slice(5, 10) : "";
+        if (dateLabel) {
+          metaWrap.createEl("span", {
+            cls: "pf-living-memory-facet-date pf-tnum",
+            text: dateLabel,
+            attr: { title: `\u7B2C ${f.revision || 1} \u6B21\u6C89\u6DC0` },
+          });
+        }
+        const fBody = item.createEl("div", {
+          cls: "pf-living-memory-facet-body",
+          text: f.content,
+        });
+        if (canEdit) {
+          const actions = metaWrap.createEl("div", {
+            cls: "pf-living-memory-actions",
+          });
+          const editBtn = actions.createEl("button", {
+            cls: "pf-living-memory-action-btn",
+            attr: {
+              type: "button",
+              "data-pf-testid": `memory-facet-edit-${f.facet}`,
+            },
+            text: "编辑",
+          });
+          editBtn.addEventListener("click", () => {
+            openInlineEditor(fBody, f.facet, f.label || f.facet, f.content);
+          });
+          if (typeof client?.getMemoryCardHistory === "function") {
+            const histBtn = actions.createEl("button", {
+              cls: "pf-living-memory-action-btn",
+              attr: {
+                type: "button",
+                "data-pf-testid": `memory-facet-history-${f.facet}`,
+              },
+              text: "历史",
+            });
+            histBtn.addEventListener("click", () => {
+              new MemoryFacetHistoryModal(
+                this.app,
+                activeKey,
+                f.facet,
+                f.label || f.facet,
+                client,
+                (updated) => {
+                  this._setBoundedCache(
+                    this._memoryCardCache,
+                    activeKey,
+                    updated
+                  );
+                  this._renderLivingMemoryBody(body, updated, activeKey);
+                }
+              ).open();
+            });
+          }
+          if (typeof client?.clearMemoryFacet === "function") {
+            const clearBtn = actions.createEl("button", {
+              cls: "pf-living-memory-action-btn pf-living-memory-action-btn--danger",
+              attr: {
+                type: "button",
+                "data-pf-testid": `memory-facet-clear-${f.facet}`,
+              },
+              text: "清空",
+            });
+            clearBtn.addEventListener("click", () => {
+              void client.clearMemoryFacet!(activeKey, f.facet)
+                .then(() => {
+                  this._memoryCardCache.delete(activeKey);
+                  return this._loadLivingMemoryInto(body, activeKey);
+                })
+                .catch((err: unknown) => {
+                  new Notice(
+                    "清空记忆失败: " +
+                      (err instanceof Error ? err.message : String(err)),
+                    5000
+                  );
+                });
+            });
+          }
+        }
       }
-      item.createEl("div", {
-        cls: "pf-living-memory-facet-body",
-        text: f.content,
-      });
+    }
+
+    if (canEdit) {
+      const missingDefs = LIVING_MEMORY_FACET_DEFS.filter(
+        (d) => !populatedKeys.has(d.facet)
+      );
+      if (missingDefs.length > 0) {
+        const addRow = body.createEl("div", {
+          cls: "pf-living-memory-add-row",
+        });
+        const draftSlot = body.createEl("div", {
+          cls: "pf-living-memory-draft-slot",
+        });
+        for (const def of missingDefs) {
+          const chip = addRow.createEl("button", {
+            cls: "pf-living-memory-chip",
+            attr: {
+              type: "button",
+              "data-pf-testid": `memory-facet-add-${def.facet}`,
+            },
+            text: `+ ${def.label}`,
+          });
+          chip.addEventListener("click", () => {
+            openInlineEditor(draftSlot, def.facet, def.label, "");
+          });
+        }
+      }
     }
   }
 
@@ -1451,7 +1633,7 @@ export class PaperForgeStatusView extends ItemView {
   ): Promise<void> {
     const cached = this._memoryCardCache.get(paperKey);
     if (cached) {
-      this._renderLivingMemoryBody(body, cached);
+      this._renderLivingMemoryBody(body, cached, paperKey);
     } else {
       body.empty();
     }
@@ -1460,7 +1642,7 @@ export class PaperForgeStatusView extends ItemView {
     } | null;
     if (typeof client?.getMemoryCard !== "function") {
       if (!cached) {
-        this._renderLivingMemoryBody(body, null);
+        this._renderLivingMemoryBody(body, null, paperKey);
       }
       return;
     }
@@ -1468,10 +1650,10 @@ export class PaperForgeStatusView extends ItemView {
       const card = await client.getMemoryCard(paperKey);
       this._setBoundedCache(this._memoryCardCache, paperKey, card);
       if (this._currentPaperKey !== paperKey) return;
-      this._renderLivingMemoryBody(body, card);
+      this._renderLivingMemoryBody(body, card, paperKey);
     } catch {
       if (!cached) {
-        this._renderLivingMemoryBody(body, null);
+        this._renderLivingMemoryBody(body, null, paperKey);
       }
     }
   }
@@ -4266,5 +4448,147 @@ export class PaperForgeStatusView extends ItemView {
       return (leaf.view as PaperForgeStatusView | undefined) ?? null;
     }
     return null;
+  }
+}
+
+const LIVING_MEMORY_FACET_DEFS = [
+  { facet: "idea_logic", label: "研究思路与逻辑链" },
+  { facet: "methods_params", label: "实验技术与关键参数" },
+  { facet: "research_craft", label: "研究技巧与巧思" },
+  { facet: "critique_limits", label: "硬伤、边界与存疑" },
+  { facet: "my_connection", label: "课题迁移与灵感" },
+] as const;
+
+export class MemoryFacetHistoryModal extends Modal {
+  private readonly paperKey: string;
+  private readonly facet: string;
+  private readonly facetLabel: string;
+  private readonly client: {
+    getMemoryCardHistory?: (
+      key: string,
+      facet?: string
+    ) => Promise<MemoryHistoryEntryDto[]>;
+    refineMemoryCard?: (
+      key: string,
+      facet: string,
+      content: string
+    ) => Promise<PaperMemoryCardDto>;
+  };
+  private readonly onRestored: (card: PaperMemoryCardDto) => void;
+
+  constructor(
+    app: App,
+    paperKey: string,
+    facet: string,
+    facetLabel: string,
+    client: {
+      getMemoryCardHistory?: (
+        key: string,
+        facet?: string
+      ) => Promise<MemoryHistoryEntryDto[]>;
+      refineMemoryCard?: (
+        key: string,
+        facet: string,
+        content: string
+      ) => Promise<PaperMemoryCardDto>;
+    },
+    onRestored: (card: PaperMemoryCardDto) => void
+  ) {
+    super(app);
+    this.paperKey = paperKey;
+    this.facet = facet;
+    this.facetLabel = facetLabel;
+    this.client = client;
+    this.onRestored = onRestored;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("paperforge-modal");
+    contentEl.createEl("h3", {
+      text: `${this.facetLabel} · 修订历史`,
+    });
+    const listEl = contentEl.createDiv({ cls: "pf-memory-history-list" });
+    listEl.createEl("div", {
+      cls: "pf-living-memory-empty",
+      text: "正在加载历史修订…",
+    });
+
+    if (typeof this.client.getMemoryCardHistory !== "function") {
+      listEl.empty();
+      listEl.createEl("div", {
+        cls: "pf-living-memory-empty",
+        text: "当前客户端不支持历史查看。",
+      });
+      return;
+    }
+
+    void this.client
+      .getMemoryCardHistory(this.paperKey, this.facet)
+      .then((entries) => {
+        listEl.empty();
+        if (!entries.length) {
+          listEl.createEl("div", {
+            cls: "pf-living-memory-empty",
+            text: "暂无历史修订记录。",
+          });
+          return;
+        }
+        for (const entry of entries) {
+          const row = listEl.createDiv({ cls: "pf-memory-history-row" });
+          const head = row.createDiv({ cls: "pf-memory-history-head" });
+          head.createEl("span", {
+            text: `r${entry.revision} · ${(entry.created_at || "").slice(0, 16).replace("T", " ")}`,
+          });
+          if (typeof this.client.refineMemoryCard === "function") {
+            const restoreBtn = head.createEl("button", {
+              cls: "btn-secondary pf-living-memory-action-btn",
+              attr: {
+                type: "button",
+                "data-pf-testid": "memory-history-restore",
+              },
+              text: "恢复此版本",
+            });
+            restoreBtn.addEventListener("click", () => {
+              restoreBtn.disabled = true;
+              void this.client.refineMemoryCard!(
+                this.paperKey,
+                this.facet,
+                entry.content
+              )
+                .then((updated) => {
+                  this.onRestored(updated);
+                  this.close();
+                })
+                .catch((err: unknown) => {
+                  restoreBtn.disabled = false;
+                  new Notice(
+                    "恢复历史失败: " +
+                      (err instanceof Error ? err.message : String(err)),
+                    5000
+                  );
+                });
+            });
+          }
+          row.createEl("div", {
+            cls: "pf-memory-history-content",
+            text: entry.content,
+          });
+        }
+      })
+      .catch((err: unknown) => {
+        listEl.empty();
+        listEl.createEl("div", {
+          cls: "pf-living-memory-empty",
+          text:
+            "历史加载失败: " +
+            (err instanceof Error ? err.message : String(err)),
+        });
+      });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
   }
 }

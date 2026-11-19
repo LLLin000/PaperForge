@@ -1024,7 +1024,8 @@ export class OcrWorkspaceView extends ItemView {
               this._loadPapers().then(() => {
                 if (!this._closed) this._render();
               });
-            }
+            },
+            () => restoreClient.versionsResetLive(restoreKey)
           ).open();
           return;
         }
@@ -1042,7 +1043,8 @@ export class OcrWorkspaceView extends ItemView {
           (label) => restoreClient.versionsRestore(restoreKey, label),
           () => {
             this._loadPapers().then(() => this._render());
-          }
+          },
+          () => restoreClient.versionsResetLive(restoreKey)
         ).open();
       } catch (err: any) {
         new Notice(
@@ -1432,6 +1434,9 @@ export class VersionRestoreModal extends Modal {
   private restore: (
     label: string
   ) => ReturnType<PaperForgeClient["versionsRestore"]>;
+  private resetLive:
+    | (() => ReturnType<PaperForgeClient["versionsResetLive"]>)
+    | null;
   private restoreFeedback: string | null = null;
   private selectedIdx: number = 0;
   private onRestored: (() => void) | null;
@@ -1445,7 +1450,8 @@ export class VersionRestoreModal extends Modal {
     currentLabel: string,
     currentPath: string,
     restore: (label: string) => ReturnType<PaperForgeClient["versionsRestore"]>,
-    onRestored?: () => void
+    onRestored?: () => void,
+    resetLive?: () => ReturnType<PaperForgeClient["versionsResetLive"]>
   ) {
     super(app);
     this.paperKey = paperKey;
@@ -1453,6 +1459,7 @@ export class VersionRestoreModal extends Modal {
     this.currentLabel = currentLabel;
     this.currentPath = currentPath;
     this.restore = restore;
+    this.resetLive = resetLive ?? null;
     this.onRestored = onRestored ?? null;
     this.mdComponent = new Component();
     this.mdComponent.load();
@@ -1648,6 +1655,16 @@ export class VersionRestoreModal extends Modal {
       });
       restoreBtn.addEventListener("click", () => this.doRestore(ver));
     }
+    if (this.resetLive) {
+      const resetLiveBtn = actionsDiv.createEl("button", {
+        cls: "btn-secondary pf-vr-btn pf-vr-reset-live-btn",
+        attr: { "data-pf-testid": "version-reset-live" },
+        text: "切回最新规范全文",
+      });
+      resetLiveBtn.addEventListener("click", () => {
+        void this._executeResetLive();
+      });
+    }
   }
   private doRestore(ver: VersionEntry) {
     if (ver.label === this.currentLabel) return;
@@ -1711,6 +1728,20 @@ export class VersionRestoreModal extends Modal {
       this.onRestored?.();
     } catch (err: any) {
       new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
+    }
+  }
+
+  private async _executeResetLive(): Promise<void> {
+    if (!this.resetLive) return;
+    try {
+      await this.resetLive();
+      this.contentCache.delete("__current__");
+      this.restoreFeedback = null;
+      new Notice("已切回最新规范全文");
+      this.close();
+      this.onRestored?.();
+    } catch (err: any) {
+      new Notice("[!!] Reset failed: " + (err?.message || err), 6000);
     }
   }
 
