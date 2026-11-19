@@ -544,7 +544,7 @@ def main() -> int:
                 for slug in SCENES:
                     loc = page.locator(f"#scene-{slug}")
                     loc.wait_for(state="visible", timeout=10000)
-                    out_png = OUT_DIR / f"v3-{slug}.png"
+                    out_png = OUT_DIR / f"v4-{slug}.png"
                     loc.screenshot(path=str(out_png))
                     print(f"rendered: {out_png.relative_to(REPO_ROOT).as_posix()} ({out_png.stat().st_size} bytes)")
             finally:
