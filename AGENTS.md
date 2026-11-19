@@ -80,4 +80,6 @@ The packaged `paperforge/skills/` directory is the source of the PaperForge skil
 | Getting started | `docs/getting-started.md` |
 | Command docs | `docs/COMMANDS.md` |
 | User manual | `docs/user-manual.md` |
+| UI & Base Design | `docs/OBSIDIAN-UI-AND-BASE-DESIGN.md` |
+| Install & Update | `docs/INSTALL-AND-UPDATE-ARCHITECTURE.md` |
 | Migration guide | `docs/MIGRATION-v1.2.md` |

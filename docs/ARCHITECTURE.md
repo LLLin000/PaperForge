@@ -779,6 +779,7 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 - Command reference: [`docs/COMMANDS.md`](COMMANDS.md)
 - Migration guide: [`docs/MIGRATION-v1.2.md`](MIGRATION-v1.2.md)
 - UI & Base visual design specification: [`docs/OBSIDIAN-UI-AND-BASE-DESIGN.md`](OBSIDIAN-UI-AND-BASE-DESIGN.md)
+- Desktop installation & fast-update blueprint: [`docs/INSTALL-AND-UPDATE-ARCHITECTURE.md`](INSTALL-AND-UPDATE-ARCHITECTURE.md)
 - Product requirements: `docs/prd-*.md`
 
 ---
