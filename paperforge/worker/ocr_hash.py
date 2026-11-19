@@ -17,7 +17,6 @@ legacy backfill) publishes through this module.
 """
 from __future__ import annotations
 
-import hashlib
 import os
 import tempfile
 from pathlib import Path
@@ -37,13 +36,9 @@ def compute_ocr_result_hash(paper_root: Path) -> str | None:
     Returns None when any artifact is missing — a partial hash must never be
     published or trusted.
     """
-    digest = hashlib.sha256()
-    for rel in OCR_RESULT_HASH_ARTIFACTS:
-        path = paper_root / rel
-        if not path.exists():
-            return None
-        digest.update(path.read_bytes())
-    return digest.hexdigest()
+    from paperforge.core.stat_cache import cached_concat_sha256_hex
+
+    return cached_concat_sha256_hex([paper_root / rel for rel in OCR_RESULT_HASH_ARTIFACTS])
 
 
 def has_result_hash_pending(paper_root: Path) -> bool:

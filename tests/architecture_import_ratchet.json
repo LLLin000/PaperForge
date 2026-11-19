@@ -79,9 +79,9 @@
       "15:paperforge.worker._utils"
     ],
     "paperforge.worker.asset_index": [
-      "40:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
-      "599:paperforge.embedding._config",
-      "599:paperforge.embedding._config:_read_plugin_settings"
+      "42:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
+      "633:paperforge.embedding._config",
+      "633:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
       "2976:paperforge.lineage:_resolve_canonical_pdf"

@@ -107,9 +107,9 @@ def provenance_state(
     if canonical_pdf is None or not canonical_pdf.exists():
         return PROVENANCE_UNKNOWN  # unresolvable canonical PDF
     try:
-        import hashlib as _hashlib
+        from paperforge.core.stat_cache import cached_sha256_hex
 
-        current_fp = "sha256:" + _hashlib.sha256(canonical_pdf.read_bytes()).hexdigest()
+        current_fp = "sha256:" + cached_sha256_hex(canonical_pdf)
     except OSError:
         return PROVENANCE_UNKNOWN  # unreadable canonical PDF
     if current_fp != recorded_fp:
@@ -119,9 +119,9 @@ def provenance_state(
     if not raw.exists():
         return PROVENANCE_UNKNOWN  # raw missing — cannot verify
     try:
-        import hashlib as _hashlib
+        from paperforge.core.stat_cache import cached_sha256_hex
 
-        current_raw = "sha256:" + _hashlib.sha256(raw.read_bytes()).hexdigest()
+        current_raw = "sha256:" + cached_sha256_hex(raw)
     except OSError:
         return PROVENANCE_UNKNOWN  # raw unreadable — cannot verify
     if current_raw != recorded_raw_hash:

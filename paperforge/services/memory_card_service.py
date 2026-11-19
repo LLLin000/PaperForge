@@ -473,14 +473,20 @@ def get_base_table_snapshot(vault: Path) -> dict[str, Any]:
         u_cnt, a_cnt = ann_counts.get(key, (0, 0))
         m_cnt, m_upd = mem_counts.get(key, (0, ""))
 
-        # Workspace file fallback when DB hasn't been rebuilt yet
-        if key not in mem_counts and item.get("paper_root"):
+        # Workspace file fallback ONLY for papers not yet materialized in SQLite
+        if key not in db_papers and item.get("paper_root"):
             ws_dir = vault_root / str(item["paper_root"]).rstrip("/")
             c_map = _read_card_file(_card_file_for_workspace(ws_dir))
             if c_map:
                 sorted_f = _sort_facets(c_map)
                 m_cnt = len(sorted_f)
                 m_upd = max((f["updated_at"] for f in sorted_f if f.get("updated_at")), default="")
+            if (ws_dir / "annotations.jsonl").is_file():
+                from paperforge.services.annotations_service import read_active_annotations_for_workspace
+
+                anns = read_active_annotations_for_workspace(ws_dir)
+                u_cnt = sum(1 for a in anns if str(a.get("author") or "user") != "agent")
+                a_cnt = sum(1 for a in anns if str(a.get("author") or "user") == "agent")
 
         rows[key] = {
             "zotero_key": key,

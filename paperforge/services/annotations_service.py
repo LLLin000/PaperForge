@@ -6,10 +6,11 @@ mutated so ``pdf_sha256`` and OCR/provenance hashes remain intact.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
+import os
 import secrets
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,7 @@ from filelock import FileLock
 
 from paperforge.config import paperforge_paths
 from paperforge.core.io import read_json, read_jsonl
+from paperforge.core.stat_cache import cached_sha256_hex
 from paperforge.lineage import workspace_dir_for_key
 from paperforge.memory.db import WriterLock, get_connection, get_memory_db_path
 from paperforge.memory.permanent import append_reading_note
@@ -51,8 +53,48 @@ def _utcnow_iso() -> str:
 
 
 def _sha256_file(path: Path) -> str:
-    with path.open("rb") as fh:
-        return hashlib.file_digest(fh, "sha256").hexdigest()
+    return cached_sha256_hex(path)
+
+
+_COMPACT_MIN_LINES = 100
+
+
+def _maybe_compact_jsonl_locked(jsonl_path: Path, state: dict[str, dict[str, Any]]) -> bool:
+    """Compact tombstoned ``annotations.jsonl`` logs under ``FileLock`` once log bloat exceeds 2x active."""
+    if not jsonl_path.exists():
+        return False
+    raw_lines = [line for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if len(raw_lines) < _COMPACT_MIN_LINES or len(raw_lines) <= 2 * len(state):
+        return False
+    ordered = sorted(
+        state.values(),
+        key=lambda rec: (str(rec.get("created_at") or ""), str(rec.get("ann_id") or "")),
+    )
+    payload = "".join(
+        json.dumps({"op": "add", "ann_id": rec["ann_id"], "record": rec}, ensure_ascii=False) + "\n"
+        for rec in ordered
+        if rec.get("ann_id")
+    )
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="\n",
+            dir=jsonl_path.parent,
+            prefix=".annotations.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = Path(handle.name)
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, jsonl_path)
+        return True
+    finally:
+        if tmp_path is not None and tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
 
 
 def _normalize_rect(raw: list[float] | tuple[float, ...]) -> list[float]:
@@ -687,6 +729,7 @@ def update_annotation(
                 )
                 + "\n"
             )
+        _maybe_compact_jsonl_locked(jsonl_path, state)
 
     _sync_sqlite_annotation(vault_root, updated_rec)
     _bump_seq_safe(vault_root, "annotations.update", paper_key)
@@ -707,10 +750,12 @@ def delete_annotation(vault: Path, paper_key: str, ann_id: str) -> dict[str, Any
         state = _replay_jsonl_events(jsonl_path)
         if ann_id not in state:
             raise ValueError(f"Annotation not found: {ann_id}")
+        state.pop(ann_id, None)
         with jsonl_path.open("a", encoding="utf-8") as fh:
             fh.write(
                 json.dumps({"op": "delete", "ann_id": ann_id, "updated_at": now}, ensure_ascii=False) + "\n"
             )
+        _maybe_compact_jsonl_locked(jsonl_path, state)
     _sync_sqlite_annotation(vault_root, None, delete_id=ann_id)
     _bump_seq_safe(vault_root, "annotations.delete", paper_key)
     return {"deleted": True, "ann_id": ann_id, "paper_id": paper_key}
@@ -797,6 +842,7 @@ def adopt_agent_annotation(vault: Path, paper_key: str, ann_id: str) -> dict[str
                 )
                 + "\n"
             )
+        _maybe_compact_jsonl_locked(jsonl_path, state)
     _sync_sqlite_annotation(vault_root, updated_rec)
     _bump_seq_safe(vault_root, "annotations.adopt", paper_key)
     paths = paperforge_paths(vault_root)
@@ -836,7 +882,9 @@ def clear_agent_annotations(
                     fh.write(
                         json.dumps({"op": "delete", "ann_id": aid, "updated_at": now}, ensure_ascii=False) + "\n"
                     )
+                    state.pop(aid, None)
                     deleted_ids.append(aid)
+            _maybe_compact_jsonl_locked(jsonl_path, state)
     for aid in deleted_ids:
         _sync_sqlite_annotation(vault_root, None, delete_id=aid)
     if deleted_ids:

@@ -23,14 +23,16 @@ Design decisions (see Phase 23 context):
 
 from __future__ import annotations
 
-import sys
-
+import copy
 import json
 import logging
 import os
 import re
 import shutil
+import sys
 import tempfile
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -45,6 +47,7 @@ from paperforge.adapters.obsidian_frontmatter import (
 )
 from paperforge.config import paperforge_paths
 from paperforge.core.io import write_text_atomic
+from paperforge.core.stat_cache import RACY_WINDOW_NS
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +97,7 @@ def mutate_index(vault: Path, mutator) -> bool:
             os.fsync(tmp.fileno())
             tmp.close()
             os.replace(tmp.name, path)
+            _invalidate_read_cache(path)
             try:
                 from paperforge.services.state_signal import bump_state_seq_in_dir
 
@@ -158,6 +162,16 @@ def build_envelope(items: list[dict], export_hash: str = "") -> dict:
 # ---------------------------------------------------------------------------
 
 
+_INDEX_READ_CACHE_LOCK = threading.Lock()
+_INDEX_READ_CACHE: dict[str, tuple[int, int, dict | list]] = {}
+
+
+def _invalidate_read_cache(path: Path) -> None:
+    key = str(path.resolve(strict=False))
+    with _INDEX_READ_CACHE_LOCK:
+        _INDEX_READ_CACHE.pop(key, None)
+
+
 def atomic_write_index(path: Path, data: dict) -> None:
     """Write *data* as JSON to *path* atomically with cross-process locking.
 
@@ -189,6 +203,7 @@ def atomic_write_index(path: Path, data: dict) -> None:
             os.fsync(tmp.fileno())
             tmp.close()
             os.replace(tmp.name, path)
+            _invalidate_read_cache(path)
             try:
                 from paperforge.services.state_signal import bump_state_seq_in_dir
 
@@ -219,12 +234,31 @@ def read_index(vault: Path) -> dict | list | None:
     """
     path = get_index_path(vault)
     if not path.exists():
+        _invalidate_read_cache(path)
         return None
+    cache_key = str(path.resolve(strict=False))
+    try:
+        st = path.stat()
+    except OSError as exc:
+        logger.warning("Stat failed for index at %s: %s", path, exc)
+        return None
+    is_racy = abs(time.time_ns() - st.st_mtime_ns) < RACY_WINDOW_NS
+    sig = (int(st.st_size), int(st.st_mtime_ns))
+    if not is_racy:
+        with _INDEX_READ_CACHE_LOCK:
+            cached = _INDEX_READ_CACHE.get(cache_key)
+            if cached is not None and cached[:2] == sig:
+                return copy.deepcopy(cached[2])
     try:
         with open(path, encoding="utf-8") as fh:
-            return json.load(fh)
+            data = json.load(fh)
+        if not is_racy:
+            with _INDEX_READ_CACHE_LOCK:
+                _INDEX_READ_CACHE[cache_key] = (sig[0], sig[1], copy.deepcopy(data))
+        return data
     except (json.JSONDecodeError, OSError) as exc:
         logger.warning("Corrupt index at %s, treating as missing: %s", path, exc)
+        _invalidate_read_cache(path)
         return None
 
 
