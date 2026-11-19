@@ -920,7 +920,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.display();
     }, 20000);
     void Promise.resolve()
-      .then(() => this.getClient().runtimeStatus(expectedVersion))
+      .then(() => {
+        const minEngine = this._minEngineVersion();
+        return minEngine
+          ? this.getClient().runtimeStatus(expectedVersion, {
+              minEngineVersion: minEngine,
+            })
+          : this.getClient().runtimeStatus(expectedVersion);
+      })
       .then((status) => {
         this._runtimeStatus = status;
         const env = this._capabilityState?.installation;
@@ -967,12 +974,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         : "repair";
   }
 
+  private _minEngineVersion(): string | undefined {
+    const manifest = this.plugin?.manifest as
+      | { minEngineVersion?: string }
+      | undefined;
+    return manifest?.minEngineVersion || undefined;
+  }
+
   /** Open the external installer and watch the published pointer. */
   private _launchRuntimeInstaller(action: RuntimeInstallerAction): void {
-    const result = this.getClient().launchRuntimeInstaller(
-      action,
-      this.plugin.manifest.version
-    );
+    const minEngine = this._minEngineVersion();
+    const result = minEngine
+      ? this.getClient().launchRuntimeInstaller(
+          action,
+          this.plugin.manifest.version,
+          { allowUvDownload: true }
+        )
+      : this.getClient().launchRuntimeInstaller(
+          action,
+          this.plugin.manifest.version
+        );
     if (!result.ok) {
       const message = t("runtime_installer_failed").replace(
         "{error}",
@@ -3329,10 +3350,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     const client = this.getClient();
+    const minEngine = this._minEngineVersion();
     client
       .probe(mod, {
         expectedVersion:
           mod === "installation" ? this.plugin.manifest?.version : undefined,
+        ...(mod === "installation" && minEngine
+          ? { minEngineVersion: minEngine }
+          : {}),
         lastOperationExitCode:
           mod === "library" &&
           lastOperationExitCode != null &&
@@ -4075,11 +4100,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     // Older runtimes accept expected-version on the installation probe but
     // ignore it in probe all. Keep Python's versioned verdict authoritative.
+    const minEngine = this._minEngineVersion();
+    const engineOpt = minEngine ? { minEngineVersion: minEngine } : {};
     void Promise.all([
-      client.probeAll({ expectedVersion: this.plugin.manifest?.version }),
+      client.probeAll({
+        expectedVersion: this.plugin.manifest?.version,
+        ...engineOpt,
+      }),
       client
         .probe("installation", {
           expectedVersion: this.plugin.manifest?.version,
+          ...engineOpt,
         })
         .catch(() => createInvalidEnvelope("installation")),
     ])

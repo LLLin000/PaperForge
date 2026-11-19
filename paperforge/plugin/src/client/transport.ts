@@ -87,8 +87,9 @@ export interface Transport {
    */
   launchRuntimeInstaller?(
     action: "install" | "update" | "repair",
-    version: string
-  ): { ok: boolean; python?: string; error?: string };
+    version: string,
+    options?: { allowUvDownload?: boolean }
+  ): { ok: boolean; python?: string; error?: string; logPath?: string };
 }
 
 /**

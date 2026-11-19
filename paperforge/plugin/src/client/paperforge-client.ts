@@ -54,6 +54,10 @@ export interface RuntimeStatus {
   python_exists: boolean;
   paperforge_version: string | null;
   version_matches_expected: boolean;
+  compatible?: boolean;
+  min_engine_version?: string | null;
+  deps_lock_matches?: boolean;
+  uv_path?: string | null;
   vector_ready: boolean;
   installer: string;
 }
@@ -807,11 +811,18 @@ export class PaperForgeClient {
 
   async probe(
     module: string,
-    options?: { expectedVersion?: string; lastOperationExitCode?: number }
+    options?: {
+      expectedVersion?: string;
+      minEngineVersion?: string;
+      lastOperationExitCode?: number;
+    }
   ): Promise<ProbeEnvelope> {
     const extraArgs: string[] = [];
     if (options?.expectedVersion) {
       extraArgs.push("--expected-version", options.expectedVersion);
+    }
+    if (options?.minEngineVersion) {
+      extraArgs.push("--min-engine-version", options.minEngineVersion);
     }
     if (
       options?.lastOperationExitCode != null &&
@@ -822,7 +833,7 @@ export class PaperForgeClient {
         String(options.lastOperationExitCode)
       );
     }
-    const cacheKey = `probe:${module}:${options?.expectedVersion ?? ""}:${options?.lastOperationExitCode ?? ""}`;
+    const cacheKey = `probe:${module}:${options?.expectedVersion ?? ""}:${options?.minEngineVersion ?? ""}:${options?.lastOperationExitCode ?? ""}`;
     return this._cachedRead(cacheKey, 60000, async () => {
       return this._executePfResult<ProbeEnvelope>(
         ["probe", module, "--json", ...extraArgs],
@@ -836,12 +847,16 @@ export class PaperForgeClient {
 
   async probeAll(options?: {
     expectedVersion?: string;
+    minEngineVersion?: string;
   }): Promise<ProbeAllEnvelope> {
     const extraArgs: string[] = [];
     if (options?.expectedVersion) {
       extraArgs.push("--expected-version", options.expectedVersion);
     }
-    const cacheKey = `probe:all:${options?.expectedVersion ?? ""}`;
+    if (options?.minEngineVersion) {
+      extraArgs.push("--min-engine-version", options.minEngineVersion);
+    }
+    const cacheKey = `probe:all:${options?.expectedVersion ?? ""}:${options?.minEngineVersion ?? ""}`;
     return this._cachedRead(cacheKey, 60000, async () => {
       return this._executePfResult<ProbeAllEnvelope>(
         ["probe", "all", "--json", ...extraArgs],
@@ -859,12 +874,18 @@ export class PaperForgeClient {
    * venv (bytecode compilation, an antivirus scan), and painting a working
    * runtime as broken is worse than a 500 ms delay.
    */
-  async runtimeStatus(expectedVersion: string): Promise<RuntimeStatus> {
+  async runtimeStatus(
+    expectedVersion: string,
+    options?: { minEngineVersion?: string }
+  ): Promise<RuntimeStatus> {
     const argv = [
       "runtime",
       "status",
       "--expected-version",
       expectedVersion,
+      ...(options?.minEngineVersion
+        ? ["--min-engine-version", options.minEngineVersion]
+        : []),
       "--json",
     ];
     try {
@@ -888,7 +909,8 @@ export class PaperForgeClient {
    * pointer; the UI only polls `runtimeStatus` afterwards. */
   launchRuntimeInstaller(
     action: "install" | "update" | "repair",
-    version: string
+    version: string,
+    options?: { allowUvDownload?: boolean }
   ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     if (typeof this._transport.launchRuntimeInstaller !== "function") {
       return {
@@ -896,7 +918,9 @@ export class PaperForgeClient {
         error: "This transport cannot launch the external installer.",
       };
     }
-    return this._transport.launchRuntimeInstaller(action, version);
+    return options
+      ? this._transport.launchRuntimeInstaller(action, version, options)
+      : this._transport.launchRuntimeInstaller(action, version);
   }
 
   async reconcile(

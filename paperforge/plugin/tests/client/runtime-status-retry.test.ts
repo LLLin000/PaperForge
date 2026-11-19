@@ -34,4 +34,49 @@ describe("runtimeStatus retry", () => {
     );
     expect(calls).toBe(2);
   });
+
+  it("forwards --min-engine-version when provided on runtimeStatus, probe, and probeAll", async () => {
+    const transport = new MockTransport();
+    transport.executeHandler = () =>
+      JSON.stringify({ runtime_ready: true, runtime_state: "ready" });
+    const client = new PaperForgeClient({ transport });
+
+    await client.runtimeStatus("2.0.0rc6", { minEngineVersion: "2.0.0rc6" });
+    await client.probe("installation", {
+      expectedVersion: "2.0.0rc6",
+      minEngineVersion: "2.0.0rc6",
+    });
+    await client.probeAll({
+      expectedVersion: "2.0.0rc6",
+      minEngineVersion: "2.0.0rc6",
+    });
+
+    expect(transport.calls[0].argv).toEqual([
+      "runtime",
+      "status",
+      "--expected-version",
+      "2.0.0rc6",
+      "--min-engine-version",
+      "2.0.0rc6",
+      "--json",
+    ]);
+    expect(transport.calls[1].argv).toEqual([
+      "probe",
+      "installation",
+      "--json",
+      "--expected-version",
+      "2.0.0rc6",
+      "--min-engine-version",
+      "2.0.0rc6",
+    ]);
+    expect(transport.calls[2].argv).toEqual([
+      "probe",
+      "all",
+      "--json",
+      "--expected-version",
+      "2.0.0rc6",
+      "--min-engine-version",
+      "2.0.0rc6",
+    ]);
+  });
 });
