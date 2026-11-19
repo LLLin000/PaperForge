@@ -25,9 +25,6 @@ def _skill_state_path(vault: Path) -> Path:
 
         return paperforge_paths(vault)["paperforge"] / "indexes" / "skill-deploy-state.json"
     except Exception:  # noqa: BLE001 — fallback when called on unconfigured vault
-        for cand in (vault / ".paperforge", vault / "System" / "PaperForge"):
-            if cand.exists():
-                return cand / "indexes" / "skill-deploy-state.json"
         return vault / ".paperforge" / "indexes" / "skill-deploy-state.json"
 
 
