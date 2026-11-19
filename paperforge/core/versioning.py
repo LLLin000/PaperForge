@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
+import platform
 import re
-import tomllib
+import sys
 from pathlib import Path
+
+import tomllib
 
 #: Earliest Python core version the current plugin generation can drive without
 #: forcing a backend reinstall on UI-only plugin patch bumps.
@@ -107,9 +110,12 @@ def is_version_compatible(
                 pass
         return True, "ok"
 
-    if expected_version and expected_version.strip():
-        if normalize_release_version(core_version) != normalize_release_version(expected_version):
-            return False, "exact_version_mismatch"
+    if (
+        expected_version
+        and expected_version.strip()
+        and normalize_release_version(core_version) != normalize_release_version(expected_version)
+    ):
+        return False, "exact_version_mismatch"
     return True, "ok"
 
 
@@ -164,3 +170,56 @@ def compute_deps_lock_hash(pyproject_path: Path | None = None) -> str:
         return ""
     joined = "\n".join(sorted(specs)).encode("utf-8")
     return hashlib.sha256(joined).hexdigest()[:16]
+
+
+def runtime_abi_tag() -> str:
+    """Return a concise host Python ABI + OS + arch identifier for runtime compatibility."""
+    mach = (platform.machine() or "unknown").lower()
+    return f"py{sys.version_info[0]}{sys.version_info[1]}-{sys.platform}-{mach}"
+
+
+def installed_deps_satisfy_declarations(
+    site_packages: Path,
+    pyproject_path: Path | None = None,
+) -> bool:
+    """Verify real installed distributions in *site_packages* satisfy declared version ranges.
+
+    Returns ``True`` cleanly when *site_packages* is a minimal mock without
+    ``.dist-info`` metadata, and performs strict specifier checks whenever real
+    distributions are present so fast-patch cannot reuse stale pinned deps.
+    """
+    if not site_packages.is_dir():
+        return False
+    dists = list(importlib.metadata.distributions(path=[str(site_packages)]))
+    if not dists:
+        return True
+    installed_versions: dict[str, str] = {}
+    for dist in dists:
+        raw_name = (dist.metadata.get("Name") or "").strip()
+        if raw_name:
+            installed_versions[re.sub(r"[-_.]+", "-", raw_name).lower()] = dist.version
+
+    candidate = pyproject_path or (Path(__file__).resolve().parents[2] / "pyproject.toml")
+    if not candidate.is_file():
+        return True
+    try:
+        from packaging.requirements import Requirement
+    except ImportError:
+        return True
+
+    data = tomllib.loads(candidate.read_text(encoding="utf-8"))
+    project = data.get("project") or {}
+    opt = project.get("optional-dependencies") or {}
+    raw_reqs = [*(project.get("dependencies") or []), *(opt.get("vector") or [])]
+    for raw in raw_reqs:
+        try:
+            req = Requirement(str(raw))
+        except Exception:  # noqa: BLE001
+            continue
+        if req.marker and not req.marker.evaluate({"extra": "vector"}):
+            continue
+        norm_name = re.sub(r"[-_.]+", "-", req.name).lower()
+        ver = installed_versions.get(norm_name)
+        if not ver or not req.specifier.contains(ver, prereleases=True):
+            return False
+    return True

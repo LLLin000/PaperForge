@@ -24,8 +24,10 @@ from paperforge import __version__
 from paperforge.core.versioning import (
     MIN_COMPATIBLE_PLUGIN_VERSION,
     compute_deps_lock_hash,
+    installed_deps_satisfy_declarations,
     is_version_compatible,
     normalize_release_version,
+    runtime_abi_tag,
 )
 from paperforge.runtime_pointer import pointer_dir, pointer_path, publish_pointer, read_pointer
 from paperforge.runtime_uv import (
@@ -567,20 +569,26 @@ def _install_runtime_locked(
             )
 
     target_deps_hash = compute_deps_lock_hash()
+    current_abi = runtime_abi_tag()
     old_pointer = read_pointer(home)
     old_root = (
         Path(str(old_pointer["environment_root"]))
         if old_pointer and old_pointer.get("environment_root")
         else None
     )
+    old_abi = old_pointer.get("runtime_abi") if old_pointer else None
+    old_sp = _site_packages_dir(old_root) if old_root is not None and old_root.is_dir() else None
     can_fast_patch = bool(
         not force
         and wheel is None
         and target_deps_hash
         and old_pointer
         and old_pointer.get("deps_lock_hash") == target_deps_hash
+        and (not old_abi or old_abi == current_abi)
         and old_root is not None
         and old_root.is_dir()
+        and old_sp is not None
+        and installed_deps_satisfy_declarations(old_sp)
     )
 
     candidate = runtime_dir / f".venv-candidate-{uuid.uuid4().hex}"
@@ -688,6 +696,7 @@ def _install_runtime_locked(
             deps_lock_hash=target_deps_hash or None,
             installer_backend=installer_backend,
             python_source=python_source,
+            runtime_abi=current_abi,
             home=home,
         )
         installed = True

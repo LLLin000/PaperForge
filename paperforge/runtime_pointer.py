@@ -74,6 +74,7 @@ def publish_pointer(
     deps_lock_hash: str | None = None,
     installer_backend: str | None = None,
     python_source: str | None = None,
+    runtime_abi: str | None = None,
     home: Path | None = None,
 ) -> Path:
     """Atomically publish the runtime pointer (tmp + os.replace) — the ONLY
@@ -119,6 +120,8 @@ def publish_pointer(
         payload["installer_backend"] = installer_backend
     if python_source:
         payload["python_source"] = python_source
+    if runtime_abi:
+        payload["runtime_abi"] = runtime_abi
     path = pointer_path(home)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".json.tmp")
