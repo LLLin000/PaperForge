@@ -171,8 +171,13 @@ do_ocr: true
                                     with patch("paperforge.worker.ocr.requests.post", mock_post):
                                         with patch("paperforge.worker.ocr.requests.get") as mock_get:
                                             mock_get.return_value.json.return_value = {
-                                                "data": {"state": "done", "resultUrl": {"jsonUrl": ""}}
+                                                "data": {
+                                                    "state": "done",
+                                                    "resultUrl": {"jsonUrl": "http://example.com/result.json"},
+                                                }
                                             }
+                                            mock_get.return_value.text = ""
+                                            mock_get.return_value.raise_for_status = MagicMock()
                                             with patch("paperforge.worker.sync.run_selection_sync"):
                                                 with patch("paperforge.worker.sync.run_index_refresh"):
                                                     from paperforge.worker.ocr import run_ocr
@@ -190,6 +195,56 @@ do_ocr: true
         final_meta = meta_calls[-1][0][1]
         assert final_meta.get("ocr_status") in ("done", "done_degraded"), f"Expected terminal status ('done'/'done_degraded'), got {final_meta.get('ocr_status')}"
         assert final_meta.get("ocr_job_id") == "job-123"
+
+    def test_done_with_empty_result_url_stays_queued_for_recovery(self, tmp_path: Path) -> None:
+        vault, ocr_root, exports, library_records = _make_vault(tmp_path)
+        paths = _mock_paths(vault, ocr_root, exports, library_records)
+
+        key = "TESTKEY1_DELAYED"
+        meta_path = ocr_root / key / "meta.json"
+        meta_path.parent.mkdir()
+        meta_path.write_text(json.dumps({"zotero_key": key, "ocr_status": "pending"}), encoding="utf-8")
+
+        lr_dir = library_records / "骨科"
+        lr_dir.mkdir(parents=True)
+        (lr_dir / f"{key}.md").write_text(f"---\nzotero_key: {key}\nanalyze: false\ndo_ocr: true\n---\n# Test", encoding="utf-8")
+        (exports / "骨科.json").write_text(
+            json.dumps([{"key": key, "title": "Delayed Paper", "attachments": [{"contentType": "application/pdf", "path": "test.pdf"}]}]),
+            encoding="utf-8",
+        )
+        _write_valid_pdf(vault / "test.pdf")
+
+        mock_post = MagicMock()
+        mock_post.return_value.json.return_value = {"data": {"jobId": "job-delayed"}}
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
+            with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
+                with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
+                    with patch("paperforge.worker.ocr.load_export_rows", return_value=[{"key": key, "attachments": [{"contentType": "application/pdf", "path": "test.pdf"}], "title": "Delayed Paper"}]):
+                        with patch("paperforge.worker.ocr.sync_ocr_queue", return_value=[{"zotero_key": key, "has_pdf": True, "pdf_path": "test.pdf", "queue_status": "pending"}]):
+                            with patch("paperforge.worker.ocr.ensure_ocr_meta", return_value={"zotero_key": key, "ocr_status": "pending"}):
+                                with patch("paperforge.worker.ocr.write_json") as mock_write:
+                                    with patch("paperforge.worker.ocr.requests.post", mock_post):
+                                        with patch("paperforge.worker.ocr.requests.get") as mock_get:
+                                            mock_get.return_value.json.return_value = {
+                                                "data": {"state": "done", "resultUrl": {"jsonUrl": ""}}
+                                            }
+                                            mock_get.return_value.raise_for_status = MagicMock()
+                                            with patch("paperforge.worker.sync.run_selection_sync"):
+                                                with patch("paperforge.worker.sync.run_index_refresh"):
+                                                    from paperforge.worker.ocr import run_ocr
+
+                                                    run_ocr(vault)
+
+        meta_calls = [
+            c for c in mock_write.call_args_list if isinstance(c[0][1], dict) and c[0][1].get("zotero_key") == key
+        ]
+        assert meta_calls
+        final_meta = meta_calls[-1][0][1]
+        assert final_meta.get("ocr_status") == "queued"
+        assert final_meta.get("ocr_job_id") == "job-delayed"
+        assert final_meta.get("error_stage") == "result"
 
 
 # ---------------------------------------------------------------------------

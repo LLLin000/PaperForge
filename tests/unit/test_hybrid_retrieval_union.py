@@ -120,3 +120,53 @@ def test_retrieve_deep_allows_bm25_when_vectors_not_built_and_blocks_stale_vecto
     assert "P_STALE_VEC" not in keys  # stale vector-only never leaks
     dual = next(m for m in payload["data"]["matches"] if m["zotero_key"] == "P_DUAL")
     assert dual["score"] == 0.6
+
+
+def test_retrieve_deep_real_bm25_without_vectors_and_missing_db(
+    tmp_path: Path, capsys
+) -> None:
+    """Real unmocked `retrieve --deep`: safe empty return before DB exists, and real BM25 hits without vectors."""
+    import shutil
+    import pymupdf
+    from paperforge.config import load_config, resolve_paths
+    from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
+    from tests.conftest import EXPORT_FIXTURE, OCR_FIXTURE
+
+    canonical_test_config(tmp_path, system_dir=".paperforge")
+
+    # (a) Before memory DB exists, retrieve --deep must not crash with OperationalError
+    rc_empty = cli_main(["--vault", str(tmp_path), "retrieve", "suture anchor", "--deep", "--json"])
+    assert rc_empty == 0
+    payload_empty = json.loads(capsys.readouterr().out)
+    assert payload_empty["ok"] is True
+    assert payload_empty["data"]["matches"] == []
+
+    # (b) Seed canonical OCR fixture, sync -> memory build (NO embed build / NO vectors)
+    paths = resolve_paths(tmp_path, load_config(tmp_path))
+    pdf_path = paths["zotero_dir"] / "storage" / "TSTONE001" / "TSTONE001.pdf"
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    with pymupdf.open() as doc:
+        doc.new_page()
+        doc.save(pdf_path)
+
+    paths["exports"].mkdir(parents=True, exist_ok=True)
+    shutil.copy2(EXPORT_FIXTURE, paths["exports"] / "骨科.json")
+
+    key = "TSTONE001"
+    ocr_target = paths["ocr"] / key
+    shutil.copytree(OCR_FIXTURE, ocr_target, dirs_exist_ok=True)
+    meta_file = ocr_target / "meta.json"
+    meta_obj = json.loads(meta_file.read_text(encoding="utf-8"))
+    meta_obj["raw_version"]["pdf_fingerprint"] = compute_pdf_fingerprint(pdf_path)
+    meta_file.write_text(json.dumps(meta_obj), encoding="utf-8")
+
+    assert cli_main(["--vault", str(tmp_path), "sync", "--json"]) == 0
+    assert cli_main(["--vault", str(tmp_path), "memory", "build", "--json"]) == 0
+    _ = capsys.readouterr()
+
+    rc_real = cli_main(["--vault", str(tmp_path), "retrieve", "suture anchor", "--deep", "--json"])
+    assert rc_real == 0
+    payload_real = json.loads(capsys.readouterr().out)
+    assert payload_real["ok"] is True
+    matched_keys = [m["zotero_key"] for m in payload_real["data"]["matches"]]
+    assert key in matched_keys

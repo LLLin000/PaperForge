@@ -3111,6 +3111,21 @@ def run_ocr(
         return resp
     _reported_progress_keys: set[str] = set()
 
+    def _mark_ocr_result_unavailable(
+        row_obj: dict,
+        meta_obj: dict,
+        meta_file: Path,
+        paper_key: str,
+        message: str,
+    ) -> None:
+        meta_obj["ocr_status"] = "queued"
+        meta_obj["error"] = message
+        meta_obj["error_stage"] = "result"
+        row_obj["queue_status"] = "queued"
+        timed_out_keys.add(paper_key)
+        result_unavailable_keys.add(paper_key)
+        write_json(meta_file, meta_obj)
+
     for queue_row in progress_bar(ocr_queue, desc="Processing OCR", disable=no_progress):
         if stop_check is not None and stop_check():
             _stopped = True
@@ -3178,19 +3193,30 @@ def run_ocr(
                     queue_row["queue_status"] = meta["ocr_status"]
                     meta["error"] = ""
             elif state == "done":
+                from paperforge.providers.paddleocr import extract_paddleocr_result_url
+
                 try:
-                    result_url = payload["resultUrl"]["jsonUrl"]
+                    result_url = extract_paddleocr_result_url(payload)
+                    if not result_url:
+                        _mark_ocr_result_unavailable(
+                            queue_row,
+                            meta,
+                            paths["ocr"] / key / "meta.json",
+                            key,
+                            "Remote OCR finished, but its result URL is not yet available; check provider status before retrying.",
+                        )
+                        continue
                     try:
                         result_response = requests.get(result_url, timeout=120)
                         result_response.raise_for_status()
                     except requests.RequestException:
-                        meta["ocr_status"] = "queued"
-                        meta["error"] = "Remote OCR finished, but its result could not be retrieved; check provider status before retrying."
-                        meta["error_stage"] = "result"
-                        queue_row["queue_status"] = "queued"
-                        timed_out_keys.add(key)
-                        result_unavailable_keys.add(key)
-                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        _mark_ocr_result_unavailable(
+                            queue_row,
+                            meta,
+                            paths["ocr"] / key / "meta.json",
+                            key,
+                            "Remote OCR finished, but its result could not be retrieved; check provider status before retrying.",
+                        )
                         continue
                     lines = [line.strip() for line in result_response.text.splitlines() if line.strip()]
                     all_results = []
@@ -3591,18 +3617,25 @@ def run_ocr(
                 try:
                     result_url = extract_paddleocr_result_url(payload)
                     if not result_url:
-                        raise KeyError("resultUrl")
+                        _mark_ocr_result_unavailable(
+                            queue_row,
+                            meta,
+                            paths["ocr"] / key / "meta.json",
+                            key,
+                            "Remote OCR finished, but its result URL is not yet available; check provider status before retrying.",
+                        )
+                        continue
                     try:
                         result_response = requests.get(result_url, timeout=120)
                         result_response.raise_for_status()
                     except requests.RequestException:
-                        meta["ocr_status"] = "queued"
-                        meta["error"] = "Remote OCR finished, but its result could not be retrieved; check provider status before retrying."
-                        meta["error_stage"] = "result"
-                        queue_row["queue_status"] = "queued"
-                        timed_out_keys.add(key)
-                        result_unavailable_keys.add(key)
-                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        _mark_ocr_result_unavailable(
+                            queue_row,
+                            meta,
+                            paths["ocr"] / key / "meta.json",
+                            key,
+                            "Remote OCR finished, but its result could not be retrieved; check provider status before retrying.",
+                        )
                         continue
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
                     results = [json.loads(l)["result"] for l in lines]
@@ -3621,6 +3654,9 @@ def run_ocr(
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
                     apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted.discard(key)
                     continue
                 health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}

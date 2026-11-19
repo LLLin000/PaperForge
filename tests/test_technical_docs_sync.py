@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -106,15 +107,33 @@ def test_all_14_handbook_chapters_exist_with_standard_sections() -> None:
 
 
 def test_referenced_repo_paths_and_markdown_links_resolve() -> None:
+    ls_res = subprocess.run(
+        ["git", "ls-files"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    )
+    tracked_files = {line.strip() for line in ls_res.stdout.splitlines() if line.strip()}
+    tracked_dirs: set[str] = set()
+    for rel in tracked_files:
+        parts = Path(rel).parts
+        for idx in range(1, len(parts)):
+            tracked_dirs.add("/".join(parts[:idx]))
+
     missing_paths: list[str] = []
     for doc_path in (*(HANDBOOK_DIR / n for n in EXPECTED_CHAPTERS), DOCS_INDEX_PATH):
         text = doc_path.read_text(encoding="utf-8")
         rel_doc = doc_path.relative_to(REPO_ROOT).as_posix()
         for match in _REPO_PATH_RE.finditer(text):
             candidate = match.group(1).rstrip("/")
-            if not (REPO_ROOT / candidate).exists():
+            if candidate not in tracked_files and candidate not in tracked_dirs:
                 missing_paths.append(f"{rel_doc}: {candidate}")
-    assert not missing_paths, "Missing repo paths referenced in handbook/index:\n  " + "\n  ".join(missing_paths)
+    assert not missing_paths, (
+        "Missing or untracked repo paths referenced in handbook/index:\n  "
+        + "\n  ".join(missing_paths)
+    )
 
     broken_links: list[str] = []
     ref_text = REFERENCE_PATH.read_text(encoding="utf-8")

@@ -73,8 +73,10 @@ class TestCanonicalIndexOcrState:
     def _base_mock_paths(self, vault: Path) -> dict:
         return {
             "vault": vault,
+            "paperforge": vault / "99_System" / "PaperForge",
             "exports": vault / "99_System" / "PaperForge" / "exports",
             "ocr": vault / "99_System" / "PaperForge" / "ocr",
+            "zotero_dir": vault / "99_System" / "Zotero",
             "literature": vault / "03_Resources" / "Literature",
             "index": vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json",
             "bases": vault / "05_Bases",

@@ -38,7 +38,7 @@ def test_l2_bad_url():
     assert result["level"] == 2
     assert result["passed"] is False
     assert "404" in result["error"]
-    assert "PADDLEOCR_JOB_URL" in result["fix"]
+    assert "paddleocr_job_url" in result["fix"]
 
 
 def test_l2_unauthorized():

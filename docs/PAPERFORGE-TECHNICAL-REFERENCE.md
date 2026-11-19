@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.0rc6` | **章节数**：`14` | **分册指纹**：`sha256:6b8c7fe6adb62d10`
+> **版本**：`2.0.0rc6` | **章节数**：`14` | **分册指纹**：`sha256:510382df317c4b5b`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 
@@ -3065,7 +3065,6 @@ stateDiagram-v2
 | `paperforge/commands/project_log.py`                                | CLI `paperforge project-log`（写入、列表、渲染 `project-log.md`）                                                                                                                                                                                           | `tests/cli/test_research_records.py`                                                                                                       |
 | `paperforge/services/local_read.py` & `paperforge/commands/read.py` | 零合成字面局部阅读 `read_paper_local()` 与 `paperforge read` 入口                                                                                                                                                                                           | `tests/test_local_read.py`                                                                                                                 |
 | `paperforge/commands/note.py`                                       | 权威工作流标志位变更 `paperforge note set-flag`（保换行符写回 + 索引联动回滚）                                                                                                                                                                              | `tests/test_note_set_flag.py`、`tests/unit/test_living_memory_and_state_seq.py`                                                            |
-| `project_memory_panel/`（独立工程记忆面板）                         | 工程级问题/决策 YAML 记录构建验证（非单篇论文卡）                                                                                                                                                                                                           | `tests/unit/test_project_memory_panel.py`                                                                                                  |
 
 ---
 
@@ -3284,7 +3283,7 @@ flowchart TD
 - [ ] **验证 Living Memory Card 与数据库一致性**：运行 `paperforge memory-card get <KEY> --json` 与 `paperforge memory-card history <KEY> --json`，对比工作区 `<workspace>/ai/memory-card.json`；若发现 SQLite 与侧车不一致，运行 `paperforge memory build --key <KEY> --json` 重新同步。
 - [ ] **排查 Obsidian Base 表未刷新或计数陈旧**：检查 `<paperforge>/indexes/.state-seq.json` 的 `seq` 与 `reason`，并运行 `paperforge memory-card base-snapshot --json` 验证 `user_ann_count`、`agent_ann_count`、`memory_facet_count` 是否与底层一致。
 - [ ] **校验与修正阅读笔记来源绑定**：对存在存疑出处的记录执行 `paperforge reading-log --source-check <RECORD_ID> --paper <KEY> --json`；若记录已被推翻，使用 `paperforge reading-log --correct <RECORD_ID> --paper <KEY> --correction "..." --reason "..." --json` 追加不可变校正链而非手改 `reading-log.jsonl`。
-- [ ] **回归验证测试集**：修改批注、定位、记忆卡或永久记录逻辑后，执行 `pytest tests/unit/test_annotations_service.py tests/unit/test_pdf_grounding_and_agent_mark.py tests/unit/test_living_memory_and_state_seq.py tests/unit/test_upgrade_resilience.py tests/unit/test_project_memory_panel.py tests/cli/test_research_records.py tests/test_local_read.py tests/test_note_set_flag.py`。
+- [ ] **回归验证测试集**：修改批注、定位、记忆卡或永久记录逻辑后，执行 `pytest tests/unit/test_annotations_service.py tests/unit/test_pdf_grounding_and_agent_mark.py tests/unit/test_living_memory_and_state_seq.py tests/unit/test_upgrade_resilience.py tests/cli/test_research_records.py tests/test_local_read.py tests/test_note_set_flag.py`。
 
 > 相关章节：SQLite `paper_annotations` / `paper_memory_cards` / `paper_memory_history` 表结构及从侧车恢复机制见 [Chapter 10](#chapter-10)；Agent 上下文读取 `living_memory` / `user_annotations` 及 `/pf-deep` 写回闭环见 [Chapter 12](#chapter-12)。
 

@@ -21,10 +21,7 @@ _COLLECTION_NAMES = ["paperforge_fulltext", "paperforge_body", "paperforge_objec
 
 
 def get_vector_db_path(vault: Path) -> Path:
-    from paperforge.config import fallback_paperforge_dir, paperforge_paths
-
-    paths = paperforge_paths(vault)
-    return (paths.get("memory_db", paths.get("paperforge", fallback_paperforge_dir(vault)))).parent / "vectors"
+    return get_memory_db_path(vault).parent / "vectors"
 
 
 class LegacyVectorUnavailable(RuntimeError):

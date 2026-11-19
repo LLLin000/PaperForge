@@ -228,6 +228,10 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
     """
     from paperforge.embedding.query_rewrite import expand_query as do_expand
 
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return []
+
     query_variants = do_expand(query)
     # P1-3: encode the query BEFORE taking the reader lock — a slow provider
     # call must not hold .read.lock (it stalls other queries and can exceed
@@ -238,7 +242,6 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
         ).encode_single(query)
     except Exception:
         query_embedding = None
-    db_path = get_memory_db_path(vault)
     with open_live_reader(vault, db_path) as conn:
         ensure_vec_extension(conn)
         bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id)

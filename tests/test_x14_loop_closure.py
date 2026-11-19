@@ -129,36 +129,42 @@ def _static_probe_action_ids() -> set[str]:
     """Every ``action_id`` the probe can place in an envelope, from source.
 
     Reads the keyword arguments of the product's own ``build_action_primary``
-    calls — no hand-maintained list — and expands the one dynamic id
-    (``f"{mod_name}.probe"`` over ``PROBE_ORDER``).
+    calls across ``commands/probe.py`` and ``probes/*.py``, expanding the one
+    dynamic id (``f"{mod_name}.probe"`` over ``PROBE_ORDER``).
     """
-    tree = ast.parse(PROBE_SOURCE.read_text(encoding="utf-8"))
+    source_files = [
+        p
+        for p in [PROBE_SOURCE, *sorted((ROOT / "paperforge" / "probes").glob("*.py"))]
+        if p.exists()
+    ]
     ids: set[str] = set()
     dynamic: list[str] = []
-    for node in ast.walk(tree):
-        if not (isinstance(node, ast.keyword) and node.arg == "action_id"):
-            continue
-        value = node.value
-        if isinstance(value, ast.Constant) and isinstance(value.value, str):
-            ids.add(value.value)
-        elif isinstance(value, ast.IfExp):
-            for branch in (value.body, value.orelse):
-                assert isinstance(branch, ast.Constant) and isinstance(branch.value, str)
-                ids.add(branch.value)
-        elif isinstance(value, ast.JoinedStr):
-            parts: list[str] = []
-            for piece in value.values:
-                if isinstance(piece, ast.Constant):
-                    parts.append(str(piece.value))
-                elif isinstance(piece, ast.FormattedValue) and isinstance(
-                    piece.value, ast.Name
-                ):
-                    parts.append("{" + piece.value.id + "}")
-                else:  # pragma: no cover - guards a new dynamic shape
-                    raise AssertionError(f"unhandled probe action_id piece: {ast.dump(piece)}")
-            dynamic.append("".join(parts))
-        else:  # pragma: no cover - guards a new dynamic shape
-            raise AssertionError(f"unhandled probe action_id expr: {ast.dump(value)}")
+    for src_path in source_files:
+        tree = ast.parse(src_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.keyword) and node.arg == "action_id"):
+                continue
+            value = node.value
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                ids.add(value.value)
+            elif isinstance(value, ast.IfExp):
+                for branch in (value.body, value.orelse):
+                    assert isinstance(branch, ast.Constant) and isinstance(branch.value, str)
+                    ids.add(branch.value)
+            elif isinstance(value, ast.JoinedStr):
+                parts: list[str] = []
+                for piece in value.values:
+                    if isinstance(piece, ast.Constant):
+                        parts.append(str(piece.value))
+                    elif isinstance(piece, ast.FormattedValue) and isinstance(
+                        piece.value, ast.Name
+                    ):
+                        parts.append("{" + piece.value.id + "}")
+                    else:  # pragma: no cover - guards a new dynamic shape
+                        raise AssertionError(f"unhandled probe action_id piece: {ast.dump(piece)}")
+                dynamic.append("".join(parts))
+            else:  # pragma: no cover - guards a new dynamic shape
+                raise AssertionError(f"unhandled probe action_id expr: {ast.dump(value)}")
     for expr in dynamic:
         assert expr == "{mod_name}.probe", f"new dynamic probe id: {expr!r}"
         ids |= {f"{stem}.probe" for stem in PROBE_ORDER_STEMS}

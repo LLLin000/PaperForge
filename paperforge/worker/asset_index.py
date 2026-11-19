@@ -765,7 +765,7 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
             file=sys.stderr,
         )
 
-    zotero_dir = paths["zotero_dir"]
+    zotero_dir = paths.get("zotero_dir") or (Path(paths.get("paperforge", vault / ".paperforge")) / "Zotero")
 
     export_hash = _compute_export_hash(paths)
     if not force_rebuild and isinstance(existing_data, dict) and existing_data.get("export_hash") == export_hash:
@@ -874,7 +874,7 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
     # Find the export item for the requested key
     config = load_domain_config(paths)
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
-    zotero_dir = paths["zotero_dir"]
+    zotero_dir = paths.get("zotero_dir") or (Path(paths.get("paperforge", vault / ".paperforge")) / "Zotero")
 
     found_item = None
     found_domain = ""

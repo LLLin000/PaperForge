@@ -7,7 +7,6 @@ from paperforge import __version__ as PF_VERSION
 from pathlib import Path
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.embedding import hybrid_search, merge_retrieve
 
 
 
@@ -124,10 +123,11 @@ def run(args: argparse.Namespace) -> int:
                 return 1
 
     from paperforge.embedding import get_embed_status
+    from paperforge.embedding import search as _embedding_search
     # ── @ Deep Search mode: query rewrite + hybrid retrieval ──────
     if deep:
         try:
-            raw_chunks = hybrid_search(vault, query, limit=limit, paper_id=paper_key)
+            raw_chunks = _embedding_search.hybrid_search(vault, query, limit=limit, paper_id=paper_key)
             # #159 §6 reader gate: never serve a mismatched/unknown chain, while
             # permitting BM25-only hits when vectors are not built.
             from paperforge.reader_gate import filter_readable
@@ -199,7 +199,7 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        chunks = merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
+        chunks = _embedding_search.merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
         # #159 §6 reader gate: never serve a mismatched/unknown chain.
         from paperforge.reader_gate import filter_readable
 
