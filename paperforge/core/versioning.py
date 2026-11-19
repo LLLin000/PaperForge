@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import email.parser
 import hashlib
 import importlib.metadata
+import platform
 import re
-import tomllib
+import sys
 from pathlib import Path
+
+import tomllib
 
 #: Earliest Python core version the current plugin generation can drive without
 #: forcing a backend reinstall on UI-only plugin patch bumps.
@@ -107,9 +111,12 @@ def is_version_compatible(
                 pass
         return True, "ok"
 
-    if expected_version and expected_version.strip():
-        if normalize_release_version(core_version) != normalize_release_version(expected_version):
-            return False, "exact_version_mismatch"
+    if (
+        expected_version
+        and expected_version.strip()
+        and normalize_release_version(core_version) != normalize_release_version(expected_version)
+    ):
+        return False, "exact_version_mismatch"
     return True, "ok"
 
 
@@ -164,3 +171,116 @@ def compute_deps_lock_hash(pyproject_path: Path | None = None) -> str:
         return ""
     joined = "\n".join(sorted(specs)).encode("utf-8")
     return hashlib.sha256(joined).hexdigest()[:16]
+
+
+def runtime_abi_tag() -> str:
+    """Return a concise host Python ABI + OS + arch identifier for runtime compatibility."""
+    mach = (platform.machine() or "unknown").lower()
+    return f"py{sys.version_info[0]}{sys.version_info[1]}-{sys.platform}-{mach}"
+
+
+_REQ_CLAUSE_RE = re.compile(r"^\s*(===|==|~=|>=|<=|!=|>|<)\s*([^\s,;]+)\s*$")
+_REQ_SPLIT_RE = re.compile(r"^([A-Za-z0-9._-]+)(?:\[[^\]]*\])?\s*(.*)$")
+
+
+def _clause_satisfied(installed_ver: str, op: str, target_ver: str) -> bool:
+    """Evaluate a single PEP 440 specifier clause without external dependencies."""
+    if op == "===":
+        return installed_ver.strip() == target_ver.strip()
+    try:
+        inst_t = parse_release_tuple(installed_ver)
+        tgt_t = parse_release_tuple(target_ver)
+    except ValueError:
+        return True
+    if op == "==":
+        return inst_t == tgt_t
+    if op == "!=":
+        return inst_t != tgt_t
+    if op == ">=":
+        return inst_t >= tgt_t
+    if op == "<=":
+        return inst_t <= tgt_t
+    if op == ">":
+        return inst_t > tgt_t
+    if op == "<":
+        return inst_t < tgt_t
+    if op == "~=":
+        parts = [int(p) for p in re.split(r"[^0-9]+", target_ver.strip()) if p][:3]
+        upper = (parts[0], parts[1] + 1, 0, 0, 0, 0) if len(parts) >= 2 else (parts[0] + 1, 0, 0, 0, 0, 0)
+        return tgt_t <= inst_t < upper
+    return True
+
+
+def _req_specifiers_satisfied(installed_ver: str, spec_expr: str) -> bool:
+    """Evaluate comma-separated PEP 440 specifiers cleanly using stdlib only."""
+    for clause in spec_expr.split(","):
+        clause = clause.strip()
+        if not clause:
+            continue
+        m = _REQ_CLAUSE_RE.match(clause)
+        if not m:
+            continue
+        if not _clause_satisfied(installed_ver, m.group(1), m.group(2)):
+            return False
+    return True
+
+
+def installed_deps_satisfy_declarations(
+    site_packages: Path,
+    pyproject_path: Path | None = None,
+) -> bool:
+    """Verify real installed distributions in *site_packages* satisfy declared version ranges.
+
+    Returns ``True`` cleanly when *site_packages* is a minimal mock without
+    ``.dist-info`` metadata, and performs strict specifier checks whenever real
+    distributions are present so fast-patch cannot reuse stale pinned deps.
+    """
+    if not site_packages.is_dir():
+        return False
+    dist_dirs = list(site_packages.glob("*.dist-info"))
+    if not dist_dirs:
+        return True
+    installed_versions: dict[str, str] = {}
+    parser = email.parser.HeaderParser()
+    for d in dist_dirs:
+        meta_file = d / "METADATA"
+        if not meta_file.is_file():
+            continue
+        try:
+            meta = parser.parsestr(meta_file.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            continue
+        raw_name = (meta.get("Name") or "").strip()
+        raw_ver = (meta.get("Version") or "").strip()
+        if raw_name and raw_ver:
+            installed_versions[re.sub(r"[-_.]+", "-", raw_name).lower()] = raw_ver
+    if not installed_versions:
+        return True
+
+    candidate = pyproject_path or (Path(__file__).resolve().parents[2] / "pyproject.toml")
+    if not candidate.is_file():
+        return True
+
+    data = tomllib.loads(candidate.read_text(encoding="utf-8"))
+    project = data.get("project") or {}
+    opt = project.get("optional-dependencies") or {}
+    raw_reqs = [*(project.get("dependencies") or []), *(opt.get("vector") or [])]
+    for raw in raw_reqs:
+        req_str = str(raw).strip()
+        if not req_str:
+            continue
+        parts = req_str.split(";", 1)
+        marker = parts[1].strip().lower() if len(parts) > 1 else ""
+        if "legacy-vector" in marker or ("extra" in marker and "vector" not in marker):
+            continue
+        m = _REQ_SPLIT_RE.match(parts[0].strip())
+        if not m:
+            continue
+        norm_name = re.sub(r"[-_.]+", "-", m.group(1)).lower()
+        spec_expr = m.group(2).strip()
+        ver = installed_versions.get(norm_name)
+        if not ver:
+            return False
+        if spec_expr and not _req_specifiers_satisfied(ver, spec_expr):
+            return False
+    return True

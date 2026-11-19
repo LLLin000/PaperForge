@@ -137,3 +137,31 @@ def test_skill_sync_auto_updates_unmodified_and_preserves_customized(tmp_path: P
     payload = json.loads(proc.stdout)
     assert payload["ok"] is True
     assert payload["status"] == "customized_preserved"
+
+
+def test_atomic_skill_replace_preserves_prior_skill_on_stage_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from paperforge.services import skill_deploy
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+
+    first = skill_deploy.deploy_skills(vault)
+    assert first["skill_deployed"] is True
+    dst_skill = vault / ".agents" / "skills" / "paperforge"
+    (dst_skill / "SKILL.md").write_text("# working prior skill", encoding="utf-8")
+
+    # Simulate copy failure while staging replacement — prior skill must remain untouched
+    def _boom_copy(src, dst, **kwargs):
+        Path(dst).mkdir(parents=True, exist_ok=True)
+        (Path(dst) / "partial.txt").write_text("incomplete", encoding="utf-8")
+        raise OSError("disk error during skill stage")
+
+    monkeypatch.setattr(skill_deploy.shutil, "copytree", _boom_copy)
+    failed = skill_deploy.deploy_skills(vault, overwrite=True)
+    assert failed["skill_deployed"] is False
+    assert failed["errors"]
+    assert (dst_skill / "SKILL.md").read_text(encoding="utf-8") == "# working prior skill"
+    assert not any(p.name.startswith(".paperforge-skill-") for p in dst_skill.parent.iterdir())

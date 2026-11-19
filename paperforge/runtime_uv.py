@@ -7,6 +7,8 @@ same filesystem volume so NTFS/APFS/ext4 hardlinks succeed without copying.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import io
 import os
 import platform
@@ -17,10 +19,19 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-UV_RELEASE_BASE = "https://github.com/astral-sh/uv/releases/latest/download"
+UV_VERSION = "0.13.9"
+UV_RELEASE_BASE = f"https://github.com/astral-sh/uv/releases/download/{UV_VERSION}"
 UV_MIRROR_RELEASE_BASES = (
-    "https://ghfast.top/https://github.com/astral-sh/uv/releases/latest/download",
+    f"https://ghfast.top/https://github.com/astral-sh/uv/releases/download/{UV_VERSION}",
 )
+UV_ASSET_SHA256: dict[str, str] = {
+    "uv-x86_64-pc-windows-msvc.zip": "edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb",
+    "uv-aarch64-pc-windows-msvc.zip": "72eed595983a4d7d22d79f21065b0f4479cc7e5c7a89104bb410c8f47559a878",
+    "uv-x86_64-apple-darwin.tar.gz": "617a3211261b0fc739562f0071aa34e9739797c510208ede8e2977c30903d041",
+    "uv-aarch64-apple-darwin.tar.gz": "5aeca67f2283f75235de40d0bd9c0a5bbc5fce23b6d48b3bf9fa1b2db08382ca",
+    "uv-x86_64-unknown-linux-gnu.tar.gz": "a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5",
+    "uv-aarch64-unknown-linux-gnu.tar.gz": "0797542018e541a9288855df555c8077eed06f7a47d206362030480e8ecc9f3d",
+}
 UV_PYTHON_MIRROR_DEFAULT = "https://registry.npmmirror.com/-/binary/python-build-standalone"
 UV_PYPI_INDEXES = (
     None,  # official PyPI (or env UV_INDEX_URL / PIP_INDEX_URL)
@@ -139,25 +150,45 @@ def _safe_extract_uv_binary(raw_bytes: bytes, kind: str, target_exe: Path) -> No
     os.replace(str(tmp_exe), str(target_exe))
 
 
+def verify_uv_archive_sha256(
+    raw_bytes: bytes,
+    asset_name: str,
+    *,
+    expected_sha256: str | None = None,
+) -> str:
+    """Fail-closed SHA-256 verification of downloaded ``uv`` archives before extraction."""
+    expected = (expected_sha256 or UV_ASSET_SHA256.get(asset_name) or "").strip().lower()
+    if not expected:
+        raise RuntimeError(f"No pinned SHA-256 checksum available for uv asset: {asset_name!r}")
+    actual = hashlib.sha256(raw_bytes).hexdigest().lower()
+    if not hmac.compare_digest(actual, expected):
+        raise RuntimeError(
+            f"uv archive checksum mismatch for {asset_name}: expected {expected}, got {actual}"
+        )
+    return actual
+
+
 def ensure_uv(runtime_dir: Path, *, allow_download: bool = True, timeout: int = 45) -> str | None:
-    """Locate ``uv``, or download portable ``uv`` into ``runtime_dir/bin``."""
+    """Locate ``uv``, or download & SHA-256 verify portable ``uv`` into ``runtime_dir/bin``."""
     existing = discover_uv(runtime_dir)
     if existing:
         return existing
     if not allow_download:
         return None
     try:
-        _, kind = uv_asset_name()
+        asset_name, kind = uv_asset_name()
         urls = uv_download_urls()
     except RuntimeError:
         return None
 
+    override_sha = os.environ.get("PAPERFORGE_UV_SHA256", "").strip() or None
     target = managed_uv_path(runtime_dir)
     for url in urls:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "PaperForge-Installer/2.1"})
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw_bytes = resp.read()
+            verify_uv_archive_sha256(raw_bytes, asset_name, expected_sha256=override_sha)
             _safe_extract_uv_binary(raw_bytes, kind, target)
             return str(target)
         except Exception:  # noqa: BLE001 — fall through to next mirror or None

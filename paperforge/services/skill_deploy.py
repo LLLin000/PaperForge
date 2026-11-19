@@ -70,6 +70,40 @@ def _resolve_source_root() -> Path:
     return Path(paperforge.__file__).parent
 
 
+def _atomic_replace_skill_tree(src_skill: Path, dst_skill: Path) -> None:
+    """Stage & digest-verify *src_skill* before swapping *dst_skill* atomically with rollback."""
+    import uuid
+
+    dst_skill.parent.mkdir(parents=True, exist_ok=True)
+    stage_dir = dst_skill.parent / f".paperforge-skill-stage-{uuid.uuid4().hex[:8]}"
+    backup_dir: Path | None = None
+    try:
+        shutil.copytree(src_skill, stage_dir, dirs_exist_ok=False)
+        if _skill_tree_digest(stage_dir) != _skill_tree_digest(src_skill):
+            raise RuntimeError("Staged skill digest verification failed")
+        if dst_skill.exists():
+            backup_dir = dst_skill.parent / f".paperforge-skill-backup-{uuid.uuid4().hex[:8]}"
+            dst_skill.rename(backup_dir)
+            try:
+                stage_dir.rename(dst_skill)
+            except Exception:
+                if backup_dir.exists() and not dst_skill.exists():
+                    backup_dir.rename(dst_skill)
+                raise
+            try:
+                shutil.rmtree(backup_dir)
+            except OSError as exc:
+                logger.warning("skill_deploy: failed to remove backup %s: %s", backup_dir, exc)
+        else:
+            stage_dir.rename(dst_skill)
+    finally:
+        if stage_dir.exists():
+            try:
+                shutil.rmtree(stage_dir)
+            except OSError as exc:
+                logger.warning("skill_deploy: failed to remove stage %s: %s", stage_dir, exc)
+
+
 def deploy_skills(
     vault: Path,
     agent_key: str = "opencode",
@@ -134,15 +168,9 @@ def deploy_skills(
                     f"existing paperforge skill differs at {dst_skill} — "
                     "rerun with --overwrite to replace it"
                 )
-            else:
-                try:
-                    shutil.rmtree(dst_skill)
-                except OSError as exc:
-                    logger.warning("skill_deploy: failed to remove %s: %s", dst_skill, exc)
         if not (noop or already_exists):
             try:
-                dst_skill.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(src_skill, dst_skill, dirs_exist_ok=False)
+                _atomic_replace_skill_tree(src_skill, dst_skill)
                 skill_deployed = True
             except Exception as e:
                 errors.append(f"Skill deploy failed: {e}")

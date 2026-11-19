@@ -273,6 +273,23 @@ function shSingleQuote(value: string): string {
   return "'" + value.replace(/'/g, "'\"'\"'") + "'";
 }
 
+export const UV_VERSION = "0.13.9";
+
+export const UV_ASSET_SHA256: Readonly<Record<string, string>> = {
+  "uv-x86_64-pc-windows-msvc.zip":
+    "edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb",
+  "uv-aarch64-pc-windows-msvc.zip":
+    "72eed595983a4d7d22d79f21065b0f4479cc7e5c7a89104bb410c8f47559a878",
+  "uv-x86_64-apple-darwin.tar.gz":
+    "617a3211261b0fc739562f0071aa34e9739797c510208ede8e2977c30903d041",
+  "uv-aarch64-apple-darwin.tar.gz":
+    "5aeca67f2283f75235de40d0bd9c0a5bbc5fce23b6d48b3bf9fa1b2db08382ca",
+  "uv-x86_64-unknown-linux-gnu.tar.gz":
+    "a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5",
+  "uv-aarch64-unknown-linux-gnu.tar.gz":
+    "0797542018e541a9288855df555c8077eed06f7a47d206362030480e8ecc9f3d",
+};
+
 function uvTargetTriple(platform: NodeJS.Platform, arch: string): string {
   const normArch =
     arch === "arm64" || arch === "aarch64" ? "aarch64" : "x86_64";
@@ -286,6 +303,8 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
   const pep440 = normalizePep440Version(opts.version);
   const spec = pep440 ? `paperforge[vector]==${pep440}` : "paperforge[vector]";
   const target = uvTargetTriple("win32", opts.arch ?? process.arch);
+  const assetName = `uv-${target}.zip`;
+  const expectedSha = UV_ASSET_SHA256[assetName] ?? "";
   const binDir = uvInstallDir(home);
   const uvDest = uvBinaryPath(home, "win32");
   const cacheDir = uvCacheDir(home);
@@ -309,12 +328,22 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
     `  $uvBin = ${psSingleQuote(uvSeed)}`,
     `  if (-not $uvBin -or -not (Test-Path $uvBin)) { $uvBin = ${psSingleQuote(uvDest)} }`,
     "  if (-not (Test-Path $uvBin)) {",
+    `    $expectedSha = ${psSingleQuote(expectedSha)}`,
+    "    if (-not $expectedSha) { throw 'No pinned SHA-256 digest for uv archive.' }",
     `    $zipPath = Join-Path $env:TEMP ('uv-' + [guid]::NewGuid().ToString('N') + '.zip')`,
     `    $extDir = Join-Path $env:TEMP ('uv-ext-' + [guid]::NewGuid().ToString('N'))`,
-    `    $urls = @('https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.zip', 'https://mirror.ghproxy.com/https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.zip')`,
+    `    $urls = @('https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}', 'https://ghfast.top/https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}')`,
     "    $downloaded = $false",
-    "    foreach ($u in $urls) { try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zipPath; $downloaded = $true; break } catch {} }",
-    "    if (-not $downloaded) { throw 'Failed to download portable uv.' }",
+    "    foreach ($u in $urls) {",
+    "      try {",
+    "        Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zipPath",
+    "        $actualSha = (Get-FileHash -Algorithm SHA256 -Path $zipPath).Hash.ToLowerInvariant()",
+    '        if ($actualSha -ne $expectedSha) { Remove-Item -Force -ErrorAction SilentlyContinue $zipPath; throw "SHA-256 mismatch from $u" }',
+    "        $downloaded = $true",
+    "        break",
+    "      } catch {}",
+    "    }",
+    "    if (-not $downloaded) { throw 'Failed to download and SHA-256 verify portable uv.' }",
     "    Expand-Archive -Path $zipPath -DestinationPath $extDir -Force",
     "    $found = Get-ChildItem -Path $extDir -Recurse -Filter 'uv.exe' | Select-Object -First 1",
     "    if (-not $found) { throw 'uv.exe not found inside archive.' }",
@@ -368,6 +397,8 @@ export function posixUvInstallerScript(opts: UvInstallerOptions): string {
   const pep440 = normalizePep440Version(opts.version);
   const spec = pep440 ? `paperforge[vector]==${pep440}` : "paperforge[vector]";
   const target = uvTargetTriple(platform, opts.arch ?? process.arch);
+  const assetName = `uv-${target}.tar.gz`;
+  const expectedSha = UV_ASSET_SHA256[assetName] ?? "";
   const binDir = uvInstallDir(home);
   const uvDest = uvBinaryPath(home, platform);
   const cacheDir = uvCacheDir(home);
@@ -393,14 +424,31 @@ export function posixUvInstallerScript(opts: UvInstallerOptions): string {
     "  fi",
     "}",
     "trap on_exit EXIT",
+    "verify_sha256() {",
+    '  file="$1"; want="$2"',
+    '  if [ -z "$want" ]; then return 1; fi',
+    "  if command -v sha256sum >/dev/null 2>&1; then",
+    '    got="$(sha256sum "$file" | awk \'{print $1}\')"',
+    "  elif command -v shasum >/dev/null 2>&1; then",
+    '    got="$(shasum -a 256 "$file" | awk \'{print $1}\')"',
+    "  else",
+    "    return 1",
+    "  fi",
+    '  [ "$got" = "$want" ]',
+    "}",
     `UV_BIN=${shSingleQuote(uvSeed)}`,
     `if [ -z "$UV_BIN" ] || [ ! -x "$UV_BIN" ]; then UV_BIN=${shSingleQuote(uvDest)}; fi`,
     'if [ ! -x "$UV_BIN" ]; then',
+    `  EXPECTED_SHA=${shSingleQuote(expectedSha)}`,
     '  TMP_DIR="$(mktemp -d)"',
     '  ARC="$TMP_DIR/uv.tar.gz"',
-    `  URL1="https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.tar.gz"`,
-    `  URL2="https://mirror.ghproxy.com/$URL1"`,
-    '  curl -fsSL "$URL1" -o "$ARC" || curl -fsSL "$URL2" -o "$ARC"',
+    `  URL1="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}"`,
+    `  URL2="https://ghfast.top/$URL1"`,
+    '  if ! (curl -fsSL "$URL1" -o "$ARC" && verify_sha256 "$ARC" "$EXPECTED_SHA"); then',
+    '    rm -f "$ARC"',
+    '    curl -fsSL "$URL2" -o "$ARC"',
+    '    verify_sha256 "$ARC" "$EXPECTED_SHA"',
+    "  fi",
     '  tar -xzf "$ARC" -C "$TMP_DIR"',
     '  FOUND="$(find "$TMP_DIR" -type f -name uv | head -n 1)"',
     '  cp "$FOUND" "$UV_BIN" && chmod +x "$UV_BIN"',

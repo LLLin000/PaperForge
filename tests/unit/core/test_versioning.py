@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from paperforge.core.versioning import (
     compute_deps_lock_hash,
     is_version_compatible,
@@ -88,3 +86,45 @@ def test_compute_deps_lock_hash_is_deterministic_and_sensitive_to_changes(tmp_pa
     assert compute_deps_lock_hash(pyproject_a) == compute_deps_lock_hash(pyproject_b)
     # Adding/updating runtime or vector dependencies flips depsLockHash
     assert compute_deps_lock_hash(pyproject_a) != compute_deps_lock_hash(pyproject_c)
+
+
+def test_runtime_abi_and_installed_dep_checks_guard_fast_patch(tmp_path: Path) -> None:
+    from paperforge.core.versioning import (
+        installed_deps_satisfy_declarations,
+        runtime_abi_tag,
+    )
+
+    tag = runtime_abi_tag()
+    assert tag.startswith("py")
+    assert "-" in tag
+
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(
+        '[project]\ndependencies = ["requests>=2.31.0,<3"]\n',
+        encoding="utf-8",
+    )
+    sp = tmp_path / "site-packages"
+    sp.mkdir()
+    # Empty/mock site-packages (no dist-info) -> allowed for unit test harnesses
+    assert installed_deps_satisfy_declarations(sp, pyproject_path=pyproject) is True
+
+    # Real outdated dist-info -> rejected cleanly
+    dist_info = sp / "requests-2.20.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: requests\nVersion: 2.20.0\n",
+        encoding="utf-8",
+    )
+    assert installed_deps_satisfy_declarations(sp, pyproject_path=pyproject) is False
+
+    # Updating dist-info to a matching version -> satisfied cleanly
+    import shutil
+
+    shutil.rmtree(dist_info)
+    good_dist = sp / "requests-2.32.3.dist-info"
+    good_dist.mkdir()
+    (good_dist / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: requests\nVersion: 2.32.3\n",
+        encoding="utf-8",
+    )
+    assert installed_deps_satisfy_declarations(sp, pyproject_path=pyproject) is True
