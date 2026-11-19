@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import email.parser
 import hashlib
 import importlib.metadata
 import platform
@@ -236,14 +237,25 @@ def installed_deps_satisfy_declarations(
     """
     if not site_packages.is_dir():
         return False
-    dists = list(importlib.metadata.distributions(path=[str(site_packages)]))
-    if not dists:
+    dist_dirs = list(site_packages.glob("*.dist-info"))
+    if not dist_dirs:
         return True
     installed_versions: dict[str, str] = {}
-    for dist in dists:
-        raw_name = (dist.metadata.get("Name") or "").strip()
-        if raw_name:
-            installed_versions[re.sub(r"[-_.]+", "-", raw_name).lower()] = dist.version
+    parser = email.parser.HeaderParser()
+    for d in dist_dirs:
+        meta_file = d / "METADATA"
+        if not meta_file.is_file():
+            continue
+        try:
+            meta = parser.parsestr(meta_file.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            continue
+        raw_name = (meta.get("Name") or "").strip()
+        raw_ver = (meta.get("Version") or "").strip()
+        if raw_name and raw_ver:
+            installed_versions[re.sub(r"[-_.]+", "-", raw_name).lower()] = raw_ver
+    if not installed_versions:
+        return True
 
     candidate = pyproject_path or (Path(__file__).resolve().parents[2] / "pyproject.toml")
     if not candidate.is_file():
