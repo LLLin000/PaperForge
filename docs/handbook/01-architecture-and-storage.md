@@ -16,7 +16,7 @@ PaperForge 采用 **Python Core Single Authority（Python 核心单一权威）+
 ### 非目标边界（Non-Goals）
 
 - **客户端不做语义推断**：插件前端与 Agent 不得直接解析 `paperforge.json`、`formal-library.json`、`paperforge.db` 或 OCR `meta.json` 来推导系统能力状态、论文主键或下一步动作策略；唯一例外是引导适配器只读 `~/.paperforge/runtime/pointer.json` 以定位 Python 解释器。
-- **不引入持久化后台守护进程（Daemon）**：Python 进程均为按次调用（one-shot invocation），跨端 UI 实时刷新通过 `.state-seq.json` 状态序号文件与 Obsidian 文件监听实现，长任务通过 `NodeProcessTransport` 持有子进程句柄进行生命周期管理。
+- **仅限受控 stdio JSON-RPC 复用（无网络服务守护进程）**：长任务与流式命令仍按独立子进程执行（受 `NodeProcessTransport` 与取消令牌约束）；短 RPC 读/写可通过无网络端口的 `paperforge daemon --stdio` 按 Vault 会话复用同一进程并受 `idle_timeout` 与 stdin EOF 自动退出制约，跨端刷新继续经由 `.state-seq.json` 状态序号通知。
 - **不做无审计物理删目录**：用户数据或孤儿论文的清理必须经由 `paperforge/worker/trash.py` 移入 `.paperforge/trash/` 并生成清单，禁止业务层直接调用裸 `shutil.rmtree()` 删除库目录。
 - **Worker 层禁止反向依赖上层入口**：`paperforge/worker/` 是确定性执行层，禁止导入 `paperforge.commands` 或 `paperforge.plugin`。
 
@@ -26,37 +26,40 @@ PaperForge 采用 **Python Core Single Authority（Python 核心单一权威）+
 
 ### 2.1 核心源码模块
 
-| 模块路径                                            | 核心职责                        | 关键对外入口 / 不变量                                                                           |
-| --------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `paperforge/__init__.py`                            | 包版本定义                      | 定义源码基准版本 `__version__`（当前 `"2.0.0rc6"`）                                             |
-| `paperforge/config.py`                              | 配置解析与 Vault 路径单一权威   | `load_config()`、`resolve_paths()`、`paperforge_paths()`、`resolve_vault()`、`LEGACY_PATH_KEYS` |
-| `paperforge/services/storage_migration.py`          | v1→v2 隐藏存储引擎迁移服务      | `migrate_vault_storage()`、`rewrite_visual_embeds_for_key()`                                    |
-| `paperforge/commands/migrate_storage.py`            | `migrate-storage` CLI 适配器    | `run()`，输出 `PFResult` 或人类可读摘要                                                         |
-| `paperforge/worker/asset_index.py`                  | 规范索引与论文工作区物化        | `build_index()`、`refresh_index_entry()`、`sync_workspace_visual_assets()`、`_build_entry()`    |
-| `paperforge/worker/paper_meta.py`                   | 单论文工作区元数据读写          | `write_paper_meta()`、`read_paper_meta()`（`SCHEMA_VERSION = 1`）                               |
-| `paperforge/worker/base_views.py`                   | Obsidian `.base` 视图生成与清洗 | `ensure_base_views()`、`build_base_views()`、`merge_base_views()`、`RETIRED_PF_VIEWS`           |
-| `paperforge/worker/ocr_artifacts.py`                | 单论文 OCR 存储路径与缓存清理   | `artifact_paths_for_root()`、`OCRArtifactPaths`、`cleanup_ocr_artifact_cache()`                 |
-| `paperforge/worker/trash.py`                        | Fail-Closed 回收站隔离删除层    | `validate_target()`、`trash_remove()`、`list_trash()`、`restore_trash()`、`purge_trash()`       |
-| `paperforge/worker/prune.py`                        | 孤儿论文清理调度                | `prune_orphan_papers()`，受 `WriterLock` 保护后调用 `trash_remove()`                            |
-| `paperforge/lineage.py`                             | 跨载体残留检测与工作区定位      | `_detect_residuals()`、`_workspace_dir_for_key()`                                               |
-| `paperforge/services/skill_deploy.py`               | Agent Skill 安全部署服务        | `deploy_skills()`、`_validate_target()`、`_skill_tree_digest()`                                 |
-| `scripts/check_module_graph.py`                     | P0 AST 静态依赖门禁（R1-R4）    | `build_snapshot()`、`check()`、`reach()`、`HEAVY_TOP_LEVELS`、`FORBIDDEN_WORKER_TARGETS`        |
-| `tests/architecture_import_ratchet.json`            | R1/R2/R2b/R3/R4 冻结棘轮快照    | 仅允许收缩、禁止新增跨模块私有导入与顶层重导入                                                  |
-| `paperforge/architecture_audit/__init__.py`         | 跨层架构审计门面                | 导出 `ArchitectureContract`、`ArchitectureSurvey`、`reconcile`、`compose`                       |
-| `paperforge/architecture_audit/layers.py`           | 五层不可变审计模型定义          | 严格分离人工声明 Contract、静态/运行时 Survey、审计结论、Agent Review 与视图                    |
-| `paperforge/plugin/src/client/paperforge-client.ts` | 插件侧强类型客户端              | `PaperForgeClient`（封装探针、动作、配置与读模型调用）                                          |
-| `paperforge/plugin/src/client/node-transport.ts`    | 插件侧唯一子进程通道            | `NodeProcessTransport`、`runLongTask()`、`NdjsonStreamParser`                                   |
+| 模块路径                                            | 核心职责                        | 关键对外入口 / 不变量                                                                                                                                    |
+| --------------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paperforge/__init__.py`                            | 包版本定义                      | 定义源码基准版本 `__version__`（当前 `"2.0.0rc6"`）                                                                                                      |
+| `paperforge/config.py`                              | 配置解析与 Vault 路径单一权威   | `load_config()`、`resolve_paths()`、`paperforge_paths()`、`resolve_paperforge_dir()`、`fallback_paperforge_dir()`、`resolve_vault()`、`LEGACY_PATH_KEYS` |
+| `paperforge/core/stat_cache.py`                     | 库外 STAT 指纹 SHA-256 缓存     | `cached_sha256_hex()`、`cached_concat_sha256_hex()`（SQLite WAL 于 OS 用户缓存目录，含 2s Racy-Git 保护，恪守 X13 零写 Vault）                           |
+| `paperforge/services/storage_migration.py`          | v1→v2 隐藏存储引擎迁移服务      | `migrate_vault_storage()`、`rewrite_visual_embeds_for_key()`                                                                                             |
+| `paperforge/commands/migrate_storage.py`            | `migrate-storage` CLI 适配器    | `run()`，输出 `PFResult` 或人类可读摘要                                                                                                                  |
+| `paperforge/worker/asset_index.py`                  | 规范索引与论文工作区物化        | `build_index()`、`refresh_index_entry()`、`sync_workspace_visual_assets()`、`_build_entry()`                                                             |
+| `paperforge/worker/paper_meta.py`                   | 单论文工作区元数据读写          | `write_paper_meta()`、`read_paper_meta()`（`SCHEMA_VERSION = 1`）                                                                                        |
+| `paperforge/worker/base_views.py`                   | Obsidian `.base` 视图生成与清洗 | `ensure_base_views()`、`build_base_views()`、`merge_base_views()`、`RETIRED_PF_VIEWS`                                                                    |
+| `paperforge/worker/ocr_artifacts.py`                | 单论文 OCR 存储路径与缓存清理   | `artifact_paths_for_root()`、`OCRArtifactPaths`、`cleanup_ocr_artifact_cache()`                                                                          |
+| `paperforge/worker/trash.py`                        | Fail-Closed 回收站隔离删除层    | `validate_target()`、`trash_remove()`、`list_trash()`、`restore_trash()`、`purge_trash()`                                                                |
+| `paperforge/worker/prune.py`                        | 孤儿论文清理调度                | `prune_orphan_papers()`，受 `WriterLock` 保护后调用 `trash_remove()`                                                                                     |
+| `paperforge/lineage.py`                             | 跨载体残留检测与工作区定位      | `_detect_residuals()`、`_workspace_dir_for_key()`                                                                                                        |
+| `paperforge/services/skill_deploy.py`               | Agent Skill 安全部署服务        | `deploy_skills()`、`_validate_target()`、`_skill_tree_digest()`                                                                                          |
+| `scripts/check_module_graph.py`                     | P0 AST 静态依赖门禁（R1-R4）    | `build_snapshot()`、`check()`、`reach()`、`HEAVY_TOP_LEVELS`、`FORBIDDEN_WORKER_TARGETS`                                                                 |
+| `tests/architecture_import_ratchet.json`            | R1/R2/R2b/R3/R4 冻结棘轮快照    | 仅允许收缩、禁止新增跨模块私有导入与顶层重导入                                                                                                           |
+| `paperforge/architecture_audit/__init__.py`         | 跨层架构审计门面                | 导出 `ArchitectureContract`、`ArchitectureSurvey`、`reconcile`、`compose`                                                                                |
+| `paperforge/architecture_audit/layers.py`           | 五层不可变审计模型定义          | 严格分离人工声明 Contract、静态/运行时 Survey、审计结论、Agent Review 与视图                                                                             |
+| `paperforge/plugin/src/client/paperforge-client.ts` | 插件侧强类型客户端              | `PaperForgeClient`（封装探针、动作、配置与读模型调用）                                                                                                   |
+| `paperforge/plugin/src/client/node-transport.ts`    | 插件侧唯一子进程通道            | `NodeProcessTransport`、`runLongTask()`、`NdjsonStreamParser`                                                                                            |
 
 ### 2.2 配套单元测试与门禁测试
 
-| 测试文件路径                                  | 验证目标与断言重点                                                                                                                                          |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tests/test_module_graph.py`                  | 验证 `scripts/check_module_graph.py` 的导入解析、Tarjan 环检测（R1）、跨包私有导入（R2）、跨模块私有成员访问（R2b）、层级违规（R3）及顶层重库拦截（R4）逻辑 |
-| `tests/test_architecture_boundaries.py`       | 扫描 `paperforge/actions/`、`paperforge/services/`、`paperforge/materialization/`，断言 `KNOWN_EXEMPTIONS` 为空，杜绝后台层反向导入 `paperforge.commands.*` |
-| `tests/test_import_weight.py`                 | 在干净子进程中导入 `paperforge.worker.ocr`，断言 `sys.modules` 中不含 `torch`、`chromadb`、`pdfplumber`、`fitz`、`pymupdf`、`PIL`                           |
-| `tests/unit/test_dot_paperforge_and_scale.py` | 验证 `resolve_paths()` 对 `.paperforge` 的叶子折叠、单论文前缀图像物化、工作区隐藏 `fulltext.md` 清理、`SyncService` 快路径与 `migrate-storage` 端到端行为  |
-| `tests/unit/test_upgrade_resilience.py`       | 验证外置 `zotero_data_dir` 修复、标题命名旧笔记重命名迁移、以及 `paperforge.db` 销毁重建后由 `ai/memory-card.json` 无损恢复记忆历史                         |
-| `tests/unit/worker/test_trash.py`             | 钉住 2026-08-14 事故回归：断言空路径/`.`/`..`/`allowed_root` 本身及越界路径触发 `DangerousPathError`，`trash_remove` 仅移动到 `.paperforge/trash/` 且可恢复 |
+| 测试文件路径                                    | 验证目标与断言重点                                                                                                                                          |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/test_module_graph.py`                    | 验证 `scripts/check_module_graph.py` 的导入解析、Tarjan 环检测（R1）、跨包私有导入（R2）、跨模块私有成员访问（R2b）、层级违规（R3）及顶层重库拦截（R4）逻辑 |
+| `tests/test_architecture_boundaries.py`         | 扫描 `paperforge/actions/`、`paperforge/services/`、`paperforge/materialization/`，断言 `KNOWN_EXEMPTIONS` 为空，杜绝后台层反向导入 `paperforge.commands.*` |
+| `tests/test_import_weight.py`                   | 在干净子进程中导入 `paperforge.worker.ocr`，断言 `sys.modules` 中不含 `torch`、`chromadb`、`pdfplumber`、`fitz`、`pymupdf`、`PIL`                           |
+| `tests/unit/test_dot_paperforge_and_scale.py`   | 验证 `resolve_paths()` 对 `.paperforge` 的叶子折叠、单论文前缀图像物化、工作区隐藏 `fulltext.md` 清理、`SyncService` 快路径与 `migrate-storage` 端到端行为  |
+| `tests/unit/test_path_authority_and_staging.py` | 验证自定义 `system_dir` / `.paperforge` 路径权威解析无旁路、及外置 OS 用户数据目录 R/P 舞台写入与遗留 `<tmp>` 回退检索                                      |
+| `tests/unit/test_stat_cache_and_fastpaths.py`   | 验证 `stat_cache` 2s Racy-Git 失效窗口、`read_index` `(size, mtime_ns)` 缓存与 `annotations.jsonl` 压缩前后端一致性                                         |
+| `tests/unit/test_upgrade_resilience.py`         | 验证外置 `zotero_data_dir` 修复、标题命名旧笔记重命名迁移、以及 `paperforge.db` 销毁重建后由 `ai/memory-card.json` 无损恢复记忆历史                         |
+| `tests/unit/worker/test_trash.py`               | 钉住 2026-08-14 事故回归：断言空路径/`.`/`..`/`allowed_root` 本身及越界路径触发 `DangerousPathError`，`trash_remove` 仅移动到 `.paperforge/trash/` 且可恢复 |
 
 ---
 

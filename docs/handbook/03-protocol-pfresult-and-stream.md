@@ -26,7 +26,7 @@
 ### 2.1 核心源码模块
 
 | 模块路径                                         | 核心职责                                   | 关键符号                                                                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| ------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `paperforge/cli.py`                              | 顶层 `argparse` 树与全局门禁分派           | `build_parser()`、`main()`、`_run_cli()`、`_run_runtime_command()`、`_run_skill()`、`_cmd_paths()`                                                                   |
 | `paperforge/commands/__init__.py`                | 动态命令模块注册表                         | `_COMMAND_REGISTRY`、`get_command_module()`                                                                                                                          |
 | `paperforge/logging_config.py`                   | `paperforge` 根日志初始化（仅写 `stderr`） | `configure_logging()`、`get_paperforge_logger()`                                                                                                                     |
@@ -44,29 +44,31 @@
 | `paperforge/actions/types.py`                    | 动作描述符与请求类型模型                   | `ActionSpec`、`ActionRequest`、`ActionScope`、`ActionExecutionHooks`                                                                                                 |
 | `paperforge/actions/registry.py`                 | 冻结动作注册表与非注册动作表               | `ACTION_REGISTRY`（9 个注册动作）、`NON_REGISTRY_ACTIONS`                                                                                                            |
 | `paperforge/actions/runner.py`                   | 动作管道执行器                             | `run_action()`、`ActionError`、`cancelled_result()`                                                                                                                  |
-| `paperforge/commands/action.py`                  | `action list                               | describe                                                                                                                                                             | preflight    | run` CLI                                          | `run_dispatch()`、`EXIT_INVALID_REQUEST`、`EXIT_CONFIRMATION_REQUIRED`、`EXIT_CANCELLED` |
-| `paperforge/commands/ocr.py`                     | `ocr` 族分派、诊断与流包装                 | `_run_ocr_dispatch()`、`_run_ocr_redo()`、`_run_ocr_rebuild()`、`_diagnose()`                                                                                        |
-| `paperforge/commands/embed.py`                   | `embed build                               | status                                                                                                                                                               | migrate` CLI | `run()`（无 `--json` 时发 `#137` 流错误终止事件） |
-| `paperforge/plugin/src/client/node-transport.ts` | TS 端唯一子进程与协议 Fail-Closed 解析器   | `NdjsonStreamParser`、`runLongTask()`、`hardKill()`、`paperforgeEnrichedEnv()`                                                                                       |
+| `paperforge/commands/action.py`                  | `action list                               | describe                                                                                                                                                             | preflight    | run` CLI                                                       | `run_dispatch()`、`EXIT_INVALID_REQUEST`、`EXIT_CONFIRMATION_REQUIRED`、`EXIT_CANCELLED` |
+| `paperforge/commands/ocr.py`                     | `ocr` 族分派、诊断与流包装                 | `_run_ocr_dispatch()`、`_run_ocr_redo()`、`_run_ocr_rebuild()`、`_diagnose()`（支持 `--stream`）                                                                     |
+| `paperforge/commands/embed.py`                   | `embed build                               | status                                                                                                                                                               | migrate` CLI | `run()`（`--stream` 或无 `--json` 时发 `#137` 流错误终止事件） |
+| `paperforge/commands/daemon.py`                  | 持久 stdio JSON-RPC 复用通道               | `serve_stdio()`、`_execute_request()`（重定向 logging `StreamHandler`，透传 `stdin` 凭据并隔离 `SystemExit`）                                                        |
+| `paperforge/plugin/src/client/node-transport.ts` | TS 端唯一子进程与协议 Fail-Closed 解析器   | `NdjsonStreamParser`、`runLongTask()`、`hardKill()`、`paperforgeEnrichedEnv()`、暖 daemon 复用与一次性冷回退                                                         |
 
 ### 2.2 配套单元测试与契约测试
 
-| 测试文件路径                            | 验证目标与断言重点                                                                                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `tests/cli/test_json_contracts.py`      | 校验 `paths --json`、`status --json`、`context`、`search --json`、`retrieve --json` 的信封键集与字段类型语义                   |
-| `tests/cli/test_error_codes.py`         | 校验未知命令退出码、`--help`/`--version`、无 Vault 时禁止泄漏 Python Traceback 及确定性错误输出                                |
-| `tests/cli/test_contract_helpers.py`    | 提供 `normalize_snapshot()`、`assert_valid_json()`、`assert_json_shape()` 契约测试助手                                         |
-| `tests/test_cli_paths.py`               | 断言 `paths --json` 与文本输出不含 `<system_dir>`/`<resources_dir>` 未解析占位符                                               |
-| `tests/test_cli_worker_dispatch.py`     | 验证 `status`、`sync`、兼容别名及 `ocr` 向对应命令/服务模块的正确分派                                                          |
-| `tests/test_x04_kill_terminal.py`       | 启动 `setup --json` 并注入硬杀（`SIGKILL`/`TerminateProcess`），断言退出码非零且绝不伪造 `result` 终态事件                     |
-| `tests/test_x05_atomicity_hardening.py` | 模拟临时文件写入后、`os.replace` 前崩溃，断言旧 `pointer.json` 完好且截断 JSON 被 Fail-Soft 拒绝                               |
-| `tests/unit/core/test_errors.py`        | 校验 `ErrorCode` 枚举值、字符串转换及未知字符串向 `ErrorCode.UNKNOWN` 的前向容错                                               |
-| `tests/unit/core/test_io.py`            | 校验 `write_json_atomic()` 自动创建父目录、原子替换且不残留 `.json.tmp`                                                        |
-| `tests/unit/core/test_result.py`        | 校验 `PFResult` / `PFError` 布尔语义、序列化空字段省略规则（`warnings`/`next_actions`）及 `to_json()`/`from_dict()` 往返一致性 |
-| `tests/unit/core/test_state.py`         | 校验 `OcrStatus` 9 态、`from_legacy()` 映射、`PdfStatus`、`Lifecycle` 及 `ALLOWED_TRANSITIONS` 非法迁移拦截                    |
-| `tests/test_settlement.py`              | 校验 `successful_keys` 与 `summary` 严格由 `per_key` 派生且透传 `reason_code`、`execution_id`                                  |
-| `tests/test_core_keys.py`               | 校验 `normalize_paper_keys()` 对 CRLF、BOM、逗号空格混排、空行、重复键及 `known_keys` 过滤                                     |
-| `tests/test_timing.py`                  | 校验 `PAPERFORGE_TIMING=1/0/unset` 三种策略及“计时器永不写入 `stdout`”红线                                                     |
+| 测试文件路径                                | 验证目标与断言重点                                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `tests/cli/test_json_contracts.py`          | 校验 `paths --json`、`status --json`、`context`、`search --json`、`retrieve --json` 的信封键集与字段类型语义                   |
+| `tests/cli/test_error_codes.py`             | 校验未知命令退出码、`--help`/`--version`、无 Vault 时禁止泄漏 Python Traceback 及确定性错误输出                                |
+| `tests/cli/test_contract_helpers.py`        | 提供 `normalize_snapshot()`、`assert_valid_json()`、`assert_json_shape()` 契约测试助手                                         |
+| `tests/test_cli_paths.py`                   | 断言 `paths --json` 与文本输出不含 `<system_dir>`/`<resources_dir>` 未解析占位符                                               |
+| `tests/unit/test_daemon_and_stream_flag.py` | 验证 `paperforge daemon --stdio` 复用、`auth set --stdin` 秘钥透传、错误/嵌套隔离及各命令 `--stream` 参数解析                  |
+| `tests/test_cli_worker_dispatch.py`         | 验证 `status`、`sync`、兼容别名及 `ocr` 向对应命令/服务模块的正确分派                                                          |
+| `tests/test_x04_kill_terminal.py`           | 启动 `setup --json` 并注入硬杀（`SIGKILL`/`TerminateProcess`），断言退出码非零且绝不伪造 `result` 终态事件                     |
+| `tests/test_x05_atomicity_hardening.py`     | 模拟临时文件写入后、`os.replace` 前崩溃，断言旧 `pointer.json` 完好且截断 JSON 被 Fail-Soft 拒绝                               |
+| `tests/unit/core/test_errors.py`            | 校验 `ErrorCode` 枚举值、字符串转换及未知字符串向 `ErrorCode.UNKNOWN` 的前向容错                                               |
+| `tests/unit/core/test_io.py`                | 校验 `write_json_atomic()` 自动创建父目录、原子替换且不残留 `.json.tmp`                                                        |
+| `tests/unit/core/test_result.py`            | 校验 `PFResult` / `PFError` 布尔语义、序列化空字段省略规则（`warnings`/`next_actions`）及 `to_json()`/`from_dict()` 往返一致性 |
+| `tests/unit/core/test_state.py`             | 校验 `OcrStatus` 9 态、`from_legacy()` 映射、`PdfStatus`、`Lifecycle` 及 `ALLOWED_TRANSITIONS` 非法迁移拦截                    |
+| `tests/test_settlement.py`                  | 校验 `successful_keys` 与 `summary` 严格由 `per_key` 派生且透传 `reason_code`、`execution_id`                                  |
+| `tests/test_core_keys.py`                   | 校验 `normalize_paper_keys()` 对 CRLF、BOM、逗号空格混排、空行、重复键及 `known_keys` 过滤                                     |
+| `tests/test_timing.py`                      | 校验 `PAPERFORGE_TIMING=1/0/unset` 三种策略及“计时器永不写入 `stdout`”红线                                                     |
 
 ---
 
@@ -192,21 +194,22 @@ sequenceDiagram
   - `PAPERFORGE_LOG_LEVEL`：日志级别（`DEBUG`/`INFO`/`WARNING`/`ERROR`），未配置时默认 `INFO`，非法值静默回退至 `WARNING`。
   - `PAPERFORGE_TIMING`：`1` 打印所有阶段耗时到 `stderr`；`0` 完全静默；未设置仅打印超过 `SLOW_MS = 1000.0` ms 的慢阶段。
 
-### 5.2 全部 46 个顶层 CLI 子命令全集（核对自 `build_parser()`）
+### 5.2 全部 47 个顶层 CLI 子命令全集（核对自 `build_parser()`）
 
-#### 5.2.1 控制面、配置与安装运维（9 个）
+#### 5.2.1 控制面、配置与安装运维（10 个）
 
-| 顶层子命令       | 子动作 / 关键选项                                                                                                                                     | 说明                                        |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `config`         | `list\|get\|set\|unset\|validate\|paths\|init\|migrate` (`--dry-run`, `--json`)                                                                       | Schema v2 唯一配置入口                      |
-| `auth`           | `status\|set\|delete\|migrate` (`--stdin`, `--replace`, `--yes`, `--from`, `--json`)                                                                  | 凭据管理权威入口                            |
-| `runtime`        | `install\|update\|repair\|status` (`--expected-version`, `--base-python`, `--wheel`, `--json`)                                                        | 独立受管运行时（无需 Vault）                |
-| `setup`          | `--modular`, `--headless`, `--agent`, `--system-dir`, `--resources-dir`, `--literature-dir`, `--base-dir`, `--zotero-data`, `--skip-checks`, `--json` | Vault 初始化编排（`--json` 输出 NDJSON 流） |
-| `probe`          | `installation\|help\|library\|ocr\|memory\|maintenance\|lineage\|all` (`--json`, `--expected-version`, `--last-operation-exit-code`)                  | 只读能力探测包络                            |
-| `action`         | `list\|describe\|preflight\|run` (`--scope`, `--key`, `--keys-file`, `--confirm`, `--follow`, `--json`)                                               | 声明式动作策略管道                          |
-| `reconcile`      | `--scope`, `--key`, `--json`                                                                                                                          | 纯派生缺陷读模型与 `next_actions` 生成器    |
-| `doctor`         | `--json`                                                                                                                                              | Vault 全链路诊断与字段注册表检查            |
-| `runtime-health` | `--json`                                                                                                                                              | Memory/Vector 5 维健康检查                  |
+| 顶层子命令       | 子动作 / 关键选项                                                                                                                                                 | 说明                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `config`         | `list\|get\|set\|unset\|validate\|paths\|init\|migrate` (`--dry-run`, `--json`)                                                                                   | Schema v2 唯一配置入口                                   |
+| `auth`           | `status\|set\|delete\|migrate` (`--stdin`, `--replace`, `--yes`, `--from`, `--json`)                                                                              | 凭据管理权威入口                                         |
+| `runtime`        | `install\|update\|repair\|status` (`--expected-version`, `--base-python`, `--wheel`, `--json`)                                                                    | 独立受管运行时（无需 Vault）                             |
+| `daemon`         | `--stdio`（默认启用）, `--idle-timeout SEC`（默认 `300`，`0` 禁用）                                                                                               | 单进程 stdio JSON-RPC 复用通道（无网络监听）             |
+| `setup`          | `--modular`, `--headless`, `--agent`, `--system-dir`, `--resources-dir`, `--literature-dir`, `--base-dir`, `--zotero-data`, `--skip-checks`, `--stream`, `--json` | Vault 初始化编排（`--stream` / `--json` 输出 NDJSON 流） |
+| `probe`          | `installation\|help\|library\|ocr\|memory\|maintenance\|lineage\|all` (`--json`, `--expected-version`, `--last-operation-exit-code`)                              | 只读能力探测包络                                         |
+| `action`         | `list\|describe\|preflight\|run` (`--scope`, `--key`, `--keys-file`, `--confirm`, `--follow`, `--stream`, `--json`)                                               | 声明式动作策略管道（`--stream` 强制 `#137` 流）          |
+| `reconcile`      | `--scope`, `--key`, `--json`                                                                                                                                      | 纯派生缺陷读模型与 `next_actions` 生成器                 |
+| `doctor`         | `--json`                                                                                                                                                          | Vault 全链路诊断与字段注册表检查                         |
+| `runtime-health` | `--json`                                                                                                                                                          | Memory/Vector 5 维健康检查                               |
 
 #### 5.2.2 文献库同步、工作区与路径（7 个）
 
@@ -222,37 +225,37 @@ sequenceDiagram
 
 #### 5.2.3 OCR、渲染审计与显示版本（5 个）
 
-| 顶层子命令 | 子动作 / 关键选项                                                                                                                                | 说明                                                         |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `ocr`      | 顶层 `--diagnose`, `--json`, `--key`；子命令 `pipeline-versions`, `status`, `resume`, `redo`, `list`, `rebuild`, 以及兼容子命令 `run` / `doctor` | OCR 队列执行、断点续传、派生重建与诊断                       |
-| `render`   | `audit\|reconcile\|promote-r\|accept-proposal` (`--include-pdf-media`, `--apply-r`, `--all`, `--plan-hash`, `--json`)                            | 渲染一致性审计与 R/P 级联修复晋升                            |
-| `versions` | `list\|show\|backups\|paths\|restore` (`--key`, `--label`, `--json`)                                                                             | 显示全文历史版本与安全恢复（不动规范块）                     |
-| `repair`   | `--fix`, `--fix-paths`, `--json`                                                                                                                 | 修复笔记与 OCR 元数据分歧或失联 PDF 路径                     |
-| `note`     | `set-flag` (`--key`, `--field`, `--value true\|false`, `--json`)                                                                                 | Python 权威改写笔记 Frontmatter 开关（`do_ocr` / `analyze`） |
+| 顶层子命令 | 子动作 / 关键选项                                                                                                                                            | 说明                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `ocr`      | 顶层 `--diagnose`, `--stream`, `--json`, `--key`；子命令 `pipeline-versions`, `status`, `resume`, `redo`, `list`, `rebuild`, 以及兼容子命令 `run` / `doctor` | OCR 队列执行、断点续传、派生重建与诊断（支持 `--stream`）    |
+| `render`   | `audit\|reconcile\|promote-r\|accept-proposal` (`--include-pdf-media`, `--apply-r`, `--all`, `--plan-hash`, `--json`)                                        | 渲染一致性审计与 R/P 级联修复晋升                            |
+| `versions` | `list\|show\|backups\|paths\|restore\|reset-live` (`--key`, `--label`, `--json`)                                                                             | 显示全文历史版本、安全恢复与切回最新规范全文                 |
+| `repair`   | `--fix`, `--fix-paths`, `--json`                                                                                                                             | 修复笔记与 OCR 元数据分歧或失联 PDF 路径                     |
+| `note`     | `set-flag` (`--key`, `--field`, `--value true\|false`, `--json`)                                                                                             | Python 权威改写笔记 Frontmatter 开关（`do_ocr` / `analyze`） |
 
 #### 5.2.4 记忆底座、向量检索、阅读记录与智能体（19 个）
 
-| 顶层子命令      | 子动作 / 关键选项                                                                                                                   | 说明                                           |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `memory`        | `build [--key ...] [--json]\|status [--json]\|restore-backup [--json]`                                                              | SQLite `paperforge.db` 底座构建与备份恢复      |
-| `embed`         | `build [--force\|--resume] [--json]\|status [--probe] [--json]\|migrate [--json]`                                                   | 向量索引构建、探针与 Chroma→vec0 迁移          |
-| `search`        | `query`, `--json`, `--limit`, `--domain`, `--year-from`, `--year-to`, `--ocr`, `--deep`, `--lifecycle`, `--next-step`, `--evidence` | FTS5 元数据检索                                |
-| `retrieve`      | `query`, `--json`, `--limit`, `--deep`, `--expand\|--no-expand`, `--paper`                                                          | 正文与图表语义混合检索（BM25 ∪ vec0）          |
-| `query-plan`    | `query`, `--intent discover\|locate\|content\|known-paper`, `--json`                                                                | 检索意图唯一路由器                             |
-| `inspect`       | `query`, `--json`                                                                                                                   | 单论文 6 阶段端到端瓶颈诊断（只读 `?mode=ro`） |
-| `paper-status`  | `query`, `--json`                                                                                                                   | 查询单篇论文状态                               |
-| `paper-context` | `key`, `--json`, `--structure`                                                                                                      | 获取论文元信息、章节结构树及批注               |
-| `read`          | `key`, `--find` (必选), `--source auto\|fulltext\|pdf`, `--json`                                                                    | 受控本地原文/PDF 字面量检索                    |
-| `context`       | `key`, `--domain`, `--collection`, `--all`                                                                                          | 生成可溯源 AI 上下文包                         |
-| `dashboard`     | `--json`                                                                                                                            | 聚合仪表盘统计与权限投影                       |
-| `annotations`   | `pdf-info\|list\|add\|update\|delete\|promote\|fulltext-preview\|agent-mark\|adopt\|clear-agent`                                    | 非破坏性侧车 PDF 批注与 Agent 句子锚定         |
-| `memory-card`   | `get\|refine\|history\|clear\|base-snapshot`                                                                                        | 5 维动态论文记忆卡片及 Base 快照               |
-| `reading-log`   | `--write`, `--render`, `--correct`, `--search`, `--lookup`, `--validate`, `--import`, `--json` 等                                   | 科研精读摘录记录与纠错账本                     |
-| `project-log`   | `--write`, `--payload`, `--project`, `--list`, `--render`                                                                           | 项目级研究工作日志                             |
-| `deep-reading`  | `--json`                                                                                                                            | 查询待精读论文队列                             |
-| `deep-finalize` | `zotero_key`, `--json`                                                                                                              | 标记精读完成并刷新状态                         |
-| `agent-context` | `--json`                                                                                                                            | 生成智能体启动上下文包                         |
-| `skill`         | `deploy` (`--to`, `--overwrite`, `--json`)                                                                                          | 部署内嵌 `paperforge` 技能包                   |
+| 顶层子命令      | 子动作 / 关键选项                                                                                                                   | 说明                                                   |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `memory`        | `build [--key ...] [--json]\|status [--json]\|restore-backup [--json]`                                                              | SQLite `paperforge.db` 底座构建与备份恢复              |
+| `embed`         | `build [--force\|--resume] [--stream] [--json]\|status [--probe] [--json]\|migrate [--json]`                                        | 向量索引构建（支持显式 `--stream` 流模式）、探针与迁移 |
+| `search`        | `query`, `--json`, `--limit`, `--domain`, `--year-from`, `--year-to`, `--ocr`, `--deep`, `--lifecycle`, `--next-step`, `--evidence` | FTS5 元数据检索                                        |
+| `retrieve`      | `query`, `--json`, `--limit`, `--deep`, `--expand\|--no-expand`, `--paper`                                                          | 正文与图表语义混合检索（BM25 ∪ vec0）                  |
+| `query-plan`    | `query`, `--intent discover\|locate\|content\|known-paper`, `--json`                                                                | 检索意图唯一路由器                                     |
+| `inspect`       | `query`, `--json`                                                                                                                   | 单论文 6 阶段端到端瓶颈诊断（只读 `?mode=ro`）         |
+| `paper-status`  | `query`, `--json`                                                                                                                   | 查询单篇论文状态                                       |
+| `paper-context` | `key`, `--json`, `--structure`                                                                                                      | 获取论文元信息、章节结构树及批注                       |
+| `read`          | `key`, `--find` (必选), `--source auto\|fulltext\|pdf`, `--json`                                                                    | 受控本地原文/PDF 字面量检索                            |
+| `context`       | `key`, `--domain`, `--collection`, `--all`                                                                                          | 生成可溯源 AI 上下文包                                 |
+| `dashboard`     | `--json`                                                                                                                            | 聚合仪表盘统计与权限投影                               |
+| `annotations`   | `pdf-info\|list\|add\|update\|delete\|promote\|fulltext-preview\|agent-mark\|adopt\|clear-agent`                                    | 非破坏性侧车 PDF 批注与 Agent 句子锚定                 |
+| `memory-card`   | `get\|refine\|history\|clear\|base-snapshot`                                                                                        | 5 维动态论文记忆卡片及 Base 快照                       |
+| `reading-log`   | `--write`, `--render`, `--correct`, `--search`, `--lookup`, `--validate`, `--import`, `--json` 等                                   | 科研精读摘录记录与纠错账本                             |
+| `project-log`   | `--write`, `--payload`, `--project`, `--list`, `--render`                                                                           | 项目级研究工作日志                                     |
+| `deep-reading`  | `--json`                                                                                                                            | 查询待精读论文队列                                     |
+| `deep-finalize` | `zotero_key`, `--json`                                                                                                              | 标记精读完成并刷新状态                                 |
+| `agent-context` | `--json`                                                                                                                            | 生成智能体启动上下文包                                 |
+| `skill`         | `deploy` (`--to`, `--overwrite`, `--json`)                                                                                          | 部署内嵌 `paperforge` 技能包                           |
 
 #### 5.2.5 向后兼容历史子命令（6 个，文档已弃用）
 

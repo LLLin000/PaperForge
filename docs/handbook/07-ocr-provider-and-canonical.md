@@ -123,7 +123,7 @@
 
 为防止记忆层（`paperforge/memory/builder.py`）或检索读取侧消费到写了一半的衍生文件，所有成功路径（首次 `postprocess_ocr_result`、派生重建 `_rebuild_one_paper`、历史回填 `backfill_from_result`）必须通过以下三步协议发布：
 
-1. **固定输入顺序（`OCR_RESULT_HASH_ARTIFACTS`）**：依次读取以下 3 个文件原始字节计算单条 SHA-256：
+1. **固定输入顺序（`OCR_RESULT_HASH_ARTIFACTS`）**：依次读取以下 3 个文件原始字节计算单条 SHA-256（底层委托 `paperforge/core/stat_cache.py::cached_concat_sha256_hex()` 利用 `(size, mtime_ns, ctime_ns)` 缓存与 2s Racy-Git 防护跳过未变大文件重算，与 `paperforge/materialization/ocr.py` 共用缓存而不污染 Vault）：
    - `structure/blocks.structured.jsonl`
    - `index/structure-tree.json`
    - `index/role-index.json`
@@ -167,7 +167,7 @@ stateDiagram-v2
 2. **双计数隔离不变量（`job_attempt` vs `retry_count`）**：
    - `retry_count` 仅记录 HTTP 传输与临时轮询重试（`retry_with_meta()` 对 `ConnectionError`、`Timeout`、`429`、`503` 做指数退避，最多 `PAPERFORGE_RETRY_MAX=5` 次），**永不消耗** `job_attempt`。
    - `job_attempt` 仅记录远程作业终态失败（Provider 返回 `error`/`failed`）后的重提次数，上限为 `MAX_OCR_JOB_ATTEMPTS = 3`。当 `stage == "upload"` 且 `retry_count >= 3` 时同样直接 Fail-Closed 为 `fatal_error`。
-3. **预写意图与幂等防重提（`submission_state="submitting"`）**：上传 POST 是非幂等操作。`run_ocr()` 在发起 HTTP POST **之前** 先落盘 `submission_state="submitting"` 与 `provider_batch_id`。若在响应返回前进程崩溃或网络超时，该键被标为 `unconfirmed_keys`，并写入 `"Submission unconfirmed"`；后续 `ocr resume --batch <id>` 的 `_collect_batch_unsettled()` 也会跳过 `submission_state == "submitting"` 的论文，强制人工通过 `paperforge ocr status` 核查远程后再决定，防止产生双倍计费孤儿作业。
+3. **预写意图与幂等防重提（`submission_state="submitting"`）**：上传 POST 是非幂等操作。`run_ocr()` 在发起 HTTP POST **之前** 先落盘 `submission_state="submitting"` 与 `provider_batch_id`。若在响应返回前进程崩溃或网络超时，该键被标为 `unconfirmed_keys`，并写入 `"Submission unconfirmed"`；后续 `ocr resume --batch <id>` 的 `_collect_batch_unsettled()` 也会跳过 `submission_state == "submitting"` 的论文以防盲目重提产生双倍计费。同时，为了闭合卡滞排障闭环，`paperforge/worker/ocr_maintenance.py` 对 `submission_state == "submitting"` 且缺失 `ocr_job_id`、状态尚未完成的条目主动在维护面板显式暴露可操作恢复行（`display_action="retry_ocr"`、`display_reason_key="submitting_unconfirmed"`、`can_redo=True`、`recommended_action="redo"`，`tests/unit/test_ux_loop_closures.py`）。
 4. **单活控制器与批观测降级**：写控制器启动即尝试获取 `<paperforge>/ocr/controller.lock`（`O_EXCL`，>30s 视为僵尸锁接管）；只读命令（`ocr status`、`probe`）绝不抢锁。轮询优先使用 `PaddleOCRProvider.get_batch_status(batch_id)` 单次批查询，若批接口不可用或已完成项缺失 `resultUrl`，自动降级到单作业 `_do_poll(job_id)`。
 5. **动态单篇超时与槽位释放**：`_paper_timeout_minutes(meta)` 基准为 `PAPERFORGE_PAPER_TIMEOUT_MINUTES`（默认 `10` 分钟），每多 2 页源 PDF（`source_page_count`）追加 1 分钟（`base + pages // 2`）。超时后仅释放本地并发槽位（`active_submitted.discard(key)`）并保留 `ocr_job_id`，**绝不盲目重提**。
 6. **协作式停止（Cooperative Stop）**：轮询休眠按 1 秒切片检查 `stop_check()`（接收 `SIGINT` / `SIGTERM` 或 stdin `PAPERFORGE_STOP`）。触发停止后立即退出本地监听返回码 `130`，远程已提交作业继续运行，stderr 打印 `paperforge ocr status --batch <id>` 与 `paperforge ocr resume --batch <id>`。
