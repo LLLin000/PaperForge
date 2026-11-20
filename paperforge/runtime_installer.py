@@ -626,7 +626,6 @@ def _install_runtime_locked(
         full_spec = f"{wheel}[vector]" if wheel else f"paperforge[vector]=={norm_ver}"
         fast_patched = False
 
-        wheel_cache_dir: Path | None = None
         if (
             wheel is None
             and not os.environ.get("PIP_FIND_LINKS")
@@ -636,9 +635,7 @@ def _install_runtime_locked(
             and _pip_install is _ORIG_PIP_INSTALL
             and uv_pip_install is _ORIG_UV_PIP_INSTALL
         ):
-            cached_whl = download_release_wheel(norm_ver, uv_wheel_cache_dir(runtime_dir))
-            if cached_whl is not None:
-                wheel_cache_dir = cached_whl.parent
+            download_release_wheel(norm_ver, uv_wheel_cache_dir(runtime_dir))
 
         if can_fast_patch and old_root is not None and _clone_site_packages_for_fast_patch(old_root, candidate):
             patch_spec = f"paperforge=={norm_ver}"
@@ -649,7 +646,6 @@ def _install_runtime_locked(
                     patch_spec,
                     runtime_dir=runtime_dir,
                     no_deps=True,
-                    find_links=wheel_cache_dir,
                 )
             else:
                 patch_res = _pip_install_no_deps(candidate_python, patch_spec, cwd=runtime_dir)
@@ -689,7 +685,6 @@ def _install_runtime_locked(
                         candidate_python,
                         full_spec,
                         runtime_dir=runtime_dir,
-                        find_links=wheel_cache_dir,
                     )
                 else:
                     pip = _pip_install(candidate_python, full_spec, cwd=runtime_dir)

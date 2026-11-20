@@ -349,6 +349,10 @@ def uv_pip_install(
     base_cmd = [str(uv_exe), "pip", "install", "--python", str(candidate_python)]
     if no_deps:
         base_cmd.append("--no-deps")
+    if find_links is None:
+        wheel_cache = uv_wheel_cache_dir(runtime_dir)
+        if wheel_cache.is_dir() and any(wheel_cache.glob("paperforge-*.whl")):
+            find_links = wheel_cache
     if find_links is not None and find_links.is_dir():
         base_cmd.extend(["--find-links", str(find_links)])
 
