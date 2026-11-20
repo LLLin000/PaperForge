@@ -3830,37 +3830,106 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._renderOverviewCard(moduleList, mod.id, mod.label, env, idx + 1);
     }
 
-    // ── Appearance Palette Mode (AsterLab Warm Neutral vs Obsidian Theme) ──
-    const themeBar = cc.createDiv({ cls: "pf-cc-theme-bar" });
+    // ── Appearance Palette Mode, Liquid Glass & Reduce Motion ──
+    const appearanceGroup = cc.createDiv({ cls: "pf-cc-appearance-group" });
+
+    const themeBar = appearanceGroup.createDiv({ cls: "pf-cc-theme-bar" });
     const themeCopy = themeBar.createDiv({ cls: "pf-cc-theme-copy" });
     themeCopy.createEl("div", {
       cls: "pf-cc-theme-label",
-      text: t("settings_theme_label") || "界面配色",
+      text: t("settings_theme_label") || "外观与材质",
     });
     themeCopy.createEl("div", {
       cls: "pf-cc-theme-desc",
       text:
         t("settings_theme_desc") ||
-        "默认使用 AsterLab 暖白 / 暗黑暖灰精密配色，也可选择跟随当前 Obsidian 主题色。",
+        "默认同步当前 Obsidian 主题色与原生圆角，也可切换为 AsterLab 纯净或经典暖灰。",
     });
     const themeSelect = themeBar.createEl("select", {
       cls: "pf-cc-theme-select",
       attr: { "data-pf-testid": "settings-theme-mode" },
     }) as HTMLSelectElement;
     for (const [val, label] of [
-      ["asterlab", t("settings_theme_asterlab") || "AsterLab 暖白原色（默认）"],
-      ["obsidian", t("settings_theme_obsidian") || "跟随当前 Obsidian 主题"],
+      [
+        "obsidian",
+        t("settings_theme_obsidian") || "跟随 Obsidian 主题与原生圆角（推荐）",
+      ],
+      [
+        "asterlab",
+        t("settings_theme_asterlab") || "AsterLab 纯净白纸 · 深空曜石",
+      ],
+      ["warm", t("settings_theme_warm") || "AsterLab 经典暖纸色盘"],
     ] as const) {
       const opt = themeSelect.createEl("option", { text: label });
       opt.value = val;
     }
+    const curTheme = this.plugin.settings.ui_theme_mode;
     themeSelect.value =
-      this.plugin.settings.ui_theme_mode === "obsidian"
-        ? "obsidian"
-        : "asterlab";
+      curTheme === "asterlab"
+        ? "asterlab"
+        : curTheme === "warm"
+          ? "warm"
+          : "obsidian";
     themeSelect.addEventListener("change", () => {
+      const next = themeSelect.value;
       this.plugin.settings.ui_theme_mode =
-        themeSelect.value === "obsidian" ? "obsidian" : "asterlab";
+        next === "asterlab"
+          ? "asterlab"
+          : next === "warm"
+            ? "warm"
+            : "obsidian";
+      (
+        this.plugin as unknown as { applyUiThemeMode?: () => void }
+      ).applyUiThemeMode?.();
+      void this.plugin.saveSettings();
+    });
+
+    const glassRow = appearanceGroup.createDiv({ cls: "pf-cc-theme-bar" });
+    const glassCopy = glassRow.createDiv({ cls: "pf-cc-theme-copy" });
+    glassCopy.createEl("div", {
+      cls: "pf-cc-theme-label",
+      text: t("settings_liquid_glass_label") || "Liquid Glass 液态玻璃材质",
+    });
+    glassCopy.createEl("div", {
+      cls: "pf-cc-theme-desc",
+      text:
+        t("settings_liquid_glass_desc") ||
+        "为工具栏与悬浮气泡开启半透折射与微光描边；暗黑模式自动切换为烟熏深灰清透层。",
+    });
+    const glassSwitch = glassRow.createEl("input", {
+      type: "checkbox",
+      cls: "pf-switch",
+      attr: { "data-pf-testid": "settings-liquid-glass" },
+    }) as HTMLInputElement;
+    glassSwitch.checked = this.plugin.settings.ui_liquid_glass !== false;
+    glassSwitch.addEventListener("change", () => {
+      this.plugin.settings.ui_liquid_glass = glassSwitch.checked;
+      (
+        this.plugin as unknown as { applyUiThemeMode?: () => void }
+      ).applyUiThemeMode?.();
+      void this.plugin.saveSettings();
+    });
+
+    const motionRow = appearanceGroup.createDiv({ cls: "pf-cc-theme-bar" });
+    const motionCopy = motionRow.createDiv({ cls: "pf-cc-theme-copy" });
+    motionCopy.createEl("div", {
+      cls: "pf-cc-theme-label",
+      text: t("settings_reduce_motion_label") || "减弱物理动效（无障碍）",
+    });
+    motionCopy.createEl("div", {
+      cls: "pf-cc-theme-desc",
+      text:
+        t("settings_reduce_motion_desc") ||
+        "跳过四档物理弹簧与微缩按压动画，仅保留瞬时状态切换。",
+    });
+    const motionSwitch = motionRow.createEl("input", {
+      type: "checkbox",
+      cls: "pf-switch",
+      attr: { "data-pf-testid": "settings-reduce-motion" },
+    }) as HTMLInputElement;
+    motionSwitch.checked = this.plugin.settings.reduce_motion === true;
+    motionSwitch.addEventListener("change", () => {
+      this.plugin.settings.reduce_motion = motionSwitch.checked;
       (
         this.plugin as unknown as { applyUiThemeMode?: () => void }
       ).applyUiThemeMode?.();

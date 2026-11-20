@@ -1,84 +1,102 @@
 /* ==========================================================================
    PaperForge — Obsidian Plugin Styles
-   AsterLab Dual-Mode Design Token Layer (AsterLab Warm Neutral default /
-   Obsidian Theme Bridge via body.pf-theme-obsidian)
+   AsterLab v2 Handbook Design Token Layer:
+   - Obsidian Native Host Bridge (default body.pf-theme-obsidian)
+   - AsterLab Pure Obsidian Preset (body.pf-theme-asterlab)
+   - AsterLab Classic Warm Paper Preset (body.pf-theme-warm)
    ========================================================================== */
 
 :root,
-.theme-light body:not(.pf-theme-obsidian),
-body.pf-theme-asterlab:not(.theme-dark),
-.theme-light .pf-scope-asterlab {
-  --pf-canvas: #f7f6f3;
+.theme-light :is(body.pf-theme-asterlab, .pf-scope-asterlab) {
+  --pf-canvas: #ffffff;
   --pf-surface: #ffffff;
-  --pf-elevated: #faf9f7;
-  --pf-rail: #f1efea;
-  --pf-hover: #efece6;
-  --pf-border: #e7e3db;
-  --pf-border-hover: #d6d0c5;
-  --pf-border-strong: #d6d0c5;
-  --pf-text: #1c1b18;
-  --pf-text-muted: #5f5a52;
-  --pf-text-subtle: #8f897f;
-  --pf-accent: #5b45c9;
-  --pf-accent-hover: #4b37ae;
+  --pf-elevated: #f5f6f8;
+  --pf-rail: #f5f6f8;
+  --pf-hover: #ededf0;
+  --pf-border: #e5e7ec;
+  --pf-border-hover: #cfd4de;
+  --pf-border-strong: #cfd4de;
+  --pf-text: #14151a;
+  --pf-text-muted: #525766;
+  --pf-text-subtle: #848b9c;
+  --pf-accent: #6c5ce7;
+  --pf-accent-hover: #5848d6;
   --pf-accent-text: #ffffff;
-  --pf-accent-soft: rgba(91, 69, 201, 0.1);
-  --pf-accent-tint: #faf8ff;
-  --pf-accent-line: #cfc4f0;
+  --pf-accent-soft: #eeebff;
+  --pf-accent-tint: #f7f5ff;
+  --pf-accent-line: #c9bffa;
   --pf-success: #2f7a4f;
   --pf-warning: #7a6233;
-  --pf-danger: #a3373a;
-  --pf-radius: 10px;
-  --pf-radius-control: 6px;
-  --pf-radius-panel: 10px;
-  --pf-radius-dialog: 12px;
+  --pf-danger: #c4383b;
+  /* Native Obsidian Radii Sync (fallback to AsterLab 6 / 10 / 12px) */
+  --pf-radius-control: var(--input-radius, var(--radius-s, 6px));
+  --pf-radius-btn: var(--button-radius, var(--radius-s, 6px));
+  --pf-radius-panel: var(--radius-m, 10px);
+  --pf-radius-dialog: var(--modal-radius, var(--radius-l, 12px));
+  --pf-radius: var(--pf-radius-panel);
   --pf-control-h: 30px;
   --pf-row-h: 32px;
+  /* Liquid Glass Light Material */
+  --pf-glass-bg: color-mix(in srgb, var(--pf-surface) 76%, transparent);
+  --pf-glass-panel: color-mix(in srgb, var(--pf-surface) 86%, transparent);
+  --pf-glass-border: color-mix(
+    in srgb,
+    var(--pf-surface) 90%,
+    var(--pf-border)
+  );
+  --pf-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.92);
   --pf-shadow-float:
-    0 8px 24px rgba(28, 27, 24, 0.1), 0 1px 3px rgba(28, 27, 24, 0.06);
+    0 10px 28px rgba(20, 21, 26, 0.1), 0 1px 3px rgba(20, 21, 26, 0.05);
   --pf-btn-lift:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    inset 0 -1px 0 rgba(28, 27, 24, 0.06), 0 1px 2px rgba(28, 27, 24, 0.06);
+    inset 0 -1px 0 rgba(20, 21, 26, 0.05), 0 1px 2px rgba(20, 21, 26, 0.05);
   --pf-primary-lift:
     inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(0, 0, 0, 0.14),
-    0 1px 2px rgba(91, 69, 201, 0.28);
+    0 1px 2px rgba(108, 92, 231, 0.28);
   --pf-btn-press:
-    inset 0 1px 2px rgba(28, 27, 24, 0.18), inset 0 0 0 transparent,
+    inset 0 1px 2px rgba(20, 21, 26, 0.16), inset 0 0 0 transparent,
     0 0 0 transparent;
   --pf-well-inset:
-    inset 0 1px 2px rgba(28, 27, 24, 0.06),
-    inset 0 0 0 1px rgba(28, 27, 24, 0.05);
+    inset 0 1px 2px rgba(20, 21, 26, 0.05),
+    inset 0 0 0 1px rgba(20, 21, 26, 0.04);
+  /* Four-Tier AsterLab Oklab Physical Motion Curves */
   --pf-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --pf-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
-  --pf-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pf-ease-overshoot: cubic-bezier(0.32, 1.24, 0.52, 1);
+  --pf-motion-micro: 100ms cubic-bezier(0.22, 1, 0.36, 1);
+  --pf-motion-snappy: 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  --pf-motion-fluid: 220ms cubic-bezier(0.32, 1.24, 0.52, 1);
   color-scheme: light;
 }
 
-.theme-dark body:not(.pf-theme-obsidian),
-body.theme-dark.pf-theme-asterlab,
-.theme-dark .pf-scope-asterlab {
-  --pf-canvas: #171614;
-  --pf-surface: #1e1d1a;
-  --pf-elevated: #242320;
-  --pf-rail: #171614;
-  --pf-hover: #2b2925;
-  --pf-border: #37352f;
-  --pf-border-hover: #4a473f;
-  --pf-border-strong: #4a473f;
-  --pf-text: #f2efe9;
-  --pf-text-muted: #a9a49a;
-  --pf-text-subtle: #78736a;
-  --pf-accent: #a996ff;
-  --pf-accent-hover: #bcabff;
-  --pf-accent-text: #1b1533;
-  --pf-accent-soft: rgba(169, 150, 255, 0.14);
-  --pf-accent-tint: rgba(169, 150, 255, 0.08);
-  --pf-accent-line: rgba(169, 150, 255, 0.36);
+.theme-dark :is(body, body.pf-theme-asterlab, .pf-scope-asterlab) {
+  --pf-canvas: #111215;
+  --pf-surface: #16181d;
+  --pf-elevated: #1e2027;
+  --pf-rail: #111215;
+  --pf-hover: #252831;
+  --pf-border: #2b2e38;
+  --pf-border-hover: #3d4250;
+  --pf-border-strong: #3d4250;
+  --pf-text: #f3f4f8;
+  --pf-text-muted: #a6adbd;
+  --pf-text-subtle: #737a8c;
+  --pf-accent: #a596ff;
+  --pf-accent-hover: #b8acff;
+  --pf-accent-text: #161229;
+  --pf-accent-soft: #2a2645;
+  --pf-accent-tint: rgba(165, 150, 255, 0.1);
+  --pf-accent-line: rgba(165, 150, 255, 0.36);
   --pf-success: #84c9a4;
   --pf-warning: #d9b878;
   --pf-danger: #e79a9c;
+  /* Liquid Glass Dark Smoked Clear (never raises dark blacks into muddy gray) */
+  --pf-glass-bg: rgba(20, 22, 28, 0.86);
+  --pf-glass-panel: rgba(20, 22, 28, 0.92);
+  --pf-glass-border: rgba(255, 255, 255, 0.14);
+  --pf-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
   --pf-shadow-float:
-    0 10px 28px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.25);
+    0 12px 32px rgba(0, 0, 0, 0.48), 0 1px 4px rgba(0, 0, 0, 0.28);
   --pf-btn-lift:
     inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.25),
     0 1px 2px rgba(0, 0, 0, 0.28);
@@ -93,8 +111,51 @@ body.theme-dark.pf-theme-asterlab,
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --pf-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --pf-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
-  --pf-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pf-ease-overshoot: cubic-bezier(0.32, 1.24, 0.52, 1);
+  --pf-motion-micro: 100ms cubic-bezier(0.22, 1, 0.36, 1);
+  --pf-motion-snappy: 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  --pf-motion-fluid: 220ms cubic-bezier(0.32, 1.24, 0.52, 1);
   color-scheme: dark;
+}
+
+/* Classic AsterLab Warm Paper Preset (optional via Settings) */
+.theme-light body.pf-theme-warm,
+body.pf-theme-warm:not(.theme-dark) {
+  --pf-canvas: #f7f6f3;
+  --pf-surface: #ffffff;
+  --pf-elevated: #faf9f7;
+  --pf-rail: #f1efea;
+  --pf-hover: #efece6;
+  --pf-border: #e7e3db;
+  --pf-border-hover: #d6d0c5;
+  --pf-border-strong: #d6d0c5;
+  --pf-text: #1c1b18;
+  --pf-text-muted: #5f5a52;
+  --pf-text-subtle: #8f897f;
+  --pf-accent: #5b45c9;
+  --pf-accent-hover: #4b37ae;
+  --pf-accent-soft: rgba(91, 69, 201, 0.1);
+  --pf-accent-tint: #faf8ff;
+  --pf-accent-line: #cfc4f0;
+}
+
+.theme-dark body.pf-theme-warm {
+  --pf-canvas: #171614;
+  --pf-surface: #1e1d1a;
+  --pf-elevated: #242320;
+  --pf-rail: #171614;
+  --pf-hover: #2b2925;
+  --pf-border: #37352f;
+  --pf-border-hover: #4a473f;
+  --pf-border-strong: #4a473f;
+  --pf-text: #f2efe9;
+  --pf-text-muted: #a9a49a;
+  --pf-text-subtle: #78736a;
+  --pf-accent: #a996ff;
+  --pf-accent-hover: #bcabff;
+  --pf-accent-soft: rgba(169, 150, 255, 0.14);
+  --pf-accent-tint: rgba(169, 150, 255, 0.08);
+  --pf-accent-line: rgba(169, 150, 255, 0.36);
 }
 
 body.pf-theme-obsidian {
@@ -131,6 +192,10 @@ body.pf-theme-obsidian {
   --pf-success: var(--text-success);
   --pf-warning: var(--text-warning);
   --pf-danger: var(--text-error);
+  --pf-radius-control: var(--input-radius, var(--radius-s, 6px));
+  --pf-radius-btn: var(--button-radius, var(--radius-s, 6px));
+  --pf-radius-panel: var(--radius-m, 10px);
+  --pf-radius-dialog: var(--modal-radius, var(--radius-l, 12px));
 }
 
 /* ── Shared AsterLab Structural Primitives ── */
@@ -12392,4 +12457,228 @@ input[type="checkbox"].pf-switch:checked::after {
 .pf-pdf-view.is-narrow .pf-pdf-search-wrap {
   flex: 1 1 140px;
   min-width: 120px;
+}
+
+/* ==========================================================================
+   AsterLab Handbook v2 Polish: Native Button Radii Sync, Liquid Glass v2,
+   Anti-XP-Box Surfaces, Solid Dark Modals, & Four-Tier Physical Motion System
+   ========================================================================== */
+
+/* 1. Native Obsidian Button & Modal Radii Inheritance */
+:is(
+  .pf-btn,
+  .pf-action-btn,
+  .paperforge-contextual-btn,
+  .paperforge-next-step-trigger,
+  .pf-activity-strip-link,
+  .pf-memory-deeplink
+) {
+  border-radius: var(--pf-radius-btn, var(--pf-radius-control, 6px));
+}
+
+/* Inset grouped appearance settings rows without nested box chrome */
+.pf-cc-appearance-group {
+  margin-top: 16px;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-surface);
+  overflow: hidden;
+}
+
+.pf-cc-appearance-group > .pf-cc-theme-bar {
+  margin-top: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.pf-cc-appearance-group > .pf-cc-theme-bar + .pf-cc-theme-bar {
+  border-top: 1px solid var(--pf-border);
+}
+
+/* 2. Anti-XP-Box: calm solid elevation without nested borders in Companion */
+.paperforge-status-panel .paperforge-snapshot-pill {
+  border: none !important;
+  background: var(--pf-elevated) !important;
+  border-radius: var(--pf-radius-control, 6px) !important;
+}
+
+.paperforge-status-panel .paperforge-next-step-card {
+  border: none !important;
+  background: var(--pf-elevated) !important;
+}
+
+/* Solid Dark Mode Modals (prevents see-through bleed-over on dense settings/tables) */
+.theme-dark .modal.pf-modal,
+.theme-dark
+  .modal-container
+  .modal:has(.pf-diag-fulltext-modal, .pf-memory-history-list) {
+  background: var(--pf-surface) !important;
+  border: 1px solid var(--pf-border-strong) !important;
+  border-radius: var(--pf-radius-dialog, 12px) !important;
+}
+
+/* 3. Liquid Glass v2: Light Frost + Dark Smoked Clear (toolbars & popovers only) */
+body:not(.pf-no-glass) :is(.pf-pdf-toolbar, .pf-pdf-markup-bar) {
+  background: var(--pf-glass-bg) !important;
+  border-bottom: 1px solid var(--pf-glass-border) !important;
+  box-shadow: var(--pf-glass-highlight) !important;
+  backdrop-filter: blur(22px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(185%) !important;
+}
+
+body:not(.pf-no-glass)
+  :is(
+    .pf-base-selection-bar,
+    .pf-pdf-area-float,
+    .pf-pdf-highlight-dropdown,
+    .pf-pdf-popover
+  ) {
+  background: var(--pf-glass-panel) !important;
+  border: 1px solid var(--pf-glass-border) !important;
+  box-shadow: var(--pf-glass-highlight), var(--pf-shadow-float) !important;
+  backdrop-filter: blur(22px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(185%) !important;
+}
+
+body.pf-no-glass
+  :is(
+    .pf-pdf-toolbar,
+    .pf-pdf-markup-bar,
+    .pf-base-selection-bar,
+    .pf-pdf-area-float,
+    .pf-pdf-highlight-dropdown,
+    .pf-pdf-popover
+  ) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--pf-surface) !important;
+}
+
+/* 4. Four-Tier Physical Micro-Motion System */
+@keyframes pf-float-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pf-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pf-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+/* MotionMicro: 100ms tactile press scale(0.97) */
+:is(
+  .pf-btn,
+  .pf-action-btn,
+  .pf-icon-btn,
+  .pf-pdf-icon-btn,
+  .pf-segmented-item,
+  .paperforge-contextual-btn,
+  .paperforge-next-step-trigger,
+  .pf-memory-deeplink,
+  .pf-living-memory-chip,
+  .pf-activity-strip-link
+) {
+  transition:
+    background-color var(--pf-motion-micro),
+    border-color var(--pf-motion-micro),
+    color var(--pf-motion-micro),
+    box-shadow var(--pf-motion-micro),
+    transform var(--pf-motion-micro);
+}
+
+:is(
+    .pf-btn,
+    .pf-action-btn,
+    .pf-icon-btn,
+    .pf-pdf-icon-btn,
+    .pf-segmented-item,
+    .paperforge-contextual-btn,
+    .paperforge-next-step-trigger,
+    .pf-memory-deeplink,
+    .pf-living-memory-chip,
+    .pf-activity-strip-link
+  ):active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* MotionSnappy: smooth segmented tab lift + bar emergence */
+.pf-segmented-item.is-active,
+.pf-cc-module-nav-tab.is-active {
+  box-shadow: var(--pf-btn-lift);
+  transition:
+    background-color var(--pf-motion-snappy),
+    box-shadow var(--pf-motion-snappy),
+    color var(--pf-motion-snappy),
+    transform var(--pf-motion-micro);
+}
+
+.pf-base-selection-bar,
+.pf-global-activity-strip > .pf-activity-strip-item,
+.pf-recovery-banner,
+.pf-pdf-area-float {
+  animation: pf-float-up var(--pf-motion-snappy) both;
+}
+
+/* MotionFluid: spring popovers & rotating chevrons */
+.pf-pdf-highlight-dropdown,
+.pf-pdf-popover {
+  transform-origin: top center;
+  animation: pf-pop-in var(--pf-motion-fluid) both;
+}
+
+/* ApplyNudge: validation shake */
+.pf-nudge {
+  animation: pf-nudge 260ms var(--pf-ease-out) both;
+  border-color: var(--pf-danger) !important;
+}
+
+/* Accessibility ReduceMotion */
+body.pf-reduce-motion *,
+body.pf-reduce-motion *::before,
+body.pf-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

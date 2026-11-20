@@ -1681,6 +1681,9 @@ export class PaperForgeStatusView extends ItemView {
       saveBtn.addEventListener("click", () => {
         const nextVal = editor.value.trim();
         if (!nextVal) {
+          editor.classList.remove("pf-nudge");
+          void editor.offsetWidth;
+          editor.classList.add("pf-nudge");
           new Notice("记忆内容不能为空");
           return;
         }

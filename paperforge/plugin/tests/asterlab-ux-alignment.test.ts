@@ -385,4 +385,80 @@ describe("ADR-016: AsterLab UX Contract Alignment", () => {
     )._bindNarrowObserver();
     expect(el.classList.contains("is-narrow")).toBe(true);
   });
+
+  it("synchronizes corner radii with Obsidian host CSS variables, Liquid Glass, and 4-tier motion", () => {
+    const cssPath = path.resolve(__dirname, "../styles.css");
+    const css = fs.readFileSync(cssPath, "utf-8");
+    expect(css).toContain(
+      "--pf-radius-control: var(--input-radius, var(--radius-s, 6px))"
+    );
+    expect(css).toContain(
+      "--pf-radius-btn: var(--button-radius, var(--radius-s, 6px))"
+    );
+    expect(css).toContain("--pf-radius-panel: var(--radius-m, 10px)");
+    expect(css).toContain(
+      "--pf-radius-dialog: var(--modal-radius, var(--radius-l, 12px))"
+    );
+    expect(css).toContain("rgba(20, 22, 28, 0.86)");
+    expect(css).toContain("@keyframes pf-float-up");
+    expect(css).toContain("@keyframes pf-pop-in");
+    expect(css).toContain("@keyframes pf-nudge");
+    expect(css).toContain("body.pf-reduce-motion");
+    expect(css).toContain("body.pf-no-glass");
+    expect(css).toContain("body.pf-theme-warm");
+  });
+
+  it("applies .pf-nudge when saving an empty Living Paper Memory facet", async () => {
+    const refineMemoryCard = vi.fn();
+    const getMemoryCard = vi.fn().mockResolvedValue({
+      paper_id: "KEY_DONE",
+      facets: [],
+    });
+    const view = new PaperForgeStatusView({} as never);
+    (view as unknown as { app: unknown }).app = {
+      plugins: {
+        plugins: {
+          paperforge: {
+            settings: {},
+            getClient: () => ({ getMemoryCard, refineMemoryCard }),
+          },
+        },
+      },
+      vault: {
+        adapter: { getBasePath: () => "/vault", exists: async () => false },
+        getAbstractFileByPath: () => null,
+      },
+      workspace: {
+        on: () => ({}),
+        getActiveFile: () => null,
+        getActiveViewOfType: () => null,
+      },
+    };
+    view._buildPanel();
+    view._currentPaperKey = "KEY_DONE";
+
+    const host = document.createElement("div");
+    await (
+      view as unknown as {
+        _loadLivingMemoryInto: (el: HTMLElement, key: string) => Promise<void>;
+      }
+    )._loadLivingMemoryInto(host, "KEY_DONE");
+
+    const addBtn = host.querySelector(
+      '[data-pf-testid="memory-facet-add-idea_logic"]'
+    ) as HTMLButtonElement;
+    addBtn.click();
+
+    const editor = host.querySelector(
+      '[data-pf-testid="memory-facet-editor-idea_logic"]'
+    ) as HTMLTextAreaElement;
+    const saveBtn = host.querySelector(
+      '[data-pf-testid="memory-facet-save"]'
+    ) as HTMLButtonElement;
+    editor.value = "   ";
+    saveBtn.click();
+
+    expect(refineMemoryCard).not.toHaveBeenCalled();
+    expect(editor.classList.contains("pf-nudge")).toBe(true);
+  });
 });

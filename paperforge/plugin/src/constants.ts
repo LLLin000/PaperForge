@@ -150,8 +150,12 @@ export interface PaperForgeSettings {
   _vector_db_configured?: boolean;
   /** Diagnostic: log every client↔backend operation (metadata only). */
   debug_trace?: boolean;
-  /** UI color binding mode: "asterlab" (default warm-neutral) or "obsidian" (follow active theme). */
-  ui_theme_mode?: "asterlab" | "obsidian";
+  /** UI color binding mode: "obsidian" (default native host theme & radii), "asterlab" (Obsidian Pure), or "warm" (classic warm paper). */
+  ui_theme_mode?: "obsidian" | "asterlab" | "warm";
+  /** Enable macOS-inspired Liquid Glass translucency on toolbars & floating layers (uses smoked clear dark in dark mode). */
+  ui_liquid_glass?: boolean;
+  /** Disable 4-tier spring micro-motions (also honors prefers-reduced-motion). */
+  reduce_motion?: boolean;
   [key: string]: unknown;
 }
 
@@ -185,7 +189,9 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   _paddleocr_configured: false,
   _vector_db_configured: false,
   _setup_complete: false,
-  ui_theme_mode: "asterlab",
+  ui_theme_mode: "obsidian",
+  ui_liquid_glass: true,
+  reduce_motion: false,
 };
 
 // ── Workflow state helpers ──
