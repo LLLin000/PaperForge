@@ -152,3 +152,13 @@ python scripts/dev/render_obsidian_ui_docs.py
 3. **行内可恢复报错横幅（`.pf-recovery-banner`）**：遇到库未同步、`.base` 目录缺失、PDF/全文定位失败、同步或版本读取异常时，不再只弹一闪而过的 Toast，而是在 Companion 顶部保留带 **原因说明 + 直达修复/重试按钮** 的持久化恢复条。
 4. **单主 CTA 约束 + 零占位后台活动条（`.pf-global-activity-strip`）**：单一视口只保留一个高亮主按钮；通过 `PaperForgePlugin.getActiveBackgroundTasks()` 聚合后台同步/OCR/向量任务，空闲态 `0px` 不占位，运行态实时显示进度并支持一键 DeepLink 跳转对应文献或 OCR 工作台。
 5. **研究认知记忆 ↔ PDF 原位 DeepLink 与窄分栏响应**：研究记忆正文中的页码引用（如 `[p.3, Sec. 3.1]`、`第 5 页`）自动渲染为可点击 `.pf-memory-deeplink` 芯片，直接定位并滚动内置 `PaperForgePdfView`；PDF 视图在 `<= 680px` 分栏宽度下自动切换 `.is-narrow` 折叠换行，保证工具按钮与全文搜索框不被裁切。
+
+---
+
+## 8. Obsidian 原生圆角同步、Liquid Glass 材质与四档物理动效（ADR-017）
+
+对照最新 [AsterLab Handbook · Design System & Liquid Glass](https://docs.asterlab.party/?doc=docs%2Fhandbook%2Fdesign-system.md)，补充插件的宿主原生融合与触感精致度规范：
+
+1. **默认同步 Obsidian 主题与三档原生圆角**：`ui_theme_mode` 默认设为 `obsidian`（自动对齐当前 Obsidian 主题配色及 `--input-radius` / `--button-radius` / `--radius-s/m/l` / `--modal-radius`），同时保留 `asterlab`（纯净白纸 `#ffffff` / 深空曜石 `#111215` + `#6c5ce7`）与 `warm`（经典暖纸 `#f7f6f3` / `#171614`）两套显式预设。
+2. **Liquid Glass 浅透 / 深烟熏双通道材质（严禁 Glass-on-Glass）**：仅在顶栏工具条与悬浮气泡（`.pf-pdf-toolbar`、`.pf-base-selection-bar`、`.pf-pdf-highlight-dropdown`、`.pf-pdf-popover`）开启毛玻璃折射 + 顶部内高光白边；Dark 模式采用 `rgba(20, 22, 28, 0.86/0.92)` 烟熏清透遮罩而非抬灰白雾；侧栏卡片（Anti-XP-Box 去重框）与 Dark 弹窗保持纯实底，设置面板支持一键开关（`ui_liquid_glass`）。
+3. **四档物理微动效与无障碍降级**：覆盖按钮按压微缩 `scale(0.97)`（`100ms`）、选区条与活动条平滑托出（`160ms`）、悬浮下拉面板微弹展开（`220ms`）及空保存/校验拒绝轻晃 `.pf-nudge`（`±5px`），并同时尊重 `prefers-reduced-motion` 与设置开关（`reduce_motion`）。

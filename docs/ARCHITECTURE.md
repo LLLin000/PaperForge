@@ -776,6 +776,17 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+### ADR-017: Obsidian Native Radii Sync, Liquid Glass v2 (Light Frost / Dark Clear), & Four-Tier Micro-Motion System
+
+**Context**: Following `docs.asterlab.party/docs/handbook/design-system.md` and `liquid-glass.md`, defaulting to fixed warm-paper hex values and static `6/10/12px` radii can look visibly foreign inside custom Obsidian themes (Minimal, Things, Cupertino, Border), while uniform `backdrop-filter` light blurs wash out dark Obsidian panes.
+
+**Decisions**:
+1. **Obsidian Host Bridge Default & Native Radii Inheritance**: Default `ui_theme_mode` to `"obsidian"` (live `--background-*`, `--text-*`, `--interactive-accent`), while upgrading `"asterlab"` to AsterLab's Pure Obsidian preset (`#ffffff` / `#111215`, `#6c5ce7` / `#a596ff`) and preserving `"warm"` (`#f7f6f3` / `#171614`) as an explicit preset. Bind `--pf-radius-control`, `--pf-radius-btn`, `--pf-radius-panel`, and `--pf-radius-dialog` directly to `--input-radius`, `--button-radius`, `--radius-s/m/l`, and `--modal-radius` with `6/10/12px` fallbacks.
+2. **Liquid Glass Light vs Dark Smoked Clear (Anti-Glass-on-Glass)**: Restrict glass translucency (`blur(22px) saturate(185%)` + inner top specular highlight) to floating toolbars, multi-select bars, and popovers; use smoked dark clear masks (`rgba(20, 22, 28, 0.86/0.92)`) in dark mode; keep sidebars, base tables, and modals solid (with `ui_liquid_glass` toggle -> `body.pf-no-glass`).
+3. **Four-Tier Physical Micro-Motions & Accessibility**: Implement `MotionMicro` (`100ms` tactile press `scale(0.97)`), `MotionSnappy` (`160ms` bar float-up & segmented lift), `MotionFluid` (`220ms` spring popover & disclosure animation), and `pf-nudge` (`±5px` shake on validation reject, e.g., empty Living Memory save), respecting both OS `prefers-reduced-motion` and plugin `reduce_motion` (`body.pf-reduce-motion`).
+
+---
+
 ## Glossary
 
 - **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.
