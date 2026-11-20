@@ -1,17 +1,17 @@
 # PaperForge 全平台桌面安装、热修与协同升级架构蓝图
 
-> **定位**：面向维护者与工程演进的架构设计文档（**设计蓝图 / 待评审定稿**）。  
+> **定位**：面向维护者与工程演进的架构设计文档。  
 > **适用范围**：Obsidian 桌面端全平台（**Windows x64/ARM64、macOS Apple Silicon/Intel、Linux x64/ARM64**；移动端 iOS/Android 暂不纳入）。  
-> **当前基线版本**：`2.0.0rc6`（[**init**.py](../paperforge/__init__.py) / [manifest.json](../paperforge/plugin/manifest.json)）。
+> **当前基线版本**：`2.0.0`（[**init**.py](../paperforge/__init__.py) / [manifest.json](../paperforge/plugin/manifest.json) / [versions.json](../versions.json)）。
 
 > [!IMPORTANT]
-> **已上线现状（`v2.0.0rc6` / Phase 1）与远期演进蓝图（`v2.1` / Phase 2–3）边界说明：**
+> **当前已上线架构边界说明（Single-Channel GitHub Release + v2.1 全阶段落地）：**
 >
-> - **当前已上线（Phase 1 + Phase 2 + Phase 3 代码契约已落地）**：
+> - **当前已上线（Phase 1 + Phase 2 + Phase 3 + 单源 GitHub Release 分发均已落地）**：
+>   - **单一分发源**：仓库根目录 `manifest.json` + `versions.json` 使用纯三位 SemVer（`2.0.0`），通过 GitHub Pre-release 区分内测（BRAT）与正式发布（Obsidian 商店自动同步）；Python Wheel（`paperforge-<ver>-py3-none-any.whl`）优先直连 GitHub Release（含 `ghfast.top` 镜像）下载至 `~/.paperforge/runtime/cache/wheels/` 并通过 `--find-links` 安装，不强制依赖 PyPI 发包或国内镜像同步，PyPI 在 `publish.yml` 中仅保留为可选发布开关。
 >   - **Phase 1（隔离运行时指针）**：由 Python `runtime_installer` 在 `~/.paperforge/runtime/` 下创建隔离虚拟环境并原子发布 `pointer.json`；SemVer ↔ PEP 440 版本统一由 `paperforge/core/versioning.py`（与插件 `normalizePep440Version`）双端对齐。
->   - **Phase 2（四维解耦与极速热修）**：`manifest.json` 声明 `minEngineVersion`，`probe`/`runtime status` 支持 `--min-engine-version` 兼容窗口校验；`pointer.json` 记录可选 `deps_lock_hash`，纯代码补丁命中同哈希时复用现有 `site-packages` 进行 `--no-deps` 秒级升级；`paperforge skill sync` 基于状态摘要无损自动更新未改动的 Skill。
->   - **Phase 3（便携 `uv` 零前置引导）**：无本机 Python 3.11+ 时，插件与 `paperforge/runtime_uv.py` 可自动下载便携 `uv` 并拉取独立托管 Python 3.12（含国内镜像兜底）完成全自动安装；真实桌面端 Obsidian Vault 的首装/热修体感验收仍在持续跟进中。
-> - **本文设计的目标架构（v2.1 Blueprint，尚未上线）**：下文中关于内嵌 `uv` 静态引导免装 Python、Wheel 硬链接秒级热修，以及 `minEngineVersion` / `depsLockHash` 与插件解耦升级的方案属于 **v2.1 待评审实现蓝图**，尚未合入当前 `NodeProcessTransport` 与 `runtime_installer.py`。
+>   - **Phase 2（四维解耦与极速热修）**：`manifest.json` 声明 `minEngineVersion`，`probe`/`runtime status` 支持 `--min-engine-version` 兼容窗口校验；`pointer.json` 记录 `deps_lock_hash` 与 `runtime_abi` 并校验实装 `.dist-info/METADATA` 区间，纯代码补丁命中时复用 `site-packages` 进行 `--no-deps` 秒级升级；`paperforge skill sync` 基于状态摘要与暂存原子替换无损更新未改动的 Skill。
+>   - **Phase 3（便携 `uv 0.13.9` 零前置引导）**：无本机 Python 3.11+ 时，插件与 `paperforge/runtime_uv.py` 可自动下载经官方 SHA-256 校验的便携 `uv` 并拉取独立托管 Python 3.12（含国内镜像兜底）完成全自动安装；真实桌面端 Obsidian Vault 的首装/热修体感验收仍在持续跟进中。
 
 ---
 

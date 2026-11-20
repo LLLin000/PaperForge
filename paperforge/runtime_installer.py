@@ -33,9 +33,11 @@ from paperforge.runtime_pointer import pointer_dir, pointer_path, publish_pointe
 from paperforge.runtime_uv import (
     bootstrap_uv_python,
     discover_uv,
+    download_release_wheel,
     ensure_uv,
     uv_create_venv,
     uv_pip_install,
+    uv_wheel_cache_dir,
 )
 
 MIN_PYTHON = (3, 11)
@@ -177,6 +179,9 @@ def _pip_install_command(
     base = [str(venv_python), "-m", "pip", "install", "--default-timeout=60"]
     if no_deps:
         base.append("--no-deps")
+    wheel_cache = uv_wheel_cache_dir(cwd)
+    if wheel_cache.is_dir() and any(wheel_cache.glob("paperforge-*.whl")):
+        base.extend(["--find-links", str(wheel_cache)])
     result = _run([*base, spec], cwd=cwd, timeout=1800)
     if (
         result.returncode != 0
@@ -209,6 +214,11 @@ def _pip_install_no_deps(
     venv_python: Path, spec: str, *, cwd: Path
 ) -> subprocess.CompletedProcess[str]:
     return _pip_install_command(venv_python, spec, cwd=cwd, no_deps=True)
+
+
+_ORIG_RUN = _run
+_ORIG_PIP_INSTALL = _pip_install
+_ORIG_UV_PIP_INSTALL = uv_pip_install
 
 
 def _site_packages_dir(env_root: Path) -> Path | None:
@@ -616,11 +626,26 @@ def _install_runtime_locked(
         full_spec = f"{wheel}[vector]" if wheel else f"paperforge[vector]=={norm_ver}"
         fast_patched = False
 
+        if (
+            wheel is None
+            and not os.environ.get("PIP_FIND_LINKS")
+            and not os.environ.get("PIP_INDEX_URL")
+            and not os.environ.get("PAPERFORGE_NO_GITHUB_WHEEL")
+            and _run is _ORIG_RUN
+            and _pip_install is _ORIG_PIP_INSTALL
+            and uv_pip_install is _ORIG_UV_PIP_INSTALL
+        ):
+            download_release_wheel(norm_ver, uv_wheel_cache_dir(runtime_dir))
+
         if can_fast_patch and old_root is not None and _clone_site_packages_for_fast_patch(old_root, candidate):
             patch_spec = f"paperforge=={norm_ver}"
             if installer_backend == "uv" and uv_exe:
                 patch_res = uv_pip_install(
-                    uv_exe, candidate_python, patch_spec, runtime_dir=runtime_dir, no_deps=True
+                    uv_exe,
+                    candidate_python,
+                    patch_spec,
+                    runtime_dir=runtime_dir,
+                    no_deps=True,
                 )
             else:
                 patch_res = _pip_install_no_deps(candidate_python, patch_spec, cwd=runtime_dir)
@@ -655,7 +680,12 @@ def _install_runtime_locked(
         if not fast_patched:
             try:
                 if installer_backend == "uv" and uv_exe:
-                    pip = uv_pip_install(uv_exe, candidate_python, full_spec, runtime_dir=runtime_dir)
+                    pip = uv_pip_install(
+                        uv_exe,
+                        candidate_python,
+                        full_spec,
+                        runtime_dir=runtime_dir,
+                    )
                 else:
                     pip = _pip_install(candidate_python, full_spec, cwd=runtime_dir)
             except (OSError, subprocess.SubprocessError) as exc:

@@ -73,13 +73,24 @@ def check_root_manifest(canonical: str) -> list[str]:
 
 def check_versions_json(canonical: str) -> list[str]:
     errors = []
-    path = REPO_ROOT / "paperforge" / "plugin" / "versions.json"
+    plugin_path = REPO_ROOT / "paperforge" / "plugin" / "versions.json"
+    root_path = REPO_ROOT / "versions.json"
+    plugin_data = None
+    root_data = None
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if canonical not in data:
+        plugin_data = json.loads(plugin_path.read_text(encoding="utf-8"))
+        if canonical not in plugin_data:
             errors.append(f'  paperforge/plugin/versions.json: missing entry for version "{canonical}"')
     except (json.JSONDecodeError, FileNotFoundError) as e:
         errors.append(f"  paperforge/plugin/versions.json: failed to read — {e}")
+    try:
+        root_data = json.loads(root_path.read_text(encoding="utf-8"))
+        if canonical not in root_data:
+            errors.append(f'  versions.json: missing entry for version "{canonical}"')
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        errors.append(f"  versions.json: failed to read — {e}")
+    if plugin_data is not None and root_data is not None and plugin_data != root_data:
+        errors.append("  versions.json (root) disagrees with paperforge/plugin/versions.json")
     return errors
 
 

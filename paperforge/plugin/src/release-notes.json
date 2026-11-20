@@ -1,7 +1,7 @@
 {
   "versions": [
     {
-      "version": "2.0.0rc6",
+      "version": "2.0.0",
       "date": "2026-11-18",
       "title": "AsterLab 视觉规范统一 · 单视图 Base 选择操作栏 · 苹果预览风格 PDF 批注器",
       "breaking_or_migration": [

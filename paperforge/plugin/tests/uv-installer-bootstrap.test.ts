@@ -169,3 +169,40 @@ describe("zero-Python uv installer bootstrapper", () => {
     expect(mockSpawn).toHaveBeenCalledTimes(1);
   });
 });
+
+import {
+  bootstrapPythonSource,
+  releaseWheelUrl,
+} from "../src/services/runtime-installer-launcher";
+
+describe("single-channel GitHub Release wheel bootstrap", () => {
+  it("builds direct and mirror release wheel URLs and wires --find-links in Python and uv installers", () => {
+    expect(releaseWheelUrl("2.0.0")).toBe(
+      "https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl"
+    );
+    expect(releaseWheelUrl("2.0.0", true)).toBe(
+      "https://ghfast.top/https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl"
+    );
+
+    const pyBootstrap = bootstrapPythonSource("2.0.0");
+    expect(pyBootstrap).toContain('VERSION = "2.0.0"');
+    expect(pyBootstrap).toContain("paperforge-2.0.0-py3-none-any.whl");
+    expect(pyBootstrap).toContain("--find-links");
+
+    const winUv = windowsUvInstallerScript({
+      action: "install",
+      version: "2.0.0",
+    });
+    expect(winUv).toContain("paperforge-2.0.0-py3-none-any.whl");
+    expect(winUv).toContain("--find-links");
+
+    const posixUv = posixUvInstallerScript({
+      action: "install",
+      version: "2.0.0",
+      platform: "darwin",
+      arch: "arm64",
+    });
+    expect(posixUv).toContain("paperforge-2.0.0-py3-none-any.whl");
+    expect(posixUv).toContain("--find-links");
+  });
+});

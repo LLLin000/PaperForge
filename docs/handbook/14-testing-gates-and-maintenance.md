@@ -132,7 +132,7 @@ flowchart LR
    - 标准动作：先运行 `python scripts/dev/ocr_rebuild_paper.py <KEY> --trace --dump-stages` 按 V3 流水线重算结果；随后审查生成的 `block_trace.csv`（每块 `role`、`role_confidence`、`seed_role`、`zone`）与 `stages_summary.json`（每阶段状态字段变迁）；修复完毕后必须先过 **OCR V3 聚焦套件**（若改动图文绑定再过 Figure 套件）。
 2. **发版改号与插件打包链路 (`scripts/bump.py`)**：
    - 唯一允许改动版本的起点是 `paperforge/__init__.py` 或通过 `scripts/bump.py` 自动联动修改，严禁手动散改 `manifest.json`。
-   - 标准动作：`npm --prefix paperforge/plugin run build`（编译生成最新 `paperforge/plugin/main.js`）→ `python scripts/bump.py <ver>`（依次替换 `paperforge/__init__.py`、`paperforge/plugin/manifest.json`、`manifest.json`，向 `paperforge/plugin/versions.json` 写入版本映射，提交并校验 `HEAD:paperforge/__init__.py` 后打 Git Tag）→ 运行 `python scripts/check_version_sync.py`。
+   - 标准动作：`npm --prefix paperforge/plugin run build`（编译生成最新 `paperforge/plugin/main.js`）→ `python scripts/bump.py <ver>`（依次替换 `paperforge/__init__.py`、`paperforge/plugin/manifest.json`、`manifest.json`，向根目录 `versions.json` 与 `paperforge/plugin/versions.json` 写入版本映射，提交并校验 `HEAD:paperforge/__init__.py` 后打 Git Tag）→ 运行 `python scripts/check_version_sync.py`（或通过 `publish.yml` 的 `workflow_dispatch` 一键打标并发布单通道 GitHub Release）。
 3. **CI 测试地图与代码覆盖同步链路**：
    - 凡是在 `tests/` 下新增、拆解或重命名测试文件（非 `e2e`/`audit`/`chaos`/`harness` 目录），必须立刻运行 `python scripts/ci_shard.py --write` 更新 `tests/ci-shards.json`，否则 `tests/test_ci_shard_map.py` 与 `tests/test_ci_coverage_contract.py` 将在 L1b / J1b 阶段失败。
 4. **SQLite Schema 迁移状态机 (`migrate_schema`)**：
