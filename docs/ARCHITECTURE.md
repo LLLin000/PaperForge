@@ -763,6 +763,19 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+### ADR-016: AsterLab UX Contract Alignment (Single-Authority Tokens, Unified Vocabulary, Recoverable Inline Errors, Activity Strip, & Responsive Gates)
+
+**Context**: Comparing PaperForge's `v4` Obsidian UI against AsterLab's post-2026-11-12 UX Contract (`ux-contract.md`, `design-system.md`, `UX-02`, `UX-07`, `UI-INT-10`, `CLOSE-07`) exposed structural gaps beyond palette alignment: 37 toast-only `[!!]` notices without in-surface recovery paths, mixed mode/status terminology across Base/Companion/OCR Workspace/Settings (`GLOBAL`, `PAPER`, `OCR Needed`, `KEY_FAILED`), multiple primary-styled CTAs competing in narrow `300px` sidebars, fragmented background-task visibility, disconnected Living Memory text vs PDF page/figure anchors, and `styles.css` literal drift (`8px` radii, non-4px gaps) lacking narrow-pane and dark-mode screenshot regression gates.
+
+**Decisions**:
+1. **Single-Authority Token & Geometry Discipline**: Normalize new/remediated CSS rules in `paperforge/plugin/styles.css` onto `--pf-radius-control` (`6px`), `--pf-radius-panel` (`10px`), `--pf-radius-dialog` (`12px`), `4px` spacing multiples, and zero raw `[!!]`/`[OK]` log prefixes on user surfaces. Keep zero literal colors outside token definitions.
+2. **Unified Domain & Mode Vocabulary**: Localize and align Companion mode badges (`工作区` / `单篇` / `集合` / `版本`), paper recommendation labels (`需要同步` / `需要解析` / `建议精读` / `已就绪`), OCR Workspace states (`已解析` / `排队中` / `解析中` / `部分解析` / `解析异常` / `未解析` / `无附件`), and secondary technical disclosure headings (`渲染核查` instead of raw `Render Quality`, localized `PDF 状态` / `解析状态` / `附件状态` / `笔记路径`) while preserving stable DOM `data-pf-testid` / `data-pf-mode` hooks for automation.
+3. **Recoverable Inline Errors (`Cause + Next Action`)**: Replace toast-only `[!!]` error dead-ends in `PaperForgeStatusView` and `OcrWorkspaceView` with an inline persistent recovery banner (`_renderInlineRecoveryBanner`) carrying localized cause copy plus one-click recovery buttons (`重试` / `同步文献库` / `打开设置`), retaining transient `Notice` only for non-blocking confirmations or supplementary cues without `[!!]`/`[OK]` machine prefixes.
+4. **Task-First Single Primary Budget & Zero-Idle Global Activity Strip**: Enforce at most one `.primary` CTA per viewport region in Companion Global and Paper modes (`打开文献库` primary in Global; `打开 PDF` or contextually recommended `解析全文` primary in Paper). Expose `getActiveBackgroundTasks()` from `PaperForgePlugin` to drive a shared `.pf-global-activity-strip` (0px height when idle; live progress + `查看/跳转` DeepLink when OCR / Sync / Embedding runs).
+5. **Memory ↔ PDF DeepLink & Responsive Split-Pane Toolbar**: Parse inline page/figure anchors (`[p.N]`, `p.N`, `第 N 页`, `Sec./Fig.`) in Companion Living Paper Memory cards into clickable DeepLinks invoking `openPaperPdf(key, { page })`; make `PaperForgePdfView` toolbar overflow cleanly with compact split-pane breakpoints (`<= 680px`); extend `scripts/dev/render_obsidian_ui_docs.py` + `_obsidian_ui_showcase.ts` to test AsterLab Dark mode, narrow `320px` sidebar width, and narrow `640px` split PDF width alongside CSS token regression tests.
+
+---
+
 ## Glossary
 
 - **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.

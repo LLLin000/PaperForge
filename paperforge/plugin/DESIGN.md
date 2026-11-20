@@ -109,3 +109,39 @@ Every interactive control follows five concrete tactile & typographic rules impl
 6. **Concentric & Continuous Corners (`#004`)**: Outer containers (`10px`–`12px`) minus compact padding (`4px`) drive inner control radii (`6px`–`8px`), with `corner-shape: superellipse(1.25)` where supported.
 7. **Recessed Input & Segmented Tracks (`#015`)**: Unified search bars and segmented controls sit inside `--pf-well-inset` tracks with an elevated `--pf-surface` capsule casting `--pf-btn-lift`.
 8. **CJK / Latin Typography Switches (`#007`)**: Global `text-autospace: normal`, `text-spacing-trim: trim-start`, `text-wrap: balance` on headings, `text-wrap: pretty` on prose, `white-space: nowrap` on buttons/tabs, and `min-width: 0` on all flex truncating headers.
+
+---
+
+## 7. Unified Domain & Mode Vocabulary (AsterLab `ux-contract.md` §3 Alignment)
+
+Every surface (`PaperForgeBasesView`, `PaperForgeStatusView`, `OcrWorkspaceView`, `PaperForgeSettingTab`) shares one canonical vocabulary:
+
+| Context                 | Canonical Chinese Label                                                                   | Canonical English Label                                                                           | Retired Ambiguous / Machine Tokens                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Companion Mode          | `全局` / `单篇` / `集合` / `版本历史`                                                     | `Workspace` / `Paper` / `Collection` / `Versions`                                                 | `GLOBAL`, `PAPER`, `COLLECTION` uppercase chrome                        |
+| Paper Parse State       | `已精读` / `已解析` / `解析中` / `排队中` / `部分解析` / `解析异常` / `未解析` / `无附件` | `Deep Read` / `Parsed` / `Parsing` / `Queued` / `Partial` / `Parse Error` / `Unparsed` / `No PDF` | `已处理` vs `已解析`, `未完成`, `待处理`, `KEY_DONE`, `OCR Needed`      |
+| Toast & Banner Prefixes | Direct calm academic phrasing                                                             | Direct calm academic phrasing                                                                     | `[!!]`, `[OK]`, `[i]` log prefixes                                      |
+| Technical Disclosure    | `渲染核查`, `PDF 状态`, `解析状态`, `附件状态`, `笔记路径`                                | `Render Audit`, `PDF Status`, `OCR Status`, `Asset Status`, `Note Path`                           | Raw `Render Quality`, `PDF Health`, `done_incomplete` on surface chrome |
+
+---
+
+## 8. Recoverable Inline Errors (`Cause + Recovery Action`)
+
+Never fail with a fleeting `Notice` alone when user recovery is possible (`AsterLab D8 / UX-02`):
+
+1. Missing PDF, missing fulltext, missing `.base`, failed sync, or rejected state updates persist an inline recoverable banner (`.pf-recovery-banner`) showing the localized error state, human-readable cause, and direct recovery action(s) (`重试` / `重新同步` / `打开设置`) until cleared by dismissal or successful state transition.
+2. Transient `Notice` alerts remain supplemental for quick copy confirmations (`已复制标题`) or background start cues, strictly free of `[!!]` / `[OK]` / `[i]` ASCII badges.
+
+---
+
+## 9. Zero-Idle Activity Strip & Evidence DeepLinks (`UI-INT-10` / `CLOSE-07`)
+
+1. **Zero-Idle Global Activity Strip (`.pf-global-activity-strip`)**: When no long-running operation (`Sync`, `OCR`, `Embedding`) is active, the strip renders `0px` (not even empty padding or placeholder chrome). While active, it surfaces real-time progress and provides a DeepLink action jumping directly to the active paper or OCR Workspace.
+2. **Memory ↔ PDF DeepLinks**: Evidence page/figure markers inside Living Paper Memory (`[p.N]`, `p.N`, `第 N 页`, `Fig. N`) render as interactive inline DeepLink chips (`.pf-memory-deeplink`) that focus `PaperForgePdfView` and scroll directly to page `N`.
+
+---
+
+## 10. Narrow Pane & Dark Theme Gates
+
+1. **Responsive Split-Pane PDF Toolbar**: When `PaperForgePdfView` sits inside a narrow split pane (`<= 680px`), secondary chrome compacts gracefully so page navigation, zoom, split highlight, and search remain reachable without horizontal clipping.
+2. **Continuous Three-Axis Verification**: `scripts/dev/render_obsidian_ui_docs.py` verifies wide desktop Light, **AsterLab Dark**, **320px narrow Companion sidebar**, and **640px narrow split PDF** layouts with zero uncaught console/page errors.

@@ -140,3 +140,15 @@ python scripts/dev/render_obsidian_ui_docs.py
 ![11 · OCR 与智能检索模块配置详情](images/ui-states/v4-11-settings-ocr-and-memory-details.png)
 
 ![12 · 二级 OCR 批量维护工作台与三大安全弹窗](images/ui-states/v4-12-ocr-workspace-and-modals.png)
+
+---
+
+## 7. AsterLab UX 契约深度对齐（ADR-016）
+
+围绕任务收敛、可恢复反馈与窄分栏可读性，UI 在现有暖灰体系之上补充了五项可门禁验收的交互约束：
+
+1. **三档圆角与零日志前缀门禁**：全量 `styles.css` 收口至 `--pf-radius-control`（`6px`）/ `--pf-radius-panel`（`10px`）/ `--pf-radius-dialog`（`12px`）三档（零 `5/7/8/9px` 散落字面量），所有界面视图移除 `[!!]` / `[OK]` / `[i]` 工程师前缀。
+2. **全端统一词表**：Companion 模式切换徽章统一使用本地化语义词（`全局` / `单篇` / `集合` / `版本历史`）；Base 表格与 `OcrWorkspaceView` 共用同一套状态词表（`已精读` / `已解析` / `解析中` / `排队中` / `部分解析` / `解析异常` / `未解析` / `无附件`）；高技术字段折叠区统一本地化为 `渲染核查`、`PDF 状态`、`解析状态`、`附件状态`、`笔记路径`。
+3. **行内可恢复报错横幅（`.pf-recovery-banner`）**：遇到库未同步、`.base` 目录缺失、PDF/全文定位失败、同步或版本读取异常时，不再只弹一闪而过的 Toast，而是在 Companion 顶部保留带 **原因说明 + 直达修复/重试按钮** 的持久化恢复条。
+4. **单主 CTA 约束 + 零占位后台活动条（`.pf-global-activity-strip`）**：单一视口只保留一个高亮主按钮；通过 `PaperForgePlugin.getActiveBackgroundTasks()` 聚合后台同步/OCR/向量任务，空闲态 `0px` 不占位，运行态实时显示进度并支持一键 DeepLink 跳转对应文献或 OCR 工作台。
+5. **研究认知记忆 ↔ PDF 原位 DeepLink 与窄分栏响应**：研究记忆正文中的页码引用（如 `[p.3, Sec. 3.1]`、`第 5 页`）自动渲染为可点击 `.pf-memory-deeplink` 芯片，直接定位并滚动内置 `PaperForgePdfView`；PDF 视图在 `<= 680px` 分栏宽度下自动切换 `.is-narrow` 折叠换行，保证工具按钮与全文搜索框不被裁切。

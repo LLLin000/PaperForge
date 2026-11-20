@@ -539,7 +539,33 @@ def main() -> int:
                 if showcase_err:
                     raise RuntimeError(f"Showcase JS error:\n{showcase_err}")
                 if errors:
-                    raise RuntimeError(f"Uncaught page errors:\n" + "\n".join(errors))
+                    raise RuntimeError("Uncaught page errors:\n" + "\n".join(errors))
+
+                dom_audit = page.evaluate(
+                    """() => {
+                      const text = document.body.innerText || "";
+                      const hasLegacyPrefix = text.includes("[!!]") || text.includes("[OK]");
+                      const emptyStrips = Array.from(
+                        document.querySelectorAll(".pf-global-activity-strip")
+                      ).filter((el) => el.children.length === 0);
+                      const zeroIdleOk = emptyStrips.every(
+                        (el) => el.getBoundingClientRect().height === 0
+                      );
+                      const narrowPdf = Array.from(
+                        document.querySelectorAll(".pf-pdf-view.is-narrow .pf-pdf-toolbar")
+                      );
+                      const narrowToolbarOk = narrowPdf.every(
+                        (el) => el.scrollWidth <= el.clientWidth + 2
+                      );
+                      return { hasLegacyPrefix, zeroIdleOk, narrowToolbarOk };
+                    }"""
+                )
+                if dom_audit.get("hasLegacyPrefix"):
+                    raise RuntimeError("Rendered UI leaked [!!] or [OK] log prefixes")
+                if not dom_audit.get("zeroIdleOk", False):
+                    raise RuntimeError("Empty .pf-global-activity-strip did not collapse to 0px")
+                if not dom_audit.get("narrowToolbarOk", False):
+                    raise RuntimeError("Narrow .pf-pdf-view.is-narrow toolbar overflowed horizontally")
 
                 for slug in SCENES:
                     loc = page.locator(f"#scene-{slug}")
