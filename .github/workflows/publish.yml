@@ -11,6 +11,26 @@ on:
     tags:
       # Canonical numeric SemVer tags only. PEP 440 normalization happens in Gate 1.
       - '[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag / SemVer version (e.g. 2.0.0; defaults to paperforge.__version__)"
+        required: false
+        type: string
+      prerelease:
+        description: "GitHub Release channel mode (auto uses tag suffix; true publishes 2.0.0 as Pre-release)"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - "true"
+          - "false"
+      publish_pypi:
+        description: "Also publish Python wheel/sdist to PyPI (optional; GitHub Release .whl is primary)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   publish:
@@ -36,12 +56,20 @@ jobs:
       - name: Version/tag sync check
         id: version_sync
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
         run: |
           set -euo pipefail
-          TAG="$RELEASE_TAG"
           PY_VERSION="$(python -c 'import sys; sys.path.insert(0, "paperforge"); import __init__; print(__init__.__version__)' 2>/dev/null || python -c 'import re; print(re.search(r"__version__ = \"([^\"]+)\"", open("paperforge/__init__.py").read()).group(1))')"
           PLUGIN_VERSION="$(python -c 'import json; print(json.load(open("paperforge/plugin/manifest.json", encoding="utf-8"))["version"])')"
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            TAG="$REF_NAME"
+          else
+            TAG="$PY_VERSION"
+          fi
           python - "$TAG" "$PY_VERSION" "$PLUGIN_VERSION" <<'PY'
           import os
           import re
@@ -79,6 +107,7 @@ jobs:
 
           release_kind = "stable" if phase is None else "prerelease"
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"release_tag={tag}\n")
               output.write(f"release_kind={release_kind}\n")
           print(
               f"validated tag={tag} python={expected_python} "
@@ -163,7 +192,7 @@ jobs:
       - name: Project plugin prerelease metadata
         if: steps.version_sync.outputs.release_kind == 'prerelease'
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ steps.version_sync.outputs.release_tag }}
         run: |
           python - "$RELEASE_TAG" <<'PY'
           import json
@@ -172,7 +201,8 @@ jobs:
 
           tag = sys.argv[1]
           manifest_path = Path("paperforge/plugin/manifest.json")
-          versions_path = Path("paperforge/plugin/versions.json")
+          versions_path = Path("versions.json")
+          plugin_versions_path = Path("paperforge/plugin/versions.json")
 
           manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
           manifest["version"] = tag
@@ -181,18 +211,19 @@ jobs:
               encoding="utf-8",
           )
 
-          versions = json.loads(versions_path.read_text(encoding="utf-8"))
-          versions[tag] = manifest["minAppVersion"]
-          versions_path.write_text(
-              json.dumps(versions, indent=2, ensure_ascii=False) + "\n",
-              encoding="utf-8",
-          )
+          for vp in (versions_path, plugin_versions_path):
+              versions = json.loads(vp.read_text(encoding="utf-8"))
+              versions[tag] = manifest["minAppVersion"]
+              vp.write_text(
+                  json.dumps(versions, indent=2, ensure_ascii=False) + "\n",
+                  encoding="utf-8",
+              )
           print(f"projected plugin metadata version={tag}")
           PY
 
-      # ── Gate 4: PyPI (skip-existing only protects against reruns of the
-      # SAME version — the version/tag gate above prevents stale tags).
-      - name: Publish to PyPI
+      # ── Gate 4: Optional PyPI mirror (opt-in; GitHub Release .whl is primary).
+      - name: Publish to PyPI (optional)
+        if: github.event.inputs.publish_pypi == 'true' || vars.ENABLE_PYPI_PUBLISH == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_TOKEN }}
@@ -201,24 +232,33 @@ jobs:
       # ── Gate 5: ONE GitHub Release with plugin + Python artifacts.
       - name: Determine release type
         id: release_type
+        env:
+          PRE_OVERRIDE: ${{ github.event.inputs.prerelease }}
         run: |
           set -euo pipefail
-          case "${{ steps.version_sync.outputs.release_kind }}" in
-            stable)
-              echo "prerelease=false" >> "$GITHUB_OUTPUT"
-              ;;
-            prerelease)
-              echo "prerelease=true" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "::error::version sync did not produce a valid release kind"
-              exit 1
-              ;;
-          esac
+          if [ "$PRE_OVERRIDE" = "true" ]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          elif [ "$PRE_OVERRIDE" = "false" ]; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ steps.version_sync.outputs.release_kind }}" in
+              stable)
+                echo "prerelease=false" >> "$GITHUB_OUTPUT"
+                ;;
+              prerelease)
+                echo "prerelease=true" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "::error::version sync did not produce a valid release kind"
+                exit 1
+                ;;
+            esac
+          fi
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version_sync.outputs.release_tag }}
         run: |
           set -e
           PRERELEASE="${{ steps.release_type.outputs.prerelease }}"
@@ -226,9 +266,10 @@ jobs:
           if [ "$PRERELEASE" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
           # #120-fix (P1-4): idempotent rerun — a failure after release
           # create must not deadlock the rerun on "release already exists".
-          if ! gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
-            gh release create "${{ github.ref_name }}" \
-              --title "${{ github.ref_name }}" \
+          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --target "${{ github.sha }}" \
+              --title "$RELEASE_TAG" \
               --generate-notes \
               $PRERELEASE_FLAG
           fi
@@ -236,13 +277,13 @@ jobs:
           # after a mid-upload failure must backfill every missing asset,
           # not just the checksum.
           sha256sum paperforge/plugin/main.js paperforge/plugin/styles.css \
-            paperforge/plugin/manifest.json paperforge/plugin/versions.json \
+            paperforge/plugin/manifest.json versions.json \
             dist/*.whl dist/*.tar.gz > checksums.txt
-          gh release upload "${{ github.ref_name }}" --clobber \
+          gh release upload "$RELEASE_TAG" --clobber \
             paperforge/plugin/main.js \
             paperforge/plugin/styles.css \
             paperforge/plugin/manifest.json \
-            paperforge/plugin/versions.json \
+            versions.json \
             dist/*.whl \
             dist/*.tar.gz \
             checksums.txt

@@ -12,6 +12,7 @@ import hmac
 import io
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tarfile
@@ -19,6 +20,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+PAPERFORGE_GITHUB_REPO = "LLLin000/PaperForge"
+PAPERFORGE_RELEASE_MIRROR = "https://ghfast.top"
 UV_VERSION = "0.13.9"
 UV_RELEASE_BASE = f"https://github.com/astral-sh/uv/releases/download/{UV_VERSION}"
 UV_MIRROR_RELEASE_BASES = (
@@ -50,6 +53,82 @@ def uv_cache_dir(runtime_dir: Path) -> Path:
 
 def uv_python_dir(runtime_dir: Path) -> Path:
     return runtime_dir / "python"
+
+
+def uv_wheel_cache_dir(runtime_dir: Path) -> Path:
+    return runtime_dir / "cache" / "wheels"
+
+
+def _candidate_release_tags(norm_ver: str) -> list[str]:
+    tags = [norm_ver]
+    m = re.fullmatch(r"(\d+\.\d+\.\d+)(a|b|rc)(\d+)", norm_ver, re.IGNORECASE)
+    if m:
+        stage_map = {"a": "alpha", "b": "beta", "rc": "rc"}
+        tags.append(f"{m.group(1)}-{stage_map[m.group(2).lower()]}.{int(m.group(3))}")
+    return tags
+
+
+def release_wheel_urls(version: str) -> list[str]:
+    """Return ordered GitHub Release + mirror wheel URLs for *version*."""
+    cleaned = (version or "").strip().lstrip("vV")
+    m = re.fullmatch(
+        r"(\d+(?:\.\d+)*)[-.]?(alpha|beta|rc|a|b)\.?(\d+)(?:\.post(\d+))?",
+        cleaned,
+        re.IGNORECASE,
+    )
+    if m:
+        stage = {"alpha": "a", "a": "a", "beta": "b", "b": "b", "rc": "rc"}[m.group(2).lower()]
+        post = f".post{int(m.group(4))}" if m.group(4) is not None else ""
+        norm_ver = f"{m.group(1)}{stage}{int(m.group(3))}{post}"
+    else:
+        norm_ver = cleaned
+
+    override = os.environ.get("PAPERFORGE_RELEASE_WHEEL_URL", "").strip()
+    if override:
+        return [override]
+
+    wheel_name = f"paperforge-{norm_ver}-py3-none-any.whl"
+    urls: list[str] = []
+    for tag in _candidate_release_tags(norm_ver):
+        direct = f"https://github.com/{PAPERFORGE_GITHUB_REPO}/releases/download/{tag}/{wheel_name}"
+        urls.append(direct)
+        urls.append(f"{PAPERFORGE_RELEASE_MIRROR}/{direct}")
+    return urls
+
+
+def download_release_wheel(version: str, wheel_dir: Path, *, timeout: int = 45) -> Path | None:
+    """Fetch ``paperforge-<ver>-py3-none-any.whl`` directly from GitHub Release into *wheel_dir*.
+
+    Validates zip structure before publishing atomically so ``pip`` / ``uv pip``
+    can resolve PaperForge locally without requiring PyPI uploads.
+    """
+    urls = release_wheel_urls(version)
+    if not urls:
+        return None
+    wheel_name = urls[0].rsplit("/", 1)[-1].split("?", 1)[0]
+    if not wheel_name.endswith(".whl"):
+        return None
+    dest = wheel_dir / wheel_name
+    if dest.is_file() and dest.stat().st_size > 0 and zipfile.is_zipfile(dest):
+        return dest
+
+    wheel_dir.mkdir(parents=True, exist_ok=True)
+    tmp_whl = dest.with_suffix(".whl.tmp")
+    for url in urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "PaperForge-Installer/2.1"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw_bytes = resp.read()
+            if not raw_bytes or not zipfile.is_zipfile(io.BytesIO(raw_bytes)):
+                continue
+            tmp_whl.write_bytes(raw_bytes)
+            os.replace(str(tmp_whl), str(dest))
+            return dest
+        except Exception:  # noqa: BLE001 — fall through to next mirror or PyPI fallback
+            if tmp_whl.exists():
+                tmp_whl.unlink(missing_ok=True)
+            continue
+    return None
 
 
 def managed_uv_path(runtime_dir: Path) -> Path:
@@ -261,14 +340,17 @@ def uv_pip_install(
     *,
     runtime_dir: Path,
     no_deps: bool = False,
+    find_links: Path | None = None,
     run_fn=None,
 ) -> subprocess.CompletedProcess[str]:
     """Install *spec* into *candidate_python* with hardlink cache & CN mirror fallback."""
     runner = run_fn or _run_uv
     uv_cache_dir(runtime_dir).mkdir(parents=True, exist_ok=True)
-    base_cmd = [uv_exe, "pip", "install", "--python", str(candidate_python)]
+    base_cmd = [str(uv_exe), "pip", "install", "--python", str(candidate_python)]
     if no_deps:
         base_cmd.append("--no-deps")
+    if find_links is not None and find_links.is_dir():
+        base_cmd.extend(["--find-links", str(find_links)])
 
     if os.environ.get("PIP_INDEX_URL") or os.environ.get("PIP_FIND_LINKS") or spec.lower().endswith(".whl"):
         return runner([*base_cmd, spec], runtime_dir=runtime_dir, timeout=1800)

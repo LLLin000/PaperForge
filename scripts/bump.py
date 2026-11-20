@@ -28,6 +28,7 @@ FILES_TO_UPDATE = {
 # present, so a bump must add a row here too (reuse the current manifest's
 # minAppVersion until the manifest itself is bumped).
 VERSIONS_JSON = ROOT / "paperforge" / "plugin" / "versions.json"
+ROOT_VERSIONS_JSON = ROOT / "versions.json"
 
 
 def read_current_version() -> str:
@@ -87,17 +88,18 @@ def main():
     import json as _json
 
     manifest = _json.loads(FILES_TO_UPDATE["plugin_manifest"].read_text(encoding="utf-8"))
-    min_app = manifest.get("minAppVersion", "1.0.0")
-    vj = _json.loads(VERSIONS_JSON.read_text(encoding="utf-8"))
-    vj[new_ver] = min_app
-    if args.dry_run:
-        print(f"  WOULD update versions.json: {new_ver} → {min_app}")
-    else:
-        VERSIONS_JSON.write_text(
-            _json.dumps(vj, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        print(f"  versions.json: {new_ver} → {min_app}")
+    min_app = manifest.get("minAppVersion", "1.11.4")
+    for vers_path in (VERSIONS_JSON, ROOT_VERSIONS_JSON):
+        vj = _json.loads(vers_path.read_text(encoding="utf-8")) if vers_path.exists() else {}
+        vj[new_ver] = min_app
+        if args.dry_run:
+            print(f"  WOULD update {vers_path.name}: {new_ver} → {min_app}")
+        else:
+            vers_path.write_text(
+                _json.dumps(vj, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            print(f"  {vers_path.relative_to(ROOT)}: {new_ver} → {min_app}")
 
     if args.dry_run:
         print("\nDry run — no changes made.")
@@ -108,7 +110,10 @@ def main():
         return
 
     # Git add + commit + tag
-    staged = [str(FILES_TO_UPDATE[k]) for k in FILES_TO_UPDATE] + [str(VERSIONS_JSON)]
+    staged = [str(FILES_TO_UPDATE[k]) for k in FILES_TO_UPDATE] + [
+        str(VERSIONS_JSON),
+        str(ROOT_VERSIONS_JSON),
+    ]
     run(["git", "add"] + staged)
     run(["git", "commit", "-m", f"bump: {old_ver} -> {new_ver}"])
 

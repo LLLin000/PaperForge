@@ -119,3 +119,60 @@ def test_pinned_uv_checksums_and_fail_closed_verification(tmp_path: Path, monkey
     resolved = runtime_uv.ensure_uv(tmp_path, allow_download=True)
     assert resolved is not None
     assert Path(resolved).read_bytes() == b"trusted-uv-payload"
+
+
+def test_release_wheel_urls_and_cached_download(tmp_path: Path, monkeypatch) -> None:
+    urls = runtime_uv.release_wheel_urls("2.0.0")
+    assert urls == [
+        "https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl",
+        "https://ghfast.top/https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl",
+    ]
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("paperforge/__init__.py", b'__version__ = "2.0.0"\n')
+    good_whl = buf.getvalue()
+
+    class _Resp:
+        def __init__(self, data: bytes) -> None:
+            self._data = data
+
+        def read(self) -> bytes:
+            return self._data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    responses = [b"<html>not a wheel</html>", good_whl]
+    monkeypatch.setattr(
+        runtime_uv.urllib.request,
+        "urlopen",
+        lambda req, timeout=45: _Resp(responses.pop(0)),
+    )
+    wheel_dir = runtime_uv.uv_wheel_cache_dir(tmp_path)
+    downloaded = runtime_uv.download_release_wheel("2.0.0", wheel_dir)
+    assert downloaded == wheel_dir / "paperforge-2.0.0-py3-none-any.whl"
+    assert downloaded.read_bytes() == good_whl
+
+    recorded_cmds: list[list[str]] = []
+
+    def fake_run(cmd, *, runtime_dir, timeout=1800, extra_env=None):
+        import subprocess
+
+        recorded_cmds.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    res = runtime_uv.uv_pip_install(
+        "uv",
+        tmp_path / "python",
+        "paperforge[vector]==2.0.0",
+        runtime_dir=tmp_path,
+        find_links=wheel_dir,
+        run_fn=fake_run,
+    )
+    assert res.returncode == 0
+    assert "--find-links" in recorded_cmds[0]
+    assert str(wheel_dir) in recorded_cmds[0]

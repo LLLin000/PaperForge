@@ -14,10 +14,10 @@ import tomllib
 
 #: Earliest Python core version the current plugin generation can drive without
 #: forcing a backend reinstall on UI-only plugin patch bumps.
-MIN_ENGINE_VERSION = "2.0.0rc6"
+MIN_ENGINE_VERSION = "2.0.0"
 
 #: Earliest Obsidian plugin version compatible with this Python core.
-MIN_COMPATIBLE_PLUGIN_VERSION = "2.0.0rc6"
+MIN_COMPATIBLE_PLUGIN_VERSION = "2.0.0"
 
 _PRERELEASE_RE = re.compile(
     r"^(\d+(?:\.\d+)*)[-.]?(alpha|beta|rc|a|b)\.?(\d+)(?:\.post(\d+))?$",
