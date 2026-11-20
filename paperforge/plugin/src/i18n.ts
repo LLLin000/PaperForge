@@ -1332,11 +1332,19 @@ const LANG: Record<string, Record<string, string>> = {
     pdf_cleared_ai_notice: "Cleared AI guide annotations",
     pdf_margin_badge: "Margin",
     md_ocr_workspace_advanced: "Advanced Batch Maintenance Workspace",
-    settings_theme_label: "Appearance palette",
+    settings_theme_label: "Appearance & Material",
     settings_theme_desc:
-      "Use the warm-neutral AsterLab palette by default or follow your active Obsidian theme.",
-    settings_theme_asterlab: "AsterLab Warm Neutral (Default)",
-    settings_theme_obsidian: "Follow Obsidian Theme",
+      "Follow your active Obsidian theme and native corner radii by default, or switch to AsterLab Pure / Warm presets.",
+    settings_theme_obsidian:
+      "Follow Obsidian Theme & Native Radii (Recommended)",
+    settings_theme_asterlab: "AsterLab Pure Obsidian (White / Deep Space)",
+    settings_theme_warm: "AsterLab Classic Warm Paper",
+    settings_liquid_glass_label: "Liquid Glass translucency",
+    settings_liquid_glass_desc:
+      "Apply frosted glass translucency on toolbars and popovers (uses smoked dark glass in dark mode).",
+    settings_reduce_motion_label: "Reduce physical motion (Accessibility)",
+    settings_reduce_motion_desc:
+      "Skip spring transitions and tactile press micro-scales.",
   },
   zh: {
     record_save: "保存研究记录",
@@ -2570,11 +2578,18 @@ const LANG: Record<string, Record<string, string>> = {
     pdf_cleared_ai_notice: "已清空 AI 导读标注",
     pdf_margin_badge: "页边定位",
     md_ocr_workspace_advanced: "高级全文批量维护工作台",
-    settings_theme_label: "界面配色",
+    settings_theme_label: "外观与材质",
     settings_theme_desc:
-      "默认使用 AsterLab 暖白 / 暗黑暖灰精密配色，也可选择跟随当前 Obsidian 主题色。",
-    settings_theme_asterlab: "AsterLab 暖白原色（默认）",
-    settings_theme_obsidian: "跟随当前 Obsidian 主题",
+      "默认同步当前 Obsidian 主题色与原生圆角，也可切换为 AsterLab 纯净白纸/深空曜石或经典暖灰色盘。",
+    settings_theme_obsidian: "跟随 Obsidian 主题与原生圆角（推荐）",
+    settings_theme_asterlab: "AsterLab 纯净白纸 · 深空曜石",
+    settings_theme_warm: "AsterLab 经典暖纸色盘",
+    settings_liquid_glass_label: "Liquid Glass 液态玻璃材质",
+    settings_liquid_glass_desc:
+      "为工具栏与悬浮气泡开启半透折射与微光描边；暗黑模式自动切换为烟熏深灰清透层。",
+    settings_reduce_motion_label: "减弱物理动效（无障碍）",
+    settings_reduce_motion_desc:
+      "跳过四档物理弹簧与微缩按压动画，仅保留瞬时状态切换。",
   },
 };
 

@@ -1010,15 +1010,31 @@ export default class PaperForgePlugin extends Plugin {
 
   applyUiThemeMode(): void {
     if (typeof document === "undefined" || !document.body) return;
+    const raw = this.settings?.ui_theme_mode;
     const mode =
-      this.settings?.ui_theme_mode === "obsidian" ? "obsidian" : "asterlab";
+      raw === "asterlab" ? "asterlab" : raw === "warm" ? "warm" : "obsidian";
     document.body.classList.toggle("pf-theme-obsidian", mode === "obsidian");
     document.body.classList.toggle("pf-theme-asterlab", mode === "asterlab");
+    document.body.classList.toggle("pf-theme-warm", mode === "warm");
+    document.body.classList.toggle(
+      "pf-no-glass",
+      this.settings?.ui_liquid_glass === false
+    );
+    document.body.classList.toggle(
+      "pf-reduce-motion",
+      this.settings?.reduce_motion === true
+    );
   }
 
   onunload() {
     if (typeof document !== "undefined" && document.body) {
-      document.body.classList.remove("pf-theme-obsidian", "pf-theme-asterlab");
+      document.body.classList.remove(
+        "pf-theme-obsidian",
+        "pf-theme-asterlab",
+        "pf-theme-warm",
+        "pf-no-glass",
+        "pf-reduce-motion"
+      );
     }
     if (this._pollTimer) clearInterval(this._pollTimer);
     if (this._stateSeqTimer) clearTimeout(this._stateSeqTimer);

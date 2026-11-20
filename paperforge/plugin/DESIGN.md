@@ -145,3 +145,12 @@ Never fail with a fleeting `Notice` alone when user recovery is possible (`Aster
 
 1. **Responsive Split-Pane PDF Toolbar**: When `PaperForgePdfView` sits inside a narrow split pane (`<= 680px`), secondary chrome compacts gracefully so page navigation, zoom, split highlight, and search remain reachable without horizontal clipping.
 2. **Continuous Three-Axis Verification**: `scripts/dev/render_obsidian_ui_docs.py` verifies wide desktop Light, **AsterLab Dark**, **320px narrow Companion sidebar**, and **640px narrow split PDF** layouts with zero uncaught console/page errors.
+
+---
+
+## 11. Obsidian Native Radii Sync, Liquid Glass v2, & Four-Tier Micro-Motions (ADR-017)
+
+1. **Three Theme Presets (`ui_theme_mode`)**: Defaults to `"obsidian"` (live host colors + Obsidian native radii), with `"asterlab"` (AsterLab v2 Pure Obsidian `#ffffff / #111215`, `#6c5ce7 / #a596ff`) and `"warm"` (`#f7f6f3 / #171614`, `#5b45c9`) selectable in Control Center.
+2. **Native Radii Inheritance**: `--pf-radius-control`, `--pf-radius-btn`, `--pf-radius-panel`, and `--pf-radius-dialog` read `--input-radius`, `--button-radius`, `--radius-s/m/l`, and `--modal-radius` with `6 / 10 / 12px` fallbacks.
+3. **Liquid Glass Light vs Dark Clear (No Glass-on-Glass)**: Applied strictly to floating toolbars & popovers (`blur(22px) saturate(185%)` + top specular edge in Light; smoked dark clear `rgba(20, 22, 28, 0.86/0.92)` in Dark; toggleable via `ui_liquid_glass`). Sidebars, Base tables, and Modals remain solid surfaces (Anti-XP-Box).
+4. **Four-Tier Motion + `ReduceMotion`**: `MotionMicro` (`100ms` active `scale(0.97)`), `MotionSnappy` (`160ms` bar entrance & tab lift), `MotionFluid` (`220ms` spring popovers & chevron rotation), and `pf-nudge` (`±5px` validation shake), disabled cleanly via `reduce_motion` (`body.pf-reduce-motion`) or OS `prefers-reduced-motion`.
