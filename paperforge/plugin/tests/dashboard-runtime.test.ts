@@ -587,8 +587,12 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
 
     expect(doctor).toHaveBeenCalledOnce();
     const message = view.containerEl.querySelector(".paperforge-message");
-    expect(message?.textContent).toContain("[!!] Doctor reported issues");
+    expect(message?.textContent).toContain("Doctor reported issues");
     expect(message?.classList.contains("msg-error")).toBe(true);
+    const recovery = view.containerEl.querySelector(
+      '[data-pf-testid="recovery-banner"]'
+    );
+    expect(recovery?.textContent).toContain("Doctor reported issues");
     await view.onClose();
   });
 

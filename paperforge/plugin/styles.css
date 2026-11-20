@@ -532,7 +532,7 @@ body.pf-theme-obsidian {
   font-size: 11px;
   font-weight: var(--font-medium);
   padding: 2px 8px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   background: var(--background-secondary);
   color: var(--text-muted);
   border: 1px solid var(--background-modifier-border);
@@ -671,7 +671,7 @@ body.pf-theme-obsidian {
   font-size: 11px;
   font-weight: var(--font-semibold);
   padding: 3px 10px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   line-height: 1.4;
 }
 
@@ -688,7 +688,7 @@ body.pf-theme-obsidian {
 .paperforge-progress-track {
   display: flex;
   height: 10px;
-  border-radius: 5px;
+  border-radius: var(--pf-radius-control);
   overflow: hidden;
   background: var(--background-modifier-border);
   gap: 2px;
@@ -701,7 +701,7 @@ body.pf-theme-obsidian {
 }
 
 .paperforge-progress-seg:first-child {
-  border-radius: 5px 0 0 5px;
+  border-radius: var(--pf-radius-control) 0 0 var(--pf-radius-control);
 }
 
 .paperforge-progress-seg:last-child {
@@ -709,7 +709,7 @@ body.pf-theme-obsidian {
 }
 
 .paperforge-progress-seg:only-child {
-  border-radius: 5px;
+  border-radius: var(--pf-radius-control);
 }
 .paperforge-progress-seg.pending {
   background: var(--background-modifier-border);
@@ -1216,7 +1216,7 @@ body.pf-theme-obsidian {
 /* ── Skills container ── */
 .paperforge-skills-box {
   background: var(--background-secondary);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   padding: 14px 14px 10px;
   margin: 10px 0 18px;
   border: 1px solid var(--background-modifier-border);
@@ -1271,7 +1271,7 @@ body.pf-theme-obsidian {
   margin: 10px 0;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
   transition: border-color 120ms;
 }
@@ -1737,7 +1737,7 @@ body.pf-theme-obsidian {
   display: flex;
   gap: 4px;
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   overflow: hidden;
   background: var(--background-modifier-border);
 }
@@ -1901,7 +1901,7 @@ body.pf-theme-obsidian {
   font-size: 10px;
   font-weight: var(--font-semibold);
   padding: 2px 8px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   border: 1px solid transparent;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2450,7 +2450,7 @@ body.pf-theme-obsidian {
   align-items: center;
   padding: 10px 16px;
   background: var(--background-secondary);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   min-width: 64px;
   transition:
     border-color 120ms,
@@ -2531,7 +2531,7 @@ body.pf-theme-obsidian {
       var(--text-warning) 18%,
       var(--background-modifier-border)
     );
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   margin: 12px 0;
 }
 .paperforge-issue-list {
@@ -2571,7 +2571,7 @@ body.pf-theme-obsidian {
   text-align: left;
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -2646,7 +2646,7 @@ body.pf-theme-obsidian {
   align-items: center;
   padding: 10px 16px;
   background: var(--background-secondary);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   min-width: 60px;
   transition: border-color 120ms;
   border: 1px solid transparent;
@@ -2692,7 +2692,7 @@ body.pf-theme-obsidian {
 .pf-maint-hero {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   padding: 20px 24px;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.04),
@@ -2748,7 +2748,7 @@ body.pf-theme-obsidian {
 .pf-maint-card {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   padding: 14px 16px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
   transition:
@@ -2899,7 +2899,7 @@ body.pf-theme-obsidian {
   max-height: 60vh;
   overflow-y: auto;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   margin-bottom: 16px;
 }
 .pf-maint-table {
@@ -3007,7 +3007,7 @@ body.pf-theme-obsidian {
   margin-bottom: 12px;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
 }
 .pf-maint-progress .paperforge-progress-track {
   flex: 1;
@@ -3167,7 +3167,7 @@ body.pf-theme-obsidian {
 }
 
 .paperforge-release-card {
-  border-radius: 8px !important;
+  border-radius: var(--pf-radius-panel) !important;
   transition:
     border-color 120ms,
     box-shadow 120ms;
@@ -3194,7 +3194,7 @@ body.pf-theme-obsidian {
 
 /* Clean up desc boxes */
 .paperforge-settings-desc {
-  border-radius: 8px !important;
+  border-radius: var(--pf-radius-panel) !important;
   font-size: 13px !important;
 }
 
@@ -3205,7 +3205,7 @@ body.pf-theme-obsidian {
 
 /* CTA button for install */
 .paperforge-setup-bar {
-  border-radius: 8px !important;
+  border-radius: var(--pf-radius-panel) !important;
 }
 
 .paperforge-setup-label {
@@ -3217,7 +3217,7 @@ body.pf-theme-obsidian {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .paperforge-step-btn {
-  border-radius: 8px !important;
+  border-radius: var(--pf-radius-panel) !important;
 }
 
 .paperforge-contextual-btn-icon {
@@ -3786,7 +3786,7 @@ body.pf-theme-obsidian {
   );
   border: 1px solid
     color-mix(in srgb, var(--interactive-accent) 22%, var(--pf-border));
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   min-width: 0;
   width: 100%;
   max-width: 160px;
@@ -3896,7 +3896,7 @@ body.pf-theme-obsidian {
   );
   border: 1px solid
     color-mix(in srgb, var(--interactive-accent) 22%, var(--pf-border));
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   min-width: 72px;
   flex: 1;
 }
@@ -5266,7 +5266,7 @@ body.pf-theme-obsidian {
   font-size: 11px;
   font-weight: 500;
   padding: 2px 8px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -6388,7 +6388,7 @@ body.pf-theme-obsidian {
   padding: 14px 16px;
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
 }
 .pf-ocr-ws-activity.pf-active,
 .pf-ocr-ws-activity.pf-history {
@@ -6706,7 +6706,7 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-ocr-ws-detail-card {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   padding: 18px;
 }
 .pf-ocr-ws-detail-head {
@@ -7745,7 +7745,7 @@ input.pf-ocr-ws-search-input::placeholder {
   display: inline-block;
   font-size: 10px;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
   color: var(--interactive-accent);
   margin-top: 2px;
@@ -7779,7 +7779,7 @@ input.pf-ocr-ws-search-input::placeholder {
   display: inline-block;
   font-size: 10px;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   background: color-mix(in srgb, var(--text-success) 12%, transparent);
   color: var(--text-success);
   vertical-align: middle;
@@ -8069,7 +8069,7 @@ input.pf-ocr-ws-search-input::placeholder {
   gap: 8px;
   padding: 18px 16px;
   border: 1.5px dashed var(--background-modifier-border-hover);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   text-align: center;
@@ -9087,7 +9087,7 @@ input.pf-ocr-ws-search-input::placeholder {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
+  border-radius: var(--pf-radius-control);
   background: #fde047;
   color: #1c1b19;
   border: 1px solid rgba(28, 27, 25, 0.18);
@@ -9959,7 +9959,7 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-segmented {
   background: var(--pf-rail) !important;
   padding: 3px !important;
-  border-radius: 9px !important;
+  border-radius: var(--pf-radius-panel) !important;
   border: 1px solid var(--pf-border) !important;
   box-shadow: var(--pf-well-inset) !important;
   gap: 2px;
@@ -10516,7 +10516,7 @@ input[type="checkbox"].pf-switch:checked::after {
   height: 30px !important;
   min-height: 30px !important;
   padding: 0 28px 0 10px !important;
-  border-radius: 7px !important;
+  border-radius: var(--pf-radius-control) !important;
   border: 1px solid var(--pf-border-strong) !important;
   background-color: var(--pf-surface) !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%235f5a52' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 4.5L6 2l2.5 2.5M3.5 7.5L6 10l2.5-2.5'/%3E%3C/svg%3E") !important;
@@ -10547,7 +10547,7 @@ input[type="checkbox"].pf-switch:checked::after {
   height: 30px !important;
   min-height: 30px !important;
   padding: 0 10px !important;
-  border-radius: 7px !important;
+  border-radius: var(--pf-radius-control) !important;
   border: 1px solid var(--pf-border) !important;
   background: var(--pf-elevated) !important;
   box-shadow: var(--pf-well-inset) !important;
@@ -10677,7 +10677,7 @@ input[type="checkbox"].pf-switch:checked::after {
   align-items: center;
   gap: 2px;
   padding: 2px 3px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   background: rgba(28, 27, 24, 0.045);
 }
 
@@ -10706,7 +10706,7 @@ input[type="checkbox"].pf-switch:checked::after {
   color: var(--pf-text);
   background: var(--pf-surface) !important;
   border: 1px solid var(--pf-border) !important;
-  border-radius: 5px !important;
+  border-radius: var(--pf-radius-control) !important;
   box-shadow: none !important;
 }
 
@@ -10728,7 +10728,7 @@ input[type="checkbox"].pf-switch:checked::after {
 .pf-pdf-split-highlight {
   display: inline-flex;
   align-items: center;
-  border-radius: 7px;
+  border-radius: var(--pf-radius-control);
   background: rgba(28, 27, 24, 0.045);
   border: 1px solid var(--pf-border);
   overflow: hidden;
@@ -10740,7 +10740,7 @@ input[type="checkbox"].pf-switch:checked::after {
 
 .pf-pdf-search-wrap {
   height: 28px;
-  border-radius: 7px !important;
+  border-radius: var(--pf-radius-control) !important;
   background: rgba(28, 27, 24, 0.045) !important;
   border: 1px solid transparent !important;
   box-shadow: inset 0 1px 1.5px rgba(28, 27, 24, 0.04);
@@ -10762,7 +10762,7 @@ input[type="checkbox"].pf-switch:checked::after {
   align-items: center;
   gap: 2px;
   padding: 2px;
-  border-radius: 7px;
+  border-radius: var(--pf-radius-control);
   background: rgba(28, 27, 24, 0.045);
 }
 
@@ -10795,7 +10795,7 @@ input[type="checkbox"].pf-switch:checked::after {
 .pf-pdf-width-group .pf-pdf-pill-ctrl {
   height: 22px;
   border: none !important;
-  border-radius: 5px;
+  border-radius: var(--pf-radius-control);
   color: var(--pf-text-muted);
 }
 
@@ -10950,7 +10950,7 @@ input[type="checkbox"].pf-switch:checked::after {
   flex-wrap: wrap;
   gap: 2px !important;
   padding: 3px !important;
-  border-radius: 9px;
+  border-radius: var(--pf-radius-panel);
   background: var(--pf-rail);
   border: 1px solid var(--pf-border);
   box-shadow: var(--pf-well-inset);
@@ -11086,7 +11086,7 @@ input[type="checkbox"].pf-switch:checked::after {
 .pf-setup-journey .pf-setup-step {
   text-align: center;
   padding: 5px 8px !important;
-  border-radius: 7px !important;
+  border-radius: var(--pf-radius-control) !important;
   border: 1px solid transparent !important;
   background: transparent !important;
   color: var(--pf-text-muted);
@@ -11180,7 +11180,7 @@ input[type="checkbox"].pf-switch:checked::after {
   background: var(--pf-surface) !important;
   color: var(--pf-text) !important;
   border: 1px solid var(--pf-border-strong) !important;
-  border-radius: 7px !important;
+  border-radius: var(--pf-radius-control) !important;
   box-shadow: var(--pf-btn-lift) !important;
   font-weight: 500;
 }
@@ -11251,7 +11251,7 @@ input[type="checkbox"].pf-switch:checked::after {
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   background: color-mix(in srgb, var(--pf-success) 10%, transparent);
   color: var(--pf-success);
   font-size: 12px;
@@ -11310,7 +11310,7 @@ input[type="checkbox"].pf-switch:checked::after {
 .paperforge-status-panel .paperforge-workflow-funnel {
   background: var(--pf-elevated);
   border: 1px solid var(--pf-border);
-  border-radius: 9px;
+  border-radius: var(--pf-radius-panel);
   padding: 8px 6px;
   gap: 0 !important;
 }
@@ -11358,7 +11358,7 @@ input[type="checkbox"].pf-switch:checked::after {
 }
 
 .pf-base-pdf-btn {
-  border-radius: 5px;
+  border-radius: var(--pf-radius-control);
   transition:
     background-color 120ms var(--pf-ease-out),
     color 120ms var(--pf-ease-out);
@@ -11444,7 +11444,7 @@ input[type="checkbox"].pf-switch:checked::after {
   gap: 1px !important;
   background: var(--pf-border) !important;
   border: 1px solid var(--pf-border) !important;
-  border-radius: 9px !important;
+  border-radius: var(--pf-radius-panel) !important;
   overflow: hidden;
   margin: 12px 0 !important;
 }
@@ -11469,7 +11469,7 @@ input[type="checkbox"].pf-switch:checked::after {
 .pf-vr-content {
   background: var(--pf-elevated) !important;
   border: 1px solid var(--pf-border);
-  border-radius: 8px !important;
+  border-radius: var(--pf-radius-panel) !important;
   padding: 14px 16px !important;
   line-height: 1.65 !important;
 }
@@ -11619,7 +11619,7 @@ input[type="checkbox"].pf-switch:checked::after {
 
 .pf-settings-scope .paperforge-release-card {
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   padding: 12px;
   margin-bottom: 12px;
 }
@@ -11680,7 +11680,7 @@ input[type="checkbox"].pf-switch:checked::after {
 
 .pf-settings-scope .paperforge-migration-warning {
   border: 1px solid var(--text-warning);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   padding: 10px 14px;
   margin-bottom: 12px;
   background: rgba(var(--color-yellow-rgb, 255, 208, 0), 0.08);
@@ -11727,7 +11727,7 @@ input[type="checkbox"].pf-switch:checked::after {
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--pf-border);
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   background: var(--pf-surface);
   flex-wrap: wrap;
 }
@@ -11934,7 +11934,7 @@ input[type="checkbox"].pf-switch:checked::after {
   height: 28px;
   padding: 0 10px 0 28px;
   font-size: 12.5px;
-  border-radius: 7px;
+  border-radius: var(--pf-radius-control);
   border: 1px solid var(--pf-border);
   background: var(--pf-elevated);
   color: var(--pf-text);
@@ -12017,7 +12017,7 @@ input[type="checkbox"].pf-switch:checked::after {
 .paperforge-status-panel .paperforge-next-step-card {
   background: var(--pf-elevated) !important;
   border: 1px solid var(--pf-border) !important;
-  border-radius: 8px !important;
+  border-radius: var(--pf-radius-panel) !important;
   box-shadow: none !important;
   margin: 10px 0 !important;
   padding: 10px 12px !important;
@@ -12055,7 +12055,7 @@ input[type="checkbox"].pf-switch:checked::after {
 
 .paperforge-status-panel .paperforge-search-input-row {
   height: 32px;
-  border-radius: 7px;
+  border-radius: var(--pf-radius-control);
   background: var(--pf-elevated);
   border: 1px solid var(--pf-border);
   box-shadow: var(--pf-well-inset);
@@ -12161,7 +12161,7 @@ input[type="checkbox"].pf-switch:checked::after {
 
 .pf-memory-history-row {
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--pf-radius-panel);
   border: 1px solid var(--pf-border);
   background: var(--pf-surface);
 }
@@ -12180,4 +12180,216 @@ input[type="checkbox"].pf-switch:checked::after {
   line-height: 1.55;
   white-space: pre-wrap;
   color: var(--pf-text);
+}
+
+/* ==========================================================================
+   ADR-016: AsterLab UX Contract Alignment (Activity Strip, Recovery Banner,
+   Memory <-> PDF DeepLinks, & Narrow Split-Pane PDF Responsive Toolbar)
+   ========================================================================== */
+
+/* Zero-idle cross-surface background activity strip */
+.pf-global-activity-strip:empty {
+  display: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.pf-global-activity-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--pf-elevated);
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-activity-strip-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--pf-text);
+}
+
+.pf-activity-strip-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--pf-accent);
+}
+
+.pf-activity-strip-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.pf-activity-strip-count {
+  color: var(--pf-text-muted);
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+
+.pf-activity-strip-link {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--pf-radius-control);
+  border: 1px solid var(--pf-border-strong);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pf-activity-strip-link:hover {
+  border-color: var(--pf-accent);
+  color: var(--pf-accent);
+}
+
+/* Inline recoverable banner (replaces toast-only failures) */
+.pf-recovery-banner-host:empty {
+  display: none;
+}
+
+.pf-recovery-banner-host {
+  padding: 8px 12px 0;
+}
+
+.pf-recovery-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--pf-radius-panel);
+  border: 1px solid color-mix(in srgb, var(--pf-danger) 42%, var(--pf-border));
+  background: color-mix(in srgb, var(--pf-danger) 6%, var(--pf-surface));
+}
+
+.pf-recovery-banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pf-recovery-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-danger);
+  min-width: 0;
+}
+
+.pf-recovery-banner-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--pf-radius-control);
+  background: transparent;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pf-recovery-banner-dismiss:hover {
+  background: var(--pf-hover);
+  color: var(--pf-text);
+}
+
+.pf-recovery-banner-cause {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--pf-text-muted);
+  word-break: break-word;
+}
+
+.pf-recovery-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* Memory <-> PDF inline DeepLink chips */
+.pf-memory-deeplink {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  padding: 0 6px;
+  height: 20px;
+  border-radius: var(--pf-radius-control);
+  border: 1px solid var(--pf-accent-line);
+  background: var(--pf-accent-tint);
+  color: var(--pf-accent);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  vertical-align: baseline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pf-memory-deeplink:hover {
+  background: var(--pf-accent-soft);
+  border-color: var(--pf-accent);
+}
+
+/* Companion single-primary discipline & narrow sidebar wrap safety */
+.paperforge-status-panel .paperforge-global-actions-row,
+.paperforge-status-panel .paperforge-status-strip,
+.paperforge-status-panel .paperforge-status-strip-right {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.paperforge-next-step-trigger.is-primary {
+  background: var(--pf-accent);
+  color: var(--pf-accent-text);
+  border-color: var(--pf-accent);
+}
+
+.paperforge-next-step-trigger.is-primary:hover {
+  background: var(--pf-accent-hover);
+  border-color: var(--pf-accent-hover);
+}
+
+/* Narrow split-pane PDF responsive toolbar (<= 680px) */
+.pf-pdf-view.is-narrow .pf-pdf-toolbar {
+  height: auto !important;
+  min-height: 40px !important;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 6px 10px !important;
+}
+
+.pf-pdf-view.is-narrow .pf-pdf-toolbar-left {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.pf-pdf-view.is-narrow .pf-pdf-toolbar-center {
+  flex: 0 1 auto;
+}
+
+.pf-pdf-view.is-narrow .pf-pdf-toolbar-right {
+  flex: 1 1 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pf-pdf-view.is-narrow .pf-pdf-search-wrap {
+  flex: 1 1 140px;
+  min-width: 120px;
 }

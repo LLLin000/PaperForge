@@ -227,7 +227,7 @@ function makeMemoryCard(populated = true): PaperMemoryCardDto {
         revision: 3,
         updated_at: "2026-11-18T11:15:00Z",
         content:
-          "主线论证“物理场频率窗 → Ca2+ 内流 → ERK1/2-RUNX2 成骨分化” [Sec. 3.1-3.2]；在 15/75/150 Hz 梯度中锁定 75 Hz ± 5 µM 为有效窗口，并通过硝苯地平与 BAPTA-AM 双向阻断验证上游必要性。",
+          "主线论证“物理场频率窗 → Ca2+ 内流 → ERK1/2-RUNX2 成骨分化” [p.3, Sec. 3.1-3.2]；在 15/75/150 Hz 梯度中锁定 75 Hz ± 5 µM 为有效窗口，并通过硝苯地平与 BAPTA-AM 双向阻断验证上游必要性。",
       },
       {
         facet: "methods_params",
@@ -235,7 +235,7 @@ function makeMemoryCard(populated = true): PaperMemoryCardDto {
         revision: 2,
         updated_at: "2026-11-18T10:50:00Z",
         content:
-          "2% 低熔点琼脂糖 3D 支架接种原代细胞；PEMF 75 Hz, 1.8 mT, 2 h/day 连续 14 天；钙成像采样率 2 Hz（峰值出现在 22 min）；抑制剂 Nifedipine 10 µM（提前 30 min 预处理）[Sec. 2.4]。",
+          "2% 低熔点琼脂糖 3D 支架接种原代细胞；PEMF 75 Hz, 1.8 mT, 2 h/day 连续 14 天；钙成像采样率 2 Hz（峰值出现在 22 min）；抑制剂 Nifedipine 10 µM（提前 30 min 预处理）[p.2, Sec. 2.4]。",
       },
       {
         facet: "research_craft",
@@ -243,7 +243,7 @@ function makeMemoryCard(populated = true): PaperMemoryCardDto {
         revision: 1,
         updated_at: "2026-11-18T09:30:00Z",
         content:
-          "采用“场强等能量积分 + 变频率”对照替代固定占空比，排除热效应混杂；线性质混杂模型在附录纳入支架刚度随机截距（ICC=0.04）[Fig. 1, Sec. 4]。",
+          "采用“场强等能量积分 + 变频率”对照替代固定占空比，排除热效应混杂；线性质混杂模型在附录纳入支架刚度随机截距（ICC=0.04）[p.5, Fig. 1]。",
       },
       {
         facet: "critique_limits",
@@ -866,6 +866,18 @@ function makeFakePlugin(
     getClient: () => fakeClient as unknown as ReturnType<never>,
     getBaseSnapshotCache: () => snapshot,
     refreshBaseSnapshot: async () => snapshot,
+    getActiveBackgroundTasks: () =>
+      ocrRunning
+        ? [
+            {
+              kind: "ocr" as const,
+              label: "正在解析全文",
+              current: 2,
+              total: 5,
+              key: "KEY_PROC",
+            },
+          ]
+        : [],
     isOcrRunningForKey: (key: string) => ocrRunning && key === "KEY_PROC",
     openPaperPdf: async () => {},
     requestOcrRun: async () => {},
@@ -1281,6 +1293,19 @@ export async function renderAllScenes(): Promise<void> {
       v._renderModeHeader("global");
       (v as unknown as { _renderBackendBanner: () => void })._renderBackendBanner();
       v._renderGlobalMode();
+      (
+        v as unknown as {
+          _setRecoveryError: (
+            title: string,
+            cause: string,
+            actions: Array<{ label: string; primary?: boolean; run: () => void }>
+          ) => void;
+        }
+      )._setRecoveryError(
+        "未检测到文献库同步源",
+        "Better BibTeX 导出未就绪，请检查目录配置后重试。",
+        [{ label: "重试同步", run: () => {} }]
+      );
     });
     void vErr;
   }
@@ -1566,12 +1591,15 @@ export async function renderAllScenes(): Promise<void> {
       cls: "pf-doc-panel-label",
       text: "A. AsterLab Dark · 原 PDF 变更告警 + 缩略图导航 + AI 导读关闭",
     });
-    const leftMount = leftCard.createDiv();
+    const leftMount = leftCard.createDiv({ cls: "pf-pdf-view is-narrow" });
+    leftMount.style.width = "620px";
+    leftMount.style.maxWidth = "100%";
     const pdfLeft = new PaperForgePdfView(new WorkspaceLeaf(), pluginLeft as never);
     (pdfLeft as unknown as { app: App }).app = appLeft;
     (pdfLeft as unknown as { contentEl: HTMLElement }).contentEl = leftMount;
     (pdfLeft as unknown as { _scale: number })._scale = 0.72;
     await pdfLeft.setState({ paperKey: "KEY_DONE", page: 1 }, { history: false });
+    leftMount.classList.add("is-narrow");
     const aiToggleBtn = leftMount.querySelector(
       '[data-pf-testid="pdf-toggle-ai-layer"]'
     ) as HTMLButtonElement | null;

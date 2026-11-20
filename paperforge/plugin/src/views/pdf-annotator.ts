@@ -175,6 +175,7 @@ export class PaperForgePdfView extends ItemView {
   private _clearAiBtn: HTMLButtonElement | null = null;
   private _fitWidthBtn: HTMLButtonElement | null = null;
   private _toolBtns = new Map<string, HTMLButtonElement>();
+  private _resizeObserver: ResizeObserver | null = null;
   private _stateRef: EventRef | null = null;
   private _loadVersion = 0;
 
@@ -228,10 +229,30 @@ export class PaperForgePdfView extends ItemView {
 
   async onOpen(): Promise<void> {
     this._subscribeStateChanges();
+    this._bindNarrowObserver();
     await this._loadAndRender();
   }
 
+  private _bindNarrowObserver(): void {
+    const updateNarrow = () => {
+      const w = this.contentEl?.clientWidth || 0;
+      if (w > 0) {
+        this.contentEl.classList.toggle("is-narrow", w <= 680);
+      }
+    };
+    updateNarrow();
+    if (typeof ResizeObserver === "function" && this.contentEl) {
+      this._resizeObserver?.disconnect();
+      this._resizeObserver = new ResizeObserver(() => updateNarrow());
+      this._resizeObserver.observe(this.contentEl);
+    }
+  }
+
   async onClose(): Promise<void> {
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
     if (this._stateRef) {
       const ws = this.app?.workspace as unknown as {
         offref?: (ref: EventRef) => void;

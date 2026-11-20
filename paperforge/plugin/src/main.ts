@@ -74,6 +74,14 @@ import {
 } from "./client";
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
+export interface ActiveBackgroundTask {
+  kind: "sync" | "ocr" | "embed";
+  label: string;
+  current?: number;
+  total?: number;
+  key?: string;
+}
+
 export default class PaperForgePlugin extends Plugin {
   /** agent_platform choices from Python's config list (#142) — empty until hydrated. */
   agentPlatformChoices: string[] = [];
@@ -88,6 +96,7 @@ export default class PaperForgePlugin extends Plugin {
   private _embedProcess: unknown = null;
   private _embedProgress = { current: 0, total: 0, key: "" };
   private _embedStderr = "";
+  private _ocrRunning = false;
   _memoryStatusText: string | null = null;
   _ocrProgress = { current: 0, total: 1, key: "" };
   private _settingTab: PaperForgeSettingTab | null = null;
@@ -259,8 +268,10 @@ export default class PaperForgePlugin extends Plugin {
         new Notice(t("ocr_already_running"));
         return;
       }
+      this._ocrRunning = true;
       this._ocrProgress = { current: 0, total: 1, key: "" };
       this._settingTab?.display();
+      this._emitStateChanged();
       void (async () => {
         // Ticket 07 step 3: the shared client owns the OCR run — the same
         // canonical `ocr.run` action, #137 NDJSON progress, availability
@@ -326,10 +337,14 @@ export default class PaperForgePlugin extends Plugin {
             `exit code ${result.exitCode}`;
           new Notice(t("ocr_failed_notice") + ": " + detail, 8000);
         }
+        this._ocrRunning = false;
+        this._emitStateChanged();
         this._settingTab?.display();
         const vaultPath = (this.app.vault.adapter as any).basePath as string;
         this._autoSync(vaultPath);
       })().catch((error: Error) => {
+        this._ocrRunning = false;
+        this._emitStateChanged();
         new Notice(
           t("ocr_failed_notice") +
             ": " +
@@ -525,27 +540,29 @@ export default class PaperForgePlugin extends Plugin {
               return;
             }
             if (a.id === "paperforge-doctor") {
-              new Notice(`PaperForge: running ${a.commandId}...`);
+              new Notice(t("dash_checking") || `Running ${a.commandId}...`);
               const report = await client.doctor();
               const ok = (report as { ok?: boolean })?.ok !== false;
               new Notice(
-                ok ? `[OK] ${a.okMsg}` : "[!!] Doctor reported issues",
+                ok
+                  ? a.okMsg || t("dash_doctor_ok")
+                  : t("dash_doctor_issues") || "Doctor reported issues",
                 ok ? 6000 : 8000
               );
               return;
             }
             if (a.id === "paperforge-repair") {
-              new Notice(`PaperForge: running ${a.commandId}...`);
+              new Notice(t("dash_checking") || `Running ${a.commandId}...`);
               await client.repair();
-              new Notice(`[OK] ${a.okMsg}`);
+              new Notice(a.okMsg || t("dash_repair_ok"));
               this._settingTab?._refreshAllReadModels();
               return;
             }
             // Unknown tool identity — fail closed, never substitute.
-            new Notice(`[!!] Unsupported tool: ${a.id}`, 8000);
+            new Notice(`Unsupported tool: ${a.id}`, 8000);
           } catch (err: any) {
             new Notice(
-              `[!!] ${a.commandId} failed: ${String(err?.message || err).slice(0, 120)}`,
+              `${a.commandId} failed: ${String(err?.message || err).slice(0, 120)}`,
               8000
             );
           }
@@ -683,6 +700,7 @@ export default class PaperForgePlugin extends Plugin {
   private _autoSync(vaultPath: string) {
     if (this._autoSyncRunning) return;
     this._autoSyncRunning = true;
+    this._emitStateChanged();
 
     // Ticket 07 Stage 2 step 1: the convergence tick routes through the
     // shared client — same sync PFResult consumer as Settings/Dashboard.
@@ -721,6 +739,7 @@ export default class PaperForgePlugin extends Plugin {
       } finally {
         this._autoSyncRunning = false;
         this._memoryStatusText = null;
+        this._emitStateChanged();
       }
     })();
   }
@@ -824,6 +843,38 @@ export default class PaperForgePlugin extends Plugin {
 
   getBaseSnapshotCache(): BaseTableSnapshotDto | null {
     return this._baseSnapshotCache ?? null;
+  }
+
+  /** Zero-idle shared background activity projection for Companion / Base UI strips. */
+  getActiveBackgroundTasks(): ActiveBackgroundTask[] {
+    const tasks: ActiveBackgroundTask[] = [];
+    if (this._autoSyncRunning) {
+      tasks.push({
+        kind: "sync",
+        label: t("activity_syncing") || "Syncing library",
+      });
+    }
+    if (this._ocrRunning || this.getClient().isOperationActive()) {
+      const prog = this._ocrProgress;
+      tasks.push({
+        kind: "ocr",
+        label: t("activity_ocr") || "Parsing fulltext",
+        current: prog?.total > 0 ? prog.current : undefined,
+        total: prog?.total > 0 ? prog.total : undefined,
+        key: prog?.key || undefined,
+      });
+    }
+    if (this._embedProcess) {
+      const ep = this._embedProgress;
+      tasks.push({
+        kind: "embed",
+        label: t("activity_embed") || "Building embeddings",
+        current: ep?.total > 0 ? ep.current : undefined,
+        total: ep?.total > 0 ? ep.total : undefined,
+        key: ep?.key || undefined,
+      });
+    }
+    return tasks;
   }
 
   isOcrRunningForKey(key: string): boolean {

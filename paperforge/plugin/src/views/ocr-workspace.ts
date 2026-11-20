@@ -1047,10 +1047,7 @@ export class OcrWorkspaceView extends ItemView {
           () => restoreClient.versionsResetLive(restoreKey)
         ).open();
       } catch (err: any) {
-        new Notice(
-          "[!!] Version history failed: " + (err?.message || err),
-          6000
-        );
+        new Notice("读取版本历史失败：" + (err?.message || err), 6000);
       }
     };
     void (async () => {
@@ -1727,7 +1724,7 @@ export class VersionRestoreModal extends Modal {
       }
       this.onRestored?.();
     } catch (err: any) {
-      new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
+      new Notice("版本恢复失败：" + (err?.message || err), 6000);
     }
   }
 
@@ -1741,7 +1738,7 @@ export class VersionRestoreModal extends Modal {
       this.close();
       this.onRestored?.();
     } catch (err: any) {
-      new Notice("[!!] Reset failed: " + (err?.message || err), 6000);
+      new Notice("重置全文失败：" + (err?.message || err), 6000);
     }
   }
 
