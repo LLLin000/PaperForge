@@ -101,6 +101,13 @@ export class PaperForgeStatusView extends ItemView {
   _headerTitle: HTMLElement | null = null;
   _versionBadge: HTMLElement | null = null;
   _messageEl: HTMLElement | null = null;
+  _activityStripEl: HTMLElement | null = null;
+  _recoveryBannerEl: HTMLElement | null = null;
+  private _recoveryState: {
+    title: string;
+    cause: string;
+    actions: Array<{ label: string; primary?: boolean; run: () => void }>;
+  } | null = null;
   _contentEl!: HTMLElement;
   _modeContextEl!: HTMLElement;
   // ── Search state ──
@@ -344,7 +351,133 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-message",
       attr: { "aria-live": "polite" },
     });
+    this._activityStripEl = root.createEl("div", {
+      cls: "pf-global-activity-strip",
+      attr: { "data-pf-testid": "global-activity-strip" },
+    });
+    this._recoveryBannerEl = root.createEl("div", {
+      cls: "pf-recovery-banner-host",
+      attr: { "data-pf-testid": "recovery-banner-host" },
+    });
+    this._renderGlobalActivityStrip();
+    this._renderRecoveryBanner();
     this._contentEl = root.createEl("div", { cls: "paperforge-content-area" });
+  }
+
+  private _setRecoveryError(
+    title: string,
+    cause: string,
+    actions: Array<{ label: string; primary?: boolean; run: () => void }> = []
+  ): void {
+    this._recoveryState = { title, cause, actions };
+    this._renderRecoveryBanner();
+  }
+
+  private _clearRecoveryError(): void {
+    this._recoveryState = null;
+    this._recoveryBannerEl?.empty();
+  }
+
+  private _renderRecoveryBanner(): void {
+    if (!this._recoveryBannerEl) return;
+    this._recoveryBannerEl.empty();
+    if (!this._recoveryState) return;
+    const { title, cause, actions } = this._recoveryState;
+    const banner = this._recoveryBannerEl.createEl("div", {
+      cls: "pf-recovery-banner",
+      attr: { role: "alert", "data-pf-testid": "recovery-banner" },
+    });
+    const head = banner.createEl("div", { cls: "pf-recovery-banner-head" });
+    head.createEl("span", { cls: "pf-recovery-banner-title", text: title });
+    const dismiss = createPfIconBtn(head, {
+      icon: "x",
+      label: t("dash_recovery_dismiss") || "关闭",
+      size: 13,
+      cls: "pf-recovery-banner-dismiss",
+    });
+    dismiss.addEventListener("click", () => this._clearRecoveryError());
+    if (cause) {
+      banner.createEl("div", {
+        cls: "pf-recovery-banner-cause",
+        text: cause,
+      });
+    }
+    if (actions.length > 0) {
+      const bar = banner.createEl("div", { cls: "pf-recovery-banner-actions" });
+      for (const act of actions) {
+        const btn = bar.createEl("button", {
+          cls: act.primary
+            ? "paperforge-contextual-btn primary"
+            : "paperforge-contextual-btn",
+          type: "button",
+          text: act.label,
+        });
+        btn.addEventListener("click", act.run);
+      }
+    }
+  }
+
+  private _renderGlobalActivityStrip(): void {
+    if (!this._activityStripEl) return;
+    this._activityStripEl.empty();
+    const plugin = (
+      this.app as unknown as {
+        plugins?: {
+          plugins?: Record<
+            string,
+            {
+              getActiveBackgroundTasks?: () => Array<{
+                kind: "sync" | "ocr" | "embed";
+                label: string;
+                current?: number;
+                total?: number;
+                key?: string;
+              }>;
+              openPaperPdf?: (key: string) => Promise<void>;
+              openOcrDiagnostic?: (key?: string) => void;
+            }
+          >;
+        };
+      }
+    )?.plugins?.plugins?.["paperforge"];
+    const tasks = plugin?.getActiveBackgroundTasks?.() ?? [];
+    if (!tasks.length) return;
+    for (const task of tasks) {
+      const row = this._activityStripEl.createEl("div", {
+        cls: "pf-activity-strip-item",
+        attr: { "data-activity-kind": task.kind },
+      });
+      row.createEl("span", { cls: "pf-activity-strip-dot" });
+      row.createEl("span", {
+        cls: "pf-activity-strip-label",
+        text: task.label,
+      });
+      if (
+        typeof task.current === "number" &&
+        typeof task.total === "number" &&
+        task.total > 0
+      ) {
+        row.createEl("span", {
+          cls: "pf-activity-strip-count pf-tnum",
+          text: `${task.current}/${task.total}`,
+        });
+      }
+      if (task.key) {
+        const jumpBtn = row.createEl("button", {
+          cls: "pf-activity-strip-link",
+          type: "button",
+          text: t("activity_jump") || "查看",
+          attr: { "data-pf-testid": `activity-jump-${task.kind}` },
+        });
+        jumpBtn.addEventListener("click", () => {
+          if (task.kind === "ocr" && plugin?.openOcrDiagnostic) {
+            plugin.openOcrDiagnostic(task.key);
+          } else if (task.key && plugin?.openPaperPdf) {
+            void plugin.openPaperPdf(task.key);
+          }
+        });
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------- */
@@ -905,7 +1038,9 @@ export class PaperForgeStatusView extends ItemView {
       statusGrid,
       t("dash_row_index"),
       indexOk ? "healthy" : "missing",
-      indexOk ? indexItems.length + " entries" : t("dash_index_not_loaded")
+      indexOk
+        ? `${indexItems.length} ${t("dash_papers")}`
+        : t("dash_index_not_loaded")
     );
     // Export health is Python's check_permissions().can_sync — the
     // host-local filesystem scan (Semantic Fact) is retired (#TB-2).
@@ -924,7 +1059,7 @@ export class PaperForgeStatusView extends ItemView {
       statusGrid,
       t("dash_row_ocr_token"),
       "checking",
-      "Checking…"
+      t("dash_checking") || "Checking…"
     );
     void this._getClient()
       ?.credentialAvailable("ocr")
@@ -1023,8 +1158,11 @@ export class PaperForgeStatusView extends ItemView {
     const btnsRow = actionsRow.createEl("div", {
       cls: "paperforge-global-actions-row",
     });
+    const setupBannerPrimary = this._backendUnavailable || !this._getClient();
     const hubBtn = btnsRow.createEl("button", {
-      cls: "paperforge-contextual-btn primary",
+      cls: setupBannerPrimary
+        ? "paperforge-contextual-btn"
+        : "paperforge-contextual-btn primary",
     });
     const hubIcon = hubBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
@@ -1044,11 +1182,47 @@ export class PaperForgeStatusView extends ItemView {
         if (baseFile) {
           const leaf = this.app.workspace.getLeaf(false);
           if (leaf) leaf.openFile(baseFile);
+          this._clearRecoveryError();
         } else {
-          new Notice("[!!] No .base file found in " + baseDir, 6000);
+          this._setRecoveryError(
+            t("dash_base_missing") || "Literature Hub .base file not found",
+            baseDir,
+            [
+              {
+                label: t("dash_sync_library"),
+                primary: true,
+                run: () => void this._runLibrarySync(),
+              },
+              {
+                label: t("dash_recovery_open_settings") || "打开设置",
+                run: () => {
+                  const setting = (
+                    this.app as unknown as {
+                      setting?: {
+                        open?: () => void;
+                        openTabById?: (id: string) => void;
+                      };
+                    }
+                  )?.setting;
+                  setting?.openTabById?.("paperforge");
+                  setting?.open?.();
+                },
+              },
+            ]
+          );
         }
       } else {
-        new Notice("[!!] Base directory not found: " + baseDir, 6000);
+        this._setRecoveryError(
+          t("dash_base_missing") || "Base directory not found",
+          baseDir,
+          [
+            {
+              label: t("dash_sync_library"),
+              primary: true,
+              run: () => void this._runLibrarySync(),
+            },
+          ]
+        );
       }
     });
     const globalSyncBtn = btnsRow.createEl("button", {
@@ -1270,7 +1444,17 @@ export class PaperForgeStatusView extends ItemView {
             this.app.workspace.openLinkText(targetPath, "");
             return;
           }
-          new Notice("[!!] PDF not found: " + targetPath, 6000);
+          this._setRecoveryError(
+            t("dash_pdf_missing") || "PDF not found",
+            targetPath,
+            [
+              {
+                label: t("dash_sync_library"),
+                primary: true,
+                run: () => void this._runLibrarySync(),
+              },
+            ]
+          );
           return;
         }
         // F-14: a plain path is already absolute (OS path) OR a vault-relative
@@ -1280,7 +1464,17 @@ export class PaperForgeStatusView extends ItemView {
           if (typeof openPdf === "function") {
             openPdf.call(Platform, targetPath);
           } else {
-            new Notice("[!!] PDF not found: " + targetPath, 6000);
+            this._setRecoveryError(
+              t("dash_pdf_missing") || "PDF not found",
+              targetPath,
+              [
+                {
+                  label: t("dash_sync_library"),
+                  primary: true,
+                  run: () => void this._runLibrarySync(),
+                },
+              ]
+            );
           }
           return;
         }
@@ -1292,7 +1486,17 @@ export class PaperForgeStatusView extends ItemView {
         if (base && typeof openPdf === "function") {
           openPdf.call(Platform, path.join(base, targetPath));
         } else {
-          new Notice("[!!] PDF not found: " + targetPath, 6000);
+          this._setRecoveryError(
+            t("dash_pdf_missing") || "PDF not found",
+            targetPath,
+            [
+              {
+                label: t("dash_sync_library"),
+                primary: true,
+                run: () => void this._runLibrarySync(),
+              },
+            ]
+          );
         }
       });
       if (noteLink) {
@@ -1358,9 +1562,16 @@ export class PaperForgeStatusView extends ItemView {
             ).open();
           }
         } catch (err: any) {
-          new Notice(
-            "[!!] Version history failed: " + (err?.message || err),
-            6000
+          this._setRecoveryError(
+            t("version_error_read") || "无法读取版本历史",
+            err?.message || String(err),
+            [
+              {
+                label: t("dash_recovery_retry") || "重试",
+                primary: true,
+                run: () => verBtn.click(),
+              },
+            ]
           );
         }
       })();
@@ -1527,8 +1738,8 @@ export class PaperForgeStatusView extends ItemView {
         }
         const fBody = item.createEl("div", {
           cls: "pf-living-memory-facet-body",
-          text: f.content,
         });
+        this._renderLivingMemoryTextWithDeepLinks(fBody, f.content, activeKey);
         if (canEdit) {
           const actions = metaWrap.createEl("div", {
             cls: "pf-living-memory-actions",
@@ -1752,10 +1963,73 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  /* ── Render Living Memory prose with interactive PDF page DeepLinks ── */
+  private _renderLivingMemoryTextWithDeepLinks(
+    container: HTMLElement,
+    text: string,
+    paperKey: string
+  ): void {
+    container.empty();
+    const raw = String(text || "");
+    if (!raw) return;
+    // Match page citations like [p.4], [p.4, Sec. 3.2], (p. 12), or 第 3 页
+    const re =
+      /(\[[^\]]*?\bp\.\s*(\d+)[^\]]*\]|\bp\.\s*(\d+)\b|第\s*(\d+)\s*页)/gi;
+    let cursor = 0;
+    let match: RegExpExecArray | null;
+    const pfPlugin = (
+      this.app as unknown as {
+        plugins?: {
+          plugins?: Record<
+            string,
+            {
+              openPaperPdf?: (
+                key: string,
+                opts?: { page?: number; annId?: string }
+              ) => Promise<void>;
+            }
+          >;
+        };
+      }
+    )?.plugins?.plugins?.["paperforge"];
+    while ((match = re.exec(raw)) !== null) {
+      if (match.index > cursor) {
+        container.appendChild(
+          container.ownerDocument.createTextNode(raw.slice(cursor, match.index))
+        );
+      }
+      const pageNum = Number(match[2] || match[3] || match[4] || 0);
+      if (pageNum > 0 && paperKey) {
+        const chip = container.createEl("button", {
+          cls: "pf-memory-deeplink pf-tnum",
+          type: "button",
+          text: match[1],
+          attr: {
+            "data-pf-testid": `memory-deeplink-p${pageNum}`,
+            "data-page": String(pageNum),
+            title: `跳转 PDF 第 ${pageNum} 页`,
+          },
+        });
+        chip.addEventListener("click", () => {
+          void pfPlugin?.openPaperPdf?.(paperKey, { page: pageNum });
+        });
+      } else {
+        container.appendChild(container.ownerDocument.createTextNode(match[1]));
+      }
+      cursor = match.index + match[0].length;
+    }
+    if (cursor < raw.length) {
+      container.appendChild(
+        container.ownerDocument.createTextNode(raw.slice(cursor))
+      );
+    }
+  }
+
   /* ── Extract overview from formal note body ── */
   _extractOverviewFromNote(content: string): string | null {
     if (!content) return null;
-    const deepIdx = content.indexOf("## \uD83D\uDD0D \u7CBE\u8BFB");
+    let deepIdx = content.indexOf("## \uD83D\uDD0D \u7CBE\u8BFB");
+    if (deepIdx === -1) deepIdx = content.indexOf("## \u7CBE\u8BFB");
     if (deepIdx === -1) return null;
     const section = content.slice(deepIdx);
     const markers = [
@@ -1983,7 +2257,29 @@ export class PaperForgeStatusView extends ItemView {
         const newVal = cb.checked;
         const client = this._getClient();
         if (!client) {
-          new Notice("[!!] PaperForge backend unavailable", 6000);
+          this._setRecoveryError(
+            t("dash_backend_unavailable") || "后端不可用",
+            t("backend_missing_body") || "",
+            [
+              {
+                label: t("backend_missing_btn") || "打开设置",
+                primary: true,
+                run: () => {
+                  const pf = (
+                    this.app as unknown as {
+                      plugins?: {
+                        plugins?: Record<
+                          string,
+                          { openSetupJourney?: () => boolean }
+                        >;
+                      };
+                    }
+                  )?.plugins?.plugins?.["paperforge"];
+                  pf?.openSetupJourney?.();
+                },
+              },
+            ]
+          );
           cb.checked = !newVal;
           return;
         }
@@ -1996,6 +2292,7 @@ export class PaperForgeStatusView extends ItemView {
             tf.key as "do_ocr" | "analyze",
             newVal
           );
+          this._clearRecoveryError();
           this._patchCachedEntry(key!, { [tf.key]: newVal });
           this._currentPaperEntry = patchEntryWorkflowState(
             this._currentPaperEntry,
@@ -2004,18 +2301,45 @@ export class PaperForgeStatusView extends ItemView {
         } catch (err: any) {
           // fail closed: revert the checkbox, never leave a lying UI state
           cb.checked = !newVal;
-          new Notice("[!!] Flag update failed: " + (err?.message || err), 6000);
+          this._setRecoveryError("状态更新失败", err?.message || String(err), [
+            {
+              label: t("dash_recovery_retry") || "重试",
+              primary: true,
+              run: () => {
+                cb.checked = newVal;
+                cb.dispatchEvent(new Event("change"));
+              },
+            },
+          ]);
         }
       });
     }
     const health = entry.health || {};
+    const statusMap: Record<string, string> = {
+      done: t("ocr_ws_status_done") || "已解析",
+      processing: t("ocr_ws_status_processing") || "解析中",
+      queued: "排队中",
+      failed: t("ocr_ws_status_failed") || "解析异常",
+      done_incomplete: t("ocr_ws_status_incomplete") || "部分解析",
+      done_degraded: t("ocr_ws_status_degraded") || "部分解析",
+      nopdf: t("ocr_ws_status_nopdf") || "无附件",
+      pending: t("ocr_ws_status_pending") || "未解析",
+    };
+    const localizedOcrStatus =
+      (entry.ocr_status && statusMap[String(entry.ocr_status)]) ||
+      entry.ocr_status ||
+      "\u2014";
+    const notePathLabel = t("dash_tech_note_path") || "笔记路径";
     const rows = [
-      ["PDF Health", health.pdf_health || "\u2014"],
-      ["OCR Status", entry.ocr_status || "\u2014"],
-      ["Asset Health", health.asset_health || "\u2014"],
-      ["Note Path", entry.note_path || "\u2014"],
+      [t("dash_tech_pdf_status") || "PDF 状态", health.pdf_health || "\u2014"],
+      [t("dash_tech_ocr_status") || "解析状态", localizedOcrStatus],
+      [
+        t("dash_tech_asset_status") || "附件状态",
+        health.asset_health || "\u2014",
+      ],
+      [notePathLabel, entry.note_path || "\u2014"],
     ];
-    const copyableLabels = new Set(["Note Path", "Key"]);
+    const copyableLabels = new Set([notePathLabel, "Note Path", "Key"]);
     for (const [l, v] of rows) {
       const row = body.createEl("div", { cls: "paperforge-technical-row" });
       row.createEl("span", { cls: "paperforge-technical-label", text: l });
@@ -2027,7 +2351,7 @@ export class PaperForgeStatusView extends ItemView {
         valEl.addClass("pf-copy");
         valEl.addEventListener("click", () => {
           navigator.clipboard.writeText(v);
-          new Notice(l + " copied");
+          new Notice(`${l} ${t("dash_copied") || "copied"}`);
         });
       }
     }
@@ -2054,12 +2378,13 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-quality-body",
     });
     qualityBody.style.display = "none";
-    toggle.setText("Render Quality \u25B8");
+    const qualityTitle = t("dash_tech_render_audit") || "渲染核查";
+    toggle.setText(`${qualityTitle} \u25B8`);
     toggle.addEventListener("click", () => {
       const visible = qualityBody.style.display !== "none";
       qualityBody.style.display = visible ? "none" : "block";
       toggle.setText(
-        visible ? "Render Quality \u25B8" : "Render Quality \u25BE"
+        visible ? `${qualityTitle} \u25B8` : `${qualityTitle} \u25BE`
       );
       if (!visible && !qualityBody.dataset.loaded) {
         void this._loadQualitySection(qualityBody, key);
@@ -2089,7 +2414,9 @@ export class PaperForgeStatusView extends ItemView {
       const papers = (audit?.papers ?? []) as Array<Record<string, unknown>>;
       const paper = papers.find((p) => p["paper_key"] === key);
       const state = String(audit?.state ?? "UNKNOWN");
-      status.setText(`Render consistency: ${state}`);
+      status.setText(
+        `${t("dash_render_consistency") || "Render consistency"}: ${state}`
+      );
       status.setAttr(
         "class",
         state === "CLEAN" ? "pf-status-ok" : "pf-status-warn"
@@ -2397,37 +2724,37 @@ export class PaperForgeStatusView extends ItemView {
       { label: string; text: string; actionId: string | null; icon: PfIconName }
     > = {
       sync: {
-        label: "Sync Needed",
+        label: t("dash_action_sync") || "同步文献库",
         text: t("dash_next_sync"),
         actionId: "paperforge-sync",
         icon: "refresh-cw",
       },
       ocr: {
-        label: "OCR Needed",
+        label: t("dash_action_ocr") || "解析全文",
         text: t("dash_next_ocr"),
         actionId: "paperforge-ocr",
         icon: "file-text",
       },
       repair: {
-        label: "Repair Needed",
+        label: t("dash_action_repair") || "修复问题",
         text: t("dash_next_repair"),
         actionId: "paperforge-repair",
         icon: "wrench",
       },
       "rebuild index": {
-        label: "Rebuild Needed",
+        label: t("dash_action_resync") || "重建索引",
         text: t("dash_next_resync"),
         actionId: "paperforge-sync",
         icon: "refresh-cw",
       },
       "/pf-deep": {
-        label: "Ready for Deep Reading",
+        label: t("dash_action_deep") || "可开始精读",
         text: t("dash_next_deep"),
         actionId: null,
         icon: "book-open",
       },
       ready: {
-        label: "All Set",
+        label: t("dash_action_done") || "已就绪",
         text: t("dash_next_done"),
         actionId: "ready",
         icon: "check",
@@ -2445,7 +2772,9 @@ export class PaperForgeStatusView extends ItemView {
     card.createEl("div", { cls: "paperforge-next-step-text", text: info.text });
     if (info.actionId && info.actionId !== "ready") {
       const trigger = card.createEl("button", {
-        cls: "paperforge-next-step-trigger",
+        cls: entry.pdf_path
+          ? "paperforge-next-step-trigger"
+          : "paperforge-next-step-trigger is-primary",
       });
       const iconSpan = trigger.createEl("span", {
         cls: "paperforge-contextual-btn-icon",
@@ -2478,10 +2807,14 @@ export class PaperForgeStatusView extends ItemView {
           .then(() => {
             setPfIcon(iconSpan, "check", 14);
             labelSpan.setText(t("copied"));
-            new Notice(fullCmd + " copied");
+            new Notice(`${fullCmd} ${t("dash_copied") || "copied"}`);
           })
           .catch(() => {
-            new Notice("[!!] Clipboard write failed", 6000);
+            this._setRecoveryError(
+              "剪贴板写入失败",
+              "请手动复制命令：" + fullCmd,
+              []
+            );
           });
       });
       const platformKey =
@@ -2517,14 +2850,38 @@ export class PaperForgeStatusView extends ItemView {
   /* ── Open Fulltext File in Obsidian (D-12) ── */
   _openFulltext(fulltextPath: string) {
     if (!fulltextPath) {
-      new Notice("[!!] No fulltext path available for this paper", 6000);
+      this._setRecoveryError(
+        t("dash_fulltext_missing") || "未找到全文文件",
+        t("dash_next_ocr") || "",
+        [
+          {
+            label: t("dash_action_ocr") || "解析全文",
+            primary: true,
+            run: () => {
+              const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
+              if (action) this._runAction(action, this._contentEl);
+            },
+          },
+        ]
+      );
       return;
     }
     const file = this.app.vault.getAbstractFileByPath(fulltextPath);
     if (file) {
+      this._clearRecoveryError();
       this.app.workspace.openLinkText(file.path, "");
     } else {
-      new Notice("[!!] Fulltext file not found: " + fulltextPath, 6000);
+      this._setRecoveryError(
+        t("dash_fulltext_missing") || "未找到全文文件",
+        fulltextPath,
+        [
+          {
+            label: t("dash_sync_library"),
+            primary: true,
+            run: () => void this._runLibrarySync(),
+          },
+        ]
+      );
     }
   }
 
@@ -2581,22 +2938,56 @@ export class PaperForgeStatusView extends ItemView {
         await leaf.openFile(file);
         await this.app.workspace.revealLeaf(leaf);
         this.app.workspace.setActiveLeaf(leaf, { focus: true });
+        this._clearRecoveryError();
       } catch {
-        new Notice("[!!] Failed to open note: " + notePath, 6000);
+        this._setRecoveryError(
+          t("paper_note_missing") || "无法打开文献笔记",
+          notePath,
+          [
+            {
+              label: t("dash_recovery_retry") || "重试",
+              primary: true,
+              run: () => void this._openSearchResult(notePath, newLeaf),
+            },
+          ]
+        );
       }
       return;
     }
     try {
       if (await this.app.vault.adapter.exists(notePath)) {
-        new Notice(
-          "[!!] Note exists but Obsidian has not indexed it yet. Reopen the vault and retry.",
-          6000
-        );
+        this._setRecoveryError("笔记尚未被 Obsidian 索引", notePath, [
+          {
+            label: t("dash_recovery_retry") || "重试",
+            primary: true,
+            run: () => void this._openSearchResult(notePath, newLeaf),
+          },
+        ]);
         return;
       }
-      new Notice(t("paper_note_missing") + ": " + notePath, 6000);
+      this._setRecoveryError(
+        t("paper_note_missing") || "笔记文件不存在",
+        notePath,
+        [
+          {
+            label: t("dash_sync_library"),
+            primary: true,
+            run: () => void this._runLibrarySync(),
+          },
+        ]
+      );
     } catch {
-      new Notice("[!!] Failed to open note: " + notePath, 6000);
+      this._setRecoveryError(
+        t("paper_note_missing") || "无法打开文献笔记",
+        notePath,
+        [
+          {
+            label: t("dash_recovery_retry") || "重试",
+            primary: true,
+            run: () => void this._openSearchResult(notePath, newLeaf),
+          },
+        ]
+      );
     }
   }
 
@@ -2630,7 +3021,17 @@ export class PaperForgeStatusView extends ItemView {
       await this._openSearchResult(resolvedPath, newLeaf);
       return;
     }
-    new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
+    this._setRecoveryError(
+      t("paper_note_missing") || "未找到文献笔记",
+      zoteroKey || "unknown",
+      [
+        {
+          label: t("dash_sync_library"),
+          primary: true,
+          run: () => void this._runLibrarySync(),
+        },
+      ]
+    );
   }
 
   /* ── Collection Mode Render: Batch Workflow Workspace ── */
@@ -2850,7 +3251,17 @@ export class PaperForgeStatusView extends ItemView {
       this._versionPapers = await client.versionsList();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      new Notice(`[!!] Version list failed: ${msg}`, 6000);
+      this._setRecoveryError(
+        t("version_error_read") || "无法读取版本列表",
+        msg,
+        [
+          {
+            label: t("dash_recovery_retry") || "重试",
+            primary: true,
+            run: () => void this._switchToVersionMode(paperKey),
+          },
+        ]
+      );
       this._versionPapers = [];
       // F-7 deferred: version-list failures don't flip _backendUnavailable.
       // That's a false long-lived-error class #244 targeted.
@@ -3103,7 +3514,11 @@ export class PaperForgeStatusView extends ItemView {
                 }
               }
             } catch (err: any) {
-              new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
+              this._setRecoveryError(
+                "版本恢复失败",
+                err?.message || String(err),
+                []
+              );
             }
           })();
         });
@@ -3150,7 +3565,7 @@ export class PaperForgeStatusView extends ItemView {
           : "";
         diffs = diffFulltext(textA, textB);
       } catch (err: any) {
-        new Notice("[!!] Compare failed: " + (err?.message || err), 6000);
+        this._setRecoveryError("版本对比失败", err?.message || String(err), []);
         return;
       }
       compareArea.style.display = "block";
@@ -3635,12 +4050,24 @@ export class PaperForgeStatusView extends ItemView {
             .then((r) => {
               const ok = (r as { ok?: boolean })?.ok !== false;
               new Notice(
-                ok ? "[OK] Doctor complete" : "[!!] Doctor reported issues",
+                ok
+                  ? t("dash_doctor_ok") || "Doctor complete"
+                  : t("dash_doctor_issues") || "Doctor reported issues",
                 6000
               );
             })
             .catch((err: Error) => {
-              new Notice("[!!] Doctor failed: " + err.message, 8000);
+              this._setRecoveryError(
+                t("dash_doctor_issues") || "环境检查失败",
+                err.message,
+                [
+                  {
+                    label: t("dash_recovery_retry") || "重试",
+                    primary: true,
+                    run: () => doctorBtn.click(),
+                  },
+                ]
+              );
             });
         });
         const retryBtn = actions.createEl("button", {
@@ -4131,20 +4558,26 @@ export class PaperForgeStatusView extends ItemView {
     if (this._librarySyncRunning) return;
     const client = this._getClient();
     if (!client) {
-      new Notice("[!!] PaperForge backend unavailable", 6000);
+      this._setRecoveryError(
+        t("dash_backend_unavailable") || "PaperForge Core 不可用",
+        t("backend_missing_body") || "",
+        []
+      );
       return;
     }
     const vp = (this.app.vault.adapter as unknown as { basePath?: string })
       .basePath;
     this._librarySyncRunning = true;
-    this._showMessage("Syncing library...", "running");
+    this._renderGlobalActivityStrip();
+    this._showMessage(t("activity_syncing") || "Syncing library...", "running");
     let exitOk = false;
     try {
       const result = await client.sync();
       exitOk = result?.ok !== false;
       if (exitOk) {
-        this._showMessage("[OK] Sync Library: complete", "ok");
-        new Notice("Sync complete");
+        this._clearRecoveryError();
+        this._showMessage(t("dash_sync_complete") || "Sync complete", "ok");
+        new Notice(t("dash_sync_complete") || "Sync complete");
         // Corrective (final P1-A): JSON-mode sync attaches the next_action
         // intents and NEVER executes them. Dashboard must consume the SAME
         // sync-result consumer as Settings so automatic-local follow-ups
@@ -4153,15 +4586,30 @@ export class PaperForgeStatusView extends ItemView {
           runAction: (req) => client.runAction(req),
         });
       } else {
-        this._showMessage("[!!] Sync failed", "error");
-        new Notice("[!!] Sync Library failed", 8000);
+        const failTitle = t("dash_sync_failed") || "Sync failed";
+        this._showMessage(failTitle, "error");
+        this._setRecoveryError(failTitle, t("dash_cli_unreachable") || "", [
+          {
+            label: t("dash_recovery_retry") || "重试",
+            primary: true,
+            run: () => void this._runLibrarySync(),
+          },
+        ]);
       }
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : String(err);
-      this._showMessage("[!!] " + detail, "error");
-      new Notice("[!!] Sync failed: " + detail, 8000);
+      const failTitle = t("dash_sync_failed") || "Sync failed";
+      this._showMessage(detail, "error");
+      this._setRecoveryError(failTitle, detail, [
+        {
+          label: t("dash_recovery_retry") || "重试",
+          primary: true,
+          run: () => void this._runLibrarySync(),
+        },
+      ]);
     } finally {
       this._librarySyncRunning = false;
+      this._renderGlobalActivityStrip();
       // Committed mutation → refresh the read model and re-check orphans
       // through the shared client (same behavior as the legacy sync path).
       this._cachedStats = null;
@@ -4191,10 +4639,7 @@ export class PaperForgeStatusView extends ItemView {
    * (#99) and never dispatches. */
   async _runAction(a: any, card: HTMLElement) {
     if (a.disabled) {
-      new Notice(
-        `[i] ${a.disabledMsg || "This action is not yet available."}`,
-        6000
-      );
+      new Notice(a.disabledMsg || "This action is not yet available.", 6000);
       return;
     }
     if (a.id === "paperforge-ocr") {
@@ -4238,10 +4683,26 @@ export class PaperForgeStatusView extends ItemView {
         const report = await this._getClient()!.doctor();
         const ok = (report as { ok?: boolean })?.ok !== false;
         const message = ok
-          ? "[OK] " + (a.okMsg || "Doctor complete")
-          : "[!!] Doctor reported issues";
+          ? a.okMsg || t("dash_doctor_ok") || "Doctor complete"
+          : t("dash_doctor_issues") || "Doctor reported issues";
         settle(message, ok ? "ok" : "error");
-        new Notice(message, ok ? 6000 : 8000);
+        if (!ok) {
+          this._setRecoveryError(message, t("dash_cli_unreachable") || "", [
+            {
+              label: t("dash_repair_issues") || "修复问题",
+              primary: true,
+              run: () => {
+                const repairAct = ACTIONS.find(
+                  (act) => act.id === "paperforge-repair"
+                );
+                if (repairAct) void this._runAction(repairAct, card);
+              },
+            },
+          ]);
+        } else {
+          this._clearRecoveryError();
+          new Notice(message, 6000);
+        }
         // Recovery path: fresh read model + re-render (works even when the
         // initial load failed — _invalidateIndex no longer skips a null cache).
         await this._invalidateIndex();
@@ -4250,29 +4711,33 @@ export class PaperForgeStatusView extends ItemView {
       }
       if (a.id === "paperforge-repair") {
         await this._getClient()!.repair();
-        settle("[OK] " + (a.okMsg || "Repair complete"), "ok");
-        new Notice("[OK] " + (a.okMsg || "Repair complete"));
+        const okMsg = a.okMsg || t("dash_repair_ok") || "Repair complete";
+        this._clearRecoveryError();
+        settle(okMsg, "ok");
+        new Notice(okMsg);
         await this._invalidateIndex();
         await this._refreshCurrentMode();
         return;
       }
       // Unknown/unsupported tool identity — fail closed, never substitute.
-      settle(
-        "[!!] No client route for " + (a.id || a.commandId || "unknown"),
-        "error"
-      );
-      new Notice(
-        "[!!] Unsupported tool: " + (a.id || a.commandId || "unknown"),
-        8000
-      );
+      const unknownMsg =
+        "No client route for " + (a.id || a.commandId || "unknown");
+      settle(unknownMsg, "error");
+      this._setRecoveryError("未支持的操作", unknownMsg, []);
     } catch (err: any) {
-      settle(
-        "[!!] " + (a.commandId || a.id) + " failed: " + (err?.message || err),
-        "error"
-      );
-      new Notice(
-        "[!!] " + (a.commandId || a.id) + " failed: " + (err?.message || err),
-        8000
+      const failMsg =
+        (a.commandId || a.id) + " failed: " + (err?.message || err);
+      settle(failMsg, "error");
+      this._setRecoveryError(
+        t("dash_doctor_issues") || "操作执行失败",
+        failMsg,
+        [
+          {
+            label: t("dash_recovery_retry") || "重试",
+            primary: true,
+            run: () => void this._runAction(a, card),
+          },
+        ]
       );
       void this._loadDashboardData(true);
     }
@@ -4304,13 +4769,14 @@ export class PaperForgeStatusView extends ItemView {
     switch (mode) {
       case "global":
         badge.addClass("global");
-        badge.setText("Global");
+        badge.setText(t("mode_global") || "全局");
         if (this._headerTitle) this._headerTitle.setText("PaperForge");
         break;
       case "paper":
         badge.addClass("paper");
-        badge.setText("Paper");
-        if (this._headerTitle) this._headerTitle.setText("Paper");
+        badge.setText(t("mode_paper") || "单篇");
+        if (this._headerTitle)
+          this._headerTitle.setText(t("mode_paper") || "单篇");
         if (this._currentPaperEntry && this._currentPaperEntry.title) {
           modeName = this._currentPaperEntry.title;
         } else if (this._currentPaperKey) {
@@ -4320,20 +4786,24 @@ export class PaperForgeStatusView extends ItemView {
             text: t("dash_not_in_index"),
           });
         } else {
-          modeName = "Unknown paper";
+          modeName = t("ocr_ws_status_unknown") || "未知文献";
         }
         break;
       case "collection":
         badge.addClass("collection");
-        badge.setText("Collection");
-        if (this._headerTitle) this._headerTitle.setText("Collection");
-        modeName = this._currentDomain || "Unknown Domain";
+        badge.setText(t("mode_collection") || "集合");
+        if (this._headerTitle)
+          this._headerTitle.setText(t("mode_collection") || "集合");
+        modeName =
+          this._currentDomain || t("ocr_ws_status_unknown") || "未知集合";
         break;
       case "versions":
         badge.addClass("versions");
-        badge.setText(t("version_panel_title"));
+        badge.setText(t("mode_versions") || t("version_panel_title"));
         if (this._headerTitle)
-          this._headerTitle.setText(t("version_panel_title"));
+          this._headerTitle.setText(
+            t("mode_versions") || t("version_panel_title")
+          );
         break;
     }
     if (modeName) {
@@ -4392,6 +4862,7 @@ export class PaperForgeStatusView extends ItemView {
         on?: (ev: string, cb: (payload?: unknown) => void) => unknown;
       }
     )?.on?.("paperforge:state-changed", (payload?: unknown) => {
+      this._renderGlobalActivityStrip();
       const changed = (payload as { changedKeys?: string[] } | undefined)
         ?.changedKeys;
       if (Array.isArray(changed) && changed.length > 0) {
