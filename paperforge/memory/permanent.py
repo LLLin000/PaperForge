@@ -32,6 +32,23 @@ def get_reading_log_path(vault: Path) -> Path:
 RECORD_FIELDS = ("excerpt", "usage", "note", "context", "section")
 
 
+def _append_jsonl_atomic(filepath: Path, record: dict[str, object]) -> None:
+    """Append one schema-stamped JSONL record under cross-process FileLock with fsync."""
+    import os
+    from filelock import FileLock
+
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    lock = FileLock(str(filepath) + ".lock", timeout=10.0)
+    payload = dict(record)
+    payload.setdefault("schema_version", 1)
+    line = json.dumps(payload, ensure_ascii=False) + "\n"
+    with lock:
+        with filepath.open("a", encoding="utf-8") as fh:
+            fh.write(line)
+            fh.flush()
+            os.fsync(fh.fileno())
+
+
 def _error(message: str, kind: str = "validation") -> dict:
     return {"ok": False, "error": message, "error_kind": kind}
 
@@ -85,8 +102,7 @@ def append_reading_note(
     filepath = log_dir / "reading-log.jsonl"
 
     try:
-        with filepath.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        _append_jsonl_atomic(filepath, entry)
     except OSError as e:
         return _error(str(e), "io")
 
@@ -156,8 +172,7 @@ def append_project_entry(vault: Path, entry: dict) -> dict:
     filepath = log_dir / "project-log.jsonl"
 
     try:
-        with filepath.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        _append_jsonl_atomic(filepath, record)
     except OSError as e:
         return {"ok": False, "error": str(e)}
 
@@ -226,8 +241,7 @@ def append_correction(
     filepath = log_dir / "correction-log.jsonl"
 
     try:
-        with filepath.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        _append_jsonl_atomic(filepath, entry)
     except OSError as e:
         return _error(str(e), "io")
 

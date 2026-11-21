@@ -787,6 +787,23 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+### ADR-018: Unified File & State Engine, SQLite Runtime SSOT, Identity-Anchored Workspaces, & Atom-Level Safe Migration
+
+**Context**: Auditing multi-era veteran vaults (e.g., mixed `v1.5.15` / `v2.0.0-rc.*` / `System/PaperForge` + `.paperforge/trash` states) and current migration/index paths exposed structural fragility: (1) splitting runtime record authority across monolithic `formal-library.json` (O(N) full-file rewrite, single-byte blast radius, drift vs `paperforge.db`), `paper-meta.json` cached path strings, and scattered JSON queues/caches (`ocr-queue.json`, `ocr_maintenance.json`, `vector-build-state.json`, `.sync-fastpath.json`); (2) relying on brittle filename prefixes (`"KEY - Title"`), folder depth (`len(parts) == 2`), `slugify` path reconstruction, and `glob(f"{key} - *")` rather than structured identity anchors; (3) whole-vault migration rollbacks and `materialization/ocr.py` judging missing `blocks.raw.jsonl` as requiring paid remote OCR even when canonical `json/result.json` is intact; and (4) remaining unguarded `unlink()` calls in sync/index cleanup and blind `System/Zotero` moves. Detailed design is recorded in [`docs/adr/0006-unified-engine-ssot-and-safe-migration.md`](adr/0006-unified-engine-ssot-and-safe-migration.md).
+
+**Decisions**:
+1. **Ownership-Split SSOT (Zero Competing Runtime Truths)**:
+   - **Zotero** remains the upstream bibliographic truth (read-only import).
+   - **Per-Paper Text/JSONL Sidecars** hold human-sovereign knowledge and crash-resilient recovery sources (`<KEY>.md` with YAML `zotero_key`, append-only `<ws>/annotations.jsonl`, `<ws>/ai/memory-card.json`, `reading-log.jsonl`, `project-log.jsonl`, and write-once OCR truth `.paperforge/ocr/<KEY>/json/result.json`), keeping fault radius strictly bounded to 1 paper and enabling Calibre-style lossless SQLite reconstruction if the DB is ever lost.
+   - **SQLite (`paperforge.db`) as Unified Engine SSOT**: Consolidate global paper records, workspace path registries, task/OCR/build queues, OCR summary projections, and event sequence logs into ACID transactions inside `paperforge.db`, demoting/phasing out monolithic `formal-library.json` and scattered runtime JSON state files.
+2. **Identity-First Resolution (Ban String/Positional Guessing)**: Replace filename prefix splitting, hardcoded directory depth checks, title-slug path guessing, and wildcard `glob("{key} - *")` with a `zotero_key`-anchored `workspace_registry` backed by `paper-meta.json` / note frontmatter / SQLite.
+3. **Atom-Level OCR Truth Salvage & Per-Item Safe Migration**:
+   - Elevate `json/result.json` as Tier-0 salvageable OCR truth so missing/corrupt derived files (`blocks.raw.jsonl`, `blocks.structured.jsonl`, `fulltext.md`, `assets/`) trigger zero-cost local `backfill_from_result` instead of paid re-OCR.
+   - Execute migrations via capability/shape fingerprinting (`VaultUpgradeInspector`), pre-flight backups of small configs/DBs/Bases, per-paper isolated transactions (never letting 1 defective paper abort 971 others), and strict quarantine (`quarantine_move` to `.paperforge/trash/` or `.paperforge/backups/`) in place of bare `unlink()` / `rmtree()`. Direct deletion is permitted only on verified PaperForge-owned artifacts after explicit user confirmation.
+4. **Standard Convergence & Stateful Daemon Engine**: Standardize new vaults on `system_dir: ".paperforge"`, `.agents/skills`, and explicit `.paperforge/vault-manifest.json` layout versioning; evolve `paperforge daemon` from a stateless CLI wrapper into an in-process engine host with warm SQLite read models, dirty-set workspace tracking (eliminating repeated full-vault `rglob("*.md")` scans), and background resumable task scheduling.
+
+---
+
 ## Glossary
 
 - **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.

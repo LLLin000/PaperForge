@@ -85,11 +85,12 @@ def read_jsonl(path: Path):
 
 
 def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    from paperforge.core.io import write_text_atomic
+
     text = "\n".join(json.dumps(row, ensure_ascii=False) for row in rows)
     if text:
         text += "\n"
-    path.write_text(text, encoding="utf-8")
+    write_text_atomic(path, text)
 
 
 def sync_workspace_fulltext(source_fulltext: Path, target_fulltext: Path) -> bool:

@@ -45,15 +45,37 @@ def _move_tree_entries(
     *,
     dry_run: bool,
     moved_pairs: list[tuple[Path, Path]] | None = None,
+    conflict_backup_dir: Path | None = None,
     on_progress=None,
 ) -> dict[str, int]:
-    """Move directories and files from *src_dir* into *dst_dir* without overwriting existing entries."""
-    counts = {"moved": 0, "skipped_existing": 0}
-    if not src_dir.exists() or src_dir.resolve() == dst_dir.resolve():
+    """Move directories and files from *src_dir* into *dst_dir* safely.
+
+    Never overwrites existing destination files. When both sides hold the same
+    relative file path (e.g., partial ``.paperforge/`` pre-existence), compares
+    SHA-256 and routes the redundant/older source copy into *conflict_backup_dir*
+    instead of leaving *src_dir* uncleaned or silently overwriting *dst_dir*.
+    """
+    import hashlib
+    from paperforge.services.identity_resolver import is_reparse_or_symlink
+
+    counts = {"moved": 0, "skipped_existing": 0, "conflicts_quarantined": 0, "skipped_user_or_symlink": 0}
+    if not src_dir.exists() or is_reparse_or_symlink(src_dir) or src_dir.resolve() == dst_dir.resolve():
         return counts
     if not dry_run:
         dst_dir.mkdir(parents=True, exist_ok=True)
     for child in sorted(src_dir.iterdir()):
+        if is_reparse_or_symlink(child):
+            counts["skipped_user_or_symlink"] += 1
+            continue
+        # Protect unknown user Markdown notes placed at engine root from vanishing into hidden .paperforge/
+        if (
+            child.is_file()
+            and child.suffix.lower() == ".md"
+            and child.name not in ("deep-reading-queue.md", "_loss_survey_expanded.md", "bio-analysis-for-gpt.md")
+            and src_dir.name == "PaperForge"
+        ):
+            counts["skipped_user_or_symlink"] += 1
+            continue
         target = dst_dir / child.name
         if not target.exists():
             if not dry_run:
@@ -69,14 +91,34 @@ def _move_tree_entries(
                 target,
                 dry_run=dry_run,
                 moved_pairs=moved_pairs,
+                conflict_backup_dir=conflict_backup_dir,
                 on_progress=on_progress,
             )
             counts["moved"] += sub["moved"]
             counts["skipped_existing"] += sub["skipped_existing"]
+            counts["conflicts_quarantined"] += sub["conflicts_quarantined"]
             if not dry_run:
                 with contextlib.suppress(OSError):
                     if not any(child.iterdir()):
                         child.rmdir()
+        elif child.is_file() and target.is_file() and conflict_backup_dir is not None:
+            same_content = False
+            with contextlib.suppress(OSError):
+                same_content = (
+                    hashlib.sha256(child.read_bytes()).hexdigest()
+                    == hashlib.sha256(target.read_bytes()).hexdigest()
+                )
+            sub_dir = "duplicates" if same_content else "conflicts"
+            if not dry_run:
+                dest_dir = conflict_backup_dir / sub_dir
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                dest = dest_dir / f"{child.parent.name}__{child.name}"
+                shutil.move(str(child), str(dest))
+                if moved_pairs is not None:
+                    moved_pairs.append((child, dest))
+                if on_progress is not None:
+                    on_progress()
+            counts["conflicts_quarantined"] += 1
         else:
             counts["skipped_existing"] += 1
     if not dry_run:
@@ -139,6 +181,13 @@ def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
         if isinstance(item, dict) and item.get("path") and "original_text" in item
     ]
     created_assets = [Path(p) for p in (data.get("created_assets") or [])]
+    restorable_fulltexts: list[tuple[Path, bytes]] = []
+    for pf_item in (data.get("preserved_fulltexts") or []):
+        if isinstance(pf_item, dict) and pf_item.get("orig") and pf_item.get("backup"):
+            bp = Path(str(pf_item["backup"]))
+            if bp.is_file():
+                with contextlib.suppress(OSError):
+                    restorable_fulltexts.append((Path(str(pf_item["orig"])), bp.read_bytes()))
 
     prev_sys = data.get("previous_system_dir")
 
@@ -148,7 +197,7 @@ def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
 
     _rollback_mutations(
         rewritten_notes=rewritten_notes,
-        restorable_fulltexts=[],
+        restorable_fulltexts=restorable_fulltexts,
         created_assets=created_assets,
         moved_pairs=moved_pairs,
         config_restorer=_restore_cfg if prev_sys else None,
@@ -170,8 +219,13 @@ def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
     }
 
 
-def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, Any]:
-    """Transactionally migrate an existing vault to `.paperforge/` with full-stage rollback."""
+def migrate_vault_storage(
+    vault: Path,
+    *,
+    dry_run: bool = False,
+    isolate_paper_errors: bool = False,
+) -> dict[str, Any]:
+    """Transactionally migrate an existing vault to `.paperforge/` with rollback."""
     vault_root = Path(vault).expanduser().resolve()
     cfg_path = vault_root / "paperforge.json"
     previous_system_dir: str | None = None
@@ -190,11 +244,21 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
 
     target_pf = vault_root / ".paperforge"
     journal_path = target_pf / ".migration-journal.json"
+    conflict_backup_dir = target_pf / "backups" / "storage-migration"
     moved_pairs: list[tuple[Path, Path]] = []
     rewritten_notes: list[tuple[Path, str]] = []
     created_assets: list[Path] = []
     restorable_fulltexts: list[tuple[Path, bytes]] = []
+    journal_fulltexts: list[dict[str, str]] = []
+    paper_errors: list[dict[str, str]] = []
     config_updated = False
+
+    configured_zotero_path: Path | None = None
+    if cfg_path.exists():
+        raw_zotero = str(snapshot.values["zotero_data_dir"].value or "").strip()
+        if raw_zotero:
+            zp = Path(raw_zotero)
+            configured_zotero_path = (zp if zp.is_absolute() else (vault_root / zp)).resolve()
 
     def _flush_journal() -> None:
         if dry_run:
@@ -211,6 +275,7 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                     {"path": str(p), "original_text": txt} for p, txt in rewritten_notes
                 ],
                 "created_assets": [str(p) for p in created_assets],
+                "preserved_fulltexts": journal_fulltexts,
             },
         )
 
@@ -221,12 +286,13 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
     _flush_journal()
 
     moved_zotero = False
+    zotero_preserved_in_place = False
     ocr_root = target_pf / "ocr" if not dry_run or not old_pf.exists() else old_pf / "ocr"
     assets_copied = 0
     notes_rewritten = 0
     workspace_copies_removed = 0
     workspace_copies_preserved = 0
-    tree_counts = {"moved": 0, "skipped_existing": 0}
+    tree_counts = {"moved": 0, "skipped_existing": 0, "conflicts_quarantined": 0}
 
     try:
         tree_counts = _move_tree_entries(
@@ -234,6 +300,7 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
             target_pf,
             dry_run=dry_run,
             moved_pairs=moved_pairs,
+            conflict_backup_dir=conflict_backup_dir,
             on_progress=_flush_journal,
         )
 
@@ -245,23 +312,49 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
             and old_zotero.resolve() != target_zotero.resolve()
             and not target_zotero.exists()
         ):
-            moved_zotero = True
-            if not dry_run:
-                target_pf.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(old_zotero), str(target_zotero))
-                moved_pairs.append((old_zotero, target_zotero))
-                _flush_journal()
+            points_to_old_zotero = (
+                configured_zotero_path is not None
+                and (
+                    configured_zotero_path == old_zotero.resolve()
+                    or old_zotero.resolve() in configured_zotero_path.parents
+                )
+            )
+            if points_to_old_zotero:
+                # Never bury an active user Zotero library inside hidden `.paperforge/`
+                zotero_preserved_in_place = True
+            else:
+                moved_zotero = True
+                if not dry_run:
+                    target_pf.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(old_zotero), str(target_zotero))
+                    moved_pairs.append((old_zotero, target_zotero))
+                    _flush_journal()
 
         if lit_root.exists():
+            from paperforge.services.identity_resolver import scan_vault_identities
+
+            id_scan = scan_vault_identities(lit_root)
+            ws_targets: list[tuple[str, Path, Any | None]] = [
+                (key, ws_info.workspace_dir, ws_info)
+                for key, ws_info in sorted(id_scan.workspaces.items())
+            ]
+            seen_ws_dirs = {ws_dir.resolve() for _, ws_dir, _ in ws_targets}
+            # Fallback for un-anchored/bare legacy folders (`<KEY> - <Title>/`)
             for domain_dir in sorted(lit_root.iterdir()):
                 if not domain_dir.is_dir():
                     continue
-                for ws_dir in sorted(domain_dir.iterdir()):
-                    if not ws_dir.is_dir() or " - " not in ws_dir.name:
+                for candidate_dir in sorted(domain_dir.iterdir()):
+                    if not candidate_dir.is_dir() or " - " not in candidate_dir.name:
                         continue
-                    key = ws_dir.name.split(" - ", 1)[0].strip()
-                    if not key:
+                    if candidate_dir.resolve() in seen_ws_dirs:
                         continue
+                    legacy_key = candidate_dir.name.split(" - ", 1)[0].strip()
+                    if legacy_key:
+                        ws_targets.append((legacy_key, candidate_dir, None))
+                        seen_ws_dirs.add(candidate_dir.resolve())
+
+            for key, ws_dir, ws_info in ws_targets:
+                try:
                     paper_ocr_dir = ocr_root / key
                     if paper_ocr_dir.exists():
                         if dry_run:
@@ -280,12 +373,21 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                             for fname in copied:
                                 if fname not in existing_before:
                                     created_assets.append(ws_assets_dir / fname)
+
+                    note_candidates: list[Path] = []
+                    if ws_info is not None:
+                        if ws_info.main_note_path is not None:
+                            note_candidates.append(ws_info.main_note_path)
+                        note_candidates.extend(ws_info.legacy_named_notes)
+                    note_candidates.extend(
+                        [
+                            ws_dir / f"{key}.md",
+                            ws_dir / f"{ws_dir.name}.md",
+                            ws_dir.parent / f"{key}.md",
+                        ]
+                    )
                     seen_notes: set[Path] = set()
-                    for candidate_note in (
-                        ws_dir / f"{key}.md",
-                        ws_dir / f"{ws_dir.name}.md",
-                        domain_dir / f"{key}.md",
-                    ):
+                    for candidate_note in note_candidates:
                         if candidate_note.exists() and candidate_note.is_file():
                             resolved_note = candidate_note.resolve()
                             if resolved_note in seen_notes:
@@ -299,6 +401,7 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                                     rewritten_notes.append((candidate_note, original))
                                     _flush_journal()
                                     write_text_atomic(candidate_note, updated)
+
                     ocr_dir_for_verify = (
                         paper_ocr_dir
                         if paper_ocr_dir.exists()
@@ -306,6 +409,12 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                     )
                     ws_ft_path = ws_dir / "fulltext.md"
                     ft_snapshot = ws_ft_path.read_bytes() if (not dry_run and ws_ft_path.is_file()) else None
+                    if ft_snapshot is not None:
+                        snap_backup = conflict_backup_dir / "fulltexts" / f"{key}_fulltext.md"
+                        snap_backup.parent.mkdir(parents=True, exist_ok=True)
+                        snap_backup.write_bytes(ft_snapshot)
+                        journal_fulltexts.append({"orig": str(ws_ft_path), "backup": str(snap_backup)})
+                        _flush_journal()
                     outcome = cleanup_or_preserve_workspace_fulltext(
                         ws_dir,
                         vault=vault_root,
@@ -320,6 +429,10 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                         workspace_copies_removed += 1
                     if outcome == "preserved_to_trash":
                         workspace_copies_preserved += 1
+                except Exception as paper_exc:  # noqa: BLE001
+                    if not isolate_paper_errors:
+                        raise
+                    paper_errors.append({"key": key, "error": str(paper_exc)})
 
         if not dry_run:
             if not cfg_path.exists():
@@ -342,9 +455,11 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
                 {
                     "state": "completed",
                     "entries_moved": tree_counts["moved"],
+                    "conflicts_quarantined": tree_counts["conflicts_quarantined"],
                     "notes_rewritten": notes_rewritten,
                     "workspace_fulltexts_removed": workspace_copies_removed,
                     "workspace_fulltexts_preserved": workspace_copies_preserved,
+                    "paper_errors": paper_errors,
                 },
             )
     except Exception as exc:  # noqa: BLE001 — any mid-migration failure triggers atomic rollback
@@ -374,10 +489,13 @@ def migrate_vault_storage(vault: Path, *, dry_run: bool = False) -> dict[str, An
         "target_engine_dir": ".paperforge",
         "entries_moved": tree_counts["moved"],
         "entries_skipped_existing": tree_counts["skipped_existing"],
+        "conflicts_quarantined": tree_counts["conflicts_quarantined"],
         "moved_zotero_dir": moved_zotero,
+        "zotero_preserved_in_place": zotero_preserved_in_place,
         "visual_assets_materialized": assets_copied,
         "notes_rewritten": notes_rewritten,
         "workspace_fulltexts_removed": workspace_copies_removed,
         "workspace_fulltexts_preserved": workspace_copies_preserved,
+        "paper_errors": paper_errors,
         "config_updated": config_updated,
     }

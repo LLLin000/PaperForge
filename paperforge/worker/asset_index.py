@@ -418,8 +418,24 @@ def _build_entry(
 
     if note_path.parent.exists():
         for stale_note in note_path.parent.glob(f"{key} - *.md"):
-            if stale_note != note_path:
-                stale_note.unlink()
+            if stale_note == note_path:
+                continue
+            try:
+                fm = read_frontmatter_dict(stale_note.read_text(encoding="utf-8"))
+                stale_key = str(fm.get("zotero_key") or "").strip()
+            except Exception:
+                stale_key = ""
+            if stale_key and stale_key != key:
+                continue
+            from paperforge.worker.trash import trash_remove
+
+            trash_remove(
+                stale_note,
+                vault=vault,
+                allowed_root=paths["literature"],
+                operation="superseded_note_filename",
+                paper_key=key,
+            )
 
     # Workspace paths (Phase 26: flat-to-workspace migration)
     main_note_path = workspace_dir / f"{key}.md"

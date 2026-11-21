@@ -354,8 +354,68 @@ CREATE TABLE IF NOT EXISTS paper_memory_history (
 );
 """
 
+CREATE_WORKSPACE_REGISTRY = """
+CREATE TABLE IF NOT EXISTS workspace_registry (
+    zotero_key        TEXT PRIMARY KEY,
+    domain            TEXT NOT NULL DEFAULT '',
+    workspace_relpath TEXT NOT NULL,
+    main_note_relpath TEXT NOT NULL DEFAULT '',
+    dir_mtime_ns      INTEGER NOT NULL DEFAULT 0,
+    identity_source   TEXT NOT NULL DEFAULT '',
+    status            TEXT NOT NULL DEFAULT 'active',
+    verified_at       TEXT NOT NULL
+);
+"""
+
+CREATE_OCR_CATALOG = """
+CREATE TABLE IF NOT EXISTS ocr_catalog (
+    zotero_key            TEXT PRIMARY KEY,
+    ocr_status            TEXT NOT NULL DEFAULT '',
+    tier0_truth_intact    INTEGER NOT NULL DEFAULT 0,
+    result_json_sha256    TEXT NOT NULL DEFAULT '',
+    has_blocks_raw        INTEGER NOT NULL DEFAULT 0,
+    has_blocks_structured INTEGER NOT NULL DEFAULT 0,
+    has_fulltext          INTEGER NOT NULL DEFAULT 0,
+    pipeline_version      TEXT NOT NULL DEFAULT '',
+    salvage_action        TEXT NOT NULL DEFAULT '',
+    derived_defects_json  TEXT NOT NULL DEFAULT '[]',
+    updated_at            TEXT NOT NULL
+);
+"""
+
+CREATE_VAULT_KV = """
+CREATE TABLE IF NOT EXISTS vault_kv (
+    key        TEXT PRIMARY KEY,
+    value_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+"""
+
+CREATE_ENGINE_JOBS = """
+CREATE TABLE IF NOT EXISTS engine_jobs (
+    job_id       TEXT PRIMARY KEY,
+    job_type     TEXT NOT NULL,
+    target_key   TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL DEFAULT 'pending',
+    payload_json TEXT NOT NULL DEFAULT '{}',
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    last_error   TEXT NOT NULL DEFAULT '',
+    updated_at   TEXT NOT NULL
+);
+"""
+
+ENGINE_INDEX_SQL = [
+    "CREATE INDEX IF NOT EXISTS idx_workspace_registry_domain ON workspace_registry(domain);",
+    "CREATE INDEX IF NOT EXISTS idx_ocr_catalog_salvage ON ocr_catalog(salvage_action);",
+    "CREATE INDEX IF NOT EXISTS idx_engine_jobs_status ON engine_jobs(job_type, status);",
+]
+
 
 ALL_TABLES = [
+    "engine_jobs",
+    "vault_kv",
+    "ocr_catalog",
+    "workspace_registry",
     "paper_memory_history",
     "paper_memory_cards",
     "paper_annotations",
@@ -418,6 +478,14 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_paper_memory_history_key "
         "ON paper_memory_history(zotero_key, facet, id);"
     )
+    # ADR-018 Unified File & State Engine tables — additive while preserving
+    # CURRENT_SCHEMA_VERSION == 7 for retrieval substrate compatibility.
+    conn.execute(CREATE_WORKSPACE_REGISTRY)
+    conn.execute(CREATE_OCR_CATALOG)
+    conn.execute(CREATE_VAULT_KV)
+    conn.execute(CREATE_ENGINE_JOBS)
+    for idx_sql in ENGINE_INDEX_SQL:
+        conn.execute(idx_sql)
 
     # Run pending migrations
     migrate_schema(conn, get_schema_version(conn), CURRENT_SCHEMA_VERSION)

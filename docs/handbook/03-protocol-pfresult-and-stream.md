@@ -219,6 +219,8 @@ sequenceDiagram
 | `status`          | `--json`                                                                                                   | 报告库统计、OCR 队列与索引摘要               |
 | `sync`            | `--dry-run`, `--domain`, `--selection`, `--index`, `--rebuild-index`, `--prune`, `--prune-force`, `--json` | Zotero 选择同步、资产索引重建与收敛触发      |
 | `migrate-storage` | `--dry-run`, `--json`                                                                                      | 迁移引擎存储至 `.paperforge/`                |
+| `upgrade`         | `--plan`, `--dry-run`, `--apply`, `--fast-cutover`, `--heal`, `--priority-key`, `--limit`, `--rollback`, `--backfill-ocr`, `--quarantine-residuals`, `--quarantine-ids`, `--no-rebuild-db`, `--json` | 跨版本 Vault 普查、双速无损切流、渐进自愈与一键回滚 |
+| `engine`          | `status\|sync-registry\|rebuild-db` (`--json`)                                                             | 统一 VaultEngine SQLite SSOT 与清单管理      |
 | `base-refresh`    | `--force` / `-f`                                                                                           | 刷新 `.base` 视图文件                        |
 | `prune`           | `--force`, `--json`, `keys...`                                                                             | 清理孤儿论文（默认 dry-run，实删移入回收站） |
 | `trash`           | `list\|restore <trash_id>\|purge [--older-than DAYS]`                                                      | 回收站列表、恢复与物理清除                   |

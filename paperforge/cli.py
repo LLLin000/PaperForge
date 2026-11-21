@@ -829,6 +829,37 @@ def build_parser() -> argparse.ArgumentParser:
     p_migrate_storage.add_argument("--dry-run", action="store_true", help="Preview changes without modifying files")
     p_migrate_storage.add_argument("--json", action="store_true", help="Output JSON")
 
+    p_upgrade = sub.add_parser(
+        "upgrade",
+        help="Inspect cross-version vault state (A/B/C), run <3s fast cutover, heal progressively, or rollback",
+    )
+    p_upgrade.add_argument("--plan", action="store_true", help="Read-only inspection plan (default)")
+    p_upgrade.add_argument("--dry-run", action="store_true", help="Preview upgrade plan without writing disk")
+    p_upgrade.add_argument("--apply", action="store_true", help="Apply safe migrations with pre-flight backups")
+    p_upgrade.add_argument("--fast-cutover", action="store_true", help="Perform O(1) <3s structural cutover and defer per-paper healing")
+    p_upgrade.add_argument("--heal", action="store_true", help="Run background/JIT progressive healing batch")
+    p_upgrade.add_argument("--priority-key", metavar="KEY", help="Prioritize one paper key for JIT healing")
+    p_upgrade.add_argument("--limit", type=int, help="Max workspaces per progressive healing batch")
+    p_upgrade.add_argument("--rollback", action="store_true", help="One-click rollback to pre-upgrade snapshot")
+    p_upgrade.add_argument("--backfill-ocr", action="store_true", help="Locally rebuild derived OCR layers from intact result.json")
+    p_upgrade.add_argument("--quarantine-residuals", action="store_true", help="Move all confirmed leftover candidates into .paperforge/trash/")
+    p_upgrade.add_argument("--quarantine-ids", metavar="IDS", help="Comma-separated cleanup candidate IDs to quarantine")
+    p_upgrade.add_argument("--no-rebuild-db", action="store_true", help="Skip SQLite workspace_registry/ocr_catalog sync")
+    p_upgrade.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_engine = sub.add_parser(
+        "engine",
+        help="Unified VaultEngine SQLite SSOT operations (status / sync-registry / rebuild-db)",
+    )
+    p_engine_sub = p_engine.add_subparsers(dest="engine_verb", required=True)
+    for eng_verb, eng_help in (
+        ("status", "Show vault-manifest and engine state"),
+        ("sync-registry", "Sync workspace_registry and ocr_catalog tables in paperforge.db"),
+        ("rebuild-db", "Rebuild paperforge.db from per-paper plaintext truths after backup"),
+    ):
+        p_ev = p_engine_sub.add_parser(eng_verb, help=eng_help)
+        p_ev.add_argument("--json", action="store_true", help="Output JSON")
+
     p_ann = sub.add_parser("annotations", help="Non-destructive Zotero-style sidecar PDF annotations")
     p_ann_sub = p_ann.add_subparsers(dest="ann_verb", required=True)
 
@@ -1036,8 +1067,8 @@ def _run_cli(argv: list[str] | None = None) -> int:
     args.vault_path = vault
 
     # Fail-closed config loading: domain commands never operate on guessed
-    # paths.  config/setup/probe handle their own missing-config states.
-    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action", "skill"})
+    # paths.  config/setup/probe/upgrade/engine handle their own missing-config states.
+    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action", "skill", "upgrade", "engine"})
     try:
         snapshot = load_config(vault)
         args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
@@ -1262,6 +1293,16 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if args.command == "migrate-storage":
         from paperforge.commands.migrate_storage import run
+
+        return run(args)
+
+    if args.command == "upgrade":
+        from paperforge.commands.upgrade import run
+
+        return run(args)
+
+    if args.command == "engine":
+        from paperforge.commands.engine import run
 
         return run(args)
 

@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.0` | **章节数**：`14` | **分册指纹**：`sha256:efcbe9a6d75ef634`
+> **版本**：`2.0.0` | **章节数**：`14` | **分册指纹**：`sha256:71e2d34d6e6eaf9e`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 
@@ -844,6 +844,8 @@ sequenceDiagram
 | `status`          | `--json`                                                                                                   | 报告库统计、OCR 队列与索引摘要               |
 | `sync`            | `--dry-run`, `--domain`, `--selection`, `--index`, `--rebuild-index`, `--prune`, `--prune-force`, `--json` | Zotero 选择同步、资产索引重建与收敛触发      |
 | `migrate-storage` | `--dry-run`, `--json`                                                                                      | 迁移引擎存储至 `.paperforge/`                |
+| `upgrade`         | `--plan`, `--dry-run`, `--apply`, `--fast-cutover`, `--heal`, `--priority-key`, `--limit`, `--rollback`, `--backfill-ocr`, `--quarantine-residuals`, `--quarantine-ids`, `--no-rebuild-db`, `--json` | 跨版本 Vault 普查、双速无损切流、渐进自愈与一键回滚 |
+| `engine`          | `status\|sync-registry\|rebuild-db` (`--json`)                                                             | 统一 VaultEngine SQLite SSOT 与清单管理      |
 | `base-refresh`    | `--force` / `-f`                                                                                           | 刷新 `.base` 视图文件                        |
 | `prune`           | `--force`, `--json`, `keys...`                                                                             | 清理孤儿论文（默认 dry-run，实删移入回收站） |
 | `trash`           | `list\|restore <trash_id>\|purge [--older-than DAYS]`                                                      | 回收站列表、恢复与物理清除                   |
@@ -2792,6 +2794,14 @@ flowchart TD
     - 约束：`PRIMARY KEY (zotero_key, facet)`，`FOREIGN KEY (zotero_key) REFERENCES papers(zotero_key)`。
 18. **`paper_memory_history`**（动态认知记忆卡片历史快照）：
     - 列：`id INTEGER PRIMARY KEY AUTOINCREMENT`、`zotero_key TEXT NOT NULL`、`facet TEXT NOT NULL`、`content TEXT NOT NULL DEFAULT ''`、`revision INTEGER NOT NULL DEFAULT 1`、`created_at TEXT NOT NULL`。
+19. **`workspace_registry`**（ADR-018 身份锚定工作区映射，替代 `rglob` 与目录名解析）：
+    - 列：`zotero_key TEXT PRIMARY KEY`、`domain TEXT NOT NULL DEFAULT ''`、`workspace_relpath TEXT NOT NULL`、`main_note_relpath TEXT NOT NULL DEFAULT ''`、`dir_mtime_ns INTEGER NOT NULL DEFAULT 0`、`identity_source TEXT NOT NULL DEFAULT ''`、`status TEXT NOT NULL DEFAULT 'active'`、`verified_at TEXT NOT NULL`。
+20. **`ocr_catalog`**（ADR-018 单篇 OCR 原子盘点与 Tier-0 抢救投影）：
+    - 列：`zotero_key TEXT PRIMARY KEY`、`ocr_status TEXT NOT NULL DEFAULT ''`、`tier0_truth_intact INTEGER NOT NULL DEFAULT 0`、`result_json_sha256 TEXT NOT NULL DEFAULT ''`、`has_blocks_raw INTEGER NOT NULL DEFAULT 0`、`has_blocks_structured INTEGER NOT NULL DEFAULT 0`、`has_fulltext INTEGER NOT NULL DEFAULT 0`、`pipeline_version TEXT NOT NULL DEFAULT ''`、`salvage_action TEXT NOT NULL DEFAULT ''`、`derived_defects_json TEXT NOT NULL DEFAULT '[]'`、`updated_at TEXT NOT NULL`。
+21. **`vault_kv`**（ADR-018 统一引擎键值状态表，收拢零散 JSON 状态）：
+    - 列：`key TEXT PRIMARY KEY`、`value_json TEXT NOT NULL`、`updated_at TEXT NOT NULL`。
+22. **`engine_jobs`**（ADR-018 后台任务与断点恢复队列）：
+    - 列：`job_id TEXT PRIMARY KEY`、`job_type TEXT NOT NULL`、`target_key TEXT NOT NULL DEFAULT ''`、`status TEXT NOT NULL DEFAULT 'pending'`、`payload_json TEXT NOT NULL DEFAULT '{}'`、`attempts INTEGER NOT NULL DEFAULT 0`、`last_error TEXT NOT NULL DEFAULT ''`、`updated_at TEXT NOT NULL`。
 
 ##### B. 无条件表与 `VEC_TABLES`（4 张）
 

@@ -17,6 +17,7 @@ _MODULE_MAP: dict[str, str] = {
     "build_base_views": "paperforge.worker.base_views",
     "merge_base_views": "paperforge.worker.base_views",
     "ensure_base_views": "paperforge.worker.base_views",
+    "load_domain_config": "paperforge.worker._domain",
     "obsidian_wikilink_for_pdf": "paperforge.worker.sync",
     "absolutize_vault_path": "paperforge.worker.sync",
     "_normalize_attachment_path": "paperforge.worker.sync",

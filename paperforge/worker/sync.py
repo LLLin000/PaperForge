@@ -1235,7 +1235,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
                                 "true" if legacy_value else "false",
                             )
                     if updated_content != workspace_content:
-                        main_note_path.write_text(updated_content, encoding="utf-8")
+                        from paperforge.core.io import write_text_atomic
+
+                        write_text_atomic(main_note_path, updated_content)
                 except Exception:
                     pass
             continue
@@ -1250,8 +1252,10 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         if legacy_flags["analyze"] is not None:
             content = update_frontmatter_field(content, "analyze", "true" if legacy_flags["analyze"] else "false")
 
-        # Write main note to workspace (copy of flat note)
-        main_note_path.write_text(content, encoding="utf-8")
+        # Write main note to workspace atomically (copy of flat note)
+        from paperforge.core.io import write_text_atomic
+
+        write_text_atomic(main_note_path, content)
 
         # Create ai/ directory
         ai_dir = workspace_dir / "ai"

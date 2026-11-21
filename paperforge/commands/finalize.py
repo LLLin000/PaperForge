@@ -85,7 +85,14 @@ def run(args: argparse.Namespace) -> int:
     note_updated = updated != text
     if note_updated:
         try:
-            _ = note_path.write_text(updated, encoding="utf-8", newline="")
+            import hashlib as _hashlib
+            from paperforge.core.io import write_text_cas
+
+            expected_sha = _hashlib.sha256(text.encode("utf-8")).hexdigest() if not note_path.is_file() else None
+            # Verify raw bytes match what `_find_formal_note` read if line endings are LF, else atomic write
+            if note_path.is_file() and note_path.read_text(encoding="utf-8") != text:
+                return _failure(args, f"concurrent edit detected on note: {note_path}")
+            write_text_cas(note_path, updated, expected_sha256=expected_sha, newline="")
         except OSError as exc:
             return _failure(args, f"could not update note: {exc}")
 

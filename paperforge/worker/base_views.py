@@ -498,21 +498,28 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
         else:
             deduped[view_name] = block_text
 
-    # --- Phase 4: ensure standard views exist ---
-    # For each standard name NOT in deduped, generate a fresh PF view block
-    # For existing standard views, keep them AS-IS (don't replace content)
+    # --- Phase 4: ensure standard views exist & upgrade legacy `- type: table` ---
     for v in views:
-        if v["name"] not in deduped:
-            vtype = str(v.get("type") or "paperforge-table")
-            block = f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
+        vname = v["name"]
+        vtype = str(v.get("type") or "paperforge-table")
+        if vname in deduped:
+            deduped[vname] = re.sub(
+                r"^(\s*-\s*type:\s*)table\s*$",
+                rf"\1{vtype}",
+                deduped[vname],
+                count=1,
+                flags=re.MULTILINE,
+            )
+        else:
+            block = f"{PAPERFORGE_VIEW_PREFIX}{vname}\n"
             block += f"  - type: {vtype}\n"
-            block += f'    name: "{v["name"]}"\n'
+            block += f'    name: "{vname}"\n'
             block += "    order:\n"
             for col in v["order"]:
                 block += f"      - {col}\n"
             if v["filter"]:
                 block += f"    filter: '{v['filter']}'\n"
-            deduped[v["name"]] = block
+            deduped[vname] = block
 
     # --- Phase 5: fix properties section ---
     header_text = "\n".join(header_lines)
@@ -580,16 +587,22 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
     paths["bases"].mkdir(parents=True, exist_ok=True)
 
     def refresh_base(base_path: Path, folder_filter: str, views: list[dict]) -> None:
+        from paperforge.core.io import write_text_atomic
+
         resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
             existing = base_path.read_text(encoding="utf-8")
             sanitized = _sanitize_base_file(existing, views, folder_filter=resolved_filter)
+            if not sanitized.startswith("# paperforge-base-schema:"):
+                sanitized = "# paperforge-base-schema: 2\n" + sanitized
             if sanitized != existing:
-                base_path.write_text(sanitized, encoding="utf-8")
+                write_text_atomic(base_path, sanitized)
             return
         merged = _build_base_yaml(resolved_filter, views)
         merged = substitute_config_placeholders(merged, paths)
-        base_path.write_text(merged, encoding="utf-8")
+        if not merged.startswith("# paperforge-base-schema:"):
+            merged = "# paperforge-base-schema: 2\n" + merged
+        write_text_atomic(base_path, merged)
 
     seen_domains = set()
     for entry in config.get("domains", []):
