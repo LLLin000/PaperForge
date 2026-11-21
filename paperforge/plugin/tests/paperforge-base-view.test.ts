@@ -327,4 +327,48 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     expect(groups[0].textContent).toContain("1 篇");
     expect(groups[1].textContent).toContain("Sports");
   });
+
+  it("provides sticky multi-condition filter bar (domain -> cascading collection, IF threshold, status, openalex_2yr marker)", () => {
+    snapshot.rows.K_DONE.collections = ["BoneRegen/Hydrogels"];
+    snapshot.rows.K_WAIT.collections = ["SportsMed/Meniscus"];
+    snapshot.rows.K_WAIT.impact_factor_source = "openalex_2yr";
+
+    let savedFilters: Record<string, unknown> = {};
+    host.getBaseFilters = () => savedFilters as any;
+    host.setBaseFilters = (_key, next) => {
+      savedFilters = next as Record<string, unknown>;
+    };
+
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    view.onDataUpdated();
+
+    // OpenAlex fallback metric displays ≈ provenance mark
+    expect(container.textContent).toContain("9.4≈");
+
+    // 1. Filter by Domain = Ortho -> cascades collections list and filters rows
+    const domSel = container.querySelector<HTMLSelectElement>(
+      '[data-pf-testid="base-filter-domain"]'
+    )!;
+    domSel.value = "Ortho";
+    domSel.dispatchEvent(new dom.window.Event("change"));
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(2);
+    expect(savedFilters.domain).toBe("Ortho");
+
+    // 2. Stack IF >= 10 -> narrows Ortho down to K_DONE (IF 12.8)
+    const ifSel = container.querySelector<HTMLSelectElement>(
+      '[data-pf-testid="base-filter-if"]'
+    )!;
+    ifSel.value = "10";
+    ifSel.dispatchEvent(new dom.window.Event("change"));
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(1);
+    expect(container.textContent).toContain("Electrospun Scaffold Trial");
+
+    // 3. Reset clears filters cleanly
+    const resetBtn = container.querySelector<HTMLButtonElement>(
+      '[data-pf-testid="base-filter-reset"]'
+    )!;
+    resetBtn.click();
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(3);
+  });
 });

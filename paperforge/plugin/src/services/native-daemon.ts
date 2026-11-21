@@ -190,9 +190,25 @@ function parseChecksumForAsset(
   return null;
 }
 
+function normalizeDaemonTag(v: string): string {
+  return String(v || "")
+    .trim()
+    .replace(/^[vV]/, "");
+}
+
+export function nativeDaemonVersionFile(
+  home: string = os.homedir(),
+  platform: NodeJS.Platform = process.platform
+): string {
+  return path.join(
+    path.dirname(managedNativeDaemonPath(home, platform)),
+    ".daemon-version"
+  );
+}
+
 /**
- * Quietly download and SHA-256 verify the prebuilt native `paperforge-daemon`
- * binary into `~/.paperforge/bin/` if not yet installed. Never throws.
+ * Quietly download, SHA-256 verify, and (when checkVersionUpdate=true) hot-align
+ * the prebuilt native `paperforge-daemon` binary against plugin `version`. Never throws.
  */
 export async function ensureNativeDaemonDownloaded(
   version: string,
@@ -200,26 +216,39 @@ export async function ensureNativeDaemonDownloaded(
     home?: string;
     platform?: NodeJS.Platform;
     arch?: string;
+    checkVersionUpdate?: boolean;
+    onBeforeReplace?: () => void | Promise<void>;
   } = {}
 ): Promise<string | null> {
   const plat = opts.platform ?? process.platform;
   const arch = opts.arch ?? process.arch;
   const home = opts.home ?? os.homedir();
   const dest = managedNativeDaemonPath(home, plat);
+  const verFile = path.join(path.dirname(dest), ".daemon-version");
+  const wantTag = normalizeDaemonTag(version);
+
+  let hasExisting = false;
   try {
     if (fs.existsSync(dest) && fs.statSync(dest).size > 0) {
       ensureExecutableMode(dest, plat);
-      return dest;
+      hasExisting = true;
+      if (!opts.checkVersionUpdate || !wantTag) {
+        return dest;
+      }
+      const installedTag = fs.existsSync(verFile)
+        ? normalizeDaemonTag(fs.readFileSync(verFile, "utf-8"))
+        : "";
+      if (installedTag === wantTag) {
+        return dest;
+      }
     }
   } catch {
-    // Continue to download
+    // Continue to download/update
   }
 
   const assetName = nativeDaemonAssetName(plat, arch);
-  const tag = String(version || "")
-    .trim()
-    .replace(/^[vV]/, "");
-  if (!assetName || !tag) return null;
+  const tag = wantTag;
+  if (!assetName || !tag) return hasExisting ? dest : null;
 
   const baseRelease = `https://github.com/${PAPERFORGE_GITHUB_REPO}/releases/download/${tag}`;
   const bases = [baseRelease, `https://ghfast.top/${baseRelease}`];
@@ -245,12 +274,24 @@ export async function ensureNativeDaemonDownloaded(
       const tmpPath = `${dest}.${process.pid}.${Date.now()}.tmp`;
       fs.writeFileSync(tmpPath, binBuf, { mode: 0o755 });
       ensureExecutableMode(tmpPath, plat);
+      if (hasExisting && opts.onBeforeReplace) {
+        try {
+          await opts.onBeforeReplace();
+        } catch {
+          // Best-effort release before rename
+        }
+      }
       fs.renameSync(tmpPath, dest);
       ensureExecutableMode(dest, plat);
+      try {
+        fs.writeFileSync(verFile, tag, "utf-8");
+      } catch {
+        // Non-fatal metadata marker write
+      }
       return dest;
     } catch {
-      // Try mirror or silently stay on Python fallback when offline
+      // Try mirror or silently stay on existing / Python fallback when offline
     }
   }
-  return null;
+  return hasExisting ? dest : null;
 }

@@ -252,6 +252,23 @@ export interface VersionsResetLiveResultDTO {
   provenance_cleared: boolean;
 }
 
+export interface ZoteroCollectionInfoDto {
+  key: string;
+  name: string;
+  parent_key?: string | null;
+  path: string;
+  direct_item_count: number;
+  item_count: number;
+  top_level: boolean;
+}
+
+export interface ZoteroDetectDto {
+  found: boolean;
+  zotero_dir: string;
+  total_papers: number;
+  collections: ZoteroCollectionInfoDto[];
+}
+
 export interface BasePaperRowDto {
   zotero_key: string;
   title: string;
@@ -259,7 +276,10 @@ export interface BasePaperRowDto {
   year: string;
   journal: string;
   impact_factor: string;
+  impact_factor_source?: string;
+  journal_partition?: string;
   domain: string;
+  collections?: string[];
   has_pdf: boolean;
   do_ocr: boolean;
   analyze: boolean;
@@ -1398,7 +1418,9 @@ export class PaperForgeClient {
 
   /** Credential presence from the authority (`auth status`), never from
    * SecretStorage or settings flags (#173/C1). */
-  async credentialAvailable(service: "embedding" | "ocr"): Promise<boolean> {
+  async credentialAvailable(
+    service: "embedding" | "ocr" | "easyscholar"
+  ): Promise<boolean> {
     return this._cachedRead(`auth-status:${service}`, 60000, async () => {
       const data = await this._executePfResult<{
         credentials?: Array<{ state?: string }>;
@@ -1416,7 +1438,7 @@ export class PaperForgeClient {
    * migration passes `{replace: false}` so a stale host copy can never
    * overwrite a live keyring value. */
   async authSetSecret(
-    kind: "ocr" | "embedding",
+    kind: "ocr" | "embedding" | "easyscholar",
     secret: string,
     options?: { replace?: boolean }
   ): Promise<boolean> {
@@ -2629,6 +2651,68 @@ export class PaperForgeClient {
     });
     const parsed = JSON.parse(raw) as { acked?: boolean };
     return Boolean(parsed?.acked);
+  }
+
+  shutdownTransport(): void {
+    (
+      this._transport as unknown as { shutdownDaemon?: () => void }
+    )?.shutdownDaemon?.();
+  }
+
+  async daemonSubmitRuntimeUpdate(
+    version: string
+  ): Promise<{ accepted: boolean; coalesced?: boolean; reason?: string }> {
+    if (typeof this._transport.rpc !== "function") {
+      return { accepted: false, reason: "rpc_unavailable" };
+    }
+    const raw = await this._transport.rpc({
+      op: "job.submit",
+      kind: "runtime.update",
+      version,
+    });
+    return JSON.parse(raw);
+  }
+
+  /** Fast Zero-Python Zotero data directory + collections detector (`zotero detect --json`). */
+  async zoteroDetect(customPath?: string): Promise<ZoteroDetectDto> {
+    const argv = ["zotero", "detect"];
+    if (customPath && customPath.trim()) {
+      argv.push("--path", customPath.trim());
+    }
+    argv.push("--json");
+    const data = await this._executePfResult<Partial<ZoteroDetectDto>>(argv, {
+      timeoutMs: 15000,
+    });
+    return {
+      found: Boolean(data?.found),
+      zotero_dir: String(data?.zotero_dir ?? ""),
+      total_papers: Number(data?.total_papers ?? 0),
+      collections: Array.isArray(data?.collections) ? data!.collections : [],
+    };
+  }
+
+  /** Live provider probe returning detected dimension & latency (`embed test-connection --json`). */
+  async embedTestConnection(): Promise<{
+    model: string;
+    base_url: string;
+    dimension: number;
+    latency_ms: number;
+  }> {
+    return this._executePfResult(["embed", "test-connection", "--json"], {
+      timeoutMs: 35000,
+    });
+  }
+
+  /** Quick OCR token & endpoint connectivity probe (`ocr test-connection --json`). */
+  async ocrTestConnection(): Promise<{
+    passed: boolean;
+    level: number;
+    error?: string;
+    fix?: string;
+  }> {
+    return this._executePfResult(["ocr", "test-connection", "--json"], {
+      timeoutMs: 35000,
+    });
   }
 }
 

@@ -1,0 +1,223 @@
+/**
+ * Embedding provider presets + live interactive Domain mapping preview card.
+ *
+ * Keeps beginner onboarding 100% jargon-free:
+ * 1. Researchers choose a preset provider (SiliconFlow / DashScope / Zhipu / OpenAI / Ollama)
+ *    instead of typing URLs or choosing SDK vs requests internals.
+ * 2. Live animated SVG/DOM tree diagram visualizes Option A (per Zotero top folder) vs
+ *    Option B (single unified library + Base toolbar pills) using their actual checked folders.
+ */
+
+export interface EmbeddingProviderPreset {
+  id: string;
+  labelZh: string;
+  labelEn: string;
+  baseUrl: string;
+  model: string;
+  dimensionsHint: string;
+  signupUrl?: string;
+}
+
+export const EMBEDDING_PRESETS: readonly EmbeddingProviderPreset[] = [
+  {
+    id: "siliconflow",
+    labelZh: "硅基流动 SiliconFlow（国内直连 · 含免费额度 · 推荐）",
+    labelEn: "SiliconFlow (China direct · BAAI/bge-m3 · Recommended)",
+    baseUrl: "https://api.siliconflow.cn/v1",
+    model: "BAAI/bge-m3",
+    dimensionsHint: "1024",
+    signupUrl: "https://cloud.siliconflow.cn/",
+  },
+  {
+    id: "dashscope",
+    labelZh: "阿里云百炼 DashScope（text-embedding-v3）",
+    labelEn: "Alibaba DashScope (text-embedding-v3)",
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model: "text-embedding-v3",
+    dimensionsHint: "1024",
+    signupUrl: "https://bailian.console.aliyun.com/",
+  },
+  {
+    id: "zhipu",
+    labelZh: "智谱 AI（embedding-3 · 国内直连）",
+    labelEn: "Zhipu AI (embedding-3)",
+    baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    model: "embedding-3",
+    dimensionsHint: "2048",
+    signupUrl: "https://open.bigmodel.cn/",
+  },
+  {
+    id: "openai",
+    labelZh: "OpenAI 官方（text-embedding-3-small）",
+    labelEn: "OpenAI Official (text-embedding-3-small)",
+    baseUrl: "https://api.openai.com/v1",
+    model: "text-embedding-3-small",
+    dimensionsHint: "1536",
+    signupUrl: "https://platform.openai.com/api-keys",
+  },
+  {
+    id: "ollama",
+    labelZh: "本地 Ollama（零费用完全离线）",
+    labelEn: "Local Ollama (Offline · Zero API cost)",
+    baseUrl: "http://127.0.0.1:11434/v1",
+    model: "bge-m3",
+    dimensionsHint: "1024",
+  },
+  {
+    id: "custom",
+    labelZh: "自定义 OpenAI 兼容端点",
+    labelEn: "Custom OpenAI-compatible endpoint",
+    baseUrl: "",
+    model: "",
+    dimensionsHint: "",
+  },
+];
+
+export function matchEmbeddingPresetId(baseUrl: string, model: string): string {
+  const b = String(baseUrl || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .toLowerCase();
+  const m = String(model || "")
+    .trim()
+    .toLowerCase();
+  if (!b && (m === "text-embedding-3-small" || !m)) return "openai";
+  for (const p of EMBEDDING_PRESETS) {
+    if (p.id === "custom") continue;
+    if (b && b === p.baseUrl.toLowerCase()) return p.id;
+  }
+  return "custom";
+}
+
+export interface PreviewCollectionItem {
+  key: string;
+  name: string;
+  path: string;
+  item_count: number;
+  top_level?: boolean;
+}
+
+export function renderDomainModePreview(
+  host: HTMLElement,
+  opts: {
+    domainMode: "per_collection" | "unified";
+    collections: PreviewCollectionItem[];
+    litDir: string;
+    isZh: boolean;
+  }
+): void {
+  host.innerHTML = "";
+  const wrap = host.createDiv({
+    cls: "pf-domain-live-preview",
+    attr: { "data-mode": opts.domainMode },
+  });
+
+  const litName = (opts.litDir || "Literature").trim() || "Literature";
+  const topFolders =
+    opts.collections.length > 0
+      ? opts.collections
+      : [
+          {
+            key: "DEMO1",
+            name: opts.isZh ? "课题1-基础研究" : "Topic-A",
+            path: "Topic-A",
+            item_count: 42,
+          },
+          {
+            key: "DEMO2",
+            name: opts.isZh ? "课题2-临床随访" : "Topic-B",
+            path: "Topic-B",
+            item_count: 19,
+          },
+        ];
+
+  // Left card: Folder tree in Obsidian Vault
+  const leftCard = wrap.createDiv({ cls: "pf-preview-pane pf-fade-swap" });
+  leftCard.createDiv({
+    cls: "pf-preview-pane-title",
+    text: opts.isZh ? "Obsidian 目录实时预览" : "Vault Folder Preview",
+  });
+  const tree = leftCard.createDiv({ cls: "pf-preview-tree" });
+  tree.createDiv({
+    cls: "pf-preview-node is-root",
+    text: `📁 ${litName}/`,
+  });
+
+  if (opts.domainMode === "per_collection") {
+    for (const col of topFolders.slice(0, 4)) {
+      const folderLine = tree.createDiv({
+        cls: "pf-preview-node is-branch pf-fade-item",
+      });
+      folderLine.createSpan({ text: `├── 📂 ${col.name}/ ` });
+      folderLine.createEl("span", {
+        cls: "pf-preview-count",
+        text: opts.isZh ? `(${col.item_count} 篇)` : `(${col.item_count})`,
+      });
+    }
+    if (topFolders.length > 4) {
+      tree.createDiv({
+        cls: "pf-preview-node is-branch is-more",
+        text: opts.isZh
+          ? `└── … 共 ${topFolders.length} 个课题目录`
+          : `└── … ${topFolders.length} topic folders`,
+      });
+    }
+  } else {
+    const totalCount = topFolders.reduce(
+      (acc, c) => acc + (c.item_count || 0),
+      0
+    );
+    const flatLine = tree.createDiv({
+      cls: "pf-preview-node is-branch pf-fade-item",
+    });
+    flatLine.createSpan({
+      text: opts.isZh
+        ? "├── 📂 Literature/（全部汇总） "
+        : "├── 📂 Literature/ (Unified) ",
+    });
+    flatLine.createEl("span", {
+      cls: "pf-preview-count",
+      text: opts.isZh ? `(${totalCount} 篇)` : `(${totalCount})`,
+    });
+    tree.createDiv({
+      cls: "pf-preview-node is-leaf pf-fade-item",
+      text: opts.isZh
+        ? "│     └─ 笔记内自动带 Zotero 分类标签"
+        : "│     └─ Auto-tagged with Zotero collections",
+    });
+  }
+
+  // Right card: Always ONE unified Base table with sticky filter bar
+  const rightCard = wrap.createDiv({ cls: "pf-preview-pane pf-fade-swap" });
+  rightCard.createDiv({
+    cls: "pf-preview-pane-title",
+    text: opts.isZh
+      ? "单一 Base 总表（始终只有 1 张表）"
+      : "Single Master Base View",
+  });
+  const baseSim = rightCard.createDiv({ cls: "pf-preview-base-sim" });
+  const pills = baseSim.createDiv({ cls: "pf-preview-pills" });
+  pills.createEl("span", {
+    cls: "pf-preview-pill is-active",
+    text: opts.isZh ? "全部" : "All",
+  });
+  for (const col of topFolders.slice(0, 3)) {
+    pills.createEl("span", {
+      cls: "pf-preview-pill pf-fade-item",
+      text: col.name,
+    });
+  }
+  const miniRows = baseSim.createDiv({ cls: "pf-preview-mini-rows" });
+  for (const col of topFolders.slice(0, 3)) {
+    const r = miniRows.createDiv({ cls: "pf-preview-mini-row" });
+    r.createEl("span", { cls: "pf-preview-dot" });
+    r.createEl("span", {
+      cls: "pf-preview-row-title",
+      text: opts.isZh ? `${col.name} 示例文献` : `${col.name} paper`,
+    });
+    r.createEl("span", {
+      cls: "pf-preview-row-badge",
+      text: opts.domainMode === "per_collection" ? col.name : col.path,
+    });
+  }
+}

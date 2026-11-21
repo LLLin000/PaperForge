@@ -168,6 +168,13 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
         await vi.waitFor(() =>
           expect(pushed.some((p) => p.event === "notice.push")).toBe(true)
         );
+
+        // 6. Native Zero-Python zoteroDetect handles missing dir cleanly in <5ms
+        const zotMissing = await client.zoteroDetect(
+          path.join(tmpVault, "nonexistent-zotero")
+        );
+        expect(zotMissing.found).toBe(false);
+        expect(zotMissing.collections).toEqual([]);
       } finally {
         unsub();
         transport.shutdownDaemon();

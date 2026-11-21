@@ -688,28 +688,50 @@ export default class PaperForgePlugin extends Plugin {
       this.app.vault.adapter as unknown as { basePath?: string }
     ).basePath;
 
+    const pluginVersion = this.manifest?.version ?? "";
     const hadNativeBefore = Boolean(
       resolveNativeDaemonBinary({ vaultPath: vaultBase })
     );
-    void ensureNativeDaemonDownloaded(this.manifest?.version ?? "")
+    void ensureNativeDaemonDownloaded(pluginVersion, {
+      checkVersionUpdate: true,
+      onBeforeReplace: () => this._client?.shutdownTransport(),
+    })
       .then((downloadedBin) => {
-        if (hadNativeBefore || !downloadedBin || !vaultBase) return;
-        // Re-hydrate only when transitioning from absent -> downloaded so the
-        // 1-2s first-launch download window never leaves stale/empty banners.
-        void this.refreshUpgradePlan().catch(() => undefined);
-        void this.getClient()
-          .configValidate()
-          .then((validation) => {
-            if (validation.state === "migration_required") {
-              this._needsConfigMigration = true;
-            }
-          })
-          .catch(() => undefined);
-        void this.refreshBaseSnapshot().catch(() => undefined);
-        if (this.settings.autoSyncEnabled !== false) {
-          this._autoSync(vaultBase);
+        if (!downloadedBin || !vaultBase) return;
+        // Re-hydrate if transitioning from absent -> present, or silently align
+        // already-installed Python runtime when plugin version jumped on Marketplace.
+        if (!hadNativeBefore) {
+          void this.refreshUpgradePlan().catch(() => undefined);
+          void this.getClient()
+            .configValidate()
+            .then((validation) => {
+              if (validation.state === "migration_required") {
+                this._needsConfigMigration = true;
+              }
+            })
+            .catch(() => undefined);
+          void this.refreshBaseSnapshot().catch(() => undefined);
+          if (this.settings.autoSyncEnabled !== false) {
+            this._autoSync(vaultBase);
+          }
+          this._settingTab?.display();
         }
-        this._settingTab?.display();
+        const ptr = readRuntimePointer();
+        if (ptr && pluginVersion) {
+          const norm = (s: string) =>
+            String(s || "")
+              .trim()
+              .replace(/^[vV]/, "")
+              .replace(/[-_.]?(?:rc)\.?(\d+)/i, "rc$1")
+              .replace(/[-_.]?(?:beta|b)\.?(\d+)/i, "b$1")
+              .replace(/[-_.]?(?:alpha|a)\.?(\d+)/i, "a$1")
+              .toLowerCase();
+          if (norm(ptr.paperforgeVersion) !== norm(pluginVersion)) {
+            void this.getClient()
+              .daemonSubmitRuntimeUpdate(pluginVersion)
+              .catch(() => undefined);
+          }
+        }
       })
       .catch(() => undefined);
 
@@ -994,6 +1016,34 @@ export default class PaperForgePlugin extends Plugin {
 
   getBaseSnapshotCache(): BaseTableSnapshotDto | null {
     return this._baseSnapshotCache ?? null;
+  }
+
+  getBaseFilters(viewKey: string): {
+    query?: string;
+    domain?: string;
+    collection?: string;
+    status?: string;
+    minIf?: number;
+  } {
+    const map = this.settings._baseFilters ?? {};
+    return { ...(map[viewKey] ?? map.default ?? {}) };
+  }
+
+  setBaseFilters(
+    viewKey: string,
+    next: {
+      query?: string;
+      domain?: string;
+      collection?: string;
+      status?: string;
+      minIf?: number;
+    }
+  ): void {
+    if (!this.settings._baseFilters) {
+      this.settings._baseFilters = {};
+    }
+    this.settings._baseFilters[viewKey || "default"] = { ...next };
+    void this.saveSettings();
   }
 
   /** Zero-idle shared background activity projection for Companion / Base UI strips. */

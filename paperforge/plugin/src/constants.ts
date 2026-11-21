@@ -140,6 +140,22 @@ export interface PaperForgeSettings {
   vector_db_api_base: string;
   vector_db_api_model: string;
   vector_db_provider_type?: string;
+  vector_db_dimensions?: string;
+  zotero_source_mode?: "sqlite" | "bbt";
+  domain_mode?: "per_collection" | "unified";
+  zotero_selected_collections?: string[];
+  journal_metrics_mode?: "auto" | "easyscholar" | "local_only";
+  _easyscholar_configured?: boolean;
+  _baseFilters?: Record<
+    string,
+    {
+      query?: string;
+      domain?: string;
+      collection?: string;
+      status?: string;
+      minIf?: number;
+    }
+  >;
   last_seen_version: string;
   capabilityState: Record<string, ProbeEnvelope>;
   autoSyncEnabled?: boolean;
@@ -176,6 +192,13 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   vector_db_api_base: "",
   vector_db_api_model: "text-embedding-3-small",
   vector_db_provider_type: "openai_sdk",
+  vector_db_dimensions: "",
+  zotero_source_mode: "sqlite",
+  domain_mode: "per_collection",
+  zotero_selected_collections: [],
+  journal_metrics_mode: "auto",
+  _easyscholar_configured: false,
+  _baseFilters: {},
   system_dir: "",
   resources_dir: "",
   literature_dir: "",
