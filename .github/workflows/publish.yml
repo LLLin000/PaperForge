@@ -74,15 +74,23 @@ jobs:
       - name: Install musl cross toolchain (Linux static zero-glibc dependency)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+            python3 -m pip install --quiet --break-system-packages ziglang cargo-zigbuild || python3 -m pip install --quiet ziglang cargo-zigbuild
+          else
+            sudo apt-get update
+            sudo apt-get install -y musl-tools
+          fi
 
       - name: Build native Rust daemon (${{ matrix.target }})
         working-directory: crates/paperforge-daemon
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
-          CC_aarch64_unknown_linux_musl: aarch64-linux-gnu-gcc
-        run: cargo build --release --target ${{ matrix.target }}
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+            cargo zigbuild --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
 
       - name: Ad-hoc codesign binary on macOS (Apple Silicon / Gatekeeper)
         if: runner.os == 'macOS'
