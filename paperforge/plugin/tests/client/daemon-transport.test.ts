@@ -286,4 +286,74 @@ describe("NodeProcessTransport warm daemon & scoped invalidation", () => {
     expect(mockSpawn).toHaveBeenCalledTimes(2);
     transport.shutdownDaemon();
   });
+
+  it("dispatches duplex ControlDaemon push events while resolving interleaved RPCs", async () => {
+    const daemonChild = new MockChildProcess();
+    daemonChild.stdin.write = vi.fn((chunk: string) => {
+      daemonChild.writes.push(chunk);
+      const req = JSON.parse(chunk.trim()) as { id: number; op?: string };
+      queueMicrotask(() => {
+        // Interleave an unsolicited server-push event before the RPC response
+        daemonChild.stdout.emit(
+          "data",
+          JSON.stringify({
+            event: "task.updated",
+            seq: 1,
+            vault: vaultPath,
+            data: {
+              job_id: "job_123",
+              kind: "upgrade.heal",
+              status: "running",
+              current: 3,
+              total: 10,
+            },
+          }) +
+            "\n" +
+            JSON.stringify({
+              id: req.id,
+              ok: true,
+              exit_code: 0,
+              stdout: JSON.stringify({
+                ok: true,
+                pid: 4242,
+                parent_pid: process.pid,
+                uptime_sec: 1.5,
+                rss_bytes: 18_000_000,
+                rss_mb: 17.17,
+                heavy_modules_loaded: [],
+                active_jobs: [],
+                unacked_notice_count: 0,
+                cached_vaults: [],
+              }),
+              stderr: "",
+            }) +
+            "\n"
+        );
+      });
+      return true;
+    });
+
+    const mockSpawn = vi.fn().mockReturnValue(daemonChild);
+    const transport = new NodeProcessTransport({
+      vaultPath,
+      spawnFn: mockSpawn as unknown as typeof import("child_process").spawn,
+      useDaemon: true,
+    });
+    const client = new PaperForgeClient({ transport });
+    const receivedEvents: Array<{
+      event: string;
+      data?: Record<string, unknown>;
+    }> = [];
+    const unsub = client.onDaemonEvent((ev) => receivedEvents.push(ev));
+
+    const health = await client.daemonHealth();
+    expect(health?.ok).toBe(true);
+    expect(health?.heavy_modules_loaded).toEqual([]);
+    expect(receivedEvents).toHaveLength(1);
+    expect(receivedEvents[0].event).toBe("task.updated");
+    expect(receivedEvents[0].data?.job_id).toBe("job_123");
+
+    unsub();
+    transport.shutdownDaemon();
+  });
 });

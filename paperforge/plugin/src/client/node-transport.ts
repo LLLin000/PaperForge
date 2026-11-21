@@ -25,6 +25,7 @@ import {
   type StreamHandle,
   type NdjsonEvent,
   type LongTaskOutcome,
+  type DaemonPushEvent,
   AsyncEventQueue,
 } from "./transport";
 import { stripCredentialEnv } from "../services/secret-storage";
@@ -466,6 +467,9 @@ export class NodeProcessTransport implements Transport {
   private readonly _useDaemon: boolean;
   private _daemonSupported = true;
   private _daemon: DaemonSession | null = null;
+  private readonly _daemonListeners = new Set<
+    (event: DaemonPushEvent) => void
+  >();
 
   constructor(options: NodeProcessTransportOptions) {
     this._vaultPath = options.vaultPath;
@@ -744,6 +748,8 @@ export class NodeProcessTransport implements Transport {
     this.shutdownDaemon();
 
     const env = paperforgeEnrichedEnv();
+    env.PAPERFORGE_PARENT_PID = String(process.pid);
+    env.PAPERFORGE_DAEMON_PUSH = "1";
     const child = this._spawnFn(
       py.path,
       [
@@ -787,6 +793,11 @@ export class NodeProcessTransport implements Transport {
         if (!line) continue;
         let msg: {
           id?: unknown;
+          event?: unknown;
+          seq?: unknown;
+          ts?: unknown;
+          vault?: unknown;
+          data?: unknown;
           exit_code?: unknown;
           stdout?: unknown;
           stderr?: unknown;
@@ -794,6 +805,26 @@ export class NodeProcessTransport implements Transport {
         try {
           msg = JSON.parse(line);
         } catch {
+          continue;
+        }
+        if (typeof msg.event === "string" && msg.id === undefined) {
+          const pushEv: DaemonPushEvent = {
+            event: msg.event,
+            seq: typeof msg.seq === "number" ? msg.seq : undefined,
+            ts: typeof msg.ts === "number" ? msg.ts : undefined,
+            vault: typeof msg.vault === "string" ? msg.vault : null,
+            data:
+              msg.data && typeof msg.data === "object"
+                ? (msg.data as Record<string, unknown>)
+                : {},
+          };
+          for (const listener of this._daemonListeners) {
+            try {
+              listener(pushEv);
+            } catch {
+              // Isolate UI listener errors from transport event loop
+            }
+          }
           continue;
         }
         const rpcId = typeof msg.id === "number" ? msg.id : Number(msg.id);
@@ -850,6 +881,52 @@ export class NodeProcessTransport implements Transport {
     });
 
     return session;
+  }
+
+  onDaemonEvent(listener: (event: DaemonPushEvent) => void): () => void {
+    this._daemonListeners.add(listener);
+    return () => {
+      this._daemonListeners.delete(listener);
+    };
+  }
+
+  async rpc(
+    payload: Record<string, unknown>,
+    timeoutMs = 30000
+  ): Promise<string> {
+    const py = await this.resolvePython();
+    const session = this._ensureDaemonSession(py);
+    const id = session.nextId++;
+    const line =
+      JSON.stringify({
+        vault: this._vaultPath,
+        ...payload,
+        id,
+      }) + "\n";
+
+    return new Promise<string>((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      if (timeoutMs > 0) {
+        timer = setTimeout(() => {
+          session.pending.delete(id);
+          const timeoutErr = new Error(
+            `PaperForge daemon RPC timed out after ${timeoutMs}ms`
+          ) as Error & { timedOut: boolean };
+          timeoutErr.timedOut = true;
+          this.shutdownDaemon();
+          reject(timeoutErr);
+        }, timeoutMs);
+      }
+
+      session.pending.set(id, { resolve, reject, timer });
+      try {
+        session.child.stdin?.write(line);
+      } catch (err) {
+        session.pending.delete(id);
+        if (timer) clearTimeout(timer);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    });
   }
 
   shutdownDaemon(): void {

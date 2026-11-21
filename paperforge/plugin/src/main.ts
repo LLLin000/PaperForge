@@ -71,15 +71,18 @@ import {
   PaperForgeClient,
   NodeProcessTransport,
   type BaseTableSnapshotDto,
+  type VaultUpgradePlanDto,
+  type DaemonJobDto,
 } from "./client";
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
 export interface ActiveBackgroundTask {
-  kind: "sync" | "ocr" | "embed";
+  kind: "sync" | "ocr" | "embed" | "heal";
   label: string;
   current?: number;
   total?: number;
   key?: string;
+  jobId?: string;
 }
 
 export default class PaperForgePlugin extends Plugin {
@@ -104,6 +107,10 @@ export default class PaperForgePlugin extends Plugin {
   private _lastStateSeq = -1;
   private _stateSeqWatcher: fs.FSWatcher | null = null;
   private _stateSeqTimer: ReturnType<typeof setTimeout> | null = null;
+  private _daemonJobs = new Map<string, DaemonJobDto>();
+  private _unsubscribeDaemon: (() => void) | null = null;
+  private _upgradePlanCache: VaultUpgradePlanDto | null = null;
+  private _upgradeBannerDismissedForSession = false;
 
   private _client: PaperForgeClient | null = null;
 
@@ -116,8 +123,77 @@ export default class PaperForgePlugin extends Plugin {
         vaultPath,
       });
       this._client = new PaperForgeClient({ transport });
+      this._unsubscribeDaemon?.();
+      this._unsubscribeDaemon = this._client.onDaemonEvent((ev) => {
+        this._handleDaemonPushEvent(ev);
+      });
     }
     return this._client;
+  }
+
+  private _handleDaemonPushEvent(ev: {
+    event: string;
+    data?: Record<string, unknown>;
+  }): void {
+    if (ev.event === "task.updated" && ev.data) {
+      const job = ev.data as unknown as DaemonJobDto;
+      if (job.job_id) {
+        if (job.status === "running" || job.status === "cancelling") {
+          this._daemonJobs.set(job.job_id, job);
+        } else {
+          this._daemonJobs.delete(job.job_id);
+        }
+        this._emitStateChanged(job.item_id ? [job.item_id] : []);
+      }
+      return;
+    }
+    if (ev.event === "notice.push" && ev.data) {
+      const title = String(ev.data.title ?? "").trim();
+      const detail = String(ev.data.detail ?? "").trim();
+      const level = String(ev.data.level ?? "info");
+      const nid = String(ev.data.notice_id ?? "");
+      if (title) {
+        const msg = detail ? `${title}: ${detail.slice(0, 140)}` : title;
+        new Notice(msg, level === "warning" || level === "error" ? 8000 : 5000);
+      }
+      if (nid) {
+        void this._client?.daemonAckNotice(nid).catch(() => undefined);
+      }
+      this._settingTab?._refreshAllReadModels();
+      return;
+    }
+    if (ev.event === "state.changed") {
+      const seq = Number(ev.data?.seq ?? -1);
+      if (seq > 0 && seq !== this._lastStateSeq) {
+        this._lastStateSeq = seq;
+        this._client?.invalidateCache();
+        void this.refreshBaseSnapshot().catch(() => undefined);
+      }
+    }
+  }
+
+  getUpgradePlanCache(): VaultUpgradePlanDto | null {
+    return this._upgradePlanCache;
+  }
+
+  isUpgradeBannerDismissed(): boolean {
+    return this._upgradeBannerDismissedForSession;
+  }
+
+  dismissUpgradeBannerForSession(): void {
+    this._upgradeBannerDismissedForSession = true;
+    this._emitStateChanged();
+  }
+
+  async refreshUpgradePlan(): Promise<VaultUpgradePlanDto | null> {
+    try {
+      const plan = await this.getClient().vaultUpgradePlan();
+      this._upgradePlanCache = plan;
+      this._emitStateChanged();
+      return plan;
+    } catch {
+      return this._upgradePlanCache;
+    }
   }
 
   /** Read-only view of the Python-published runtime pointer.
@@ -603,6 +679,7 @@ export default class PaperForgePlugin extends Plugin {
         })
         .catch(() => undefined);
       this._startStateSeqWatcher(vaultBase);
+      void this.refreshUpgradePlan().catch(() => undefined);
     }
   }
 
@@ -699,6 +776,11 @@ export default class PaperForgePlugin extends Plugin {
 
   private _autoSync(vaultPath: string) {
     if (this._autoSyncRunning) return;
+    if (this._upgradePlanCache?.provenance?.needs_upgrade === true) {
+      // Pause automatic background sync until veteran layout cutover runs so
+      // legacy System/PaperForge directories stay pristine for 1-click upgrade.
+      return;
+    }
     this._autoSyncRunning = true;
     this._emitStateChanged();
 
@@ -874,6 +956,34 @@ export default class PaperForgePlugin extends Plugin {
         key: ep?.key || undefined,
       });
     }
+    for (const dj of this._daemonJobs.values()) {
+      const mappedKind: ActiveBackgroundTask["kind"] =
+        dj.kind === "upgrade.heal"
+          ? "heal"
+          : dj.kind === "ocr"
+            ? "ocr"
+            : dj.kind === "embed"
+              ? "embed"
+              : "sync";
+      if (mappedKind !== "heal" && tasks.some((x) => x.kind === mappedKind)) {
+        continue;
+      }
+      tasks.push({
+        kind: mappedKind,
+        label:
+          mappedKind === "heal"
+            ? "正在后台整理历史文献结构"
+            : mappedKind === "ocr"
+              ? t("activity_ocr") || "Parsing fulltext"
+              : mappedKind === "embed"
+                ? t("activity_embed") || "Building embeddings"
+                : t("activity_syncing") || "Syncing library",
+        current: dj.total > 0 ? dj.current : undefined,
+        total: dj.total > 0 ? dj.total : undefined,
+        key: dj.item_id || undefined,
+        jobId: dj.job_id,
+      });
+    }
     return tasks;
   }
 
@@ -1044,6 +1154,9 @@ export default class PaperForgePlugin extends Plugin {
       // ignore watcher close errors
     }
     this._stateSeqWatcher = null;
+    this._unsubscribeDaemon?.();
+    this._unsubscribeDaemon = null;
+    this._daemonJobs.clear();
     // In-flight embed/OCR operations are owned by the shared client's
     // OperationLock — cancelled below via cancelActiveOperation.
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);

@@ -976,6 +976,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_daemon.add_argument("--stdio", action="store_true", default=True, help="Serve JSON-RPC over stdin/stdout")
     p_daemon.add_argument("--idle-timeout", type=int, default=300, metavar="SEC",
                           help="Auto-exit after SEC seconds idle (default: 300; 0 disables)")
+    p_daemon.add_argument("--parent-pid", type=int, default=None, metavar="PID",
+                          help="Optional host process PID to monitor (exits cleanly if parent dies)")
     return parser
 
 # ---------------------------------------------------------------------------

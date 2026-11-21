@@ -69,6 +69,15 @@ export interface StreamHandle {
   outcome: Promise<LongTaskOutcome>;
 }
 
+/** Asynchronous push event emitted by the warm ControlDaemon over duplex stdout. */
+export interface DaemonPushEvent {
+  event: "task.updated" | "notice.push" | "state.changed" | string;
+  seq?: number;
+  ts?: number;
+  vault?: string | null;
+  data?: Record<string, unknown>;
+}
+
 export interface Transport {
   /**
    * Execute a PaperForge subcommand to completion, returning raw stdout string.
@@ -80,6 +89,17 @@ export interface Transport {
    * Launch a PaperForge subcommand in streaming mode (#137 NDJSON).
    */
   stream(argv: string[], options?: StreamOptions): StreamHandle;
+
+  /**
+   * Optional direct control-plane RPC to the warm ControlDaemon (job.submit,
+   * daemon.health, notice.list, etc.).
+   */
+  rpc?(payload: Record<string, unknown>, timeoutMs?: number): Promise<string>;
+
+  /**
+   * Optional subscription to server-pushed ControlDaemon events.
+   */
+  onDaemonEvent?(listener: (event: DaemonPushEvent) => void): () => void;
 
   /**
    * Open the external runtime installer in a terminal window. Optional: only
