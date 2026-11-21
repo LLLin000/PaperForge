@@ -336,7 +336,53 @@ class SyncService:
                                 h.update(f"note:{dname}/{ne.name}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
             except OSError:
                 pass
+        zdir = paths.get("zotero_dir")
+        if zdir:
+            for zname in ("zotero.sqlite", "zotero.sqlite-wal"):
+                zp = zdir / zname
+                if zp.is_file():
+                    try:
+                        st = zp.stat()
+                        h.update(f"zot:{zname}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+                    except OSError:
+                        pass
         return h.hexdigest()
+
+    def _materialize_sqlite_exports_if_enabled(self, paths: dict[str, Path]) -> None:
+        """Direct read-only sync from zotero.sqlite when enabled and zotero.sqlite exists."""
+        try:
+            from paperforge.config import load_config
+
+            snap = load_config(self.vault)
+            mode = str(snap.values["zotero_source_mode"].value or "sqlite")
+            if mode != "sqlite":
+                return
+            zdir = paths.get("zotero_dir")
+            if not zdir or not (zdir / "zotero.sqlite").is_file():
+                return
+            domain_mode = str(snap.values["domain_mode"].value or "per_collection")
+            raw_sel = str(snap.values["zotero_selected_collections"].value or "").strip()
+            selected: list[str] | None = None
+            if raw_sel:
+                if raw_sel.startswith("["):
+                    import json as _json
+
+                    parsed = _json.loads(raw_sel)
+                    if isinstance(parsed, list):
+                        selected = [str(x).strip() for x in parsed if str(x).strip()]
+                else:
+                    selected = [s.strip() for s in raw_sel.split(",") if s.strip()]
+            from paperforge.adapters.zotero_sqlite import materialize_zotero_sqlite_exports
+
+            materialize_zotero_sqlite_exports(
+                self.vault,
+                paths["exports"],
+                zdir,
+                selected_collections=selected,
+                domain_mode=domain_mode,
+            )
+        except Exception as exc:
+            logger.warning("Zotero SQLite auto-materialization skipped: %s", exc)
 
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
@@ -367,7 +413,12 @@ class SyncService:
             except Exception:
                 fastpath_paths = None
 
-        # ── Pre-check: BBT exports ──
+        # ── Phase 0: Direct zotero.sqlite materialization (when fastpath missed) ──
+        if fastpath_paths is None:
+            fastpath_paths = self.resolve_paths()
+        self._materialize_sqlite_exports_if_enabled(fastpath_paths)
+
+        # ── Pre-check: BBT / materialized exports ──
         _export_code = "ok"
         try:
             with timing.phase("sync.load_exports"):

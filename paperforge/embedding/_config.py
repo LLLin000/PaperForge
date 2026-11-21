@@ -61,3 +61,15 @@ def get_api_model(vault: Path) -> str:
 def get_provider_type(vault: Path) -> str:
     values = _snapshot_values(vault)
     return str(values.get("vector_db_provider_type", "") or "openai_sdk")
+
+
+def get_api_dimensions(vault: Path) -> int | None:
+    """Optional Matryoshka output dimension override (only sent when positive int)."""
+    try:
+        values = _snapshot_values(vault)
+        raw = str(values.get("vector_db_dimensions", "") or "").strip()
+        if raw.isdigit() and int(raw) > 0:
+            return int(raw)
+    except Exception:
+        pass
+    return None

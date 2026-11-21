@@ -270,6 +270,30 @@ fn execute_request(daemon: &NativeControlDaemon, req: &Value) -> (Value, bool) {
         );
     }
 
+    // 1b. Instant Zero-Python `zotero detect [--path DIR] --json`
+    if argv.first().map(|s| s.as_str()) == Some("zotero")
+        && argv.get(1).map(|s| s.as_str()) == Some("detect")
+    {
+        let mut path_arg: Option<&str> = None;
+        let mut i = 2;
+        while i < argv.len() {
+            if argv[i] == "--path" {
+                if let Some(val) = argv.get(i + 1) {
+                    path_arg = Some(val.as_str());
+                    i += 1;
+                }
+            } else if let Some(val) = argv[i].strip_prefix("--path=") {
+                path_arg = Some(val);
+            }
+            i += 1;
+        }
+        let (rc, out, err) = crate::query_ops::handle_zotero_detect(path_arg);
+        return (
+            json!({ "id": id, "exit_code": rc, "stdout": out, "stderr": err }),
+            false,
+        );
+    }
+
     let python_available = NativeControlDaemon::resolve_python_exe().is_some();
 
     // 2. Native `< 2ms` fast-paths when vault is supplied
@@ -602,5 +626,47 @@ mod tests {
             b"abc",
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         ));
+    }
+
+    #[test]
+    fn native_zotero_detect_reads_sqlite_collections_without_python() {
+        let tmp = env::temp_dir().join(format!("pf_zot_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let zdb = tmp.join("zotero.sqlite");
+        let conn = Connection::open(&zdb).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE itemTypes (itemTypeID INTEGER PRIMARY KEY, typeName TEXT);
+             CREATE TABLE items (itemID INTEGER PRIMARY KEY, itemTypeID INTEGER, key TEXT);
+             CREATE TABLE deletedItems (itemID INTEGER PRIMARY KEY);
+             CREATE TABLE collections (collectionID INTEGER PRIMARY KEY, collectionName TEXT, parentCollectionID INTEGER, key TEXT);
+             CREATE TABLE collectionItems (collectionID INTEGER, itemID INTEGER);
+             INSERT INTO itemTypes VALUES (1, 'journalArticle'), (2, 'attachment');
+             INSERT INTO items VALUES (1, 1, 'ABC12345'), (2, 2, 'ATT99999');
+             INSERT INTO collections VALUES (10, 'Cartilage', NULL, 'CROOT1'), (11, 'InVivo', 10, 'CSUB01');
+             INSERT INTO collectionItems VALUES (11, 1);",
+        )
+        .unwrap();
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 9,
+                "argv": ["zotero", "detect", "--path", tmp.to_string_lossy(), "--json"],
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let env: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(env["ok"], true);
+        assert_eq!(env["data"]["found"], true);
+        assert_eq!(env["data"]["total_papers"], 1);
+        assert_eq!(env["data"]["collections"].as_array().unwrap().len(), 2);
+        assert_eq!(env["data"]["collections"][1]["path"], "Cartilage/InVivo");
+        assert_eq!(env["data"]["collections"][0]["item_count"], 1);
+
+        let _ = fs::remove_dir_all(&tmp);
     }
 }

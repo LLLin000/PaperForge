@@ -48,6 +48,9 @@ pub const AGENT_PLATFORMS: &[&str] = &[
 ];
 
 pub const PROVIDER_TYPES: &[&str] = &["openai_sdk", "requests"];
+pub const ZOTERO_SOURCE_MODES: &[&str] = &["sqlite", "bbt"];
+pub const DOMAIN_MODES: &[&str] = &["per_collection", "unified"];
+pub const JOURNAL_METRICS_MODES: &[&str] = &["auto", "easyscholar", "local_only"];
 
 pub const FIELD_SPECS: &[FieldSpec] = &[
     FieldSpec {
@@ -250,6 +253,66 @@ pub const FIELD_SPECS: &[FieldSpec] = &[
         default_bool: None,
         env_var: Some("VECTOR_DB_API_MODEL"),
         choices: &[],
+        writable: true,
+        allow_empty: false,
+        vault_relative: false,
+    },
+    FieldSpec {
+        key: "vector_db_dimensions",
+        nested_vault_config: false,
+        value_type: "string",
+        default_str: "",
+        default_bool: None,
+        env_var: Some("VECTOR_DB_DIMENSIONS"),
+        choices: &[],
+        writable: true,
+        allow_empty: true,
+        vault_relative: false,
+    },
+    FieldSpec {
+        key: "zotero_source_mode",
+        nested_vault_config: false,
+        value_type: "enum",
+        default_str: "sqlite",
+        default_bool: None,
+        env_var: Some("PAPERFORGE_ZOTERO_SOURCE_MODE"),
+        choices: ZOTERO_SOURCE_MODES,
+        writable: true,
+        allow_empty: false,
+        vault_relative: false,
+    },
+    FieldSpec {
+        key: "domain_mode",
+        nested_vault_config: false,
+        value_type: "enum",
+        default_str: "per_collection",
+        default_bool: None,
+        env_var: Some("PAPERFORGE_DOMAIN_MODE"),
+        choices: DOMAIN_MODES,
+        writable: true,
+        allow_empty: false,
+        vault_relative: false,
+    },
+    FieldSpec {
+        key: "zotero_selected_collections",
+        nested_vault_config: false,
+        value_type: "string",
+        default_str: "",
+        default_bool: None,
+        env_var: Some("PAPERFORGE_ZOTERO_COLLECTIONS"),
+        choices: &[],
+        writable: true,
+        allow_empty: true,
+        vault_relative: false,
+    },
+    FieldSpec {
+        key: "journal_metrics_mode",
+        nested_vault_config: false,
+        value_type: "enum",
+        default_str: "auto",
+        default_bool: None,
+        env_var: Some("PAPERFORGE_JOURNAL_METRICS_MODE"),
+        choices: JOURNAL_METRICS_MODES,
         writable: true,
         allow_empty: false,
         vault_relative: false,

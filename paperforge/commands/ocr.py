@@ -918,8 +918,51 @@ def run(args: argparse.Namespace) -> int:
         print("Error: explicit OCR scope is empty; no papers processed", file=sys.stderr)
         return 2
 
-    # Backward compat: if subcommand was "doctor", diagnose
+    # Backward compat: if subcommand was "doctor" or "test-connection", diagnose
     ocr_action = getattr(args, "ocr_action", None)
+    if ocr_action == "test-connection":
+        from paperforge.config import ConfigError, load_vault_config
+        from paperforge.core.errors import ErrorCode
+        from paperforge.core.result import PFError, PFResult
+        from paperforge.ocr_diagnostics import ocr_doctor
+        from paperforge import __version__ as _PF_VER
+
+        try:
+            cfg: dict[str, str] | None = load_vault_config(vault)
+        except ConfigError:
+            cfg = None
+        try:
+            diag = ocr_doctor(config=cfg, live=False)
+            passed = bool(diag.get("passed"))
+            res = PFResult(
+                ok=passed,
+                command="ocr test-connection",
+                version=_PF_VER,
+                data=diag,
+                error=None
+                if passed
+                else PFError(
+                    code=ErrorCode.VALIDATION_ERROR,
+                    message=str(diag.get("error") or "OCR check failed"),
+                ),
+            )
+            if json_output:
+                print(res.to_json())
+            else:
+                print("OK" if passed else f"Error: {diag.get('error')}")
+            return 0 if passed else 1
+        except Exception as exc:
+            res = PFResult(
+                ok=False,
+                command="ocr test-connection",
+                version=_PF_VER,
+                error=PFError(code=ErrorCode.VALIDATION_ERROR, message=str(exc)),
+            )
+            if json_output:
+                print(res.to_json())
+            else:
+                print(f"Error: {exc}", file=sys.stderr)
+            return 1
     if ocr_action == "doctor" or diagnose_only:
         return _diagnose(vault, live=live, json_output=json_output)
 

@@ -21,7 +21,7 @@
       "21:paperforge.embedding._chroma",
       "34:paperforge.embedding.preflight:_preflight_check",
       "38:paperforge.worker._progress",
-      "83:paperforge.embedding._chroma"
+      "122:paperforge.embedding._chroma"
     ],
     "paperforge.commands.finalize": [
       "33:paperforge.worker._utils"
@@ -71,16 +71,16 @@
       "735:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
-      "429:paperforge.worker._domain",
-      "518:paperforge.worker._utils"
+      "480:paperforge.worker._domain",
+      "569:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"
     ],
     "paperforge.worker.asset_index": [
       "43:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
-      "663:paperforge.embedding._config",
-      "663:paperforge.embedding._config:_read_plugin_settings"
+      "677:paperforge.embedding._config",
+      "677:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
       "3011:paperforge.lineage:_resolve_canonical_pdf"

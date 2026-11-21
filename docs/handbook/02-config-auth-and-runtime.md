@@ -71,9 +71,9 @@
 
 ## 3. 磁盘文件、数据库表与协议 JSON 字段字典
 
-### 3.1 `FIELD_SPECS` 全量配置字段字典（共 17 个字段）
+### 3.1 `FIELD_SPECS` 全量配置字段字典（共 22 个字段）
 
-下表逐项核对自 `paperforge/config.py` 第 94–129 行的 `FIELD_SPECS` 元组（`writable` 默认值均为 `True`）：
+下表逐项核对自 `paperforge/config.py` 的 `FIELD_SPECS` 元组（`writable` 默认值均为 `True`）：
 
 | `key`                     | `storage_path`                       | `value_type` | `default`                                              | `env`                            | `choices`                    | `allow_empty` | `vault_relative` |
 | ------------------------- | ------------------------------------ | ------------ | ------------------------------------------------------ | -------------------------------- | ---------------------------- | ------------- | ---------------- |
@@ -94,6 +94,11 @@
 | `vector_db_provider_type` | `("vector_db_provider_type",)`       | `"enum"`     | `"openai_sdk"`                                         | `"VECTOR_DB_PROVIDER_TYPE"`      | `("openai_sdk", "requests")` | `False`       | `False`          |
 | `vector_db_api_base`      | `("vector_db_api_base",)`            | `"string"`   | `""`                                                   | `"VECTOR_DB_API_BASE"`           | `()`                         | `True`        | `False`          |
 | `vector_db_api_model`     | `("vector_db_api_model",)`           | `"string"`   | `"text-embedding-3-small"`                             | `"VECTOR_DB_API_MODEL"`          | `()`                         | `False`       | `False`          |
+| `vector_db_dimensions`    | `("vector_db_dimensions",)`          | `"string"`   | `""`                                                   | `"VECTOR_DB_DIMENSIONS"`         | `()`                         | `True`        | `False`          |
+| `zotero_source_mode`      | `("zotero_source_mode",)`            | `"enum"`     | `"sqlite"`                                             | `"PAPERFORGE_ZOTERO_SOURCE_MODE"` | `("sqlite", "bbt")`         | `False`       | `False`          |
+| `domain_mode`             | `("domain_mode",)`                   | `"enum"`     | `"per_collection"`                                     | `"PAPERFORGE_DOMAIN_MODE"`       | `("per_collection", "unified")` | `False`     | `False`          |
+| `zotero_selected_collections` | `("zotero_selected_collections",)` | `"string"` | `""`                                                   | `"PAPERFORGE_ZOTERO_COLLECTIONS"` | `()`                        | `True`        | `False`          |
+| `journal_metrics_mode`    | `("journal_metrics_mode",)`          | `"enum"`     | `"auto"`                                               | `"PAPERFORGE_JOURNAL_METRICS_MODE"` | `("auto", "easyscholar", "local_only")` | `False` | `False`     |
 
 > **注意**：`FIELD_SPECS` 中 `system_dir` 的结构体默认值为 `"System"`，但在通过 CLI 运行 `paperforge setup` 初始化全新 Vault（`paperforge.json` 与 `System/PaperForge` 均不存在且未显式传 `--system-dir`）时，`paperforge/cli.py` 会显式注入 `system_dir = ".paperforge"`。
 

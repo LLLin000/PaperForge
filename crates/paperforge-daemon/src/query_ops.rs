@@ -261,6 +261,12 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
         let needs_diag = matches!(ocr_status.as_str(), "failed" | "done_incomplete" | "unknown")
             || (ocr_status == "done" && !ocr_health.is_empty() && ocr_health != "healthy");
 
+        let collections: Vec<Value> = obj
+            .get("collections")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+
         out_rows.insert(
             key.clone(),
             json!({
@@ -270,7 +276,10 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                 "year": str_or("year", ""),
                 "journal": str_or("journal", ""),
                 "impact_factor": str_or("impact_factor", ""),
+                "impact_factor_source": str_or("impact_factor_source", ""),
+                "journal_partition": str_or("journal_partition", ""),
                 "domain": str_or("domain", ""),
+                "collections": collections,
                 "has_pdf": obj.get("has_pdf").and_then(|v| v.as_bool()).unwrap_or(false),
                 "do_ocr": obj.get("do_ocr").and_then(|v| v.as_bool()).unwrap_or(false),
                 "analyze": obj.get("analyze").and_then(|v| v.as_bool()).unwrap_or(false),
@@ -635,6 +644,285 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
                     "re_ocr_needed": 0,
                 }
             }
+        }),
+    );
+    (0, format!("{out}\n"), String::new())
+}
+
+fn parse_zotero_prefs_data_dir(prefs_path: &Path) -> Option<PathBuf> {
+    let raw = fs::read_to_string(prefs_path).ok()?;
+    for line in raw.lines() {
+        let trimmed = line.trim();
+        if !trimmed.contains("\"extensions.zotero.dataDir\"") {
+            continue;
+        }
+        if let Some(after_key) = trimmed.split("\"extensions.zotero.dataDir\"").nth(1) {
+            if let Some(first_q) = after_key.find('"') {
+                let rest = &after_key[first_q + 1..];
+                if let Some(end_q) = rest.rfind('"') {
+                    let val = rest[..end_q].replace("\\\\", "\\").replace("\\\"", "\"");
+                    let p = PathBuf::from(val.trim());
+                    if p.join("zotero.sqlite").is_file() {
+                        return Some(p);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn auto_detect_zotero_dir() -> Option<PathBuf> {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .map(PathBuf::from)
+        .ok();
+    let mut profile_roots: Vec<PathBuf> = Vec::new();
+    if cfg!(windows) {
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            profile_roots.push(PathBuf::from(appdata).join("Zotero").join("Zotero"));
+        }
+    } else if cfg!(target_os = "macos") {
+        if let Some(ref h) = home {
+            profile_roots.push(h.join("Library").join("Application Support").join("Zotero"));
+        }
+    } else if let Some(ref h) = home {
+        profile_roots.push(h.join(".zotero").join("zotero"));
+        profile_roots.push(h.join(".var/app/org.zotero.Zotero/.zotero/zotero"));
+        profile_roots.push(h.join("snap/zotero-snap/common/.zotero/zotero"));
+    }
+
+    for root in profile_roots {
+        let ini = root.join("profiles.ini");
+        let Ok(txt) = fs::read_to_string(&ini) else { continue };
+        let mut is_rel = true;
+        let mut cur_path: Option<String> = None;
+        for line in txt.lines().chain(std::iter::once("[END]")) {
+            let t = line.trim();
+            if t.starts_with('[') {
+                if let Some(p) = cur_path.take() {
+                    let prof_dir = if is_rel { root.join(&p) } else { PathBuf::from(&p) };
+                    if let Some(hit) = parse_zotero_prefs_data_dir(&prof_dir.join("prefs.js")) {
+                        return Some(hit);
+                    }
+                }
+                is_rel = true;
+            } else if let Some(v) = t.strip_prefix("IsRelative=") {
+                is_rel = v.trim() != "0";
+            } else if let Some(v) = t.strip_prefix("Path=") {
+                cur_path = Some(v.trim().to_string());
+            }
+        }
+    }
+
+    if let Some(ref h) = home {
+        for cand in [
+            h.join("Zotero"),
+            h.join(".var/app/org.zotero.Zotero/Zotero"),
+            h.join("snap/zotero-snap/common/Zotero"),
+        ] {
+            if cand.join("zotero.sqlite").is_file() {
+                return Some(cand);
+            }
+        }
+    }
+    None
+}
+
+/// Native Zero-Python `paperforge zotero detect [--path DIR] --json`.
+pub fn handle_zotero_detect(path_arg: Option<&str>) -> (i32, String, String) {
+    let explicit = path_arg
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| crate::config_ops::expand_tilde(s));
+    let detected = explicit.or_else(auto_detect_zotero_dir);
+    let Some(zdir) = detected else {
+        let out = pf_ok(
+            "zotero detect",
+            json!({
+                "found": false,
+                "zotero_dir": "",
+                "total_papers": 0,
+                "collections": [],
+            }),
+        );
+        return (0, format!("{out}\n"), String::new());
+    };
+    let db_src = zdir.join("zotero.sqlite");
+    if !db_src.is_file() {
+        let out = pf_ok(
+            "zotero detect",
+            json!({
+                "found": false,
+                "zotero_dir": zdir.to_string_lossy(),
+                "total_papers": 0,
+                "collections": [],
+            }),
+        );
+        return (0, format!("{out}\n"), String::new());
+    }
+
+    // Snapshot copy to avoid locks while Zotero desktop is open
+    let tmp_dir = std::env::temp_dir().join(format!(
+        "pf_zot_rust_{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    let _ = fs::create_dir_all(&tmp_dir);
+    for suf in ["", "-wal", "-shm"] {
+        let src = zdir.join(format!("zotero.sqlite{suf}"));
+        if src.is_file() {
+            let _ = fs::copy(&src, tmp_dir.join(format!("zotero.sqlite{suf}")));
+        }
+    }
+    let snap_db = tmp_dir.join("zotero.sqlite");
+    let mut total_papers: i64 = 0;
+    let mut out_cols: Vec<Value> = Vec::new();
+
+    if let Some(conn) = open_readonly_db(&snap_db) {
+        total_papers = conn
+            .query_row(
+                "SELECT COUNT(*) FROM items i JOIN itemTypes it ON i.itemTypeID = it.itemTypeID \
+                 WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems) \
+                 AND it.typeName NOT IN ('attachment','note','annotation')",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+
+        struct ColMeta {
+            key: String,
+            name: String,
+            parent_id: Option<i64>,
+        }
+        let mut cols: HashMap<i64, ColMeta> = HashMap::new();
+        if let Ok(mut st) = conn.prepare(
+            "SELECT collectionID, key, collectionName, parentCollectionID FROM collections",
+        ) {
+            if let Ok(rows) = st.query_map([], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, Option<i64>>(3)?,
+                ))
+            }) {
+                for (cid, key, name, pid) in rows.flatten() {
+                    cols.insert(
+                        cid,
+                        ColMeta {
+                            key,
+                            name,
+                            parent_id: pid,
+                        },
+                    );
+                }
+            }
+        }
+
+        let mut direct: HashMap<i64, std::collections::HashSet<i64>> = HashMap::new();
+        if let Ok(mut st) = conn.prepare(
+            "SELECT ci.collectionID, ci.itemID FROM collectionItems ci \
+             JOIN items i ON ci.itemID = i.itemID \
+             JOIN itemTypes it ON i.itemTypeID = it.itemTypeID \
+             WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems) \
+             AND it.typeName NOT IN ('attachment','note','annotation')",
+        ) {
+            if let Ok(rows) = st.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?))) {
+                for (cid, iid) in rows.flatten() {
+                    direct.entry(cid).or_default().insert(iid);
+                }
+            }
+        }
+
+        let mut children_map: HashMap<i64, Vec<i64>> = HashMap::new();
+        for (&cid, meta) in &cols {
+            if let Some(pid) = meta.parent_id {
+                children_map.entry(pid).or_default().push(cid);
+            }
+        }
+
+        fn build_path(
+            cid: i64,
+            cols: &HashMap<i64, ColMeta>,
+            depth: usize,
+        ) -> String {
+            if depth > 32 {
+                return String::new();
+            }
+            let Some(m) = cols.get(&cid) else { return String::new() };
+            if let Some(pid) = m.parent_id {
+                if cols.contains_key(&pid) {
+                    let pp = build_path(pid, cols, depth + 1);
+                    if !pp.is_empty() {
+                        return format!("{pp}/{}", m.name);
+                    }
+                }
+            }
+            m.name.clone()
+        }
+
+        fn subtree_count(
+            cid: i64,
+            direct: &HashMap<i64, std::collections::HashSet<i64>>,
+            children_map: &HashMap<i64, Vec<i64>>,
+            acc: &mut std::collections::HashSet<i64>,
+            visited: &mut std::collections::HashSet<i64>,
+        ) {
+            if !visited.insert(cid) {
+                return;
+            }
+            if let Some(s) = direct.get(&cid) {
+                acc.extend(s);
+            }
+            if let Some(kids) = children_map.get(&cid) {
+                for &k in kids {
+                    subtree_count(k, direct, children_map, acc, visited);
+                }
+            }
+        }
+
+        let mut items_vec: Vec<(String, Value)> = Vec::new();
+        for (&cid, meta) in &cols {
+            let path = build_path(cid, &cols, 0);
+            let direct_cnt = direct.get(&cid).map(|s| s.len()).unwrap_or(0);
+            let mut sub_set = std::collections::HashSet::new();
+            let mut visited = std::collections::HashSet::new();
+            subtree_count(cid, &direct, &children_map, &mut sub_set, &mut visited);
+            let parent_key = meta
+                .parent_id
+                .and_then(|pid| cols.get(&pid))
+                .map(|pm| Value::String(pm.key.clone()))
+                .unwrap_or(Value::Null);
+            let top_level = meta.parent_id.map(|pid| !cols.contains_key(&pid)).unwrap_or(true);
+            items_vec.push((
+                path.to_ascii_lowercase(),
+                json!({
+                    "key": meta.key,
+                    "name": meta.name,
+                    "parent_key": parent_key,
+                    "path": path,
+                    "direct_item_count": direct_cnt,
+                    "item_count": sub_set.len(),
+                    "top_level": top_level,
+                }),
+            ));
+        }
+        items_vec.sort_by(|a, b| a.0.cmp(&b.0));
+        out_cols = items_vec.into_iter().map(|(_, v)| v).collect();
+    }
+
+    let _ = fs::remove_dir_all(&tmp_dir);
+    let out = pf_ok(
+        "zotero detect",
+        json!({
+            "found": true,
+            "zotero_dir": zdir.to_string_lossy(),
+            "total_papers": total_papers,
+            "collections": out_cols,
         }),
     );
     (0, format!("{out}\n"), String::new())

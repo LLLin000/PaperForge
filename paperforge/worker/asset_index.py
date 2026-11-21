@@ -509,7 +509,19 @@ def _build_entry(
     authors = item.get("authors", [])
     first_author = authors[0] if authors else ""
     extra = item.get("extra", "")
-    impact_factor = lookup_impact_factor(item.get("journal", ""), extra, vault)
+    from paperforge.worker._utils import lookup_journal_metric_full
+
+    _jm = lookup_journal_metric_full(
+        item.get("journal", ""),
+        extra,
+        vault,
+        issn=str(item.get("issn", "") or ""),
+        zotero_dir=zotero_dir,
+        allow_network=True,
+    )
+    impact_factor = _jm.get("impact_factor", "")
+    impact_factor_source = _jm.get("impact_factor_source", "")
+    journal_partition = _jm.get("journal_partition", "")
     legacy_flags = _legacy_control_flags(paths, key)
     legacy_do_ocr = legacy_flags.get("do_ocr")
     legacy_analyze = legacy_flags.get("analyze")
@@ -569,6 +581,8 @@ def _build_entry(
         "abstract": item.get("abstract", ""),
         "journal": item.get("journal", ""),
         "impact_factor": impact_factor,
+        "impact_factor_source": impact_factor_source,
+        "journal_partition": journal_partition,
         "year": item.get("year", ""),
         "doi": item.get("doi", ""),
         "pmid": item.get("pmid", ""),

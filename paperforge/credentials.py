@@ -22,7 +22,7 @@ from typing import Literal, Protocol
 
 SERVICE = "paperforge"
 
-CredentialKind = Literal["ocr", "embedding"]
+CredentialKind = Literal["ocr", "embedding", "easyscholar"]
 
 _PROFILE_RE_PARTS = ("[a-z][a-z0-9_]{0,63}")
 
@@ -35,7 +35,7 @@ class CredentialKey:
     def __post_init__(self) -> None:
         import re
 
-        if self.kind not in ("ocr", "embedding"):
+        if self.kind not in ("ocr", "embedding", "easyscholar"):
             raise ValueError(f"invalid credential kind: {self.kind!r}")
         if not re.fullmatch(_PROFILE_RE_PARTS, self.profile):
             raise ValueError(f"invalid credential profile: {self.profile!r}")
