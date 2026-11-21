@@ -17,6 +17,10 @@ import {
   matchEmbeddingPresetId,
   renderDomainModePreview,
 } from "./views/domain-preview";
+
+interface InlineRenderOpts {
+  inline?: boolean;
+}
 import type { ZoteroDetectDto } from "./client/paperforge-client";
 import {
   PaperForgeSettings,
@@ -1237,7 +1241,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Render Foundation with the shared module-detail shell. */
   _renderInstallationDetail(
     containerEl: HTMLElement,
-    opts?: { inline?: boolean }
+    opts?: InlineRenderOpts
   ): void {
     // The shell renders the header first, so a stale "ready" envelope must be
     // corrected before it runs: the pointer is the fact, the envelope a cache.
@@ -1687,7 +1691,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** #88: Library module workbench. */
   _renderLibraryDetail(
     containerEl: HTMLElement,
-    opts?: { inline?: boolean }
+    opts?: InlineRenderOpts
   ): void {
     if (!opts?.inline) {
       this._renderModuleDetailShell(containerEl, "library");
@@ -1770,10 +1774,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the OCR detail view (Issue #96: 3-state UX). */
-  _renderOcrDetail(
-    containerEl: HTMLElement,
-    opts?: { inline?: boolean }
-  ): void {
+  _renderOcrDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
     if (!opts?.inline) {
       this._renderModuleDetailShell(containerEl, "ocr");
     }
@@ -1974,10 +1975,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
   /** Render the Memory detail view (Issue #78). */
-  _renderAgentDetail(
-    containerEl: HTMLElement,
-    opts?: { inline?: boolean }
-  ): void {
+  _renderAgentDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
     if (!opts?.inline) {
       this._renderModuleDetailShell(containerEl, "agent");
     }
@@ -2117,10 +2115,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the Memory detail view matching prototype layout. */
-  _renderMemoryDetail(
-    containerEl: HTMLElement,
-    opts?: { inline?: boolean }
-  ): void {
+  _renderMemoryDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
     if (!opts?.inline) {
       this._renderModuleDetailShell(containerEl, "memory", false);
     }
@@ -4823,7 +4818,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const wrapper = containerEl.createDiv({ cls: "pf-setup-journey" });
     const isZh = t("nav_close") === "关闭";
 
-    if (this._setupExpressMode && this._setupStage === 1) {
+    if (
+      this._setupExpressMode &&
+      this._setupStage === 1 &&
+      !this._setupReinstallRequested
+    ) {
       this._renderExpressSetup(wrapper, isZh);
       return;
     }
@@ -4971,11 +4970,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           label:
             action === "install"
               ? isZh
-                ? "一键启用引擎（后台自动配置）"
-                : "Enable Engine (Auto)"
+                ? "一键启用 PaperForge 引擎"
+                : "Enable PaperForge Engine"
               : isZh
-                ? "更新 / 修复引擎"
-                : "Update / Repair Engine",
+                ? "更新 / 修复 PaperForge 引擎"
+                : "Update / Repair PaperForge Engine",
           onClick: () => this._launchRuntimeInstaller(action),
         });
         c1Row.createEl("span", {
