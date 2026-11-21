@@ -4,45 +4,32 @@
 
 ---
 
-## 1. 安装与运行前检查（当前 `v2.0.0`）
+## 1. 一屏极速安装与连接 Zotero（当前 `v2.0.0`，无需 Better BibTeX）
 
 > [!NOTE]
-> PaperForge 会在用户主目录 `.paperforge/runtime/` 下维护完全隔离的受管 Python 运行时并写入 `pointer.json`，不会污染系统包。若桌面端尚未安装本机 Python 3.11+，在 Obsidian 设置 → PaperForge 向导点击安装时会自动启用便携 `uv` 下载托管 Python 3.12 并直接从 GitHub Release 拉取构建好的 `.whl` 完成引导（同时支持下面终端命令；详见 [跨平台安装与热更架构设计](INSTALL-AND-UPDATE-ARCHITECTURE.md)）。
+> 新手科研用户全程无需打开终端、无需提前安装 Python，也**不再强制安装 Better BibTeX 插件**：内置 Rust 侧车会自动拉取完全隔离的托管运行时（`.paperforge/runtime/`），并以只读方式直连 Zotero 的 `zotero.sqlite` 数据库读取文献、PDF 路径与分类树。
 
-1. 桌面端点击向导一键安装（推荐，自动处理零 Python 环境、`uv` 缓存与 Release `.whl`），**或者**在已安装 Python 3.11+ 的终端显式安装受管运行时：
-   ```bash
-   python -m pip install --user "https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl"
-   python -m paperforge runtime install --expected-version 2.0.0
-   ```
-   （将 `2.0.0` 替换为插件设置面板展示的当前版本号）
-2. Obsidian 已打开当前 Vault，且 PaperForge 插件已在社区插件设置中启用
-3. Python 运行时已确认就绪（Obsidian 设置面板 → PaperForge Control Center → 验证通过 `pointer.json` 隔离环境）
+1. 在 Obsidian 社区插件市场安装并启用 **PaperForge** 后，打开设置面板即进入 **「一屏极速开启」**：
+   - **第 1 步（自动计算引擎）**：点一下「一键启用引擎」，后台静默部署运行环境（期间可继续往下选 Zotero，无需干等）。
+   - **第 2 步（直连 Zotero 与目录隔离）**：插件自动定位 `Zotero/zotero.sqlite` 与文献分类。如果你的 Obsidian 库根目录下**已经存在非空个人 `Literature` / `Resources` / `Bases` 文件夹**，PaperForge 会自动识别并将自身目录隔离到 `PaperForge/Literature` 等路径，绝不与原有个人笔记混杂。
+   - **实时选择 Domain 组织模式**：点击卡片即可在右侧实时预览 **选项 A（按 Zotero 顶级分类各自建子文件夹，推荐）** 或 **选项 B（全部文献平铺同目录，靠顶部胶囊在单一 Base 总表中筛选）**。
+   - **第 3 步（可选 AI / 期刊分区增强）**：OCR 与 AI 语义检索（含硅基流动、百炼、智谱、OpenAI、Ollama 一键预设与实时测通按钮）全部收在折叠区，留空也可先用基础文献管理与 PDF 批注；影响因子内置 3 层兜底（Zotero Extra → 本地 `zoterostyle.json` / `journal-tags-cache.json` → 内置 385 本顶刊 OpenAlex CC0 离线种子与在线查询，表格中以 `≈` 区分 2 年平均被引）。
+2. 点击页面底部唯一主按钮 **「保存配置并立即同步文献库」**，首次同步完成即自动标记初始化完成！
 
----
+![一屏极速引导与 A/B 目录实时预览](images/ui-states/v4-13-express-onboarding-and-domain-preview.png)
 
-## 2. 配置 Better BibTeX 自动导出
-
-1. 打开 Zotero
-2. 对你要同步的文献库或分类右键 -> `导出...`
-3. 格式选：**Better BibTeX JSON**
-4. 勾选 **"Keep updated"**
-5. 保存到向导自动创建的导出目录（新库默认为 `{你的Vault路径}/.paperforge/exports/`；旧库升级为 `{你的Vault路径}/System/PaperForge/exports/`）
-
-> 💡 新建 Vault 默认将引擎缓存、OCR 中间文件与内部 `fulltext.md` 收归隐藏目录 `.paperforge/`，避免上万个中间文件拖慢 Obsidian 索引与启动速度；如果你正在使用旧版 `System/PaperForge/` 目录，可随时运行 `paperforge migrate-storage` 一键平滑迁移。
+> [!TIP]
+> 隐藏引擎缓存、OCR 中间文件与内部 `fulltext.md` 默认收归 `.paperforge/`，避免拖慢 Obsidian 索引。若仍习惯使用传统 **Better BibTeX JSON** 工作流，可在引导右上角切至「分步详情模式」按原有 `.paperforge/exports/` 导出路径使用。
 
 ---
 
-## 3. 第一次同步
+## 2. 在单一 `.base` 工作台高效筛选与同步
 
-打开 Dashboard（`Ctrl+P` -> `PaperForge: Open Main Panel`），点击 **Sync Library**。
+> 安装完成后，正式文献笔记保存在你的文献根目录（默认为 `Literature/<专题>/`；检测到同名用户目录时自动隔离为 `PaperForge/Literature/<专题>/`）。
 
-或者终端执行：
+![单一 Base 工作台与粘性多维筛选栏](images/ui-states/v4-01-base-workbench-all-states.png)
 
-```bash
-paperforge sync
-```
-
-完成后，正式文献笔记出现在 `Resources/Literature/<领域>/` 下。
+打开任意 `.base` 视图（默认仅保留一张 **「文献库」总表**），表头固定提供**防丢失的持久化多维筛选条**（`标题/作者/期刊` 即时过滤 → `专题` → `二级子分类` 级联下拉 → `全部 / 待解析 / 已解析 / 已精读` 状态胶囊 → `IF 阈值` 下拉）。日常新增文献后只需点 **Sync Library**（或终端执行 `paperforge sync`）即可秒级增量更新。
 
 ---
 
@@ -91,9 +78,9 @@ paperforge deep-reading
 ## 8. 日常路径
 
 ```
-添加文献到 Zotero
-  -> BBT 自动导出到 exports/
+添加文献到 Zotero（直接只读解析 zotero.sqlite，免 BBT 插件）
   -> 点 Sync
+  -> 在单一 Base 总表利用顶部持久化筛选条定位文献
   -> Obsidian 内置 PDF 阅读器划线/框选批注 (annotations.jsonl)
   -> 标记 do_ocr: true
   -> 运行 OCR

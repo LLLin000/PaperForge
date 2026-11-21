@@ -54,6 +54,45 @@ def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
     sub = getattr(args, "embed_subcommand", "build")
 
+    if sub == "test-connection":
+        from paperforge.embedding.status import test_embedding_connection
+
+        try:
+            probe_data = test_embedding_connection(vault)
+            dim = int(probe_data.get("dimension") or 0)
+            result = PFResult(
+                ok=dim > 0,
+                command="embed test-connection",
+                version=PF_VERSION,
+                data=probe_data,
+                error=None
+                if dim > 0
+                else PFError(
+                    code=ErrorCode.VALIDATION_ERROR,
+                    message="Embedding provider returned empty vector.",
+                ),
+            )
+            if args.json:
+                print(result.to_json())
+            else:
+                print(f"OK: {probe_data.get('model')} ({dim} dims, {probe_data.get('latency_ms')}ms)")
+            return 0 if dim > 0 else 1
+        except Exception as exc:
+            result = PFResult(
+                ok=False,
+                command="embed test-connection",
+                version=PF_VERSION,
+                error=PFError(
+                    code=ErrorCode.VALIDATION_ERROR,
+                    message=str(exc),
+                ),
+            )
+            if args.json:
+                print(result.to_json())
+            else:
+                print(f"Error: {exc}", file=sys.stderr)
+            return 1
+
     if sub == "status":
         status = get_embed_status(vault, probe=getattr(args, "probe", False))
         status["build_state"] = read_vector_build_state(vault)

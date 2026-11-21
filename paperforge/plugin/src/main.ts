@@ -48,6 +48,10 @@ import {
   resolveRuntimeCommand,
   type PointerInfo,
 } from "./services/managed-runtime";
+import {
+  ensureNativeDaemonDownloaded,
+  resolveNativeDaemonBinary,
+} from "./services/native-daemon";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -61,6 +65,7 @@ import {
   PaperForgeConfirmModal,
   PaperForgeSetupWizardModal,
 } from "./views/modals";
+import { PaperForgeUpgradeModal } from "./views/upgrade-modal";
 import {
   applyPathConfigFromList,
   isConfigHydrated,
@@ -71,15 +76,18 @@ import {
   PaperForgeClient,
   NodeProcessTransport,
   type BaseTableSnapshotDto,
+  type VaultUpgradePlanDto,
+  type DaemonJobDto,
 } from "./client";
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
 export interface ActiveBackgroundTask {
-  kind: "sync" | "ocr" | "embed";
+  kind: "sync" | "ocr" | "embed" | "heal";
   label: string;
   current?: number;
   total?: number;
   key?: string;
+  jobId?: string;
 }
 
 export default class PaperForgePlugin extends Plugin {
@@ -104,6 +112,10 @@ export default class PaperForgePlugin extends Plugin {
   private _lastStateSeq = -1;
   private _stateSeqWatcher: fs.FSWatcher | null = null;
   private _stateSeqTimer: ReturnType<typeof setTimeout> | null = null;
+  private _daemonJobs = new Map<string, DaemonJobDto>();
+  private _unsubscribeDaemon: (() => void) | null = null;
+  private _upgradePlanCache: VaultUpgradePlanDto | null = null;
+  private _upgradeBannerDismissedForSession = false;
 
   private _client: PaperForgeClient | null = null;
 
@@ -116,8 +128,93 @@ export default class PaperForgePlugin extends Plugin {
         vaultPath,
       });
       this._client = new PaperForgeClient({ transport });
+      this._unsubscribeDaemon?.();
+      this._unsubscribeDaemon = this._client.onDaemonEvent((ev) => {
+        this._handleDaemonPushEvent(ev);
+      });
     }
     return this._client;
+  }
+
+  private _handleDaemonPushEvent(ev: {
+    event: string;
+    data?: Record<string, unknown>;
+  }): void {
+    if (ev.event === "task.updated" && ev.data) {
+      const job = ev.data as unknown as DaemonJobDto;
+      if (job.job_id) {
+        if (job.status === "running" || job.status === "cancelling") {
+          this._daemonJobs.set(job.job_id, job);
+        } else {
+          this._daemonJobs.delete(job.job_id);
+        }
+        this._emitStateChanged(job.item_id ? [job.item_id] : []);
+      }
+      return;
+    }
+    if (ev.event === "notice.push" && ev.data) {
+      const title = String(ev.data.title ?? "").trim();
+      const detail = String(ev.data.detail ?? "").trim();
+      const level = String(ev.data.level ?? "info");
+      const nid = String(ev.data.notice_id ?? "");
+      if (title) {
+        const msg = detail ? `${title}: ${detail.slice(0, 140)}` : title;
+        new Notice(msg, level === "warning" || level === "error" ? 8000 : 5000);
+      }
+      if (nid) {
+        void this._client?.daemonAckNotice(nid).catch(() => undefined);
+      }
+      this._settingTab?._refreshAllReadModels();
+      return;
+    }
+    if (ev.event === "state.changed") {
+      const seq = Number(ev.data?.seq ?? -1);
+      if (seq > 0 && seq !== this._lastStateSeq) {
+        this._lastStateSeq = seq;
+        this._client?.invalidateCache();
+        void this.refreshBaseSnapshot().catch(() => undefined);
+      }
+    }
+  }
+
+  getUpgradePlanCache(): VaultUpgradePlanDto | null {
+    return this._upgradePlanCache;
+  }
+
+  isUpgradeBannerDismissed(): boolean {
+    return this._upgradeBannerDismissedForSession;
+  }
+
+  dismissUpgradeBannerForSession(): void {
+    this._upgradeBannerDismissedForSession = true;
+    this._emitStateChanged();
+  }
+
+  async refreshUpgradePlan(): Promise<VaultUpgradePlanDto | null> {
+    try {
+      const plan = await this.getClient().vaultUpgradePlan();
+      this._upgradePlanCache = plan;
+      this._emitStateChanged();
+      return plan;
+    } catch {
+      return this._upgradePlanCache;
+    }
+  }
+
+  async openUpgradeModal(): Promise<void> {
+    const plan = this._upgradePlanCache ?? (await this.refreshUpgradePlan());
+    if (!plan) {
+      new Notice("PaperForge: 暂无法读取文献库升级诊断信息。");
+      return;
+    }
+    new PaperForgeUpgradeModal(this.app, this.getClient(), plan, {
+      onDismissForSession: () => this.dismissUpgradeBannerForSession(),
+      onUpgraded: async () => {
+        await this.refreshUpgradePlan();
+        await this.refreshBaseSnapshot().catch(() => undefined);
+        this._settingTab?.display();
+      },
+    }).open();
   }
 
   /** Read-only view of the Python-published runtime pointer.
@@ -576,14 +673,70 @@ export default class PaperForgePlugin extends Plugin {
       callback: () => this._runLegacyConfigMigration(),
     });
 
+    this.addCommand({
+      id: "paperforge-vault-upgrade",
+      name: "检查并无损升级文献库目录结构",
+      callback: () => {
+        void this.openUpgradeModal();
+      },
+    });
+
     this._startConvergenceTimer();
     this._checkReleaseNotes();
 
-    // #142/C0: one-time plugin-assisted config migration — detect legacy
-    // vaults and surface an explicit migrate command.
     const vaultBase = (
       this.app.vault.adapter as unknown as { basePath?: string }
     ).basePath;
+
+    const pluginVersion = this.manifest?.version ?? "";
+    const hadNativeBefore = Boolean(
+      resolveNativeDaemonBinary({ vaultPath: vaultBase })
+    );
+    void ensureNativeDaemonDownloaded(pluginVersion, {
+      checkVersionUpdate: true,
+      onBeforeReplace: () => this._client?.shutdownTransport(),
+    })
+      .then((downloadedBin) => {
+        if (!downloadedBin || !vaultBase) return;
+        // Re-hydrate if transitioning from absent -> present, or silently align
+        // already-installed Python runtime when plugin version jumped on Marketplace.
+        if (!hadNativeBefore) {
+          void this.refreshUpgradePlan().catch(() => undefined);
+          void this.getClient()
+            .configValidate()
+            .then((validation) => {
+              if (validation.state === "migration_required") {
+                this._needsConfigMigration = true;
+              }
+            })
+            .catch(() => undefined);
+          void this.refreshBaseSnapshot().catch(() => undefined);
+          if (this.settings.autoSyncEnabled !== false) {
+            this._autoSync(vaultBase);
+          }
+          this._settingTab?.display();
+        }
+        const ptr = readRuntimePointer();
+        if (ptr && pluginVersion) {
+          const norm = (s: string) =>
+            String(s || "")
+              .trim()
+              .replace(/^[vV]/, "")
+              .replace(/[-_.]?(?:rc)\.?(\d+)/i, "rc$1")
+              .replace(/[-_.]?(?:beta|b)\.?(\d+)/i, "b$1")
+              .replace(/[-_.]?(?:alpha|a)\.?(\d+)/i, "a$1")
+              .toLowerCase();
+          if (norm(ptr.paperforgeVersion) !== norm(pluginVersion)) {
+            void this.getClient()
+              .daemonSubmitRuntimeUpdate(pluginVersion)
+              .catch(() => undefined);
+          }
+        }
+      })
+      .catch(() => undefined);
+
+    // #142/C0: one-time plugin-assisted config migration — detect legacy
+    // vaults and surface an explicit migrate command.
     if (vaultBase) {
       void this.getClient()
         .configValidate()
@@ -603,6 +756,21 @@ export default class PaperForgePlugin extends Plugin {
         })
         .catch(() => undefined);
       this._startStateSeqWatcher(vaultBase);
+      void this.refreshUpgradePlan()
+        .then((plan) => {
+          if (
+            this.settings._setup_complete === false &&
+            this.settings._setup_journey_started !== true &&
+            !readRuntimePointer() &&
+            !plan?.provenance?.needs_upgrade
+          ) {
+            new Notice(
+              "PaperForge 已就绪：请前往「设置 → PaperForge」完成初始引导，或在侧边栏浏览已有文献。",
+              8000
+            );
+          }
+        })
+        .catch(() => undefined);
     }
   }
 
@@ -699,6 +867,11 @@ export default class PaperForgePlugin extends Plugin {
 
   private _autoSync(vaultPath: string) {
     if (this._autoSyncRunning) return;
+    if (this._upgradePlanCache?.provenance?.needs_upgrade === true) {
+      // Pause automatic background sync until veteran layout cutover runs so
+      // legacy System/PaperForge directories stay pristine for 1-click upgrade.
+      return;
+    }
     this._autoSyncRunning = true;
     this._emitStateChanged();
 
@@ -845,6 +1018,34 @@ export default class PaperForgePlugin extends Plugin {
     return this._baseSnapshotCache ?? null;
   }
 
+  getBaseFilters(viewKey: string): {
+    query?: string;
+    domain?: string;
+    collection?: string;
+    status?: string;
+    minIf?: number;
+  } {
+    const map = this.settings._baseFilters ?? {};
+    return { ...(map[viewKey] ?? map.default ?? {}) };
+  }
+
+  setBaseFilters(
+    viewKey: string,
+    next: {
+      query?: string;
+      domain?: string;
+      collection?: string;
+      status?: string;
+      minIf?: number;
+    }
+  ): void {
+    if (!this.settings._baseFilters) {
+      this.settings._baseFilters = {};
+    }
+    this.settings._baseFilters[viewKey || "default"] = { ...next };
+    void this.saveSettings();
+  }
+
   /** Zero-idle shared background activity projection for Companion / Base UI strips. */
   getActiveBackgroundTasks(): ActiveBackgroundTask[] {
     const tasks: ActiveBackgroundTask[] = [];
@@ -872,6 +1073,34 @@ export default class PaperForgePlugin extends Plugin {
         current: ep?.total > 0 ? ep.current : undefined,
         total: ep?.total > 0 ? ep.total : undefined,
         key: ep?.key || undefined,
+      });
+    }
+    for (const dj of this._daemonJobs.values()) {
+      const mappedKind: ActiveBackgroundTask["kind"] =
+        dj.kind === "upgrade.heal"
+          ? "heal"
+          : dj.kind === "ocr"
+            ? "ocr"
+            : dj.kind === "embed"
+              ? "embed"
+              : "sync";
+      if (mappedKind !== "heal" && tasks.some((x) => x.kind === mappedKind)) {
+        continue;
+      }
+      tasks.push({
+        kind: mappedKind,
+        label:
+          mappedKind === "heal"
+            ? "正在后台整理历史文献结构"
+            : mappedKind === "ocr"
+              ? t("activity_ocr") || "Parsing fulltext"
+              : mappedKind === "embed"
+                ? t("activity_embed") || "Building embeddings"
+                : t("activity_syncing") || "Syncing library",
+        current: dj.total > 0 ? dj.current : undefined,
+        total: dj.total > 0 ? dj.total : undefined,
+        key: dj.item_id || undefined,
+        jobId: dj.job_id,
       });
     }
     return tasks;
@@ -1044,6 +1273,9 @@ export default class PaperForgePlugin extends Plugin {
       // ignore watcher close errors
     }
     this._stateSeqWatcher = null;
+    this._unsubscribeDaemon?.();
+    this._unsubscribeDaemon = null;
+    this._daemonJobs.clear();
     // In-flight embed/OCR operations are owned by the shared client's
     // OperationLock — cancelled below via cancelActiveOperation.
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);

@@ -56,9 +56,9 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             ttl_seconds=TTL_LIBRARY,
         )
 
-    zotero_path = Path(zotero_dir)
+    zotero_path = Path(zotero_dir).expanduser()
     if not zotero_path.is_absolute():
-        zotero_path = (vault / zotero_dir).resolve()
+        zotero_path = (vault / zotero_path).resolve()
     if not zotero_path.exists():
         return build_envelope(
             module="library", capability_state="missing_input", severity="error",

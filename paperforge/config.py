@@ -63,6 +63,9 @@ AGENT_PLATFORM_IDS = (
 )
 _VALID_AGENT_PLATFORMS = AGENT_PLATFORM_IDS
 _VALID_PROVIDER_TYPES = ("openai_sdk", "requests")
+_VALID_ZOTERO_SOURCE_MODES = ("sqlite", "bbt")
+_VALID_DOMAIN_MODES = ("per_collection", "unified")
+_VALID_JOURNAL_METRICS_MODES = ("auto", "easyscholar", "local_only")
 
 LEGACY_PATH_KEYS = (
     "system_dir", "resources_dir", "literature_dir", "control_dir",
@@ -126,6 +129,16 @@ FIELD_SPECS: tuple[FieldSpec, ...] = (
               env="VECTOR_DB_API_BASE", allow_empty=True),
     FieldSpec("vector_db_api_model", ("vector_db_api_model",), "string", "text-embedding-3-small",
               env="VECTOR_DB_API_MODEL"),
+    FieldSpec("vector_db_dimensions", ("vector_db_dimensions",), "string", "",
+              env="VECTOR_DB_DIMENSIONS", allow_empty=True),
+    FieldSpec("zotero_source_mode", ("zotero_source_mode",), "enum", "sqlite",
+              env="PAPERFORGE_ZOTERO_SOURCE_MODE", choices=_VALID_ZOTERO_SOURCE_MODES),
+    FieldSpec("domain_mode", ("domain_mode",), "enum", "per_collection",
+              env="PAPERFORGE_DOMAIN_MODE", choices=_VALID_DOMAIN_MODES),
+    FieldSpec("zotero_selected_collections", ("zotero_selected_collections",), "string", "",
+              env="PAPERFORGE_ZOTERO_COLLECTIONS", allow_empty=True),
+    FieldSpec("journal_metrics_mode", ("journal_metrics_mode",), "enum", "auto",
+              env="PAPERFORGE_JOURNAL_METRICS_MODE", choices=_VALID_JOURNAL_METRICS_MODES),
 )
 
 FIELD_BY_KEY: dict[str, FieldSpec] = {spec.key: spec for spec in FIELD_SPECS}

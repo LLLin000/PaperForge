@@ -1041,10 +1041,27 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
     if not first_author:
         authors = entry.get("authors", [])
         first_author = authors[0] if authors else ""
+    existing_aliases_raw = existing_fm.get("aliases")
+    merged_aliases: list[str] = []
+    for cand in (entry.get("title", ""), entry.get("citation_key", "")):
+        c_str = str(cand or "").strip()
+        if c_str and c_str not in merged_aliases:
+            merged_aliases.append(c_str)
+    if isinstance(existing_aliases_raw, list):
+        for a in existing_aliases_raw:
+            a_str = str(a or "").strip()
+            if a_str and a_str not in merged_aliases:
+                merged_aliases.append(a_str)
+    elif isinstance(existing_aliases_raw, str) and existing_aliases_raw.strip():
+        a_str = existing_aliases_raw.strip()
+        if a_str not in merged_aliases:
+            merged_aliases.append(a_str)
+    aliases_literal = ", ".join(yaml_quote(a) for a in merged_aliases)
+
     lines = [
         "---",
         f"title: {yaml_quote(entry.get('title', ''))}",
-        f"aliases: [{yaml_quote(entry.get('title', ''))}, {yaml_quote(entry.get('citation_key', ''))}]",
+        f"aliases: [{aliases_literal}]",
         f"year: {entry.get('year', '')}",
         f"journal: {yaml_quote(entry.get('journal', ''))}",
         f"first_author: {yaml_quote(first_author)}",
@@ -1235,7 +1252,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
                                 "true" if legacy_value else "false",
                             )
                     if updated_content != workspace_content:
-                        main_note_path.write_text(updated_content, encoding="utf-8")
+                        from paperforge.core.io import write_text_atomic
+
+                        write_text_atomic(main_note_path, updated_content)
                 except Exception:
                     pass
             continue
@@ -1250,8 +1269,10 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         if legacy_flags["analyze"] is not None:
             content = update_frontmatter_field(content, "analyze", "true" if legacy_flags["analyze"] else "false")
 
-        # Write main note to workspace (copy of flat note)
-        main_note_path.write_text(content, encoding="utf-8")
+        # Write main note to workspace atomically (copy of flat note)
+        from paperforge.core.io import write_text_atomic
+
+        write_text_atomic(main_note_path, content)
 
         # Create ai/ directory
         ai_dir = workspace_dir / "ai"

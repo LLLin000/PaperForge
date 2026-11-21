@@ -6,6 +6,7 @@ from pathlib import Path
 import openai
 
 from paperforge.embedding._config import (
+    get_api_dimensions,
     get_api_key,
     get_api_model,
     get_provider_type,
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class OpenAICompatibleProvider(EmbeddingProvider):
     def __init__(self, vault: Path):
+        self._vault = vault
         provider_type = get_provider_type(vault)
         if provider_type == "requests":
             from paperforge.embedding.providers.requests_fallback import OpenAICompatibleProvider as Fallback
@@ -28,10 +30,10 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         if not api_key:
             raise ValueError(
                 "No API key configured for embedding. "
-                "Run `paperforge auth set embedding --stdin` or supply "
-                "PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT."
+                "Please enter your API key in Settings -> PaperForge."
             )
         self._model = get_api_model(vault)
+        self._dimensions = get_api_dimensions(vault)
         from paperforge.embedding._config import get_effective_api_base_url
 
         base_url = get_effective_api_base_url(vault)
@@ -46,8 +48,20 @@ class OpenAICompatibleProvider(EmbeddingProvider):
     def encode(self, texts: list[str]) -> list[list[float]]:
         if hasattr(self, "_delegate"):
             return self._delegate.encode(texts)
-        response = self._client.embeddings.create(model=self._model, input=texts)
-        return [d.embedding for d in response.data]
+        kwargs: dict[str, object] = {"model": self._model, "input": texts}
+        if self._dimensions:
+            kwargs["dimensions"] = self._dimensions
+        try:
+            response = self._client.embeddings.create(**kwargs)
+            return [d.embedding for d in response.data]
+        except Exception as sdk_exc:
+            # Auto-fallback to requests when an OpenAI-compatible relay rejects SDK headers/strict schema
+            try:
+                from paperforge.embedding.providers.requests_fallback import OpenAICompatibleProvider as Fallback
+
+                return Fallback(self._vault).encode(texts)
+            except Exception:
+                raise sdk_exc
 
     def encode_single(self, text: str) -> list[float]:
         return self.encode([text])[0]

@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from paperforge.config import resolve_paths
+from paperforge.core.io import write_text_atomic
 from paperforge.worker._utils import (
     read_json,
     write_json,
@@ -139,7 +140,7 @@ def repair_pdf_paths(
                             item.get("zotero_storage_key", ""),
                         )
                         if new_text != text:
-                            record_path.write_text(new_text, encoding="utf-8")
+                            write_text_atomic(record_path, new_text)
                             fixed += 1
                             if verbose:
                                 logger.info("fixed path for %s: %s", zotero_key, new_wikilink)
@@ -159,7 +160,7 @@ def repair_pdf_paths(
                 if resolved:
                     new_text = update_frontmatter_field(text, "path_error", "")
                     if new_text != text:
-                        record_path.write_text(new_text, encoding="utf-8")
+                        write_text_atomic(record_path, new_text)
                         fixed += 1
                         if verbose:
                             logger.info("cleared path_error for %s", zotero_key)
@@ -286,7 +287,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     new_status = "pending"
                     new_record_text = update_frontmatter_field(record_text, "ocr_status", new_status)
                     if new_record_text != record_text:
-                        record_path.write_text(new_record_text, encoding="utf-8")
+                        write_text_atomic(record_path, new_record_text)
                         fixed_formal_note_primary = True
                     if meta_validated_status is not None and meta_validated_status != "done":
                         if meta_path.exists():
@@ -302,13 +303,13 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     if not is_do_ocr:
                         final_record_text = update_frontmatter_field(new_record_text, "do_ocr", "true")
                         if final_record_text != new_record_text:
-                            record_path.write_text(final_record_text, encoding="utf-8")
+                            write_text_atomic(record_path, final_record_text)
                             fixed_formal_note_primary = True
                 elif note_ocr_status == "done" and meta_ocr_status in ("pending", "processing"):
                     new_status = "pending"
                     new_record_text = update_frontmatter_field(record_text, "ocr_status", new_status)
                     if new_record_text != record_text:
-                        record_path.write_text(new_record_text, encoding="utf-8")
+                        write_text_atomic(record_path, new_record_text)
                         fixed_formal_note_primary = True
                     if meta_path.exists():
                         try:
@@ -323,7 +324,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     if not is_do_ocr:
                         final_record_text = update_frontmatter_field(new_record_text, "do_ocr", "true")
                         if final_record_text != new_record_text:
-                            record_path.write_text(final_record_text, encoding="utf-8")
+                            write_text_atomic(record_path, final_record_text)
                             fixed_formal_note_primary = True
                 else:
                     print(f"[WARNING] No --fix handler for {zotero_key}: {div_reason}")

@@ -418,8 +418,24 @@ def _build_entry(
 
     if note_path.parent.exists():
         for stale_note in note_path.parent.glob(f"{key} - *.md"):
-            if stale_note != note_path:
-                stale_note.unlink()
+            if stale_note == note_path:
+                continue
+            try:
+                fm = read_frontmatter_dict(stale_note.read_text(encoding="utf-8"))
+                stale_key = str(fm.get("zotero_key") or "").strip()
+            except Exception:
+                stale_key = ""
+            if stale_key and stale_key != key:
+                continue
+            from paperforge.worker.trash import trash_remove
+
+            trash_remove(
+                stale_note,
+                vault=vault,
+                allowed_root=paths["literature"],
+                operation="superseded_note_filename",
+                paper_key=key,
+            )
 
     # Workspace paths (Phase 26: flat-to-workspace migration)
     main_note_path = workspace_dir / f"{key}.md"
@@ -493,7 +509,19 @@ def _build_entry(
     authors = item.get("authors", [])
     first_author = authors[0] if authors else ""
     extra = item.get("extra", "")
-    impact_factor = lookup_impact_factor(item.get("journal", ""), extra, vault)
+    from paperforge.worker._utils import lookup_journal_metric_full
+
+    _jm = lookup_journal_metric_full(
+        item.get("journal", ""),
+        extra,
+        vault,
+        issn=str(item.get("issn", "") or ""),
+        zotero_dir=zotero_dir,
+        allow_network=True,
+    )
+    impact_factor = _jm.get("impact_factor", "")
+    impact_factor_source = _jm.get("impact_factor_source", "")
+    journal_partition = _jm.get("journal_partition", "")
     legacy_flags = _legacy_control_flags(paths, key)
     legacy_do_ocr = legacy_flags.get("do_ocr")
     legacy_analyze = legacy_flags.get("analyze")
@@ -553,6 +581,8 @@ def _build_entry(
         "abstract": item.get("abstract", ""),
         "journal": item.get("journal", ""),
         "impact_factor": impact_factor,
+        "impact_factor_source": impact_factor_source,
+        "journal_partition": journal_partition,
         "year": item.get("year", ""),
         "doi": item.get("doi", ""),
         "pmid": item.get("pmid", ""),

@@ -106,3 +106,6 @@ pip/cache/
 
 # transient commit-message files
 .git-msg/
+
+# Rust build artifacts (native sidecar crate)
+crates/**/target/

@@ -1143,7 +1143,8 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(client.runAction).not.toHaveBeenCalled();
     expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
       "update",
-      (tab.plugin as any).manifest.version
+      (tab.plugin as any).manifest.version,
+      { allowUvDownload: true }
     );
   });
 
@@ -1183,7 +1184,8 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(client.runAction).not.toHaveBeenCalled();
     expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
       "repair",
-      (tab.plugin as any).manifest.version
+      (tab.plugin as any).manifest.version,
+      { allowUvDownload: true }
     );
   });
 

@@ -1,7 +1,7 @@
 # PaperForge Obsidian UI 全景设计与 `.base` 交互规范
 
 > 本文档完整记录 PaperForge 插件在 Obsidian 中的全局设计语言（**MyGo AsterLab 暖灰精密科研体系** + Obsidian 原生主题适配）、精简后的单一 **`.base` 文献库视图与表头多选上下文动作栏**、**Companion 伴读侧栏与持续演进研究认知记忆**，以及对标 **macOS 预览 (`预览.app`)** 的双层工具栏 PDF 阅读批注体验与 **Zotero 式笔记引述桥**。
-> 文档内全部 12 张界面截图均由真实生产 TypeScript 视图组件配合 `paperforge/plugin/styles.css` 在无头浏览器中实时渲染生成，确保规范与上线代码始终同构。
+> 文档内全部 13 张界面截图均由真实生产 TypeScript 视图组件配合 `paperforge/plugin/styles.css` 在无头浏览器中实时渲染生成，确保规范与上线代码始终同构。
 
 ---
 
@@ -11,10 +11,10 @@
 
 | 组成部分 | 仓库路径 | 职责 |
 | --- | --- | --- |
-| 渲染编排器 | `scripts/dev/render_obsidian_ui_docs.py` | 调用 `esbuild` 打包展示入口并注入 `paperforge/plugin/styles.css`，通过 Playwright Chromium 截取 12 张 `@2x` Retina PNG |
+| 渲染编排器 | `scripts/dev/render_obsidian_ui_docs.py` | 调用 `esbuild` 打包展示入口并注入 `paperforge/plugin/styles.css`，通过 Playwright Chromium 截取 13 张 `@2x` Retina PNG |
 | 场景构造入口 | `scripts/dev/_obsidian_ui_showcase.ts` | 实例化真实 `PaperForgeBasesView`、`PaperForgeStatusView`、`PaperForgePdfView`、`PaperForgeSettingTab`、`OcrWorkspaceView` 与三大安全弹窗，覆写合成快照与桩客户端 |
 | Obsidian 运行时垫片 | `scripts/dev/_obsidian_browser_shim.ts` | 模拟 Obsidian 1.12 运行时（`BasesView`、`ItemView`、`PluginSettingTab`、`Modal`、`Setting`、`Menu`、`createEl` 及按画布缩放比例自适应的 `loadPdfJs` 双栏科研 PDF 页） |
-| 产物图片目录 | `docs/images/ui-states/` | 存放 `v4-01-*.png` 至 `v4-12-*.png` 共 12 张最新状态截图（采用版本号前缀避免 Obsidian / 编辑器 Markdown 预览的同 URL 位图内存缓存命中旧图） |
+| 产物图片目录 | `docs/images/ui-states/` | 存放 `v4-01-*.png` 至 `v4-13-*.png` 共 13 张最新状态截图（采用版本号前缀避免 Obsidian / 编辑器 Markdown 预览的同 URL 位图内存缓存命中旧图） |
 
 > [!NOTE]
 > 为保证离线确定性与静态路径门禁通过，展示场景仅构造合成文献库路径（例如 `D:/ResearchVault`、`C:/Users/Researcher/Zotero`），不读取任何本机个人库或敏感真实路径。
@@ -61,7 +61,7 @@ python scripts/dev/render_obsidian_ui_docs.py
 
 1. **收敛为单一「文献库」主视图**：`build_base_views` 仅产出单一主视图 `"文献库"`（`type: "paperforge-table"`）；通过 `RETIRED_PF_VIEWS` 在增量迁移与健康检查阶段自动清理旧版队列分页（`控制面板`、`待 OCR`、`待深度阅读`、`重做OCR` 等），同时完整保留用户自建自定义视图、筛选器与列宽配置。
 2. **去除行内操作墙与队列开关列**：不再每行堆砌 `[解析]`/`[诊断]` 按钮矩阵，也不默认展示 `do_ocr` / `analyze` 布尔开关列。状态以 `.pf-badge-outline` 克制边框胶囊呈现（如 `已精读`、`解析中 2/5`、`未解析`、`解析异常`）；有 PDF 的条目在标题左侧直接提供 14 px 线条文档图标入口，点击标题直接打开笔记、右键呼出 Obsidian 原生 `Menu`。
-3. **原生 Bases API 兼容**：严格读取 Obsidian `config.getOrder()`、`config.getDisplayName()`（兼容用户在 Bases UI 新增自定义列，如 `note.priority` → `课题优先级`）以及 `data.groupedData`（渲染 AsterLab 8 色科学分类圆点分组标题）。
+3. **原生 Bases API 兼容 + 粘性多维筛选条**：严格读取 Obsidian `config.getOrder()`、`config.getDisplayName()`（兼容用户在 Bases UI 新增自定义列，如 `note.priority` → `课题优先级`）以及 `data.groupedData`（渲染 AsterLab 8 色科学分类圆点分组标题）；表头内建持久化 `.pf-base-filter-bar`（关键词检索、专题 / 二级子分类级联筛选、状态胶囊 `全部 / 待解析 / 已解析 / 已精读` 与 `IF` 阈值选择），筛选态按视图键自动持久保留，不随切换标签或重渲染丢失；若影响因子来源为 OpenAlex 2 年平均被引（`impact_factor_source === "openalex_2yr"`），数值旁以 `.pf-if-approx` 弱提示 `≈` 标志区分。
 
 ### 3.2 最左侧勾选框与表头多选上下文操作栏
 
@@ -127,11 +127,14 @@ python scripts/dev/render_obsidian_ui_docs.py
 
 ---
 
-## 6. 设置控制中心、四步向导与二级批量维护台
+## 6. 设置控制中心、一屏极速引导与二级批量维护台
 
-1. **设置控制中心（`PaperForgeSettingTab`）**：`01–05` 编号能力列表清晰展示 6 种状态胶囊（Ready / Checking / Setup Required / Action Required / Not Enabled / Detection Failed），底部集成 `界面配色` 双模式开关；模块详情与 `MaintenanceItem` 提供结构化错误剖析与「复制诊断信息」。
-2. **四阶段安装向导**：引导科研人员完成托管运行时准备、Zotero/BBT 连接、可选能力选择与就绪检查。
-3. **二级维护台与安全弹窗（`OcrWorkspaceView` & Modals）**：仅按需进入的批量 OCR 重跑、版本恢复对比、只读 OCR 排版诊断预览与 Zotero 孤儿清理弹窗均已统一切换至 AsterLab 语义变量与线条图标体系。
+1. **一屏极速引导（默认新户入口 · `_renderExpressSetup`）**：面向零代码科研工作者砍掉繁琐四步跳转——**单屏整合**「① 计算引擎（后台自动安装不阻塞后续选项）→ ② 直连 Zotero（`zotero.sqlite` 免 BBT、同名 `Literature/` 自动隔离防护、交互式 A/B 目录与 Base 总表实时预览）→ ③ 可折叠可选 AI 与期刊数据源预设（硅基流动 / 百炼 / 智谱 / OpenAI / Ollama 一键填参 + 实测连接）→ 底部单一主按钮保存并同步」；右上角仍保留「分步详情模式」以便高级排查。
+2. **设置控制中心（`PaperForgeSettingTab` · 同屏手风琴 + 静默重检）**：淘汰“打开设置就 5 个模块一起转圈 Checking”与“5 个卡片跳 5 个独立子页”的繁琐路径——缓存采用 SWR（保留上次有效状态、后台合并单次 `probeAll` 静默校对），并将「核心连接（Zotero + 引擎）」与「AI 与扩展能力（OCR / 智能检索 / Agent 集成）」整合为同屏可就地展开的手风琴行，无需跳转即可修改密钥与模型，底部集成 `界面配色` 与动效开关。
+3. **四阶段安装向导（分步详细视图）**：支持逐阶细致检验托管运行时、Zotero 库路径、可选能力与就绪检查。
+4. **二级维护台与安全弹窗（`OcrWorkspaceView` & Modals）**：仅按需进入的批量 OCR 重跑、版本恢复对比、只读 OCR 排版诊断预览与 Zotero 孤儿清理弹窗均已统一切换至 AsterLab 语义变量与线条图标体系。
+
+![13 · 一屏极速引导（免 BBT · 目录防冲突）与 A/B 目录实时预览](images/ui-states/v4-13-express-onboarding-and-domain-preview.png)
 
 ![09 · 设置控制中心：五大能力六态与界面配色切换](images/ui-states/v4-09-settings-control-center-six-states.png)
 

@@ -2137,6 +2137,7 @@ def postprocess_ocr_result(
     if meta is None:
         meta = read_json(meta_path) if meta_path.exists() else {}
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
+    meta.setdefault("schema_version", 2)
     meta["normalize_mode"] = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
     from paperforge.pdf_resolver import resolve_source_pdf
@@ -2657,7 +2658,9 @@ def _redo_one_paper_transaction(
             except Exception:
                 logger.warning("Redo: cannot restore workspace fulltext %s", wf)
         try:
-            note_file.write_text(original_text, encoding="utf-8")
+            from paperforge.core.io import write_text_atomic
+
+            write_text_atomic(note_file, original_text)
         except Exception:
             logger.warning("Redo: cannot restore note for %s", key)
         try:
@@ -2679,11 +2682,13 @@ def _redo_one_paper_transaction(
         if ocr_dir and ocr_dir.exists():
             shutil.rmtree(ocr_dir)
 
+        from paperforge.core.io import write_text_atomic as _write_note_atomic
+
         pending_text = _rewrite_note_fields(
             original_text,
             do_ocr=True, ocr_status="pending", fulltext_md_path="", ocr_redo=True,
         )
-        note_file.write_text(pending_text, encoding="utf-8")
+        _write_note_atomic(note_file, pending_text)
 
         _paper_exit = run_ocr(vault, verbose=verbose, no_progress=True, selected_keys={key})
 
@@ -2699,9 +2704,11 @@ def _redo_one_paper_transaction(
 
     # ---- 4. Commit or rollback ----
     if ocr_ok:
+        from paperforge.core.io import write_text_atomic as _write_note_atomic
+
         current_text = note_file.read_text(encoding="utf-8")
         current_text = _rewrite_note_fields(current_text, ocr_status="done", ocr_redo=False)
-        note_file.write_text(current_text, encoding="utf-8")
+        _write_note_atomic(note_file, current_text)
         refresh_index_entry(vault, key)
         _drop_snapshot()
         return "success"
@@ -3270,7 +3277,9 @@ def run_ocr(
                                     count=1,
                                     flags=re.MULTILINE,
                                 )
-                                note_path.write_text(text, encoding="utf-8")
+                                from paperforge.core.io import write_text_atomic as _write_note_atomic
+
+                                _write_note_atomic(note_path, text)
                     except Exception:
                         logger.warning("auto_analyze_after_ocr: failed for %s", key, exc_info=True)
                 meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()

@@ -116,7 +116,13 @@ export function resolvePdfResourceUrl(
   const abs = (ctx.pdf_abs_path || "").replace(/\\/g, "/").replace(/^\/+/, "");
   if (!abs) return "";
   const prefix = Platform.resourcePathPrefix || "app://local/";
-  return `${prefix}${encodeURI(abs)}`;
+  const encoded = abs
+    .split("/")
+    .map((seg, idx) =>
+      idx === 0 && /^[A-Za-z]:$/.test(seg) ? seg : encodeURIComponent(seg)
+    )
+    .join("/");
+  return `${prefix}${encoded}`;
 }
 
 export class PaperForgePdfView extends ItemView {

@@ -14,10 +14,20 @@ import {
   openUnifiedPaperContextMenu,
 } from "./paper-interactions";
 
+export interface BaseFilterState {
+  query?: string;
+  domain?: string;
+  collection?: string;
+  status?: string;
+  minIf?: number;
+}
+
 export interface PaperForgeBasesHost {
   app: obsidian.App;
   getClient(): PaperForgeClient;
   getBaseSnapshotCache(): BaseTableSnapshotDto | null;
+  getBaseFilters?(viewKey: string): BaseFilterState;
+  setBaseFilters?(viewKey: string, next: BaseFilterState): void;
   refreshBaseSnapshot(
     changedKeys?: string[]
   ): Promise<BaseTableSnapshotDto | null>;
@@ -248,6 +258,76 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _selectedKeys = new Set<string>();
   private _lastSelectedIdx: number | null = null;
   private _pendingShiftKey = false;
+  private _localFilters: BaseFilterState | null = null;
+
+  private _filterKey(): string {
+    return (
+      (
+        (this as unknown as { file?: { path?: string } })?.file?.path || ""
+      ).trim() || "default"
+    );
+  }
+
+  private _getFilters(): BaseFilterState {
+    if (this._localFilters) return this._localFilters;
+    const loaded = this.plugin.getBaseFilters?.(this._filterKey()) ?? {};
+    this._localFilters = { ...loaded };
+    return this._localFilters;
+  }
+
+  private _updateFilters(patch: Partial<BaseFilterState>): void {
+    const next: BaseFilterState = { ...this._getFilters(), ...patch };
+    if (!next.query) delete next.query;
+    if (!next.domain) delete next.domain;
+    if (!next.collection) delete next.collection;
+    if (!next.status || next.status === "all") delete next.status;
+    if (!next.minIf || next.minIf <= 0) delete next.minIf;
+    this._localFilters = next;
+    this.plugin.setBaseFilters?.(this._filterKey(), next);
+    this.render();
+  }
+
+  private _hasActiveFilters(f: BaseFilterState): boolean {
+    return Boolean(
+      (f.query && f.query.trim()) ||
+      f.domain ||
+      f.collection ||
+      (f.status && f.status !== "all") ||
+      (f.minIf && f.minIf > 0)
+    );
+  }
+
+  private _matchesFilters(row: BasePaperRowDto, f: BaseFilterState): boolean {
+    if (f.domain && row.domain !== f.domain) return false;
+    if (f.collection) {
+      const cols = Array.isArray(row.collections) ? row.collections : [];
+      if (
+        !cols.some(
+          (c) => c === f.collection || c.startsWith(f.collection + "/")
+        )
+      ) {
+        return false;
+      }
+    }
+    if (f.status && f.status !== "all") {
+      if (f.status === "pending" && row.ocr_status !== "pending") return false;
+      if (f.status === "done" && row.ocr_status !== "done") return false;
+      if (f.status === "deep_done" && row.deep_reading_status !== "done") {
+        return false;
+      }
+    }
+    if (f.minIf && f.minIf > 0) {
+      const num = Number.parseFloat(String(row.impact_factor || ""));
+      if (!Number.isFinite(num) || num < f.minIf) return false;
+    }
+    if (f.query && f.query.trim()) {
+      const q = f.query.trim().toLowerCase();
+      const hay =
+        `${row.title} ${row.first_author} ${row.journal} ${row.domain} ${row.zotero_key}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }
 
   constructor(
     controller: obsidian.QueryController,
@@ -495,6 +575,153 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     });
   }
 
+  private _renderFilterBar(
+    root: HTMLElement,
+    rawItems: RenderItem[],
+    filters: BaseFilterState
+  ): void {
+    const bar = mkEl(root, "div", {
+      cls: "pf-base-filter-bar",
+      attr: { "data-pf-testid": "base-filter-bar" },
+    });
+
+    const domains = Array.from(
+      new Set(rawItems.map((it) => it.row.domain).filter(Boolean))
+    ).sort();
+    const activeDomain = filters.domain || "";
+    const collectionPool = Array.from(
+      new Set(
+        rawItems
+          .filter((it) => !activeDomain || it.row.domain === activeDomain)
+          .flatMap((it) => it.row.collections || [])
+          .filter(Boolean)
+      )
+    ).sort();
+
+    // 1. Live keyword filter
+    const searchInput = mkEl(bar, "input", {
+      cls: "pf-base-filter-search",
+      attr: {
+        type: "search",
+        placeholder: "筛选标题 / 作者 / 期刊…",
+        "data-pf-testid": "base-filter-search",
+      },
+    }) as HTMLInputElement;
+    searchInput.value = filters.query || "";
+    searchInput.addEventListener("change", () => {
+      this._updateFilters({ query: searchInput.value.trim() });
+    });
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        this._updateFilters({ query: searchInput.value.trim() });
+      }
+    });
+
+    // 2. Topic / Domain dropdown
+    if (domains.length > 0) {
+      const domSel = mkEl(bar, "select", {
+        cls: "pf-base-filter-select",
+        attr: { "data-pf-testid": "base-filter-domain" },
+      }) as HTMLSelectElement;
+      const allOpt = mkEl(domSel, "option", {
+        text: "全部专题",
+        attr: { value: "" },
+      }) as HTMLOptionElement;
+      allOpt.selected = !activeDomain;
+      for (const d of domains) {
+        const opt = mkEl(domSel, "option", {
+          text: d,
+          attr: { value: d },
+        }) as HTMLOptionElement;
+        opt.selected = activeDomain === d;
+      }
+      domSel.addEventListener("change", () => {
+        this._updateFilters({ domain: domSel.value, collection: "" });
+      });
+    }
+
+    // 3. Cascading Zotero Collection dropdown
+    if (collectionPool.length > 0) {
+      const colSel = mkEl(bar, "select", {
+        cls: "pf-base-filter-select",
+        attr: { "data-pf-testid": "base-filter-collection" },
+      }) as HTMLSelectElement;
+      const allCol = mkEl(colSel, "option", {
+        text: "全部子分类",
+        attr: { value: "" },
+      }) as HTMLOptionElement;
+      allCol.selected = !filters.collection;
+      for (const c of collectionPool) {
+        const opt = mkEl(colSel, "option", {
+          text: c,
+          attr: { value: c },
+        }) as HTMLOptionElement;
+        opt.selected = filters.collection === c;
+      }
+      colSel.addEventListener("change", () => {
+        this._updateFilters({ collection: colSel.value });
+      });
+    }
+
+    // 4. Quick status pills
+    const pills = mkEl(bar, "div", { cls: "pf-base-filter-pills" });
+    const statusChoices: Array<[string, string]> = [
+      ["all", "全部"],
+      ["pending", "待解析"],
+      ["done", "已解析"],
+      ["deep_done", "已精读"],
+    ];
+    const activeStatus = filters.status || "all";
+    for (const [val, label] of statusChoices) {
+      const btn = mkEl(pills, "button", {
+        cls: `pf-base-filter-pill${activeStatus === val ? " is-active" : ""}`,
+        text: label,
+        attr: { type: "button", "data-pf-filter-status": val },
+      });
+      btn.addEventListener("click", () => {
+        this._updateFilters({ status: val });
+      });
+    }
+
+    // 5. Minimum IF selector
+    const ifSel = mkEl(bar, "select", {
+      cls: "pf-base-filter-select pf-tnum",
+      attr: { "data-pf-testid": "base-filter-if" },
+    }) as HTMLSelectElement;
+    for (const [val, label] of [
+      ["0", "IF 不限"],
+      ["5", "IF ≥ 5"],
+      ["10", "IF ≥ 10"],
+      ["20", "IF ≥ 20"],
+    ]) {
+      const opt = mkEl(ifSel, "option", {
+        text: label,
+        attr: { value: val },
+      }) as HTMLOptionElement;
+      opt.selected = String(filters.minIf || 0) === val;
+    }
+    ifSel.addEventListener("change", () => {
+      this._updateFilters({ minIf: Number(ifSel.value) || 0 });
+    });
+
+    if (this._hasActiveFilters(filters)) {
+      const reset = mkEl(bar, "button", {
+        cls: "pf-btn pf-btn-ghost",
+        text: "重置",
+        attr: { type: "button", "data-pf-testid": "base-filter-reset" },
+      });
+      reset.addEventListener("click", () => {
+        this._updateFilters({
+          query: "",
+          domain: "",
+          collection: "",
+          status: "all",
+          minIf: 0,
+        });
+      });
+    }
+  }
+
   private _renderCell(
     tr: HTMLElement,
     col: ColumnSpec,
@@ -568,9 +795,33 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           text: row.journal || "—",
         });
         break;
-      case "impact_factor":
-        td.textContent = row.impact_factor || "—";
+      case "impact_factor": {
+        const val = row.impact_factor || "";
+        const src = row.impact_factor_source || "";
+        const part = row.journal_partition || "";
+        if (!val) {
+          td.textContent = "—";
+          td.classList.add("pf-base-muted");
+        } else if (src === "openalex_2yr") {
+          mkEl(td, "span", { text: val });
+          mkEl(td, "span", { cls: "pf-if-approx", text: "≈" });
+          td.setAttribute(
+            "title",
+            "来自 OpenAlex 开源 2 年篇均引文指标（可在设置填写 EasyScholar Key 升级为精确 JCR IF 与中科院分区）"
+          );
+        } else {
+          td.textContent = val;
+          const tipParts: string[] = [];
+          if (src === "jcr") tipParts.push("官方 JCR IF");
+          else if (src === "zotero_plugin") tipParts.push("Zotero 期刊库");
+          else if (src === "extra") tipParts.push("Zotero Extra");
+          if (part) tipParts.push(part);
+          if (tipParts.length > 0) {
+            td.setAttribute("title", tipParts.join(" · "));
+          }
+        }
         break;
+      }
       case "domain": {
         if (!row.domain) {
           mkEl(td, "span", { cls: "pf-base-muted", text: "—" });
@@ -663,7 +914,15 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     root.classList.toggle("is-compact", compact);
 
     const snapshot = this.plugin.getBaseSnapshotCache();
-    const groups = this._collectGroups(snapshot);
+    const rawGroups = this._collectGroups(snapshot);
+    const rawFlatItems = rawGroups.flatMap((g) => g.items);
+    const filters = this._getFilters();
+    const groups = rawGroups
+      .map((g) => ({
+        groupLabel: g.groupLabel,
+        items: g.items.filter((it) => this._matchesFilters(it.row, filters)),
+      }))
+      .filter((g) => g.items.length > 0);
     const flatItems = groups.flatMap((g) => g.items);
     const visibleKeySet = new Set(flatItems.map((it) => it.row.zotero_key));
 
@@ -681,7 +940,9 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     const activeProg = this.plugin._ocrProgress;
     const isRunningAny =
       Boolean(activeProg && activeProg.key) ||
-      flatItems.some((it) => this.plugin.isOcrRunningForKey(it.row.zotero_key));
+      rawFlatItems.some((it) =>
+        this.plugin.isOcrRunningForKey(it.row.zotero_key)
+      );
     if (isRunningAny) {
       const strip = mkEl(root, "div", {
         cls: "pf-base-activity-strip pf-tnum",
@@ -697,14 +958,39 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       });
     }
 
+    // Persistent multi-filter bar (survives Obsidian view switches & restarts)
+    if (rawFlatItems.length > 0 || this._hasActiveFilters(filters)) {
+      this._renderFilterBar(root, rawFlatItems, filters);
+    }
+
     if (flatItems.length === 0) {
       const empty = mkEl(root, "div", { cls: "pf-base-empty" });
       mkEl(empty, "span", {
         text: this._loadingSnapshot
           ? t("pdf_loading") || "正在加载文献数据…"
-          : t("base_empty_hint") || "当前筛选条件下暂无文献。",
+          : this._hasActiveFilters(filters)
+            ? "当前筛选条件下没有匹配的文献。"
+            : t("base_empty_hint") || "当前筛选条件下暂无文献。",
       });
-      if (!this._loadingSnapshot) {
+      if (this._hasActiveFilters(filters)) {
+        const resetBtn = mkEl(empty, "button", {
+          cls: "pf-btn",
+          text: "重置筛选条件",
+          attr: {
+            type: "button",
+            "data-pf-testid": "base-reset-filters-empty",
+          },
+        });
+        resetBtn.addEventListener("click", () => {
+          this._updateFilters({
+            query: "",
+            domain: "",
+            collection: "",
+            status: "all",
+            minIf: 0,
+          });
+        });
+      } else if (!this._loadingSnapshot) {
         const syncEmptyBtn = mkEl(empty, "button", {
           cls: "pf-btn",
           text: t("base_sync_library") || "同步文献库",

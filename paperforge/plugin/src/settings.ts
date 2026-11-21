@@ -13,6 +13,16 @@ import * as os from "os";
 import { migrateLegacySecret } from "./services/secret-storage";
 import { t, setLanguage, langFromApp } from "./i18n";
 import {
+  EMBEDDING_PRESETS,
+  matchEmbeddingPresetId,
+  renderDomainModePreview,
+} from "./views/domain-preview";
+
+interface InlineRenderOpts {
+  inline?: boolean;
+}
+import type { ZoteroDetectDto } from "./client/paperforge-client";
+import {
   PaperForgeSettings,
   ProbeEnvelope,
   ActionPrimary,
@@ -73,6 +83,10 @@ import {
   checkOrphanState,
   type OrphanItem,
 } from "./views/modals";
+import {
+  renderUpgradeAvailableBanner,
+  renderStorageMigrationMaintenanceSection,
+} from "./views/upgrade-modal";
 import {
   readRuntimePointer,
   resolveRuntimeCommand,
@@ -153,6 +167,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _advCollapsed = true;
   private _refreshPending = false;
   activeTab = "overview";
+  private _zoteroDetectData: ZoteroDetectDto | null = null;
+  private _zoteroDetectBusy = false;
+  private _zoteroDetectRan = false;
+  private _setupExpressMode = true;
+  private _detectedFolderCollisionMsg: string | null = null;
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
     current: 0,
@@ -174,6 +193,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _lastOrphanCount: number = 0;
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
+  /** Cached modules past TTL waiting for silent background revalidation (never flashed to Checking). */
+  private _staleModulesNeedingSilentRefresh: Set<string> = new Set();
+  private _overviewAutoProbedThisSession = false;
+  private _silentRevalidating = false;
+  /** Expanded accordion row ids on the 1-screen Control Center. */
+  private _expandedInlineModules: Set<string> = new Set();
   /** Optional modules whose detail page re-probed once this session, so a
    *  persisted last-known envelope (e.g. "API Key: Entered" for a key since
    *  deleted) never stands in for the live state after a restart. */
@@ -644,7 +669,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
-  private _applyLibraryConfiguration(): void {
+  private _applyLibraryConfiguration(opts?: {
+    autoCompleteOnSuccess?: boolean;
+  }): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
@@ -767,6 +794,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         }
 
+        // Save Zotero direct SQLite & Domain preferences alongside folder paths
+        const extraKeys: Array<[string, string]> = [
+          ["zotero_source_mode", settings.zotero_source_mode || "sqlite"],
+          ["domain_mode", settings.domain_mode || "per_collection"],
+          ["journal_metrics_mode", settings.journal_metrics_mode || "auto"],
+          [
+            "zotero_selected_collections",
+            Array.isArray(settings.zotero_selected_collections)
+              ? JSON.stringify(settings.zotero_selected_collections)
+              : "",
+          ],
+        ];
+        for (const [k, v] of extraKeys) {
+          const existing = listed.fields.find((f) => f.key === k);
+          if (existing && String(existing.stored_value ?? "") !== v) {
+            await client.configSet(k, v).catch(() => undefined);
+          }
+        }
+
         if (problems.length > 0) {
           this._setupOperation = "failed";
           this._setupFeedback = t("setup_library_config_failed");
@@ -807,6 +853,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._probeModule("library");
         this._setupOperation = "idle";
         this._setupFeedback = t("setup_library_configured");
+        if (opts?.autoCompleteOnSuccess) {
+          this.plugin.settings._setup_complete = true;
+          await this.plugin.saveSettings();
+        }
         this.display();
       } catch (error) {
         if (!setupClientOwnsFailure) {
@@ -846,26 +896,77 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "paperforge-settings-desc",
     });
 
-    // Auto-probe stale/unknown modules BEFORE rendering so cards show "Checking..."
+    // Coalesce startup checks into ONE background refresh without flashing cached cards to "Checking...".
+    let hasNeverProbed = false;
     for (const mod of CAPABILITY_MODULES) {
+      if (mod === "maintenance") continue;
       const env = this._capabilityState?.[mod];
       if (!env) continue;
-      const neverProbed =
+      if (
         env.capability_state === "unknown" &&
-        env.updated_at === new Date(0).toISOString();
-      const isStale =
-        env.user_state === "detection_failed" &&
-        env.reason.code.endsWith(".stale");
-      if ((neverProbed || isStale) && !this._attemptedProbes.has(mod)) {
-        this._attemptedProbes.add(mod);
-        if (mod !== "maintenance") {
-          this._probeModule(mod);
-        }
+        env.updated_at === new Date(0).toISOString()
+      ) {
+        hasNeverProbed = true;
       }
     }
+    const clientObj =
+      typeof (this.plugin as unknown as { getClient?: unknown })?.getClient ===
+      "function"
+        ? (
+            this.plugin as unknown as {
+              getClient: () => { probeAll?: unknown };
+            }
+          ).getClient()
+        : null;
+    if (
+      clientObj &&
+      typeof clientObj.probeAll === "function" &&
+      !this._overviewAutoProbedThisSession &&
+      (hasNeverProbed || this._staleModulesNeedingSilentRefresh.size > 0)
+    ) {
+      this._overviewAutoProbedThisSession = true;
+      this._staleModulesNeedingSilentRefresh.clear();
+      this._refreshAllReadModels({ silent: !hasNeverProbed });
+    }
+
+    // ── Non-blocking Veteran Vault Upgrade Banner (ADR-018) ──
+    const cachedUpgradePlan =
+      typeof this.plugin.getUpgradePlanCache === "function"
+        ? this.plugin.getUpgradePlanCache()
+        : null;
+    const bannerDismissed =
+      typeof this.plugin.isUpgradeBannerDismissed === "function"
+        ? Boolean(this.plugin.isUpgradeBannerDismissed())
+        : false;
+    renderUpgradeAvailableBanner(containerEl, cachedUpgradePlan, {
+      dismissed: bannerDismissed,
+      onOpenModal: () => {
+        void this.plugin.openUpgradeModal?.();
+      },
+      onDismiss: () => {
+        this.plugin.dismissUpgradeBannerForSession?.();
+        this.display();
+      },
+    });
 
     // ── Control Center (Issue #76) ──
     this._renderControlCenter(containerEl);
+
+    // ── Deferred Storage Cleanup & Time-Machine Rollback ──
+    if (cachedUpgradePlan && typeof this.plugin.getClient === "function") {
+      renderStorageMigrationMaintenanceSection(
+        containerEl,
+        this.app,
+        this.getClient(),
+        cachedUpgradePlan,
+        () => {
+          void (async () => {
+            await this.plugin.refreshUpgradePlan?.();
+            this.display();
+          })();
+        }
+      );
+    }
   }
 
   /** Safe vault base path extraction. */
@@ -981,19 +1082,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return manifest?.minEngineVersion || undefined;
   }
 
-  /** Open the external installer and watch the published pointer. */
+  /** Open the background installer and watch the published pointer. */
   private _launchRuntimeInstaller(action: RuntimeInstallerAction): void {
-    const minEngine = this._minEngineVersion();
-    const result = minEngine
-      ? this.getClient().launchRuntimeInstaller(
-          action,
-          this.plugin.manifest.version,
-          { allowUvDownload: true }
-        )
-      : this.getClient().launchRuntimeInstaller(
-          action,
-          this.plugin.manifest.version
-        );
+    const result = this.getClient().launchRuntimeInstaller(
+      action,
+      this.plugin.manifest.version,
+      { allowUvDownload: true }
+    );
     if (!result.ok) {
       const message = t("runtime_installer_failed").replace(
         "{error}",
@@ -1039,7 +1134,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }, 3000);
   }
 
-  /** The installer's current phase, read from its log ("" before it starts). */
+  /** The installer's current phase translated into beginner-friendly progress text. */
   private _installerProgressLine(): string {
     if (!this._installerLogPath) return "";
     try {
@@ -1047,14 +1142,47 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         .readFileSync(this._installerLogPath, "utf-8")
         .split(/\r?\n/)
         .filter((line) => line.trim());
+      const isZh = t("nav_close") === "关闭";
       for (let i = lines.length - 1; i >= 0 && i > lines.length - 60; i -= 1) {
         const line = lines[i].trim();
         if (
-          /^\[PaperForge\]|^Collecting |^Installing collected|^Building wheel|^Downloading |^Successfully installed|^Created wheel/.test(
+          line.includes("Installing paperforge") ||
+          (line.startsWith("Downloading ") &&
+            !line.includes("uv") &&
+            !line.includes("wheel"))
+        ) {
+          return isZh
+            ? "阶段 4/5：正在自动配置 PaperForge 核心与 AI 组件…"
+            : "Step 4/5: Installing PaperForge core & AI dependencies…";
+        }
+        if (line.includes("Downloading wheel")) {
+          return isZh
+            ? "阶段 3/5：正在下载 PaperForge 计算引擎…"
+            : "Step 3/5: Downloading PaperForge compute package…";
+        }
+        if (line.includes("Installing managed Python")) {
+          return isZh
+            ? "阶段 2/5：正在自动配置独立运行环境（无需手动安装）…"
+            : "Step 2/5: Provisioning isolated Python runtime automatically…";
+        }
+        if (line.includes("Portable uv ready")) {
+          return isZh
+            ? "阶段 1/5：自动安装器已就绪，即将配置运行环境…"
+            : "Step 1/5: Automatic bootstrapper ready…";
+        }
+        if (line.includes("Downloading uv")) {
+          return isZh
+            ? "阶段 1/5：正在准备零依赖自动安装器…"
+            : "Step 1/5: Preparing zero-dependency automatic bootstrapper…";
+        }
+        if (
+          /^\[PaperForge\]|^Collecting |^Installing collected|^Successfully installed/.test(
             line
           )
         ) {
-          return line.slice(0, 160);
+          return isZh
+            ? "正在后台自动安装与自检组件，请稍候…"
+            : "Completing automatic background setup and verification…";
         }
       }
     } catch {
@@ -1111,7 +1239,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Installation detail view (Issue #77). */
   /** Render Foundation with the shared module-detail shell. */
-  _renderInstallationDetail(containerEl: HTMLElement): void {
+  _renderInstallationDetail(
+    containerEl: HTMLElement,
+    opts?: InlineRenderOpts
+  ): void {
     // The shell renders the header first, so a stale "ready" envelope must be
     // corrected before it runs: the pointer is the fact, the envelope a cache.
     const pointer = readRuntimePointer();
@@ -1122,7 +1253,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState = this._capabilityState ?? {};
       this._capabilityState.installation = this._setupRequiredEnvelope();
     }
-    this._renderModuleDetailShell(containerEl, "installation", false);
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "installation", false);
+    }
     const env =
       this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
@@ -1522,7 +1655,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _probeDetailOnce(mod: CapabilityModule): void {
     if (this._detailProbedThisSession.has(mod)) return;
     this._detailProbedThisSession.add(mod);
-    this._probeModule(mod);
+    const existing = this._capabilityState?.[mod];
+    const hasCachedState =
+      Boolean(existing) &&
+      existing!.updated_at !== new Date(0).toISOString() &&
+      existing!.user_state !== "detection_failed";
+    this._probeModule(mod, undefined, { silent: hasCachedState });
   }
 
   /** Render the Module Detail tab (top-level destination). */
@@ -1551,8 +1689,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** #88: Library module workbench. */
-  _renderLibraryDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "library");
+  _renderLibraryDetail(
+    containerEl: HTMLElement,
+    opts?: InlineRenderOpts
+  ): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "library");
+    }
     const env =
       this._capabilityState?.library ?? createUnknownEnvelope("library");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
@@ -1631,8 +1774,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the OCR detail view (Issue #96: 3-state UX). */
-  _renderOcrDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "ocr");
+  _renderOcrDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "ocr");
+    }
     const env = this._capabilityState?.ocr ?? createUnknownEnvelope("ocr");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_ocr_status") });
@@ -1830,8 +1975,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
   /** Render the Memory detail view (Issue #78). */
-  _renderAgentDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "agent");
+  _renderAgentDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "agent");
+    }
     const body = containerEl.createDiv({ cls: "pf-module-body" });
 
     const current = this.plugin.settings.agent_platform || "opencode";
@@ -1968,8 +2115,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the Memory detail view matching prototype layout. */
-  _renderMemoryDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "memory", false);
+  _renderMemoryDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "memory", false);
+    }
     const env =
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
@@ -2078,6 +2227,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cfgIcon.textContent = open ? "\u25b6" : "\u25bc";
     });
 
+    // Preset selector at top of Memory config (class pf-sr-cfg-select preserves .pf-sr-cfg-input count = 3)
+    const presetRow = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
+    presetRow.createEl("label", {
+      text: "服务商预设",
+      cls: "pf-sr-cfg-lbl",
+    });
+    const presetSel = presetRow.createEl("select", {
+      cls: "pf-sr-cfg-select",
+      attr: { "data-pf-testid": "sr-provider-preset-select" },
+    }) as HTMLSelectElement;
+    const curPreset = matchEmbeddingPresetId(
+      this.plugin.settings.vector_db_api_base || "",
+      this.plugin.settings.vector_db_api_model || ""
+    );
+    for (const p of EMBEDDING_PRESETS) {
+      const opt = presetSel.createEl("option", {
+        text: t("nav_close") === "关闭" ? p.labelZh : p.labelEn,
+        attr: { value: p.id },
+      });
+      opt.selected = p.id === curPreset;
+    }
+
     // API Key — commit on Save button or blur/change (no mid-typing timer truncation)
     const kr = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
     kr.createEl("label", {
@@ -2153,8 +2324,54 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._setVectorDbConfig("vector_db_api_model", mi);
     });
 
-    // Provider Type (class pf-sr-cfg-select keeps .pf-sr-cfg-input count at 3)
-    const pr = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
+    presetSel.addEventListener("change", () => {
+      const picked = EMBEDDING_PRESETS.find((p) => p.id === presetSel.value);
+      if (!picked || picked.id === "custom") return;
+      bi.value = picked.baseUrl;
+      mi.value = picked.model;
+      this._setVectorDbConfig("vector_db_api_base", bi);
+      this._setVectorDbConfig("vector_db_api_model", mi);
+    });
+
+    // Live connectivity & vector dimension check right in the panel
+    const testRow = cfgBody.createDiv({
+      cls: "pf-sr-cfg-row pf-test-conn-row",
+    });
+    const testBtn = testRow.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "测试连接并自动匹配维度",
+      attr: { type: "button", "data-pf-testid": "sr-test-conn-btn" },
+    });
+    const testOut = testRow.createEl("span", {
+      cls: "pf-test-conn-status",
+      text: "",
+    });
+    testBtn.addEventListener("click", () => {
+      testBtn.disabled = true;
+      testOut.textContent = "探测中…";
+      void this.getClient()
+        .embedTestConnection()
+        .then((res) => {
+          testOut.className = "pf-test-conn-status is-ok";
+          testOut.textContent = `✓ 已连通 · ${res.model} (${res.dimension} 维 · ${res.latency_ms}ms)`;
+        })
+        .catch((err) => {
+          testOut.className = "pf-test-conn-status is-err";
+          testOut.textContent = `✗ 连接失败：${String(err?.message || err).slice(0, 90)}`;
+        })
+        .finally(() => {
+          testBtn.disabled = false;
+        });
+    });
+
+    // Advanced compatibility toggle collapsed by default (beginners never need SDK vs requests)
+    const advClientDetails = cfgBody.createEl("details", {
+      cls: "pf-adv-inline-details",
+    });
+    advClientDetails.createEl("summary", {
+      text: "高级接口模式（一般无需修改，系统已自动容错）",
+    });
+    const pr = advClientDetails.createDiv({ cls: "pf-sr-cfg-row" });
     pr.createEl("label", {
       text: t("mem_provider_type_label") || "API Client Mode",
       cls: "pf-sr-cfg-lbl",
@@ -2861,7 +3078,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._detailReturn = null;
       } else {
         this.activeTab = "overview";
-        this._focusTargetId = `button.pf-cc-module-card[data-module="${mod}"]`;
+        this._focusTargetId = `.pf-open-module-btn[data-module="${mod}"]`;
       }
       this._selectedDetailModule = "";
       this.display();
@@ -3288,11 +3505,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * so first-run immediately probes Installation+Help.
    */
   _initCapabilityState(): void {
-    const stored = this.plugin.settings.capabilityState;
-    this._capabilityState = validatePersistedEnvelopes(
-      (stored ?? {}) as Record<string, unknown>,
+    const stored = (this.plugin.settings.capabilityState ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const validated = validatePersistedEnvelopes(
+      stored,
       CAPABILITY_MODULES as unknown as string[]
     );
+    // Keep last valid state visible across TTL expiration (Stale-While-Revalidate)
+    // and silently verify in background rather than flashing "Checking..." on every open.
+    for (const mod of CAPABILITY_MODULES) {
+      const raw = stored[mod];
+      if (
+        raw &&
+        typeof raw === "object" &&
+        isValidEnvelope(raw, mod) &&
+        isEnvelopeStale(raw as ProbeEnvelope) &&
+        (raw as ProbeEnvelope).user_state !== "checking"
+      ) {
+        validated[mod] = raw as ProbeEnvelope;
+        this._staleModulesNeedingSilentRefresh.add(mod);
+      }
+    }
+    this._capabilityState = validated;
     this._persistCapabilityState();
   }
 
@@ -3304,33 +3540,39 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Call `paperforge probe <module> --json` and store the validated envelope unchanged. */
-  _probeModule(mod: CapabilityModule, lastOperationExitCode?: number): void {
+  _probeModule(
+    mod: CapabilityModule,
+    lastOperationExitCode?: number,
+    opts?: { silent?: boolean }
+  ): void {
     if (this._probing.has(mod)) return;
     this._probing.add(mod);
 
-    // Show probing state immediately
-    const current = this._capabilityState?.[mod];
-    const probing: ProbeEnvelope = {
-      schema_version: 2,
-      module: mod,
-      capability_state: current?.capability_state ?? "unknown",
-      activity_state: "running",
-      activity_label: "Probing...",
-      activity_progress: null,
-      severity: "unknown",
-      reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
-      action: { primary: probeAction(mod) },
-      notices: current?.notices ?? [],
-      user_state: "checking",
-      capability_kind:
-        mod === "installation" || mod === "library" ? "required" : "optional",
-      maintenance_eligible: false,
-      user_visible_failure: false,
-      user_impact: null,
-      updated_at: new Date().toISOString(),
-      ttl_seconds: current?.ttl_seconds ?? 0,
-    };
-    this._updateCapabilityEnvelope(mod, probing);
+    if (!opts?.silent) {
+      // Show probing state immediately for explicit user-triggered / first-run checks
+      const current = this._capabilityState?.[mod];
+      const probing: ProbeEnvelope = {
+        schema_version: 2,
+        module: mod,
+        capability_state: current?.capability_state ?? "unknown",
+        activity_state: "running",
+        activity_label: "Probing...",
+        activity_progress: null,
+        severity: "unknown",
+        reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
+        action: { primary: probeAction(mod) },
+        notices: current?.notices ?? [],
+        user_state: "checking",
+        capability_kind:
+          mod === "installation" || mod === "library" ? "required" : "optional",
+        maintenance_eligible: false,
+        user_visible_failure: false,
+        user_impact: null,
+        updated_at: new Date().toISOString(),
+        ttl_seconds: current?.ttl_seconds ?? 0,
+      };
+      this._updateCapabilityEnvelope(mod, probing);
+    }
 
     const resolved = this._resolveRuntimeCommand();
     if (!resolved) {
@@ -3707,25 +3949,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.display();
   }
 
-  /** #86: Overview — operational baseline + five navigation-only module cards. */
+  /**
+   * Unified 1-Screen Control Center:
+   * - Merges runtime & library into one core row (zero sub-page jumping)
+   * - Inline accordion expansion for Library / OCR / Smart Retrieval / Agent
+   * - Keeps deep-link _handleCardNavigation + _render*Detail API compatibility.
+   */
   _renderControlCenter(containerEl: HTMLElement): void {
     const cc = containerEl.createEl("div", { cls: "pf-control-center" });
     const envelopes: Record<string, ProbeEnvelope> =
       this._capabilityState ?? {};
+    const isZh = langFromApp(this.app) === "zh";
 
-    // ── Page heading + lede ──
-    // ONE heading per page, at the settings-heading scale (15px/600).  The
-    // page name used to be a grey 12px eyebrow under a second title, which
-    // left four overlapping text blocks before any content.
     cc.createEl("h2", {
       cls: "pf-cc-heading",
       text: t("cc_heading") || "Control center",
     });
     cc.createEl("p", {
       cls: "pf-cc-lede",
-      text:
-        t("cc_lede") ||
-        "See what is working and what needs attention across your pipeline.",
+      text: isZh
+        ? "核心状态与常用配置同屏展示，点击任意能力行即可就地展开修改，无需来回跳转。"
+        : "Core health & settings in one calm screen — click any row to configure in-place.",
     });
 
     // ── Summary Card ──
@@ -3786,18 +4030,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     const summaryMeta = summaryEl.createDiv({ cls: "pf-cc-summary-meta" });
-
-    // Last checked time
     const latest = Object.values(envelopes)
       .map((e) => e.updated_at)
-      .filter(Boolean)
+      .filter((ts) => ts && ts !== new Date(0).toISOString())
       .sort()
       .pop();
     summaryMeta.createEl("span", {
-      text: latest
-        ? (t("cc_last_checked") || "Checked just now: ") +
-          new Date(latest).toLocaleString()
-        : t("cc_checked_pending") || "Not checked yet",
+      text: this._silentRevalidating
+        ? isZh
+          ? "正在后台轻检…"
+          : "Revalidating…"
+        : latest
+          ? (t("cc_last_checked") || "Checked: ") +
+            new Date(latest).toLocaleString()
+          : t("cc_checked_pending") || "Not checked yet",
     });
 
     const refreshBtn = summaryMeta.createEl("button", {
@@ -3806,29 +4052,109 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     refreshBtn.addEventListener("click", () => this._refreshAllModules());
 
-    // ── Section Head ──
-    const sectionHead = cc.createDiv({ cls: "pf-cc-section-head" });
-    sectionHead.createEl("div", {
+    // ── Group 1: Core Connection (Zotero Library + Runtime merged into 1 calm row) ──
+    const coreHead = cc.createDiv({ cls: "pf-cc-section-head" });
+    coreHead.createEl("div", {
       cls: "pf-cc-section-title",
-      text: t("cc_modules_header") || "Modules",
+      text: isZh ? "核心连接" : "Core Connection",
     });
-    sectionHead.createEl("span", {
+    const versionTag =
+      this._runtimeStatusVersion || this.plugin.manifest?.version || "";
+    const enginePill = coreHead.createEl("div", {
+      cls: "caption pf-open-module-btn pf-cc-engine-pill",
+      text: isZh
+        ? `计算引擎 ${versionTag ? `v${versionTag}` : ""}（${foundationReady ? "正常" : this._getUserStateLabel(foundationEnv.user_state)}）`
+        : `Engine ${versionTag ? `v${versionTag}` : ""} (${this._getUserStateLabel(foundationEnv.user_state)})`,
+      attr: {
+        "data-module": "installation",
+        role: "button",
+        tabindex: "0",
+      },
+    });
+    enginePill.addEventListener("click", () => {
+      if (!this._expandedInlineModules.has("library")) {
+        this._expandedInlineModules.add("library");
+        this.display();
+      }
+      const sub = this.containerEl?.querySelector<HTMLDetailsElement>(
+        ".pf-cc-inline-subengine"
+      );
+      if (sub) sub.open = true;
+    });
+
+    const coreList = cc.createDiv({ cls: "pf-cc-module-list" });
+    this._renderAccordionRow(
+      coreList,
+      "library",
+      isZh ? "Zotero 文献库与计算引擎" : "Zotero Library & Core Engine",
+      !foundationReady && libraryEnv.user_state === "ready"
+        ? foundationEnv
+        : libraryEnv,
+      (drawerBody) => {
+        this._renderLibraryDetail(drawerBody, { inline: true });
+        const engineDetails = drawerBody.createEl("details", {
+          cls: "pf-cc-inline-subengine",
+        });
+        if (!foundationReady) engineDetails.open = true;
+        engineDetails.createEl("summary", {
+          text: isZh
+            ? `计算引擎与环境维护（v${versionTag || "?"} · ${this._getUserStateLabel(foundationEnv.user_state)}）`
+            : `Compute Engine & Maintenance (v${versionTag || "?"})`,
+        });
+        const engineSlot = engineDetails.createDiv();
+        this._renderInstallationDetail(engineSlot, { inline: true });
+      },
+      isZh
+        ? `${this.plugin.settings.zotero_data_dir || "未选 Zotero 目录"} · 引擎${foundationReady ? "正常" : "待检查"}`
+        : undefined
+    );
+
+    // ── Group 2: Optional AI & Skills (all editable inline, 0 sub-page hops) ──
+    const optHead = cc.createDiv({ cls: "pf-cc-section-head" });
+    optHead.createEl("div", {
+      cls: "pf-cc-section-title",
+      text: isZh ? "AI 与扩展能力" : "AI & Agent Capabilities",
+    });
+    optHead.createEl("span", {
       cls: "caption",
       text:
         t("cc_optional_note") ||
         "Optional modules do not affect core readiness.",
     });
 
-    // ── Module List (5 cards with numbering 01-05) ──
-    const moduleList = cc.createDiv({ cls: "pf-cc-module-list" });
-    for (const [idx, mod] of this._getOverviewModules().entries()) {
-      const env =
-        mod.id === "agent"
-          ? this._getAgentPlaceholderEnvelope()
-          : (envelopes[mod.id] ??
-            createUnknownEnvelope(mod.id as CapabilityModule));
-      this._renderOverviewCard(moduleList, mod.id, mod.label, env, idx + 1);
-    }
+    const optList = cc.createDiv({ cls: "pf-cc-module-list" });
+    const ocrEnv = envelopes["ocr"] ?? createUnknownEnvelope("ocr");
+    this._renderAccordionRow(
+      optList,
+      "ocr",
+      t("cc_module_ocr") || "PDF 解析 (OCR)",
+      ocrEnv,
+      (drawerBody) => this._renderOcrDetail(drawerBody, { inline: true })
+    );
+
+    const memEnv = envelopes["memory"] ?? createUnknownEnvelope("memory");
+    this._renderAccordionRow(
+      optList,
+      "memory",
+      t("cc_module_memory") || "智能检索（向量与记忆）",
+      memEnv,
+      (drawerBody) => this._renderMemoryDetail(drawerBody, { inline: true }),
+      this.plugin.settings.vector_db_api_model
+        ? `${this.plugin.settings.vector_db_api_model} · ${this._getModuleConsequence("memory", memEnv)}`
+        : undefined
+    );
+
+    const agentEnv = this._getAgentPlaceholderEnvelope();
+    this._renderAccordionRow(
+      optList,
+      "agent",
+      t("cc_module_agent") || "AI Agent 技能集成",
+      agentEnv,
+      (drawerBody) => this._renderAgentDetail(drawerBody, { inline: true }),
+      AGENT_PLATFORM_LABELS[
+        this.plugin.settings.agent_platform || "opencode"
+      ] ?? this.plugin.settings.agent_platform
+    );
 
     // ── Appearance Palette Mode, Liquid Glass & Reduce Motion ──
     const appearanceGroup = cc.createDiv({ cls: "pf-cc-appearance-group" });
@@ -3937,6 +4263,86 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
+  private _renderAccordionRow(
+    listEl: HTMLElement,
+    mod: string,
+    label: string,
+    env: ProbeEnvelope,
+    renderInlineBody: (drawerBody: HTMLElement) => void,
+    sentenceOverride?: string
+  ): void {
+    const item = listEl.createDiv({
+      cls: "pf-cc-accordion-item",
+      attr: { "data-module": mod },
+    });
+    const isExpanded = this._expandedInlineModules.has(mod);
+    const header = item.createEl("div", {
+      cls: `pf-cc-module-card pf-open-module-btn pf-cc-accordion-head${isExpanded ? " is-expanded" : ""}`,
+      attr: {
+        "data-module": mod,
+        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+        "aria-expanded": String(isExpanded),
+        role: "button",
+        tabindex: "0",
+      },
+    });
+    header.createEl("span", { cls: "pf-cc-card-name", text: label });
+    renderStatusBadge(
+      header,
+      env.user_state,
+      this._getUserStateLabel(env.user_state)
+    );
+    header.createEl("span", {
+      cls: "pf-cc-card-sentence",
+      text: sentenceOverride ?? this._getModuleConsequence(mod, env),
+    });
+    const metricText =
+      env.user_state === "ready" &&
+      env.action?.primary?.scope_count &&
+      env.action.primary.scope_count > 1
+        ? (t("cc_metric_papers") || "Papers: ") + env.action.primary.scope_count
+        : "";
+    header.createEl("span", {
+      cls: "pf-cc-card-metric",
+      text: metricText,
+    });
+    header.createEl("span", {
+      cls: `pf-cc-card-arrow pf-cc-row-chevron${isExpanded ? " is-expanded" : ""}`,
+      text: "\u203A",
+    });
+
+    const drawer = item.createDiv({
+      cls: `pf-cc-inline-drawer${isExpanded ? " is-open" : ""}`,
+    });
+    if (isExpanded) {
+      renderInlineBody(drawer);
+    }
+
+    const toggleExpand = () => {
+      if (this._expandedInlineModules.has(mod)) {
+        this._expandedInlineModules.delete(mod);
+        header.classList.remove("is-expanded");
+        header.setAttribute("aria-expanded", "false");
+        drawer.classList.remove("is-open");
+        drawer.innerHTML = "";
+      } else {
+        this._expandedInlineModules.add(mod);
+        header.classList.add("is-expanded");
+        header.setAttribute("aria-expanded", "true");
+        drawer.classList.add("is-open");
+        drawer.innerHTML = "";
+        renderInlineBody(drawer);
+      }
+    };
+    header.addEventListener("click", toggleExpand);
+    header.addEventListener("keydown", (ev: KeyboardEvent) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        toggleExpand();
+      }
+    });
+  }
+
   private _applyOverviewQuickFilter(
     containerEl: HTMLElement,
     rawQuery: string
@@ -3944,25 +4350,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const q = rawQuery.trim().toLowerCase();
     const MODULE_KEYWORDS: Record<string, string> = {
       installation: "runtime python core 环境 安装 更新",
-      library: "zotero bbt pdf sync exports 同步 文献库 路径",
+      library:
+        "zotero bbt pdf sync exports runtime python core 同步 文献库 路径 环境",
       ocr: "paddle ocr fulltext 解析 扫描",
-      memory: "vector embedding sqlite search api 向量 检索 认知",
+      memory: "vector embedding sqlite search api 向量 检索 认知 硅基",
       agent: "claude codex opencode cursor skill agents 技能",
     };
-    const cards = Array.from(
+    const items = Array.from(
       containerEl.querySelectorAll<HTMLElement>(
-        ".pf-cc-module-card, .pf-maintenance-inbox-item"
+        ".pf-cc-accordion-item, .pf-cc-module-card, .pf-maintenance-inbox-item"
       )
     );
-    for (const card of cards) {
+    for (const el of items) {
       if (!q) {
-        card.classList.remove("pf-is-filtered-out");
-        card.style.display = "";
+        el.classList.remove("pf-is-filtered-out");
+        el.style.display = "";
         continue;
       }
-      const mod = card.getAttribute("data-module") || "";
+      const mod = el.getAttribute("data-module") || "";
       const haystack = (
-        (card.textContent || "") +
+        (el.textContent || "") +
         " " +
         mod +
         " " +
@@ -3970,11 +4377,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ).toLowerCase();
       const matched = haystack.includes(q);
       if (matched) {
-        card.classList.remove("pf-is-filtered-out");
-        card.style.display = "";
+        el.classList.remove("pf-is-filtered-out");
+        el.style.display = "";
       } else {
-        card.classList.add("pf-is-filtered-out");
-        card.style.display = "none";
+        el.classList.add("pf-is-filtered-out");
+        el.style.display = "none";
       }
     }
   }
@@ -4139,9 +4546,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * #144: no dependency map — invalidate everything, refresh everything.
    * Stale actions stay disabled until fresh envelopes land (last-known kept).
    */
-  _refreshAllReadModels(lastLibraryExitCode?: number): void {
+  _refreshAllReadModels(
+    lastLibraryExitCodeOrOpts?:
+      | number
+      | { lastLibraryExitCode?: number; silent?: boolean }
+  ): void {
+    const lastLibraryExitCode =
+      typeof lastLibraryExitCodeOrOpts === "number"
+        ? lastLibraryExitCodeOrOpts
+        : lastLibraryExitCodeOrOpts?.lastLibraryExitCode;
+    const silent =
+      typeof lastLibraryExitCodeOrOpts === "object" &&
+      lastLibraryExitCodeOrOpts?.silent === true;
     const client = this.getClient();
-    client.invalidateCache();
+    if (!client || typeof client.probeAll !== "function") {
+      this._probing.clear();
+      this._silentRevalidating = false;
+      return;
+    }
+    if (!silent) {
+      client.invalidateCache?.();
+    }
     const vp =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
       "";
@@ -4164,8 +4589,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       );
       return;
     }
-    for (const mod of CAPABILITY_MODULES) {
-      this._probing.add(mod);
+
+    const fingerprintState = (
+      state?: Record<string, ProbeEnvelope> | null
+    ): string =>
+      JSON.stringify(
+        CAPABILITY_MODULES.map((m) => {
+          const e = state?.[m];
+          return e
+            ? [
+                m,
+                e.user_state,
+                e.capability_state,
+                e.reason?.code,
+                e.action?.primary?.action_id,
+                e.details,
+              ]
+            : [m];
+        })
+      );
+    const prevFingerprint = silent
+      ? fingerprintState(this._capabilityState)
+      : "";
+
+    if (silent) {
+      this._silentRevalidating = true;
+    } else {
+      for (const mod of CAPABILITY_MODULES) {
+        this._probing.add(mod);
+      }
     }
     // Older runtimes accept expected-version on the installation probe but
     // ignore it in probe all. Keep Python's versioned verdict authoritative.
@@ -4185,18 +4637,34 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ])
       .then(([data, installation]) => {
         this._probing.clear();
+        this._silentRevalidating = false;
         const modules = {
           ...data.modules,
           installation: isValidEnvelope(installation, "installation")
             ? installation
             : createInvalidEnvelope("installation"),
         };
-        for (const [mod, env] of Object.entries(modules)) {
-          if (isValidEnvelope(env, mod as CapabilityModule)) {
-            this._updateCapabilityEnvelope(
-              mod as CapabilityModule,
-              env as ProbeEnvelope
-            );
+        if (silent) {
+          this._capabilityState = this._capabilityState ?? {};
+          for (const [mod, env] of Object.entries(modules)) {
+            if (isValidEnvelope(env, mod as CapabilityModule)) {
+              this._capabilityState[mod] = env as ProbeEnvelope;
+            }
+          }
+          this._persistCapabilityState();
+          const changed =
+            fingerprintState(this._capabilityState) !== prevFingerprint;
+          if (changed && !this._displayInProgress) {
+            this.display();
+          }
+        } else {
+          for (const [mod, env] of Object.entries(modules)) {
+            if (isValidEnvelope(env, mod as CapabilityModule)) {
+              this._updateCapabilityEnvelope(
+                mod as CapabilityModule,
+                env as ProbeEnvelope
+              );
+            }
           }
         }
         // #78: the library sync-failure exit code is forwarded into the
@@ -4222,12 +4690,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._lastOrphanCount = orphanCount;
       })
       .catch(() => {
-        this._updateCapabilityEnvelope(
-          "installation",
-          createInvalidEnvelope("installation")
-        );
         this._probing.clear();
-        this.display();
+        this._silentRevalidating = false;
+        if (!silent) {
+          this._updateCapabilityEnvelope(
+            "installation",
+            createInvalidEnvelope("installation")
+          );
+          this.display();
+        }
       });
   }
 
@@ -4294,13 +4765,80 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   // #87: Setup Journey — 4-stage first-use wizard
   // ═══════════════════════════════════════════════════════════════
 
+  private _detectAndIsolateFolderCollision(vaultPath: string): void {
+    if (!vaultPath || this._detectedFolderCollisionMsg !== null) return;
+    const s = this.plugin.settings;
+    // Skip if user already explicitly configured paths or vault already has paperforge.json
+    if (
+      s.literature_dir?.trim() ||
+      fs.existsSync(path.join(vaultPath, "paperforge.json"))
+    ) {
+      this._detectedFolderCollisionMsg = "";
+      return;
+    }
+    const collided: string[] = [];
+    for (const folder of ["Literature", "Resources", "Bases"]) {
+      const full = path.join(vaultPath, folder);
+      try {
+        if (fs.existsSync(full) && fs.statSync(full).isDirectory()) {
+          const entries = fs.readdirSync(full);
+          if (entries.length > 0) {
+            collided.push(folder);
+          }
+        }
+      } catch {
+        // Ignore stat issues
+      }
+    }
+    if (collided.length > 0) {
+      s.system_dir = ".paperforge";
+      s.literature_dir = "PaperForge/Literature";
+      s.resources_dir = "PaperForge/Resources";
+      s.base_dir = "PaperForge/Bases";
+      this._detectedFolderCollisionMsg =
+        t("nav_close") === "关闭"
+          ? `检测到库内已存在原有 ${collided.join(" / ")} 文件夹：已自动为你改为存入 PaperForge/ 隔离目录，绝不会混入你的个人笔记。`
+          : `Detected existing ${collided.join(" / ")} folder(s): isolated PaperForge notes inside PaperForge/ so your existing files stay untouched.`;
+      void this.plugin.saveSettings();
+    } else {
+      this._detectedFolderCollisionMsg = "";
+    }
+  }
+
   _renderSetupJourney(containerEl: HTMLElement): void {
     if (this.plugin.settings._setup_journey_started !== true) {
       this.plugin.settings._setup_journey_started = true;
       this.plugin.saveSettings();
     }
+    const vaultPath = this._getVaultBasePath();
+    if (vaultPath) {
+      this._detectAndIsolateFolderCollision(vaultPath);
+    }
+
     const wrapper = containerEl.createDiv({ cls: "pf-setup-journey" });
-    wrapper.createEl("h2", { text: t("setup_welcome") });
+    const isZh = t("nav_close") === "关闭";
+
+    if (
+      this._setupExpressMode &&
+      this._setupStage === 1 &&
+      !this._setupReinstallRequested
+    ) {
+      this._renderExpressSetup(wrapper, isZh);
+      return;
+    }
+
+    const topHead = wrapper.createDiv({ cls: "pf-express-header" });
+    topHead.createEl("h2", { text: t("setup_welcome") });
+    const backExpress = topHead.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: isZh ? "切回极简一屏配置" : "Back to Express setup",
+      attr: { type: "button" },
+    });
+    backExpress.addEventListener("click", () => {
+      this._setupExpressMode = true;
+      this._setupStage = 1;
+      this.display();
+    });
     wrapper.createEl("p", {
       text: t("setup_desc"),
       cls: "pf-setup-desc",
@@ -4317,15 +4855,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: { "aria-label": t("setup_progress") },
     });
     stages.forEach((label, i) => {
-      progress.createEl("span", {
+      const pill = progress.createEl("button", {
         cls:
           "pf-setup-step" +
           (i + 1 === this._setupStage ? " pf-setup-step--active" : "") +
           (i + 1 < this._setupStage ? " pf-setup-step--done" : ""),
         text: String(i + 1) + ". " + label,
         attr: {
+          type: "button",
           "aria-current": i + 1 === this._setupStage ? "step" : "false",
         },
+      });
+      pill.addEventListener("click", () => {
+        this._setupStage = i + 1;
+        this.display();
       });
     });
 
@@ -4334,6 +4877,435 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     else if (this._setupStage === 2) this._renderSetupStageLibrary(body);
     else if (this._setupStage === 3) this._renderSetupStageOptionals(body);
     else this._renderSetupStageReview(body);
+  }
+
+  /** Express 1-page beginner flow: zero jargon, engine + Zotero + AI presets all cleanly accessible on 1 screen. */
+  private _renderExpressSetup(wrapper: HTMLElement, isZh: boolean): void {
+    this._refreshRuntimeStatus();
+    this._maybeAutoDetectZotero();
+
+    const settings = this.plugin.settings;
+    const pointer = readRuntimePointer();
+    const runtime = this._runtimeStatus;
+    const rtReady = runtime?.runtime_ready === true;
+    const action: RuntimeInstallerAction = !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+
+    const head = wrapper.createDiv({ cls: "pf-express-header" });
+    const headCopy = head.createDiv();
+    headCopy.createEl("h2", {
+      text: isZh
+        ? "欢迎使用 PaperForge · 一屏极速开启"
+        : "PaperForge Quick Setup",
+    });
+    headCopy.createEl("p", {
+      cls: "pf-setup-desc",
+      text: isZh
+        ? "全程图形界面操作，不改你的 Zotero 原库。确认 Zotero 位置后点最下方「保存并立即同步」即可。"
+        : "Zero terminal or code needed, read-only on your Zotero database. Confirm Zotero below and click Save & Sync.",
+    });
+    const switchStep = head.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: isZh ? "分步详情模式" : "Step-by-step view",
+      attr: { type: "button", "data-pf-testid": "express-to-step-btn" },
+    });
+    switchStep.addEventListener("click", () => {
+      this._setupExpressMode = false;
+      this.display();
+    });
+
+    // ── Block 1: Compute Engine (1 compact row, never locks Block 2/3) ──
+    const c1 = wrapper.createDiv({ cls: "pf-express-card" });
+    const c1Head = c1.createDiv({ cls: "pf-express-card-head" });
+    c1Head.createEl("span", { cls: "pf-express-num", text: "1" });
+    c1Head.createEl("strong", {
+      text: isZh
+        ? "自动计算引擎（OCR / Zotero / AI 组件）"
+        : "Compute Engine (OCR / Sync / AI)",
+    });
+    const rtPill = c1Head.createEl("span", {
+      cls: `pf-express-pill ${rtReady ? "is-ok" : "is-warn"}`,
+      text: rtReady
+        ? isZh
+          ? "✓ 已就绪"
+          : "✓ Ready"
+        : this._runtimePollTimer
+          ? isZh
+            ? "正在后台安装…"
+            : "Installing…"
+          : isZh
+            ? "待一键启用"
+            : "One-click install",
+    });
+    void rtPill;
+    if (!rtReady) {
+      if (this._runtimePollTimer) {
+        const prog = this._installerProgressLine();
+        const pct = prog.includes("4/5")
+          ? 80
+          : prog.includes("3/5")
+            ? 60
+            : prog.includes("2/5")
+              ? 40
+              : prog.includes("1/5")
+                ? 22
+                : 15;
+        const bar = c1.createDiv({ cls: "pf-runtime-stage-bar" });
+        const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
+        fill.style.width = `${pct}%`;
+        c1.createEl("p", {
+          cls: "setting-item-description",
+          text:
+            prog ||
+            (isZh
+              ? "正在后台下载配置独立 Python 计算组件，同时你可以继续看第 2 步…"
+              : "Provisioning engine in background — feel free to configure Zotero below right away…"),
+        });
+      } else {
+        const c1Row = c1.createDiv({ cls: "pf-test-conn-row" });
+        renderActionButton(c1Row, {
+          label:
+            action === "install"
+              ? isZh
+                ? "一键启用 PaperForge 引擎"
+                : "Enable PaperForge Engine"
+              : isZh
+                ? "更新 / 修复 PaperForge 引擎"
+                : "Update / Repair PaperForge Engine",
+          onClick: () => this._launchRuntimeInstaller(action),
+        });
+        c1Row.createEl("span", {
+          cls: "setting-item-description",
+          text: isZh
+            ? "免手动装环境；点击即可，无需在此干等。"
+            : "Runs automatically without leaving Obsidian.",
+        });
+      }
+    }
+
+    // ── Block 2: Zotero Auto-Locate + Anti-Collision + Live Domain Preview ──
+    const c2 = wrapper.createDiv({ cls: "pf-express-card" });
+    const c2Head = c2.createDiv({ cls: "pf-express-card-head" });
+    c2Head.createEl("span", { cls: "pf-express-num", text: "2" });
+    c2Head.createEl("strong", {
+      text: isZh
+        ? "连接 Zotero（自动扫描，无需装 Better BibTeX）"
+        : "Connect Zotero (Zero plugins required)",
+    });
+
+    if (this._detectedFolderCollisionMsg) {
+      c2.createEl("p", {
+        cls: "pf-setup-ok pf-collision-guard-banner",
+        text: "🛡 " + this._detectedFolderCollisionMsg,
+      });
+    }
+
+    const zotRow = c2.createDiv({ cls: "pf-setup-path-row" });
+    const zotInput = zotRow.createEl("input", {
+      cls: "pf-setup-input",
+      attr: {
+        type: "text",
+        placeholder: isZh
+          ? "自动扫描 Zotero 数据目录…"
+          : "Zotero data directory…",
+        "data-pf-testid": "express-zotero-input",
+      },
+    }) as HTMLInputElement;
+    zotInput.value = settings.zotero_data_dir || "";
+    const applyZot = (dir: string) => {
+      settings.zotero_data_dir = dir.trim();
+      settings.zotero_source_mode = "sqlite";
+      zotInput.value = settings.zotero_data_dir;
+      void this.plugin.saveSettings();
+      this._maybeAutoDetectZotero(true);
+      this.display();
+    };
+    zotInput.addEventListener("change", () => applyZot(zotInput.value));
+    const browseBtn = zotRow.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: t("setup_zotero_browse"),
+      attr: { type: "button" },
+    });
+    browseBtn.addEventListener("click", () => {
+      void this._pickFolderPath(c2).then((picked) => {
+        if (picked) applyZot(picked);
+      });
+    });
+
+    if (this._zoteroDetectData?.found) {
+      c2.createEl("p", {
+        cls: "pf-setup-ok",
+        text: isZh
+          ? `✓ 已检测到 ${this._zoteroDetectData.total_papers} 篇 Zotero 文献 · 默认直连同步`
+          : `✓ Found ${this._zoteroDetectData.total_papers} papers in Zotero · ready for direct sync`,
+      });
+    }
+
+    const previewHost = c2.createDiv();
+    const allCols = this._zoteroDetectData?.collections ?? [];
+    const topCols = allCols.filter((c) => c.top_level !== false);
+    const curSel = new Set(
+      Array.isArray(settings.zotero_selected_collections)
+        ? settings.zotero_selected_collections
+        : []
+    );
+    const curMode =
+      settings.domain_mode === "unified" ? "unified" : "per_collection";
+    const redrawPreview = () => {
+      const pickedCols =
+        curSel.size > 0
+          ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
+              curSel.has(c.key)
+            )
+          : topCols.length > 0
+            ? topCols
+            : allCols;
+      renderDomainModePreview(previewHost, {
+        domainMode:
+          settings.domain_mode === "unified" ? "unified" : "per_collection",
+        collections: pickedCols,
+        litDir: settings.literature_dir || "Literature",
+        isZh,
+      });
+    };
+
+    const modeGrid = c2.createDiv({ cls: "pf-mode-choice-grid" });
+    const modeCardEls: HTMLButtonElement[] = [];
+    for (const opt of [
+      {
+        id: "per_collection" as const,
+        title: isZh
+          ? "按 Zotero 顶级文件夹分专题（推荐）"
+          : "Group by Zotero Folders (Recommended)",
+        desc: isZh
+          ? "文件夹整洁分类，同时所有文献仍在同一张 Base 总表。"
+          : "Neat topic subfolders while keeping one master Base table.",
+      },
+      {
+        id: "unified" as const,
+        title: isZh
+          ? "全部放一起，只靠总表筛选"
+          : "Unified Folder + Base Filter Bar",
+        desc: isZh
+          ? "所有文献统一放进同一目录，在总表顶部随手筛选。"
+          : "All papers in one folder, filtered via the sticky Base bar.",
+      },
+    ]) {
+      const card = modeGrid.createEl("button", {
+        cls: `pf-mode-choice-card${curMode === opt.id ? " is-selected" : ""}`,
+        attr: { type: "button" },
+      });
+      modeCardEls.push(card);
+      card.createEl("span", { cls: "pf-mode-choice-title", text: opt.title });
+      card.createEl("span", { cls: "pf-mode-choice-desc", text: opt.desc });
+      card.addEventListener("click", () => {
+        settings.domain_mode = opt.id;
+        settings.zotero_source_mode = "sqlite";
+        for (const el of modeCardEls) el.classList.remove("is-selected");
+        card.classList.add("is-selected");
+        void this.plugin.saveSettings();
+        redrawPreview();
+      });
+    }
+    redrawPreview();
+
+    if (allCols.length > 0) {
+      const colDet = c2.createEl("details", { cls: "pf-adv-inline-details" });
+      colDet.createEl("summary", {
+        text: isZh
+          ? `挑选只同步哪些 Zotero 文件夹（当前：${curSel.size > 0 ? `已选 ${curSel.size} 个` : "全部文库"}）`
+          : `Filter specific Zotero folders (${curSel.size > 0 ? `${curSel.size} selected` : "All papers"})`,
+      });
+      const colGrid = colDet.createDiv({ cls: "pf-zotero-col-grid" });
+      for (const col of topCols.length > 0 ? topCols : allCols) {
+        const label = colGrid.createEl("label", { cls: "pf-zotero-col-item" });
+        const cb = label.createEl("input", {
+          attr: { type: "checkbox" },
+        }) as HTMLInputElement;
+        cb.checked = curSel.has(col.key);
+        cb.addEventListener("change", () => {
+          if (cb.checked) curSel.add(col.key);
+          else curSel.delete(col.key);
+          settings.zotero_selected_collections = Array.from(curSel);
+          void this.plugin.saveSettings();
+          redrawPreview();
+        });
+        label.createSpan({ text: col.name });
+        label.createEl("span", {
+          cls: "pf-zotero-col-cnt",
+          text: `${col.item_count}`,
+        });
+      }
+    }
+
+    // ── Block 3: Optional AI Keys (collapsed neatly so beginners never feel pressured) ──
+    const c3 = wrapper.createDiv({ cls: "pf-express-card" });
+    const c3Head = c3.createDiv({ cls: "pf-express-card-head" });
+    c3Head.createEl("span", { cls: "pf-express-num", text: "3" });
+    c3Head.createEl("strong", {
+      text: isZh
+        ? "AI 与期刊分区增强（全部可选，可稍后在设置补充）"
+        : "Optional AI & Journal Metrics (Configure later anytime)",
+    });
+
+    const aiDetails = c3.createEl("details", { cls: "pf-adv-inline-details" });
+    aiDetails.createEl("summary", {
+      text: isZh
+        ? "展开填写 PDF 解析（OCR）、AI 语义检索（含硅基流动预设）或 EasyScholar 密钥"
+        : "Expand to add PaddleOCR, Embedding (with presets), or EasyScholar API keys",
+    });
+
+    // OCR quick row
+    const ocrBox = aiDetails.createDiv({ cls: "pf-express-subrow" });
+    ocrBox.createEl("label", { text: "PaddleOCR API Key" });
+    const ocrKeyIn = ocrBox.createEl("input", {
+      cls: "pf-setup-input",
+      attr: {
+        type: "password",
+        placeholder: settings._paddleocr_configured
+          ? "•••• (已保存)"
+          : "粘贴百度 AI Studio OCR 密钥（可选）",
+      },
+    }) as HTMLInputElement;
+    const ocrTestBtn = ocrBox.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "保存并测通",
+      attr: { type: "button" },
+    });
+    const ocrMsg = ocrBox.createEl("span", { cls: "pf-test-conn-status" });
+    ocrTestBtn.addEventListener("click", () => {
+      const val = ocrKeyIn.value.trim();
+      ocrTestBtn.disabled = true;
+      ocrMsg.textContent = "测试中…";
+      void (
+        val
+          ? this._storeSetupSecret("paddleocr-api-key", val)
+          : Promise.resolve(true)
+      )
+        .then(() => this.getClient().ocrTestConnection())
+        .then((res) => {
+          if (val) ocrKeyIn.value = "";
+          ocrMsg.className = `pf-test-conn-status ${res?.passed ? "is-ok" : "is-err"}`;
+          ocrMsg.textContent = res?.passed
+            ? "✓ 已连通"
+            : `✗ ${res?.error || "校验失败"}`;
+        })
+        .catch((err) => {
+          ocrMsg.className = "pf-test-conn-status is-err";
+          ocrMsg.textContent = `✗ ${String(err?.message || err).slice(0, 60)}`;
+        })
+        .finally(() => {
+          ocrTestBtn.disabled = false;
+        });
+    });
+
+    // Embedding quick row with Preset dropdown
+    const memBox = aiDetails.createDiv({ cls: "pf-express-subrow" });
+    memBox.createEl("label", { text: "AI 语义检索预设" });
+    const pSel = memBox.createEl("select", {
+      cls: "pf-setup-select",
+    }) as HTMLSelectElement;
+    const curP = matchEmbeddingPresetId(
+      settings.vector_db_api_base || "",
+      settings.vector_db_api_model || ""
+    );
+    for (const p of EMBEDDING_PRESETS) {
+      const opt = pSel.createEl("option", {
+        text: isZh ? p.labelZh : p.labelEn,
+        attr: { value: p.id },
+      }) as HTMLOptionElement;
+      opt.selected = p.id === curP;
+    }
+    pSel.addEventListener("change", () => {
+      const picked = EMBEDDING_PRESETS.find((x) => x.id === pSel.value);
+      if (!picked || picked.id === "custom") return;
+      void this.getClient()
+        .configSet("vector_db_api_base", picked.baseUrl)
+        .catch(() => undefined);
+      void this.getClient()
+        .configSet("vector_db_api_model", picked.model)
+        .catch(() => undefined);
+      settings.vector_db_api_base = picked.baseUrl;
+      settings.vector_db_api_model = picked.model;
+      void this.plugin.saveSettings();
+    });
+    const memKeyIn = memBox.createEl("input", {
+      cls: "pf-setup-input",
+      attr: {
+        type: "password",
+        placeholder: settings._vector_db_configured
+          ? "•••• (已保存)"
+          : "粘贴 AI 检索 API Key（可选）",
+      },
+    }) as HTMLInputElement;
+    const memTestBtn = memBox.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "保存并测维度",
+      attr: { type: "button" },
+    });
+    const memMsg = memBox.createEl("span", { cls: "pf-test-conn-status" });
+    memTestBtn.addEventListener("click", () => {
+      const val = memKeyIn.value.trim();
+      memTestBtn.disabled = true;
+      memMsg.textContent = "探测中…";
+      void (
+        val
+          ? this._storeSetupSecret("vector-db-api-key", val)
+          : Promise.resolve(true)
+      )
+        .then(() => this.getClient().embedTestConnection())
+        .then((res) => {
+          if (val) memKeyIn.value = "";
+          memMsg.className = "pf-test-conn-status is-ok";
+          memMsg.textContent = `✓ ${res.model} (${res.dimension}维)`;
+        })
+        .catch((err) => {
+          memMsg.className = "pf-test-conn-status is-err";
+          memMsg.textContent = `✗ ${String(err?.message || err).slice(0, 60)}`;
+        })
+        .finally(() => {
+          memTestBtn.disabled = false;
+        });
+    });
+
+    if (this._setupFeedback) {
+      wrapper.createEl("p", {
+        cls:
+          this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
+        text: this._setupFeedback,
+      });
+    }
+    if (this._setupFailureDetail && this._setupOperation === "failed") {
+      wrapper.createEl("p", {
+        cls: "pf-setup-failure-detail",
+        text: this._setupFailureDetail,
+      });
+    }
+
+    // ── Single Big Footer CTA ──
+    const footer = wrapper.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(footer, {
+      label: isZh ? "稍后配置，先逛逛" : t("setup_nav_later"),
+      variant: "ghost",
+      disabled: this._setupOperation === "running",
+      onClick: () => this._goHome(),
+    });
+    renderActionButton(footer, {
+      label:
+        this._setupOperation === "running"
+          ? isZh
+            ? "正在同步文献库…"
+            : "Syncing…"
+          : isZh
+            ? "保存配置并立即同步文献库"
+            : "Save & Sync Library Now",
+      disabled: this._setupOperation === "running",
+      onClick: () =>
+        this._applyLibraryConfiguration({ autoCompleteOnSuccess: true }),
+    });
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {
@@ -4383,15 +5355,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-setup-status",
           text: t("runtime_installing"),
         });
-        // pip spends minutes downloading; naming the current phase is the
-        // difference between "stuck" and "working" for the user.
         const progress = this._installerProgressLine();
+        const pct = progress.includes("4/5")
+          ? 80
+          : progress.includes("3/5")
+            ? 60
+            : progress.includes("2/5")
+              ? 40
+              : progress.includes("1/5")
+                ? 22
+                : 15;
+        const bar = containerEl.createDiv({ cls: "pf-runtime-stage-bar" });
+        const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
+        fill.style.width = `${pct}%`;
         if (progress) {
           containerEl.createEl("p", {
             cls: "setting-item-description",
             text: progress,
           });
         }
+        containerEl.createEl("p", {
+          cls: "setting-item-description",
+          text:
+            t("nav_close") === "关闭"
+              ? "提示：无需等待进度条结束，可直接点击下方按钮先配置 Zotero。"
+              : "Tip: you can click Next below to configure Zotero while setup finishes in the background.",
+        });
         renderActionButton(containerEl, {
           label: t("runtime_cancel_btn"),
           variant: "secondary",
@@ -4440,8 +5429,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       },
     });
     renderActionButton(nav, {
-      label: t("setup_nav_continue"),
-      disabled: !ready,
+      label:
+        ready || !this._runtimePollTimer
+          ? t("setup_nav_continue")
+          : t("nav_close") === "关闭"
+            ? "边装边配置下一步 →"
+            : "Continue while installing →",
+      disabled: !ready && !this._runtimePollTimer,
       onClick: () => {
         this._setupStage = 2;
         this.display();
@@ -4463,10 +5457,38 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
+  private _maybeAutoDetectZotero(force = false): void {
+    const client = this.getClient?.();
+    if (!client || typeof client.zoteroDetect !== "function") return;
+    if (this._zoteroDetectBusy) return;
+    if (this._zoteroDetectRan && !force) return;
+    this._zoteroDetectRan = true;
+    this._zoteroDetectBusy = true;
+    const hint = (this.plugin.settings.zotero_data_dir || "").trim();
+    void client
+      .zoteroDetect(hint || undefined)
+      .then((res) => {
+        this._zoteroDetectData = res;
+        if (
+          res.found &&
+          res.zotero_dir &&
+          !this.plugin.settings.zotero_data_dir?.trim()
+        ) {
+          this.plugin.settings.zotero_data_dir = res.zotero_dir;
+          void this.plugin.saveSettings();
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        this._zoteroDetectBusy = false;
+        this.display();
+      });
+  }
+
   /**
-   * Stage 2 is a guided flow, not a form: three required steps in order, the
-   * current one open, finished ones collapsed to a summary line.
-   *   1 Zotero directory → 2 BBT JSON export → 3 save + sync (library ready)
+   * Stage 2 is a beginner-friendly 3-step flow powered by direct zotero.sqlite reading:
+   *   1 Locate Zotero data folder (auto-detected) -> 2 Pick collections & topic layout
+   *   with live interactive preview -> 3 One-click Save & Sync (hidden default dirs).
    */
   _renderSetupStageLibrary(containerEl: HTMLElement): void {
     const env =
@@ -4482,10 +5504,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     const settings = this.plugin.settings;
+    this._maybeAutoDetectZotero();
+
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    // Same layout Python resolves: <vault>/<system_dir>/PaperForge/exports.
-    // Defaults apply before the config exists, so first-run never waits on
-    // hydration (which needs a config to read in the first place).
     const sysDir = settings.system_dir?.trim() || "System";
     const sysLeaf = sysDir
       .replace(/[\\/]+$/, "")
@@ -4496,22 +5517,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ? path.join(vaultPath, sysDir, "exports")
         : path.join(vaultPath, sysDir, "PaperForge", "exports");
     const zotero = (settings.zotero_data_dir || "").trim();
-    const zoteroOk = !!zotero && fs.existsSync(zotero);
+    const zoteroOk =
+      Boolean(this._zoteroDetectData?.found) ||
+      (!!zotero && fs.existsSync(zotero));
     const bbtFiles = this._listBbtExports(exportsDir);
-    const bbtOk = bbtFiles.length > 0;
+    const useLegacyBbt = settings.zotero_source_mode === "bbt";
+    const scopeOk = useLegacyBbt ? bbtFiles.length > 0 : zoteroOk;
     const libReady = env.user_state === "ready";
     const running = this._setupOperation === "running";
+    const isZh = t("nav_close") === "关闭";
 
     containerEl.createEl("h3", { text: t("setup_library_title") });
-    containerEl.createEl("p", { text: t("setup_library_desc") });
+    containerEl.createEl("p", {
+      text: isZh
+        ? "无需安装任何 Zotero 导出插件，直接自动读取你的 Zotero 文库目录与课题分组。"
+        : t("setup_library_desc"),
+    });
     if (libReady) {
       containerEl.createEl("p", {
         cls: "pf-setup-ok",
         text: t("setup_library_ready"),
       });
     } else if (env.reason?.code !== "library.config_missing") {
-      // A fresh vault has nothing to diagnose: the three steps are the
-      // instruction, so only real failures get a consequence line.
       containerEl.createEl("p", {
         cls: "pf-setup-status",
         text: this._getModuleConsequence("library", env),
@@ -4530,8 +5557,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // A failure the user must act on: the reason is rendered, never only
-    // logged — "+ Add" with no explanation is the report that started this.
     if (this._setupOperation === "failed" && this._setupFailureDetail) {
       containerEl.createEl("p", {
         cls: "pf-setup-failure-detail",
@@ -4539,15 +5564,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // Completion is monotonic: a ready library means its prerequisites held,
-    // even if the export folder was emptied or a path was edited afterwards.
     const steps = [
       {
         id: "zotero",
         title: t("setup_step_zotero"),
         done: zoteroOk || libReady,
       },
-      { id: "bbt", title: t("setup_step_bbt"), done: bbtOk || libReady },
+      {
+        id: "scope",
+        title: isZh ? "选择同步课题与目录组织方式" : "Topics & Folder Layout",
+        done: scopeOk || libReady,
+      },
       { id: "verify", title: t("setup_step_verify_title"), done: libReady },
     ];
     const currentId = steps.find((step) => !step.done)?.id ?? null;
@@ -4572,7 +5599,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             ? t("setup_step_todo")
             : "",
       });
-      if (!step.done && step.id !== currentId) {
+      if (!step.done && step.id !== currentId && step.id !== "scope") {
         row.createEl("p", {
           cls: "caption pf-step-hint",
           text: t("setup_step_" + step.id + "_desc"),
@@ -4584,13 +5611,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         summary.createEl("span", {
           text:
             step.id === "zotero"
-              ? zotero
-              : step.id === "bbt"
-                ? bbtFiles.join(", ")
+              ? zotero +
+                (this._zoteroDetectData?.found
+                  ? ` (${this._zoteroDetectData.total_papers} 篇)`
+                  : "")
+              : step.id === "scope"
+                ? useLegacyBbt
+                  ? bbtFiles.join(", ")
+                  : (settings.domain_mode === "unified"
+                      ? "全部文献统一汇总"
+                      : "按 Zotero 顶级文件夹分专题") +
+                    (Array.isArray(settings.zotero_selected_collections) &&
+                    settings.zotero_selected_collections.length > 0
+                      ? ` · 已选 ${settings.zotero_selected_collections.length} 个文件夹`
+                      : " · 同步全库")
                 : [
-                    settings.system_dir || "System",
-                    settings.resources_dir || "Resources",
                     settings.literature_dir || "Literature",
+                    settings.resources_dir || "Resources",
                     settings.base_dir || "Bases",
                   ].join(" · "),
         });
@@ -4610,10 +5647,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       const body = row.createDiv({ cls: "pf-setup-flow-body" });
       if (step.id === "zotero") {
-        body.createEl("p", {
-          cls: "caption",
-          text: t("setup_library_zotero_hint"),
-        });
+        if (this._zoteroDetectData?.found) {
+          body.createEl("p", {
+            cls: "pf-setup-ok",
+            text: isZh
+              ? `✓ 已自动定位 Zotero 数据目录（共检测到 ${this._zoteroDetectData.total_papers} 篇文献）`
+              : `✓ Auto-detected Zotero library (${this._zoteroDetectData.total_papers} papers)`,
+          });
+        } else {
+          body.createEl("p", {
+            cls: "caption",
+            text: t("setup_library_zotero_hint"),
+          });
+        }
         const inputRow = body.createDiv({ cls: "pf-setup-path-row" });
         const input = inputRow.createEl("input", {
           cls: "pf-setup-input",
@@ -4628,6 +5674,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           input.value = settings.zotero_data_dir;
           this._setupOpenStep = null;
           void this.plugin.saveSettings();
+          this._maybeAutoDetectZotero(true);
           this.display();
         };
         input.addEventListener("change", () => applyZoteroDir(input.value));
@@ -4649,11 +5696,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             attr: { type: "button" },
           })
           .addEventListener("click", () => {
-            applyZoteroDir(path.join(os.homedir(), "Zotero"));
+            const home = os.homedir();
+            const candidates = [
+              path.join(home, "Zotero"),
+              path.join(home, ".var", "app", "org.zotero.Zotero", "Zotero"),
+              path.join(home, "snap", "zotero-snap", "common", "Zotero"),
+            ];
+            const found =
+              candidates.find((cand) => {
+                try {
+                  return fs.existsSync(cand);
+                } catch {
+                  return false;
+                }
+              }) ?? candidates[0];
+            applyZoteroDir(found);
           });
         if (
           zotero &&
           (/[/\\]program files(?:\s*\(x86\))?[/\\]/i.test(zotero) ||
+            /[/\\]applications[/\\]zotero\.app(?:[/\\]|$)/i.test(zotero) ||
             /zotero\.(?:exe|app)$/i.test(zotero))
         ) {
           body.createEl("p", {
@@ -4661,122 +5723,239 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             text: t("setup_zotero_progfiles_warn"),
           });
         }
-      } else if (step.id === "bbt") {
-        // Better BibTeX must write *into* this folder with "Keep updated":
-        // the index hash is computed from the files here, so a dragged copy
-        // would never follow later Zotero edits.
-        body.createEl("p", {
-          cls: "pf-setup-form-intro",
-          text: t("setup_bbt_export_hint"),
-        });
-        if (
-          env.reason?.code === "library.bbt_invalid_format" &&
-          env.reason.text
-        ) {
+      } else if (step.id === "scope") {
+        const previewHost = body.createDiv();
+        const allCols = this._zoteroDetectData?.collections ?? [];
+        const topCols = allCols.filter((c) => c.top_level !== false);
+        const curSel = new Set(
+          Array.isArray(settings.zotero_selected_collections)
+            ? settings.zotero_selected_collections
+            : []
+        );
+        const curMode =
+          settings.domain_mode === "unified" ? "unified" : "per_collection";
+
+        const redrawPreview = () => {
+          const pickedCols =
+            curSel.size > 0
+              ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
+                  curSel.has(c.key)
+                )
+              : topCols.length > 0
+                ? topCols
+                : allCols;
+          renderDomainModePreview(previewHost, {
+            domainMode:
+              settings.domain_mode === "unified" ? "unified" : "per_collection",
+            collections: pickedCols,
+            litDir: settings.literature_dir || "Literature",
+            isZh,
+          });
+        };
+
+        if (!useLegacyBbt) {
           body.createEl("p", {
-            cls: "pf-setup-warn",
-            text: env.reason.text,
+            cls: "caption",
+            text: isZh
+              ? "1) 选择需要同步到 Obsidian 的 Zotero 文件夹（不勾选则默认同步整个 Zotero 文库）："
+              : "1) Check Zotero collections to sync (leave unchecked to sync your entire Zotero library):",
+          });
+          if (allCols.length > 0) {
+            const colGrid = body.createDiv({ cls: "pf-zotero-col-grid" });
+            const listToShow = topCols.length > 0 ? topCols : allCols;
+            for (const col of listToShow) {
+              const label = colGrid.createEl("label", {
+                cls: "pf-zotero-col-item",
+              });
+              const cb = label.createEl("input", {
+                attr: { type: "checkbox" },
+              }) as HTMLInputElement;
+              cb.checked = curSel.has(col.key);
+              cb.addEventListener("change", () => {
+                if (cb.checked) curSel.add(col.key);
+                else curSel.delete(col.key);
+                settings.zotero_selected_collections = Array.from(curSel);
+                void this.plugin.saveSettings();
+                redrawPreview();
+              });
+              label.createSpan({ text: col.name });
+              label.createEl("span", {
+                cls: "pf-zotero-col-cnt",
+                text: `${col.item_count}`,
+              });
+            }
+          } else {
+            body.createEl("p", {
+              cls: "setting-item-description",
+              text: this._zoteroDetectBusy
+                ? "正在扫描 Zotero 分类…"
+                : "将同步你的 Zotero 全部文献（稍后可随时勾选特定分类）。",
+            });
+          }
+
+          body.createEl("p", {
+            cls: "caption",
+            text: isZh
+              ? "2) 选择同步后 Obsidian 内的组织方式（下方实时预览生效效果）："
+              : "2) Choose how folders are organized (live preview updates below):",
+          });
+          const modeGrid = body.createDiv({ cls: "pf-mode-choice-grid" });
+          const modeOptions: Array<{
+            id: "per_collection" | "unified";
+            title: string;
+            desc: string;
+          }> = [
+            {
+              id: "per_collection",
+              title: isZh
+                ? "按课题文件夹自动分组（推荐）"
+                : "Group by Zotero top folders (Recommended)",
+              desc: isZh
+                ? "每个顶级 Zotero 文件夹对应一个专题分区，同时仍汇总在一张 Base 总表。"
+                : "Each top collection maps cleanly to a topic zone inside one master Base.",
+            },
+            {
+              id: "unified",
+              title: isZh
+                ? "全部放一起，只靠总表筛选"
+                : "Single unified folder, filter inside Base",
+              desc: isZh
+                ? "不拆分子文件夹，所有文献放进同一目录，在总表顶部直接用多维筛选查看。"
+                : "Put all papers together and slice purely via the sticky Base filter bar.",
+            },
+          ];
+          const cardEls: HTMLButtonElement[] = [];
+          for (const opt of modeOptions) {
+            const card = modeGrid.createEl("button", {
+              cls: `pf-mode-choice-card${curMode === opt.id ? " is-selected" : ""}`,
+              attr: { type: "button" },
+            });
+            cardEls.push(card);
+            card.createEl("span", {
+              cls: "pf-mode-choice-title",
+              text: opt.title,
+            });
+            card.createEl("span", {
+              cls: "pf-mode-choice-desc",
+              text: opt.desc,
+            });
+            card.addEventListener("click", () => {
+              settings.domain_mode = opt.id;
+              settings.zotero_source_mode = "sqlite";
+              for (const el of cardEls) el.classList.remove("is-selected");
+              card.classList.add("is-selected");
+              void this.plugin.saveSettings();
+              redrawPreview();
+            });
+          }
+          redrawPreview();
+
+          const ifDetails = body.createEl("details", {
+            cls: "pf-adv-inline-details",
+          });
+          ifDetails.createEl("summary", {
+            text: isZh
+              ? "进阶可选：配置 EasyScholar 密钥获取精确 JCR IF 与中科院分区（不填默认使用开源学术指标 ≈）"
+              : "Optional: EasyScholar key for exact JCR IF & CAS partitions",
+          });
+          const esRow = ifDetails.createDiv({ cls: "pf-test-conn-row" });
+          const esKey = esRow.createEl("input", {
+            cls: "pf-setup-input",
+            attr: {
+              type: "password",
+              placeholder: settings._easyscholar_configured
+                ? "•••• (已保存)"
+                : "EasyScholar SecretKey（可选）",
+            },
+          }) as HTMLInputElement;
+          const esBtn = esRow.createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("config_save"),
+            attr: { type: "button" },
+          });
+          const esMsg = esRow.createEl("span", { cls: "pf-test-conn-status" });
+          esBtn.addEventListener("click", () => {
+            const v = esKey.value.trim();
+            if (!v) return;
+            void this.getClient()
+              .authSetSecret("easyscholar", v)
+              .then(() => {
+                settings._easyscholar_configured = true;
+                settings.journal_metrics_mode = "auto";
+                esKey.value = "";
+                esMsg.className = "pf-test-conn-status is-ok";
+                esMsg.textContent = "✓ 已保存";
+                void this.plugin.saveSettings();
+              })
+              .catch(() => {
+                esMsg.className = "pf-test-conn-status is-err";
+                esMsg.textContent = "保存失败";
+              });
           });
         }
-        const targetRow = body.createDiv({ cls: "pf-setup-path-row" });
-        targetRow.createEl("code", {
-          cls: "pf-setup-path-value",
-          text: exportsDir,
-        });
-        targetRow
-          .createEl("button", {
-            cls: "pf-btn pf-btn-secondary",
-            text: t("setup_bbt_copy"),
-            attr: { type: "button" },
-          })
-          .addEventListener("click", () => {
-            void navigator.clipboard.writeText(exportsDir);
-            new Notice(t("setup_bbt_copied"));
-          });
-        targetRow
-          .createEl("button", {
-            cls: "pf-btn pf-btn-secondary",
-            text: t("setup_bbt_open_folder"),
-            attr: { type: "button" },
-          })
-          .addEventListener("click", () => {
-            try {
-              const { shell } = require("electron") as {
-                shell: { openPath: (p: string) => Promise<string> };
-              };
-              fs.mkdirSync(exportsDir, { recursive: true });
-              void shell.openPath(exportsDir);
-            } catch (error) {
-              console.error(
-                "PaperForge: cannot open the exports folder",
-                error
-              );
-              new Notice(exportsDir);
-            }
-          });
 
-        // Only an auto-updating export counts: the index hash is computed
-        // from the files in this folder, so a copied snapshot would silently
-        // go stale after the next Zotero edit.
-        body.createEl("p", {
-          cls: bbtOk ? "pf-setup-ok" : "pf-setup-status",
-          text: bbtOk
-            ? "\u2713 " + t("setup_bbt_found") + bbtFiles.join(", ")
-            : t("setup_bbt_missing"),
+        const legacyDetails = body.createEl("details", {
+          cls: "pf-adv-inline-details",
         });
-        targetRow
-          .createEl("button", {
-            cls: "pf-btn pf-btn-secondary",
-            text: t("setup_bbt_recheck"),
-            attr: { type: "button" },
-          })
-          .addEventListener("click", () => {
-            this._setupOpenStep = null;
-            this._attemptedProbes.delete("library");
-            this._probeModule("library");
-            this.display();
+        legacyDetails.createEl("summary", {
+          text: isZh
+            ? "兼容选项：切换旧版 Better BibTeX 手工导出 JSON 模式"
+            : "Legacy mode: Better BibTeX JSON exports",
+        });
+        const modeSwitch = legacyDetails.createEl("button", {
+          cls: "pf-btn pf-btn-secondary",
+          text: useLegacyBbt
+            ? "切换回 zotero.sqlite 免插件直连（推荐）"
+            : "切换为旧版 BBT JSON 模式",
+          attr: { type: "button" },
+        });
+        modeSwitch.addEventListener("click", () => {
+          settings.zotero_source_mode = useLegacyBbt ? "sqlite" : "bbt";
+          void this.plugin.saveSettings();
+          this.display();
+        });
+        if (useLegacyBbt) {
+          const targetRow = legacyDetails.createDiv({
+            cls: "pf-setup-path-row",
           });
-
-        const guide = body.createEl("details", { cls: "pf-setup-guide" });
-        guide.createEl("summary", { text: t("setup_bbt_guide") });
-        const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
-        guideBody.createEl("p", {
-          cls: "pf-setup-form-intro",
-          text: t("setup_bbt_desc"),
-        });
-        const guideSteps = [
-          {
-            badge: "Add-ons",
-            flow: "Tools -> Add-ons -> Better BibTeX JSON",
-            title: t("setup_bbt_step1"),
-            desc: t("setup_bbt_step1_desc"),
-          },
-          {
-            badge: "Better BibTeX JSON",
-            flow: "Format: Better BibTeX JSON | [x] Keep updated",
-            title: t("setup_bbt_step2"),
-            desc: t("setup_bbt_step2_desc"),
-          },
-          {
-            badge: "exports/*.json",
-            flow: "Save -> PaperForge/exports/<Collection>.json",
-            title: t("setup_bbt_step3"),
-            desc: t("setup_bbt_step3_desc"),
-          },
-        ];
-        for (const item of guideSteps) {
-          const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
-          entry.createEl("strong", { text: item.title });
-          entry.createEl("p", { text: item.desc });
-          const card = entry.createDiv({ cls: "pf-setup-guide-card" });
-          card.createEl("code", { text: item.flow });
+          targetRow.createEl("code", {
+            cls: "pf-setup-path-value",
+            text: exportsDir,
+          });
+          targetRow
+            .createEl("button", {
+              cls: "pf-btn pf-btn-secondary",
+              text: t("setup_bbt_open_folder"),
+              attr: { type: "button" },
+            })
+            .addEventListener("click", () => {
+              try {
+                const { shell } = require("electron") as {
+                  shell: { openPath: (p: string) => Promise<string> };
+                };
+                fs.mkdirSync(exportsDir, { recursive: true });
+                void shell.openPath(exportsDir);
+              } catch {
+                new Notice(exportsDir);
+              }
+            });
         }
       } else {
         body.createEl("p", {
           cls: "caption",
-          text: t("setup_library_folders_hint"),
+          text: isZh
+            ? "一切已按最佳实践预置完成，点击下方按钮立即同步你的 Zotero 文献库。"
+            : "Everything is ready with recommended defaults. Click below to save and sync your library.",
         });
-        const folders = body.createDiv({
+        const customFoldersDetails = body.createEl("details", {
+          cls: "pf-adv-inline-details",
+        });
+        customFoldersDetails.createEl("summary", {
+          text: isZh
+            ? "高级：自定义 Vault 文件夹名称（推荐保持默认）"
+            : "Advanced: customize folder names in vault",
+        });
+        const folders = customFoldersDetails.createDiv({
           cls: "pf-setup-folder-grid",
         });
         const hydratedLib =
@@ -5117,10 +6296,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : t("field_paddleocr"),
           },
         }) as HTMLInputElement;
-        config.createEl("label", {
+        const ocrAdv = config.createEl("details", {
+          cls: "pf-adv-inline-details",
+        });
+        ocrAdv.createEl("summary", {
+          text: "高级接口设置（普通用户无需修改，默认使用官方接口）",
+        });
+        ocrAdv.createEl("label", {
           text: t("ocr_job_url_label") || "PaddleOCR Job URL",
         });
-        const jobUrl = config.createEl("input", {
+        const jobUrl = ocrAdv.createEl("input", {
           cls: "pf-setup-ocr-extra-input",
           attr: {
             type: "text",
@@ -5133,10 +6318,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         jobUrl.addEventListener("change", () => {
           this._setVectorDbConfig("paddleocr_job_url", jobUrl);
         });
-        config.createEl("label", {
+        ocrAdv.createEl("label", {
           text: t("ocr_model_label") || "PaddleOCR Model",
         });
-        const ocrModel = config.createEl("input", {
+        const ocrModel = ocrAdv.createEl("input", {
           cls: "pf-setup-ocr-extra-input",
           attr: {
             type: "text",
@@ -5159,17 +6344,65 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         };
         pendingSecretSaves.push(commitOcrKey);
         const ocrSaveFooter = config.createDiv({
-          cls: "pf-setup-optional-footer",
+          cls: "pf-setup-optional-footer pf-test-conn-row",
         });
         const save = ocrSaveFooter.createEl("button", {
           cls: "pf-setup-verify",
           text: t("config_save"),
           attr: { type: "button" },
         });
+        const testOcrBtn = ocrSaveFooter.createEl("button", {
+          cls: "pf-btn pf-btn-secondary",
+          text: "保存并测试连接",
+          attr: { type: "button" },
+        });
+        const testOcrMsg = ocrSaveFooter.createEl("span", {
+          cls: "pf-test-conn-status",
+        });
         save.addEventListener("click", () => {
           void commitOcrKey();
         });
+        testOcrBtn.addEventListener("click", () => {
+          testOcrBtn.disabled = true;
+          testOcrMsg.textContent = "测试中…";
+          void commitOcrKey()
+            .then(() => this.getClient().ocrTestConnection())
+            .then((res) => {
+              if (res?.passed) {
+                testOcrMsg.className = "pf-test-conn-status is-ok";
+                testOcrMsg.textContent = "✓ 密钥有效，可正常解析 PDF";
+              } else {
+                testOcrMsg.className = "pf-test-conn-status is-err";
+                testOcrMsg.textContent = `✗ ${res?.error || "校验失败"}`;
+              }
+            })
+            .catch((err) => {
+              testOcrMsg.className = "pf-test-conn-status is-err";
+              testOcrMsg.textContent = `✗ 测试失败：${String(err?.message || err).slice(0, 80)}`;
+            })
+            .finally(() => {
+              testOcrBtn.disabled = false;
+            });
+        });
       } else if (opt.id === "memory") {
+        config.createEl("label", {
+          text: "选择 AI 语义服务商（自动匹配模型与维度）",
+        });
+        const presetSelect = config.createEl("select", {
+          cls: "pf-setup-select",
+        }) as HTMLSelectElement;
+        const matchedPreset = matchEmbeddingPresetId(
+          this.plugin.settings.vector_db_api_base || "",
+          this.plugin.settings.vector_db_api_model || ""
+        );
+        const isZhOpt = t("nav_close") === "关闭";
+        for (const p of EMBEDDING_PRESETS) {
+          const o = presetSelect.createEl("option", {
+            text: isZhOpt ? p.labelZh : p.labelEn,
+            attr: { value: p.id },
+          }) as HTMLOptionElement;
+          o.selected = p.id === matchedPreset;
+        }
         config.createEl("label", { text: t("feat_openai_key") });
         config.createEl("p", {
           cls: "caption",
@@ -5185,8 +6418,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : "sk-...",
           },
         }) as HTMLInputElement;
-        config.createEl("label", { text: t("feat_api_model") });
-        const model = config.createEl("input", {
+        const memAdv = config.createEl("details", {
+          cls: "pf-adv-inline-details",
+        });
+        memAdv.createEl("summary", {
+          text: "高级：自定义模型名称、端点地址与兼容模式（选上方预设可免填）",
+        });
+        memAdv.createEl("label", { text: t("feat_api_model") });
+        const model = memAdv.createEl("input", {
           cls: "pf-setup-input",
           attr: {
             type: "text",
@@ -5198,8 +6437,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         model.addEventListener("change", () => {
           this._setVectorDbConfig("vector_db_api_model", model);
         });
-        config.createEl("label", { text: t("feat_api_base_url") });
-        const base = config.createEl("input", {
+        memAdv.createEl("label", { text: t("feat_api_base_url") });
+        const base = memAdv.createEl("input", {
           cls: "pf-setup-input",
           attr: {
             type: "text",
@@ -5211,10 +6450,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         base.addEventListener("change", () => {
           this._setVectorDbConfig("vector_db_api_base", base);
         });
-        config.createEl("label", {
+        memAdv.createEl("label", {
           text: t("mem_provider_type_label") || "API Client Mode",
         });
-        const ptype = config.createEl("select", {
+        const ptype = memAdv.createEl("select", {
           cls: "pf-setup-select",
         }) as HTMLSelectElement;
         for (const [val, label] of [
@@ -5232,6 +6471,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ptype.addEventListener("change", () => {
           this._setVectorDbConfig("vector_db_provider_type", ptype);
         });
+        presetSelect.addEventListener("change", () => {
+          const picked = EMBEDDING_PRESETS.find(
+            (p) => p.id === presetSelect.value
+          );
+          if (!picked || picked.id === "custom") return;
+          model.value = picked.model;
+          base.value = picked.baseUrl;
+          this._setVectorDbConfig("vector_db_api_model", model);
+          this._setVectorDbConfig("vector_db_api_base", base);
+        });
         const commitMemKey = async () => {
           const val = key.value.trim();
           if (!val) return;
@@ -5243,15 +6492,40 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         };
         pendingSecretSaves.push(commitMemKey);
         const memSaveFooter = config.createDiv({
-          cls: "pf-setup-optional-footer",
+          cls: "pf-setup-optional-footer pf-test-conn-row",
         });
         const save = memSaveFooter.createEl("button", {
           cls: "pf-setup-verify",
           text: t("config_save"),
           attr: { type: "button" },
         });
+        const testMemBtn = memSaveFooter.createEl("button", {
+          cls: "pf-btn pf-btn-secondary",
+          text: "保存并测通维度",
+          attr: { type: "button" },
+        });
+        const testMemMsg = memSaveFooter.createEl("span", {
+          cls: "pf-test-conn-status",
+        });
         save.addEventListener("click", () => {
           void commitMemKey();
+        });
+        testMemBtn.addEventListener("click", () => {
+          testMemBtn.disabled = true;
+          testMemMsg.textContent = "探测中…";
+          void commitMemKey()
+            .then(() => this.getClient().embedTestConnection())
+            .then((res) => {
+              testMemMsg.className = "pf-test-conn-status is-ok";
+              testMemMsg.textContent = `✓ 已连通 · ${res.model} (${res.dimension} 维 · ${res.latency_ms}ms)`;
+            })
+            .catch((err) => {
+              testMemMsg.className = "pf-test-conn-status is-err";
+              testMemMsg.textContent = `✗ 测试失败：${String(err?.message || err).slice(0, 80)}`;
+            })
+            .finally(() => {
+              testMemBtn.disabled = false;
+            });
         });
       } else {
         config.createEl("label", { text: t("feat_agent_platform") });

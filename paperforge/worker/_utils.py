@@ -69,6 +69,30 @@ def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
     return ""
 
 
+def lookup_journal_metric_full(
+    journal_name: str,
+    extra: str,
+    vault: Path,
+    *,
+    issn: str = "",
+    zotero_dir: Path | None = None,
+    allow_network: bool = True,
+) -> dict[str, str]:
+    """Lookup IF + provenance + partition for indexing & Base table badges."""
+    journal_db = load_journal_db(vault)
+    from paperforge.journal_metrics import lookup_journal_metric
+
+    return lookup_journal_metric(
+        journal_name,
+        extra,
+        vault,
+        issn=issn,
+        zotero_dir=zotero_dir,
+        preloaded_db=journal_db,
+        allow_network=allow_network,
+    )
+
+
 # --- JSON I/O ---
 # write_json re-exported from paperforge.core.io
 
@@ -85,11 +109,12 @@ def read_jsonl(path: Path):
 
 
 def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    from paperforge.core.io import write_text_atomic
+
     text = "\n".join(json.dumps(row, ensure_ascii=False) for row in rows)
     if text:
         text += "\n"
-    path.write_text(text, encoding="utf-8")
+    write_text_atomic(path, text)
 
 
 def sync_workspace_fulltext(source_fulltext: Path, target_fulltext: Path) -> bool:

@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 # ── detail states (probe + reconcile vocabulary) ──────────────────────────
 
@@ -637,3 +638,106 @@ def identity_state(paper_dir: Path) -> tuple[str | None, str | None]:
     if stored != recomputed:
         return "stale", recomputed
     return "current", recomputed
+
+
+def validate_result_json(paper_dir: Path) -> tuple[bool, str, int]:
+    """Validate Tier-0 paid OCR truth ``json/result.json`` atomically.
+
+    Returns ``(is_valid, reason, page_count)``.  Legacy vaults may store a
+    list of page payloads or ``{"pages": [...]}``; any readable, non-empty,
+    structurally valid payload is sufficient to regenerate all downstream
+    artifacts locally via ``backfill_from_result`` without paying OCR APIs.
+    """
+    result_path = paper_dir / "json" / "result.json"
+    if not result_path.exists():
+        return False, "missing", 0
+    if result_path.is_dir():
+        return False, "not_file", 0
+    try:
+        if result_path.stat().st_size == 0:
+            return False, "empty", 0
+        raw = json.loads(result_path.read_text(encoding="utf-8"))
+    except UnicodeDecodeError:
+        return False, "unreadable", 0
+    except OSError:
+        return False, "permission", 0
+    except json.JSONDecodeError:
+        return False, "invalid", 0
+
+    if isinstance(raw, dict):
+        pages = raw.get("pages")
+        if isinstance(pages, list):
+            return (True, "ok", len(pages)) if pages else (False, "empty_pages", 0)
+        return (True, "ok", 1) if raw else (False, "empty", 0)
+    if isinstance(raw, list):
+        return (True, "ok", len(raw)) if raw else (False, "empty", 0)
+    return False, "invalid_shape", 0
+
+
+def assess_ocr_bundle_atoms(paper_dir: Path) -> dict[str, Any]:
+    """Perform atom-level validation separating Tier-0 OCR truth from Tier-1 derived files.
+
+    Guarantees that derived-layer or partial corruption never masks an intact
+    ``json/result.json`` source of truth that can be rebuilt locally at zero cost.
+    """
+    tier0_ok, tier0_reason, page_count = validate_result_json(paper_dir)
+    result_path = paper_dir / "json" / "result.json"
+    tier0_sha256 = ""
+    if tier0_ok:
+        try:
+            from paperforge.core.stat_cache import cached_sha256_hex
+
+            tier0_sha256 = cached_sha256_hex(result_path)
+        except Exception:  # noqa: BLE001
+            tier0_sha256 = hashlib.sha256(result_path.read_bytes()).hexdigest()
+
+    raw_cond = raw_state(paper_dir)
+    blocks_cond = _blocks_state(paper_dir)
+    tree_cond = _tree_state(paper_dir)
+    role_cond = _role_index_state(paper_dir)
+    pub_cond = _published_state(paper_dir)
+    fulltext_ok = (paper_dir / "fulltext.md").is_file() and (paper_dir / "fulltext.md").stat().st_size > 0
+    meta_dict = read_meta(paper_dir)
+    meta_ok = meta_dict is not None
+
+    derived_defects: list[str] = []
+    if blocks_cond is not None:
+        derived_defects.append(blocks_cond)
+    if tree_cond is not None:
+        derived_defects.append(tree_cond)
+    if role_cond is not None:
+        derived_defects.append(role_cond)
+    if pub_cond is not None:
+        derived_defects.append(pub_cond)
+    if not fulltext_ok:
+        derived_defects.append("fulltext_missing")
+    if not meta_ok:
+        derived_defects.append("meta_invalid_or_missing")
+
+    has_raw_blocks = raw_cond is None
+    if has_raw_blocks and not derived_defects:
+        salvage_action = "current"
+    elif has_raw_blocks:
+        salvage_action = "rebuild_derived_local"
+    elif tier0_ok:
+        salvage_action = "backfill_from_result_json"
+    else:
+        salvage_action = "re_ocr_needed"
+
+    return {
+        "zotero_key": paper_dir.name,
+        "paper_dir": str(paper_dir),
+        "tier0_truth_intact": tier0_ok,
+        "tier0_reason": tier0_reason,
+        "tier0_page_count": page_count,
+        "tier0_sha256": tier0_sha256,
+        "has_blocks_raw": has_raw_blocks,
+        "raw_defect": raw_cond,
+        "has_blocks_structured": blocks_cond is None,
+        "has_fulltext": fulltext_ok,
+        "meta_ok": meta_ok,
+        "ocr_status": str((meta_dict or {}).get("ocr_status") or ""),
+        "pipeline_version": str((meta_dict or {}).get("ocr_pipeline_version") or ""),
+        "derived_defects": derived_defects,
+        "salvage_action": salvage_action,
+    }

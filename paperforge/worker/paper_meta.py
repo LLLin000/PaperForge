@@ -69,7 +69,9 @@ def write_paper_meta(
     elif "migrated_from" in existing:
         meta["migrated_from"] = existing["migrated_from"]
 
-    meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    from paperforge.core.io import write_json_atomic
+
+    write_json_atomic(meta_path, meta)
     return meta_path
 
 

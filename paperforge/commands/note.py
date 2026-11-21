@@ -152,11 +152,15 @@ def run(args: argparse.Namespace) -> int:
             split_frontmatter_block,
         )
 
+        from paperforge.core.io import write_text_atomic, write_text_cas
+        import hashlib as _hashlib
+
+        orig_bytes = note.read_bytes()
+        orig_sha = _hashlib.sha256(orig_bytes).hexdigest()
         # Byte-preserving I/O: read/write with newline translation OFF so
         # the durable note keeps its original CRLF/LF endings on every
         # platform (Path.read_text would translate CRLF away).
-        with open(note, encoding="utf-8", newline="") as f:
-            text = f.read()
+        text = orig_bytes.decode("utf-8")
         # Authority validation BEFORE any mutation: an absent or
         # unterminated frontmatter block is a validation failure — never
         # a silent unchanged-file success.
@@ -171,9 +175,10 @@ def run(args: argparse.Namespace) -> int:
         fm = read_frontmatter_dict(probe_text)
         changed = fm.get(field) is not value
         if changed:
-            note.write_text(
+            write_text_cas(
+                note,
                 set_frontmatter_flag(text, field, value),
-                encoding="utf-8",
+                expected_sha256=orig_sha,
                 newline="",
             )
         state = "was saved" if changed else "is already set"
@@ -183,7 +188,7 @@ def run(args: argparse.Namespace) -> int:
             if not changed:
                 return f"canonical note flag {state}, but {message}"
             try:
-                note.write_text(text, encoding="utf-8", newline="")
+                write_text_atomic(note, text, newline="")
             except Exception as rollback_exc:
                 return (
                     f"{message}; canonical note rollback failed: {rollback_exc}; "

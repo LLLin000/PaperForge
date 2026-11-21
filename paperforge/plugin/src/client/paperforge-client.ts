@@ -16,6 +16,7 @@ import {
   type StreamHandle,
   type LongTaskOutcome,
   type StreamDiagnostics,
+  type DaemonPushEvent,
   AsyncEventQueue,
 } from "./transport";
 import type { ProbeAllEnvelope, ProbeEnvelope } from "./probe-types";
@@ -251,6 +252,23 @@ export interface VersionsResetLiveResultDTO {
   provenance_cleared: boolean;
 }
 
+export interface ZoteroCollectionInfoDto {
+  key: string;
+  name: string;
+  parent_key?: string | null;
+  path: string;
+  direct_item_count: number;
+  item_count: number;
+  top_level: boolean;
+}
+
+export interface ZoteroDetectDto {
+  found: boolean;
+  zotero_dir: string;
+  total_papers: number;
+  collections: ZoteroCollectionInfoDto[];
+}
+
 export interface BasePaperRowDto {
   zotero_key: string;
   title: string;
@@ -258,7 +276,10 @@ export interface BasePaperRowDto {
   year: string;
   journal: string;
   impact_factor: string;
+  impact_factor_source?: string;
+  journal_partition?: string;
   domain: string;
+  collections?: string[];
   has_pdf: boolean;
   do_ocr: boolean;
   analyze: boolean;
@@ -317,6 +338,141 @@ export interface RenderAuditDTO {
   papers?: RenderAuditPaper[];
   summary?: Record<string, unknown>;
   [key: string]: unknown;
+}
+
+export interface VaultProvenanceDto {
+  state:
+    | "fresh_or_foreign"
+    | "standard_current"
+    | "veteran_legacy"
+    | "veteran_rescue"
+    | string;
+  needs_upgrade: boolean;
+  confidence: "high" | "medium" | "none" | string;
+  signals: string[];
+  legacy_engine_dir?: string | null;
+}
+
+export interface VaultUpgradeItemDto {
+  id: string;
+  area: string;
+  title: string;
+  detail: string;
+  count?: number;
+  fast_cutover?: boolean;
+  impact?: "experience_critical" | "minor" | string;
+  remediation?: string;
+  keys?: string[];
+}
+
+export interface VaultCleanupCandidateDto {
+  id: string;
+  path: string;
+  bytes: number;
+  reason: string;
+}
+
+export interface VaultUpgradePlanDto {
+  vault: string;
+  provenance: VaultProvenanceDto;
+  census: Record<string, unknown>;
+  manifest: Record<string, unknown> | null;
+  rollback_available: boolean;
+  category_a_auto: VaultUpgradeItemDto[];
+  category_b_reconfig: VaultUpgradeItemDto[];
+  category_c_tamper: VaultUpgradeItemDto[];
+  cleanup_candidates: VaultCleanupCandidateDto[];
+  summary: {
+    auto_count: number;
+    fast_cutover_count?: number;
+    progressive_heal_count?: number;
+    reconfig_critical_count: number;
+    reconfig_minor_count: number;
+    tamper_count: number;
+    cleanup_candidate_count: number;
+    ocr_atoms: {
+      total: number;
+      current: number;
+      rebuild_derived_local: number;
+      backfill_from_result_json: number;
+      re_ocr_needed: number;
+    };
+  };
+}
+
+export interface VaultUpgradeApplyResultDto {
+  dry_run: boolean;
+  applied: boolean;
+  fast_cutover?: boolean;
+  backup_dir?: string;
+  executed_steps: Array<Record<string, unknown>>;
+  errors: Array<{ step: string; error: string }>;
+  post_check?: VaultUpgradePlanDto;
+}
+
+export interface VaultUpgradeHealResultDto {
+  processed_workspaces: number;
+  paper_meta_cleaned: number;
+  legacy_notes_renamed: number;
+  visual_assets_synced: number;
+  ocr_backfilled: number;
+  workspace_registry_upserted: number;
+  ocr_catalog_total: number;
+  skipped_isolated: Array<{ key: string; reason: string }>;
+}
+
+export interface VaultUpgradeRollbackResultDto {
+  rolled_back: boolean;
+  reason?: string;
+  backup_dir?: string;
+  restored?: string[];
+}
+
+export interface DaemonJobDto {
+  job_id: string;
+  vault: string;
+  kind: "sync" | "ocr" | "embed" | "upgrade.heal" | string;
+  status:
+    | "running"
+    | "cancelling"
+    | "succeeded"
+    | "failed"
+    | "cancelled"
+    | string;
+  current: number;
+  total: number;
+  phase: string;
+  item_id: string;
+  priority_key?: string | null;
+  started_at: number;
+  finished_at?: number | null;
+  exit_code?: number | null;
+  error?: string;
+  pid?: number | null;
+}
+
+export interface DaemonNoticeDto {
+  notice_id: string;
+  level: "info" | "success" | "warning" | "error" | string;
+  code: string;
+  title: string;
+  detail: string;
+  vault: string | null;
+  created_at: number;
+  acked: boolean;
+}
+
+export interface DaemonHealthDto {
+  ok: boolean;
+  pid: number;
+  parent_pid: number | null;
+  uptime_sec: number;
+  rss_bytes: number;
+  rss_mb: number;
+  heavy_modules_loaded: string[];
+  active_jobs: DaemonJobDto[];
+  unacked_notice_count: number;
+  cached_vaults: Array<Record<string, unknown>>;
 }
 
 export interface PaperStatusDTO {
@@ -1262,7 +1418,9 @@ export class PaperForgeClient {
 
   /** Credential presence from the authority (`auth status`), never from
    * SecretStorage or settings flags (#173/C1). */
-  async credentialAvailable(service: "embedding" | "ocr"): Promise<boolean> {
+  async credentialAvailable(
+    service: "embedding" | "ocr" | "easyscholar"
+  ): Promise<boolean> {
     return this._cachedRead(`auth-status:${service}`, 60000, async () => {
       const data = await this._executePfResult<{
         credentials?: Array<{ state?: string }>;
@@ -1280,7 +1438,7 @@ export class PaperForgeClient {
    * migration passes `{replace: false}` so a stale host copy can never
    * overwrite a live keyring value. */
   async authSetSecret(
-    kind: "ocr" | "embedding",
+    kind: "ocr" | "embedding" | "easyscholar",
     secret: string,
     options?: { replace?: boolean }
   ): Promise<boolean> {
@@ -2343,6 +2501,218 @@ export class PaperForgeClient {
       "base-snapshot",
       "--json",
     ]);
+  }
+
+  // ── 9. Unified Vault Upgrade & Low-Memory ControlDaemon (ADR-018) ────────
+
+  async vaultUpgradePlan(): Promise<VaultUpgradePlanDto> {
+    return this._executePfResult<VaultUpgradePlanDto>([
+      "upgrade",
+      "--plan",
+      "--json",
+    ]);
+  }
+
+  async vaultUpgradeApply(opts?: {
+    fastCutover?: boolean;
+    backfillOcr?: boolean;
+    quarantineResiduals?: boolean;
+    quarantineIds?: string[];
+    noRebuildDb?: boolean;
+  }): Promise<VaultUpgradeApplyResultDto> {
+    const argv = ["upgrade", "--apply", "--json"];
+    if (opts?.fastCutover) argv.push("--fast-cutover");
+    if (opts?.backfillOcr) argv.push("--backfill-ocr");
+    if (opts?.quarantineResiduals) argv.push("--quarantine-residuals");
+    if (opts?.quarantineIds?.length) {
+      argv.push("--quarantine-ids", opts.quarantineIds.join(","));
+    }
+    if (opts?.noRebuildDb) argv.push("--no-rebuild-db");
+    try {
+      return await this._executePfResult<VaultUpgradeApplyResultDto>(argv, {
+        timeoutMs: 180000,
+      });
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async vaultUpgradeHeal(opts?: {
+    priorityKey?: string;
+    limit?: number;
+    backfillOcr?: boolean;
+  }): Promise<VaultUpgradeHealResultDto> {
+    const argv = ["upgrade", "--heal", "--json"];
+    if (opts?.priorityKey) argv.push("--priority-key", opts.priorityKey);
+    if (typeof opts?.limit === "number" && opts.limit > 0) {
+      argv.push("--limit", String(opts.limit));
+    }
+    if (opts?.backfillOcr) argv.push("--backfill-ocr");
+    try {
+      return await this._executePfResult<VaultUpgradeHealResultDto>(argv, {
+        timeoutMs: 300000,
+      });
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async vaultUpgradeRollback(): Promise<VaultUpgradeRollbackResultDto> {
+    try {
+      return await this._executePfResult<VaultUpgradeRollbackResultDto>(
+        ["upgrade", "--rollback", "--json"],
+        { timeoutMs: 120000 }
+      );
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  onDaemonEvent(listener: (event: DaemonPushEvent) => void): () => void {
+    if (typeof this._transport.onDaemonEvent === "function") {
+      return this._transport.onDaemonEvent(listener);
+    }
+    return () => {};
+  }
+
+  async daemonHealth(): Promise<DaemonHealthDto | null> {
+    if (typeof this._transport.rpc !== "function") return null;
+    const raw = await this._transport.rpc({ op: "daemon.health" });
+    return JSON.parse(raw) as DaemonHealthDto;
+  }
+
+  async daemonSubmitJob(
+    kind: "sync" | "ocr" | "embed" | "upgrade.heal",
+    opts?: { priorityKey?: string; backfillOcr?: boolean; argv?: string[] }
+  ): Promise<{
+    accepted: boolean;
+    coalesced?: boolean;
+    reason?: string;
+    job?: DaemonJobDto;
+  }> {
+    if (typeof this._transport.rpc !== "function") {
+      return { accepted: false, reason: "rpc_unavailable" };
+    }
+    const raw = await this._transport.rpc({
+      op: "job.submit",
+      kind,
+      priority_key: opts?.priorityKey ?? null,
+      backfill_ocr: opts?.backfillOcr ?? false,
+      argv: opts?.argv ?? null,
+    });
+    return JSON.parse(raw);
+  }
+
+  async daemonListJobs(includeRecent = true): Promise<{
+    active: DaemonJobDto[];
+    recent: DaemonJobDto[];
+  }> {
+    if (typeof this._transport.rpc !== "function") {
+      return { active: [], recent: [] };
+    }
+    const raw = await this._transport.rpc({
+      op: "job.list",
+      include_recent: includeRecent,
+    });
+    return JSON.parse(raw);
+  }
+
+  async daemonCancelJob(
+    jobId: string
+  ): Promise<{ ok: boolean; status?: string; reason?: string }> {
+    if (typeof this._transport.rpc !== "function") {
+      return { ok: false, reason: "rpc_unavailable" };
+    }
+    const raw = await this._transport.rpc({
+      op: "job.cancel",
+      job_id: jobId,
+    });
+    return JSON.parse(raw);
+  }
+
+  async daemonListNotices(
+    includeAcked = false
+  ): Promise<{ notices: DaemonNoticeDto[] }> {
+    if (typeof this._transport.rpc !== "function") {
+      return { notices: [] };
+    }
+    const raw = await this._transport.rpc({
+      op: "notice.list",
+      include_acked: includeAcked,
+    });
+    return JSON.parse(raw);
+  }
+
+  async daemonAckNotice(noticeId: string): Promise<boolean> {
+    if (typeof this._transport.rpc !== "function") return false;
+    const raw = await this._transport.rpc({
+      op: "notice.ack",
+      notice_id: noticeId,
+    });
+    const parsed = JSON.parse(raw) as { acked?: boolean };
+    return Boolean(parsed?.acked);
+  }
+
+  shutdownTransport(): void {
+    (
+      this._transport as unknown as { shutdownDaemon?: () => void }
+    )?.shutdownDaemon?.();
+  }
+
+  async daemonSubmitRuntimeUpdate(
+    version: string
+  ): Promise<{ accepted: boolean; coalesced?: boolean; reason?: string }> {
+    if (typeof this._transport.rpc !== "function") {
+      return { accepted: false, reason: "rpc_unavailable" };
+    }
+    const raw = await this._transport.rpc({
+      op: "job.submit",
+      kind: "runtime.update",
+      version,
+    });
+    return JSON.parse(raw);
+  }
+
+  /** Fast Zero-Python Zotero data directory + collections detector (`zotero detect --json`). */
+  async zoteroDetect(customPath?: string): Promise<ZoteroDetectDto> {
+    const argv = ["zotero", "detect"];
+    if (customPath && customPath.trim()) {
+      argv.push("--path", customPath.trim());
+    }
+    argv.push("--json");
+    const data = await this._executePfResult<Partial<ZoteroDetectDto>>(argv, {
+      timeoutMs: 15000,
+    });
+    return {
+      found: Boolean(data?.found),
+      zotero_dir: String(data?.zotero_dir ?? ""),
+      total_papers: Number(data?.total_papers ?? 0),
+      collections: Array.isArray(data?.collections) ? data!.collections : [],
+    };
+  }
+
+  /** Live provider probe returning detected dimension & latency (`embed test-connection --json`). */
+  async embedTestConnection(): Promise<{
+    model: string;
+    base_url: string;
+    dimension: number;
+    latency_ms: number;
+  }> {
+    return this._executePfResult(["embed", "test-connection", "--json"], {
+      timeoutMs: 35000,
+    });
+  }
+
+  /** Quick OCR token & endpoint connectivity probe (`ocr test-connection --json`). */
+  async ocrTestConnection(): Promise<{
+    passed: boolean;
+    level: number;
+    error?: string;
+    fix?: string;
+  }> {
+    return this._executePfResult(["ocr", "test-connection", "--json"], {
+      timeoutMs: 35000,
+    });
   }
 }
 

@@ -5,7 +5,12 @@ from pathlib import Path
 
 import requests
 
-from paperforge.embedding._config import get_api_base_url, get_api_key, get_api_model
+from paperforge.embedding._config import (
+    get_api_base_url,
+    get_api_dimensions,
+    get_api_key,
+    get_api_model,
+)
 from paperforge.embedding.providers.base import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
@@ -20,21 +25,24 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
     def __init__(self, vault: Path):
         self._api_key = get_api_key(vault)
-        if not self._api_key:
+        if not api_key_check(self._api_key):
             raise ValueError(
                 "No API key configured for embedding. "
-                "Run `paperforge auth set embedding --stdin` or supply "
-                "PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT."
+                "Please enter your API key in Settings -> PaperForge."
             )
         self._model = get_api_model(vault)
         self._base_url = (get_api_base_url(vault) or "https://api.openai.com/v1").rstrip("/")
+        self._dimensions = get_api_dimensions(vault)
         logger.info("Embedding provider (requests fallback): model=%s, base_url=%s", self._model, self._base_url)
 
     def encode(self, texts: list[str]) -> list[list[float]]:
+        payload: dict[str, object] = {"model": self._model, "input": texts}
+        if self._dimensions:
+            payload["dimensions"] = self._dimensions
         resp = requests.post(
             f"{self._base_url}/embeddings",
             headers={"Authorization": f"Bearer {self._api_key}"},
-            json={"model": self._model, "input": texts},
+            json=payload,
             timeout=60.0,
         )
         resp.raise_for_status()
@@ -42,3 +50,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
     def encode_single(self, text: str) -> list[float]:
         return self.encode([text])[0]
+
+
+def api_key_check(val: str) -> bool:
+    return bool(str(val or "").strip())

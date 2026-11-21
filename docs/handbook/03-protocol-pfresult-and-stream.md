@@ -203,7 +203,7 @@ sequenceDiagram
 | `config`         | `list\|get\|set\|unset\|validate\|paths\|init\|migrate` (`--dry-run`, `--json`)                                                                                   | Schema v2 唯一配置入口                                   |
 | `auth`           | `status\|set\|delete\|migrate` (`--stdin`, `--replace`, `--yes`, `--from`, `--json`)                                                                              | 凭据管理权威入口                                         |
 | `runtime`        | `install\|update\|repair\|status` (`--expected-version`, `--base-python`, `--wheel`, `--json`)                                                                    | 独立受管运行时（无需 Vault）                             |
-| `daemon`         | `--stdio`（默认启用）, `--idle-timeout SEC`（默认 `300`，`0` 禁用）                                                                                               | 单进程 stdio JSON-RPC 复用通道（无网络监听）             |
+| `daemon`         | `--stdio`（默认启用）, `--idle-timeout SEC`（默认 `300`，`0` 禁用）, `--parent-pid PID`                                                                             | 轻内存全局控制引擎（stdio 双工 RPC + 子进程任务监管 + 消息推送） |
 | `setup`          | `--modular`, `--headless`, `--agent`, `--system-dir`, `--resources-dir`, `--literature-dir`, `--base-dir`, `--zotero-data`, `--skip-checks`, `--stream`, `--json` | Vault 初始化编排（`--stream` / `--json` 输出 NDJSON 流） |
 | `probe`          | `installation\|help\|library\|ocr\|memory\|maintenance\|lineage\|all` (`--json`, `--expected-version`, `--last-operation-exit-code`)                              | 只读能力探测包络                                         |
 | `action`         | `list\|describe\|preflight\|run` (`--scope`, `--key`, `--keys-file`, `--confirm`, `--follow`, `--stream`, `--json`)                                               | 声明式动作策略管道（`--stream` 强制 `#137` 流）          |
@@ -219,6 +219,8 @@ sequenceDiagram
 | `status`          | `--json`                                                                                                   | 报告库统计、OCR 队列与索引摘要               |
 | `sync`            | `--dry-run`, `--domain`, `--selection`, `--index`, `--rebuild-index`, `--prune`, `--prune-force`, `--json` | Zotero 选择同步、资产索引重建与收敛触发      |
 | `migrate-storage` | `--dry-run`, `--json`                                                                                      | 迁移引擎存储至 `.paperforge/`                |
+| `upgrade`         | `--plan`, `--dry-run`, `--apply`, `--fast-cutover`, `--heal`, `--priority-key`, `--limit`, `--rollback`, `--backfill-ocr`, `--quarantine-residuals`, `--quarantine-ids`, `--no-rebuild-db`, `--json` | 跨版本 Vault 普查、双速无损切流、渐进自愈与一键回滚 |
+| `engine`          | `status\|sync-registry\|rebuild-db` (`--json`)                                                             | 统一 VaultEngine SQLite SSOT 与清单管理      |
 | `base-refresh`    | `--force` / `-f`                                                                                           | 刷新 `.base` 视图文件                        |
 | `prune`           | `--force`, `--json`, `keys...`                                                                             | 清理孤儿论文（默认 dry-run，实删移入回收站） |
 | `trash`           | `list\|restore <trash_id>\|purge [--older-than DAYS]`                                                      | 回收站列表、恢复与物理清除                   |

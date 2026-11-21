@@ -235,60 +235,47 @@ class SyncService:
         return total_deleted
 
     def clean_flat_notes(self, paths: dict[str, Path], json_output: bool = False) -> int:
-        """Delete flat formal notes whose workspace equivalent exists.
+        """Quarantine flat formal notes whose verified workspace equivalent exists.
 
-        Migrated from worker/sync.py run_index_refresh (v2.2).
-        Returns number of flat notes deleted.
+        Uses structured ``zotero_key`` identity anchors rather than title-slug
+        path guessing and moves duplicates to ``.paperforge/trash/`` via
+        ``quarantine_move`` instead of calling ``unlink()``.
         """
         from paperforge.config import paperforge_paths
-        from paperforge.worker._utils import slugify_filename
-
-        try:
-            from paperforge.worker.asset_index import read_index as _read_idx
-
-            index_data = _read_idx(self.vault)
-        except Exception:
-            index_data = None
+        from paperforge.services.identity_resolver import scan_vault_identities
+        from paperforge.services.vault_engine import quarantine_move
 
         _paths = paths if paths else paperforge_paths(self.vault)
         lit_dir = _paths.get("literature")
         if not lit_dir or not lit_dir.exists():
             return 0
 
-        ws_keys: set[str] = set()
-        if isinstance(index_data, dict):
-            for item in index_data.get("items", []):
-                ws_dir = (
-                    lit_dir
-                    / item.get("domain", "")
-                    / (item.get("zotero_key", "") + " - " + slugify_filename(item.get("title", "")))
-                )
-                if ws_dir.is_dir():
-                    ws_keys.add(item.get("zotero_key"))
-
-        if not ws_keys:
+        scan = scan_vault_identities(lit_dir)
+        if not scan.workspaces or not scan.flat_notes:
             return 0
 
         cleaned = 0
-        for domain_dir in sorted(lit_dir.iterdir()):
-            if not domain_dir.is_dir():
+        for flat in scan.flat_notes:
+            if flat.classification != "verified_legacy_flat":
                 continue
-            for flat_note in list(domain_dir.glob("*.md")):
-                try:
-                    text = flat_note.read_text(encoding="utf-8")
-                    fm = read_frontmatter_dict(text)
-                    key = str(fm.get("zotero_key", "")).strip()
-                except Exception:
-                    continue
-                if key and key in ws_keys:
-                    try:
-                        flat_note.unlink()
-                        cleaned += 1
-                    except Exception:
-                        pass
+            ws = scan.workspaces.get(flat.zotero_key)
+            if ws is None or ws.main_note_path is None or not ws.main_note_path.is_file():
+                continue
+            try:
+                rec = quarantine_move(
+                    flat.note_path,
+                    vault=self.vault,
+                    allowed_root=lit_dir,
+                    operation="clean_migrated_flat_note",
+                    paper_key=flat.zotero_key,
+                )
+                if rec is not None:
+                    cleaned += 1
+            except Exception:
+                pass
 
         if cleaned > 0 and not json_output:
-            print(f"index-refresh: cleaned {cleaned} flat note(s) (migrated to workspace)")
+            print(f"index-refresh: quarantined {cleaned} flat note(s) (migrated to workspace)")
 
         return cleaned
 
@@ -349,7 +336,53 @@ class SyncService:
                                 h.update(f"note:{dname}/{ne.name}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
             except OSError:
                 pass
+        zdir = paths.get("zotero_dir")
+        if zdir:
+            for zname in ("zotero.sqlite", "zotero.sqlite-wal"):
+                zp = zdir / zname
+                if zp.is_file():
+                    try:
+                        st = zp.stat()
+                        h.update(f"zot:{zname}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+                    except OSError:
+                        pass
         return h.hexdigest()
+
+    def _materialize_sqlite_exports_if_enabled(self, paths: dict[str, Path]) -> None:
+        """Direct read-only sync from zotero.sqlite when enabled and zotero.sqlite exists."""
+        try:
+            from paperforge.config import load_config
+
+            snap = load_config(self.vault)
+            mode = str(snap.values["zotero_source_mode"].value or "sqlite")
+            if mode != "sqlite":
+                return
+            zdir = paths.get("zotero_dir")
+            if not zdir or not (zdir / "zotero.sqlite").is_file():
+                return
+            domain_mode = str(snap.values["domain_mode"].value or "per_collection")
+            raw_sel = str(snap.values["zotero_selected_collections"].value or "").strip()
+            selected: list[str] | None = None
+            if raw_sel:
+                if raw_sel.startswith("["):
+                    import json as _json
+
+                    parsed = _json.loads(raw_sel)
+                    if isinstance(parsed, list):
+                        selected = [str(x).strip() for x in parsed if str(x).strip()]
+                else:
+                    selected = [s.strip() for s in raw_sel.split(",") if s.strip()]
+            from paperforge.adapters.zotero_sqlite import materialize_zotero_sqlite_exports
+
+            materialize_zotero_sqlite_exports(
+                self.vault,
+                paths["exports"],
+                zdir,
+                selected_collections=selected,
+                domain_mode=domain_mode,
+            )
+        except Exception as exc:
+            logger.warning("Zotero SQLite auto-materialization skipped: %s", exc)
 
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
@@ -380,7 +413,12 @@ class SyncService:
             except Exception:
                 fastpath_paths = None
 
-        # ── Pre-check: BBT exports ──
+        # ── Phase 0: Direct zotero.sqlite materialization (when fastpath missed) ──
+        if fastpath_paths is None:
+            fastpath_paths = self.resolve_paths()
+        self._materialize_sqlite_exports_if_enabled(fastpath_paths)
+
+        # ── Pre-check: BBT / materialized exports ──
         _export_code = "ok"
         try:
             with timing.phase("sync.load_exports"):

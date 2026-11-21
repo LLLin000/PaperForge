@@ -136,6 +136,14 @@
     - 约束：`PRIMARY KEY (zotero_key, facet)`，`FOREIGN KEY (zotero_key) REFERENCES papers(zotero_key)`。
 18. **`paper_memory_history`**（动态认知记忆卡片历史快照）：
     - 列：`id INTEGER PRIMARY KEY AUTOINCREMENT`、`zotero_key TEXT NOT NULL`、`facet TEXT NOT NULL`、`content TEXT NOT NULL DEFAULT ''`、`revision INTEGER NOT NULL DEFAULT 1`、`created_at TEXT NOT NULL`。
+19. **`workspace_registry`**（ADR-018 身份锚定工作区映射，替代 `rglob` 与目录名解析）：
+    - 列：`zotero_key TEXT PRIMARY KEY`、`domain TEXT NOT NULL DEFAULT ''`、`workspace_relpath TEXT NOT NULL`、`main_note_relpath TEXT NOT NULL DEFAULT ''`、`dir_mtime_ns INTEGER NOT NULL DEFAULT 0`、`identity_source TEXT NOT NULL DEFAULT ''`、`status TEXT NOT NULL DEFAULT 'active'`、`verified_at TEXT NOT NULL`。
+20. **`ocr_catalog`**（ADR-018 单篇 OCR 原子盘点与 Tier-0 抢救投影）：
+    - 列：`zotero_key TEXT PRIMARY KEY`、`ocr_status TEXT NOT NULL DEFAULT ''`、`tier0_truth_intact INTEGER NOT NULL DEFAULT 0`、`result_json_sha256 TEXT NOT NULL DEFAULT ''`、`has_blocks_raw INTEGER NOT NULL DEFAULT 0`、`has_blocks_structured INTEGER NOT NULL DEFAULT 0`、`has_fulltext INTEGER NOT NULL DEFAULT 0`、`pipeline_version TEXT NOT NULL DEFAULT ''`、`salvage_action TEXT NOT NULL DEFAULT ''`、`derived_defects_json TEXT NOT NULL DEFAULT '[]'`、`updated_at TEXT NOT NULL`。
+21. **`vault_kv`**（ADR-018 统一引擎键值状态表，收拢零散 JSON 状态）：
+    - 列：`key TEXT PRIMARY KEY`、`value_json TEXT NOT NULL`、`updated_at TEXT NOT NULL`。
+22. **`engine_jobs`**（ADR-018 后台任务与断点恢复队列）：
+    - 列：`job_id TEXT PRIMARY KEY`、`job_type TEXT NOT NULL`、`target_key TEXT NOT NULL DEFAULT ''`、`status TEXT NOT NULL DEFAULT 'pending'`、`payload_json TEXT NOT NULL DEFAULT '{}'`、`attempts INTEGER NOT NULL DEFAULT 0`、`last_error TEXT NOT NULL DEFAULT ''`、`updated_at TEXT NOT NULL`。
 
 #### B. 无条件表与 `VEC_TABLES`（4 张）
 

@@ -787,6 +787,36 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+### ADR-018: Unified File & State Engine, SQLite Runtime SSOT, Identity-Anchored Workspaces, & Atom-Level Safe Migration
+
+**Context**: Auditing multi-era veteran vaults (e.g., mixed `v1.5.15` / `v2.0.0-rc.*` / `System/PaperForge` + `.paperforge/trash` states) and current migration/index paths exposed structural fragility: (1) splitting runtime record authority across monolithic `formal-library.json` (O(N) full-file rewrite, single-byte blast radius, drift vs `paperforge.db`), `paper-meta.json` cached path strings, and scattered JSON queues/caches (`ocr-queue.json`, `ocr_maintenance.json`, `vector-build-state.json`, `.sync-fastpath.json`); (2) relying on brittle filename prefixes (`"KEY - Title"`), folder depth (`len(parts) == 2`), `slugify` path reconstruction, and `glob(f"{key} - *")` rather than structured identity anchors; (3) whole-vault migration rollbacks and `materialization/ocr.py` judging missing `blocks.raw.jsonl` as requiring paid remote OCR even when canonical `json/result.json` is intact; and (4) remaining unguarded `unlink()` calls in sync/index cleanup and blind `System/Zotero` moves. Detailed design is recorded in [`docs/adr/0006-unified-engine-ssot-and-safe-migration.md`](adr/0006-unified-engine-ssot-and-safe-migration.md).
+
+**Decisions**:
+1. **Ownership-Split SSOT (Zero Competing Runtime Truths)**:
+   - **Zotero** remains the upstream bibliographic truth (read-only import).
+   - **Per-Paper Text/JSONL Sidecars** hold human-sovereign knowledge and crash-resilient recovery sources (`<KEY>.md` with YAML `zotero_key`, append-only `<ws>/annotations.jsonl`, `<ws>/ai/memory-card.json`, `reading-log.jsonl`, `project-log.jsonl`, and write-once OCR truth `.paperforge/ocr/<KEY>/json/result.json`), keeping fault radius strictly bounded to 1 paper and enabling Calibre-style lossless SQLite reconstruction if the DB is ever lost.
+   - **SQLite (`paperforge.db`) as Unified Engine SSOT**: Consolidate global paper records, workspace path registries, task/OCR/build queues, OCR summary projections, and event sequence logs into ACID transactions inside `paperforge.db`, demoting/phasing out monolithic `formal-library.json` and scattered runtime JSON state files.
+2. **Identity-First Resolution (Ban String/Positional Guessing)**: Replace filename prefix splitting, hardcoded directory depth checks, title-slug path guessing, and wildcard `glob("{key} - *")` with a `zotero_key`-anchored `workspace_registry` backed by `paper-meta.json` / note frontmatter / SQLite.
+3. **Atom-Level OCR Truth Salvage & Per-Item Safe Migration**:
+   - Elevate `json/result.json` as Tier-0 salvageable OCR truth so missing/corrupt derived files (`blocks.raw.jsonl`, `blocks.structured.jsonl`, `fulltext.md`, `assets/`) trigger zero-cost local `backfill_from_result` instead of paid re-OCR.
+   - Execute migrations via capability/shape fingerprinting (`VaultUpgradeInspector`), pre-flight backups of small configs/DBs/Bases, per-paper isolated transactions (never letting 1 defective paper abort 971 others), and strict quarantine (`quarantine_move` to `.paperforge/trash/` or `.paperforge/backups/`) in place of bare `unlink()` / `rmtree()`. Direct deletion is permitted only on verified PaperForge-owned artifacts after explicit user confirmation.
+4. **Standard Convergence & Stateful Daemon Engine**: Standardize new vaults on `system_dir: ".paperforge"`, `.agents/skills`, and explicit `.paperforge/vault-manifest.json` layout versioning; evolve `paperforge daemon` from a stateless CLI wrapper into an in-process engine host with warm SQLite read models, dirty-set workspace tracking (eliminating repeated full-vault `rglob("*.md")` scans), and background resumable task scheduling.
+
+---
+
+### ADR-019: Hybrid Native Rust Sidecar (`paperforge-daemon`) + On-Demand Python Compute Workers
+
+**Status:** Accepted (v2.0)
+**Context:** Full-scale rewriting of PaperForge's 42.7k-line V3 OCR geometric/layout rules in Rust offers negligible speedup (remote OCR/Embedding APIs and C-backed `PyMuPDF`/`sqlite-vec` dominate heavy compute) at extreme regression risk across the 555-paper corpus. Conversely, keeping Obsidian's instant-boot UI, SQLite FTS5 metadata search, Base table snapshots, configuration reads/writes, and background process supervision behind a Python interpreter incurs ~300–500ms cold-start latency and requires Python installation before a new user can even browse or search an existing vault.
+
+**Decision:** Adopt the `uv` / `ruff` hybrid architecture via `crates/paperforge-daemon` + `paperforge/plugin/src/services/native-daemon.ts`:
+1. **Zero Local Rust Requirement**: GitHub Actions (`publish.yml`) cross-compiles standalone single-file native binaries (`~2–3 MB`, statically bundling SQLite + FTS5 + native TLS) for all 6 desktop targets (`win32` `x64`/`arm64`, `darwin` `arm64`/`x64` with `codesign --force --sign -`, and `linux` `x64`/`arm64` static `musl` with zero `glibc` version coupling). The plugin verifies SHA-256 against `checksums.txt` and installs into `~/.paperforge/bin/` via Node `https` (avoiding browser `com.apple.quarantine` attributes on macOS).
+2. **Instant `< 2ms` Native Control & Query Fast-Path (Zero-Python Ready)**: `crates/paperforge-daemon` speaks the exact `paperforge daemon --stdio` JSON-RPC + duplex NDJSON push wire protocol at `~4–6 MB` RSS, natively executing `config list|get|set|unset|validate|paths|init`, `paths`, `memory-card base-snapshot`, `search` (SQLite FTS5 BM25), zero-Python `upgrade --plan` provenance checks, and all `ControlDaemon` supervision/notice/health ops.
+3. **Zero-Script Native Python Provisioning (`install-runtime` / `runtime.*`)**: When a fresh user enables Python compute features (`OCR`, `Zotero Sync`, `Vector`, `Upgrade --apply`), `paperforge-daemon` downloads pinned `uv` (`0.13.9`, SHA-256 verified), extracts it in pure Rust (`zip`/`flate2`/`tar`), provisions Python 3.12 + `paperforge[vector]` wheels with domestic mirror fallbacks, writes `installer.log`, and streams duplex `task.updated` phases — eliminating brittle temporary `.ps1`/`.cmd`/`.sh` installer scripts while keeping heavy CPython/PyMuPDF wheels out of the tiny Rust binary.
+4. **On-Demand Ephemeral Python Workers**: Heavy or domain-complex commands (`ocr`, `sync`, `embed`, `upgrade --apply`, `probe`, `auth`, `annotations`) transparently delegate to the published Python runtime (`pointer.json` / `PAPERFORGE_PYTHON_EXE`), keeping the 42.7k-line V3 OCR engine 100% authoritative while reclaiming 100% of worker RAM upon job completion.
+
+---
+
 ## Glossary
 
 - **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.

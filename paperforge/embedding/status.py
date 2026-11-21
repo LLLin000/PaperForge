@@ -173,3 +173,28 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
         "vector_state": vector_state,
         "identity_changed": identity_mismatch,
     }
+
+
+def test_embedding_connection(vault: Path) -> dict[str, object]:
+    """Run a fast live probe against the configured embedding provider and return dimension + latency."""
+    import time as _time
+
+    from paperforge.embedding._config import get_api_model, get_effective_api_base_url
+    from paperforge.embedding.dim_detect import reset_dim_cache
+    from paperforge.embedding.providers import resolve_embedding_provider
+    from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
+
+    reset_dim_cache()
+    t0 = _time.perf_counter()
+    model = get_api_model(vault)
+    base_url = get_effective_api_base_url(vault)
+    provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
+    vec = provider.encode_single("paperforge connection probe")
+    dim = len(vec) if isinstance(vec, list) else 0
+    latency_ms = round((_time.perf_counter() - t0) * 1000.0, 1)
+    return {
+        "model": model,
+        "base_url": base_url,
+        "dimension": dim,
+        "latency_ms": latency_ms,
+    }

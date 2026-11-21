@@ -78,12 +78,12 @@ def load_domain_config(paths: dict[str, Path]) -> dict:
             }
         )
 
-    config = {"domains": fresh_entries}
+    config = {"schema_version": 1, "domains": fresh_entries}
 
     # Compare before/after to decide write
     old_sorted = sorted(old_entries, key=lambda e: e.get("domain", ""))
     new_sorted = sorted(fresh_entries, key=lambda e: e.get("domain", ""))
-    if old_sorted != new_sorted:
+    if old_sorted != new_sorted or existing.get("schema_version") != 1:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         write_json(config_path, config)
 

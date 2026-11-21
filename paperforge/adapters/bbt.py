@@ -257,6 +257,7 @@ def load_export_rows(path: Path) -> list[dict]:
                     "creators": item.get("creators", []),
                     "abstract": item.get("abstractNote", ""),
                     "journal": item.get("publicationTitle", ""),
+                    "issn": item.get("ISSN", "") or item.get("issn", ""),
                     "citation_key": extract_citation_key(item),
                     "extra": item.get("extra", ""),
                     "year": extract_year(item.get("date", "")),

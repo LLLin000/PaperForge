@@ -69,6 +69,8 @@ def test_field_specs_cover_documented_fields():
         "agent_platform", "auto_analyze_after_ocr", "ocr_profile",
         "paddleocr_job_url", "paddleocr_model", "embedding_profile",
         "vector_db_provider_type", "vector_db_api_base", "vector_db_api_model",
+        "vector_db_dimensions", "zotero_source_mode", "domain_mode",
+        "zotero_selected_collections", "journal_metrics_mode",
     }
     assert set(FIELD_BY_KEY) == expected
 

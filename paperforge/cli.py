@@ -252,6 +252,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
+    ocr_test_parser = ocr_sub.add_parser("test-connection", help="Quick connectivity check for OCR key & URL")
+    ocr_test_parser.add_argument("--json", action="store_true")
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
     redo_parser.add_argument("--dry-run", action="store_true", help="List papers that would be reset without making changes")
     redo_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
@@ -329,6 +331,8 @@ def build_parser() -> argparse.ArgumentParser:
     # the unified token (stdin PAPERFORGE_STOP / SIGINT / SIGTERM).
     p_embed_migrate = p_embed_sp.add_parser("migrate", help="Migrate vectors from ChromaDB to vec0 tables")
     p_embed_migrate.add_argument("--json", action="store_true")
+    p_embed_test = p_embed_sp.add_parser("test-connection", help="Test embedding provider connectivity and detect output dimension")
+    p_embed_test.add_argument("--json", action="store_true")
 
 
     p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")
@@ -743,17 +747,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_auth = sub.add_parser("auth", help="Credential authority (keyring + canonical env)")
     auth_sub = p_auth.add_subparsers(dest="auth_verb", required=True)
     p_auth_status = auth_sub.add_parser("status", help="Report credential availability/source")
-    p_auth_status.add_argument("kind", nargs="?", choices=["ocr", "embedding"], help="Check one kind (default: vault profiles)")
+    p_auth_status.add_argument("kind", nargs="?", choices=["ocr", "embedding", "easyscholar"], help="Check one kind (default: vault profiles)")
     p_auth_status.add_argument("--profile", default=None, help="Profile id (default)")
     p_auth_status.add_argument("--json", action="store_true", help="Output as JSON")
     p_auth_set = auth_sub.add_parser("set", help="Store a secret in the keyring (never argv)")
-    p_auth_set.add_argument("kind", choices=["ocr", "embedding"])
+    p_auth_set.add_argument("kind", choices=["ocr", "embedding", "easyscholar"])
     p_auth_set.add_argument("--profile", default=None, help="Profile id (default)")
     p_auth_set.add_argument("--stdin", action="store_true", help="Read the secret from stdin (non-TTY)")
     p_auth_set.add_argument("--replace", action="store_true", help="Replace an existing different value")
     p_auth_set.add_argument("--json", action="store_true", help="Output as JSON")
     p_auth_delete = auth_sub.add_parser("delete", help="Delete the keyring entry")
-    p_auth_delete.add_argument("kind", choices=["ocr", "embedding"])
+    p_auth_delete.add_argument("kind", choices=["ocr", "embedding", "easyscholar"])
     p_auth_delete.add_argument("--profile", default=None, help="Profile id (default)")
     p_auth_delete.add_argument("--yes", action="store_true", help="Confirm deletion (noninteractive)")
     p_auth_delete.add_argument("--json", action="store_true", help="Output as JSON")
@@ -822,12 +826,49 @@ def build_parser() -> argparse.ArgumentParser:
     p_runtime_status.add_argument("--base-python", metavar="PYTHON")
     p_runtime_status.add_argument("--json", action="store_true", help="Output result as JSON")
 
+    p_zotero = sub.add_parser("zotero", help="Inspect Zotero data directory and collections directly from zotero.sqlite")
+    zot_sub = p_zotero.add_subparsers(dest="zotero_action", required=True)
+    p_zot_detect = zot_sub.add_parser("detect", help="Auto-detect Zotero data directory & list collections")
+    p_zot_detect.add_argument("--path", default=None, help="Explicit Zotero data directory path")
+    p_zot_detect.add_argument("--json", action="store_true", help="Output result as JSON")
+
     p_migrate_storage = sub.add_parser(
         "migrate-storage",
         help="Move engine data from System/PaperForge to hidden .paperforge/ and materialize per-paper assets",
     )
     p_migrate_storage.add_argument("--dry-run", action="store_true", help="Preview changes without modifying files")
     p_migrate_storage.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_upgrade = sub.add_parser(
+        "upgrade",
+        help="Inspect cross-version vault state (A/B/C), run <3s fast cutover, heal progressively, or rollback",
+    )
+    p_upgrade.add_argument("--plan", action="store_true", help="Read-only inspection plan (default)")
+    p_upgrade.add_argument("--dry-run", action="store_true", help="Preview upgrade plan without writing disk")
+    p_upgrade.add_argument("--apply", action="store_true", help="Apply safe migrations with pre-flight backups")
+    p_upgrade.add_argument("--fast-cutover", action="store_true", help="Perform O(1) <3s structural cutover and defer per-paper healing")
+    p_upgrade.add_argument("--heal", action="store_true", help="Run background/JIT progressive healing batch")
+    p_upgrade.add_argument("--priority-key", metavar="KEY", help="Prioritize one paper key for JIT healing")
+    p_upgrade.add_argument("--limit", type=int, help="Max workspaces per progressive healing batch")
+    p_upgrade.add_argument("--rollback", action="store_true", help="One-click rollback to pre-upgrade snapshot")
+    p_upgrade.add_argument("--backfill-ocr", action="store_true", help="Locally rebuild derived OCR layers from intact result.json")
+    p_upgrade.add_argument("--quarantine-residuals", action="store_true", help="Move all confirmed leftover candidates into .paperforge/trash/")
+    p_upgrade.add_argument("--quarantine-ids", metavar="IDS", help="Comma-separated cleanup candidate IDs to quarantine")
+    p_upgrade.add_argument("--no-rebuild-db", action="store_true", help="Skip SQLite workspace_registry/ocr_catalog sync")
+    p_upgrade.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_engine = sub.add_parser(
+        "engine",
+        help="Unified VaultEngine SQLite SSOT operations (status / sync-registry / rebuild-db)",
+    )
+    p_engine_sub = p_engine.add_subparsers(dest="engine_verb", required=True)
+    for eng_verb, eng_help in (
+        ("status", "Show vault-manifest and engine state"),
+        ("sync-registry", "Sync workspace_registry and ocr_catalog tables in paperforge.db"),
+        ("rebuild-db", "Rebuild paperforge.db from per-paper plaintext truths after backup"),
+    ):
+        p_ev = p_engine_sub.add_parser(eng_verb, help=eng_help)
+        p_ev.add_argument("--json", action="store_true", help="Output JSON")
 
     p_ann = sub.add_parser("annotations", help="Non-destructive Zotero-style sidecar PDF annotations")
     p_ann_sub = p_ann.add_subparsers(dest="ann_verb", required=True)
@@ -945,6 +986,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_daemon.add_argument("--stdio", action="store_true", default=True, help="Serve JSON-RPC over stdin/stdout")
     p_daemon.add_argument("--idle-timeout", type=int, default=300, metavar="SEC",
                           help="Auto-exit after SEC seconds idle (default: 300; 0 disables)")
+    p_daemon.add_argument("--parent-pid", type=int, default=None, metavar="PID",
+                          help="Optional host process PID to monitor (exits cleanly if parent dies)")
     return parser
 
 # ---------------------------------------------------------------------------
@@ -1010,6 +1053,32 @@ def _run_cli(argv: list[str] | None = None) -> int:
         configure_logging(verbose=getattr(args, "verbose", False))
         return _run_runtime_command(args)
 
+    if args.command == "zotero":
+        from paperforge import __version__ as _PF_VER
+        from paperforge.adapters.zotero_sqlite import (
+            auto_detect_zotero_data_dir,
+            list_zotero_collections,
+        )
+        from paperforge.core.result import PFResult
+
+        raw_path = getattr(args, "path", None)
+        zdir = Path(raw_path).expanduser() if raw_path else auto_detect_zotero_data_dir()
+        if zdir is None or not (zdir / "zotero.sqlite").is_file():
+            payload = {
+                "found": False,
+                "zotero_dir": str(zdir) if zdir else "",
+                "total_papers": 0,
+                "collections": [],
+            }
+        else:
+            payload = list_zotero_collections(zdir)
+        res = PFResult(ok=True, command="zotero detect", version=_PF_VER, data=payload)
+        if getattr(args, "json", False):
+            print(res.to_json())
+        else:
+            print(f"found={payload['found']} dir={payload['zotero_dir']} papers={payload['total_papers']}")
+        return 0
+
     # Resolve/import worker modules only for commands that actually need them.
     lightweight_commands = {
         "paths", "sync", "ocr", "status", "deep-reading", "deep-finalize",
@@ -1036,8 +1105,8 @@ def _run_cli(argv: list[str] | None = None) -> int:
     args.vault_path = vault
 
     # Fail-closed config loading: domain commands never operate on guessed
-    # paths.  config/setup/probe handle their own missing-config states.
-    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action", "skill"})
+    # paths.  config/setup/probe/upgrade/engine handle their own missing-config states.
+    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action", "skill", "upgrade", "engine"})
     try:
         snapshot = load_config(vault)
         args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
@@ -1262,6 +1331,16 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if args.command == "migrate-storage":
         from paperforge.commands.migrate_storage import run
+
+        return run(args)
+
+    if args.command == "upgrade":
+        from paperforge.commands.upgrade import run
+
+        return run(args)
+
+    if args.command == "engine":
+        from paperforge.commands.engine import run
 
         return run(args)
 

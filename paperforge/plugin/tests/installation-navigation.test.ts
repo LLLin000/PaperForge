@@ -1038,7 +1038,8 @@ describe("help.restore recovery through the Help tab", () => {
       // external runtime repair, never an in-plugin install.
       expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
         "repair",
-        expect.anything()
+        expect.anything(),
+        { allowUvDownload: true }
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -1102,7 +1103,8 @@ describe("help.restore recovery through the Overview card", () => {
 
     expect(cardClient.launchRuntimeInstaller).toHaveBeenCalledWith(
       "repair",
-      expect.anything()
+      expect.anything(),
+      { allowUvDownload: true }
     );
   });
 });
@@ -1895,5 +1897,146 @@ describe("Issue #356 recovery: openSetupJourney", () => {
     expect(openSpy).toHaveBeenCalledOnce();
     expect(runAction).not.toHaveBeenCalled();
     openSpy.mockRestore();
+  });
+
+  it("isolates non-empty root Literature folder into PaperForge/ when onboarding a fresh user vault", async () => {
+    const fsNode = await import("fs");
+    const tmpVault = "/fake-user-vault";
+    const existsSpy = vi
+      .spyOn(fsNode, "existsSync")
+      .mockImplementation(
+        (p: unknown) => String(p) === `${tmpVault}/Literature`
+      );
+    const statSpy = vi
+      .spyOn(fsNode, "statSync")
+      .mockImplementation(() => ({ isDirectory: () => true }) as any);
+    const readdirSpy = vi
+      .spyOn(fsNode, "readdirSync")
+      .mockImplementation((p: unknown) =>
+        String(p) === `${tmpVault}/Literature`
+          ? (["reading-notes.md"] as any)
+          : ([] as any)
+      );
+    try {
+      const tab = new PaperForgeSettingTab(
+        { vault: { adapter: { basePath: tmpVault } } } as unknown as App,
+        {
+          settings: {
+            literature_dir: "",
+            resources_dir: "",
+            base_dir: "",
+          },
+          manifest: { version: "2.2.0" },
+          saveSettings: vi.fn(),
+          readPaperforgeJson: () => ({}),
+          getClient: () => ({
+            zoteroDetect: async () => ({ found: false, collections: [] }),
+          }),
+        } as any
+      );
+      (tab as any)._detectAndIsolateFolderCollision(tmpVault);
+      expect((tab.plugin as any).settings.literature_dir).toBe(
+        "PaperForge/Literature"
+      );
+      expect((tab.plugin as any).settings.resources_dir).toBe(
+        "PaperForge/Resources"
+      );
+      expect((tab.plugin as any).settings.base_dir).toBe("PaperForge/Bases");
+      expect((tab as any)._detectedFolderCollisionMsg).toBeTruthy();
+
+      const wrapper = document.createElement("div");
+      (tab as any)._setupExpressMode = true;
+      (tab as any)._setupStage = 1;
+      (tab as any)._renderSetupJourney(wrapper);
+      expect(
+        wrapper.querySelectorAll(".pf-express-card").length
+      ).toBeGreaterThanOrEqual(2);
+      expect(wrapper.querySelector(".pf-collision-guard-banner")).toBeTruthy();
+      expect(wrapper.querySelector(".pf-domain-live-preview")).toBeTruthy();
+    } finally {
+      existsSpy.mockRestore();
+      statSpy.mockRestore();
+      readdirSpy.mockRestore();
+    }
+  });
+
+  it("Control Center preserves stale-but-valid cached state without flashing Checking and expands modules inline", async () => {
+    const expiredTs = "2020-01-01T00:00:00.000Z";
+    const mkCached = (mod: string) => ({
+      schema_version: 2,
+      module: mod,
+      capability_state: "ready",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "ok",
+      reason: { code: `${mod}.ready`, text: "Ready" },
+      action: { primary: null },
+      notices: [],
+      user_state: "ready",
+      capability_kind:
+        mod === "installation" || mod === "library" ? "required" : "optional",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
+      updated_at: expiredTs,
+      ttl_seconds: 60,
+    });
+    const probeAllMock = vi.fn(async () => ({ modules: {} }));
+    const probeMock = vi.fn(async () => mkCached("installation"));
+    const tab = new PaperForgeSettingTab(
+      { vault: { adapter: { basePath: "/vault" } } } as unknown as App,
+      {
+        settings: {
+          _setup_complete: true,
+          zotero_data_dir: "/Zotero",
+          agent_platform: "claude",
+          capabilityState: {
+            installation: mkCached("installation"),
+            library: mkCached("library"),
+            ocr: mkCached("ocr"),
+            memory: mkCached("memory"),
+            maintenance: mkCached("maintenance"),
+            help: mkCached("help"),
+          },
+        },
+        manifest: { version: "2.0.0" },
+        saveSettings: vi.fn(),
+        readPaperforgeJson: () => ({}),
+        getClient: () => ({
+          invalidateCache: vi.fn(),
+          probeAll: probeAllMock,
+          probe: probeMock,
+          isOperationActive: () => false,
+        }),
+      } as any
+    );
+    (tab as any)._resolveRuntimeCommand = () => ({ path: "python", args: [] });
+
+    const root = document.createElement("div");
+    tab.containerEl = root;
+    tab.display();
+
+    // Cached ready states stay ready immediately (no Checking... flash)
+    const summaryBadge = root.querySelector(".pf-cc-summary-badge");
+    expect(summaryBadge?.className).toContain("ready");
+    // Coalesced single background probeAll instead of 5 separate _probeModule bursts
+    expect(probeAllMock).toHaveBeenCalledTimes(1);
+
+    // 4 clean grouped accordion rows instead of 5 sub-page cards
+    const heads = root.querySelectorAll<HTMLElement>(".pf-cc-accordion-head");
+    expect(heads).toHaveLength(4);
+
+    // Clicking OCR expands inline config without navigating away from overview
+    const ocrHead = root.querySelector<HTMLElement>(
+      '.pf-cc-accordion-head[data-module="ocr"]'
+    );
+    ocrHead?.click();
+    expect(tab.activeTab).toBe("overview");
+    expect(
+      root.querySelector(
+        '.pf-cc-accordion-item[data-module="ocr"] .pf-cc-inline-drawer.is-open'
+      )
+    ).toBeTruthy();
   });
 });
