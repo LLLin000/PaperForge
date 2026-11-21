@@ -204,8 +204,9 @@ jobs:
         working-directory: paperforge/plugin
       - name: Point native daemon E2E tests at job Python
         shell: bash
-        run: echo "PF_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+        run: echo "PF_PYTHON=$(python -c 'import sys; print(sys.executable)')" >> "$GITHUB_ENV"
       - name: Run compiled Rust daemon E2E tests
+        shell: bash
         working-directory: paperforge/plugin
         run: npx vitest run tests/client/native-rust-daemon.test.ts --reporter=junit --outputFile="$RUNNER_TEMP/paperforge-rust-daemon.xml"
       - name: Preserve first-failure Rust daemon evidence
