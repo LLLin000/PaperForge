@@ -25,6 +25,8 @@ vi.mock("../../src/services/managed-runtime", () => ({
 }));
 
 import {
+  ensureNativeDaemonDownloaded,
+  managedNativeDaemonPath,
   nativeDaemonAssetName,
   nativeDaemonTargetTriple,
 } from "../../src/services/native-daemon";
@@ -70,6 +72,24 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
     expect(nativeDaemonAssetName("linux", "x64")).toBe(
       "paperforge-daemon-x86_64-unknown-linux-musl"
     );
+  });
+
+  it("returns pre-installed native daemon immediately without network roundtrips", async () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-native-home-"));
+    try {
+      const binPath = managedNativeDaemonPath(tmpHome, process.platform);
+      fs.mkdirSync(path.dirname(binPath), { recursive: true });
+      fs.writeFileSync(binPath, Buffer.from("stub-binary"));
+
+      const resolved = await ensureNativeDaemonDownloaded("2.0.0", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+      });
+      expect(resolved).toBe(binPath);
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
   });
 
   it.skipIf(!fs.existsSync(LOCAL_RUST_BIN))(

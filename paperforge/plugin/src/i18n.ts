@@ -204,7 +204,7 @@ const LANG: Record<string, Record<string, string>> = {
     prep_key_desc: "Get your API key from https://aistudio.baidu.com/paddleocr",
     prep_python: "Python 3.11+",
     prep_python_desc:
-      "Python must be available from the command line. If you are not sure, click below to auto-detect.",
+      "Automatically provisioned on demand inside Obsidian — no manual installation or command line needed.",
     prep_zotero: "Zotero Desktop",
     prep_zotero_desc: "Install Zotero from https://www.zotero.org",
     run_in_agent: "Run in {0}",
@@ -664,43 +664,44 @@ const LANG: Record<string, Record<string, string>> = {
     setup_progress: "Setup progress",
     setup_foundation_title: "Step 1: Foundation",
     setup_foundation_desc:
-      "Check PaperForge Core. Install, update, or repair it outside Obsidian; Vault configuration happens next.",
+      "One-click setup for PaperForge's AI & OCR engine inside Obsidian — no coding or terminal required.",
     runtime_external_notice:
-      "Run these commands in a terminal outside Obsidian, using the same Python 3.11+ interpreter:",
+      "Optional troubleshooting commands (regular users never need to run these):",
     runtime_status_checking: "Checking…",
     runtime_status_needs_attention: "Needs attention",
     runtime_status_not_installed: "Not installed",
     runtime_vector_ready: "Vector dependencies ready",
     runtime_not_ready_reason:
-      "Runtime is not ready. Run `paperforge runtime install` outside Obsidian.",
+      "AI & OCR engine is not installed yet. Click the Install button below — zero code or terminal setup required.",
     runtime_not_ready_impact:
-      "PaperForge cannot run without the managed runtime.",
+      "Reading, search, and vault browsing work right away; OCR, Zotero sync, and AI search need this one-click setup.",
     module_blocked_by_runtime:
-      "Finish Foundation first — the managed runtime is not installed yet.",
-    setup_runtime_checking: "Checking the managed Python runtime…",
+      "Complete Step 1 (one-click install) to unlock AI, Zotero sync, and OCR.",
+    setup_runtime_checking: "Checking the PaperForge compute engine…",
     setup_runtime_ready:
       "PaperForge Core is ready. Next: connect your library.",
     setup_runtime_attention:
-      "PaperForge Core needs an update. Press the button below to update or repair it.",
+      "PaperForge Core needs an update. Press the button below to update or repair it automatically.",
     setup_runtime_missing:
-      "PaperForge Core is not installed yet. Press “Install runtime” below.",
+      "PaperForge Core is not installed yet. Press “Install PaperForge runtime” below for automatic setup.",
     setup_runtime_refresh: "Refresh runtime status",
     runtime_status_timeout:
-      "Runtime check timed out. Check the runtime from the terminal, or run the installer again.",
+      "Runtime check timed out. Click Refresh status or click Repair to retry automatically.",
     runtime_installing:
-      "Installing… this can take a few minutes. Keep Obsidian open; this panel updates by itself.",
+      "Installing automatically… this can take a few minutes. Keep Obsidian open; this panel updates by itself.",
     runtime_cancel_btn: "Cancel waiting",
     runtime_install_cancelled:
-      "Stopped waiting for the installer. You can restart installation or refresh runtime status anytime.",
+      "Stopped waiting for background setup. You can restart installation or refresh status anytime.",
     runtime_install_btn: "Install PaperForge runtime",
     runtime_reinstall_btn: "Reinstall PaperForge runtime",
     runtime_update_btn: "Update PaperForge runtime",
     runtime_repair_btn: "Repair PaperForge runtime",
     runtime_installer_hint:
-      "Runs the PaperForge installer in the background. Obsidian itself stays read-only.",
-    runtime_manual_summary: "Manual install commands",
+      "Downloads and configures everything automatically in the background — zero code or terminal commands needed.",
+    runtime_manual_summary:
+      "Advanced troubleshooting commands (usually unnecessary)",
     runtime_installer_opened:
-      "Installer opened. This panel updates once the runtime is published.",
+      "Automatic setup started in the background. You can keep reading; this panel will update automatically.",
     runtime_installer_failed: "Could not open the installer: {error}",
     runtime_install_complete: "Runtime ready.",
     setup_ready: "Foundation is ready.",
@@ -1436,7 +1437,7 @@ const LANG: Record<string, Record<string, string>> = {
     feat_api_model_desc: "该端点使用的嵌入模型名称。",
     feat_build_btn: "构建",
     feat_build_complete: "向量构建完成。",
-    feat_build_failed: "构建失败。请查看终端输出。",
+    feat_build_failed: "构建未能完成。请点击重试或检查设置页提示。",
     feat_building: "构建中…",
     feat_cache_remove_failed: "失败：{0}",
     feat_cache_removed: "模型缓存已清除。",
@@ -1462,7 +1463,8 @@ const LANG: Record<string, Record<string, string>> = {
     feat_model_changed_warn:
       "模型已更换（{0} -> {1}）。已有向量不兼容——需要重建。",
     feat_network_error: "网络错误：",
-    feat_no_python: "未找到 Python。请查看安装标签页。",
+    feat_no_python:
+      "AI 计算环境尚未安装，请前往「设置 → PaperForge」点击一键安装。",
     feat_not_cached: "未缓存",
     feat_openai_key: "OpenAI API Key",
     feat_openai_key_desc: "用于 API 嵌入调用，模型在下方定义。",
@@ -1511,7 +1513,8 @@ const LANG: Record<string, Record<string, string>> = {
     no_pending_ocr: "所有 OCR 任务已完成",
     not_set: "未设置",
     notice_check_fail: "缺失：",
-    notice_python_missing: "Python 未检测到，请先安装 Python 3.11+ 并加入 PATH",
+    notice_python_missing:
+      "AI 与 OCR 计算环境尚未安装，请点击「设置 → PaperForge」一键自动配置（无需手动装 Python）",
     ocr_privacy_title: "OCR 隐私提示",
     ocr_privacy_warning:
       "OCR 会将 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。",
@@ -1540,8 +1543,9 @@ const LANG: Record<string, Record<string, string>> = {
     prep_export_path_label: "将导出的 JSON 文件保存到此文件夹：",
     prep_key: "PaddleOCR Key",
     prep_key_desc: "从 https://aistudio.baidu.com/paddleocr 获取 API 密钥",
-    prep_python: "Python 3.11+",
-    prep_python_desc: "确保 Python 可命令行调用。点击下方按钮自动检测。",
+    prep_python: "计算引擎（全自动配置）",
+    prep_python_desc:
+      "无需手动安装 Python 或打开终端，在设置页点击「安装」即可自动就绪。",
     prep_zotero: "Zotero 桌面版",
     prep_zotero_desc: "安装 Zotero (https://www.zotero.org)",
     run_in_agent: "在 {0} 中运行",
@@ -1960,39 +1964,42 @@ const LANG: Record<string, Record<string, string>> = {
     setup_progress: "设置进度",
     setup_foundation_title: "第 1 步：基础环境",
     setup_foundation_desc:
-      "检查 PaperForge Core。安装、更新和修复均在 Obsidian 外完成；之后再配置当前文献库。",
+      "一键在后台自动配置 OCR 与 Zotero 计算组件，全程图形界面操作，无需打开命令行或编写任何代码。",
     runtime_external_notice:
-      "请在 Obsidian 外的终端中，使用同一个 Python 3.11+ 解释器依次运行以下命令：",
+      "仅在网络受限无法自动下载时供技术人员参考的命令（普通用户无需操作）：",
     runtime_status_checking: "检查中…",
     runtime_status_needs_attention: "需要处理",
     runtime_status_not_installed: "未安装",
     runtime_vector_ready: "运行时依赖已就绪",
     runtime_not_ready_reason:
-      "运行环境未就绪。请在 Obsidian 外的终端运行 `paperforge runtime install`。",
-    runtime_not_ready_impact: "没有受管运行环境时 PaperForge 无法启动。",
-    module_blocked_by_runtime: "请先完成基础环境——受管运行环境尚未安装。",
-    setup_runtime_checking: "正在检查受管 Python 运行环境…",
+      "AI 与 OCR 计算引擎尚未安装。点击下方一键安装按钮即可自动配置，无需任何命令行操作。",
+    runtime_not_ready_impact:
+      "文献库浏览、检索与表格查看现已可直接打开；一键安装后即可解锁全文 OCR、Zotero 同步与智能检索。",
+    module_blocked_by_runtime:
+      "请先完成第 1 步（一键安装计算引擎），即可启用 AI、OCR 与同步功能。",
+    setup_runtime_checking: "正在检查 PaperForge 计算引擎…",
     setup_runtime_ready: "PaperForge Core 已就绪。下一步：连接文献库。",
     setup_runtime_attention:
-      "PaperForge Core 需要更新。点下面的按钮更新或修复。",
+      "PaperForge Core 需要更新。点下面的按钮即可自动更新或修复。",
     setup_runtime_missing:
-      "PaperForge Core 尚未安装。点下面的「安装运行环境」即可。",
+      "PaperForge Core 尚未安装。点击下面的一键安装按钮即可全自动完成配置。",
     setup_runtime_refresh: "刷新运行环境状态",
     runtime_status_timeout:
-      "运行环境检查超时。可在终端检查运行环境，或重新运行安装器。",
+      "运行环境检查超时。可点击“刷新状态”重试，或再次点击修复/安装按钮。",
     runtime_installing:
-      "正在安装…可能需要几分钟。保持 Obsidian 打开即可，此面板会自动更新。",
+      "正在自动下载并配置运行环境…首次可能需要几分钟。保持 Obsidian 打开即可，此面板会自动刷新状态。",
     runtime_cancel_btn: "取消等待",
     runtime_install_cancelled:
-      "已停止等待安装程序。你可以随时重新点击安装或刷新状态。",
+      "已停止等待自动配置。你可以随时重新点击一键安装或刷新状态。",
     runtime_install_btn: "安装 PaperForge 运行环境",
     runtime_reinstall_btn: "重新安装 PaperForge 运行环境",
     runtime_update_btn: "更新 PaperForge 运行环境",
     runtime_repair_btn: "修复 PaperForge 运行环境",
     runtime_installer_hint:
-      "会在后台运行 PaperForge 安装器；Obsidian 本身只读取运行环境。",
-    runtime_manual_summary: "手动安装命令",
-    runtime_installer_opened: "已打开安装器。运行环境发布后此面板会自动更新。",
+      "点击后由后台引擎全自动完成下载与配置——无需手动安装 Python、无需敲任何代码或命令。",
+    runtime_manual_summary: "高级排障命令（普通用户无需操作）",
+    runtime_installer_opened:
+      "已在后台启动全自动配置，无需等待——你可以继续浏览文献，完成后此面板会自动更新。",
     runtime_installer_failed: "无法打开安装器：{error}",
     runtime_install_complete: "运行环境已就绪。",
     setup_ready: "基础环境已就绪。",

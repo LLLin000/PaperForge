@@ -48,7 +48,10 @@ import {
   resolveRuntimeCommand,
   type PointerInfo,
 } from "./services/managed-runtime";
-import { ensureNativeDaemonDownloaded } from "./services/native-daemon";
+import {
+  ensureNativeDaemonDownloaded,
+  resolveNativeDaemonBinary,
+} from "./services/native-daemon";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -680,15 +683,38 @@ export default class PaperForgePlugin extends Plugin {
 
     this._startConvergenceTimer();
     this._checkReleaseNotes();
-    void ensureNativeDaemonDownloaded(this.manifest.version).catch(
-      () => undefined
-    );
 
-    // #142/C0: one-time plugin-assisted config migration — detect legacy
-    // vaults and surface an explicit migrate command.
     const vaultBase = (
       this.app.vault.adapter as unknown as { basePath?: string }
     ).basePath;
+
+    const hadNativeBefore = Boolean(
+      resolveNativeDaemonBinary({ vaultPath: vaultBase })
+    );
+    void ensureNativeDaemonDownloaded(this.manifest?.version ?? "")
+      .then((downloadedBin) => {
+        if (hadNativeBefore || !downloadedBin || !vaultBase) return;
+        // Re-hydrate only when transitioning from absent -> downloaded so the
+        // 1-2s first-launch download window never leaves stale/empty banners.
+        void this.refreshUpgradePlan().catch(() => undefined);
+        void this.getClient()
+          .configValidate()
+          .then((validation) => {
+            if (validation.state === "migration_required") {
+              this._needsConfigMigration = true;
+            }
+          })
+          .catch(() => undefined);
+        void this.refreshBaseSnapshot().catch(() => undefined);
+        if (this.settings.autoSyncEnabled !== false) {
+          this._autoSync(vaultBase);
+        }
+        this._settingTab?.display();
+      })
+      .catch(() => undefined);
+
+    // #142/C0: one-time plugin-assisted config migration — detect legacy
+    // vaults and surface an explicit migrate command.
     if (vaultBase) {
       void this.getClient()
         .configValidate()
@@ -708,7 +734,21 @@ export default class PaperForgePlugin extends Plugin {
         })
         .catch(() => undefined);
       this._startStateSeqWatcher(vaultBase);
-      void this.refreshUpgradePlan().catch(() => undefined);
+      void this.refreshUpgradePlan()
+        .then((plan) => {
+          if (
+            this.settings._setup_complete === false &&
+            this.settings._setup_journey_started !== true &&
+            !readRuntimePointer() &&
+            !plan?.provenance?.needs_upgrade
+          ) {
+            new Notice(
+              "PaperForge 已就绪：请前往「设置 → PaperForge」完成初始引导，或在侧边栏浏览已有文献。",
+              8000
+            );
+          }
+        })
+        .catch(() => undefined);
     }
   }
 

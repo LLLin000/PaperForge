@@ -139,9 +139,7 @@ export async function migrateLegacySecret(
         migrated: [],
         warnings: [
           "Keyring write failed — the legacy SecretStorage value was kept. " +
-            "Run `paperforge auth set " +
-            kind +
-            " --stdin` manually.",
+            "Please re-save this credential in Settings → PaperForge.",
         ],
       };
     }

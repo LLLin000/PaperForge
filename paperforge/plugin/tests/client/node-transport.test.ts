@@ -52,16 +52,15 @@ describe("NodeProcessTransport", () => {
       });
     });
 
-    it("shows the external installer command when the pointer is absent", async () => {
+    it("shows the non-terminal Settings setup hint when the pointer is absent", async () => {
       runtimeState.pythonPath = "";
       const transport = new NodeProcessTransport({ vaultPath });
 
       await expect(transport.resolvePython()).rejects.toThrow(
-        /paperforge runtime install.*outside Obsidian/
+        /Settings → PaperForge.*no terminal required/
       );
     });
   });
-
 
   describe("execute", () => {
     it("spawns python with vault path and executes subcommand", async () => {

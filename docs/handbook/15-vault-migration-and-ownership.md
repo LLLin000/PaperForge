@@ -158,7 +158,8 @@ sequenceDiagram
 
 - `PAPERFORGE_PARENT_PID`：由宿主（Obsidian `NodeProcessTransport`）注入父进程 PID；`ControlDaemon` 每 `1.5s` 探活，宿主崩溃时自动终止在途子进程并退出，杜绝僵尸进程。
 - `PAPERFORGE_DAEMON_PUSH`：设为 `"1"` 时开启 stdout 双工异步事件帧推送（`task.updated`、`notice.push`、`state.changed`），与带 `id` 的普通 RPC 响应帧无锁冲突共存。
-- 控制面内置 RPC 操作码：`daemon.health`、`daemon.trim`、`engine.status`、`engine.resolve_key`、`engine.invalidate`、`job.submit`、`job.list`、`job.cancel`、`notice.list`、`notice.ack`、`notice.push`。
+- 控制面内置 RPC 操作码：`daemon.health`、`daemon.trim`、`engine.status`、`engine.resolve_key`、`engine.invalidate`、`job.submit`（含原生 `runtime.*` 与 Python 派发队列）、`job.list`、`job.cancel`、`notice.list`、`notice.ack`、`notice.push`。
+- 原生零脚本部署（ADR-019）：`paperforge-daemon` 内置纯 Rust `install-runtime` 子命令与 `runtime.*` 控制面作业，直接在后台完成 `uv` SHA-256 校验、解压、`Python 3.12` 与 `paperforge[vector]` 安装并推送 `installer.log` / `task.updated` 进度，彻底消除跨平台临时 `.ps1`/`.cmd`/`.sh` 脚本依赖。
 
 ---
 

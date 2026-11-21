@@ -7,6 +7,7 @@ use crate::platform::{
     now_unix_secs, process_rss_bytes,
 };
 use crate::query_ops::{open_readonly_db, read_state_seq, resolve_engine_dir};
+use crate::runtime_ops::install_runtime_native;
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 use std::env;
@@ -394,6 +395,126 @@ impl NativeControlDaemon {
             }
             other => Err(format!("Unsupported job kind: {other}")),
         }
+    }
+
+    pub fn submit_runtime_job(&self, vault: Option<&Path>, action: &str, version: &str) -> Value {
+        let vkey = vault
+            .map(Self::norm_vault)
+            .unwrap_or_else(|| "global".to_string());
+        let act = match action {
+            "install" | "update" | "repair" => action.to_string(),
+            _ => "install".to_string(),
+        };
+        let kind = format!("runtime.{act}");
+        let ver = if version.trim().is_empty() {
+            PF_VERSION.to_string()
+        } else {
+            version.trim().to_string()
+        };
+
+        let (job_id, job_arc) = {
+            let mut g = self.inner.lock().unwrap();
+            for active in g.active_jobs.values() {
+                let aj = active.lock().unwrap();
+                if aj.kind.starts_with("runtime.") && aj.status == "running" {
+                    return json!({
+                        "accepted": true,
+                        "coalesced": true,
+                        "job": aj.to_json(),
+                    });
+                }
+            }
+            g.job_counter += 1;
+            let jid = format!("job_{}_{}", std::process::id(), g.job_counter);
+            let rec = Arc::new(Mutex::new(JobRecord {
+                job_id: jid.clone(),
+                vault: vkey.clone(),
+                kind: kind.clone(),
+                status: "running".into(),
+                current: 0,
+                total: 5,
+                phase: "starting".into(),
+                item_id: ver.clone(),
+                priority_key: None,
+                started_at: now_unix_secs(),
+                finished_at: None,
+                exit_code: None,
+                error: String::new(),
+                stderr_tail: String::new(),
+                pid: Some(std::process::id()),
+                child: None,
+            }));
+            g.active_jobs.insert(jid.clone(), rec.clone());
+            (jid, rec)
+        };
+
+        let snap = job_arc.lock().unwrap().to_json();
+        self.emit_push("task.updated", Some(&vkey), snap.clone());
+
+        let daemon_clone = self.clone();
+        let job_worker = job_arc.clone();
+        thread::spawn(move || {
+            let v_opt = if vkey == "global" { None } else { Some(vkey.as_str()) };
+            let res = install_runtime_native(&act, &ver, |phase, cur, tot| {
+                let ev_snap = {
+                    let mut j = job_worker.lock().unwrap();
+                    j.phase = phase.to_string();
+                    j.current = cur;
+                    j.total = tot;
+                    j.to_json()
+                };
+                daemon_clone.emit_push("task.updated", v_opt, ev_snap);
+            });
+
+            let (ok, err_msg, final_snap) = {
+                let mut j = job_worker.lock().unwrap();
+                j.finished_at = Some(now_unix_secs());
+                match res {
+                    Ok(_) => {
+                        j.status = "succeeded".into();
+                        j.current = 5;
+                        j.exit_code = Some(0);
+                        (true, String::new(), j.to_json())
+                    }
+                    Err(e) => {
+                        j.status = "failed".into();
+                        j.exit_code = Some(1);
+                        j.error = e.clone();
+                        (false, e, j.to_json())
+                    }
+                }
+            };
+
+            {
+                let mut g = daemon_clone.inner.lock().unwrap();
+                g.active_jobs.remove(&job_id);
+                if g.recent_jobs.len() >= MAX_RECENT_JOBS {
+                    g.recent_jobs.pop_front();
+                }
+                g.recent_jobs.push_back(final_snap.clone());
+            }
+
+            daemon_clone.emit_push("task.updated", v_opt, final_snap);
+            if ok {
+                daemon_clone.push_notice(
+                    "success",
+                    "runtime.install.done",
+                    "Python 计算引擎已就绪",
+                    "后台同步与 OCR 全文解析环境已准备完成。",
+                    vault_path_opt(&vkey),
+                );
+            } else {
+                daemon_clone.push_notice(
+                    "warning",
+                    "runtime.install.failed",
+                    "运行环境准备未完成",
+                    &err_msg,
+                    vault_path_opt(&vkey),
+                );
+            }
+        });
+
+        json!({ "accepted": true, "coalesced": false, "job": snap })
     }
 
     pub fn submit_job(
@@ -902,5 +1023,13 @@ impl NativeControlDaemon {
             let _ = self.get_or_refresh_vault(v);
         }
         outcome
+    }
+}
+
+fn vault_path_opt(vkey: &str) -> Option<&Path> {
+    if vkey.is_empty() || vkey == "global" {
+        None
+    } else {
+        Some(Path::new(vkey))
     }
 }

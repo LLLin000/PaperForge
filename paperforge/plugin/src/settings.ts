@@ -1021,19 +1021,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return manifest?.minEngineVersion || undefined;
   }
 
-  /** Open the external installer and watch the published pointer. */
+  /** Open the background installer and watch the published pointer. */
   private _launchRuntimeInstaller(action: RuntimeInstallerAction): void {
-    const minEngine = this._minEngineVersion();
-    const result = minEngine
-      ? this.getClient().launchRuntimeInstaller(
-          action,
-          this.plugin.manifest.version,
-          { allowUvDownload: true }
-        )
-      : this.getClient().launchRuntimeInstaller(
-          action,
-          this.plugin.manifest.version
-        );
+    const result = this.getClient().launchRuntimeInstaller(
+      action,
+      this.plugin.manifest.version,
+      { allowUvDownload: true }
+    );
     if (!result.ok) {
       const message = t("runtime_installer_failed").replace(
         "{error}",
@@ -1079,7 +1073,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }, 3000);
   }
 
-  /** The installer's current phase, read from its log ("" before it starts). */
+  /** The installer's current phase translated into beginner-friendly progress text. */
   private _installerProgressLine(): string {
     if (!this._installerLogPath) return "";
     try {
@@ -1087,14 +1081,47 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         .readFileSync(this._installerLogPath, "utf-8")
         .split(/\r?\n/)
         .filter((line) => line.trim());
+      const isZh = t("nav_close") === "关闭";
       for (let i = lines.length - 1; i >= 0 && i > lines.length - 60; i -= 1) {
         const line = lines[i].trim();
         if (
-          /^\[PaperForge\]|^Collecting |^Installing collected|^Building wheel|^Downloading |^Successfully installed|^Created wheel/.test(
+          line.includes("Installing paperforge") ||
+          (line.startsWith("Downloading ") &&
+            !line.includes("uv") &&
+            !line.includes("wheel"))
+        ) {
+          return isZh
+            ? "阶段 4/5：正在自动配置 PaperForge 核心与 AI 组件…"
+            : "Step 4/5: Installing PaperForge core & AI dependencies…";
+        }
+        if (line.includes("Downloading wheel")) {
+          return isZh
+            ? "阶段 3/5：正在下载 PaperForge 计算引擎…"
+            : "Step 3/5: Downloading PaperForge compute package…";
+        }
+        if (line.includes("Installing managed Python")) {
+          return isZh
+            ? "阶段 2/5：正在自动配置独立运行环境（无需手动安装）…"
+            : "Step 2/5: Provisioning isolated Python runtime automatically…";
+        }
+        if (line.includes("Portable uv ready")) {
+          return isZh
+            ? "阶段 1/5：自动安装器已就绪，即将配置运行环境…"
+            : "Step 1/5: Automatic bootstrapper ready…";
+        }
+        if (line.includes("Downloading uv")) {
+          return isZh
+            ? "阶段 1/5：正在准备零依赖自动安装器…"
+            : "Step 1/5: Preparing zero-dependency automatic bootstrapper…";
+        }
+        if (
+          /^\[PaperForge\]|^Collecting |^Installing collected|^Successfully installed/.test(
             line
           )
         ) {
-          return line.slice(0, 160);
+          return isZh
+            ? "正在后台自动安装与自检组件，请稍候…"
+            : "Completing automatic background setup and verification…";
         }
       }
     } catch {

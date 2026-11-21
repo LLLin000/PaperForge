@@ -521,7 +521,7 @@ export class NodeProcessTransport implements Transport {
     // machine code (python-bridge taxonomy) so callers can suppress it from
     // the Console and offer setup recovery without parsing this message.
     const err = new Error(
-      "PaperForge runtime not ready. Run `paperforge runtime install` outside Obsidian."
+      "PaperForge compute runtime is not installed yet. Open Settings → PaperForge and click Install (one-click setup, no terminal required)."
     ) as Error & { code: string };
     err.code = "NO_PYTHON";
     throw err;
@@ -679,6 +679,17 @@ export class NodeProcessTransport implements Transport {
           error:
             "No Python 3.11+ found. Install Python from python.org, then retry.",
         };
+      }
+      const nativeBin = this._resolveNativeDaemon();
+      if (nativeBin) {
+        return this._spawnDetachedInstaller(
+          {
+            command: nativeBin,
+            args: ["install-runtime", "--action", action, "--version", version],
+          },
+          logPath,
+          "rust-uv"
+        );
       }
       const uv = this.discoverUv();
       const scriptPath = this._writeInstallerScript(

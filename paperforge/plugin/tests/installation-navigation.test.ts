@@ -1038,7 +1038,8 @@ describe("help.restore recovery through the Help tab", () => {
       // external runtime repair, never an in-plugin install.
       expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
         "repair",
-        expect.anything()
+        expect.anything(),
+        { allowUvDownload: true }
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -1102,7 +1103,8 @@ describe("help.restore recovery through the Overview card", () => {
 
     expect(cardClient.launchRuntimeInstaller).toHaveBeenCalledWith(
       "repair",
-      expect.anything()
+      expect.anything(),
+      { allowUvDownload: true }
     );
   });
 });

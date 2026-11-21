@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.0` | **章节数**：`15` | **分册指纹**：`sha256:ca28f44318cdf1dd`
+> **版本**：`2.0.0` | **章节数**：`15` | **分册指纹**：`sha256:1ea4d789c6c679b6`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 
@@ -4322,7 +4322,8 @@ sequenceDiagram
 
 - `PAPERFORGE_PARENT_PID`：由宿主（Obsidian `NodeProcessTransport`）注入父进程 PID；`ControlDaemon` 每 `1.5s` 探活，宿主崩溃时自动终止在途子进程并退出，杜绝僵尸进程。
 - `PAPERFORGE_DAEMON_PUSH`：设为 `"1"` 时开启 stdout 双工异步事件帧推送（`task.updated`、`notice.push`、`state.changed`），与带 `id` 的普通 RPC 响应帧无锁冲突共存。
-- 控制面内置 RPC 操作码：`daemon.health`、`daemon.trim`、`engine.status`、`engine.resolve_key`、`engine.invalidate`、`job.submit`、`job.list`、`job.cancel`、`notice.list`、`notice.ack`、`notice.push`。
+- 控制面内置 RPC 操作码：`daemon.health`、`daemon.trim`、`engine.status`、`engine.resolve_key`、`engine.invalidate`、`job.submit`（含原生 `runtime.*` 与 Python 派发队列）、`job.list`、`job.cancel`、`notice.list`、`notice.ack`、`notice.push`。
+- 原生零脚本部署（ADR-019）：`paperforge-daemon` 内置纯 Rust `install-runtime` 子命令与 `runtime.*` 控制面作业，直接在后台完成 `uv` SHA-256 校验、解压、`Python 3.12` 与 `paperforge[vector]` 安装并推送 `installer.log` / `task.updated` 进度，彻底消除跨平台临时 `.ps1`/`.cmd`/`.sh` 脚本依赖。
 
 ---
 

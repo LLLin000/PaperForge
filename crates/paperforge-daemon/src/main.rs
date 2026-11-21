@@ -9,6 +9,7 @@
 mod config_ops;
 mod platform;
 mod query_ops;
+mod runtime_ops;
 mod supervisor;
 
 use config_ops::{try_handle_config_cli, PF_VERSION};
@@ -131,6 +132,19 @@ fn execute_request(daemon: &NativeControlDaemon, req: &Value) -> (Value, bool) {
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .trim();
+            if let Some(action) = kind.strip_prefix("runtime.") {
+                let ver = req
+                    .get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(PF_VERSION);
+                return (
+                    json_ok_resp(
+                        id,
+                        daemon.submit_runtime_job(vault_path.as_deref(), action, ver),
+                    ),
+                    false,
+                );
+            }
             let Some(ref vp) = vault_path else {
                 return (json_err_resp(id, "vault and kind required", 2), false);
             };
@@ -306,6 +320,42 @@ fn execute_request(daemon: &NativeControlDaemon, req: &Value) -> (Value, bool) {
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
+    if args.first().map(|s| s.as_str()) == Some("install-runtime") {
+        let mut action = "install".to_string();
+        let mut version = PF_VERSION.to_string();
+        let mut idx = 1;
+        while idx < args.len() {
+            match args[idx].as_str() {
+                "--action" => {
+                    idx += 1;
+                    if let Some(v) = args.get(idx) {
+                        action = v.clone();
+                    }
+                }
+                "--version" | "--expected-version" => {
+                    idx += 1;
+                    if let Some(v) = args.get(idx) {
+                        version = v.clone();
+                    }
+                }
+                _ => {}
+            }
+            idx += 1;
+        }
+        match runtime_ops::install_runtime_native(&action, &version, |phase, cur, tot| {
+            eprintln!("[PaperForge] {phase} ({cur}/{tot})");
+        }) {
+            Ok(log_p) => {
+                println!("{}", log_p.display());
+                return;
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        }
+    }
+
     let mut idle_timeout_secs: u64 = 300;
     let mut parent_pid: Option<u32> = env::var("PAPERFORGE_PARENT_PID")
         .ok()
@@ -540,5 +590,17 @@ mod tests {
         assert_eq!(snap_env["data"]["rows"]["RUST0001"]["title"], "Cartilage Hydrogel Regeneration");
 
         let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn native_runtime_asset_metadata_and_pep440_normalization() {
+        assert_eq!(runtime_ops::normalize_pep440("v2.0.0-rc.6"), "2.0.0rc6");
+        assert_eq!(runtime_ops::normalize_pep440("2.0.0-beta.2"), "2.0.0b2");
+        assert_eq!(runtime_ops::normalize_pep440("2.0.0"), "2.0.0");
+        assert!(runtime_ops::uv_target_asset_and_sha().is_some());
+        assert!(runtime_ops::verify_sha256_bytes(
+            b"abc",
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        ));
     }
 }
