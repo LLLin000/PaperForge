@@ -30,6 +30,7 @@ import ctypes
 import gc
 import json
 import os
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -85,6 +86,17 @@ def get_process_rss_bytes() -> int:
         except Exception:  # noqa: BLE001
             return 0
 
+    if sys.platform == "darwin":
+        # On macOS, ru_maxrss is peak high-water mark, not live RSS; query `ps` first.
+        with contextlib.suppress(Exception):
+            out = subprocess.check_output(
+                ["/bin/ps", "-o", "rss=", "-p", str(os.getpid())],
+                text=True,
+                timeout=2,
+            ).strip()
+            if out.isdigit():
+                return int(out) * 1024
+
     try:
         import resource
 
@@ -94,8 +106,17 @@ def get_process_rss_bytes() -> int:
         return 0
 
 
+def _is_linux_zombie_proc_stat(stat_text: str) -> bool:
+    """Parse `/proc/<pid>/stat` (`pid (comm) state ...`) and detect Z/X dead states."""
+    rparen = stat_text.rfind(")")
+    if rparen == -1 or rparen + 2 >= len(stat_text):
+        return False
+    state_ch = stat_text[rparen + 2]
+    return state_ch in ("Z", "X", "x")
+
+
 def is_pid_alive(pid: int | None) -> bool:
-    """Return True if *pid* is currently alive on Windows or POSIX."""
+    """Return True if *pid* is currently alive (and not a zombie) on Windows, macOS, or Linux."""
     if not pid or pid <= 0:
         return True
     if sys.platform == "win32":
@@ -111,6 +132,11 @@ def is_pid_alive(pid: int | None) -> bool:
             return int(rc) == WAIT_TIMEOUT
         finally:
             kernel32.CloseHandle(handle)
+    if sys.platform.startswith("linux"):
+        stat_file = Path(f"/proc/{int(pid)}/stat")
+        with contextlib.suppress(OSError):
+            if _is_linux_zombie_proc_stat(stat_file.read_text(encoding="ascii", errors="ignore")):
+                return False
     try:
         os.kill(int(pid), 0)
         return True
@@ -123,7 +149,7 @@ def is_pid_alive(pid: int | None) -> bool:
 
 
 def kill_process_tree(proc: subprocess.Popen[Any]) -> None:
-    """Hard-terminate a child worker process tree without touching the daemon."""
+    """Hard-terminate a child worker process tree on Windows, macOS, or Linux without touching the daemon."""
     if proc.poll() is not None:
         return
     pid = getattr(proc, "pid", None)
@@ -138,6 +164,12 @@ def kill_process_tree(proc: subprocess.Popen[Any]) -> None:
                 check=False,
             )
             return
+    if sys.platform != "win32" and pid:
+        with contextlib.suppress(Exception):
+            pgid = os.getpgid(int(pid))
+            if pgid != os.getpgrp():
+                os.killpg(pgid, signal.SIGKILL)
+                return
     with contextlib.suppress(Exception):
         proc.kill()
 
@@ -196,6 +228,7 @@ class ControlDaemon:
         self._lock = threading.RLock()
         self._started_at = time.time()
         self._parent_pid = parent_pid
+        self._initial_ppid = os.getppid()
         self._push_sink = push_sink
         self._python_exe = python_exe or sys.executable
         self._event_seq = 0
@@ -476,6 +509,7 @@ class ControlDaemon:
             self._active_jobs[job_id] = job
 
         creationflags = 0x08000000 if sys.platform == "win32" else 0
+        start_new_session = sys.platform != "win32"
         try:
             proc = subprocess.Popen(
                 [self._python_exe, "-m", "paperforge", "--vault", vkey, *resolved_argv],
@@ -487,6 +521,7 @@ class ControlDaemon:
                 encoding="utf-8",
                 errors="replace",
                 creationflags=creationflags,
+                start_new_session=start_new_session,
             )
         except Exception as exc:  # noqa: BLE001
             with self._lock:
@@ -652,6 +687,15 @@ class ControlDaemon:
             return bool(self._active_jobs)
 
     def check_parent_alive(self) -> bool:
+        if not self._parent_pid or self._parent_pid <= 0:
+            return True
+        if (
+            sys.platform != "win32"
+            and self._parent_pid == self._initial_ppid
+            and os.getppid() != self._initial_ppid
+        ):
+            # Reparented to launchd (PID 1 on macOS) or init/subreaper on Linux
+            return False
         return is_pid_alive(self._parent_pid)
 
     def _write_heartbeat(self, vault_root: Path) -> None:

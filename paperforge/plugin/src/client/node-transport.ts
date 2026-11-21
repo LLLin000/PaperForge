@@ -359,10 +359,23 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
       "/opt/homebrew/bin",
       "/usr/local/bin",
       "/usr/bin",
-      `${home}/.local/bin`
+      `${home}/.local/bin`,
+      `${home}/.cargo/bin`,
+      `${home}/.pyenv/shims`,
+      `${home}/miniforge3/bin`,
+      `${home}/miniconda3/bin`
     );
   } else if (plat === "linux") {
-    extras.push("/usr/local/bin", "/usr/bin", `${home}/.local/bin`);
+    extras.push(
+      "/usr/local/bin",
+      "/usr/bin",
+      "/snap/bin",
+      `${home}/.local/bin`,
+      `${home}/.cargo/bin`,
+      `${home}/.pyenv/shims`,
+      `${home}/miniforge3/bin`,
+      `${home}/miniconda3/bin`
+    );
   } else if (plat === "win32") {
     const localAppData =
       env.LOCALAPPDATA ||

@@ -171,6 +171,23 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
     expect(extUrl).toBe(
       "app://local/D:/Zotero%20Library/storage/AT01/ACL%20Paper.pdf"
     );
+
+    const posixHashUrl = resolvePdfResourceUrl(app, {
+      paper_id: "K3",
+      title: "macOS/Linux Paper",
+      pdf_abs_path: "/Users/alice/Zotero/storage/MX09/Paper #1 - Next?.pdf",
+      pdf_vault_rel: "",
+      pdf_locator: "storage:MX09/Paper #1 - Next?.pdf",
+      is_vault_relative: false,
+      pdf_sha256: "ghi",
+      page_count: 1,
+      workspace_rel: "Resources/Literature/Ortho/K3",
+      note_rel_path: "Resources/Literature/Ortho/K3/K3.md",
+      annotations: [],
+    });
+    expect(posixHashUrl).toBe(
+      "app://local/Users/alice/Zotero/storage/MX09/Paper%20%231%20-%20Next%3F.pdf"
+    );
   });
 
   it("renders PDF pages, omits 5-pill intent clutter, and saves new annotations", async () => {

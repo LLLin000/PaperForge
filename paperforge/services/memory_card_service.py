@@ -80,20 +80,9 @@ def facet_label(slug: str) -> str:
 
 
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(prefix=".mc-", suffix=".tmp", dir=path.parent)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(payload, fh, ensure_ascii=False, indent=2)
-            fh.flush()
-            os.fsync(fh.fileno())
-        os.replace(tmp_name, path)
-    except BaseException:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    from paperforge.core.io import write_json_atomic
+
+    write_json_atomic(path, payload)
 
 
 def _resolve_workspace_optional(vault: Path, paper_key: str) -> tuple[dict[str, Any], Path | None]:

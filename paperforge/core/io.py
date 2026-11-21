@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+_IS_WINDOWS = os.name == "nt"
 
 
 class CASConflictError(OSError):
@@ -35,8 +36,24 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _preserve_or_default_posix_mode(tmp_path: Path, dst_path: Path) -> None:
+    """Ensure ``mkstemp`` (0600) preserves existing mode or respects umask on macOS/Linux."""
+    if _IS_WINDOWS:
+        return
+    try:
+        if dst_path.exists():
+            mode = dst_path.stat().st_mode & 0o777
+        else:
+            umask = os.umask(0o022)
+            os.umask(umask)
+            mode = 0o666 & ~umask
+        os.chmod(tmp_path, mode)
+    except OSError:
+        pass
+
+
 def write_text_atomic(path: Path, text: str, *, newline: str | None = None) -> None:
-    """Write text atomically (random sibling temp + fsync + replace)."""
+    """Write text atomically (random sibling temp + fsync + POSIX mode + replace)."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_str = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
@@ -46,6 +63,7 @@ def write_text_atomic(path: Path, text: str, *, newline: str | None = None) -> N
             fh.write(text)
             fh.flush()
             os.fsync(fh.fileno())
+        _preserve_or_default_posix_mode(tmp_path, path)
         _atomic_replace_with_retry(tmp_path, path)
     except BaseException:
         try:
@@ -56,7 +74,7 @@ def write_text_atomic(path: Path, text: str, *, newline: str | None = None) -> N
 
 
 def write_bytes_atomic(path: Path, data: bytes) -> None:
-    """Write raw bytes atomically (random sibling temp + fsync + replace)."""
+    """Write raw bytes atomically (random sibling temp + fsync + POSIX mode + replace)."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_str = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
@@ -66,6 +84,7 @@ def write_bytes_atomic(path: Path, data: bytes) -> None:
             fh.write(data)
             fh.flush()
             os.fsync(fh.fileno())
+        _preserve_or_default_posix_mode(tmp_path, path)
         _atomic_replace_with_retry(tmp_path, path)
     except BaseException:
         try:

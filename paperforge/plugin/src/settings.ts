@@ -4689,11 +4689,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             attr: { type: "button" },
           })
           .addEventListener("click", () => {
-            applyZoteroDir(path.join(os.homedir(), "Zotero"));
+            const home = os.homedir();
+            const candidates = [
+              path.join(home, "Zotero"),
+              path.join(home, ".var", "app", "org.zotero.Zotero", "Zotero"),
+              path.join(home, "snap", "zotero-snap", "common", "Zotero"),
+            ];
+            const found =
+              candidates.find((cand) => {
+                try {
+                  return fs.existsSync(cand);
+                } catch {
+                  return false;
+                }
+              }) ?? candidates[0];
+            applyZoteroDir(found);
           });
         if (
           zotero &&
           (/[/\\]program files(?:\s*\(x86\))?[/\\]/i.test(zotero) ||
+            /[/\\]applications[/\\]zotero\.app(?:[/\\]|$)/i.test(zotero) ||
             /zotero\.(?:exe|app)$/i.test(zotero))
         ) {
           body.createEl("p", {

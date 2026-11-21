@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,11 @@ from paperforge.worker.paper_meta import META_FILENAME, read_paper_meta
 logger = logging.getLogger(__name__)
 
 _NON_MAIN_FILENAMES = frozenset({"fulltext.md", "deep-reading.md", "discussion.md"})
+
+
+def _nfc(text: str) -> str:
+    """Normalize macOS APFS/HFS+ NFD filenames to NFC so cross-OS comparisons match."""
+    return unicodedata.normalize("NFC", text)
 _ZOTERO_KEY_RE = re.compile(r"^[A-Z0-9]{8}$")
 _SYNC_CONFLICT_RE = re.compile(
     r"(?:\.sync-conflict-|conflicted copy|冲突副本|\bconflict\b.*\(\d+\))",
@@ -128,7 +134,7 @@ class VaultIdentityScan:
 def _domain_for_path(lit_root: Path, path: Path) -> str:
     try:
         rel = path.relative_to(lit_root)
-        return rel.parts[0] if len(rel.parts) >= 2 else ""
+        return _nfc(rel.parts[0]) if len(rel.parts) >= 2 else ""
     except ValueError:
         return ""
 
@@ -191,7 +197,7 @@ def is_verified_legacy_flat_note(
         return False
     if len(rel.parts) != 2:
         return False
-    stem = flat.note_path.stem
+    stem = _nfc(flat.note_path.stem)
     key = flat.zotero_key
     if not (stem == key or stem.startswith(f"{key} - ")):
         return False
@@ -225,11 +231,13 @@ def _is_workspace_candidate(directory: Path, lit_root: Path) -> bool:
             for child in directory.iterdir():
                 if not child.is_file() or is_sync_conflict_artifact(child):
                     continue
-                if child.suffix == ".md" and child.name not in _NON_MAIN_FILENAMES:
+                if child.suffix.lower() == ".md" and child.name.lower() not in _NON_MAIN_FILENAMES:
                     note_key, fm, _ = _read_note_identity(child)
+                    c_stem = _nfc(child.stem)
+                    d_name = _nfc(directory.name)
                     if note_key and (
-                        child.stem == note_key
-                        or (directory.name == child.stem and _has_paperforge_note_signature(fm))
+                        c_stem == note_key
+                        or (d_name == c_stem and _has_paperforge_note_signature(fm))
                     ):
                         return True
     except OSError:
@@ -288,10 +296,10 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
 
         note_records: list[tuple[Path, str, dict[str, Any]]] = []
         for child in sorted(ws_dir.iterdir()):
-            if not child.is_file() or child.suffix != ".md" or is_sync_conflict_artifact(child):
+            if not child.is_file() or child.suffix.lower() != ".md" or is_sync_conflict_artifact(child):
                 continue
             seen_ws_files.add(child.resolve())
-            if child.name in _NON_MAIN_FILENAMES:
+            if child.name.lower() in _NON_MAIN_FILENAMES:
                 continue
             nkey, fm, _ = _read_note_identity(child)
             note_records.append((child, nkey, fm))
@@ -339,9 +347,12 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
         aux_notes: list[Path] = []
         exact_canonical = ws_dir / f"{canonical_key}.md"
         for child, nkey, _ in note_records:
-            if child == exact_canonical and (not nkey or nkey == canonical_key):
+            c_stem = _nfc(child.stem)
+            if (child == exact_canonical or (c_stem == canonical_key and child.suffix.lower() == ".md")) and (
+                not nkey or nkey == canonical_key
+            ):
                 main_note = child
-            elif nkey == canonical_key and (child.stem == canonical_key or child.stem.startswith(f"{canonical_key} - ")):
+            elif nkey == canonical_key and (c_stem == canonical_key or c_stem.startswith(f"{canonical_key} - ")):
                 legacy_notes.append(child)
             else:
                 aux_notes.append(child)
@@ -392,7 +403,7 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
         if cur_dir.resolve() in ws_resolved_set:
             continue
         for fname in sorted(filenames):
-            if not fname.endswith(".md") or fname in _NON_MAIN_FILENAMES:
+            if not fname.lower().endswith(".md") or fname.lower() in _NON_MAIN_FILENAMES:
                 continue
             md_path = cur_dir / fname
             if is_sync_conflict_artifact(md_path) or md_path.resolve() in seen_ws_files:

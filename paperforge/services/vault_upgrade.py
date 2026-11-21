@@ -21,6 +21,7 @@ import os
 import re
 import shutil
 import sqlite3
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -210,7 +211,9 @@ def _is_paperforge_owned_base_file(txt: str, base_file: Path, known_domains: set
         return True
     has_zotero_anchor = "zotero_key" in txt
     has_retired = any(rv in txt for rv in RETIRED_PF_VIEWS)
-    if has_zotero_anchor and (has_retired or base_file.stem in known_domains or base_file.name == "Literature Hub.base"):
+    norm_stem = unicodedata.normalize("NFC", base_file.stem)
+    norm_domains = {unicodedata.normalize("NFC", d) for d in known_domains}
+    if has_zotero_anchor and (has_retired or norm_stem in norm_domains or base_file.name == "Literature Hub.base"):
         return True
     if has_retired and base_file.name == "Literature Hub.base":
         return True
@@ -575,7 +578,7 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
         )
 
     if zotero_dir_val:
-        zp = Path(zotero_dir_val)
+        zp = Path(zotero_dir_val).expanduser()
         resolved_z = zp if zp.is_absolute() else (vault_root / zp)
         if not resolved_z.exists():
             reconfig_items.append(
@@ -998,8 +1001,8 @@ def heal_vault_progressive(
                     elif len(ws.legacy_named_notes) == 1:
                         old_note = ws.legacy_named_notes[0]
                 if old_note is not None and old_note.is_file():
-                    old_stem = old_note.stem
-                    old_note.rename(canonical_note)
+                    old_stem = unicodedata.normalize("NFC", old_note.stem)
+                    shutil.move(str(old_note), str(canonical_note))
                     _inject_backlink_alias(canonical_note, old_stem)
                     notes_renamed += 1
 
