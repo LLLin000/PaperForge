@@ -100,6 +100,7 @@ def test_static_guard_no_raw_system_paperforge_shortcuts() -> None:
         "paperforge/commands/auth.py",
         "paperforge/services/state_signal.py",
         "paperforge/services/storage_migration.py",
+        "paperforge/services/vault_upgrade.py",
         "paperforge/plugin/test/fixtures/build_e2e_vault.py",
     }
     offenders: list[str] = []

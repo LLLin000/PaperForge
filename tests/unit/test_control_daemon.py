@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -32,8 +33,20 @@ def test_control_daemon_low_memory_rss_and_pid_watchdog_primitives() -> None:
     ctrl = ControlDaemon(parent_pid=os.getpid())
     health = ctrl.health()
     assert health["ok"] is True
-    assert health["heavy_modules_loaded"] == []
     assert health["check_parent"] if "check_parent" in health else ctrl.check_parent_alive() is True
+
+    # Prove cold-start ControlDaemon loads zero heavy modules (isolated from earlier tests in same pytest process)
+    cold = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import json; from paperforge.services.control_daemon import ControlDaemon; print(json.dumps(ControlDaemon().health()['heavy_modules_loaded']))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert json.loads(cold.stdout.strip()) == []
 
 
 def test_control_daemon_notices_idle_trim_and_exclusive_barrier(tmp_path: Path) -> None:
