@@ -46,6 +46,7 @@ import {
 import type { PaperForgeClient } from "../client";
 import { ResearchRecordModal } from "./research-record";
 import { createPfIconBtn, setPfIcon, type PfIconName } from "./icons";
+import { renderUpgradeAvailableBanner } from "./upgrade-modal";
 import {
   bindObsidianHoverPreview,
   openUnifiedPaperContextMenu,
@@ -102,6 +103,7 @@ export class PaperForgeStatusView extends ItemView {
   _versionBadge: HTMLElement | null = null;
   _messageEl: HTMLElement | null = null;
   _activityStripEl: HTMLElement | null = null;
+  _upgradeBannerEl: HTMLElement | null = null;
   _recoveryBannerEl: HTMLElement | null = null;
   private _recoveryState: {
     title: string;
@@ -355,11 +357,16 @@ export class PaperForgeStatusView extends ItemView {
       cls: "pf-global-activity-strip",
       attr: { "data-pf-testid": "global-activity-strip" },
     });
+    this._upgradeBannerEl = root.createEl("div", {
+      cls: "pf-upgrade-banner-host",
+      attr: { "data-pf-testid": "upgrade-banner-host" },
+    });
     this._recoveryBannerEl = root.createEl("div", {
       cls: "pf-recovery-banner-host",
       attr: { "data-pf-testid": "recovery-banner-host" },
     });
     this._renderGlobalActivityStrip();
+    this._renderUpgradeBanner();
     this._renderRecoveryBanner();
     this._contentEl = root.createEl("div", { cls: "paperforge-content-area" });
   }
@@ -417,6 +424,39 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  private _renderUpgradeBanner(): void {
+    if (!this._upgradeBannerEl) return;
+    this._upgradeBannerEl.empty();
+    const plugin = (
+      this.app as unknown as {
+        plugins?: {
+          plugins?: Record<
+            string,
+            {
+              getUpgradePlanCache?: () =>
+                | import("../client").VaultUpgradePlanDto
+                | null;
+              isUpgradeBannerDismissed?: () => boolean;
+              dismissUpgradeBannerForSession?: () => void;
+              openUpgradeModal?: () => Promise<void>;
+            }
+          >;
+        };
+      }
+    )?.plugins?.plugins?.["paperforge"];
+    const plan = plugin?.getUpgradePlanCache?.() ?? null;
+    renderUpgradeAvailableBanner(this._upgradeBannerEl, plan, {
+      dismissed: Boolean(plugin?.isUpgradeBannerDismissed?.()),
+      onOpenModal: () => {
+        void plugin?.openUpgradeModal?.();
+      },
+      onDismiss: () => {
+        plugin?.dismissUpgradeBannerForSession?.();
+        this._renderUpgradeBanner();
+      },
+    });
+  }
+
   private _renderGlobalActivityStrip(): void {
     if (!this._activityStripEl) return;
     this._activityStripEl.empty();
@@ -427,7 +467,7 @@ export class PaperForgeStatusView extends ItemView {
             string,
             {
               getActiveBackgroundTasks?: () => Array<{
-                kind: "sync" | "ocr" | "embed";
+                kind: "sync" | "ocr" | "embed" | "heal";
                 label: string;
                 current?: number;
                 total?: number;
@@ -4866,6 +4906,7 @@ export class PaperForgeStatusView extends ItemView {
       }
     )?.on?.("paperforge:state-changed", (payload?: unknown) => {
       this._renderGlobalActivityStrip();
+      this._renderUpgradeBanner();
       const changed = (payload as { changedKeys?: string[] } | undefined)
         ?.changedKeys;
       if (Array.isArray(changed) && changed.length > 0) {

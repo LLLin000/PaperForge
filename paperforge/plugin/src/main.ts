@@ -61,6 +61,7 @@ import {
   PaperForgeConfirmModal,
   PaperForgeSetupWizardModal,
 } from "./views/modals";
+import { PaperForgeUpgradeModal } from "./views/upgrade-modal";
 import {
   applyPathConfigFromList,
   isConfigHydrated,
@@ -194,6 +195,22 @@ export default class PaperForgePlugin extends Plugin {
     } catch {
       return this._upgradePlanCache;
     }
+  }
+
+  async openUpgradeModal(): Promise<void> {
+    const plan = this._upgradePlanCache ?? (await this.refreshUpgradePlan());
+    if (!plan) {
+      new Notice("PaperForge: 暂无法读取文献库升级诊断信息。");
+      return;
+    }
+    new PaperForgeUpgradeModal(this.app, this.getClient(), plan, {
+      onDismissForSession: () => this.dismissUpgradeBannerForSession(),
+      onUpgraded: async () => {
+        await this.refreshUpgradePlan();
+        await this.refreshBaseSnapshot().catch(() => undefined);
+        this._settingTab?.display();
+      },
+    }).open();
   }
 
   /** Read-only view of the Python-published runtime pointer.
@@ -650,6 +667,14 @@ export default class PaperForgePlugin extends Plugin {
       id: "paperforge-migrate-config",
       name: "Migrate PaperForge legacy configuration",
       callback: () => this._runLegacyConfigMigration(),
+    });
+
+    this.addCommand({
+      id: "paperforge-vault-upgrade",
+      name: "检查并无损升级文献库目录结构",
+      callback: () => {
+        void this.openUpgradeModal();
+      },
     });
 
     this._startConvergenceTimer();

@@ -12664,6 +12664,375 @@ body.pf-no-glass
   border-color: var(--pf-danger) !important;
 }
 
+/* 5. Iceberg Non-Blocking Vault Upgrade & Maintenance UI (ADR-018) */
+.pf-upgrade-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: 8px 0 10px;
+  background: var(--pf-accent-tint);
+  border: 1px solid var(--pf-accent-line);
+  border-radius: var(--pf-radius-panel);
+  animation: pf-float-up var(--pf-motion-snappy) both;
+}
+
+.pf-upgrade-banner-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pf-upgrade-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pf-accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.pf-upgrade-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
+  line-height: 1.35;
+}
+
+.pf-upgrade-banner-desc {
+  font-size: 12px;
+  color: var(--pf-text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.pf-upgrade-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pf-upgrade-banner-btn {
+  background: var(--pf-accent);
+  color: var(--pf-accent-text);
+  border-color: transparent;
+  box-shadow: var(--pf-primary-lift);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--pf-radius-btn);
+}
+
+.pf-upgrade-banner-btn:hover {
+  background: var(--pf-accent-hover);
+  color: var(--pf-accent-text);
+}
+
+.pf-upgrade-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--pf-surface);
+  border-radius: var(--pf-radius-dialog);
+  color: var(--pf-text);
+}
+
+.pf-upgrade-modal-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pf-upgrade-modal-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--pf-radius-panel);
+  background: var(--pf-accent-soft);
+  color: var(--pf-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pf-upgrade-modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-modal-promise {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--pf-text-muted);
+}
+
+.pf-upgrade-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pf-upgrade-metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel);
+}
+
+.pf-upgrade-metric-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-upgrade-metric-label {
+  font-size: 11.5px;
+  color: var(--pf-text-subtle);
+}
+
+.pf-upgrade-blocker-card {
+  padding: 10px 12px;
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-warning);
+  border-radius: var(--pf-radius-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pf-upgrade-blocker-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-warning);
+}
+
+.pf-upgrade-blocker-detail {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pf-text-muted);
+}
+
+.pf-upgrade-disclosure {
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel);
+  background: var(--pf-elevated);
+  overflow: hidden;
+}
+
+.pf-upgrade-disclosure-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--pf-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pf-upgrade-disclosure-btn:hover {
+  background: var(--pf-hover);
+  color: var(--pf-text);
+}
+
+.pf-upgrade-chevron {
+  display: inline-flex;
+  transition: transform var(--pf-motion-fluid);
+}
+
+.pf-upgrade-chevron.is-expanded {
+  transform: rotate(90deg);
+}
+
+.pf-upgrade-drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--pf-motion-fluid);
+}
+
+.pf-upgrade-drawer.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.pf-upgrade-drawer-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.pf-upgrade-drawer.is-expanded .pf-upgrade-drawer-inner {
+  padding: 6px 12px 12px;
+  border-top: 1px solid var(--pf-border);
+}
+
+.pf-upgrade-item-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: pf-float-up var(--pf-motion-snappy) both;
+}
+
+.pf-upgrade-item-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-item-check {
+  color: var(--pf-success);
+  display: inline-flex;
+}
+
+.pf-upgrade-item-tag {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  color: var(--pf-text-subtle);
+}
+
+.pf-upgrade-item-detail {
+  font-size: 11.5px;
+  color: var(--pf-text-subtle);
+  padding-left: 19px;
+}
+
+.pf-upgrade-status-slot {
+  min-height: 4px;
+  font-size: 12.5px;
+}
+
+.pf-upgrade-running-hint {
+  color: var(--pf-text-muted);
+}
+
+.pf-upgrade-error-msg {
+  color: var(--pf-danger);
+}
+
+.pf-upgrade-done-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pf-success);
+  font-weight: 500;
+}
+
+.pf-upgrade-done-icon {
+  display: inline-flex;
+  animation: pf-pop-in var(--pf-motion-fluid) both;
+}
+
+.pf-upgrade-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.pf-upgrade-maint-section {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pf-upgrade-maint-heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-cleanup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pf-upgrade-cleanup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-control);
+  cursor: pointer;
+}
+
+.pf-upgrade-cleanup-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pf-upgrade-cleanup-reason {
+  font-size: 12.5px;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-cleanup-path {
+  font-size: 11px;
+  color: var(--pf-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-upgrade-cleanup-size {
+  font-size: 12px;
+  color: var(--pf-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-upgrade-rollback-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pf-border);
+}
+
+.pf-upgrade-rollback-hint {
+  font-size: 12px;
+  color: var(--pf-text-muted);
+}
+
 /* Accessibility ReduceMotion */
 body.pf-reduce-motion *,
 body.pf-reduce-motion *::before,

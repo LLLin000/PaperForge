@@ -74,6 +74,10 @@ import {
   type OrphanItem,
 } from "./views/modals";
 import {
+  renderUpgradeAvailableBanner,
+  renderStorageMigrationMaintenanceSection,
+} from "./views/upgrade-modal";
+import {
   readRuntimePointer,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
@@ -864,8 +868,44 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     }
 
+    // ── Non-blocking Veteran Vault Upgrade Banner (ADR-018) ──
+    const cachedUpgradePlan =
+      typeof this.plugin.getUpgradePlanCache === "function"
+        ? this.plugin.getUpgradePlanCache()
+        : null;
+    const bannerDismissed =
+      typeof this.plugin.isUpgradeBannerDismissed === "function"
+        ? Boolean(this.plugin.isUpgradeBannerDismissed())
+        : false;
+    renderUpgradeAvailableBanner(containerEl, cachedUpgradePlan, {
+      dismissed: bannerDismissed,
+      onOpenModal: () => {
+        void this.plugin.openUpgradeModal?.();
+      },
+      onDismiss: () => {
+        this.plugin.dismissUpgradeBannerForSession?.();
+        this.display();
+      },
+    });
+
     // ── Control Center (Issue #76) ──
     this._renderControlCenter(containerEl);
+
+    // ── Deferred Storage Cleanup & Time-Machine Rollback ──
+    if (cachedUpgradePlan && typeof this.plugin.getClient === "function") {
+      renderStorageMigrationMaintenanceSection(
+        containerEl,
+        this.app,
+        this.getClient(),
+        cachedUpgradePlan,
+        () => {
+          void (async () => {
+            await this.plugin.refreshUpgradePlan?.();
+            this.display();
+          })();
+        }
+      );
+    }
   }
 
   /** Safe vault base path extraction. */

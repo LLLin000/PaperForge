@@ -27,7 +27,7 @@ _ATX_HEADING_RE = re.compile(r"^(#{1,5})(\s+.*)$")
 _INTRA_HANDBOOK_LINK_RE = re.compile(r"\[([^\]]+)\]\((\d{2}-[^)#]+\.md)(?:#[^)]*)?\)")
 _UP_LINK_RE = re.compile(r"\[([^\]]+)\]\(((?:\.\./)+)([^)]+)\)")
 
-EXPECTED_CHAPTER_COUNT = 14
+EXPECTED_CHAPTER_COUNT = 15
 
 
 def read_package_version(init_path: Path = INIT_PATH) -> str:

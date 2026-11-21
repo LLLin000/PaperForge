@@ -38,6 +38,7 @@ EXPECTED_CHAPTERS = (
     "12-agent-skills-and-workflows.md",
     "13-obsidian-plugin-and-views.md",
     "14-testing-gates-and-maintenance.md",
+    "15-vault-migration-and-ownership.md",
 )
 
 REQUIRED_H2_SECTIONS = (

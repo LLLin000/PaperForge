@@ -6,9 +6,9 @@
 
 ## 1. 全量技术参考手册（面向维护者与 AI Agent）
 
-PaperForge 的完整工程实现细节采用 **“14 篇专题源码核对分册 + 1 份自动编译单文件全景底本”** 双层架构维护，受 `tests/test_technical_docs_sync.py` 自动化门禁与源码实时对账：
+PaperForge 的完整工程实现细节采用 **“15 篇专题源码核对分册 + 1 份自动编译单文件全景底本”** 双层架构维护，受 `tests/test_technical_docs_sync.py` 自动化门禁与源码实时对账：
 
-- **单文件全景参考**：[PAPERFORGE-TECHNICAL-REFERENCE.md](PAPERFORGE-TECHNICAL-REFERENCE.md) —— 由 `scripts/build_technical_reference.py` 从 `docs/handbook/` 14 章确定性编译生成，适合整库上下文检索、排障溯源与跨模块升级设计。
+- **单文件全景参考**：[PAPERFORGE-TECHNICAL-REFERENCE.md](PAPERFORGE-TECHNICAL-REFERENCE.md) —— 由 `scripts/build_technical_reference.py` 从 `docs/handbook/` 15 章确定性编译生成，适合整库上下文检索、排障溯源与跨模块升级设计。
 
 | 章节   | 专题分册                                                                                                       | 核心覆盖范围与源码入口                                                                                                                   |
 | :----- | :------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,6 +26,7 @@ PaperForge 的完整工程实现细节采用 **“14 篇专题源码核对分册
 | **12** | [第 12 章：Agent Skills 分发、斜杠工作流与 AI 上下文命令](handbook/12-agent-skills-and-workflows.md)           | `paperforge/skills/` 部署与摘要校验、`/pf-*` 契约、`deep-reading`/`deep-finalize` 闭环、Agent 检索命令族                                 |
 | **13** | [第 13 章：Obsidian Thin-Client 插件、IPC 传输与五大视图交互](handbook/13-obsidian-plugin-and-views.md)        | `PaperForgeClient` & `NodeProcessTransport`、单 `OperationLock`、Base/Companion/PDF Reader/Control Center/OCR Workspace 五大界面         |
 | **14** | [第 14 章：测试金字塔、静态契约门禁与维修升级手册](handbook/14-testing-gates-and-maintenance.md)               | `.husky/pre-commit`、P0 架构门禁、`ci.yml`、V3 OCR 聚焦套件、`ocr_rebuild_paper.py`、`bump.py` 与排障手册                                |
+| **15** | [第 15 章：Vault 升级普查、四重防误触归属门禁与双速无感迁移架构](handbook/15-vault-migration-and-ownership.md) | `detect_vault_provenance`、五桶全库普查、四重克隆保护、Tier-0 OCR 抢救、双速切流与渐进自愈、一键回滚、`ControlDaemon`、`upgrade-modal`   |
 
 ---
 
