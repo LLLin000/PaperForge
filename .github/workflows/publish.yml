@@ -33,7 +33,74 @@ on:
         type: boolean
 
 jobs:
+  build-native-daemon:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            asset: paperforge-daemon-x86_64-unknown-linux-musl
+            bin: paperforge-daemon
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            asset: paperforge-daemon-aarch64-unknown-linux-musl
+            bin: paperforge-daemon
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            asset: paperforge-daemon-aarch64-apple-darwin
+            bin: paperforge-daemon
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            asset: paperforge-daemon-x86_64-apple-darwin
+            bin: paperforge-daemon
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: paperforge-daemon-x86_64-pc-windows-msvc.exe
+            bin: paperforge-daemon.exe
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            asset: paperforge-daemon-aarch64-pc-windows-msvc.exe
+            bin: paperforge-daemon.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust target (${{ matrix.target }})
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl cross toolchain (Linux static zero-glibc dependency)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
+
+      - name: Build native Rust daemon (${{ matrix.target }})
+        working-directory: crates/paperforge-daemon
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_musl: aarch64-linux-gnu-gcc
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Ad-hoc codesign binary on macOS (Apple Silicon / Gatekeeper)
+        if: runner.os == 'macOS'
+        run: codesign --force --sign - "crates/paperforge-daemon/target/${{ matrix.target }}/release/${{ matrix.bin }}"
+
+      - name: Stage release binary
+        shell: bash
+        run: |
+          mkdir -p dist-daemon
+          cp "crates/paperforge-daemon/target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist-daemon/${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-daemon-${{ matrix.target }}
+          path: dist-daemon/${{ matrix.asset }}
+
   publish:
+    needs: [build-native-daemon]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -255,6 +322,13 @@ jobs:
             esac
           fi
 
+      - name: Download native Rust daemon binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-daemon-*
+          path: dist-daemon
+          merge-multiple: true
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -278,7 +352,7 @@ jobs:
           # not just the checksum.
           sha256sum paperforge/plugin/main.js paperforge/plugin/styles.css \
             paperforge/plugin/manifest.json versions.json \
-            dist/*.whl dist/*.tar.gz > checksums.txt
+            dist/*.whl dist/*.tar.gz dist-daemon/paperforge-daemon-* > checksums.txt
           gh release upload "$RELEASE_TAG" --clobber \
             paperforge/plugin/main.js \
             paperforge/plugin/styles.css \
@@ -286,4 +360,5 @@ jobs:
             versions.json \
             dist/*.whl \
             dist/*.tar.gz \
+            dist-daemon/paperforge-daemon-* \
             checksums.txt

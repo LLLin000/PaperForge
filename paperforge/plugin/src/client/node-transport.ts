@@ -33,6 +33,7 @@ import {
   readRuntimePointer,
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
+import { resolveNativeDaemonBinary } from "../services/native-daemon";
 import {
   bootstrapPythonSource,
   installerLogPath,
@@ -419,6 +420,8 @@ export interface NodeProcessTransportOptions {
   installerLogPath?: () => string;
   /** Keep a warm stdio daemon alive across short execute() RPCs (default: true unless custom spawnFn is injected). */
   useDaemon?: boolean;
+  /** Optional explicit path to native Rust `paperforge-daemon` binary (auto-discovered when spawnFn is default). */
+  nativeDaemonPath?: string | null;
 }
 
 /** Interpreter names to probe, most specific first. */
@@ -478,6 +481,8 @@ export class NodeProcessTransport implements Transport {
   private readonly _execFileSyncFn: typeof execFileSync;
   private readonly _installerLogPath: () => string;
   private readonly _useDaemon: boolean;
+  private readonly _explicitNativeDaemonPath: string | null | undefined;
+  private readonly _hasCustomSpawn: boolean;
   private _daemonSupported = true;
   private _daemon: DaemonSession | null = null;
   private readonly _daemonListeners = new Set<
@@ -486,10 +491,25 @@ export class NodeProcessTransport implements Transport {
 
   constructor(options: NodeProcessTransportOptions) {
     this._vaultPath = options.vaultPath;
+    this._hasCustomSpawn = options.spawnFn !== undefined;
     this._spawnFn = options.spawnFn ?? spawn;
     this._execFileSyncFn = options.execFileSyncFn ?? execFileSync;
     this._installerLogPath = options.installerLogPath ?? installerLogPath;
     this._useDaemon = options.useDaemon ?? options.spawnFn === undefined;
+    this._explicitNativeDaemonPath = options.nativeDaemonPath;
+  }
+
+  private _resolveNativeDaemon(): string | null {
+    if (this._explicitNativeDaemonPath === null) return null;
+    if (this._explicitNativeDaemonPath) {
+      return resolveNativeDaemonBinary({
+        explicitPath: this._explicitNativeDaemonPath,
+        vaultPath: this._vaultPath,
+      });
+    }
+    // Preserve unit-test mock spawn expectations unless nativeDaemonPath is explicitly requested
+    if (this._hasCustomSpawn) return null;
+    return resolveNativeDaemonBinary({ vaultPath: this._vaultPath });
   }
 
   /** Resolve the interpreter from Python's published runtime pointer. */
@@ -745,11 +765,25 @@ export class NodeProcessTransport implements Transport {
     fs.writeFileSync(file, content, { encoding: "utf-8", mode: 0o755 });
     return file;
   }
-  private _ensureDaemonSession(py: {
+  private _ensureDaemonSession(target: {
     path: string;
     args: string[];
+    nativeBin?: string | null;
+    pythonWorkerExe?: string | null;
   }): DaemonSession {
-    const key = `${py.path}\0${py.args.join("\0")}`;
+    const spawnCmd = target.nativeBin || target.path;
+    const spawnArgs = target.nativeBin
+      ? ["--stdio", "--idle-timeout", "300"]
+      : [
+          ...target.args,
+          "-m",
+          "paperforge",
+          "daemon",
+          "--stdio",
+          "--idle-timeout",
+          "300",
+        ];
+    const key = `${spawnCmd}\0${spawnArgs.join("\0")}\0${target.pythonWorkerExe ?? ""}`;
     if (
       this._daemon &&
       this._daemon.key === key &&
@@ -763,25 +797,16 @@ export class NodeProcessTransport implements Transport {
     const env = paperforgeEnrichedEnv();
     env.PAPERFORGE_PARENT_PID = String(process.pid);
     env.PAPERFORGE_DAEMON_PUSH = "1";
-    const child = this._spawnFn(
-      py.path,
-      [
-        ...py.args,
-        "-m",
-        "paperforge",
-        "daemon",
-        "--stdio",
-        "--idle-timeout",
-        "300",
-      ],
-      {
-        cwd: os.tmpdir(),
-        shell: false,
-        windowsHide: true,
-        env,
-        stdio: ["pipe", "pipe", "pipe"],
-      }
-    );
+    if (target.pythonWorkerExe) {
+      env.PAPERFORGE_PYTHON_EXE = target.pythonWorkerExe;
+    }
+    const child = this._spawnFn(spawnCmd, spawnArgs, {
+      cwd: os.tmpdir(),
+      shell: false,
+      windowsHide: true,
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     executeChildRegistry.set(child, null);
 
     const session: DaemonSession = {
@@ -903,12 +928,37 @@ export class NodeProcessTransport implements Transport {
     };
   }
 
+  private async _resolveDaemonTarget(): Promise<{
+    path: string;
+    args: string[];
+    nativeBin?: string | null;
+    pythonWorkerExe?: string | null;
+  }> {
+    const nativeBin = this._resolveNativeDaemon();
+    const ptrCmd = resolveRuntimeCommand(readRuntimePointer());
+    if (nativeBin) {
+      return {
+        path: nativeBin,
+        args: [],
+        nativeBin,
+        pythonWorkerExe: ptrCmd?.command ?? null,
+      };
+    }
+    const py = await this.resolvePython();
+    return {
+      path: py.path,
+      args: py.args,
+      nativeBin: null,
+      pythonWorkerExe: null,
+    };
+  }
+
   async rpc(
     payload: Record<string, unknown>,
     timeoutMs = 30000
   ): Promise<string> {
-    const py = await this.resolvePython();
-    const session = this._ensureDaemonSession(py);
+    const target = await this._resolveDaemonTarget();
+    const session = this._ensureDaemonSession(target);
     const id = session.nextId++;
     const line =
       JSON.stringify({
@@ -958,11 +1008,16 @@ export class NodeProcessTransport implements Transport {
   }
 
   private async _executeDaemon(
-    py: { path: string; args: string[] },
+    target: {
+      path: string;
+      args: string[];
+      nativeBin?: string | null;
+      pythonWorkerExe?: string | null;
+    },
     argv: string[],
     options?: ExecuteOptions
   ): Promise<string> {
-    const session = this._ensureDaemonSession(py);
+    const session = this._ensureDaemonSession(target);
     const id = session.nextId++;
     const timeout = options?.timeoutMs ?? 120000;
     const payload =
@@ -1000,10 +1055,6 @@ export class NodeProcessTransport implements Transport {
   }
 
   async execute(argv: string[], options?: ExecuteOptions): Promise<string> {
-    const py = options?.pythonExe
-      ? { path: options.pythonExe, args: [] as string[] }
-      : await this.resolvePython();
-
     const canUseDaemon =
       this._useDaemon &&
       this._daemonSupported &&
@@ -1011,6 +1062,39 @@ export class NodeProcessTransport implements Transport {
       !options?.env &&
       argv[0] !== "runtime" &&
       argv[0] !== "daemon";
+
+    if (canUseDaemon) {
+      const nativeBin = this._resolveNativeDaemon();
+      if (nativeBin) {
+        const ptrCmd = resolveRuntimeCommand(readRuntimePointer());
+        try {
+          return await this._executeDaemon(
+            {
+              path: nativeBin,
+              args: [],
+              nativeBin,
+              pythonWorkerExe: ptrCmd?.command ?? null,
+            },
+            argv,
+            options
+          );
+        } catch (err: unknown) {
+          const unavailable =
+            err !== null &&
+            typeof err === "object" &&
+            "daemonUnavailable" in err &&
+            Boolean((err as { daemonUnavailable?: unknown }).daemonUnavailable);
+          if (!unavailable) {
+            throw err;
+          }
+          this._daemonSupported = false;
+        }
+      }
+    }
+
+    const py = options?.pythonExe
+      ? { path: options.pythonExe, args: [] as string[] }
+      : await this.resolvePython();
 
     if (canUseDaemon) {
       try {

@@ -804,6 +804,18 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+### ADR-019: Hybrid Native Rust Sidecar (`paperforge-daemon`) + On-Demand Python Compute Workers
+
+**Status:** Accepted (v2.0)
+**Context:** Full-scale rewriting of PaperForge's 42.7k-line V3 OCR geometric/layout rules in Rust offers negligible speedup (remote OCR/Embedding APIs and C-backed `PyMuPDF`/`sqlite-vec` dominate heavy compute) at extreme regression risk across the 555-paper corpus. Conversely, keeping Obsidian's instant-boot UI, SQLite FTS5 metadata search, Base table snapshots, configuration reads/writes, and background process supervision behind a Python interpreter incurs ~300–500ms cold-start latency and requires Python installation before a new user can even browse or search an existing vault.
+
+**Decision:** Adopt the `uv` / `ruff` hybrid architecture via `crates/paperforge-daemon` + `paperforge/plugin/src/services/native-daemon.ts`:
+1. **Zero Local Rust Requirement**: GitHub Actions (`publish.yml`) cross-compiles standalone single-file native binaries (`~1.5–3 MB`, statically bundling SQLite + FTS5) for all 6 desktop targets (`win32` `x64`/`arm64`, `darwin` `arm64`/`x64` with `codesign --force --sign -`, and `linux` `x64`/`arm64` static `musl` with zero `glibc` version coupling). The plugin verifies SHA-256 against `checksums.txt` and installs into `~/.paperforge/bin/` via Node `https` (avoiding browser `com.apple.quarantine` attributes on macOS).
+2. **Instant `< 2ms` Native Control & Query Fast-Path (Zero-Python Ready)**: `crates/paperforge-daemon` speaks the exact `paperforge daemon --stdio` JSON-RPC + duplex NDJSON push wire protocol at `~4–6 MB` RSS, natively executing `config list|get|set|unset|validate|paths|init`, `paths`, `memory-card base-snapshot`, `search` (SQLite FTS5 BM25), zero-Python `upgrade --plan` provenance checks, and all `ControlDaemon` supervision/notice/health ops.
+3. **On-Demand Ephemeral Python Workers**: Heavy or domain-complex commands (`ocr`, `sync`, `embed`, `upgrade --apply`, `probe`, `auth`, `annotations`) transparently delegate to the published Python runtime (`pointer.json` / `PAPERFORGE_PYTHON_EXE`), keeping the 42.7k-line V3 OCR engine 100% authoritative while reclaiming 100% of worker RAM upon job completion.
+
+---
+
 ## Glossary
 
 - **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.

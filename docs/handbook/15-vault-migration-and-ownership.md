@@ -35,7 +35,9 @@
 | `paperforge/services/storage_migration.py` | 引擎目录合并迁移、同名冲突备份、用户全文保留与事务日志恢复 | `migrate_vault_storage()`、`rollback_incomplete_migration()`、`rewrite_visual_embeds_for_key()`、`_move_tree_entries()` |
 | `paperforge/materialization/ocr.py` | Tier-0 `result.json` 原子校验与 Tier-1 派生完整性分级 | `validate_result_json()`、`assess_ocr_bundle_atoms()`、`verify_bundle_integrity()` |
 | `paperforge/core/io.py` | 跨平台 `mkstemp` + `fsync` + 重试替换、CAS 防并发覆盖与容错 JSONL | `write_bytes_atomic()`、`write_text_atomic()`、`write_text_cas()`、`CASConflictError`、`read_jsonl()` |
-| `paperforge/services/control_daemon.py` | 轻内存全局控制守护进程、排他屏障、子进程监管与双工通知中心 | `ControlDaemon`、`SupervisedJob`、`get_process_rss_bytes()`、`is_pid_alive()`、`kill_process_tree()` |
+| `paperforge/services/control_daemon.py` | 轻内存全局控制守护进程（Python 后备实现）、排他屏障、子进程监管与双工通知中心 | `ControlDaemon`、`SupervisedJob`、`get_process_rss_bytes()`、`is_pid_alive()`、`kill_process_tree()` |
+| `crates/paperforge-daemon/src/main.rs` | 跨平台原生 Rust 极速控制与检索侧车（免本地 Rust/Python 开箱即用，`< 6 MB` RSS） | `NativeControlDaemon`、`try_handle_config_cli()`、`handle_base_snapshot()`、`try_handle_search_cli()`、`handle_zero_python_upgrade_plan()` |
+| `paperforge/plugin/src/services/native-daemon.ts` | 6 平台预编译侧车定位、SHA-256 校验自动拉取与可执行权限维护 | `nativeDaemonTargetTriple()`、`resolveNativeDaemonBinary()`、`ensureNativeDaemonDownloaded()` |
 | `paperforge/commands/upgrade.py` | `paperforge upgrade` CLI 编排入口 | `run()`（支持 `--plan`、`--apply`、`--fast-cutover`、`--heal`、`--priority-key`、`--rollback`、`--quarantine-ids`） |
 | `paperforge/commands/engine.py` | `paperforge engine` SQLite 注册表诊断与重建入口 | `run()`（`status` / `sync-registry` / `rebuild-db`） |
 | `paperforge/plugin/src/views/upgrade-modal.ts` | 冰山式非阻塞升级横幅、一键无感升级弹窗与存储维护抽屉 | `PaperForgeUpgradeModal`、`renderUpgradeAvailableBanner()`、`renderStorageMigrationMaintenanceSection()` |

@@ -48,6 +48,7 @@ import {
   resolveRuntimeCommand,
   type PointerInfo,
 } from "./services/managed-runtime";
+import { ensureNativeDaemonDownloaded } from "./services/native-daemon";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -679,6 +680,9 @@ export default class PaperForgePlugin extends Plugin {
 
     this._startConvergenceTimer();
     this._checkReleaseNotes();
+    void ensureNativeDaemonDownloaded(this.manifest.version).catch(
+      () => undefined
+    );
 
     // #142/C0: one-time plugin-assisted config migration — detect legacy
     // vaults and surface an explicit migrate command.

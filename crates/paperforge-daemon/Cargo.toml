@@ -1,0 +1,24 @@
+[package]
+name = "paperforge-daemon"
+version = "2.0.0"
+edition = "2021"
+description = "Cross-platform ultra-low-memory native control & SQLite FTS5 query sidecar for PaperForge"
+license = "MIT"
+
+[[bin]]
+name = "paperforge-daemon"
+path = "src/main.rs"
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+sha2 = "0.10"
+unicode-normalization = "0.1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

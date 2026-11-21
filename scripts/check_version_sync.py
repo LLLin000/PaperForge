@@ -133,6 +133,22 @@ def check_main_js(canonical: str) -> list[str]:
     return errors
 
 
+def check_rust_daemon(canonical: str) -> list[str]:
+    errors = []
+    cargo_path = REPO_ROOT / "crates" / "paperforge-daemon" / "Cargo.toml"
+    if not cargo_path.exists():
+        return errors
+    content = cargo_path.read_text(encoding="utf-8")
+    m = re.search(r'^version\s*=\s*"([^"]+)"', content, re.MULTILINE)
+    if not m:
+        errors.append("  crates/paperforge-daemon/Cargo.toml: missing package version")
+    elif m.group(1) != canonical:
+        errors.append(
+            f'  crates/paperforge-daemon/Cargo.toml: version = "{m.group(1)}" (expected "{canonical}")'
+        )
+    return errors
+
+
 def main() -> int:
     canonical = get_canonical_version()
     print(f"Canonical version: {canonical}")
@@ -144,6 +160,7 @@ def main() -> int:
         ("manifest.json", check_root_manifest(canonical)),
         ("paperforge/plugin/versions.json", check_versions_json(canonical)),
         ("pyproject.toml (dynamic version config)", check_pyproject_toml()),
+        ("crates/paperforge-daemon/Cargo.toml", check_rust_daemon(canonical)),
         ("paperforge/plugin/main.js (fallback strings)", check_main_js(canonical)),
     ]
 
