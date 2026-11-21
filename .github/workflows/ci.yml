@@ -155,6 +155,62 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------
+  # L1c — Rust Native Daemon (unit tests + compiled sidecar real-process E2E)
+  # ---------------------------------------------------------------------------
+  rust-daemon:
+    name: L1c — Rust Native Daemon (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: paperforge/plugin/package-lock.json
+      - name: Run Rust daemon unit tests
+        working-directory: crates/paperforge-daemon
+        run: cargo test
+      - name: Build release native daemon binary
+        working-directory: crates/paperforge-daemon
+        run: cargo build --release
+      - name: Smoke test native daemon binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="crates/paperforge-daemon/target/release/paperforge-daemon"
+          if [ -f "${BIN}.exe" ]; then BIN="${BIN}.exe"; fi
+          "$BIN" --version
+          RESP=$(printf '{"id":1,"op":"daemon.health"}\n{"id":2,"op":"shutdown"}\n' | "$BIN" --stdio --idle-timeout 15 | head -n 1)
+          echo "health: $RESP"
+          echo "$RESP" | grep -q '"backend":"rust-native"'
+          echo "$RESP" | grep -q '"exit_code":0'
+      - name: Install plugin dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+        working-directory: paperforge/plugin
+      - name: Point native daemon E2E tests at job Python
+        shell: bash
+        run: echo "PF_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+      - name: Run compiled Rust daemon E2E tests
+        working-directory: paperforge/plugin
+        run: npx vitest run tests/client/native-rust-daemon.test.ts --reporter=junit --outputFile="$RUNNER_TEMP/paperforge-rust-daemon.xml"
+      - name: Preserve first-failure Rust daemon evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-rust-daemon-${{ matrix.os }}
+          path: ${{ runner.temp }}/paperforge-rust-daemon.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
   # L3 — Plugin tests (Vitest)
   # ---------------------------------------------------------------------------
   plugin-tests:
@@ -660,6 +716,7 @@ jobs:
       - static
       - python-suite
       - j-matrix
+      - rust-daemon
       - cli-acceptance
       - cli-acceptance-heavy
       - plugin-tests

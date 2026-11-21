@@ -96,6 +96,21 @@ jobs:
         if: runner.os == 'macOS'
         run: codesign --force --sign - "crates/paperforge-daemon/target/${{ matrix.target }}/release/${{ matrix.bin }}"
 
+      - name: Smoke test native binary (--version + stdio daemon.health)
+        if: >-
+          matrix.target == 'x86_64-unknown-linux-musl' ||
+          matrix.target == 'aarch64-apple-darwin' ||
+          matrix.target == 'x86_64-pc-windows-msvc'
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="crates/paperforge-daemon/target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          "$BIN" --version
+          RESP=$(printf '{"id":1,"op":"daemon.health"}\n{"id":2,"op":"shutdown"}\n' | "$BIN" --stdio --idle-timeout 15 | head -n 1)
+          echo "health response: $RESP"
+          echo "$RESP" | grep -q '"backend":"rust-native"'
+          echo "$RESP" | grep -q '"exit_code":0'
+
       - name: Stage release binary
         shell: bash
         run: |

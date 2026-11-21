@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.0` | **章节数**：`15` | **分册指纹**：`sha256:6feb85672edb267f`
+> **版本**：`2.0.0` | **章节数**：`15` | **分册指纹**：`sha256:f600268186b9bd34`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 
@@ -4327,7 +4327,10 @@ sequenceDiagram
 
 - `PAPERFORGE_PARENT_PID`：由宿主（Obsidian `NodeProcessTransport`）注入父进程 PID；`ControlDaemon` 每 `1.5s` 探活，宿主崩溃时自动终止在途子进程并退出，杜绝僵尸进程。
 - `PAPERFORGE_DAEMON_PUSH`：设为 `"1"` 时开启 stdout 双工异步事件帧推送（`task.updated`、`notice.push`、`state.changed`），与带 `id` 的普通 RPC 响应帧无锁冲突共存。
-- 控制面内置 RPC 操作码：`daemon.health`、`daemon.trim`、`engine.status`、`engine.resolve_key`、`engine.invalidate`、`job.submit`（含原生 `runtime.*` 与 Python 派发队列）、`job.list`、`job.cancel`、`notice.list`、`notice.ack`、`notice.push`。
+- 控制面内置 RPC 操作码：`daemon.health`、`daemon.trim`、`engine.status`、`engine.resolve_key`、`engine.invalidate`、`job.submit`（含原生 `runtime.*` 与 Python 派发队列）、`job.stream`（将交互式流式长任务统一纳入 Rust 监管，通过 `stream.chunk` / `stream.end` 回传 NDJSON 帧并复用 `task.updated` / `job.list` / `job.cancel` 统一状态机）、`job.list`、`job.cancel`、`notice.list`、`notice.ack`、`notice.push`。
+- 严格任务状态机与端到端可溯源性：`crates/paperforge-daemon/src/supervisor.rs` 采用强类型 `JobStatus` 枚举与集中式 `JobRecord::transition()` 校验，禁止终态任务逆转；所有作业、通知、流式帧与 Python 委派均携带全局唯一 `trace_id`、`scope_key` 与 `duration_ms`，并发去重粒度细化至 `(vault, kind, scope_key)`。
+- 零孤儿进程生命周期保障与非阻塞委派：`crates/paperforge-daemon/src/platform.rs` 为全部子进程绑定 Windows Job Object（`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`）与 Linux `prctl(PR_SET_PDEATHSIG, SIGTERM)`，即便守护进程被强制终止，系统内核仍会立即回收所有在途 Python Worker；`main.rs` 采用非阻塞并发线程派发 Python RPC，避免慢任务阻塞 `daemon.health` / `job.cancel` / `base-snapshot`。
+- Base Snapshot SQLite SSOT 权威切换：`crates/paperforge-daemon/src/query_ops.rs` 的 `handle_base_snapshot()` 以 `paperforge.db`（`papers`、`workspace_registry`、`ocr_catalog`、`paper_annotations`、`paper_memory_cards`）为权威真相源并输出 `state_authority: "sqlite" | "legacy_json_fallback"`，`formal-library.json` 仅作展示补充或空库兼容回退。
 - 原生零脚本部署（ADR-019）：`paperforge-daemon` 内置纯 Rust `install-runtime` 子命令与 `runtime.*` 控制面作业，直接在后台完成 `uv` SHA-256 校验、解压、`Python 3.12` 与 `paperforge[vector]` 安装并推送 `installer.log` / `task.updated` 进度，彻底消除跨平台临时 `.ps1`/`.cmd`/`.sh` 脚本依赖。
 
 ---

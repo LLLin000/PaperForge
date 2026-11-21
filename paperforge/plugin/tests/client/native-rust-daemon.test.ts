@@ -12,17 +12,114 @@
  *    - `getBaseTableSnapshot()` & duplex `notice.push` events!
  */
 
+import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { describe, expect, it, vi } from "vitest";
 
-const runtimeMock = vi.hoisted(() => ({ hasPython: false }));
-vi.mock("../../src/services/managed-runtime", () => ({
-  readRuntimePointer: () => null,
-  resolveRuntimeCommand: () =>
-    runtimeMock.hasPython ? { command: "python", args: [] } : null,
+const runtimeMock = vi.hoisted(() => ({
+  pythonPath: null as string | null,
 }));
+vi.mock("../../src/services/managed-runtime", () => ({
+  readRuntimePointer: () =>
+    runtimeMock.pythonPath
+      ? {
+          schemaVersion: 1,
+          pythonPath: runtimeMock.pythonPath,
+          paperforgeVersion: "2.0.0",
+        }
+      : null,
+  resolveRuntimeCommand: () =>
+    runtimeMock.pythonPath
+      ? { command: runtimeMock.pythonPath, args: [] }
+      : null,
+}));
+
+function detectHostPython(): string | null {
+  const candidates = [
+    process.env.PF_PYTHON,
+    process.platform === "win32" ? "python" : "python3",
+    "python",
+  ].filter((x): x is string => Boolean(x && x.trim()));
+  for (const cand of candidates) {
+    try {
+      const exe = execFileSync(
+        cand,
+        ["-c", "import sys; print(sys.executable)"],
+        { encoding: "utf-8", timeout: 5000 }
+      ).trim();
+      if (exe && fs.existsSync(exe)) return exe;
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
+}
+
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err: unknown) {
+    const code = (err as { code?: string } | null)?.code;
+    return code === "EPERM";
+  }
+}
+
+function rmTempSafe(dir: string): void {
+  try {
+    fs.rmSync(dir, {
+      recursive: true,
+      force: true,
+      maxRetries: 12,
+      retryDelay: 100,
+    });
+  } catch {
+    // Best-effort temp cleanup on Windows when antivirus/kernel delays cwd release.
+  }
+}
+
+function writeMockWorkerPackage(vaultDir: string): void {
+  const pkgDir = path.join(vaultDir, "paperforge");
+  fs.mkdirSync(pkgDir, { recursive: true });
+  fs.writeFileSync(path.join(pkgDir, "__init__.py"), "", "utf-8");
+  fs.writeFileSync(
+    path.join(pkgDir, "__main__.py"),
+    [
+      "import json, os, sys, time",
+      "args = sys.argv[1:]",
+      "vault = ''",
+      "if '--vault' in args:",
+      "    idx = args.index('--vault')",
+      "    if idx + 1 < len(args):",
+      "        vault = args[idx + 1]",
+      "if 'slow-rpc' in args:",
+      "    time.sleep(1.2)",
+      "    print(json.dumps({'ok': True, 'mode': 'slow-rpc'}), flush=True)",
+      "    sys.exit(0)",
+      "if 'stream-cancel-test' in args:",
+      "    print(json.dumps({'schema_version': 1, 'event': 'start', 'operation': 'ocr', 'total': 5}), flush=True)",
+      "    print(json.dumps({'schema_version': 1, 'event': 'progress', 'operation': 'ocr', 'current': 1, 'total': 5, 'item_id': 'P001'}), flush=True)",
+      "    line = sys.stdin.readline()",
+      "    if 'PAPERFORGE_STOP' in line:",
+      "        print(json.dumps({'schema_version': 1, 'event': 'cancelled', 'operation': 'ocr', 'current': 1, 'total': 5}), flush=True)",
+      "        sys.exit(130)",
+      "    print(json.dumps({'schema_version': 1, 'event': 'result', 'operation': 'ocr', 'result': {'ok': True}}), flush=True)",
+      "    sys.exit(0)",
+      "if 'orphan-sleep-test' in args:",
+      "    if vault:",
+      "        with open(os.path.join(vault, '.worker.pid'), 'w', encoding='utf-8') as f:",
+      "            f.write(str(os.getpid()))",
+      "    print(json.dumps({'schema_version': 1, 'event': 'start', 'operation': 'ocr', 'total': 1}), flush=True)",
+      "    print(json.dumps({'schema_version': 1, 'event': 'progress', 'operation': 'ocr', 'current': 1, 'total': 1, 'item_id': 'ORPHAN1'}), flush=True)",
+      "    time.sleep(30)",
+      "    sys.exit(0)",
+      "print(json.dumps({'ok': True, 'argv': args}), flush=True)",
+    ].join("\n"),
+    "utf-8"
+  );
+}
 
 import {
   ensureNativeDaemonDownloaded,
@@ -154,6 +251,7 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
           "utf-8"
         );
         const snap = await client.getBaseTableSnapshot();
+        expect(snap.state_authority).toBe("legacy_json_fallback");
         expect(snap.rows["NATV0001"]?.title).toBe(
           "Zero-Python Instant Boot Paper"
         );
@@ -178,7 +276,238 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       } finally {
         unsub();
         transport.shutdownDaemon();
-        fs.rmSync(tmpVault, { recursive: true, force: true });
+        rmTempSafe(tmpVault);
+      }
+    }
+  );
+
+  const HOST_PYTHON = detectHostPython();
+
+  it.skipIf(!fs.existsSync(LOCAL_RUST_BIN) || !HOST_PYTHON)(
+    "supervises NodeProcessTransport.stream() via Rust job.stream with unified job.list visibility and cooperative cancel",
+    async () => {
+      const tmpVault = fs.mkdtempSync(
+        path.join(os.tmpdir(), "pf-native-stream-e2e-")
+      );
+      writeMockWorkerPackage(tmpVault);
+      runtimeMock.pythonPath = HOST_PYTHON;
+
+      const transport = new NodeProcessTransport({
+        vaultPath: tmpVault,
+        useDaemon: true,
+        nativeDaemonPath: LOCAL_RUST_BIN,
+      });
+      const client = new PaperForgeClient({ transport });
+      const taskEvents: Array<Record<string, unknown>> = [];
+      const unsub = client.onDaemonEvent((ev) => {
+        if (ev.event === "task.updated" && ev.data) {
+          taskEvents.push(ev.data);
+        }
+      });
+
+      try {
+        const seenEvents: string[] = [];
+        const handle = transport.stream(["ocr", "stream-cancel-test"], {
+          graceMs: 3000,
+          onEvent: (ev) => seenEvents.push(ev.event),
+        });
+
+        // Wait until worker emits progress through Rust stream.chunk
+        await vi.waitFor(() => expect(seenEvents).toContain("progress"), {
+          timeout: 10000,
+        });
+
+        // Rust daemon job.list MUST see this interactive stream job!
+        const jobsDuring = await client.daemonListJobs(true);
+        expect(jobsDuring.active.length).toBe(1);
+        const activeJob = jobsDuring.active[0];
+        expect(activeJob.source).toBe("stream");
+        expect(activeJob.kind).toBe("ocr");
+        expect(activeJob.status).toBe("running");
+        expect(activeJob.trace_id).toMatch(/^tr_/);
+        expect(activeJob.current).toBe(1);
+        expect(activeJob.item_id).toBe("P001");
+
+        // Cooperative cancel via handle.stop() -> Rust job.cancel -> PAPERFORGE_STOP
+        handle.stop();
+        const outcome = await handle.outcome;
+        expect(outcome.cancelled).toBe(true);
+        expect(outcome.jobId).toBe(activeJob.job_id);
+        expect(outcome.traceId).toBe(activeJob.trace_id);
+
+        // Terminal job transitions out of active into recent_jobs
+        await vi.waitFor(async () => {
+          const jobsAfter = await client.daemonListJobs(true);
+          expect(jobsAfter.active.length).toBe(0);
+          const rec = jobsAfter.recent.find(
+            (j) => j.job_id === activeJob.job_id
+          );
+          expect(rec?.status).toBe("cancelled");
+        });
+        expect(
+          taskEvents.some(
+            (e) => e.job_id === activeJob.job_id && e.status === "cancelled"
+          )
+        ).toBe(true);
+      } finally {
+        unsub();
+        runtimeMock.pythonPath = null;
+        transport.shutdownDaemon();
+        rmTempSafe(tmpVault);
+      }
+    }
+  );
+
+  it.skipIf(!fs.existsSync(LOCAL_RUST_BIN) || !HOST_PYTHON)(
+    "keeps Rust daemon RPC non-blocking while a slow Python worker is executing",
+    async () => {
+      const tmpVault = fs.mkdtempSync(
+        path.join(os.tmpdir(), "pf-native-concurrent-e2e-")
+      );
+      writeMockWorkerPackage(tmpVault);
+      runtimeMock.pythonPath = HOST_PYTHON;
+
+      const transport = new NodeProcessTransport({
+        vaultPath: tmpVault,
+        useDaemon: true,
+        nativeDaemonPath: LOCAL_RUST_BIN,
+      });
+      const client = new PaperForgeClient({ transport });
+
+      try {
+        // Warm daemon first
+        const warm = await client.daemonHealth();
+        expect(warm?.ok).toBe(true);
+
+        // Kick off a slow 1.2s delegated Python command
+        const slowPromise = transport.execute(["slow-rpc"], {
+          timeoutMs: 15000,
+        });
+        await new Promise((r) => setTimeout(r, 120));
+
+        // Concurrent daemon.health MUST return immediately (< 500ms) while Python is busy
+        const t0 = Date.now();
+        const health = await client.daemonHealth();
+        const elapsedMs = Date.now() - t0;
+        expect(health?.ok).toBe(true);
+        expect(elapsedMs).toBeLessThan(600);
+
+        const slowOut = await slowPromise;
+        expect(JSON.parse(slowOut).mode).toBe("slow-rpc");
+      } finally {
+        runtimeMock.pythonPath = null;
+        transport.shutdownDaemon();
+        rmTempSafe(tmpVault);
+      }
+    }
+  );
+
+  it.skipIf(!fs.existsSync(LOCAL_RUST_BIN) || !HOST_PYTHON)(
+    "reaps child Python worker immediately when Rust daemon is hard-killed (zero orphans)",
+    async () => {
+      const tmpVault = fs.mkdtempSync(
+        path.join(os.tmpdir(), "pf-native-orphan-e2e-")
+      );
+      writeMockWorkerPackage(tmpVault);
+      runtimeMock.pythonPath = HOST_PYTHON;
+
+      const transport = new NodeProcessTransport({
+        vaultPath: tmpVault,
+        useDaemon: true,
+        nativeDaemonPath: LOCAL_RUST_BIN,
+      });
+      const pidFile = path.join(tmpVault, ".worker.pid");
+
+      try {
+        const handle = transport.stream(["ocr", "orphan-sleep-test"]);
+        await vi.waitFor(() => expect(fs.existsSync(pidFile)).toBe(true), {
+          timeout: 10000,
+        });
+        const workerPid = Number(fs.readFileSync(pidFile, "utf-8").trim());
+        expect(workerPid).toBeGreaterThan(0);
+        expect(isPidAlive(workerPid)).toBe(true);
+
+        // Force-kill the Rust daemon process WITHOUT graceful shutdown RPC.
+        // Windows Job Object (KILL_ON_JOB_CLOSE) / Linux PR_SET_PDEATHSIG must kill the worker.
+        transport.shutdownDaemon(true);
+        await handle.outcome;
+
+        await vi.waitFor(() => expect(isPidAlive(workerPid)).toBe(false), {
+          timeout: 5000,
+        });
+      } finally {
+        runtimeMock.pythonPath = null;
+        transport.shutdownDaemon(true);
+        rmTempSafe(tmpVault);
+      }
+    }
+  );
+
+  it.skipIf(!fs.existsSync(LOCAL_RUST_BIN) || !HOST_PYTHON)(
+    "serves Base Snapshot with SQLite SSOT authority over stale formal-library.json",
+    async () => {
+      const tmpVault = fs.mkdtempSync(
+        path.join(os.tmpdir(), "pf-native-ssot-e2e-")
+      );
+      runtimeMock.pythonPath = null;
+
+      try {
+        const idxDir = path.join(tmpVault, ".paperforge", "indexes");
+        fs.mkdirSync(idxDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(idxDir, "formal-library.json"),
+          JSON.stringify({
+            version: 1,
+            items: [
+              {
+                zotero_key: "SSOT0001",
+                title: "Stale JSON Title",
+                ocr_status: "pending",
+                domain: "OldDomain",
+              },
+            ],
+          }),
+          "utf-8"
+        );
+        const dbPath = path.join(idxDir, "paperforge.db");
+        execFileSync(
+          HOST_PYTHON!,
+          [
+            "-c",
+            [
+              "import sqlite3, sys",
+              "conn = sqlite3.connect(sys.argv[1])",
+              "conn.execute('CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, first_author TEXT, year TEXT, journal TEXT, domain TEXT, ocr_status TEXT, deep_reading_status TEXT, impact_factor REAL, journal_partition TEXT)')",
+              "conn.execute('CREATE TABLE workspace_registry (zotero_key TEXT PRIMARY KEY, main_note_relpath TEXT, domain TEXT, title TEXT)')",
+              "conn.execute(\"INSERT INTO papers VALUES ('SSOT0001','Authoritative SQLite Title','Lin','2026','Nature','Ortho','done','finished',50.5,'Q1')\")",
+              "conn.execute(\"INSERT INTO workspace_registry VALUES ('SSOT0001','Literature/SSOT.md','Ortho','Authoritative SQLite Title')\")",
+              "conn.commit(); conn.close()",
+            ].join("; "),
+            dbPath,
+          ],
+          { encoding: "utf-8", timeout: 10000 }
+        );
+
+        const transport = new NodeProcessTransport({
+          vaultPath: tmpVault,
+          useDaemon: true,
+          nativeDaemonPath: LOCAL_RUST_BIN,
+        });
+        const client = new PaperForgeClient({ transport });
+        try {
+          const snap = await client.getBaseTableSnapshot();
+          expect(snap.state_authority).toBe("sqlite");
+          expect(snap.rows["SSOT0001"]?.title).toBe(
+            "Authoritative SQLite Title"
+          );
+          expect(snap.rows["SSOT0001"]?.ocr_status).toBe("done");
+          expect(snap.rows["SSOT0001"]?.deep_reading_status).toBe("finished");
+          expect(snap.rows["SSOT0001"]?.journal_partition).toBe("Q1");
+        } finally {
+          transport.shutdownDaemon();
+        }
+      } finally {
+        rmTempSafe(tmpVault);
       }
     }
   );

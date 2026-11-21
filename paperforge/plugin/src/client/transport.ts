@@ -28,6 +28,10 @@ export interface LongTaskOutcome {
   /** Bounded tail of the child's stderr. Always drained: an unread stderr
    * pipe deadlocks a chatty child (win32 pipes are small). */
   stderr?: string;
+  /** Unified Rust daemon job identifier when executed via `job.stream`. */
+  jobId?: string;
+  /** End-to-end correlation identifier for daemon jobs, notices, and logs. */
+  traceId?: string;
 }
 
 /** Last completed (or failed) streamed operation, for failure diagnostics. */

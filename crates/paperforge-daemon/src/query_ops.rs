@@ -63,12 +63,44 @@ fn table_exists(conn: &Connection, name: &str) -> bool {
     .is_ok()
 }
 
+#[derive(Default)]
+struct DbPaperRow {
+    title: String,
+    first_author: String,
+    year: String,
+    journal: String,
+    domain: String,
+    ocr_status: String,
+    deep_reading_status: String,
+    main_note_path: String,
+    impact_factor: String,
+    journal_partition: String,
+}
+
+fn table_columns(conn: &Connection, table: &str) -> Vec<String> {
+    let sql = format!("PRAGMA table_info({table})");
+    conn.prepare(&sql)
+        .and_then(|mut st| {
+            let rows = st.query_map([], |r| r.get::<_, String>(1))?;
+            Ok(rows.flatten().collect())
+        })
+        .unwrap_or_default()
+}
+
 /// Native `< 2ms` implementation of `paperforge memory-card base-snapshot --json`.
+///
+/// Authority contract (SQLite SSOT):
+/// - When `paperforge.db` contains `papers` / `workspace_registry` rows, SQLite is
+///   authoritative for `ocr_status`, `deep_reading_status`, `title`, `first_author`,
+///   `year`, `journal`, `domain`, `main_note_path`, annotation counts, and memory facets.
+/// - `formal-library.json` is strictly a secondary supplement for display-only extras
+///   not yet materialized into SQLite (`impact_factor`, `impact_factor_source`,
+///   `collections`, `has_pdf`, `do_ocr`, `analyze`) or legacy fallback when SQLite is empty.
 pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let engine = resolve_engine_dir(vault);
     let (seq, updated_at) = read_state_seq(vault);
     let index_path = engine.join("indexes").join("formal-library.json");
-    let items: Vec<Value> = if let Ok(raw) = fs::read_to_string(&index_path) {
+    let json_items: Vec<Value> = if let Ok(raw) = fs::read_to_string(&index_path) {
         match serde_json::from_str::<Value>(&raw) {
             Ok(Value::Object(m)) => m
                 .get("items")
@@ -82,40 +114,144 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
         Vec::new()
     };
 
-    let mut db_papers: HashMap<String, (String, String)> = HashMap::new();
+    let mut json_by_key: HashMap<String, Map<String, Value>> = HashMap::new();
+    let mut json_order: Vec<String> = Vec::new();
+    for item in json_items {
+        let Some(obj) = item.as_object() else { continue };
+        let key = obj
+            .get("zotero_key")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if key.is_empty() {
+            continue;
+        }
+        if !json_by_key.contains_key(&key) {
+            json_order.push(key.clone());
+        }
+        json_by_key.insert(key, obj.clone());
+    }
+
+    let mut db_papers: HashMap<String, DbPaperRow> = HashMap::new();
+    let mut db_order: Vec<String> = Vec::new();
+    let mut ocr_cat_ok: HashMap<String, bool> = HashMap::new();
     let mut ann_counts: HashMap<String, (i64, i64)> = HashMap::new();
     let mut mem_counts: HashMap<String, (i64, String)> = HashMap::new();
 
     let db_path = engine.join("indexes").join("paperforge.db");
     if let Some(conn) = open_readonly_db(&db_path) {
         if table_exists(&conn, "papers") {
-            if let Ok(mut st) =
-                conn.prepare("SELECT zotero_key, COALESCE(ocr_status,''), COALESCE(deep_reading_status,'') FROM papers")
-            {
+            let cols = table_columns(&conn, "papers");
+            let has = |c: &str| cols.iter().any(|x| x == c);
+            let sel = |c: &str| -> String {
+                if has(c) {
+                    format!("COALESCE(CAST({c} AS TEXT), '')")
+                } else {
+                    "''".to_string()
+                }
+            };
+            let sql = format!(
+                "SELECT zotero_key, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM papers",
+                sel("title"),
+                sel("first_author"),
+                sel("year"),
+                sel("journal"),
+                sel("domain"),
+                sel("ocr_status"),
+                sel("deep_reading_status"),
+                sel("main_note_path"),
+                sel("impact_factor"),
+                sel("journal_partition"),
+            );
+            if let Ok(mut st) = conn.prepare(&sql) {
                 if let Ok(rows) = st.query_map([], |r| {
                     Ok((
                         r.get::<_, String>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, String>(2)?,
+                        DbPaperRow {
+                            title: r.get::<_, String>(1).unwrap_or_default(),
+                            first_author: r.get::<_, String>(2).unwrap_or_default(),
+                            year: r.get::<_, String>(3).unwrap_or_default(),
+                            journal: r.get::<_, String>(4).unwrap_or_default(),
+                            domain: r.get::<_, String>(5).unwrap_or_default(),
+                            ocr_status: r.get::<_, String>(6).unwrap_or_default(),
+                            deep_reading_status: r.get::<_, String>(7).unwrap_or_default(),
+                            main_note_path: r.get::<_, String>(8).unwrap_or_default(),
+                            impact_factor: r.get::<_, String>(9).unwrap_or_default(),
+                            journal_partition: r.get::<_, String>(10).unwrap_or_default(),
+                        },
                     ))
                 }) {
-                    for r in rows.flatten() {
-                        db_papers.insert(r.0, (r.1, r.2));
+                    for (k, row) in rows.flatten() {
+                        let tk = k.trim().to_string();
+                        if tk.is_empty() {
+                            continue;
+                        }
+                        if !db_papers.contains_key(&tk) {
+                            db_order.push(tk.clone());
+                        }
+                        db_papers.insert(tk, row);
+                    }
+                }
+            }
+        }
+        if table_exists(&conn, "workspace_registry") {
+            let cols = table_columns(&conn, "workspace_registry");
+            let has_note = cols.iter().any(|x| x == "main_note_relpath");
+            let has_dom = cols.iter().any(|x| x == "domain");
+            let has_title = cols.iter().any(|x| x == "title");
+            let sql = format!(
+                "SELECT zotero_key, {}, {}, {} FROM workspace_registry",
+                if has_note { "COALESCE(main_note_relpath,'')" } else { "''" },
+                if has_dom { "COALESCE(domain,'')" } else { "''" },
+                if has_title { "COALESCE(title,'')" } else { "''" },
+            );
+            if let Ok(mut st) = conn.prepare(&sql) {
+                if let Ok(rows) = st.query_map([], |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, String>(1).unwrap_or_default(),
+                        r.get::<_, String>(2).unwrap_or_default(),
+                        r.get::<_, String>(3).unwrap_or_default(),
+                    ))
+                }) {
+                    for (k, note_rel, dom, title) in rows.flatten() {
+                        let tk = k.trim().to_string();
+                        if tk.is_empty() {
+                            continue;
+                        }
+                        let entry = db_papers.entry(tk.clone()).or_insert_with(|| {
+                            db_order.push(tk.clone());
+                            DbPaperRow::default()
+                        });
+                        if entry.main_note_path.is_empty() && !note_rel.is_empty() {
+                            entry.main_note_path = note_rel;
+                        }
+                        if entry.domain.is_empty() && !dom.is_empty() {
+                            entry.domain = dom;
+                        }
+                        if entry.title.is_empty() && !title.is_empty() {
+                            entry.title = title;
+                        }
+                    }
+                }
+            }
+        }
+        if table_exists(&conn, "ocr_catalog") {
+            if let Ok(mut st) = conn.prepare("SELECT zotero_key, COALESCE(tier0_result_ok, 0) FROM ocr_catalog") {
+                if let Ok(rows) = st.query_map([], |r| {
+                    Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1).unwrap_or(0) != 0))
+                }) {
+                    for (k, ok) in rows.flatten() {
+                        ocr_cat_ok.insert(k, ok);
                     }
                 }
             }
         }
         if table_exists(&conn, "paper_annotations") {
-            let has_author = conn
-                .prepare("PRAGMA table_info(paper_annotations)")
-                .and_then(|mut st| {
-                    let names: Vec<String> = st
-                        .query_map([], |r| r.get::<_, String>(1))?
-                        .flatten()
-                        .collect();
-                    Ok(names.iter().any(|c| c == "author"))
-                })
-                .unwrap_or(false);
+            let has_author = table_columns(&conn, "paper_annotations")
+                .iter()
+                .any(|c| c == "author");
             let sql = if has_author {
                 "SELECT paper_id, \
                  SUM(CASE WHEN COALESCE(author, 'user') = 'agent' THEN 0 ELSE 1 END), \
@@ -157,35 +293,65 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
         }
     }
 
-    let mut out_rows = Map::new();
-    for item in items {
-        let Some(obj) = item.as_object() else { continue };
-        let key = obj
-            .get("zotero_key")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .trim()
-            .to_string();
-        if key.is_empty() {
-            continue;
+    let sqlite_authoritative = !db_papers.is_empty();
+    let mut keys: Vec<String> = Vec::new();
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    // SQLite keys first (authoritative), then any supplemental JSON-only keys
+    for k in db_order.into_iter().chain(json_order.into_iter()) {
+        if seen.insert(k.clone()) {
+            keys.push(k);
         }
+    }
+
+    let mut out_rows = Map::new();
+    for key in keys {
         let db_p = db_papers.get(&key);
-        let ocr_status = obj
-            .get("ocr_status")
-            .and_then(|v| v.as_str())
+        let obj = json_by_key.get(&key);
+
+        let json_str = |field: &str| -> String {
+            match obj.and_then(|m| m.get(field)) {
+                Some(Value::String(s)) => s.clone(),
+                Some(Value::Number(n)) => n.to_string(),
+                _ => String::new(),
+            }
+        };
+        let pick_db_first = |db_val: Option<&str>, json_field: &str, fallback: &str| -> String {
+            if let Some(s) = db_val.filter(|v| !v.is_empty()) {
+                return s.to_string();
+            }
+            let jv = json_str(json_field);
+            if !jv.is_empty() {
+                return jv;
+            }
+            fallback.to_string()
+        };
+
+        // SQLite is authoritative for ocr_status & deep_reading_status when present.
+        let ocr_status = db_p
+            .map(|p| p.ocr_status.as_str())
             .filter(|s| !s.is_empty())
             .map(String::from)
-            .or_else(|| db_p.map(|p| p.0.clone()).filter(|s| !s.is_empty()))
+            .or_else(|| {
+                if ocr_cat_ok.get(&key).copied() == Some(true) {
+                    Some("done".to_string())
+                } else {
+                    None
+                }
+            })
+            .or_else(|| {
+                let j = json_str("ocr_status");
+                if j.is_empty() { None } else { Some(j) }
+            })
             .unwrap_or_else(|| "pending".to_string());
-        let dr_status = obj
-            .get("deep_reading_status")
-            .and_then(|v| v.as_str())
-            .filter(|s| !s.is_empty())
-            .map(String::from)
-            .or_else(|| db_p.map(|p| p.1.clone()).filter(|s| !s.is_empty()))
-            .unwrap_or_else(|| "pending".to_string());
+
+        let dr_status = pick_db_first(
+            db_p.map(|p| p.deep_reading_status.as_str()),
+            "deep_reading_status",
+            "pending",
+        );
+
         let ocr_health = obj
-            .get("health")
+            .and_then(|m| m.get("health"))
             .and_then(|h| h.as_object())
             .and_then(|h| h.get("ocr_health"))
             .and_then(|v| v.as_str())
@@ -197,9 +363,9 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             .cloned()
             .unwrap_or_else(|| (0, String::new()));
 
-        // Workspace sidecar fallback when not yet materialized in SQLite
+        // Workspace sidecar fallback only when not yet materialized in SQLite
         if !db_papers.contains_key(&key) {
-            if let Some(pr) = obj.get("paper_root").and_then(|v| v.as_str()) {
+            if let Some(pr) = obj.and_then(|m| m.get("paper_root")).and_then(|v| v.as_str()) {
                 let ws_dir = vault.join(pr.trim_end_matches(['/', '\\']));
                 let mc_file = ws_dir.join("ai").join("memory-card.json");
                 if let Ok(raw_mc) = fs::read_to_string(mc_file) {
@@ -245,24 +411,21 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             }
         }
 
-        let str_or = |field: &str, def: &str| -> String {
-            match obj.get(field) {
-                Some(Value::String(s)) => s.clone(),
-                Some(Value::Number(n)) => n.to_string(),
-                _ => def.to_string(),
-            }
-        };
-        let main_note = obj
-            .get("main_note_path")
-            .or_else(|| obj.get("note_path"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
+        let main_note = db_p
+            .map(|p| p.main_note_path.as_str())
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .unwrap_or_else(|| {
+                obj.and_then(|m| m.get("main_note_path").or_else(|| m.get("note_path")))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string()
+            });
         let needs_diag = matches!(ocr_status.as_str(), "failed" | "done_incomplete" | "unknown")
             || (ocr_status == "done" && !ocr_health.is_empty() && ocr_health != "healthy");
 
         let collections: Vec<Value> = obj
-            .get("collections")
+            .and_then(|m| m.get("collections"))
             .and_then(|v| v.as_array())
             .cloned()
             .unwrap_or_default();
@@ -271,18 +434,18 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             key.clone(),
             json!({
                 "zotero_key": key,
-                "title": str_or("title", &key),
-                "first_author": str_or("first_author", ""),
-                "year": str_or("year", ""),
-                "journal": str_or("journal", ""),
-                "impact_factor": str_or("impact_factor", ""),
-                "impact_factor_source": str_or("impact_factor_source", ""),
-                "journal_partition": str_or("journal_partition", ""),
-                "domain": str_or("domain", ""),
+                "title": pick_db_first(db_p.map(|p| p.title.as_str()), "title", &key),
+                "first_author": pick_db_first(db_p.map(|p| p.first_author.as_str()), "first_author", ""),
+                "year": pick_db_first(db_p.map(|p| p.year.as_str()), "year", ""),
+                "journal": pick_db_first(db_p.map(|p| p.journal.as_str()), "journal", ""),
+                "impact_factor": pick_db_first(db_p.map(|p| p.impact_factor.as_str()), "impact_factor", ""),
+                "impact_factor_source": json_str("impact_factor_source"),
+                "journal_partition": pick_db_first(db_p.map(|p| p.journal_partition.as_str()), "journal_partition", ""),
+                "domain": pick_db_first(db_p.map(|p| p.domain.as_str()), "domain", ""),
                 "collections": collections,
-                "has_pdf": obj.get("has_pdf").and_then(|v| v.as_bool()).unwrap_or(false),
-                "do_ocr": obj.get("do_ocr").and_then(|v| v.as_bool()).unwrap_or(false),
-                "analyze": obj.get("analyze").and_then(|v| v.as_bool()).unwrap_or(false),
+                "has_pdf": obj.and_then(|m| m.get("has_pdf")).and_then(|v| v.as_bool()).unwrap_or(false),
+                "do_ocr": obj.and_then(|m| m.get("do_ocr")).and_then(|v| v.as_bool()).unwrap_or(false),
+                "analyze": obj.and_then(|m| m.get("analyze")).and_then(|v| v.as_bool()).unwrap_or(false),
                 "ocr_status": ocr_status,
                 "deep_reading_status": dr_status,
                 "main_note_path": main_note,
@@ -300,6 +463,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
         json!({
             "seq": seq,
             "updated_at": updated_at,
+            "state_authority": if sqlite_authoritative { "sqlite" } else { "legacy_json_fallback" },
             "rows": out_rows,
         }),
     );
