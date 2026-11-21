@@ -458,13 +458,24 @@ interface PendingDaemonRpc {
   timer: ReturnType<typeof setTimeout> | null;
 }
 
+interface ActiveDaemonStream {
+  streamId: string;
+  parser: NdjsonStreamParser;
+  events: NdjsonEvent[];
+  stopRequested: boolean;
+  onEvent: (ev: NdjsonEvent) => void;
+  resolve: (outcome: LongTaskOutcome) => void;
+}
+
 interface DaemonSession {
   key: string;
   child: ChildProcess;
   nextId: number;
+  nextStreamSeq: number;
   buffer: string;
   settledAny: boolean;
   pending: Map<number, PendingDaemonRpc>;
+  streams: Map<string, ActiveDaemonStream>;
 }
 
 export class NodeProcessTransport implements Transport {
@@ -824,9 +835,11 @@ export class NodeProcessTransport implements Transport {
       key,
       child,
       nextId: 1,
+      nextStreamSeq: 1,
       buffer: "",
       settledAny: false,
       pending: new Map(),
+      streams: new Map(),
     };
     this._daemon = session;
 
@@ -850,10 +863,78 @@ export class NodeProcessTransport implements Transport {
           exit_code?: unknown;
           stdout?: unknown;
           stderr?: unknown;
+          stream_id?: unknown;
+          job_id?: unknown;
+          trace_id?: unknown;
+          line?: unknown;
+          cancelled?: unknown;
         };
         try {
           msg = JSON.parse(line);
         } catch {
+          continue;
+        }
+        if (
+          msg.event === "stream.chunk" &&
+          typeof msg.stream_id === "string" &&
+          msg.id === undefined
+        ) {
+          const st = session.streams.get(msg.stream_id);
+          if (st) {
+            const rawChunk =
+              typeof msg.line === "string" ? `${msg.line}\n` : "";
+            for (const ev of st.parser.feed(rawChunk)) {
+              st.events.push(ev);
+              st.onEvent(ev);
+            }
+          }
+          continue;
+        }
+        if (
+          msg.event === "stream.end" &&
+          typeof msg.stream_id === "string" &&
+          msg.id === undefined
+        ) {
+          const st = session.streams.get(msg.stream_id);
+          if (st) {
+            session.streams.delete(msg.stream_id);
+            st.parser.finishEOF();
+            const exitCode =
+              typeof msg.exit_code === "number" ? msg.exit_code : null;
+            const cancelledFromDaemon = Boolean(msg.cancelled);
+            const stderr = typeof msg.stderr === "string" ? msg.stderr : "";
+            const death =
+              st.parser.protocolFailure === "EOF without terminal event" &&
+              typeof exitCode === "number"
+                ? `exit ${exitCode}`
+                : "";
+            const terminal = st.events.find((e) =>
+              TERMINAL_EVENTS.has(e.event)
+            );
+            st.resolve({
+              ok:
+                !st.parser.protocolFailure &&
+                exitCode === 0 &&
+                terminal?.event === "result" &&
+                terminal.result?.ok !== false,
+              exitCode,
+              cancelled:
+                cancelledFromDaemon ||
+                exitCode === 130 ||
+                terminal?.event === "cancelled" ||
+                (st.stopRequested && !st.parser.terminalSeen),
+              events: st.events,
+              protocolFailure: st.parser.protocolFailure
+                ? death
+                  ? `${st.parser.protocolFailure} (${death})`
+                  : st.parser.protocolFailure
+                : undefined,
+              stderr,
+              jobId: typeof msg.job_id === "string" ? msg.job_id : undefined,
+              traceId:
+                typeof msg.trace_id === "string" ? msg.trace_id : undefined,
+            });
+          }
           continue;
         }
         if (typeof msg.event === "string" && msg.id === undefined) {
@@ -919,6 +1000,18 @@ export class NodeProcessTransport implements Transport {
             daemonUnavailable: !session.settledAny,
           })
         );
+      }
+      for (const [sid, st] of session.streams.entries()) {
+        session.streams.delete(sid);
+        st.parser.finishEOF();
+        st.resolve({
+          ok: false,
+          exitCode: null,
+          cancelled: st.stopRequested && !st.parser.terminalSeen,
+          events: st.events,
+          protocolFailure: st.parser.protocolFailure ?? reason,
+          stderr: reason,
+        });
       }
     };
 
@@ -1003,7 +1096,7 @@ export class NodeProcessTransport implements Transport {
     });
   }
 
-  shutdownDaemon(): void {
+  shutdownDaemon(force = false): void {
     const active = this._daemon;
     this._daemon = null;
     if (!active) return;
@@ -1013,8 +1106,44 @@ export class NodeProcessTransport implements Transport {
       if (rpc.timer) clearTimeout(rpc.timer);
       rpc.reject(new Error("PaperForge daemon shut down"));
     }
+    for (const [sid, st] of active.streams.entries()) {
+      active.streams.delete(sid);
+      st.parser.finishEOF();
+      st.resolve({
+        ok: false,
+        exitCode: null,
+        cancelled: st.stopRequested && !st.parser.terminalSeen,
+        events: st.events,
+        protocolFailure:
+          st.parser.protocolFailure ?? "PaperForge daemon shut down",
+        stderr: "PaperForge daemon shut down",
+      });
+    }
     if (active.child.exitCode == null && active.child.signalCode == null) {
-      hardKill(active.child);
+      const canGraceful =
+        !force &&
+        this._spawnFn === spawn &&
+        Boolean(active.child.stdin && !active.child.stdin.destroyed);
+      if (canGraceful) {
+        try {
+          active.child.stdin?.write('{"id":0,"op":"shutdown"}\n');
+          active.child.stdin?.end();
+        } catch {
+          hardKill(active.child);
+          return;
+        }
+        const killer = setTimeout(() => {
+          if (
+            active.child.exitCode == null &&
+            active.child.signalCode == null
+          ) {
+            hardKill(active.child);
+          }
+        }, 600);
+        killer.unref?.();
+      } else {
+        hardKill(active.child);
+      }
     }
   }
 
@@ -1231,6 +1360,134 @@ export class NodeProcessTransport implements Transport {
     });
   }
 
+  private async _streamViaDaemon(
+    target: {
+      path: string;
+      args: string[];
+      nativeBin?: string | null;
+      pythonWorkerExe?: string | null;
+    },
+    argv: string[],
+    options: StreamOptions | undefined,
+    queue: AsyncEventQueue<NdjsonEvent>,
+    registerCancel: (cancelFn: () => void) => void
+  ): Promise<LongTaskOutcome> {
+    const session = this._ensureDaemonSession(target);
+    const streamId = `str_${process.pid}_${session.nextStreamSeq++}`;
+    const parser = new NdjsonStreamParser();
+    const events: NdjsonEvent[] = [];
+
+    let resolveOutcome!: (outcome: LongTaskOutcome) => void;
+    const outcomePromise = new Promise<LongTaskOutcome>((resolve) => {
+      resolveOutcome = resolve;
+    });
+
+    const entry: ActiveDaemonStream = {
+      streamId,
+      parser,
+      events,
+      stopRequested: false,
+      onEvent: (ev) => {
+        queue.push(ev);
+        options?.onEvent?.(ev);
+      },
+      resolve: resolveOutcome,
+    };
+    session.streams.set(streamId, entry);
+
+    const rpcId = session.nextId++;
+    const reqLine =
+      JSON.stringify({
+        id: rpcId,
+        op: "job.stream",
+        vault: this._vaultPath,
+        argv,
+        stream_id: streamId,
+        close_stdin: argv[0] === "setup",
+      }) + "\n";
+
+    let rawAck: string;
+    try {
+      rawAck = await new Promise<string>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          session.pending.delete(rpcId);
+          reject(new Error("PaperForge job.stream RPC timed out"));
+        }, 15000);
+        session.pending.set(rpcId, { resolve, reject, timer });
+        try {
+          session.child.stdin?.write(reqLine);
+          registerCancel(() => {
+            entry.stopRequested = true;
+            if (
+              session.child.exitCode == null &&
+              session.child.signalCode == null &&
+              session.child.stdin &&
+              !session.child.stdin.destroyed
+            ) {
+              const cancelId = session.nextId++;
+              try {
+                session.child.stdin.write(
+                  JSON.stringify({
+                    id: cancelId,
+                    op: "job.cancel",
+                    vault: this._vaultPath,
+                    stream_id: streamId,
+                    grace_ms: options?.graceMs ?? 4000,
+                    wait: false,
+                  }) + "\n"
+                );
+              } catch {
+                // Daemon already closed; failPending settles the stream.
+              }
+            }
+          });
+        } catch (err) {
+          session.pending.delete(rpcId);
+          clearTimeout(timer);
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      });
+    } catch (err) {
+      session.streams.delete(streamId);
+      throw err;
+    }
+
+    let ack: {
+      accepted?: boolean;
+      reason?: string;
+      error?: string;
+      job_id?: string;
+      trace_id?: string;
+    };
+    try {
+      ack = JSON.parse(rawAck);
+    } catch {
+      session.streams.delete(streamId);
+      return {
+        ok: false,
+        exitCode: -1,
+        cancelled: false,
+        events,
+        protocolFailure: `Malformed job.stream ack: ${rawAck.slice(0, 120)}`,
+      };
+    }
+
+    if (!ack.accepted) {
+      session.streams.delete(streamId);
+      return {
+        ok: false,
+        exitCode: -1,
+        cancelled: false,
+        events,
+        protocolFailure: ack.error || ack.reason || "job.stream rejected",
+        stderr: ack.error || ack.reason || "",
+        traceId: ack.trace_id,
+      };
+    }
+
+    return outcomePromise;
+  }
+
   stream(argv: string[], options?: StreamOptions): StreamHandle {
     const queue = new AsyncEventQueue<NdjsonEvent>();
     let stopped = false;
@@ -1238,8 +1495,77 @@ export class NodeProcessTransport implements Transport {
       stop: () => void;
       promise: Promise<LongTaskOutcome>;
     } | null = null;
+    let daemonStreamCancel: (() => void) | null = null;
 
     const outcomePromise = (async (): Promise<LongTaskOutcome> => {
+      const canUseNativeDaemon =
+        this._useDaemon &&
+        this._daemonSupported &&
+        !options?.pythonExe &&
+        !options?.env &&
+        Boolean(this._resolveNativeDaemon());
+
+      if (canUseNativeDaemon) {
+        const nativeBin = this._resolveNativeDaemon()!;
+        let workerExe: string | null = null;
+        const ptrCmd = resolveRuntimeCommand(readRuntimePointer());
+        if (ptrCmd && ptrCmd.args.length === 0) {
+          workerExe = ptrCmd.command;
+        } else {
+          try {
+            const py = await this.resolvePython();
+            if (py.args.length === 0) {
+              workerExe = py.path;
+            }
+          } catch {
+            workerExe = null;
+          }
+        }
+
+        if (stopped) {
+          queue.finish();
+          return { ok: false, exitCode: null, cancelled: true, events: [] };
+        }
+
+        if (workerExe) {
+          try {
+            const outcome = await this._streamViaDaemon(
+              {
+                path: nativeBin,
+                args: [],
+                nativeBin,
+                pythonWorkerExe: workerExe,
+              },
+              argv,
+              options,
+              queue,
+              (cancelFn) => {
+                daemonStreamCancel = cancelFn;
+                if (stopped) {
+                  cancelFn();
+                }
+              }
+            );
+            queue.finish();
+            return outcome;
+          } catch (err: unknown) {
+            const unavailable =
+              err !== null &&
+              typeof err === "object" &&
+              "daemonUnavailable" in err &&
+              Boolean(
+                (err as { daemonUnavailable?: unknown }).daemonUnavailable
+              );
+            if (!unavailable) {
+              const e = err instanceof Error ? err : new Error(String(err));
+              queue.fail(e);
+              throw e;
+            }
+            this._daemonSupported = false;
+          }
+        }
+      }
+
       let py: { path: string; args: string[] };
       try {
         py = options?.pythonExe
@@ -1292,6 +1618,9 @@ export class NodeProcessTransport implements Transport {
       events: queue,
       stop: () => {
         stopped = true;
+        if (daemonStreamCancel) {
+          daemonStreamCancel();
+        }
         if (longTaskHandle) {
           longTaskHandle.stop();
         }

@@ -3,13 +3,13 @@
 
 use crate::config_ops::{pf_err, strip_verbatim_prefix, PF_VERSION};
 use crate::platform::{
-    atomic_write_bytes, configure_worker_command, current_ppid, is_pid_alive, kill_process_tree,
-    now_unix_secs, process_rss_bytes,
+    atomic_write_bytes, attach_child_to_job, configure_worker_command, current_ppid, is_pid_alive,
+    kill_pid_tree, kill_process_tree, now_unix_secs, process_rss_bytes,
 };
 use crate::query_ops::{open_readonly_db, read_state_seq, resolve_engine_dir};
 use crate::runtime_ops::install_runtime_native;
 use serde_json::{json, Value};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
@@ -23,6 +23,106 @@ const MAX_CACHED_VAULTS: usize = 4;
 const MAX_WORKSPACES_PER_VAULT: usize = 2048;
 const MAX_NOTICES: usize = 100;
 const MAX_RECENT_JOBS: usize = 25;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum JobStatus {
+    Queued,
+    Running,
+    Cancelling,
+    Succeeded,
+    Failed,
+    Cancelled,
+}
+
+impl JobStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            JobStatus::Queued => "queued",
+            JobStatus::Running => "running",
+            JobStatus::Cancelling => "cancelling",
+            JobStatus::Succeeded => "succeeded",
+            JobStatus::Failed => "failed",
+            JobStatus::Cancelled => "cancelled",
+        }
+    }
+
+    pub fn is_terminal(&self) -> bool {
+        matches!(
+            self,
+            JobStatus::Succeeded | JobStatus::Failed | JobStatus::Cancelled
+        )
+    }
+}
+
+pub fn append_stderr_tail(buf: &mut String, line: &str, max_bytes: usize) {
+    buf.push_str(line);
+    buf.push('\n');
+    if buf.len() > max_bytes {
+        let mut drain_to = buf.len() - max_bytes;
+        while drain_to < buf.len() && !buf.is_char_boundary(drain_to) {
+            drain_to += 1;
+        }
+        buf.drain(..drain_to);
+    }
+}
+
+pub fn infer_kind_and_scope(
+    argv: &[String],
+    explicit_kind: Option<&str>,
+    priority_key: Option<&str>,
+) -> (String, String) {
+    let kind = if let Some(k) = explicit_kind.filter(|s| !s.trim().is_empty()) {
+        k.trim().to_string()
+    } else if argv.first().map(|s| s.as_str()) == Some("action")
+        && argv.get(1).map(|s| s.as_str()) == Some("run")
+    {
+        match argv.get(2).map(|s| s.as_str()).unwrap_or("") {
+            a if a.starts_with("ocr.") => "ocr".to_string(),
+            a if a.starts_with("memory.") => "embed".to_string(),
+            a if a.starts_with("library.") => "sync".to_string(),
+            other if !other.is_empty() => other.to_string(),
+            _ => "action".to_string(),
+        }
+    } else if argv.first().map(|s| s.as_str()) == Some("upgrade") {
+        "upgrade.heal".to_string()
+    } else {
+        argv.first()
+            .cloned()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "task".to_string())
+    };
+
+    if let Some(pk) = priority_key.filter(|s| !s.trim().is_empty()) {
+        return (kind, format!("key:{}", pk.trim()));
+    }
+    let mut keys: Vec<String> = Vec::new();
+    let mut i = 0;
+    while i < argv.len() {
+        let arg = argv[i].as_str();
+        if matches!(arg, "--keys" | "--key" | "--paper" | "--priority-key") {
+            if let Some(val) = argv.get(i + 1) {
+                keys.push(val.trim().to_string());
+                i += 1;
+            }
+        } else if let Some(rest) = arg
+            .strip_prefix("--keys=")
+            .or_else(|| arg.strip_prefix("--key="))
+            .or_else(|| arg.strip_prefix("--paper="))
+            .or_else(|| arg.strip_prefix("--priority-key="))
+        {
+            keys.push(rest.trim().to_string());
+        }
+        i += 1;
+    }
+    let scope_key = if !keys.is_empty() {
+        keys.sort();
+        keys.dedup();
+        format!("keys:{}", keys.join(","))
+    } else {
+        "vault".to_string()
+    };
+    (kind, scope_key)
+}
 
 #[derive(Clone)]
 pub struct VaultCacheEntry {
@@ -38,9 +138,13 @@ pub struct VaultCacheEntry {
 
 pub struct JobRecord {
     pub job_id: String,
+    pub trace_id: String,
     pub vault: String,
     pub kind: String,
-    pub status: String,
+    pub scope_key: String,
+    pub source: String,
+    pub stream_id: Option<String>,
+    pub status: JobStatus,
     pub current: i64,
     pub total: i64,
     pub phase: String,
@@ -56,12 +160,55 @@ pub struct JobRecord {
 }
 
 impl JobRecord {
+    /// Strict finite-state transition gate: terminal states are immutable.
+    pub fn transition(&mut self, next: JobStatus) -> Result<(), String> {
+        if self.status == next {
+            return Ok(());
+        }
+        let legal = match (self.status, next) {
+            (
+                JobStatus::Queued,
+                JobStatus::Running
+                | JobStatus::Cancelling
+                | JobStatus::Cancelled
+                | JobStatus::Failed,
+            ) => true,
+            (
+                JobStatus::Running,
+                JobStatus::Cancelling
+                | JobStatus::Succeeded
+                | JobStatus::Failed
+                | JobStatus::Cancelled,
+            ) => true,
+            (
+                JobStatus::Cancelling,
+                JobStatus::Cancelled | JobStatus::Succeeded | JobStatus::Failed,
+            ) => true,
+            _ => false,
+        };
+        if legal {
+            self.status = next;
+            Ok(())
+        } else {
+            Err(format!(
+                "illegal job state transition: {} -> {}",
+                self.status.as_str(),
+                next.as_str()
+            ))
+        }
+    }
+
     pub fn to_json(&self) -> Value {
+        let duration_ms = self.finished_at.map(|fin| ((fin - self.started_at).max(0.0) * 1000.0).round() as u64);
         json!({
             "job_id": self.job_id,
+            "trace_id": self.trace_id,
             "vault": self.vault,
             "kind": self.kind,
-            "status": self.status,
+            "scope_key": self.scope_key,
+            "source": self.source,
+            "stream_id": self.stream_id,
+            "status": self.status.as_str(),
             "current": self.current,
             "total": self.total,
             "phase": self.phase,
@@ -69,6 +216,7 @@ impl JobRecord {
             "priority_key": self.priority_key,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
+            "duration_ms": duration_ms,
             "exit_code": self.exit_code,
             "error": self.error,
             "pid": self.pid,
@@ -84,11 +232,13 @@ struct InnerState {
     initial_ppid: Option<u32>,
     event_seq: u64,
     job_counter: u64,
+    trace_counter: u64,
     notice_counter: u64,
     push_sink: Option<PushSink>,
     vault_lru: VecDeque<VaultCacheEntry>,
     notices: VecDeque<Value>,
     active_jobs: HashMap<String, Arc<Mutex<JobRecord>>>,
+    delegated_pids: HashSet<u32>,
     recent_jobs: VecDeque<Value>,
     exclusive_barriers: HashMap<String, String>,
     followup_heal_priority: HashMap<String, String>,
@@ -108,16 +258,27 @@ impl NativeControlDaemon {
                 initial_ppid: current_ppid(),
                 event_seq: 0,
                 job_counter: 0,
+                trace_counter: 0,
                 notice_counter: 0,
                 push_sink,
                 vault_lru: VecDeque::new(),
                 notices: VecDeque::new(),
                 active_jobs: HashMap::new(),
+                delegated_pids: HashSet::new(),
                 recent_jobs: VecDeque::new(),
                 exclusive_barriers: HashMap::new(),
                 followup_heal_priority: HashMap::new(),
             })),
         }
+    }
+
+    pub fn next_trace_id(&self, caller_trace: Option<&str>) -> String {
+        if let Some(t) = caller_trace.map(str::trim).filter(|s| !s.is_empty()) {
+            return t.to_string();
+        }
+        let mut g = self.inner.lock().unwrap();
+        g.trace_counter += 1;
+        format!("tr_{}_{}", std::process::id(), g.trace_counter)
     }
 
     pub fn norm_vault(vault: &Path) -> String {
@@ -287,18 +448,28 @@ impl NativeControlDaemon {
         json!({ "evicted_vaults": evicted, "gc_collected": 0 })
     }
 
-    pub fn push_notice(&self, level: &str, code: &str, title: &str, detail: &str, vault: Option<&Path>) -> Value {
+    pub fn push_notice_traced(
+        &self,
+        level: &str,
+        code: &str,
+        title: &str,
+        detail: &str,
+        vault: Option<&Path>,
+        trace_id: Option<&str>,
+    ) -> Value {
         let norm_v = vault.map(Self::norm_vault);
         let norm_lvl = match level {
             "info" | "success" | "warning" | "error" => level,
             _ => "info",
         };
+        let tid = self.next_trace_id(trace_id);
         let notice = {
             let mut g = self.inner.lock().unwrap();
             g.notice_counter += 1;
             let nid = format!("ntc_{}_{}", std::process::id(), g.notice_counter);
             let n = json!({
                 "notice_id": nid,
+                "trace_id": tid,
                 "level": norm_lvl,
                 "code": code,
                 "title": title,
@@ -412,11 +583,12 @@ impl NativeControlDaemon {
             version.trim().to_string()
         };
 
+        let trace_id = self.next_trace_id(None);
         let (job_id, job_arc) = {
             let mut g = self.inner.lock().unwrap();
             for active in g.active_jobs.values() {
                 let aj = active.lock().unwrap();
-                if aj.kind.starts_with("runtime.") && aj.status == "running" {
+                if aj.kind.starts_with("runtime.") && aj.status == JobStatus::Running {
                     return json!({
                         "accepted": true,
                         "coalesced": true,
@@ -426,11 +598,15 @@ impl NativeControlDaemon {
             }
             g.job_counter += 1;
             let jid = format!("job_{}_{}", std::process::id(), g.job_counter);
-            let rec = Arc::new(Mutex::new(JobRecord {
+            let mut rec_val = JobRecord {
                 job_id: jid.clone(),
+                trace_id: trace_id.clone(),
                 vault: vkey.clone(),
                 kind: kind.clone(),
-                status: "running".into(),
+                scope_key: "runtime".into(),
+                source: "runtime".into(),
+                stream_id: None,
+                status: JobStatus::Queued,
                 current: 0,
                 total: 5,
                 phase: "starting".into(),
@@ -443,7 +619,9 @@ impl NativeControlDaemon {
                 stderr_tail: String::new(),
                 pid: Some(std::process::id()),
                 child: None,
-            }));
+            };
+            let _ = rec_val.transition(JobStatus::Running);
+            let rec = Arc::new(Mutex::new(rec_val));
             g.active_jobs.insert(jid.clone(), rec.clone());
             (jid, rec)
         };
@@ -453,6 +631,7 @@ impl NativeControlDaemon {
 
         let daemon_clone = self.clone();
         let job_worker = job_arc.clone();
+        let tid_worker = trace_id.clone();
         thread::spawn(move || {
             let v_opt = if vkey == "global" { None } else { Some(vkey.as_str()) };
             let res = install_runtime_native(&act, &ver, |phase, cur, tot| {
@@ -471,13 +650,13 @@ impl NativeControlDaemon {
                 j.finished_at = Some(now_unix_secs());
                 match res {
                     Ok(_) => {
-                        j.status = "succeeded".into();
+                        let _ = j.transition(JobStatus::Succeeded);
                         j.current = 5;
                         j.exit_code = Some(0);
                         (true, String::new(), j.to_json())
                     }
                     Err(e) => {
-                        j.status = "failed".into();
+                        let _ = j.transition(JobStatus::Failed);
                         j.exit_code = Some(1);
                         j.error = e.clone();
                         (false, e, j.to_json())
@@ -496,25 +675,27 @@ impl NativeControlDaemon {
 
             daemon_clone.emit_push("task.updated", v_opt, final_snap);
             if ok {
-                daemon_clone.push_notice(
+                daemon_clone.push_notice_traced(
                     "success",
                     "runtime.install.done",
                     "Python 计算引擎已就绪",
                     "后台同步与 OCR 全文解析环境已准备完成。",
                     vault_path_opt(&vkey),
+                    Some(&tid_worker),
                 );
             } else {
-                daemon_clone.push_notice(
+                daemon_clone.push_notice_traced(
                     "warning",
                     "runtime.install.failed",
                     "运行环境准备未完成",
                     &err_msg,
                     vault_path_opt(&vkey),
+                    Some(&tid_worker),
                 );
             }
         });
 
-        json!({ "accepted": true, "coalesced": false, "job": snap })
+        json!({ "accepted": true, "coalesced": false, "trace_id": trace_id, "job": snap })
     }
 
     pub fn submit_job(
@@ -541,6 +722,8 @@ impl NativeControlDaemon {
                 Err(e) => return json!({ "accepted": false, "reason": "invalid_kind", "error": e }),
             },
         };
+        let (_, scope_key) = infer_kind_and_scope(&resolved_argv, Some(kind), priority_key.as_deref());
+        let trace_id = self.next_trace_id(None);
 
         let (job_id, job_arc) = {
             let mut g = self.inner.lock().unwrap();
@@ -554,7 +737,11 @@ impl NativeControlDaemon {
             let mut coalesced: Option<(Value, Option<String>)> = None;
             for active in g.active_jobs.values() {
                 let aj = active.lock().unwrap();
-                if aj.vault == vkey && aj.kind == kind && aj.status == "running" {
+                let same_bucket = aj.vault == vkey
+                    && aj.kind == kind
+                    && (kind == "upgrade.heal" || aj.scope_key == scope_key)
+                    && aj.status == JobStatus::Running;
+                if same_bucket {
                     let mut new_prio = None;
                     if kind == "upgrade.heal" {
                         if let Some(ref pk) = priority_key {
@@ -581,9 +768,13 @@ impl NativeControlDaemon {
             let jid = format!("job_{}_{}", std::process::id(), g.job_counter);
             let rec = Arc::new(Mutex::new(JobRecord {
                 job_id: jid.clone(),
+                trace_id: trace_id.clone(),
                 vault: vkey.clone(),
                 kind: kind.to_string(),
-                status: "running".into(),
+                scope_key: scope_key.clone(),
+                source: "job.submit".into(),
+                stream_id: None,
+                status: JobStatus::Queued,
                 current: 0,
                 total: 0,
                 phase: String::new(),
@@ -620,11 +811,13 @@ impl NativeControlDaemon {
                 return json!({ "accepted": false, "reason": "spawn_failed", "error": e.to_string() });
             }
         };
+        attach_child_to_job(&child);
 
         let stdout_pipe = child.stdout.take();
         let stderr_pipe = child.stderr.take();
         let snap = {
             let mut j = job_arc.lock().unwrap();
+            let _ = j.transition(JobStatus::Running);
             j.pid = Some(child.id());
             j.child = Some(child);
             j.to_json()
@@ -639,18 +832,14 @@ impl NativeControlDaemon {
                 let reader = BufReader::new(err_pipe);
                 for line in reader.lines().map_while(Result::ok) {
                     let mut j = job_err.lock().unwrap();
-                    j.stderr_tail.push_str(&line);
-                    j.stderr_tail.push('\n');
-                    if j.stderr_tail.len() > 4000 {
-                        let drain_to = j.stderr_tail.len() - 4000;
-                        j.stderr_tail.drain(..drain_to);
-                    }
+                    append_stderr_tail(&mut j.stderr_tail, &line, 8000);
                 }
             });
         }
 
         let daemon_clone = self.clone();
         let job_out = job_arc.clone();
+        let tid_out = trace_id.clone();
         thread::spawn(move || {
             if let Some(out_pipe) = stdout_pipe {
                 let reader = BufReader::new(out_pipe);
@@ -678,7 +867,7 @@ impl NativeControlDaemon {
                             j.item_id = id.to_string();
                         }
                         if ev.get("event").and_then(|v| v.as_str()) == Some("cancelled") {
-                            j.status = "cancelled".into();
+                            let _ = j.transition(JobStatus::Cancelled);
                         }
                         (j.vault.clone(), j.to_json())
                     };
@@ -699,23 +888,25 @@ impl NativeControlDaemon {
                 let mut j = job_out.lock().unwrap();
                 j.exit_code = Some(rc);
                 j.finished_at = Some(now_unix_secs());
-                if j.status == "cancelling" || rc == 130 {
-                    j.status = "cancelled".into();
-                } else if rc == 0 {
-                    j.status = "succeeded".into();
-                } else {
-                    j.status = "failed".into();
-                    let tail = j.stderr_tail.trim();
-                    j.error = if tail.is_empty() {
-                        format!("exit code {rc}")
+                if !j.status.is_terminal() {
+                    if j.status == JobStatus::Cancelling || rc == 130 {
+                        let _ = j.transition(JobStatus::Cancelled);
+                    } else if rc == 0 {
+                        let _ = j.transition(JobStatus::Succeeded);
                     } else {
-                        tail.chars().rev().take(300).collect::<String>().chars().rev().collect()
-                    };
+                        let _ = j.transition(JobStatus::Failed);
+                        let tail = j.stderr_tail.trim();
+                        j.error = if tail.is_empty() {
+                            format!("exit code {rc}")
+                        } else {
+                            tail.chars().rev().take(300).collect::<String>().chars().rev().collect()
+                        };
+                    }
                 }
                 (
                     j.vault.clone(),
                     j.kind.clone(),
-                    j.status.clone(),
+                    j.status,
                     j.error.clone(),
                     j.to_json(),
                 )
@@ -728,7 +919,7 @@ impl NativeControlDaemon {
                     g.recent_jobs.pop_front();
                 }
                 g.recent_jobs.push_back(final_snap.clone());
-                if kind_str == "upgrade.heal" && final_status == "succeeded" {
+                if kind_str == "upgrade.heal" && final_status == JobStatus::Succeeded {
                     g.followup_heal_priority.remove(&vault_str)
                 } else {
                     None
@@ -740,21 +931,23 @@ impl NativeControlDaemon {
             let _ = daemon_clone.get_or_refresh_vault(&v_path);
             daemon_clone.write_heartbeat(&v_path);
 
-            if final_status == "failed" {
-                daemon_clone.push_notice(
+            if final_status == JobStatus::Failed {
+                daemon_clone.push_notice_traced(
                     "warning",
                     &format!("job.{kind_str}.failed"),
                     &format!("后台任务未完成 ({kind_str})"),
                     &err_msg,
                     Some(&v_path),
+                    Some(&tid_out),
                 );
-            } else if kind_str == "upgrade.heal" && final_status == "succeeded" {
-                daemon_clone.push_notice(
+            } else if kind_str == "upgrade.heal" && final_status == JobStatus::Succeeded {
+                daemon_clone.push_notice_traced(
                     "success",
                     "job.upgrade.heal.done",
                     "文献库后台渐进整理已完成",
                     "",
                     Some(&v_path),
+                    Some(&tid_out),
                 );
             }
 
@@ -763,29 +956,311 @@ impl NativeControlDaemon {
             }
         });
 
-        json!({ "accepted": true, "coalesced": false, "job": snap })
+        json!({ "accepted": true, "coalesced": false, "trace_id": trace_id, "job": snap })
     }
 
-    pub fn cancel_job(&self, job_id: &str, grace_ms: u64, wait: bool) -> Value {
-        let job_arc = {
-            let g = self.inner.lock().unwrap();
-            let Some(ja) = g.active_jobs.get(job_id).cloned() else {
-                return json!({ "ok": false, "reason": "not_found", "job_id": job_id });
-            };
-            ja
+    /// Unified streaming job supervisor (`job.stream`): runs interactive long tasks
+    /// (OCR, Embedding, Sync, Setup) under the exact same `active_jobs` FSM, OS Job
+    /// Object death cleanup, `task.updated` / `notice.push` telemetry, and cooperative
+    /// cancellation (`PAPERFORGE_STOP` + grace escalation) while forwarding every
+    /// stdout NDJSON line back to the requesting client via `stream.chunk` / `stream.end`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn submit_stream_job(
+        &self,
+        vault: &Path,
+        argv: Vec<String>,
+        stream_id: String,
+        caller_trace: Option<&str>,
+        close_stdin: bool,
+        on_frame: PushSink,
+    ) -> Value {
+        let vkey = Self::norm_vault(vault);
+        let trace_id = self.next_trace_id(caller_trace);
+        let Some(py_exe) = Self::resolve_python_exe() else {
+            return json!({
+                "accepted": false,
+                "reason": "NO_PYTHON",
+                "trace_id": trace_id,
+                "error": "PaperForge Python worker runtime not installed yet.",
+            });
+        };
+        if argv.is_empty() {
+            return json!({
+                "accepted": false,
+                "reason": "invalid_argv",
+                "trace_id": trace_id,
+                "error": "job.stream requires non-empty argv",
+            });
+        }
+
+        let (kind, scope_key) = infer_kind_and_scope(&argv, None, None);
+
+        let (job_id, job_arc) = {
+            let mut g = self.inner.lock().unwrap();
+            if let Some(barrier) = g.exclusive_barriers.get(&vkey) {
+                return json!({
+                    "accepted": false,
+                    "reason": "vault_upgrade_barrier_active",
+                    "trace_id": trace_id,
+                    "barrier": barrier,
+                });
+            }
+            g.job_counter += 1;
+            let jid = format!("job_{}_{}", std::process::id(), g.job_counter);
+            let rec = Arc::new(Mutex::new(JobRecord {
+                job_id: jid.clone(),
+                trace_id: trace_id.clone(),
+                vault: vkey.clone(),
+                kind: kind.clone(),
+                scope_key: scope_key.clone(),
+                source: "stream".into(),
+                stream_id: Some(stream_id.clone()),
+                status: JobStatus::Queued,
+                current: 0,
+                total: 0,
+                phase: String::new(),
+                item_id: String::new(),
+                priority_key: None,
+                started_at: now_unix_secs(),
+                finished_at: None,
+                exit_code: None,
+                error: String::new(),
+                stderr_tail: String::new(),
+                pid: None,
+                child: None,
+            }));
+            g.active_jobs.insert(jid.clone(), rec.clone());
+            (jid, rec)
         };
 
-        let (vault_str, snap) = {
+        let mut cmd = Command::new(&py_exe);
+        cmd.args(["-m", "paperforge", "--vault", &vkey])
+            .args(&argv)
+            .stdin(if close_stdin { Stdio::null() } else { Stdio::piped() })
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        if Path::new(&vkey).is_dir() {
+            cmd.current_dir(&vkey);
+        }
+        configure_worker_command(&mut cmd);
+
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                let mut g = self.inner.lock().unwrap();
+                g.active_jobs.remove(&job_id);
+                return json!({
+                    "accepted": false,
+                    "reason": "spawn_failed",
+                    "trace_id": trace_id,
+                    "error": e.to_string(),
+                });
+            }
+        };
+        attach_child_to_job(&child);
+
+        let stdout_pipe = child.stdout.take();
+        let stderr_pipe = child.stderr.take();
+        let snap = {
             let mut j = job_arc.lock().unwrap();
-            j.status = "cancelling".into();
-            if let Some(ref mut c) = j.child {
-                if let Some(ref mut sin) = c.stdin {
-                    let _ = sin.write_all(b"PAPERFORGE_STOP\n");
-                    let _ = sin.flush();
+            let _ = j.transition(JobStatus::Running);
+            j.pid = Some(child.id());
+            j.child = Some(child);
+            j.to_json()
+        };
+
+        self.emit_push("task.updated", Some(&vkey), snap.clone());
+        self.write_heartbeat(Path::new(&vkey));
+
+        let err_handle = stderr_pipe.map(|err_pipe| {
+            let job_err = job_arc.clone();
+            thread::spawn(move || {
+                let reader = BufReader::new(err_pipe);
+                for line in reader.lines().map_while(Result::ok) {
+                    let mut j = job_err.lock().unwrap();
+                    append_stderr_tail(&mut j.stderr_tail, &line, 8000);
+                }
+            })
+        });
+
+        let daemon_clone = self.clone();
+        let job_out = job_arc.clone();
+        let jid_out = job_id.clone();
+        let tid_out = trace_id.clone();
+        let sid_out = stream_id.clone();
+        thread::spawn(move || {
+            let mut saw_terminal_ev = false;
+            if let Some(out_pipe) = stdout_pipe {
+                let reader = BufReader::new(out_pipe);
+                for line in reader.lines().map_while(Result::ok) {
+                    on_frame(json!({
+                        "event": "stream.chunk",
+                        "stream_id": sid_out,
+                        "job_id": jid_out,
+                        "trace_id": tid_out,
+                        "line": line,
+                    }));
+
+                    let trimmed = line.trim();
+                    if !trimmed.starts_with('{') {
+                        continue;
+                    }
+                    let Ok(ev) = serde_json::from_str::<Value>(trimmed) else { continue };
+                    if ev.get("schema_version").and_then(|v| v.as_i64()) != Some(1) {
+                        continue;
+                    }
+                    let ev_name = ev.get("event").and_then(|v| v.as_str()).unwrap_or("");
+                    if matches!(ev_name, "result" | "error" | "cancelled") {
+                        saw_terminal_ev = true;
+                    }
+                    let (v_str, snap_ev) = {
+                        let mut j = job_out.lock().unwrap();
+                        if let Some(c) = ev.get("current").and_then(|v| v.as_i64()) {
+                            j.current = c;
+                        }
+                        if let Some(t) = ev.get("total").and_then(|v| v.as_i64()) {
+                            j.total = t;
+                        }
+                        if let Some(p) = ev.get("phase").and_then(|v| v.as_str()) {
+                            j.phase = p.to_string();
+                        }
+                        if let Some(id) = ev.get("item_id").and_then(|v| v.as_str()) {
+                            j.item_id = id.to_string();
+                        }
+                        if ev_name == "cancelled" {
+                            let _ = j.transition(JobStatus::Cancelled);
+                        }
+                        (j.vault.clone(), j.to_json())
+                    };
+                    daemon_clone.emit_push("task.updated", Some(&v_str), snap_ev);
                 }
             }
-            (j.vault.clone(), j.to_json())
+
+            let rc = {
+                let mut child_opt = job_out.lock().unwrap().child.take();
+                if let Some(ref mut c) = child_opt {
+                    c.wait().ok().and_then(|s| s.code()).unwrap_or(1)
+                } else {
+                    1
+                }
+            };
+            if let Some(eh) = err_handle {
+                let _ = eh.join();
+            }
+
+            let (vault_str, kind_str, final_status, err_msg, stderr_full, final_snap) = {
+                let mut j = job_out.lock().unwrap();
+                j.exit_code = Some(rc);
+                j.finished_at = Some(now_unix_secs());
+                if !j.status.is_terminal() {
+                    if (j.status == JobStatus::Cancelling && !saw_terminal_ev) || rc == 130 {
+                        let _ = j.transition(JobStatus::Cancelled);
+                    } else if rc == 0 {
+                        let _ = j.transition(JobStatus::Succeeded);
+                    } else {
+                        let _ = j.transition(JobStatus::Failed);
+                        let tail = j.stderr_tail.trim();
+                        j.error = if tail.is_empty() {
+                            format!("exit code {rc}")
+                        } else {
+                            tail.chars().rev().take(300).collect::<String>().chars().rev().collect()
+                        };
+                    }
+                }
+                (
+                    j.vault.clone(),
+                    j.kind.clone(),
+                    j.status,
+                    j.error.clone(),
+                    j.stderr_tail.clone(),
+                    j.to_json(),
+                )
+            };
+
+            {
+                let mut g = daemon_clone.inner.lock().unwrap();
+                g.active_jobs.remove(&jid_out);
+                if g.recent_jobs.len() >= MAX_RECENT_JOBS {
+                    g.recent_jobs.pop_front();
+                }
+                g.recent_jobs.push_back(final_snap.clone());
+            }
+
+            on_frame(json!({
+                "event": "stream.end",
+                "stream_id": sid_out,
+                "job_id": jid_out,
+                "trace_id": tid_out,
+                "exit_code": rc,
+                "cancelled": final_status == JobStatus::Cancelled,
+                "stderr": stderr_full,
+            }));
+
+            daemon_clone.emit_push("task.updated", Some(&vault_str), final_snap);
+            let v_path = PathBuf::from(&vault_str);
+            let _ = daemon_clone.get_or_refresh_vault(&v_path);
+            daemon_clone.write_heartbeat(&v_path);
+
+            if final_status == JobStatus::Failed {
+                daemon_clone.push_notice_traced(
+                    "warning",
+                    &format!("job.{kind_str}.failed"),
+                    &format!("任务执行未完成 ({kind_str})"),
+                    &err_msg,
+                    Some(&v_path),
+                    Some(&tid_out),
+                );
+            }
+        });
+
+        json!({
+            "accepted": true,
+            "job_id": job_id,
+            "stream_id": stream_id,
+            "trace_id": trace_id,
+            "job": snap,
+        })
+    }
+
+    pub fn cancel_job(&self, job_or_stream_id: &str, grace_ms: u64, wait: bool) -> Value {
+        let (resolved_id, job_arc) = {
+            let g = self.inner.lock().unwrap();
+            if let Some(ja) = g.active_jobs.get(job_or_stream_id).cloned() {
+                (job_or_stream_id.to_string(), ja)
+            } else if let Some((jid, ja)) = g.active_jobs.iter().find(|(_, arc)| {
+                arc.lock()
+                    .ok()
+                    .and_then(|j| j.stream_id.clone())
+                    .as_deref()
+                    == Some(job_or_stream_id)
+            }) {
+                (jid.clone(), ja.clone())
+            } else {
+                return json!({ "ok": false, "reason": "not_found", "job_id": job_or_stream_id });
+            }
         };
+
+        let (vault_str, snap, transitioned) = {
+            let mut j = job_arc.lock().unwrap();
+            let ok = j.transition(JobStatus::Cancelling).is_ok();
+            if ok {
+                if let Some(ref mut c) = j.child {
+                    if let Some(ref mut sin) = c.stdin {
+                        let _ = sin.write_all(b"PAPERFORGE_STOP\n");
+                        let _ = sin.flush();
+                    }
+                }
+            }
+            (j.vault.clone(), j.to_json(), ok)
+        };
+        if !transitioned {
+            return json!({
+                "ok": false,
+                "reason": "already_terminal",
+                "job_id": resolved_id,
+                "status": snap["status"],
+            });
+        }
         self.emit_push("task.updated", Some(&vault_str), snap);
 
         let escalate = move || {
@@ -814,13 +1289,22 @@ impl NativeControlDaemon {
         } else {
             thread::spawn(escalate);
         }
-        json!({ "ok": true, "job_id": job_id, "status": "cancelling" })
+        json!({ "ok": true, "job_id": resolved_id, "status": "cancelling" })
     }
 
     pub fn cancel_all_jobs(&self, grace_ms: u64) {
-        let ids: Vec<String> = self.inner.lock().unwrap().active_jobs.keys().cloned().collect();
+        let (ids, delegated): (Vec<String>, Vec<u32>) = {
+            let g = self.inner.lock().unwrap();
+            (
+                g.active_jobs.keys().cloned().collect(),
+                g.delegated_pids.iter().copied().collect(),
+            )
+        };
         for jid in ids {
             let _ = self.cancel_job(&jid, grace_ms, true);
+        }
+        for pid in delegated {
+            kill_pid_tree(pid);
         }
     }
 
@@ -999,19 +1483,24 @@ impl NativeControlDaemon {
 
         let outcome = match cmd.spawn() {
             Ok(mut child) => {
+                attach_child_to_job(&child);
+                let pid = child.id();
+                self.inner.lock().unwrap().delegated_pids.insert(pid);
                 if let Some(secret_in) = stdin_text {
                     if let Some(mut sin) = child.stdin.take() {
                         let _ = sin.write_all(secret_in.as_bytes());
                     }
                 }
-                match child.wait_with_output() {
+                let res = match child.wait_with_output() {
                     Ok(out) => (
                         out.status.code().unwrap_or(1),
                         String::from_utf8_lossy(&out.stdout).into_owned(),
                         String::from_utf8_lossy(&out.stderr).into_owned(),
                     ),
                     Err(e) => (1, String::new(), format!("Python worker IO error: {e}")),
-                }
+                };
+                self.inner.lock().unwrap().delegated_pids.remove(&pid);
+                res
             }
             Err(e) => (1, String::new(), format!("Failed to spawn Python worker: {e}")),
         };

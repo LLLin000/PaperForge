@@ -296,6 +296,7 @@ export interface BasePaperRowDto {
 export interface BaseTableSnapshotDto {
   seq: number;
   updated_at: string;
+  state_authority?: "sqlite" | "legacy_json_fallback" | string;
   rows: Record<string, BasePaperRowDto>;
 }
 
@@ -430,9 +431,14 @@ export interface VaultUpgradeRollbackResultDto {
 
 export interface DaemonJobDto {
   job_id: string;
+  trace_id?: string;
   vault: string;
   kind: "sync" | "ocr" | "embed" | "upgrade.heal" | string;
+  scope_key?: string;
+  source?: "background" | "stream" | string;
+  stream_id?: string | null;
   status:
+    | "queued"
     | "running"
     | "cancelling"
     | "succeeded"
@@ -446,6 +452,7 @@ export interface DaemonJobDto {
   priority_key?: string | null;
   started_at: number;
   finished_at?: number | null;
+  duration_ms?: number;
   exit_code?: number | null;
   error?: string;
   pid?: number | null;
@@ -453,6 +460,7 @@ export interface DaemonJobDto {
 
 export interface DaemonNoticeDto {
   notice_id: string;
+  trace_id?: string;
   level: "info" | "success" | "warning" | "error" | string;
   code: string;
   title: string;
@@ -464,6 +472,7 @@ export interface DaemonNoticeDto {
 
 export interface DaemonHealthDto {
   ok: boolean;
+  backend?: string;
   pid: number;
   parent_pid: number | null;
   uptime_sec: number;

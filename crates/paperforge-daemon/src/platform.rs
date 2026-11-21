@@ -50,6 +50,41 @@ mod win_ffi {
     pub const SYNCHRONIZE: u32 = 0x0010_0000;
     pub const WAIT_TIMEOUT: u32 = 0x0000_0102;
     pub const ERROR_ACCESS_DENIED: u32 = 5;
+    pub const JOB_OBJECT_EXTENDED_LIMIT_INFORMATION: u32 = 9;
+    pub const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: u32 = 0x0000_2000;
+
+    #[repr(C)]
+    pub struct JobObjectBasicLimitInformation {
+        pub per_process_user_time_limit: i64,
+        pub per_job_user_time_limit: i64,
+        pub limit_flags: u32,
+        pub minimum_working_set_size: usize,
+        pub maximum_working_set_size: usize,
+        pub active_process_limit: u32,
+        pub affinity: usize,
+        pub priority_class: u32,
+        pub scheduling_class: u32,
+    }
+
+    #[repr(C)]
+    pub struct IoCounters {
+        pub read_operation_count: u64,
+        pub write_operation_count: u64,
+        pub other_operation_count: u64,
+        pub read_transfer_count: u64,
+        pub write_transfer_count: u64,
+        pub other_transfer_count: u64,
+    }
+
+    #[repr(C)]
+    pub struct JobObjectExtendedLimitInformation {
+        pub basic_limit_information: JobObjectBasicLimitInformation,
+        pub io_info: IoCounters,
+        pub process_memory_limit: usize,
+        pub job_memory_limit: usize,
+        pub peak_process_memory_used: usize,
+        pub peak_job_memory_used: usize,
+    }
 
     #[link(name = "kernel32")]
     extern "system" {
@@ -63,7 +98,64 @@ mod win_ffi {
         pub fn WaitForSingleObject(handle: *mut c_void, milliseconds: u32) -> u32;
         pub fn CloseHandle(object: *mut c_void) -> i32;
         pub fn GetLastError() -> u32;
+        pub fn CreateJobObjectW(
+            job_attributes: *mut c_void,
+            name: *const u16,
+        ) -> *mut c_void;
+        pub fn SetInformationJobObject(
+            job: *mut c_void,
+            info_class: u32,
+            info: *const c_void,
+            info_len: u32,
+        ) -> i32;
+        pub fn AssignProcessToJobObject(job: *mut c_void, process: *mut c_void) -> i32;
     }
+}
+
+#[cfg(windows)]
+fn daemon_job_handle() -> usize {
+    use std::sync::OnceLock;
+    static JOB: OnceLock<usize> = OnceLock::new();
+    *JOB.get_or_init(|| unsafe {
+        let h = win_ffi::CreateJobObjectW(std::ptr::null_mut(), std::ptr::null());
+        if h.is_null() {
+            return 0;
+        }
+        let mut info: win_ffi::JobObjectExtendedLimitInformation = std::mem::zeroed();
+        info.basic_limit_information.limit_flags = win_ffi::JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        let ok = win_ffi::SetInformationJobObject(
+            h,
+            win_ffi::JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
+            &info as *const _ as *const std::ffi::c_void,
+            std::mem::size_of::<win_ffi::JobObjectExtendedLimitInformation>() as u32,
+        );
+        if ok == 0 {
+            let _ = win_ffi::CloseHandle(h);
+            return 0;
+        }
+        h as usize
+    })
+}
+
+/// Bind a spawned worker child to the daemon's OS-level death-cleanup handle.
+/// On Windows, attaches the process to a `KILL_ON_JOB_CLOSE` Job Object so even
+/// hard-killing the daemon immediately tears down every worker process tree.
+pub fn attach_child_to_job(child: &Child) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawHandle;
+        let job = daemon_job_handle();
+        if job != 0 {
+            unsafe {
+                let _ = win_ffi::AssignProcessToJobObject(
+                    job as *mut std::ffi::c_void,
+                    child.as_raw_handle() as *mut std::ffi::c_void,
+                );
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = child;
 }
 
 pub fn process_rss_bytes() -> u64 {
@@ -178,6 +270,9 @@ pub fn is_pid_alive(pid: u32, initial_ppid: Option<u32>) -> bool {
 }
 
 pub fn configure_worker_command(cmd: &mut Command) {
+    // Propagate daemon PID so workers can also self-terminate if parent dies unexpectedly.
+    cmd.env("PAPERFORGE_PARENT_PID", std::process::id().to_string());
+
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -188,14 +283,25 @@ pub fn configure_worker_command(cmd: &mut Command) {
     {
         use std::os::unix::process::CommandExt;
         cmd.process_group(0);
+        #[cfg(target_os = "linux")]
+        unsafe {
+            extern "C" {
+                fn prctl(option: i32, arg2: usize, arg3: usize, arg4: usize, arg5: usize) -> i32;
+            }
+            const PR_SET_PDEATHSIG: i32 = 1;
+            const SIGTERM: usize = 15;
+            cmd.pre_exec(|| {
+                let _ = prctl(PR_SET_PDEATHSIG, SIGTERM, 0, 0, 0);
+                Ok(())
+            });
+        }
     }
 }
 
-pub fn kill_process_tree(child: &mut Child) {
-    if let Ok(Some(_)) = child.try_wait() {
+pub fn kill_pid_tree(pid: u32) {
+    if pid == 0 {
         return;
     }
-    let pid = child.id();
 
     #[cfg(windows)]
     {
@@ -215,12 +321,19 @@ pub fn kill_process_tree(child: &mut Child) {
             fn kill(pid: i32, sig: i32) -> i32;
         }
         const SIGKILL: i32 = 9;
-        // Negative PID sends SIGKILL to the isolated worker process group (`process_group(0)`).
         unsafe {
             let _ = kill(-(pid as i32), SIGKILL);
+            let _ = kill(pid as i32, SIGKILL);
         }
     }
+}
 
+pub fn kill_process_tree(child: &mut Child) {
+    if let Ok(Some(_)) = child.try_wait() {
+        return;
+    }
+    let pid = child.id();
+    kill_pid_tree(pid);
     let _ = child.kill();
 }
 
