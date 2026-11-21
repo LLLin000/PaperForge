@@ -21,6 +21,7 @@ import {
 } from "../../paperforge/plugin/src/views/ocr-workspace";
 import { PaperForgeOrphanModal } from "../../paperforge/plugin/src/views/modals";
 import { renderErrorAnatomy } from "../../paperforge/plugin/src/primitives";
+import { renderDomainModePreview } from "../../paperforge/plugin/src/views/domain-preview";
 
 const VAULT_ROOT = "D:/ResearchVault";
 const ZOTERO_DIR = "C:/Users/Researcher/Zotero";
@@ -68,7 +69,9 @@ function makeSnapshot(runningKey = "KEY_PROC"): BaseTableSnapshotDto {
         year: "2025",
         journal: "Biomaterials",
         impact_factor: "12.8",
+        impact_factor_source: "zoterostyle",
         domain: "骨科",
+        collections: ["骨科/力学响应", "骨科/组织工程水凝胶"],
         has_pdf: true,
         do_ocr: false,
         analyze: true,
@@ -110,7 +113,9 @@ function makeSnapshot(runningKey = "KEY_PROC"): BaseTableSnapshotDto {
         year: "2023",
         journal: "Acta Biomater.",
         impact_factor: "9.4",
+        impact_factor_source: "openalex_2yr",
         domain: "骨科",
+        collections: ["骨科/软骨与骨重构"],
         has_pdf: true,
         do_ocr: true,
         analyze: false,
@@ -684,6 +689,7 @@ function makeFakeSettings(overrides?: Partial<PaperForgeSettings>): PaperForgeSe
     literature_dir: "Resources/Literature",
     base_dir: "Resources/Literature/Base",
     zotero_data_dir: ZOTERO_DIR,
+    domain_mode: "per_collection",
     agent_platform: "claude",
     language: "zh",
     _paddleocr_configured: true,
@@ -854,7 +860,18 @@ function makeFakePlugin(
     memoryStatus: async () => ({ paper_count_db: 248, fresh: true, needs_rebuild: false }),
     versionsShow: async () => ({ versions: [], current_label: "v3.2", current_path: "" }),
     versionsBackups: async () => [],
+    zoteroDetect: async () => ({
+      found: true,
+      zotero_dir: ZOTERO_DIR,
+      total_papers: 142,
+      collections: [
+        { key: "COL_ORTHO", name: "骨科", path: "骨科", parent_key: "", top_level: true, item_count: 86 },
+        { key: "COL_SPORTS", name: "运动医学", path: "运动医学", parent_key: "", top_level: true, item_count: 34 },
+        { key: "COL_BIOMAT", name: "生物材料与水凝胶", path: "生物材料与水凝胶", parent_key: "", top_level: true, item_count: 22 },
+      ],
+    }),
   };
+  const baseFiltersMap = new Map<string, Record<string, unknown>>();
 
   const plugin = {
     app,
@@ -865,6 +882,10 @@ function makeFakePlugin(
     _ocrProgress: ocrRunning ? { current: 2, total: 5, key: "KEY_PROC" } : undefined,
     getClient: () => fakeClient as unknown as ReturnType<never>,
     getBaseSnapshotCache: () => snapshot,
+    getBaseFilters: (viewKey: string) => baseFiltersMap.get(viewKey) ?? {},
+    setBaseFilters: (viewKey: string, next: Record<string, unknown>) => {
+      baseFiltersMap.set(viewKey, next);
+    },
     refreshBaseSnapshot: async () => snapshot,
     getActiveBackgroundTasks: () =>
       ocrRunning
@@ -1743,10 +1764,95 @@ export async function renderAllScenes(): Promise<void> {
         expected_version: "2.2.0",
       };
       (tab as unknown as Record<string, unknown>)._runtimeStatusVersion = "2.2.0";
+      (tab as unknown as { _setupExpressMode: boolean })._setupExpressMode = false;
       tab._setupStage = stage;
       tab._setupOptionals = { ocr: true, memory: true, agent: true };
       tab._renderSetupJourney(card.createDiv());
     }
+  }
+
+  // ── Scene 13: 1-Screen Express Setup + Live Domain A/B Preview ─────────────
+  {
+    const snap = makeSnapshot("");
+    const app = new App(makeMockFiles(), VAULT_ROOT);
+    const plugin = makeFakePlugin(app, snap);
+    plugin.settings._setup_complete = false;
+    plugin.settings.literature_dir = "PaperForge/Literature";
+    plugin.settings.resources_dir = "PaperForge/Resources";
+    plugin.settings.base_dir = "PaperForge/Bases";
+    const { body } = createScene(
+      "13-express-onboarding-and-domain-preview",
+      "13 · 一屏极速引导（免 BBT · 零代码直连 zotero.sqlite · 目录防冲突）与 A/B 目录实时预览",
+      "左：新手一屏完成引擎检查、自动定位 Zotero、选择研究分类与可折叠 AI 预设；右：勾选分类后实时渲染 Mode A（分文件夹）与 Mode B（统一汇入+Base筛选）对比图",
+      1320
+    );
+    const grid = body.createDiv({ cls: "pf-doc-grid-2" });
+    grid.style.gridTemplateColumns = "minmax(0, 1.15fr) minmax(0, 0.85fr)";
+
+    const left = grid.createDiv({ cls: "pf-doc-panel pf-ob-settings-pane" });
+    left.createDiv({
+      cls: "pf-doc-panel-label",
+      text: "A. 一屏极速引导（自动隔离原有 Literature/ 文件夹 · 1 次点击保存同步）",
+    });
+    const tabExpress = new PaperForgeSettingTab(app, plugin as never);
+    (tabExpress as unknown as { _capabilityState: Record<string, ProbeEnvelope> })._capabilityState =
+      makeEnvelopes({ allReady: true });
+    (tabExpress as unknown as Record<string, unknown>)._runtimeStatus = {
+      runtime_ready: true,
+      version_matches_expected: true,
+      runtime_version: "2.2.0",
+      expected_version: "2.2.0",
+    };
+    (tabExpress as unknown as Record<string, unknown>)._runtimeStatusVersion = "2.2.0";
+    (tabExpress as unknown as { _setupExpressMode: boolean })._setupExpressMode = true;
+    (tabExpress as unknown as { _zoteroDetectRan: boolean })._zoteroDetectRan = true;
+    (tabExpress as unknown as { _detectedFolderCollisionMsg: string })._detectedFolderCollisionMsg =
+      "检测到库内已存在原有 Literature 文件夹：已自动为你改为存入 PaperForge/ 隔离目录，绝不会混入你的个人笔记。";
+    (tabExpress as unknown as { _zoteroDetectData: unknown })._zoteroDetectData = {
+      found: true,
+      zotero_dir: ZOTERO_DIR,
+      total_papers: 142,
+      collections: [
+        { key: "COL_ORTHO", name: "骨科", path: "骨科", top_level: true, item_count: 86 },
+        { key: "COL_SPORTS", name: "运动医学", path: "运动医学", top_level: true, item_count: 34 },
+        { key: "COL_BIOMAT", name: "生物材料与水凝胶", path: "生物材料与水凝胶", top_level: true, item_count: 22 },
+      ],
+    };
+    tabExpress._setupStage = 1;
+    tabExpress._renderSetupJourney(left.createDiv());
+
+    const right = grid.createDiv({ cls: "pf-doc-panel pf-ob-settings-pane" });
+    right.createDiv({
+      cls: "pf-doc-panel-label",
+      text: "B. Domain 分区模式实时渲染对比（选 A vs 选 B 一目了然）",
+    });
+    const sampleCols = [
+      { key: "COL_ORTHO", name: "骨科", path: "骨科", item_count: 86, top_level: true },
+      { key: "COL_SPORTS", name: "运动医学", path: "运动医学", item_count: 34, top_level: true },
+      { key: "COL_BIOMAT", name: "生物材料与水凝胶", path: "生物材料与水凝胶", item_count: 22, top_level: true },
+    ];
+    const boxA = right.createDiv({ cls: "pf-doc-subbox" });
+    boxA.createDiv({
+      cls: "pf-preview-pane-title",
+      text: "选项 A（推荐）：按 Zotero 顶层分类各自建立文件夹",
+    });
+    renderDomainModePreview(boxA.createDiv(), {
+      domainMode: "per_collection",
+      collections: sampleCols,
+      litDir: "PaperForge/Literature",
+      isZh: true,
+    });
+    const boxB = right.createDiv({ cls: "pf-doc-subbox" });
+    boxB.createDiv({
+      cls: "pf-preview-pane-title",
+      text: "选项 B：全部文献统一放入同一目录（Base 内用顶部胶囊筛选）",
+    });
+    renderDomainModePreview(boxB.createDiv(), {
+      domainMode: "unified",
+      collections: sampleCols,
+      litDir: "PaperForge/Literature",
+      isZh: true,
+    });
   }
 
   // ── Scene 11: Settings OCR & Smart Retrieval Module Details ────────────────

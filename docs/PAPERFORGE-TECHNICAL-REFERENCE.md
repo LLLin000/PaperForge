@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.0` | **章节数**：`15` | **分册指纹**：`sha256:0940b281327ba839`
+> **版本**：`2.0.0` | **章节数**：`15` | **分册指纹**：`sha256:6feb85672edb267f`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 
@@ -4352,6 +4352,10 @@ sequenceDiagram
    - **非 UTF-8 历史编码**：`read_text_tolerant()` 按 `utf-8-sig` → `utf-8` → `gb18030` → `utf-16` 只读探测，绝不用损坏替换符回写用户文件。
    - **SQLite 锁占用与磁盘余量预检**：切流前预检 `paperforge.db` 排他写锁与至少 `32 MB` 磁盘可用空间，不满足时平滑阻断并给出单步指引。
    - **并发编辑防覆盖（CAS）**：`note.py` 与工作区改写使用 `write_text_cas(expected_sha256=...)`，若升级或后台任务期间用户在编辑器修改了笔记，立即抛出 `CASConflictError` 放弃覆盖，用户手写内容永远优先。
+
+5. **门禁五：新库目录同名防冲突隔离与用户自定义 `aliases` 无损合并**：
+   - **根目录非空文件夹自动让位（`_detectAndIsolateFolderCollision`）**：首次引导打开尚未写入 `paperforge.json` 的个人 Obsidian 库时，若根目录下已存在非空的 `Literature/`、`Resources/` 或 `Bases/`，自动将 PaperForge 根目录隔离为 `PaperForge/Literature`、`PaperForge/Resources`、`PaperForge/Bases` 并展示防冲突横幅，从源头杜绝挤占用户原有知识库目录。
+   - **手写 YAML `aliases` 同步保留（`frontmatter_note`）**：Zotero 元数据刷新重构笔记 Frontmatter 时，自动合并保留用户自行追加的所有历史 `aliases` 与 `custom_fm` 自定义字段，仅维护工作流锚点与衍生区，不破坏用户在笔记内部建立的个人别名与双链体系。
 
 ---
 

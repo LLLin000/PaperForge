@@ -1898,4 +1898,65 @@ describe("Issue #356 recovery: openSetupJourney", () => {
     expect(runAction).not.toHaveBeenCalled();
     openSpy.mockRestore();
   });
+
+  it("isolates non-empty root Literature folder into PaperForge/ when onboarding a fresh user vault", async () => {
+    const fsNode = await import("fs");
+    const tmpVault = "/fake-user-vault";
+    const existsSpy = vi
+      .spyOn(fsNode, "existsSync")
+      .mockImplementation(
+        (p: unknown) => String(p) === `${tmpVault}/Literature`
+      );
+    const statSpy = vi
+      .spyOn(fsNode, "statSync")
+      .mockImplementation(() => ({ isDirectory: () => true }) as any);
+    const readdirSpy = vi
+      .spyOn(fsNode, "readdirSync")
+      .mockImplementation((p: unknown) =>
+        String(p) === `${tmpVault}/Literature`
+          ? (["reading-notes.md"] as any)
+          : ([] as any)
+      );
+    try {
+      const tab = new PaperForgeSettingTab(
+        { vault: { adapter: { basePath: tmpVault } } } as unknown as App,
+        {
+          settings: {
+            literature_dir: "",
+            resources_dir: "",
+            base_dir: "",
+          },
+          manifest: { version: "2.2.0" },
+          saveSettings: vi.fn(),
+          readPaperforgeJson: () => ({}),
+          getClient: () => ({
+            zoteroDetect: async () => ({ found: false, collections: [] }),
+          }),
+        } as any
+      );
+      (tab as any)._detectAndIsolateFolderCollision(tmpVault);
+      expect((tab.plugin as any).settings.literature_dir).toBe(
+        "PaperForge/Literature"
+      );
+      expect((tab.plugin as any).settings.resources_dir).toBe(
+        "PaperForge/Resources"
+      );
+      expect((tab.plugin as any).settings.base_dir).toBe("PaperForge/Bases");
+      expect((tab as any)._detectedFolderCollisionMsg).toBeTruthy();
+
+      const wrapper = document.createElement("div");
+      (tab as any)._setupExpressMode = true;
+      (tab as any)._setupStage = 1;
+      (tab as any)._renderSetupJourney(wrapper);
+      expect(
+        wrapper.querySelectorAll(".pf-express-card").length
+      ).toBeGreaterThanOrEqual(2);
+      expect(wrapper.querySelector(".pf-collision-guard-banner")).toBeTruthy();
+      expect(wrapper.querySelector(".pf-domain-live-preview")).toBeTruthy();
+    } finally {
+      existsSpy.mockRestore();
+      statSpy.mockRestore();
+      readdirSpy.mockRestore();
+    }
+  });
 });

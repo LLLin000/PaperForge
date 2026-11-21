@@ -13,6 +13,7 @@ from paperforge.adapters.zotero_sqlite import (
 )
 from paperforge.journal_metrics import lookup_journal_metric, parse_extra_journal_metric
 from paperforge.services.sync_service import SyncService
+from paperforge.worker.sync import frontmatter_note
 from tests.conftest import canonical_test_config
 
 
@@ -157,3 +158,35 @@ def test_journal_metrics_extra_and_partition_extraction(tmp_path: Path) -> None:
     parsed = parse_extra_journal_metric("IF: 8.4\nJCR: Q2")
     assert parsed["impact_factor"] == "8.4"
     assert parsed["journal_partition"] == "Q2"
+
+
+def test_openalex_offline_seed_lookup_and_aliases_preservation(tmp_path: Path, monkeypatch) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+
+    # Force network calls to raise so we prove bundled CC0 seed resolves offline without HTTP
+    monkeypatch.setattr(
+        "requests.get",
+        lambda *_a, **_kw: (_ for _ in ()).throw(AssertionError("HTTP must not be called when seed hits")),
+    )
+    seeded = lookup_journal_metric("Nature", "", vault, allow_network=True)
+    assert seeded["impact_factor_source"] == "openalex_2yr"
+    assert float(seeded["impact_factor"]) > 0.0
+
+    # Sync frontmatter update must preserve user-added custom aliases alongside canonical title/key
+    existing = "---\nzotero_key: ZOTKEY01\naliases:\n  - My Custom Nickname\n  - Cartilage Paper\n---\n\nBody text\n"
+    rendered = frontmatter_note(
+        {
+            "key": "ZOTKEY01",
+            "title": "Hydrogel Repair of Cartilage",
+            "citation_key": "linCartilage2025",
+            "domain": "BoneRegen",
+            "attachments": [],
+        },
+        existing_text=existing,
+    )
+    assert "My Custom Nickname" in rendered
+    assert "Cartilage Paper" in rendered
+    assert "Hydrogel Repair of Cartilage" in rendered
+    assert "linCartilage2025" in rendered

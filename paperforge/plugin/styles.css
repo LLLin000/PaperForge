@@ -13345,6 +13345,94 @@ body.pf-no-glass
   margin-bottom: 6px;
 }
 
+/* ── 1-Screen Express Setup Flow ── */
+.pf-express-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pf-express-card {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border-radius: var(--pf-radius-card, 10px);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface-elevated, var(--pf-surface));
+}
+
+.pf-express-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pf-express-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--pf-accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pf-express-pill {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pf-express-pill.is-ok {
+  background: color-mix(in srgb, var(--pf-success, #2f7a4f) 14%, transparent);
+  color: var(--pf-success, #2f7a4f);
+}
+
+.pf-express-pill.is-warn {
+  background: color-mix(in srgb, var(--pf-accent) 12%, transparent);
+  color: var(--pf-accent);
+}
+
+.pf-collision-guard-banner {
+  padding: 6px 10px;
+  border-radius: var(--pf-radius-control, 6px);
+  background: color-mix(in srgb, var(--pf-success, #2f7a4f) 10%, transparent);
+  font-size: 12px;
+}
+
+.pf-express-subrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pf-express-subrow > label {
+  min-width: 125px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.pf-express-card .pf-setup-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-express-card .pf-setup-path-row .pf-setup-input {
+  flex: 1;
+  min-width: 240px;
+}
+
 /* Accessibility ReduceMotion */
 body.pf-reduce-motion *,
 body.pf-reduce-motion *::before,

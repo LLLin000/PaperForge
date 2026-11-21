@@ -166,6 +166,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _zoteroDetectData: ZoteroDetectDto | null = null;
   private _zoteroDetectBusy = false;
   private _zoteroDetectRan = false;
+  private _setupExpressMode = true;
+  private _detectedFolderCollisionMsg: string | null = null;
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
     current: 0,
@@ -657,7 +659,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
-  private _applyLibraryConfiguration(): void {
+  private _applyLibraryConfiguration(opts?: {
+    autoCompleteOnSuccess?: boolean;
+  }): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
@@ -839,6 +843,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._probeModule("library");
         this._setupOperation = "idle";
         this._setupFeedback = t("setup_library_configured");
+        if (opts?.autoCompleteOnSuccess) {
+          this.plugin.settings._setup_complete = true;
+          await this.plugin.saveSettings();
+        }
         this.display();
       } catch (error) {
         if (!setupClientOwnsFailure) {
@@ -4457,13 +4465,76 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   // #87: Setup Journey — 4-stage first-use wizard
   // ═══════════════════════════════════════════════════════════════
 
+  private _detectAndIsolateFolderCollision(vaultPath: string): void {
+    if (!vaultPath || this._detectedFolderCollisionMsg !== null) return;
+    const s = this.plugin.settings;
+    // Skip if user already explicitly configured paths or vault already has paperforge.json
+    if (
+      s.literature_dir?.trim() ||
+      fs.existsSync(path.join(vaultPath, "paperforge.json"))
+    ) {
+      this._detectedFolderCollisionMsg = "";
+      return;
+    }
+    const collided: string[] = [];
+    for (const folder of ["Literature", "Resources", "Bases"]) {
+      const full = path.join(vaultPath, folder);
+      try {
+        if (fs.existsSync(full) && fs.statSync(full).isDirectory()) {
+          const entries = fs.readdirSync(full);
+          if (entries.length > 0) {
+            collided.push(folder);
+          }
+        }
+      } catch {
+        // Ignore stat issues
+      }
+    }
+    if (collided.length > 0) {
+      s.system_dir = ".paperforge";
+      s.literature_dir = "PaperForge/Literature";
+      s.resources_dir = "PaperForge/Resources";
+      s.base_dir = "PaperForge/Bases";
+      this._detectedFolderCollisionMsg =
+        t("nav_close") === "关闭"
+          ? `检测到库内已存在原有 ${collided.join(" / ")} 文件夹：已自动为你改为存入 PaperForge/ 隔离目录，绝不会混入你的个人笔记。`
+          : `Detected existing ${collided.join(" / ")} folder(s): isolated PaperForge notes inside PaperForge/ so your existing files stay untouched.`;
+      void this.plugin.saveSettings();
+    } else {
+      this._detectedFolderCollisionMsg = "";
+    }
+  }
+
   _renderSetupJourney(containerEl: HTMLElement): void {
     if (this.plugin.settings._setup_journey_started !== true) {
       this.plugin.settings._setup_journey_started = true;
       this.plugin.saveSettings();
     }
+    const vaultPath = this._getVaultBasePath();
+    if (vaultPath) {
+      this._detectAndIsolateFolderCollision(vaultPath);
+    }
+
     const wrapper = containerEl.createDiv({ cls: "pf-setup-journey" });
-    wrapper.createEl("h2", { text: t("setup_welcome") });
+    const isZh = t("nav_close") === "关闭";
+
+    if (this._setupExpressMode && this._setupStage === 1) {
+      this._renderExpressSetup(wrapper, isZh);
+      return;
+    }
+
+    const topHead = wrapper.createDiv({ cls: "pf-express-header" });
+    topHead.createEl("h2", { text: t("setup_welcome") });
+    const backExpress = topHead.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: isZh ? "切回极简一屏配置" : "Back to Express setup",
+      attr: { type: "button" },
+    });
+    backExpress.addEventListener("click", () => {
+      this._setupExpressMode = true;
+      this._setupStage = 1;
+      this.display();
+    });
     wrapper.createEl("p", {
       text: t("setup_desc"),
       cls: "pf-setup-desc",
@@ -4480,15 +4551,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: { "aria-label": t("setup_progress") },
     });
     stages.forEach((label, i) => {
-      progress.createEl("span", {
+      const pill = progress.createEl("button", {
         cls:
           "pf-setup-step" +
           (i + 1 === this._setupStage ? " pf-setup-step--active" : "") +
           (i + 1 < this._setupStage ? " pf-setup-step--done" : ""),
         text: String(i + 1) + ". " + label,
         attr: {
+          type: "button",
           "aria-current": i + 1 === this._setupStage ? "step" : "false",
         },
+      });
+      pill.addEventListener("click", () => {
+        this._setupStage = i + 1;
+        this.display();
       });
     });
 
@@ -4497,6 +4573,435 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     else if (this._setupStage === 2) this._renderSetupStageLibrary(body);
     else if (this._setupStage === 3) this._renderSetupStageOptionals(body);
     else this._renderSetupStageReview(body);
+  }
+
+  /** Express 1-page beginner flow: zero jargon, engine + Zotero + AI presets all cleanly accessible on 1 screen. */
+  private _renderExpressSetup(wrapper: HTMLElement, isZh: boolean): void {
+    this._refreshRuntimeStatus();
+    this._maybeAutoDetectZotero();
+
+    const settings = this.plugin.settings;
+    const pointer = readRuntimePointer();
+    const runtime = this._runtimeStatus;
+    const rtReady = runtime?.runtime_ready === true;
+    const action: RuntimeInstallerAction = !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+
+    const head = wrapper.createDiv({ cls: "pf-express-header" });
+    const headCopy = head.createDiv();
+    headCopy.createEl("h2", {
+      text: isZh
+        ? "欢迎使用 PaperForge · 一屏极速开启"
+        : "PaperForge Quick Setup",
+    });
+    headCopy.createEl("p", {
+      cls: "pf-setup-desc",
+      text: isZh
+        ? "全程图形界面操作，不改你的 Zotero 原库。确认 Zotero 位置后点最下方「保存并立即同步」即可。"
+        : "Zero terminal or code needed, read-only on your Zotero database. Confirm Zotero below and click Save & Sync.",
+    });
+    const switchStep = head.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: isZh ? "分步详情模式" : "Step-by-step view",
+      attr: { type: "button", "data-pf-testid": "express-to-step-btn" },
+    });
+    switchStep.addEventListener("click", () => {
+      this._setupExpressMode = false;
+      this.display();
+    });
+
+    // ── Block 1: Compute Engine (1 compact row, never locks Block 2/3) ──
+    const c1 = wrapper.createDiv({ cls: "pf-express-card" });
+    const c1Head = c1.createDiv({ cls: "pf-express-card-head" });
+    c1Head.createEl("span", { cls: "pf-express-num", text: "1" });
+    c1Head.createEl("strong", {
+      text: isZh
+        ? "自动计算引擎（OCR / Zotero / AI 组件）"
+        : "Compute Engine (OCR / Sync / AI)",
+    });
+    const rtPill = c1Head.createEl("span", {
+      cls: `pf-express-pill ${rtReady ? "is-ok" : "is-warn"}`,
+      text: rtReady
+        ? isZh
+          ? "✓ 已就绪"
+          : "✓ Ready"
+        : this._runtimePollTimer
+          ? isZh
+            ? "正在后台安装…"
+            : "Installing…"
+          : isZh
+            ? "待一键启用"
+            : "One-click install",
+    });
+    void rtPill;
+    if (!rtReady) {
+      if (this._runtimePollTimer) {
+        const prog = this._installerProgressLine();
+        const pct = prog.includes("4/5")
+          ? 80
+          : prog.includes("3/5")
+            ? 60
+            : prog.includes("2/5")
+              ? 40
+              : prog.includes("1/5")
+                ? 22
+                : 15;
+        const bar = c1.createDiv({ cls: "pf-runtime-stage-bar" });
+        const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
+        fill.style.width = `${pct}%`;
+        c1.createEl("p", {
+          cls: "setting-item-description",
+          text:
+            prog ||
+            (isZh
+              ? "正在后台下载配置独立 Python 计算组件，同时你可以继续看第 2 步…"
+              : "Provisioning engine in background — feel free to configure Zotero below right away…"),
+        });
+      } else {
+        const c1Row = c1.createDiv({ cls: "pf-test-conn-row" });
+        renderActionButton(c1Row, {
+          label:
+            action === "install"
+              ? isZh
+                ? "一键启用引擎（后台自动配置）"
+                : "Enable Engine (Auto)"
+              : isZh
+                ? "更新 / 修复引擎"
+                : "Update / Repair Engine",
+          onClick: () => this._launchRuntimeInstaller(action),
+        });
+        c1Row.createEl("span", {
+          cls: "setting-item-description",
+          text: isZh
+            ? "免手动装环境；点击即可，无需在此干等。"
+            : "Runs automatically without leaving Obsidian.",
+        });
+      }
+    }
+
+    // ── Block 2: Zotero Auto-Locate + Anti-Collision + Live Domain Preview ──
+    const c2 = wrapper.createDiv({ cls: "pf-express-card" });
+    const c2Head = c2.createDiv({ cls: "pf-express-card-head" });
+    c2Head.createEl("span", { cls: "pf-express-num", text: "2" });
+    c2Head.createEl("strong", {
+      text: isZh
+        ? "连接 Zotero（自动扫描，无需装 Better BibTeX）"
+        : "Connect Zotero (Zero plugins required)",
+    });
+
+    if (this._detectedFolderCollisionMsg) {
+      c2.createEl("p", {
+        cls: "pf-setup-ok pf-collision-guard-banner",
+        text: "🛡 " + this._detectedFolderCollisionMsg,
+      });
+    }
+
+    const zotRow = c2.createDiv({ cls: "pf-setup-path-row" });
+    const zotInput = zotRow.createEl("input", {
+      cls: "pf-setup-input",
+      attr: {
+        type: "text",
+        placeholder: isZh
+          ? "自动扫描 Zotero 数据目录…"
+          : "Zotero data directory…",
+        "data-pf-testid": "express-zotero-input",
+      },
+    }) as HTMLInputElement;
+    zotInput.value = settings.zotero_data_dir || "";
+    const applyZot = (dir: string) => {
+      settings.zotero_data_dir = dir.trim();
+      settings.zotero_source_mode = "sqlite";
+      zotInput.value = settings.zotero_data_dir;
+      void this.plugin.saveSettings();
+      this._maybeAutoDetectZotero(true);
+      this.display();
+    };
+    zotInput.addEventListener("change", () => applyZot(zotInput.value));
+    const browseBtn = zotRow.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: t("setup_zotero_browse"),
+      attr: { type: "button" },
+    });
+    browseBtn.addEventListener("click", () => {
+      void this._pickFolderPath(c2).then((picked) => {
+        if (picked) applyZot(picked);
+      });
+    });
+
+    if (this._zoteroDetectData?.found) {
+      c2.createEl("p", {
+        cls: "pf-setup-ok",
+        text: isZh
+          ? `✓ 已检测到 ${this._zoteroDetectData.total_papers} 篇 Zotero 文献 · 默认直连同步`
+          : `✓ Found ${this._zoteroDetectData.total_papers} papers in Zotero · ready for direct sync`,
+      });
+    }
+
+    const previewHost = c2.createDiv();
+    const allCols = this._zoteroDetectData?.collections ?? [];
+    const topCols = allCols.filter((c) => c.top_level !== false);
+    const curSel = new Set(
+      Array.isArray(settings.zotero_selected_collections)
+        ? settings.zotero_selected_collections
+        : []
+    );
+    const curMode =
+      settings.domain_mode === "unified" ? "unified" : "per_collection";
+    const redrawPreview = () => {
+      const pickedCols =
+        curSel.size > 0
+          ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
+              curSel.has(c.key)
+            )
+          : topCols.length > 0
+            ? topCols
+            : allCols;
+      renderDomainModePreview(previewHost, {
+        domainMode:
+          settings.domain_mode === "unified" ? "unified" : "per_collection",
+        collections: pickedCols,
+        litDir: settings.literature_dir || "Literature",
+        isZh,
+      });
+    };
+
+    const modeGrid = c2.createDiv({ cls: "pf-mode-choice-grid" });
+    const modeCardEls: HTMLButtonElement[] = [];
+    for (const opt of [
+      {
+        id: "per_collection" as const,
+        title: isZh
+          ? "按 Zotero 顶级文件夹分专题（推荐）"
+          : "Group by Zotero Folders (Recommended)",
+        desc: isZh
+          ? "文件夹整洁分类，同时所有文献仍在同一张 Base 总表。"
+          : "Neat topic subfolders while keeping one master Base table.",
+      },
+      {
+        id: "unified" as const,
+        title: isZh
+          ? "全部放一起，只靠总表筛选"
+          : "Unified Folder + Base Filter Bar",
+        desc: isZh
+          ? "所有文献统一放进同一目录，在总表顶部随手筛选。"
+          : "All papers in one folder, filtered via the sticky Base bar.",
+      },
+    ]) {
+      const card = modeGrid.createEl("button", {
+        cls: `pf-mode-choice-card${curMode === opt.id ? " is-selected" : ""}`,
+        attr: { type: "button" },
+      });
+      modeCardEls.push(card);
+      card.createEl("span", { cls: "pf-mode-choice-title", text: opt.title });
+      card.createEl("span", { cls: "pf-mode-choice-desc", text: opt.desc });
+      card.addEventListener("click", () => {
+        settings.domain_mode = opt.id;
+        settings.zotero_source_mode = "sqlite";
+        for (const el of modeCardEls) el.classList.remove("is-selected");
+        card.classList.add("is-selected");
+        void this.plugin.saveSettings();
+        redrawPreview();
+      });
+    }
+    redrawPreview();
+
+    if (allCols.length > 0) {
+      const colDet = c2.createEl("details", { cls: "pf-adv-inline-details" });
+      colDet.createEl("summary", {
+        text: isZh
+          ? `挑选只同步哪些 Zotero 文件夹（当前：${curSel.size > 0 ? `已选 ${curSel.size} 个` : "全部文库"}）`
+          : `Filter specific Zotero folders (${curSel.size > 0 ? `${curSel.size} selected` : "All papers"})`,
+      });
+      const colGrid = colDet.createDiv({ cls: "pf-zotero-col-grid" });
+      for (const col of topCols.length > 0 ? topCols : allCols) {
+        const label = colGrid.createEl("label", { cls: "pf-zotero-col-item" });
+        const cb = label.createEl("input", {
+          attr: { type: "checkbox" },
+        }) as HTMLInputElement;
+        cb.checked = curSel.has(col.key);
+        cb.addEventListener("change", () => {
+          if (cb.checked) curSel.add(col.key);
+          else curSel.delete(col.key);
+          settings.zotero_selected_collections = Array.from(curSel);
+          void this.plugin.saveSettings();
+          redrawPreview();
+        });
+        label.createSpan({ text: col.name });
+        label.createEl("span", {
+          cls: "pf-zotero-col-cnt",
+          text: `${col.item_count}`,
+        });
+      }
+    }
+
+    // ── Block 3: Optional AI Keys (collapsed neatly so beginners never feel pressured) ──
+    const c3 = wrapper.createDiv({ cls: "pf-express-card" });
+    const c3Head = c3.createDiv({ cls: "pf-express-card-head" });
+    c3Head.createEl("span", { cls: "pf-express-num", text: "3" });
+    c3Head.createEl("strong", {
+      text: isZh
+        ? "AI 与期刊分区增强（全部可选，可稍后在设置补充）"
+        : "Optional AI & Journal Metrics (Configure later anytime)",
+    });
+
+    const aiDetails = c3.createEl("details", { cls: "pf-adv-inline-details" });
+    aiDetails.createEl("summary", {
+      text: isZh
+        ? "展开填写 PDF 解析（OCR）、AI 语义检索（含硅基流动预设）或 EasyScholar 密钥"
+        : "Expand to add PaddleOCR, Embedding (with presets), or EasyScholar API keys",
+    });
+
+    // OCR quick row
+    const ocrBox = aiDetails.createDiv({ cls: "pf-express-subrow" });
+    ocrBox.createEl("label", { text: "PaddleOCR API Key" });
+    const ocrKeyIn = ocrBox.createEl("input", {
+      cls: "pf-setup-input",
+      attr: {
+        type: "password",
+        placeholder: settings._paddleocr_configured
+          ? "•••• (已保存)"
+          : "粘贴百度 AI Studio OCR 密钥（可选）",
+      },
+    }) as HTMLInputElement;
+    const ocrTestBtn = ocrBox.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "保存并测通",
+      attr: { type: "button" },
+    });
+    const ocrMsg = ocrBox.createEl("span", { cls: "pf-test-conn-status" });
+    ocrTestBtn.addEventListener("click", () => {
+      const val = ocrKeyIn.value.trim();
+      ocrTestBtn.disabled = true;
+      ocrMsg.textContent = "测试中…";
+      void (
+        val
+          ? this._storeSetupSecret("paddleocr-api-key", val)
+          : Promise.resolve(true)
+      )
+        .then(() => this.getClient().ocrTestConnection())
+        .then((res) => {
+          if (val) ocrKeyIn.value = "";
+          ocrMsg.className = `pf-test-conn-status ${res?.passed ? "is-ok" : "is-err"}`;
+          ocrMsg.textContent = res?.passed
+            ? "✓ 已连通"
+            : `✗ ${res?.error || "校验失败"}`;
+        })
+        .catch((err) => {
+          ocrMsg.className = "pf-test-conn-status is-err";
+          ocrMsg.textContent = `✗ ${String(err?.message || err).slice(0, 60)}`;
+        })
+        .finally(() => {
+          ocrTestBtn.disabled = false;
+        });
+    });
+
+    // Embedding quick row with Preset dropdown
+    const memBox = aiDetails.createDiv({ cls: "pf-express-subrow" });
+    memBox.createEl("label", { text: "AI 语义检索预设" });
+    const pSel = memBox.createEl("select", {
+      cls: "pf-setup-select",
+    }) as HTMLSelectElement;
+    const curP = matchEmbeddingPresetId(
+      settings.vector_db_api_base || "",
+      settings.vector_db_api_model || ""
+    );
+    for (const p of EMBEDDING_PRESETS) {
+      const opt = pSel.createEl("option", {
+        text: isZh ? p.labelZh : p.labelEn,
+        attr: { value: p.id },
+      }) as HTMLOptionElement;
+      opt.selected = p.id === curP;
+    }
+    pSel.addEventListener("change", () => {
+      const picked = EMBEDDING_PRESETS.find((x) => x.id === pSel.value);
+      if (!picked || picked.id === "custom") return;
+      void this.getClient()
+        .configSet("vector_db_api_base", picked.baseUrl)
+        .catch(() => undefined);
+      void this.getClient()
+        .configSet("vector_db_api_model", picked.model)
+        .catch(() => undefined);
+      settings.vector_db_api_base = picked.baseUrl;
+      settings.vector_db_api_model = picked.model;
+      void this.plugin.saveSettings();
+    });
+    const memKeyIn = memBox.createEl("input", {
+      cls: "pf-setup-input",
+      attr: {
+        type: "password",
+        placeholder: settings._vector_db_configured
+          ? "•••• (已保存)"
+          : "粘贴 AI 检索 API Key（可选）",
+      },
+    }) as HTMLInputElement;
+    const memTestBtn = memBox.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "保存并测维度",
+      attr: { type: "button" },
+    });
+    const memMsg = memBox.createEl("span", { cls: "pf-test-conn-status" });
+    memTestBtn.addEventListener("click", () => {
+      const val = memKeyIn.value.trim();
+      memTestBtn.disabled = true;
+      memMsg.textContent = "探测中…";
+      void (
+        val
+          ? this._storeSetupSecret("vector-db-api-key", val)
+          : Promise.resolve(true)
+      )
+        .then(() => this.getClient().embedTestConnection())
+        .then((res) => {
+          if (val) memKeyIn.value = "";
+          memMsg.className = "pf-test-conn-status is-ok";
+          memMsg.textContent = `✓ ${res.model} (${res.dimension}维)`;
+        })
+        .catch((err) => {
+          memMsg.className = "pf-test-conn-status is-err";
+          memMsg.textContent = `✗ ${String(err?.message || err).slice(0, 60)}`;
+        })
+        .finally(() => {
+          memTestBtn.disabled = false;
+        });
+    });
+
+    if (this._setupFeedback) {
+      wrapper.createEl("p", {
+        cls:
+          this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
+        text: this._setupFeedback,
+      });
+    }
+    if (this._setupFailureDetail && this._setupOperation === "failed") {
+      wrapper.createEl("p", {
+        cls: "pf-setup-failure-detail",
+        text: this._setupFailureDetail,
+      });
+    }
+
+    // ── Single Big Footer CTA ──
+    const footer = wrapper.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(footer, {
+      label: isZh ? "稍后配置，先逛逛" : t("setup_nav_later"),
+      variant: "ghost",
+      disabled: this._setupOperation === "running",
+      onClick: () => this._goHome(),
+    });
+    renderActionButton(footer, {
+      label:
+        this._setupOperation === "running"
+          ? isZh
+            ? "正在同步文献库…"
+            : "Syncing…"
+          : isZh
+            ? "保存配置并立即同步文献库"
+            : "Save & Sync Library Now",
+      disabled: this._setupOperation === "running",
+      onClick: () =>
+        this._applyLibraryConfiguration({ autoCompleteOnSuccess: true }),
+    });
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {

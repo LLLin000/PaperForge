@@ -184,6 +184,10 @@ sequenceDiagram
    - **SQLite 锁占用与磁盘余量预检**：切流前预检 `paperforge.db` 排他写锁与至少 `32 MB` 磁盘可用空间，不满足时平滑阻断并给出单步指引。
    - **并发编辑防覆盖（CAS）**：`note.py` 与工作区改写使用 `write_text_cas(expected_sha256=...)`，若升级或后台任务期间用户在编辑器修改了笔记，立即抛出 `CASConflictError` 放弃覆盖，用户手写内容永远优先。
 
+5. **门禁五：新库目录同名防冲突隔离与用户自定义 `aliases` 无损合并**：
+   - **根目录非空文件夹自动让位（`_detectAndIsolateFolderCollision`）**：首次引导打开尚未写入 `paperforge.json` 的个人 Obsidian 库时，若根目录下已存在非空的 `Literature/`、`Resources/` 或 `Bases/`，自动将 PaperForge 根目录隔离为 `PaperForge/Literature`、`PaperForge/Resources`、`PaperForge/Bases` 并展示防冲突横幅，从源头杜绝挤占用户原有知识库目录。
+   - **手写 YAML `aliases` 同步保留（`frontmatter_note`）**：Zotero 元数据刷新重构笔记 Frontmatter 时，自动合并保留用户自行追加的所有历史 `aliases` 与 `custom_fm` 自定义字段，仅维护工作流锚点与衍生区，不破坏用户在笔记内部建立的个人别名与双链体系。
+
 ---
 
 ## 7. 维修、调试与升级 Checklist

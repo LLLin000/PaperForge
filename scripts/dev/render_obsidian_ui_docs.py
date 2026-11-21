@@ -35,6 +35,7 @@ SCENES = [
     "10-settings-setup-wizard-four-stages",
     "11-settings-ocr-and-memory-details",
     "12-ocr-workspace-and-modals",
+    "13-express-onboarding-and-domain-preview",
 ]
 
 

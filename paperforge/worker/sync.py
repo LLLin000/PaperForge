@@ -1041,10 +1041,27 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
     if not first_author:
         authors = entry.get("authors", [])
         first_author = authors[0] if authors else ""
+    existing_aliases_raw = existing_fm.get("aliases")
+    merged_aliases: list[str] = []
+    for cand in (entry.get("title", ""), entry.get("citation_key", "")):
+        c_str = str(cand or "").strip()
+        if c_str and c_str not in merged_aliases:
+            merged_aliases.append(c_str)
+    if isinstance(existing_aliases_raw, list):
+        for a in existing_aliases_raw:
+            a_str = str(a or "").strip()
+            if a_str and a_str not in merged_aliases:
+                merged_aliases.append(a_str)
+    elif isinstance(existing_aliases_raw, str) and existing_aliases_raw.strip():
+        a_str = existing_aliases_raw.strip()
+        if a_str not in merged_aliases:
+            merged_aliases.append(a_str)
+    aliases_literal = ", ".join(yaml_quote(a) for a in merged_aliases)
+
     lines = [
         "---",
         f"title: {yaml_quote(entry.get('title', ''))}",
-        f"aliases: [{yaml_quote(entry.get('title', ''))}, {yaml_quote(entry.get('citation_key', ''))}]",
+        f"aliases: [{aliases_literal}]",
         f"year: {entry.get('year', '')}",
         f"journal: {yaml_quote(entry.get('journal', ''))}",
         f"first_author: {yaml_quote(first_author)}",

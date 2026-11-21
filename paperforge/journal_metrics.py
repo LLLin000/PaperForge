@@ -28,6 +28,49 @@ logger = logging.getLogger(__name__)
 _CACHE_TTL_SECONDS = 90 * 86400
 _INMEM_CACHE: dict[str, dict[str, str]] = {}
 _OPENALEX_BACKOFF_UNTIL = 0.0
+_OPENALEX_SEED_BY_NAME: dict[str, dict] | None = None
+_OPENALEX_SEED_BY_ISSN: dict[str, dict] | None = None
+
+
+def _load_openalex_seed() -> tuple[dict[str, dict], dict[str, dict]]:
+    global _OPENALEX_SEED_BY_NAME, _OPENALEX_SEED_BY_ISSN
+    if _OPENALEX_SEED_BY_NAME is not None and _OPENALEX_SEED_BY_ISSN is not None:
+        return _OPENALEX_SEED_BY_NAME, _OPENALEX_SEED_BY_ISSN
+    by_name: dict[str, dict] = {}
+    by_issn: dict[str, dict] = {}
+    seed_path = Path(__file__).resolve().parent / "data" / "openalex_journal_seed.json"
+    if seed_path.is_file():
+        try:
+            raw = json.loads(seed_path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                for name_key, info in raw.items():
+                    if isinstance(info, dict) and info.get("if"):
+                        norm_n = re.sub(r"[^a-z0-9]+", " ", name_key.lower()).strip()
+                        by_name[norm_n] = info
+                        issn_val = re.sub(r"[^0-9Xx]", "", str(info.get("issn") or "")).upper()
+                        if issn_val:
+                            by_issn[issn_val] = info
+        except Exception:
+            pass
+    _OPENALEX_SEED_BY_NAME = by_name
+    _OPENALEX_SEED_BY_ISSN = by_issn
+    return by_name, by_issn
+
+
+def _lookup_openalex_seed(journal_name: str, issn: str = "") -> dict[str, str] | None:
+    by_name, by_issn = _load_openalex_seed()
+    clean_issn = re.sub(r"[^0-9Xx]", "", str(issn or "")).upper()
+    hit = by_issn.get(clean_issn) if clean_issn else None
+    if not hit and journal_name:
+        norm_n = re.sub(r"[^a-z0-9]+", " ", journal_name.lower()).strip()
+        hit = by_name.get(norm_n)
+    if hit and hit.get("if"):
+        return {
+            "impact_factor": f"{float(hit['if']):.1f}",
+            "impact_factor_source": "openalex_2yr",
+            "journal_partition": "",
+        }
+    return None
 
 CREATE_JOURNAL_METRICS_TABLE = """
 CREATE TABLE IF NOT EXISTS journal_metrics (
@@ -177,9 +220,15 @@ def _find_zotero_plugin_db_candidates(vault: Path, zotero_dir: Path | None) -> l
     except Exception:
         pass
     if zotero_dir is not None and zotero_dir.is_dir():
-        for name in ("zoterostyle.json", "easyscholar.json", "if_cache.json"):
+        for name in (
+            "zoterostyle.json",
+            "journal-tags-cache.json",
+            "easyscholar.json",
+            "if_cache.json",
+        ):
             candidates.append(zotero_dir / name)
             candidates.append(zotero_dir / "zoterostyle" / name)
+            candidates.append(zotero_dir / "journal-tags" / name)
     return candidates
 
 
@@ -375,6 +424,12 @@ def lookup_journal_metric(
 
     if mode == "easyscholar":
         return empty
+
+    # 4.5 Bundled CC0 OpenAlex top-journals offline seed (instant 0ms hit)
+    seed_hit = _lookup_openalex_seed(journal_name, issn=issn)
+    if seed_hit and seed_hit.get("impact_factor"):
+        _INMEM_CACHE[cache_key] = dict(seed_hit)
+        return seed_hit
 
     # 5. OpenAlex free open 2-year citation proxy
     oa = _fetch_openalex_source(journal_name, issn=issn)

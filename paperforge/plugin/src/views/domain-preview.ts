@@ -148,7 +148,7 @@ export function renderDomainModePreview(
       const folderLine = tree.createDiv({
         cls: "pf-preview-node is-branch pf-fade-item",
       });
-      folderLine.createSpan({ text: `├── 📂 ${col.name}/ ` });
+      folderLine.createEl("span", { text: `├── 📂 ${col.name}/ ` });
       folderLine.createEl("span", {
         cls: "pf-preview-count",
         text: opts.isZh ? `(${col.item_count} 篇)` : `(${col.item_count})`,
@@ -170,10 +170,10 @@ export function renderDomainModePreview(
     const flatLine = tree.createDiv({
       cls: "pf-preview-node is-branch pf-fade-item",
     });
-    flatLine.createSpan({
+    flatLine.createEl("span", {
       text: opts.isZh
-        ? "├── 📂 Literature/（全部汇总） "
-        : "├── 📂 Literature/ (Unified) ",
+        ? "├── 📄 所有文献统一平铺此目录 "
+        : "├── 📄 All papers unified here ",
     });
     flatLine.createEl("span", {
       cls: "pf-preview-count",
