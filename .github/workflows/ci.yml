@@ -190,8 +190,15 @@ jobs:
           "$BIN" --version
           RESP=$(printf '{"id":1,"op":"daemon.health"}\n{"id":2,"op":"shutdown"}\n' | "$BIN" --stdio --idle-timeout 15 | head -n 1)
           echo "health: $RESP"
-          echo "$RESP" | grep -q '"backend":"rust-native"'
-          echo "$RESP" | grep -q '"exit_code":0'
+          python - "$RESP" <<'PY'
+          import json, sys
+          env = json.loads(sys.argv[1])
+          assert env["ok"] is True and env["exit_code"] == 0, env
+          body = json.loads(env["stdout"])
+          assert body["ok"] is True and body["backend"] == "rust-native", body
+          assert body["heavy_modules_loaded"] == [], body
+          print(f"Verified rust-native daemon: version={body['version']} rss_mb={body['rss_mb']}")
+          PY
       - name: Install plugin dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
         working-directory: paperforge/plugin

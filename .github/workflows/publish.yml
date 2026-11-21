@@ -108,8 +108,9 @@ jobs:
           "$BIN" --version
           RESP=$(printf '{"id":1,"op":"daemon.health"}\n{"id":2,"op":"shutdown"}\n' | "$BIN" --stdio --idle-timeout 15 | head -n 1)
           echo "health response: $RESP"
-          echo "$RESP" | grep -q '"backend":"rust-native"'
+          echo "$RESP" | grep -q '"ok":true'
           echo "$RESP" | grep -q '"exit_code":0'
+          echo "$RESP" | grep -q 'rust-native'
 
       - name: Stage release binary
         shell: bash
