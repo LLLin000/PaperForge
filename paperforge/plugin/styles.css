@@ -13433,6 +13433,73 @@ body.pf-no-glass
   min-width: 240px;
 }
 
+/* ── Control Center Inline Accordion (Single-Screen Settings) ── */
+.pf-cc-accordion-item {
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-control-center .pf-cc-module-list + .pf-cc-section-head {
+  margin-top: 16px;
+}
+
+.pf-cc-engine-pill {
+  cursor: pointer;
+}
+
+.pf-cc-accordion-item:last-child {
+  border-bottom: none;
+}
+
+.pf-control-center .pf-cc-accordion-head {
+  grid-template-columns: minmax(110px, auto) auto minmax(0, 1fr) auto 14px !important;
+  border-bottom: none !important;
+}
+
+.pf-control-center .pf-cc-accordion-head.is-expanded {
+  background: var(--pf-elevated, var(--pf-hover));
+}
+
+.pf-cc-row-chevron {
+  transition: transform var(--pf-motion-snappy, 160ms ease);
+  display: inline-block;
+}
+
+.pf-cc-row-chevron.is-expanded {
+  transform: rotate(90deg);
+}
+
+.pf-cc-inline-drawer {
+  display: none;
+  padding: 4px 16px 14px 16px;
+  border-top: 1px dashed var(--pf-border);
+  background: var(--pf-canvas, var(--pf-surface));
+}
+
+.pf-cc-inline-drawer.is-open {
+  display: block;
+}
+
+.pf-cc-inline-drawer .pf-module-body {
+  padding-top: 8px;
+}
+
+.pf-cc-inline-drawer .pf-module-body h3:first-child {
+  margin-top: 4px;
+}
+
+.pf-cc-inline-subengine {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pf-border);
+}
+
+.pf-cc-inline-subengine > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pf-text-muted);
+}
+
 /* Accessibility ReduceMotion */
 body.pf-reduce-motion *,
 body.pf-reduce-motion *::before,

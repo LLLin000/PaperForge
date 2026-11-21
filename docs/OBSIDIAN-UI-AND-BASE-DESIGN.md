@@ -130,7 +130,7 @@ python scripts/dev/render_obsidian_ui_docs.py
 ## 6. 设置控制中心、一屏极速引导与二级批量维护台
 
 1. **一屏极速引导（默认新户入口 · `_renderExpressSetup`）**：面向零代码科研工作者砍掉繁琐四步跳转——**单屏整合**「① 计算引擎（后台自动安装不阻塞后续选项）→ ② 直连 Zotero（`zotero.sqlite` 免 BBT、同名 `Literature/` 自动隔离防护、交互式 A/B 目录与 Base 总表实时预览）→ ③ 可折叠可选 AI 与期刊数据源预设（硅基流动 / 百炼 / 智谱 / OpenAI / Ollama 一键填参 + 实测连接）→ 底部单一主按钮保存并同步」；右上角仍保留「分步详情模式」以便高级排查。
-2. **设置控制中心（`PaperForgeSettingTab`）**：`01–05` 编号能力列表清晰展示 6 种状态胶囊（Ready / Checking / Setup Required / Action Required / Not Enabled / Detection Failed），底部集成 `界面配色` 双模式开关；模块详情与 `MaintenanceItem` 提供结构化错误剖析与「复制诊断信息」。
+2. **设置控制中心（`PaperForgeSettingTab` · 同屏手风琴 + 静默重检）**：淘汰“打开设置就 5 个模块一起转圈 Checking”与“5 个卡片跳 5 个独立子页”的繁琐路径——缓存采用 SWR（保留上次有效状态、后台合并单次 `probeAll` 静默校对），并将「核心连接（Zotero + 引擎）」与「AI 与扩展能力（OCR / 智能检索 / Agent 集成）」整合为同屏可就地展开的手风琴行，无需跳转即可修改密钥与模型，底部集成 `界面配色` 与动效开关。
 3. **四阶段安装向导（分步详细视图）**：支持逐阶细致检验托管运行时、Zotero 库路径、可选能力与就绪检查。
 4. **二级维护台与安全弹窗（`OcrWorkspaceView` & Modals）**：仅按需进入的批量 OCR 重跑、版本恢复对比、只读 OCR 排版诊断预览与 Zotero 孤儿清理弹窗均已统一切换至 AsterLab 语义变量与线条图标体系。
 

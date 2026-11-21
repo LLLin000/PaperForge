@@ -1959,4 +1959,84 @@ describe("Issue #356 recovery: openSetupJourney", () => {
       readdirSpy.mockRestore();
     }
   });
+
+  it("Control Center preserves stale-but-valid cached state without flashing Checking and expands modules inline", async () => {
+    const expiredTs = "2020-01-01T00:00:00.000Z";
+    const mkCached = (mod: string) => ({
+      schema_version: 2,
+      module: mod,
+      capability_state: "ready",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "ok",
+      reason: { code: `${mod}.ready`, text: "Ready" },
+      action: { primary: null },
+      notices: [],
+      user_state: "ready",
+      capability_kind:
+        mod === "installation" || mod === "library" ? "required" : "optional",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
+      updated_at: expiredTs,
+      ttl_seconds: 60,
+    });
+    const probeAllMock = vi.fn(async () => ({ modules: {} }));
+    const probeMock = vi.fn(async () => mkCached("installation"));
+    const tab = new PaperForgeSettingTab(
+      { vault: { adapter: { basePath: "/vault" } } } as unknown as App,
+      {
+        settings: {
+          _setup_complete: true,
+          zotero_data_dir: "/Zotero",
+          agent_platform: "claude",
+          capabilityState: {
+            installation: mkCached("installation"),
+            library: mkCached("library"),
+            ocr: mkCached("ocr"),
+            memory: mkCached("memory"),
+            maintenance: mkCached("maintenance"),
+            help: mkCached("help"),
+          },
+        },
+        manifest: { version: "2.0.0" },
+        saveSettings: vi.fn(),
+        readPaperforgeJson: () => ({}),
+        getClient: () => ({
+          invalidateCache: vi.fn(),
+          probeAll: probeAllMock,
+          probe: probeMock,
+          isOperationActive: () => false,
+        }),
+      } as any
+    );
+    (tab as any)._resolveRuntimeCommand = () => ({ path: "python", args: [] });
+
+    const root = document.createElement("div");
+    tab.containerEl = root;
+    tab.display();
+
+    // Cached ready states stay ready immediately (no Checking... flash)
+    const summaryBadge = root.querySelector(".pf-cc-summary-badge");
+    expect(summaryBadge?.className).toContain("ready");
+    // Coalesced single background probeAll instead of 5 separate _probeModule bursts
+    expect(probeAllMock).toHaveBeenCalledTimes(1);
+
+    // 4 clean grouped accordion rows instead of 5 sub-page cards
+    const heads = root.querySelectorAll<HTMLElement>(".pf-cc-accordion-head");
+    expect(heads).toHaveLength(4);
+
+    // Clicking OCR expands inline config without navigating away from overview
+    const ocrHead = root.querySelector<HTMLElement>(
+      '.pf-cc-accordion-head[data-module="ocr"]'
+    );
+    ocrHead?.click();
+    expect(tab.activeTab).toBe("overview");
+    expect(
+      root.querySelector(
+        '.pf-cc-accordion-item[data-module="ocr"] .pf-cc-inline-drawer.is-open'
+      )
+    ).toBeTruthy();
+  });
 });

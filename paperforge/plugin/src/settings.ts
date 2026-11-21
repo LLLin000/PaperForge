@@ -189,6 +189,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _lastOrphanCount: number = 0;
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
+  /** Cached modules past TTL waiting for silent background revalidation (never flashed to Checking). */
+  private _staleModulesNeedingSilentRefresh: Set<string> = new Set();
+  private _overviewAutoProbedThisSession = false;
+  private _silentRevalidating = false;
+  /** Expanded accordion row ids on the 1-screen Control Center. */
+  private _expandedInlineModules: Set<string> = new Set();
   /** Optional modules whose detail page re-probed once this session, so a
    *  persisted last-known envelope (e.g. "API Key: Entered" for a key since
    *  deleted) never stands in for the live state after a restart. */
@@ -886,22 +892,37 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "paperforge-settings-desc",
     });
 
-    // Auto-probe stale/unknown modules BEFORE rendering so cards show "Checking..."
+    // Coalesce startup checks into ONE background refresh without flashing cached cards to "Checking...".
+    let hasNeverProbed = false;
     for (const mod of CAPABILITY_MODULES) {
+      if (mod === "maintenance") continue;
       const env = this._capabilityState?.[mod];
       if (!env) continue;
-      const neverProbed =
+      if (
         env.capability_state === "unknown" &&
-        env.updated_at === new Date(0).toISOString();
-      const isStale =
-        env.user_state === "detection_failed" &&
-        env.reason.code.endsWith(".stale");
-      if ((neverProbed || isStale) && !this._attemptedProbes.has(mod)) {
-        this._attemptedProbes.add(mod);
-        if (mod !== "maintenance") {
-          this._probeModule(mod);
-        }
+        env.updated_at === new Date(0).toISOString()
+      ) {
+        hasNeverProbed = true;
       }
+    }
+    const clientObj =
+      typeof (this.plugin as unknown as { getClient?: unknown })?.getClient ===
+      "function"
+        ? (
+            this.plugin as unknown as {
+              getClient: () => { probeAll?: unknown };
+            }
+          ).getClient()
+        : null;
+    if (
+      clientObj &&
+      typeof clientObj.probeAll === "function" &&
+      !this._overviewAutoProbedThisSession &&
+      (hasNeverProbed || this._staleModulesNeedingSilentRefresh.size > 0)
+    ) {
+      this._overviewAutoProbedThisSession = true;
+      this._staleModulesNeedingSilentRefresh.clear();
+      this._refreshAllReadModels({ silent: !hasNeverProbed });
     }
 
     // ── Non-blocking Veteran Vault Upgrade Banner (ADR-018) ──
@@ -1214,7 +1235,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Installation detail view (Issue #77). */
   /** Render Foundation with the shared module-detail shell. */
-  _renderInstallationDetail(containerEl: HTMLElement): void {
+  _renderInstallationDetail(
+    containerEl: HTMLElement,
+    opts?: { inline?: boolean }
+  ): void {
     // The shell renders the header first, so a stale "ready" envelope must be
     // corrected before it runs: the pointer is the fact, the envelope a cache.
     const pointer = readRuntimePointer();
@@ -1225,7 +1249,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState = this._capabilityState ?? {};
       this._capabilityState.installation = this._setupRequiredEnvelope();
     }
-    this._renderModuleDetailShell(containerEl, "installation", false);
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "installation", false);
+    }
     const env =
       this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
@@ -1625,7 +1651,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _probeDetailOnce(mod: CapabilityModule): void {
     if (this._detailProbedThisSession.has(mod)) return;
     this._detailProbedThisSession.add(mod);
-    this._probeModule(mod);
+    const existing = this._capabilityState?.[mod];
+    const hasCachedState =
+      Boolean(existing) &&
+      existing!.updated_at !== new Date(0).toISOString() &&
+      existing!.user_state !== "detection_failed";
+    this._probeModule(mod, undefined, { silent: hasCachedState });
   }
 
   /** Render the Module Detail tab (top-level destination). */
@@ -1654,8 +1685,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** #88: Library module workbench. */
-  _renderLibraryDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "library");
+  _renderLibraryDetail(
+    containerEl: HTMLElement,
+    opts?: { inline?: boolean }
+  ): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "library");
+    }
     const env =
       this._capabilityState?.library ?? createUnknownEnvelope("library");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
@@ -1734,8 +1770,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the OCR detail view (Issue #96: 3-state UX). */
-  _renderOcrDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "ocr");
+  _renderOcrDetail(
+    containerEl: HTMLElement,
+    opts?: { inline?: boolean }
+  ): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "ocr");
+    }
     const env = this._capabilityState?.ocr ?? createUnknownEnvelope("ocr");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_ocr_status") });
@@ -1933,8 +1974,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
   /** Render the Memory detail view (Issue #78). */
-  _renderAgentDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "agent");
+  _renderAgentDetail(
+    containerEl: HTMLElement,
+    opts?: { inline?: boolean }
+  ): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "agent");
+    }
     const body = containerEl.createDiv({ cls: "pf-module-body" });
 
     const current = this.plugin.settings.agent_platform || "opencode";
@@ -2071,8 +2117,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the Memory detail view matching prototype layout. */
-  _renderMemoryDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "memory", false);
+  _renderMemoryDetail(
+    containerEl: HTMLElement,
+    opts?: { inline?: boolean }
+  ): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "memory", false);
+    }
     const env =
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
@@ -3032,7 +3083,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._detailReturn = null;
       } else {
         this.activeTab = "overview";
-        this._focusTargetId = `button.pf-cc-module-card[data-module="${mod}"]`;
+        this._focusTargetId = `.pf-open-module-btn[data-module="${mod}"]`;
       }
       this._selectedDetailModule = "";
       this.display();
@@ -3459,11 +3510,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * so first-run immediately probes Installation+Help.
    */
   _initCapabilityState(): void {
-    const stored = this.plugin.settings.capabilityState;
-    this._capabilityState = validatePersistedEnvelopes(
-      (stored ?? {}) as Record<string, unknown>,
+    const stored = (this.plugin.settings.capabilityState ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const validated = validatePersistedEnvelopes(
+      stored,
       CAPABILITY_MODULES as unknown as string[]
     );
+    // Keep last valid state visible across TTL expiration (Stale-While-Revalidate)
+    // and silently verify in background rather than flashing "Checking..." on every open.
+    for (const mod of CAPABILITY_MODULES) {
+      const raw = stored[mod];
+      if (
+        raw &&
+        typeof raw === "object" &&
+        isValidEnvelope(raw, mod) &&
+        isEnvelopeStale(raw as ProbeEnvelope) &&
+        (raw as ProbeEnvelope).user_state !== "checking"
+      ) {
+        validated[mod] = raw as ProbeEnvelope;
+        this._staleModulesNeedingSilentRefresh.add(mod);
+      }
+    }
+    this._capabilityState = validated;
     this._persistCapabilityState();
   }
 
@@ -3475,33 +3545,39 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Call `paperforge probe <module> --json` and store the validated envelope unchanged. */
-  _probeModule(mod: CapabilityModule, lastOperationExitCode?: number): void {
+  _probeModule(
+    mod: CapabilityModule,
+    lastOperationExitCode?: number,
+    opts?: { silent?: boolean }
+  ): void {
     if (this._probing.has(mod)) return;
     this._probing.add(mod);
 
-    // Show probing state immediately
-    const current = this._capabilityState?.[mod];
-    const probing: ProbeEnvelope = {
-      schema_version: 2,
-      module: mod,
-      capability_state: current?.capability_state ?? "unknown",
-      activity_state: "running",
-      activity_label: "Probing...",
-      activity_progress: null,
-      severity: "unknown",
-      reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
-      action: { primary: probeAction(mod) },
-      notices: current?.notices ?? [],
-      user_state: "checking",
-      capability_kind:
-        mod === "installation" || mod === "library" ? "required" : "optional",
-      maintenance_eligible: false,
-      user_visible_failure: false,
-      user_impact: null,
-      updated_at: new Date().toISOString(),
-      ttl_seconds: current?.ttl_seconds ?? 0,
-    };
-    this._updateCapabilityEnvelope(mod, probing);
+    if (!opts?.silent) {
+      // Show probing state immediately for explicit user-triggered / first-run checks
+      const current = this._capabilityState?.[mod];
+      const probing: ProbeEnvelope = {
+        schema_version: 2,
+        module: mod,
+        capability_state: current?.capability_state ?? "unknown",
+        activity_state: "running",
+        activity_label: "Probing...",
+        activity_progress: null,
+        severity: "unknown",
+        reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
+        action: { primary: probeAction(mod) },
+        notices: current?.notices ?? [],
+        user_state: "checking",
+        capability_kind:
+          mod === "installation" || mod === "library" ? "required" : "optional",
+        maintenance_eligible: false,
+        user_visible_failure: false,
+        user_impact: null,
+        updated_at: new Date().toISOString(),
+        ttl_seconds: current?.ttl_seconds ?? 0,
+      };
+      this._updateCapabilityEnvelope(mod, probing);
+    }
 
     const resolved = this._resolveRuntimeCommand();
     if (!resolved) {
@@ -3878,25 +3954,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.display();
   }
 
-  /** #86: Overview — operational baseline + five navigation-only module cards. */
+  /**
+   * Unified 1-Screen Control Center:
+   * - Merges runtime & library into one core row (zero sub-page jumping)
+   * - Inline accordion expansion for Library / OCR / Smart Retrieval / Agent
+   * - Keeps deep-link _handleCardNavigation + _render*Detail API compatibility.
+   */
   _renderControlCenter(containerEl: HTMLElement): void {
     const cc = containerEl.createEl("div", { cls: "pf-control-center" });
     const envelopes: Record<string, ProbeEnvelope> =
       this._capabilityState ?? {};
+    const isZh = langFromApp(this.app) === "zh";
 
-    // ── Page heading + lede ──
-    // ONE heading per page, at the settings-heading scale (15px/600).  The
-    // page name used to be a grey 12px eyebrow under a second title, which
-    // left four overlapping text blocks before any content.
     cc.createEl("h2", {
       cls: "pf-cc-heading",
       text: t("cc_heading") || "Control center",
     });
     cc.createEl("p", {
       cls: "pf-cc-lede",
-      text:
-        t("cc_lede") ||
-        "See what is working and what needs attention across your pipeline.",
+      text: isZh
+        ? "核心状态与常用配置同屏展示，点击任意能力行即可就地展开修改，无需来回跳转。"
+        : "Core health & settings in one calm screen — click any row to configure in-place.",
     });
 
     // ── Summary Card ──
@@ -3957,18 +4035,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     const summaryMeta = summaryEl.createDiv({ cls: "pf-cc-summary-meta" });
-
-    // Last checked time
     const latest = Object.values(envelopes)
       .map((e) => e.updated_at)
-      .filter(Boolean)
+      .filter((ts) => ts && ts !== new Date(0).toISOString())
       .sort()
       .pop();
     summaryMeta.createEl("span", {
-      text: latest
-        ? (t("cc_last_checked") || "Checked just now: ") +
-          new Date(latest).toLocaleString()
-        : t("cc_checked_pending") || "Not checked yet",
+      text: this._silentRevalidating
+        ? isZh
+          ? "正在后台轻检…"
+          : "Revalidating…"
+        : latest
+          ? (t("cc_last_checked") || "Checked: ") +
+            new Date(latest).toLocaleString()
+          : t("cc_checked_pending") || "Not checked yet",
     });
 
     const refreshBtn = summaryMeta.createEl("button", {
@@ -3977,29 +4057,109 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     refreshBtn.addEventListener("click", () => this._refreshAllModules());
 
-    // ── Section Head ──
-    const sectionHead = cc.createDiv({ cls: "pf-cc-section-head" });
-    sectionHead.createEl("div", {
+    // ── Group 1: Core Connection (Zotero Library + Runtime merged into 1 calm row) ──
+    const coreHead = cc.createDiv({ cls: "pf-cc-section-head" });
+    coreHead.createEl("div", {
       cls: "pf-cc-section-title",
-      text: t("cc_modules_header") || "Modules",
+      text: isZh ? "核心连接" : "Core Connection",
     });
-    sectionHead.createEl("span", {
+    const versionTag =
+      this._runtimeStatusVersion || this.plugin.manifest?.version || "";
+    const enginePill = coreHead.createEl("div", {
+      cls: "caption pf-open-module-btn pf-cc-engine-pill",
+      text: isZh
+        ? `计算引擎 ${versionTag ? `v${versionTag}` : ""}（${foundationReady ? "正常" : this._getUserStateLabel(foundationEnv.user_state)}）`
+        : `Engine ${versionTag ? `v${versionTag}` : ""} (${this._getUserStateLabel(foundationEnv.user_state)})`,
+      attr: {
+        "data-module": "installation",
+        role: "button",
+        tabindex: "0",
+      },
+    });
+    enginePill.addEventListener("click", () => {
+      if (!this._expandedInlineModules.has("library")) {
+        this._expandedInlineModules.add("library");
+        this.display();
+      }
+      const sub = this.containerEl?.querySelector<HTMLDetailsElement>(
+        ".pf-cc-inline-subengine"
+      );
+      if (sub) sub.open = true;
+    });
+
+    const coreList = cc.createDiv({ cls: "pf-cc-module-list" });
+    this._renderAccordionRow(
+      coreList,
+      "library",
+      isZh ? "Zotero 文献库与计算引擎" : "Zotero Library & Core Engine",
+      !foundationReady && libraryEnv.user_state === "ready"
+        ? foundationEnv
+        : libraryEnv,
+      (drawerBody) => {
+        this._renderLibraryDetail(drawerBody, { inline: true });
+        const engineDetails = drawerBody.createEl("details", {
+          cls: "pf-cc-inline-subengine",
+        });
+        if (!foundationReady) engineDetails.open = true;
+        engineDetails.createEl("summary", {
+          text: isZh
+            ? `计算引擎与环境维护（v${versionTag || "?"} · ${this._getUserStateLabel(foundationEnv.user_state)}）`
+            : `Compute Engine & Maintenance (v${versionTag || "?"})`,
+        });
+        const engineSlot = engineDetails.createDiv();
+        this._renderInstallationDetail(engineSlot, { inline: true });
+      },
+      isZh
+        ? `${this.plugin.settings.zotero_data_dir || "未选 Zotero 目录"} · 引擎${foundationReady ? "正常" : "待检查"}`
+        : undefined
+    );
+
+    // ── Group 2: Optional AI & Skills (all editable inline, 0 sub-page hops) ──
+    const optHead = cc.createDiv({ cls: "pf-cc-section-head" });
+    optHead.createEl("div", {
+      cls: "pf-cc-section-title",
+      text: isZh ? "AI 与扩展能力" : "AI & Agent Capabilities",
+    });
+    optHead.createEl("span", {
       cls: "caption",
       text:
         t("cc_optional_note") ||
         "Optional modules do not affect core readiness.",
     });
 
-    // ── Module List (5 cards with numbering 01-05) ──
-    const moduleList = cc.createDiv({ cls: "pf-cc-module-list" });
-    for (const [idx, mod] of this._getOverviewModules().entries()) {
-      const env =
-        mod.id === "agent"
-          ? this._getAgentPlaceholderEnvelope()
-          : (envelopes[mod.id] ??
-            createUnknownEnvelope(mod.id as CapabilityModule));
-      this._renderOverviewCard(moduleList, mod.id, mod.label, env, idx + 1);
-    }
+    const optList = cc.createDiv({ cls: "pf-cc-module-list" });
+    const ocrEnv = envelopes["ocr"] ?? createUnknownEnvelope("ocr");
+    this._renderAccordionRow(
+      optList,
+      "ocr",
+      t("cc_module_ocr") || "PDF 解析 (OCR)",
+      ocrEnv,
+      (drawerBody) => this._renderOcrDetail(drawerBody, { inline: true })
+    );
+
+    const memEnv = envelopes["memory"] ?? createUnknownEnvelope("memory");
+    this._renderAccordionRow(
+      optList,
+      "memory",
+      t("cc_module_memory") || "智能检索（向量与记忆）",
+      memEnv,
+      (drawerBody) => this._renderMemoryDetail(drawerBody, { inline: true }),
+      this.plugin.settings.vector_db_api_model
+        ? `${this.plugin.settings.vector_db_api_model} · ${this._getModuleConsequence("memory", memEnv)}`
+        : undefined
+    );
+
+    const agentEnv = this._getAgentPlaceholderEnvelope();
+    this._renderAccordionRow(
+      optList,
+      "agent",
+      t("cc_module_agent") || "AI Agent 技能集成",
+      agentEnv,
+      (drawerBody) => this._renderAgentDetail(drawerBody, { inline: true }),
+      AGENT_PLATFORM_LABELS[
+        this.plugin.settings.agent_platform || "opencode"
+      ] ?? this.plugin.settings.agent_platform
+    );
 
     // ── Appearance Palette Mode, Liquid Glass & Reduce Motion ──
     const appearanceGroup = cc.createDiv({ cls: "pf-cc-appearance-group" });
@@ -4108,6 +4268,86 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
+  private _renderAccordionRow(
+    listEl: HTMLElement,
+    mod: string,
+    label: string,
+    env: ProbeEnvelope,
+    renderInlineBody: (drawerBody: HTMLElement) => void,
+    sentenceOverride?: string
+  ): void {
+    const item = listEl.createDiv({
+      cls: "pf-cc-accordion-item",
+      attr: { "data-module": mod },
+    });
+    const isExpanded = this._expandedInlineModules.has(mod);
+    const header = item.createEl("div", {
+      cls: `pf-cc-module-card pf-open-module-btn pf-cc-accordion-head${isExpanded ? " is-expanded" : ""}`,
+      attr: {
+        "data-module": mod,
+        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+        "aria-expanded": String(isExpanded),
+        role: "button",
+        tabindex: "0",
+      },
+    });
+    header.createEl("span", { cls: "pf-cc-card-name", text: label });
+    renderStatusBadge(
+      header,
+      env.user_state,
+      this._getUserStateLabel(env.user_state)
+    );
+    header.createEl("span", {
+      cls: "pf-cc-card-sentence",
+      text: sentenceOverride ?? this._getModuleConsequence(mod, env),
+    });
+    const metricText =
+      env.user_state === "ready" &&
+      env.action?.primary?.scope_count &&
+      env.action.primary.scope_count > 1
+        ? (t("cc_metric_papers") || "Papers: ") + env.action.primary.scope_count
+        : "";
+    header.createEl("span", {
+      cls: "pf-cc-card-metric",
+      text: metricText,
+    });
+    header.createEl("span", {
+      cls: `pf-cc-card-arrow pf-cc-row-chevron${isExpanded ? " is-expanded" : ""}`,
+      text: "\u203A",
+    });
+
+    const drawer = item.createDiv({
+      cls: `pf-cc-inline-drawer${isExpanded ? " is-open" : ""}`,
+    });
+    if (isExpanded) {
+      renderInlineBody(drawer);
+    }
+
+    const toggleExpand = () => {
+      if (this._expandedInlineModules.has(mod)) {
+        this._expandedInlineModules.delete(mod);
+        header.classList.remove("is-expanded");
+        header.setAttribute("aria-expanded", "false");
+        drawer.classList.remove("is-open");
+        drawer.innerHTML = "";
+      } else {
+        this._expandedInlineModules.add(mod);
+        header.classList.add("is-expanded");
+        header.setAttribute("aria-expanded", "true");
+        drawer.classList.add("is-open");
+        drawer.innerHTML = "";
+        renderInlineBody(drawer);
+      }
+    };
+    header.addEventListener("click", toggleExpand);
+    header.addEventListener("keydown", (ev: KeyboardEvent) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        toggleExpand();
+      }
+    });
+  }
+
   private _applyOverviewQuickFilter(
     containerEl: HTMLElement,
     rawQuery: string
@@ -4115,25 +4355,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const q = rawQuery.trim().toLowerCase();
     const MODULE_KEYWORDS: Record<string, string> = {
       installation: "runtime python core 环境 安装 更新",
-      library: "zotero bbt pdf sync exports 同步 文献库 路径",
+      library:
+        "zotero bbt pdf sync exports runtime python core 同步 文献库 路径 环境",
       ocr: "paddle ocr fulltext 解析 扫描",
-      memory: "vector embedding sqlite search api 向量 检索 认知",
+      memory: "vector embedding sqlite search api 向量 检索 认知 硅基",
       agent: "claude codex opencode cursor skill agents 技能",
     };
-    const cards = Array.from(
+    const items = Array.from(
       containerEl.querySelectorAll<HTMLElement>(
-        ".pf-cc-module-card, .pf-maintenance-inbox-item"
+        ".pf-cc-accordion-item, .pf-cc-module-card, .pf-maintenance-inbox-item"
       )
     );
-    for (const card of cards) {
+    for (const el of items) {
       if (!q) {
-        card.classList.remove("pf-is-filtered-out");
-        card.style.display = "";
+        el.classList.remove("pf-is-filtered-out");
+        el.style.display = "";
         continue;
       }
-      const mod = card.getAttribute("data-module") || "";
+      const mod = el.getAttribute("data-module") || "";
       const haystack = (
-        (card.textContent || "") +
+        (el.textContent || "") +
         " " +
         mod +
         " " +
@@ -4141,11 +4382,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ).toLowerCase();
       const matched = haystack.includes(q);
       if (matched) {
-        card.classList.remove("pf-is-filtered-out");
-        card.style.display = "";
+        el.classList.remove("pf-is-filtered-out");
+        el.style.display = "";
       } else {
-        card.classList.add("pf-is-filtered-out");
-        card.style.display = "none";
+        el.classList.add("pf-is-filtered-out");
+        el.style.display = "none";
       }
     }
   }
@@ -4310,9 +4551,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * #144: no dependency map — invalidate everything, refresh everything.
    * Stale actions stay disabled until fresh envelopes land (last-known kept).
    */
-  _refreshAllReadModels(lastLibraryExitCode?: number): void {
+  _refreshAllReadModels(
+    lastLibraryExitCodeOrOpts?:
+      | number
+      | { lastLibraryExitCode?: number; silent?: boolean }
+  ): void {
+    const lastLibraryExitCode =
+      typeof lastLibraryExitCodeOrOpts === "number"
+        ? lastLibraryExitCodeOrOpts
+        : lastLibraryExitCodeOrOpts?.lastLibraryExitCode;
+    const silent =
+      typeof lastLibraryExitCodeOrOpts === "object" &&
+      lastLibraryExitCodeOrOpts?.silent === true;
     const client = this.getClient();
-    client.invalidateCache();
+    if (!client || typeof client.probeAll !== "function") {
+      this._probing.clear();
+      this._silentRevalidating = false;
+      return;
+    }
+    if (!silent) {
+      client.invalidateCache?.();
+    }
     const vp =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
       "";
@@ -4335,8 +4594,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       );
       return;
     }
-    for (const mod of CAPABILITY_MODULES) {
-      this._probing.add(mod);
+
+    const fingerprintState = (
+      state?: Record<string, ProbeEnvelope> | null
+    ): string =>
+      JSON.stringify(
+        CAPABILITY_MODULES.map((m) => {
+          const e = state?.[m];
+          return e
+            ? [
+                m,
+                e.user_state,
+                e.capability_state,
+                e.reason?.code,
+                e.action?.primary?.action_id,
+                e.details,
+              ]
+            : [m];
+        })
+      );
+    const prevFingerprint = silent
+      ? fingerprintState(this._capabilityState)
+      : "";
+
+    if (silent) {
+      this._silentRevalidating = true;
+    } else {
+      for (const mod of CAPABILITY_MODULES) {
+        this._probing.add(mod);
+      }
     }
     // Older runtimes accept expected-version on the installation probe but
     // ignore it in probe all. Keep Python's versioned verdict authoritative.
@@ -4356,18 +4642,34 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ])
       .then(([data, installation]) => {
         this._probing.clear();
+        this._silentRevalidating = false;
         const modules = {
           ...data.modules,
           installation: isValidEnvelope(installation, "installation")
             ? installation
             : createInvalidEnvelope("installation"),
         };
-        for (const [mod, env] of Object.entries(modules)) {
-          if (isValidEnvelope(env, mod as CapabilityModule)) {
-            this._updateCapabilityEnvelope(
-              mod as CapabilityModule,
-              env as ProbeEnvelope
-            );
+        if (silent) {
+          this._capabilityState = this._capabilityState ?? {};
+          for (const [mod, env] of Object.entries(modules)) {
+            if (isValidEnvelope(env, mod as CapabilityModule)) {
+              this._capabilityState[mod] = env as ProbeEnvelope;
+            }
+          }
+          this._persistCapabilityState();
+          const changed =
+            fingerprintState(this._capabilityState) !== prevFingerprint;
+          if (changed && !this._displayInProgress) {
+            this.display();
+          }
+        } else {
+          for (const [mod, env] of Object.entries(modules)) {
+            if (isValidEnvelope(env, mod as CapabilityModule)) {
+              this._updateCapabilityEnvelope(
+                mod as CapabilityModule,
+                env as ProbeEnvelope
+              );
+            }
           }
         }
         // #78: the library sync-failure exit code is forwarded into the
@@ -4393,12 +4695,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._lastOrphanCount = orphanCount;
       })
       .catch(() => {
-        this._updateCapabilityEnvelope(
-          "installation",
-          createInvalidEnvelope("installation")
-        );
         this._probing.clear();
-        this.display();
+        this._silentRevalidating = false;
+        if (!silent) {
+          this._updateCapabilityEnvelope(
+            "installation",
+            createInvalidEnvelope("installation")
+          );
+          this.display();
+        }
       });
   }
 
