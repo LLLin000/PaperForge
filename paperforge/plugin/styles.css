@@ -13500,6 +13500,45 @@ body.pf-no-glass
   color: var(--pf-text-muted);
 }
 
+/* Express onboarding helper links, proxy recovery & Base missing-PDF banner */
+.pf-express-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pf-express-help-link {
+  font-size: 12px;
+  color: var(--pf-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pf-express-help-link:hover {
+  text-decoration: underline;
+}
+
+.pf-proxy-recovery {
+  border-color: var(--pf-warn, #c47f17);
+}
+
+.pf-base-missing-pdf-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pf-text);
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border-strong);
+  border-left: 3px solid var(--pf-warn, #c47f17);
+  border-radius: 6px;
+}
+
 /* Accessibility ReduceMotion */
 body.pf-reduce-motion *,
 body.pf-reduce-motion *::before,

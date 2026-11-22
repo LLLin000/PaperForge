@@ -695,6 +695,12 @@ export default class PaperForgePlugin extends Plugin {
     void ensureNativeDaemonDownloaded(pluginVersion, {
       checkVersionUpdate: true,
       onBeforeReplace: () => this._client?.shutdownTransportAsync(),
+      onQuarantineSuspected: (binDir) => {
+        new Notice(
+          `PaperForge 检测到原生加速引擎文件异常消失（可能被安全软件隔离），正在尝试自动修复。如反复出现，可将目录 ${binDir} 加入 Windows 安全中心排除项。`,
+          12000
+        );
+      },
     })
       .then((downloadedBin) => {
         if (!downloadedBin || !vaultBase) return;

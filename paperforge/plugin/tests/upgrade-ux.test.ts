@@ -387,4 +387,27 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
     expect(noticeMsg).not.toMatch(/^已将 \d+ 项历史残余安全移入/);
     expect(quarantineBtn.disabled).toBe(false);
   });
+
+  it("translates raw OCR and Embedding API errors into beginner-friendly Chinese/English guidance", async () => {
+    const { formatProviderConnectionError } = await import("../src/settings");
+    expect(
+      formatProviderConnectionError("HTTP 401 Unauthorized", "ocr", true)
+    ).toContain("API Key 无效");
+    expect(
+      formatProviderConnectionError("429 quota exceeded", "embed", true)
+    ).toContain("免费额度已用完");
+    expect(
+      formatProviderConnectionError(
+        "embedding dimension mismatch 1024 vs 1536",
+        "embed",
+        true
+      )
+    ).toContain("重建索引");
+    expect(
+      formatProviderConnectionError("ECONNREFUSED", "ocr", true)
+    ).toContain("代理设置");
+    expect(
+      formatProviderConnectionError("NO_PYTHON runtime missing", "ocr", true)
+    ).toContain("一键启用引擎");
+  });
 });
