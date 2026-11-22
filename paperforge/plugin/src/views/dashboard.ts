@@ -3667,19 +3667,7 @@ export class PaperForgeStatusView extends ItemView {
       }
     };
 
-    // ── Bottom Action Bar ──
-    const actionBar = view.createEl("div", {
-      cls: "paperforge-version-actions-bar",
-    });
-    const restoreSelectedBtn = actionBar.createEl("button", {
-      cls: "pf-btn-primary",
-      text: t("version_restore_selected"),
-    });
-    const clearOldBtn = actionBar.createEl("button", {
-      cls: "pf-btn-secondary",
-      text: t("version_clear_old").replace("{size}", ""),
-    });
-
+    // Per-version Restore actions live inline on each version entry above.
     // Initial render
     renderPaperList();
   }

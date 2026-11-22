@@ -330,3 +330,125 @@ def test_migration_fault_injection_rolls_back_on_nth_move_asset_note_or_journal_
     assert not dst_meta.exists()
     assert ws4_note.read_text(encoding="utf-8") == "![[render/figures/figure_001.md]]\n"
     assert json.loads(journal4.read_text(encoding="utf-8"))["state"] == "rolled_back"
+
+
+def test_full_upgrade_promotes_isolated_paper_errors_to_partial_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When isolate_paper_errors=True hits a per-paper failure, journal & upgrade settle as partial_success
+    and promote the paper error into top-level `errors` instead of silently reporting completed."""
+    from paperforge.services import storage_migration
+    from paperforge.services.vault_upgrade import execute_vault_upgrade
+
+    vault = tmp_path / "v_partial"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir="System")
+    for k in ("P01", "P02"):
+        fig = vault / "System" / "PaperForge" / "ocr" / k / "assets" / "figures" / "figure_001.jpg"
+        fig.parent.mkdir(parents=True)
+        fig.write_bytes(k.encode())
+        ws = vault / "Resources" / "Literature" / "Ortho" / f"{k} - Paper"
+        ws.mkdir(parents=True)
+        (ws / f"{k}.md").write_text(f"---\nzotero_key: {k}\n---\n![[render/figures/figure_001.md]]\n", encoding="utf-8")
+
+    orig_cleanup = storage_migration.cleanup_or_preserve_workspace_fulltext
+
+    def _fail_p02(ws_dir: Path, **kwargs):  # type: ignore[no-untyped-def]
+        if kwargs.get("paper_key") == "P02":
+            raise OSError("simulated locked fulltext for P02")
+        return orig_cleanup(ws_dir, **kwargs)
+
+    monkeypatch.setattr(storage_migration, "cleanup_or_preserve_workspace_fulltext", _fail_p02)
+    # 1. Verify migrate_vault_storage rolls back P02's partial note rewrite on per-paper failure
+    sres = migrate_vault_storage(vault, dry_run=False, isolate_paper_errors=True)
+    assert sres["state"] == "partial_success"
+    assert len(sres["paper_errors"]) == 1
+    assert sres["paper_errors"][0]["key"] == "P02"
+    p02_note = (vault / "Resources" / "Literature" / "Ortho" / "P02 - Paper" / "P02.md").read_text(encoding="utf-8")
+    assert "render/figures/figure_001.md" in p02_note
+
+    # 2. Verify execute_vault_upgrade promotes isolated paper errors into top-level `errors` & `partial_success`
+    vault2 = tmp_path / "v_partial_upgrade"
+    vault2.mkdir()
+    canonical_test_config(vault2, system_dir="System")
+    for k in ("P01", "P02"):
+        fig = vault2 / "System" / "PaperForge" / "ocr" / k / "assets" / "figures" / "figure_001.jpg"
+        fig.parent.mkdir(parents=True)
+        fig.write_bytes(k.encode())
+        ws = vault2 / "Resources" / "Literature" / "Ortho" / f"{k} - Paper"
+        ws.mkdir(parents=True)
+        (ws / f"{k}.md").write_text(f"---\nzotero_key: {k}\n---\n![[render/figures/figure_001.md]]\n", encoding="utf-8")
+
+    res = execute_vault_upgrade(vault2, dry_run=False, fast_cutover=False, rebuild_db=False)
+    monkeypatch.undo()
+
+    assert res["applied"] is True
+    assert res["status"] == "partial_success"
+    assert any("P02" in str(e.get("step", "")) for e in res["errors"])
+    journal = json.loads((vault2 / ".paperforge" / ".migration-journal.json").read_text(encoding="utf-8"))
+    assert journal["state"] == "partial_success"
+    assert len(journal["paper_errors"]) == 1
+
+
+def test_zotero_online_backup_snapshot_is_consistent_under_concurrent_wal_writes(tmp_path: Path) -> None:
+    """SQLite Online Backup API captures a transactionally consistent snapshot while a live writer
+    continuously mutates and checkpoints a WAL-mode zotero.sqlite, without altering the source DB."""
+    import sqlite3
+    import threading
+    import time
+
+    from paperforge.adapters.zotero_sqlite import open_zotero_snapshot_ro
+
+    zdir = tmp_path / "Zotero"
+    zdir.mkdir()
+    db_path = zdir / "zotero.sqlite"
+
+    init_conn = sqlite3.connect(str(db_path))
+    init_conn.execute("PRAGMA journal_mode=WAL")
+    init_conn.execute("CREATE TABLE items (itemID INTEGER PRIMARY KEY, key TEXT, batch INTEGER)")
+    init_conn.executemany("INSERT INTO items VALUES (?, ?, 0)", [(i, f"K{i:04d}") for i in range(1, 51)])
+    init_conn.commit()
+    init_conn.close()
+
+    stop_ev = threading.Event()
+    writer_errors: list[Exception] = []
+
+    def _writer() -> None:
+        w = sqlite3.connect(str(db_path), timeout=5.0)
+        try:
+            batch = 1
+            while not stop_ev.is_set() and batch <= 40:
+                w.execute("BEGIN IMMEDIATE")
+                # Every committed transaction inserts an atomic pair sharing the same batch id
+                base = batch * 100
+                w.execute("INSERT INTO items VALUES (?, ?, ?)", (base + 1, f"B{batch}_A", batch))
+                w.execute("INSERT INTO items VALUES (?, ?, ?)", (base + 2, f"B{batch}_B", batch))
+                w.commit()
+                if batch % 5 == 0:
+                    w.execute("PRAGMA wal_checkpoint(PASSIVE)")
+                batch += 1
+                time.sleep(0.005)
+        except Exception as exc:  # noqa: BLE001
+            writer_errors.append(exc)
+        finally:
+            w.close()
+
+    t = threading.Thread(target=_writer, daemon=True)
+    t.start()
+    try:
+        for _ in range(5):
+            with open_zotero_snapshot_ro(zdir) as (snap_conn, _):
+                qc = snap_conn.execute("PRAGMA quick_check").fetchone()
+                assert qc and str(qc[0]).lower() == "ok"
+                # Every non-zero batch seen in the snapshot MUST have both rows (no torn transaction!)
+                counts = snap_conn.execute(
+                    "SELECT batch, COUNT(*) FROM items WHERE batch > 0 GROUP BY batch"
+                ).fetchall()
+                for row in counts:
+                    assert row[1] == 2, f"Torn transaction detected for batch {row[0]}: count={row[1]}"
+            time.sleep(0.01)
+    finally:
+        stop_ev.set()
+        t.join(timeout=5.0)
+
+    assert not writer_errors, f"Writer failed: {writer_errors}"

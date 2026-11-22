@@ -694,7 +694,7 @@ export default class PaperForgePlugin extends Plugin {
     );
     void ensureNativeDaemonDownloaded(pluginVersion, {
       checkVersionUpdate: true,
-      onBeforeReplace: () => this._client?.shutdownTransport(),
+      onBeforeReplace: () => this._client?.shutdownTransportAsync(),
     })
       .then((downloadedBin) => {
         if (!downloadedBin || !vaultBase) return;

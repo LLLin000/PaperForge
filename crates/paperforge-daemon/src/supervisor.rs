@@ -418,6 +418,32 @@ impl NativeControlDaemon {
         out_entry
     }
 
+    /// Resolve a `zotero_key` to its `workspace_relpath`: hits bounded in-memory LRU
+    /// first (`<= 2048` entries), and falls back to a direct SQLite point lookup on
+    /// cache miss so large vaults (> 2048 papers) never lose keys.
+    pub fn resolve_workspace_key(&self, vault: &Path, key: &str) -> (Option<String>, i64) {
+        let c = self.get_or_refresh_vault(vault);
+        if let Some(rel) = c.workspace_map.get(key) {
+            return (Some(rel.clone()), c.last_seq);
+        }
+        // Only hit SQLite on cache miss when cache may be truncated or empty
+        if c.workspace_map.len() >= MAX_WORKSPACES_PER_VAULT || c.workspace_map.is_empty() {
+            let db_path = resolve_engine_dir(vault).join("indexes").join("paperforge.db");
+            if let Some(conn) = open_readonly_db(&db_path) {
+                if let Ok(rel) = conn.query_row(
+                    "SELECT workspace_relpath FROM workspace_registry WHERE zotero_key = ?1 LIMIT 1",
+                    [key],
+                    |r| r.get::<_, String>(0),
+                ) {
+                    if !rel.is_empty() {
+                        return (Some(rel), c.last_seq);
+                    }
+                }
+            }
+        }
+        (None, c.last_seq)
+    }
+
     pub fn invalidate_vault(&self, vault: Option<&Path>) -> usize {
         let mut g = self.inner.lock().unwrap();
         if let Some(v) = vault {

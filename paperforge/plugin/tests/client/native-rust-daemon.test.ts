@@ -13,6 +13,7 @@
  */
 
 import { execFileSync } from "child_process";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -126,6 +127,8 @@ import {
   managedNativeDaemonPath,
   nativeDaemonAssetName,
   nativeDaemonTargetTriple,
+  readNativeDaemonMeta,
+  resolveNativeDaemonBinary,
 } from "../../src/services/native-daemon";
 import { NodeProcessTransport } from "../../src/client/node-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
@@ -178,7 +181,7 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       fs.mkdirSync(path.dirname(binPath), { recursive: true });
       fs.writeFileSync(binPath, Buffer.from("stub-binary"));
 
-      const resolved = await ensureNativeDaemonDownloaded("2.0.0", {
+      const resolved = await ensureNativeDaemonDownloaded("2.0.1", {
         home: tmpHome,
         platform: process.platform,
         arch: process.arch,
@@ -186,6 +189,84 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       expect(resolved).toBe(binPath);
     } finally {
       fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
+  });
+
+  it("detects SHA-256 drift even under identical SemVer and atomically flips to a versioned binary without Windows lock race", async () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-native-sha-"));
+    try {
+      const asset = nativeDaemonAssetName(process.platform, process.arch)!;
+      const binV1 = Buffer.from("paperforge-daemon-build-1");
+      const shaV1 = crypto.createHash("sha256").update(binV1).digest("hex");
+      const binV2 = Buffer.from("paperforge-daemon-build-2-fixed");
+      const shaV2 = crypto.createHash("sha256").update(binV2).digest("hex");
+
+      // 1. Seed initial install for tag 2.0.1 (build 1)
+      let currentPayload = binV1;
+      let currentSha = shaV1;
+      let binFetches = 0;
+      const mockFetch = async (url: string): Promise<Buffer> => {
+        if (url.endsWith("/checksums.txt")) {
+          return Buffer.from(`${currentSha}  ${asset}\n`, "utf-8");
+        }
+        binFetches += 1;
+        return currentPayload;
+      };
+
+      const p1 = await ensureNativeDaemonDownloaded("2.0.1", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: mockFetch,
+      });
+      expect(p1).toBeTruthy();
+      expect(binFetches).toBe(1);
+      expect(readNativeDaemonMeta(tmpHome, process.platform)?.sha256).toBe(
+        shaV1
+      );
+
+      // 2. Same tag + SAME SHA-256 -> skips binary download
+      const p1Again = await ensureNativeDaemonDownloaded("2.0.1", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: mockFetch,
+      });
+      expect(p1Again).toBe(p1);
+      expect(binFetches).toBe(1);
+
+      // 3. Same tag + DIFFERENT SHA-256 -> downloads to a NEW versioned path & awaits onBeforeReplace
+      currentPayload = binV2;
+      currentSha = shaV2;
+      let stoppedOld = false;
+      const p2 = await ensureNativeDaemonDownloaded("2.0.1", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: mockFetch,
+        onBeforeReplace: async () => {
+          stoppedOld = true;
+        },
+      });
+      expect(binFetches).toBe(2);
+      expect(stoppedOld).toBe(true);
+      expect(p2).toBeTruthy();
+      expect(p2).not.toBe(p1);
+      expect(readNativeDaemonMeta(tmpHome, process.platform)?.sha256).toBe(
+        shaV2
+      );
+      expect(
+        resolveNativeDaemonBinary({
+          home: tmpHome,
+          platform: process.platform,
+          arch: process.arch,
+        })
+      ).toBe(p2);
+    } finally {
+      rmTempSafe(tmpHome);
     }
   });
 
@@ -464,6 +545,12 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
                 title: "Stale JSON Title",
                 ocr_status: "pending",
                 domain: "OldDomain",
+                has_pdf: false,
+              },
+              {
+                zotero_key: "DELETED99",
+                title: "Deleted Ghost Paper",
+                ocr_status: "done",
               },
             ],
           }),
@@ -477,9 +564,9 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
             [
               "import sqlite3, sys",
               "conn = sqlite3.connect(sys.argv[1])",
-              "conn.execute('CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, first_author TEXT, year TEXT, journal TEXT, domain TEXT, ocr_status TEXT, deep_reading_status TEXT, impact_factor REAL, journal_partition TEXT)')",
+              "conn.execute('CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, first_author TEXT, year TEXT, journal TEXT, domain TEXT, ocr_status TEXT, deep_reading_status TEXT, impact_factor REAL, journal_partition TEXT, has_pdf INTEGER, do_ocr INTEGER, analyze INTEGER, collections_json TEXT)')",
               "conn.execute('CREATE TABLE workspace_registry (zotero_key TEXT PRIMARY KEY, main_note_relpath TEXT, domain TEXT, title TEXT)')",
-              "conn.execute(\"INSERT INTO papers VALUES ('SSOT0001','Authoritative SQLite Title','Lin','2026','Nature','Ortho','done','finished',50.5,'Q1')\")",
+              "conn.execute(\"INSERT INTO papers VALUES ('SSOT0001','Authoritative SQLite Title','Lin','2026','Nature','Ortho','done','finished',50.5,'Q1',1,1,0,'[\\\"Ortho/ACL\\\"]')\")",
               "conn.execute(\"INSERT INTO workspace_registry VALUES ('SSOT0001','Literature/SSOT.md','Ortho','Authoritative SQLite Title')\")",
               "conn.commit(); conn.close()",
             ].join("; "),
@@ -503,6 +590,10 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
           expect(snap.rows["SSOT0001"]?.ocr_status).toBe("done");
           expect(snap.rows["SSOT0001"]?.deep_reading_status).toBe("finished");
           expect(snap.rows["SSOT0001"]?.journal_partition).toBe("Q1");
+          expect(snap.rows["SSOT0001"]?.has_pdf).toBe(true);
+          expect(snap.rows["SSOT0001"]?.do_ocr).toBe(true);
+          expect(snap.rows["SSOT0001"]?.collections).toEqual(["Ortho/ACL"]);
+          expect(snap.rows["DELETED99"]).toBeUndefined();
         } finally {
           transport.shutdownDaemon();
         }

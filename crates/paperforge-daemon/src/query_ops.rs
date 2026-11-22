@@ -75,6 +75,10 @@ struct DbPaperRow {
     main_note_path: String,
     impact_factor: String,
     journal_partition: String,
+    has_pdf: Option<bool>,
+    do_ocr: Option<bool>,
+    analyze: Option<bool>,
+    collections: Option<Vec<Value>>,
 }
 
 fn table_columns(conn: &Connection, table: &str) -> Vec<String> {
@@ -151,8 +155,22 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                     "''".to_string()
                 }
             };
+            let sel_int = |c: &str| -> String {
+                if has(c) {
+                    format!("{c}")
+                } else {
+                    "NULL".to_string()
+                }
+            };
+            let sel_opt_text = |c: &str| -> String {
+                if has(c) {
+                    format!("CAST({c} AS TEXT)")
+                } else {
+                    "NULL".to_string()
+                }
+            };
             let sql = format!(
-                "SELECT zotero_key, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM papers",
+                "SELECT zotero_key, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM papers",
                 sel("title"),
                 sel("first_author"),
                 sel("year"),
@@ -163,9 +181,26 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                 sel("main_note_path"),
                 sel("impact_factor"),
                 sel("journal_partition"),
+                sel_int("has_pdf"),
+                sel_int("do_ocr"),
+                sel_int("analyze"),
+                sel_opt_text("collections_json"),
             );
             if let Ok(mut st) = conn.prepare(&sql) {
                 if let Ok(rows) = st.query_map([], |r| {
+                    let has_pdf = r.get::<_, Option<i64>>(11).ok().flatten().map(|v| v != 0);
+                    let do_ocr = r.get::<_, Option<i64>>(12).ok().flatten().map(|v| v != 0);
+                    let analyze = r.get::<_, Option<i64>>(13).ok().flatten().map(|v| v != 0);
+                    let cols_raw = r.get::<_, Option<String>>(14).ok().flatten();
+                    let collections = cols_raw.and_then(|s| {
+                        let t = s.trim();
+                        if t.is_empty() {
+                            return None;
+                        }
+                        serde_json::from_str::<Value>(t)
+                            .ok()
+                            .and_then(|v| v.as_array().cloned())
+                    });
                     Ok((
                         r.get::<_, String>(0)?,
                         DbPaperRow {
@@ -179,6 +214,10 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                             main_note_path: r.get::<_, String>(8).unwrap_or_default(),
                             impact_factor: r.get::<_, String>(9).unwrap_or_default(),
                             journal_partition: r.get::<_, String>(10).unwrap_or_default(),
+                            has_pdf,
+                            do_ocr,
+                            analyze,
+                            collections,
                         },
                     ))
                 }) {
@@ -296,8 +335,10 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let sqlite_authoritative = !db_papers.is_empty();
     let mut keys: Vec<String> = Vec::new();
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
-    // SQLite keys first (authoritative), then any supplemental JSON-only keys
-    for k in db_order.into_iter().chain(json_order.into_iter()) {
+    // Strict SSOT key membership: when SQLite has authoritative paper records,
+    // NEVER union stale JSON-only keys (prevents resurrecting deleted papers).
+    let source_order = if sqlite_authoritative { db_order } else { json_order };
+    for k in source_order {
         if seen.insert(k.clone()) {
             keys.push(k);
         }
@@ -424,11 +465,27 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
         let needs_diag = matches!(ocr_status.as_str(), "failed" | "done_incomplete" | "unknown")
             || (ocr_status == "done" && !ocr_health.is_empty() && ocr_health != "healthy");
 
-        let collections: Vec<Value> = obj
-            .and_then(|m| m.get("collections"))
-            .and_then(|v| v.as_array())
-            .cloned()
+        let collections: Vec<Value> = db_p
+            .and_then(|p| p.collections.clone())
+            .or_else(|| {
+                obj.and_then(|m| m.get("collections"))
+                    .and_then(|v| v.as_array())
+                    .cloned()
+            })
             .unwrap_or_default();
+
+        let has_pdf = db_p
+            .and_then(|p| p.has_pdf)
+            .or_else(|| obj.and_then(|m| m.get("has_pdf")).and_then(|v| v.as_bool()))
+            .unwrap_or(false);
+        let do_ocr = db_p
+            .and_then(|p| p.do_ocr)
+            .or_else(|| obj.and_then(|m| m.get("do_ocr")).and_then(|v| v.as_bool()))
+            .unwrap_or(false);
+        let analyze = db_p
+            .and_then(|p| p.analyze)
+            .or_else(|| obj.and_then(|m| m.get("analyze")).and_then(|v| v.as_bool()))
+            .unwrap_or(false);
 
         out_rows.insert(
             key.clone(),
@@ -443,9 +500,9 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                 "journal_partition": pick_db_first(db_p.map(|p| p.journal_partition.as_str()), "journal_partition", ""),
                 "domain": pick_db_first(db_p.map(|p| p.domain.as_str()), "domain", ""),
                 "collections": collections,
-                "has_pdf": obj.and_then(|m| m.get("has_pdf")).and_then(|v| v.as_bool()).unwrap_or(false),
-                "do_ocr": obj.and_then(|m| m.get("do_ocr")).and_then(|v| v.as_bool()).unwrap_or(false),
-                "analyze": obj.and_then(|m| m.get("analyze")).and_then(|v| v.as_bool()).unwrap_or(false),
+                "has_pdf": has_pdf,
+                "do_ocr": do_ocr,
+                "analyze": analyze,
                 "ocr_status": ocr_status,
                 "deep_reading_status": dr_status,
                 "main_note_path": main_note,
@@ -926,7 +983,8 @@ pub fn handle_zotero_detect(path_arg: Option<&str>) -> (i32, String, String) {
         return (0, format!("{out}\n"), String::new());
     }
 
-    // Snapshot copy to avoid locks while Zotero desktop is open
+    // Transactionally consistent read-only snapshot using SQLite Online Backup API
+    // (safe while Zotero desktop is open and writing to WAL; never writes to zotero.sqlite).
     let tmp_dir = std::env::temp_dir().join(format!(
         "pf_zot_rust_{}_{}",
         std::process::id(),
@@ -935,27 +993,147 @@ pub fn handle_zotero_detect(path_arg: Option<&str>) -> (i32, String, String) {
             .map(|d| d.as_nanos())
             .unwrap_or(0)
     ));
-    let _ = fs::create_dir_all(&tmp_dir);
-    for suf in ["", "-wal", "-shm"] {
-        let src = zdir.join(format!("zotero.sqlite{suf}"));
-        if src.is_file() {
-            let _ = fs::copy(&src, tmp_dir.join(format!("zotero.sqlite{suf}")));
-        }
+    if let Err(e) = fs::create_dir_all(&tmp_dir) {
+        let out = pf_err(
+            "zotero detect",
+            "ZOTERO_SNAPSHOT_FAILED",
+            &format!("Failed to prepare temporary snapshot directory: {e}"),
+            json!({ "zotero_dir": zdir.to_string_lossy() }),
+            &[],
+        );
+        return (1, format!("{out}\n"), String::new());
     }
     let snap_db = tmp_dir.join("zotero.sqlite");
-    let mut total_papers: i64 = 0;
-    let mut out_cols: Vec<Value> = Vec::new();
+    let src_db = zdir.join("zotero.sqlite");
 
-    if let Some(conn) = open_readonly_db(&snap_db) {
-        total_papers = conn
-            .query_row(
-                "SELECT COUNT(*) FROM items i JOIN itemTypes it ON i.itemTypeID = it.itemTypeID \
-                 WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems) \
-                 AND it.typeName NOT IN ('attachment','note','annotation')",
-                [],
-                |r| r.get(0),
-            )
-            .unwrap_or(0);
+    let mut snap_ok = false;
+    let mut last_err = String::new();
+
+    // Primary path: SQLite Online Backup API from read-only source connection
+    if let Some(src_conn) = open_readonly_db(&src_db) {
+        match Connection::open(&snap_db) {
+            Ok(mut dst_conn) => {
+                match rusqlite::backup::Backup::new(&src_conn, &mut dst_conn)
+                    .and_then(|b| b.run_to_completion(100, std::time::Duration::from_millis(10), None))
+                {
+                    Ok(()) => {
+                        snap_ok = true;
+                    }
+                    Err(e) => {
+                        last_err = format!("SQLite online backup failed: {e}");
+                    }
+                }
+            }
+            Err(e) => {
+                last_err = format!("Failed to open snapshot destination: {e}");
+            }
+        }
+    }
+
+    // Fallback path: double-checked file copy (e.g. if read-only open blocked on WAL without -shm)
+    if !snap_ok {
+        let stat_sig = |dir: &Path| -> Vec<(String, u64, u128)> {
+            ["", "-wal", "-shm"]
+                .iter()
+                .filter_map(|suf| {
+                    let p = dir.join(format!("zotero.sqlite{suf}"));
+                    let m = fs::metadata(&p).ok()?;
+                    let mt = m
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_nanos())
+                        .unwrap_or(0);
+                    Some(((*suf).to_string(), m.len(), mt))
+                })
+                .collect()
+        };
+        for _attempt in 0..3 {
+            let before = stat_sig(&zdir);
+            let mut copy_ok = true;
+            for suf in ["", "-wal", "-shm"] {
+                let src = zdir.join(format!("zotero.sqlite{suf}"));
+                let dst = tmp_dir.join(format!("zotero.sqlite{suf}"));
+                if src.is_file() {
+                    if let Err(e) = fs::copy(&src, &dst) {
+                        last_err = format!("Failed to copy zotero.sqlite{suf}: {e}");
+                        copy_ok = false;
+                        break;
+                    }
+                } else {
+                    let _ = fs::remove_file(&dst);
+                }
+            }
+            let after = stat_sig(&zdir);
+            if copy_ok && before == after {
+                if let Some(check_conn) = open_readonly_db(&snap_db) {
+                    let qc = check_conn
+                        .query_row("PRAGMA quick_check", [], |r| r.get::<_, String>(0))
+                        .unwrap_or_default();
+                    if qc.eq_ignore_ascii_case("ok") {
+                        snap_ok = true;
+                        break;
+                    }
+                    last_err = format!("Snapshot integrity check failed: {qc}");
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(40));
+        }
+    }
+
+    if !snap_ok {
+        let _ = fs::remove_dir_all(&tmp_dir);
+        let msg = if last_err.is_empty() {
+            "Unable to read a consistent snapshot of zotero.sqlite".to_string()
+        } else {
+            last_err
+        };
+        let out = pf_err(
+            "zotero detect",
+            "ZOTERO_DB_UNREADABLE",
+            &msg,
+            json!({ "zotero_dir": zdir.to_string_lossy() }),
+            &["Close Zotero or retry once Zotero finishes syncing."],
+        );
+        return (1, format!("{out}\n"), String::new());
+    }
+
+    let Some(conn) = open_readonly_db(&snap_db) else {
+        let _ = fs::remove_dir_all(&tmp_dir);
+        let out = pf_err(
+            "zotero detect",
+            "ZOTERO_DB_UNREADABLE",
+            "Failed to open copied zotero.sqlite snapshot",
+            json!({ "zotero_dir": zdir.to_string_lossy() }),
+            &[],
+        );
+        return (1, format!("{out}\n"), String::new());
+    };
+
+    let total_papers: i64 = match conn.query_row(
+        "SELECT COUNT(*) FROM items i JOIN itemTypes it ON i.itemTypeID = it.itemTypeID \
+         WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems) \
+         AND it.typeName NOT IN ('attachment','note','annotation')",
+        [],
+        |r| r.get(0),
+    ) {
+        Ok(cnt) => cnt,
+        Err(e) => {
+            drop(conn);
+            let _ = fs::remove_dir_all(&tmp_dir);
+            let out = pf_err(
+                "zotero detect",
+                "ZOTERO_DB_UNREADABLE",
+                &format!("Failed to query Zotero items table: {e}"),
+                json!({ "zotero_dir": zdir.to_string_lossy() }),
+                &[],
+            );
+            return (1, format!("{out}\n"), String::new());
+        }
+    };
+
+    let out_cols: Vec<Value>;
+    {
 
         struct ColMeta {
             key: String,
@@ -1078,6 +1256,7 @@ pub fn handle_zotero_detect(path_arg: Option<&str>) -> (i32, String, String) {
         items_vec.sort_by(|a, b| a.0.cmp(&b.0));
         out_cols = items_vec.into_iter().map(|(_, v)| v).collect();
     }
+    drop(conn);
 
     let _ = fs::remove_dir_all(&tmp_dir);
     let out = pf_ok(

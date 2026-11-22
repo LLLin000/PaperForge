@@ -1,6 +1,26 @@
 {
   "versions": [
     {
+      "version": "2.0.1",
+      "date": "2026-11-22",
+      "title": "发布认证加固 · 内容寻址热更新 · 全平台零孤儿回收 · SQLite 完整 SSOT",
+      "breaking_or_migration": [],
+      "new_features": [
+        "原生 Rust 守护进程升级改为内容寻址版本化二进制 + SHA-256 校验，杜绝同版本号旧二进制滞留与 Windows 运行中文件占用替换竞态",
+        "macOS 新增内核级 kqueue (EVFILT_PROC/NOTE_EXIT) 零轮询孤儿回收器，与 Windows Job Object 及 Linux PR_SET_PDEATHSIG 全面齐平",
+        "Zotero 直连全面切换至只读 SQLite Online Backup API 事务一致性快照，运行 Zotero 写入期间读取无撕裂且区分读取错误与空库"
+      ],
+      "fixes": [
+        "Base Snapshot 彻底收口 SQLite SSOT：直接读取 has_pdf / do_ocr / analyze / collections_json，且不再从陈旧 JSON 复活已删除文献",
+        "Rust 引擎 engine.resolve_key 超过 2048 内存缓存上限时自动回源 SQLite 单键查询，超大文献库不丢键",
+        "完整目录迁移与设置页残余清理准确区分 completed / partial_success / failed 并提升单篇错误，避免部分失败时误报成功",
+        "隐藏版本历史页未接线的底部批量按钮，保留已验证的单版本即时恢复能力"
+      ],
+      "recommended_actions": [
+        "升级插件后无需手动操作，系统会自动按 SHA-256 校验并无缝切换至 2.0.1 原生 Rust 守护进程"
+      ]
+    },
+    {
       "version": "2.0.0",
       "date": "2026-11-18",
       "title": "AsterLab 视觉规范统一 · 单视图 Base 选择操作栏 · 苹果预览风格 PDF 批注器",

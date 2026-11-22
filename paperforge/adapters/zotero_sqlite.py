@@ -136,9 +136,85 @@ def auto_detect_zotero_data_dir() -> Path | None:
     return None
 
 
+def _stat_sqlite_group(db_path: Path) -> list[tuple[str, int, int]]:
+    sig: list[tuple[str, int, int]] = []
+    for suffix in ("", "-wal", "-shm"):
+        p = db_path.parent / f"{db_path.name}{suffix}"
+        try:
+            st = p.stat()
+            sig.append((suffix, st.st_size, st.st_mtime_ns))
+        except OSError:
+            continue
+    return sig
+
+
+def _snapshot_sqlite_ro(src_db: Path, dst_db: Path) -> None:
+    """Create a transactionally consistent read-only snapshot of a live SQLite DB.
+
+    Primary path uses SQLite's Online Backup API (`sqlite3.Connection.backup`)
+    from a strict read-only URI connection (`?mode=ro`) so concurrent WAL writes
+    and checkpoints in a running Zotero desktop instance never produce torn reads
+    and Zotero's source files are never written.
+
+    Falls back to a double-checked stat-verified file copy + `PRAGMA quick_check`
+    only if read-only open is blocked (e.g., OS-level exclusive lock or WAL mode
+    without existing `-shm` file).
+    """
+    import time
+
+    uri = f"{src_db.resolve().as_uri()}?mode=ro"
+    last_err: Exception | None = None
+    try:
+        src_conn = sqlite3.connect(uri, uri=True, timeout=2.0)
+        try:
+            dst_conn = sqlite3.connect(str(dst_db))
+            try:
+                src_conn.backup(dst_conn, pages=100, sleep=0.01)
+            finally:
+                dst_conn.close()
+        finally:
+            src_conn.close()
+        return
+    except sqlite3.Error as exc:
+        last_err = exc
+        for suffix in ("", "-wal", "-shm"):
+            p = dst_db.parent / f"{dst_db.name}{suffix}"
+            with contextlib.suppress(OSError):
+                p.unlink()
+
+    # Fallback: double-checked file copy + quick_check integrity validation
+    for _ in range(3):
+        before = _stat_sqlite_group(src_db)
+        try:
+            for suffix in ("", "-wal", "-shm"):
+                src = src_db.parent / f"{src_db.name}{suffix}"
+                dst = dst_db.parent / f"{dst_db.name}{suffix}"
+                if src.is_file():
+                    shutil.copy2(src, dst)
+                elif dst.exists():
+                    dst.unlink()
+            after = _stat_sqlite_group(src_db)
+            if before == after:
+                chk = sqlite3.connect(str(dst_db))
+                try:
+                    row = chk.execute("PRAGMA quick_check").fetchone()
+                    if row and str(row[0]).lower() == "ok":
+                        return
+                    last_err = sqlite3.DatabaseError(f"Snapshot quick_check failed: {row}")
+                finally:
+                    chk.close()
+        except (OSError, sqlite3.Error) as exc:
+            last_err = exc
+        time.sleep(0.05)
+
+    raise sqlite3.OperationalError(
+        f"Failed to capture a consistent snapshot of {src_db}: {last_err}"
+    )
+
+
 @contextlib.contextmanager
 def open_zotero_snapshot_ro(zotero_dir: Path) -> Iterator[tuple[sqlite3.Connection, sqlite3.Connection | None]]:
-    """Yield read-only connections to a safe temp copy of zotero.sqlite (+ optional BBT sqlite)."""
+    """Yield read-only connections to a consistent temp snapshot of zotero.sqlite (+ optional BBT sqlite)."""
     src_db = zotero_dir / "zotero.sqlite"
     if not src_db.is_file():
         raise FileNotFoundError(f"zotero.sqlite not found in {zotero_dir}")
@@ -148,23 +224,19 @@ def open_zotero_snapshot_ro(zotero_dir: Path) -> Iterator[tuple[sqlite3.Connecti
         conn: sqlite3.Connection | None = None
         bbt_conn: sqlite3.Connection | None = None
         try:
-            for suffix in ("", "-wal", "-shm"):
-                src = zotero_dir / f"zotero.sqlite{suffix}"
-                if src.is_file():
-                    shutil.copy2(src, tmp_dir / src.name)
-            conn = sqlite3.connect(str(tmp_dir / "zotero.sqlite"))
+            snap_db = tmp_dir / "zotero.sqlite"
+            _snapshot_sqlite_ro(src_db, snap_db)
+            conn = sqlite3.connect(str(snap_db))
             conn.row_factory = sqlite3.Row
 
             bbt_src = zotero_dir / "better-bibtex.sqlite"
             if bbt_src.is_file():
-                for suffix in ("", "-wal", "-shm"):
-                    s = zotero_dir / f"better-bibtex.sqlite{suffix}"
-                    if s.is_file():
-                        shutil.copy2(s, tmp_dir / s.name)
                 try:
-                    bbt_conn = sqlite3.connect(str(tmp_dir / "better-bibtex.sqlite"))
+                    bbt_snap = tmp_dir / "better-bibtex.sqlite"
+                    _snapshot_sqlite_ro(bbt_src, bbt_snap)
+                    bbt_conn = sqlite3.connect(str(bbt_snap))
                     bbt_conn.row_factory = sqlite3.Row
-                except sqlite3.Error:
+                except (OSError, sqlite3.Error):
                     bbt_conn = None
 
             yield conn, bbt_conn

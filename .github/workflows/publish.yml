@@ -359,6 +359,13 @@ jobs:
           RELEASE_TAG: ${{ steps.version_sync.outputs.release_tag }}
         run: |
           set -e
+          # Release Identity Gate: never silently overwrite assets on a Git tag
+          # pointing to an older commit SHA.
+          EXISTING_TAG_SHA=$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" | tail -n 1 | awk '{print $1}')
+          if [ -n "$EXISTING_TAG_SHA" ] && [ "$EXISTING_TAG_SHA" != "${{ github.sha }}" ]; then
+            echo "::error::Release Identity Gate failed: tag '${RELEASE_TAG}' already points to ${EXISTING_TAG_SHA}, not ${{ github.sha }}. Bump the version for a new release."
+            exit 1
+          fi
           PRERELEASE="${{ steps.release_type.outputs.prerelease }}"
           PRERELEASE_FLAG=""
           if [ "$PRERELEASE" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi

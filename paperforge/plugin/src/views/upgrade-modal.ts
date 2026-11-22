@@ -454,13 +454,42 @@ export function renderStorageMigrationMaintenanceSection(
       void (async () => {
         quarantineBtn.disabled = true;
         try {
-          await client.vaultUpgradeApply({
+          const res = await client.vaultUpgradeApply({
             fastCutover: true,
             quarantineIds: ids,
             noRebuildDb: true,
           });
+          const errs = Array.isArray(res?.errors) ? res.errors : [];
+          const qStep = Array.isArray(res?.executed_steps)
+            ? res.executed_steps.find(
+                (s) => s && s.step === "quarantine_residuals"
+              )
+            : undefined;
+          const quarantinedCount =
+            typeof qStep?.quarantined === "number"
+              ? qStep.quarantined
+              : res?.applied && errs.length === 0
+                ? ids.length
+                : 0;
+
+          if (!res || res.applied === false) {
+            const firstErr = errs[0]?.error || "未能应用清理操作";
+            new Notice(`清理未完成: ${firstErr}`, 8000);
+            quarantineBtn.disabled = false;
+            return;
+          }
+          if (errs.length > 0) {
+            const firstErr = errs[0]?.error || "部分项目移入失败";
+            new Notice(
+              `部分残余清理未完成：已移入 ${quarantinedCount} 项，失败 ${errs.length} 项（${firstErr}），失败项已保留可重试。`,
+              8000
+            );
+            quarantineBtn.disabled = false;
+            onUpdated();
+            return;
+          }
           new Notice(
-            `已将 ${ids.length} 项历史残余安全移入 .paperforge/trash/`
+            `已将 ${quarantinedCount} 项历史残余安全移入 .paperforge/trash/`
           );
           onUpdated();
         } catch (err: unknown) {
