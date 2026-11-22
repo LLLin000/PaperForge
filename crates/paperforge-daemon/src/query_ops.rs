@@ -139,6 +139,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
 
     let mut db_papers: HashMap<String, DbPaperRow> = HashMap::new();
     let mut db_order: Vec<String> = Vec::new();
+    let mut sqlite_schema_present = false;
     let mut ocr_cat_ok: HashMap<String, bool> = HashMap::new();
     let mut ann_counts: HashMap<String, (i64, i64)> = HashMap::new();
     let mut mem_counts: HashMap<String, (i64, String)> = HashMap::new();
@@ -146,6 +147,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let db_path = engine.join("indexes").join("paperforge.db");
     if let Some(conn) = open_readonly_db(&db_path) {
         if table_exists(&conn, "papers") {
+            sqlite_schema_present = true;
             let cols = table_columns(&conn, "papers");
             let has = |c: &str| cols.iter().any(|x| x == c);
             let sel = |c: &str| -> String {
@@ -235,6 +237,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             }
         }
         if table_exists(&conn, "workspace_registry") {
+            sqlite_schema_present = true;
             let cols = table_columns(&conn, "workspace_registry");
             let has_note = cols.iter().any(|x| x == "main_note_relpath");
             let has_dom = cols.iter().any(|x| x == "domain");
@@ -332,7 +335,9 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
         }
     }
 
-    let sqlite_authoritative = !db_papers.is_empty();
+    // Authoritative whenever paperforge.db exists with a valid papers /
+    // workspace_registry schema — including a legitimately emptied (0-row) table.
+    let sqlite_authoritative = sqlite_schema_present;
     let mut keys: Vec<String> = Vec::new();
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     // Strict SSOT key membership: when SQLite has authoritative paper records,

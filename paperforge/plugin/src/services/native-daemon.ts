@@ -335,7 +335,9 @@ export async function ensureNativeDaemonDownloaded(
       ensureExecutableMode(meta.binaryPath, plat);
       existingPath = meta.binaryPath;
       installedTag = normalizeDaemonTag(meta.tag);
-      installedSha = meta.sha256 || sha256File(meta.binaryPath);
+      // Always hash the live bytes on disk — never trust cached metadata alone,
+      // so a corrupted or truncated local binary triggers automatic repair.
+      installedSha = sha256File(meta.binaryPath);
     } else if (fs.existsSync(legacyDest) && fs.statSync(legacyDest).size > 0) {
       ensureExecutableMode(legacyDest, plat);
       existingPath = legacyDest;
@@ -394,6 +396,14 @@ export async function ensureNativeDaemonDownloaded(
       const tmpPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
       fs.writeFileSync(tmpPath, binBuf, { mode: 0o755 });
       ensureExecutableMode(tmpPath, plat);
+      const repairingSamePath = existingPath === targetPath;
+      if (repairingSamePath && opts.onBeforeReplace) {
+        try {
+          await opts.onBeforeReplace();
+        } catch {
+          // Best-effort release before repairing same-path corrupted binary
+        }
+      }
       try {
         fs.renameSync(tmpPath, targetPath);
       } catch {
@@ -425,7 +435,7 @@ export async function ensureNativeDaemonDownloaded(
         // Non-fatal legacy version marker write
       }
 
-      if (existingPath && opts.onBeforeReplace) {
+      if (existingPath && !repairingSamePath && opts.onBeforeReplace) {
         try {
           await opts.onBeforeReplace();
         } catch {

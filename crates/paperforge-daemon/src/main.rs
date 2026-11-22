@@ -1061,6 +1061,51 @@ mod tests {
     }
 
     #[test]
+    fn base_snapshot_empty_sqlite_table_does_not_fallback_to_stale_json() {
+        let tmp = env::temp_dir().join(format!("pf_ssot_empty_db_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let idx = tmp.join(".paperforge").join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+
+        fs::write(
+            idx.join("formal-library.json"),
+            serde_json::to_string(&json!({
+                "items": [
+                    { "zotero_key": "GHOST01", "title": "Old Deleted Paper 1" },
+                    { "zotero_key": "GHOST02", "title": "Old Deleted Paper 2" }
+                ]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        // Legitimately empty SQLite `papers` table (0 rows)
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch("CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, ocr_status TEXT);")
+            .unwrap();
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 14,
+                "vault": tmp.to_string_lossy(),
+                "argv": ["memory-card", "base-snapshot", "--json"],
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let env: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(env["data"]["state_authority"], "sqlite");
+        assert!(
+            env["data"]["rows"].as_object().unwrap().is_empty(),
+            "Empty authoritative SQLite table must not fall back to stale formal-library.json"
+        );
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
     fn engine_resolve_key_falls_back_to_sqlite_beyond_2048_cache_limit() {
         let tmp = env::temp_dir().join(format!("pf_resolve_2048_{}", std::process::id()));
         let _ = fs::remove_dir_all(&tmp);
