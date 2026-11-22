@@ -286,6 +286,24 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       expect(repairStopped).toBe(true);
       expect(p2Repaired).toBe(p2);
       expect(fs.readFileSync(p2Repaired!).equals(binV2)).toBe(true);
+
+      // 5. Simulate Windows Defender deleting the installed binary while .daemon-meta.json stays:
+      //    ensureNativeDaemonDownloaded MUST invoke onQuarantineSuspected with ~/.paperforge/bin!
+      fs.unlinkSync(p2!);
+      let quarantinedDir = "";
+      await ensureNativeDaemonDownloaded("2.0.2", {
+        home: tmpHome,
+        platform: "win32",
+        arch: "x64",
+        checkVersionUpdate: true,
+        fetchBuffer: async () => {
+          throw new Error("offline");
+        },
+        onQuarantineSuspected: (dir) => {
+          quarantinedDir = dir;
+        },
+      });
+      expect(quarantinedDir).toBe(path.join(tmpHome, ".paperforge", "bin"));
     } finally {
       rmTempSafe(tmpHome);
     }

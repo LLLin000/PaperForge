@@ -102,9 +102,22 @@ fn append_log(log_path: &Path, line: &str) {
 }
 
 fn http_get_bytes(url: &str, timeout_secs: u64) -> Result<Vec<u8>, String> {
-    let agent = ureq::AgentBuilder::new()
-        .timeout(std::time::Duration::from_secs(timeout_secs))
-        .build();
+    let mut builder = ureq::AgentBuilder::new()
+        .timeout_connect(std::time::Duration::from_secs(10))
+        .timeout_read(std::time::Duration::from_secs(timeout_secs))
+        .timeout(std::time::Duration::from_secs(timeout_secs));
+    if let Ok(proxy_raw) = env::var("PAPERFORGE_PROXY")
+        .or_else(|_| env::var("HTTPS_PROXY"))
+        .or_else(|_| env::var("HTTP_PROXY"))
+    {
+        let trimmed = proxy_raw.trim();
+        if !trimmed.is_empty() {
+            if let Ok(proxy) = ureq::Proxy::new(trimmed) {
+                builder = builder.proxy(proxy);
+            }
+        }
+    }
+    let agent = builder.build();
     let resp = agent
         .get(url)
         .set("User-Agent", "PaperForge-Native-Daemon/2.0")
@@ -116,6 +129,35 @@ fn http_get_bytes(url: &str, timeout_secs: u64) -> Result<Vec<u8>, String> {
         .read_to_end(&mut buf)
         .map_err(|e| format!("Read body failed for {url}: {e}"))?;
     Ok(buf)
+}
+
+fn prefer_cn_mirrors() -> bool {
+    if env::var("PAPERFORGE_PREFER_CN_MIRROR")
+        .map(|v| v.trim() == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+    {
+        return true;
+    }
+    for key in ["LC_ALL", "LANG"] {
+        if let Ok(v) = env::var(key) {
+            if v.to_ascii_lowercase().starts_with("zh") {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn github_candidate_urls(direct_url: &str) -> Vec<String> {
+    let mirrors = [
+        format!("https://ghfast.top/{direct_url}"),
+        format!("https://gh-proxy.com/{direct_url}"),
+    ];
+    if prefer_cn_mirrors() {
+        vec![mirrors[0].clone(), mirrors[1].clone(), direct_url.to_string()]
+    } else {
+        vec![direct_url.to_string(), mirrors[0].clone(), mirrors[1].clone()]
+    }
 }
 
 fn sha256_lower(bytes: &[u8]) -> String {
@@ -186,12 +228,12 @@ fn find_or_install_uv(home: &Path, log_path: &Path) -> Result<PathBuf, String> {
     let (asset, expected_sha, kind) =
         uv_target_asset_and_sha().ok_or_else(|| "Unsupported OS/architecture for uv".to_string())?;
     let direct_url = format!("https://github.com/astral-sh/uv/releases/download/{UV_VERSION}/{asset}");
-    let mirror_url = format!("https://ghfast.top/{direct_url}");
+    let urls = github_candidate_urls(&direct_url);
 
     let mut archive_bytes: Option<Vec<u8>> = None;
-    for url in [&direct_url, &mirror_url] {
+    for url in &urls {
         append_log(log_path, &format!("[PaperForge] Downloading uv ({UV_VERSION}) from {url} ..."));
-        if let Ok(bytes) = http_get_bytes(url, 120) {
+        if let Ok(bytes) = http_get_bytes(url, 60) {
             let actual = sha256_lower(&bytes);
             if actual == expected_sha {
                 archive_bytes = Some(bytes);
@@ -320,13 +362,31 @@ where
 
         on_phase("installing_python", 2, 5);
         append_log(&log_path, "[PaperForge] Installing managed Python 3.12 via uv ...");
-        if run_logged_command(&uv_bin, &["python", "install", "3.12"], &base_envs, &log_path).is_err() {
-            let mut mirror_envs = base_envs.to_vec();
-            mirror_envs.push((
-                "UV_PYTHON_INSTALL_MIRROR",
-                "https://registry.npmmirror.com/-/binary/python-build-standalone",
-            ));
-            run_logged_command(&uv_bin, &["python", "install", "3.12"], &mirror_envs, &log_path)?;
+        let mut cn_py_envs = base_envs.to_vec();
+        cn_py_envs.push((
+            "UV_PYTHON_INSTALL_MIRROR",
+            "https://registry.npmmirror.com/-/binary/python-build-standalone",
+        ));
+        let py_attempts: [&[(&str, &str)]; 2] = if prefer_cn_mirrors() {
+            [cn_py_envs.as_slice(), base_envs.as_slice()]
+        } else {
+            [base_envs.as_slice(), cn_py_envs.as_slice()]
+        };
+        let mut py_ok = false;
+        let mut py_err = String::new();
+        for env_set in py_attempts {
+            match run_logged_command(&uv_bin, &["python", "install", "3.12"], env_set, &log_path) {
+                Ok(()) => {
+                    py_ok = true;
+                    break;
+                }
+                Err(e) => {
+                    py_err = e;
+                }
+            }
+        }
+        if !py_ok {
+            return Err(py_err);
         }
 
         let boot_str = boot_dir.to_string_lossy().into_owned();
@@ -348,11 +408,10 @@ where
             let wheel_name = format!("paperforge-{pep440}-py3-none-any.whl");
             let wheel_file = wheel_dir.join(&wheel_name);
             if !wheel_file.is_file() {
-                let w1 = format!("https://github.com/{GITHUB_REPO}/releases/download/{clean_tag}/{wheel_name}");
-                let w2 = format!("https://ghfast.top/{w1}");
-                for wu in [&w1, &w2] {
+                let w_direct = format!("https://github.com/{GITHUB_REPO}/releases/download/{clean_tag}/{wheel_name}");
+                for wu in github_candidate_urls(&w_direct) {
                     append_log(&log_path, &format!("[PaperForge] Downloading wheel {wu} ..."));
-                    if let Ok(bytes) = http_get_bytes(wu, 90) {
+                    if let Ok(bytes) = http_get_bytes(&wu, 60) {
                         if bytes.starts_with(b"PK") && atomic_write_bytes(&wheel_file, &bytes).is_ok() {
                             break;
                         }
@@ -371,11 +430,19 @@ where
             .unwrap_or(false);
         let wheel_dir_str = wheel_dir.to_string_lossy().into_owned();
 
-        let mirrors = [
-            "",
-            "https://pypi.tuna.tsinghua.edu.cn/simple",
-            "https://mirrors.aliyun.com/pypi/simple/",
-        ];
+        let mirrors: [&str; 3] = if prefer_cn_mirrors() {
+            [
+                "https://pypi.tuna.tsinghua.edu.cn/simple",
+                "https://mirrors.aliyun.com/pypi/simple/",
+                "",
+            ]
+        } else {
+            [
+                "",
+                "https://pypi.tuna.tsinghua.edu.cn/simple",
+                "https://mirrors.aliyun.com/pypi/simple/",
+            ]
+        };
         let mut installed = false;
         for idx in mirrors {
             let mut args: Vec<&str> = vec!["pip", "install", "--python", &boot_py_str, "--upgrade"];

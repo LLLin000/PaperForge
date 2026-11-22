@@ -217,13 +217,17 @@ export function resolveNativeDaemonBinary(
   return null;
 }
 
-function httpsGetBuffer(url: string, redirectsLeft = 5): Promise<Buffer> {
+function httpsGetBuffer(
+  url: string,
+  redirectsLeft = 5,
+  timeoutMs = 15000
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
       {
         headers: { "User-Agent": "PaperForge-Obsidian-Plugin/2.0" },
-        timeout: 45000,
+        timeout: timeoutMs,
       },
       (res) => {
         const code = res.statusCode ?? 0;
@@ -236,10 +240,11 @@ function httpsGetBuffer(url: string, redirectsLeft = 5): Promise<Buffer> {
             reject(new Error("Too many redirects"));
             return;
           }
-          httpsGetBuffer(res.headers.location, redirectsLeft - 1).then(
-            resolve,
-            reject
-          );
+          httpsGetBuffer(
+            res.headers.location,
+            redirectsLeft - 1,
+            timeoutMs
+          ).then(resolve, reject);
           return;
         }
         if (code !== 200) {
@@ -258,6 +263,23 @@ function httpsGetBuffer(url: string, redirectsLeft = 5): Promise<Buffer> {
     });
     req.on("error", reject);
   });
+}
+
+function preferCnGithubMirrors(): boolean {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (
+      tz === "Asia/Shanghai" ||
+      tz === "Asia/Chongqing" ||
+      tz === "Asia/Urumqi" ||
+      tz === "Asia/Harbin"
+    ) {
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  return false;
 }
 
 function parseChecksumForAsset(
@@ -308,6 +330,7 @@ export async function ensureNativeDaemonDownloaded(
     arch?: string;
     checkVersionUpdate?: boolean;
     onBeforeReplace?: () => void | Promise<void>;
+    onQuarantineSuspected?: (binDir: string) => void;
     fetchBuffer?: (url: string) => Promise<Buffer>;
   } = {}
 ): Promise<string | null> {
@@ -319,26 +342,40 @@ export async function ensureNativeDaemonDownloaded(
   const verFile = path.join(binDir, ".daemon-version");
   const metaFile = nativeDaemonMetaFile(home, plat);
   const wantTag = normalizeDaemonTag(version);
-  const fetcher = opts.fetchBuffer ?? httpsGetBuffer;
+  const fetcher =
+    opts.fetchBuffer ??
+    ((u: string) =>
+      httpsGetBuffer(u, 5, u.endsWith("/checksums.txt") ? 10000 : 25000));
 
   const meta = readNativeDaemonMeta(home, plat);
   let existingPath: string | null = null;
   let installedSha: string | null = null;
   let installedTag = "";
+  let suspectedQuarantine = false;
 
   try {
+    if (meta?.binaryPath) {
+      if (
+        fs.existsSync(meta.binaryPath) &&
+        fs.statSync(meta.binaryPath).size > 0
+      ) {
+        ensureExecutableMode(meta.binaryPath, plat);
+        existingPath = meta.binaryPath;
+        installedTag = normalizeDaemonTag(meta.tag);
+        // Always hash the live bytes on disk — never trust cached metadata alone,
+        // so a corrupted or truncated local binary triggers automatic repair.
+        installedSha = sha256File(meta.binaryPath);
+      } else if (plat === "win32") {
+        // Metadata points to a binary we previously installed, yet the .exe vanished
+        // (typical Windows Defender quarantine signature).
+        suspectedQuarantine = true;
+      }
+    }
     if (
-      meta?.binaryPath &&
-      fs.existsSync(meta.binaryPath) &&
-      fs.statSync(meta.binaryPath).size > 0
+      !existingPath &&
+      fs.existsSync(legacyDest) &&
+      fs.statSync(legacyDest).size > 0
     ) {
-      ensureExecutableMode(meta.binaryPath, plat);
-      existingPath = meta.binaryPath;
-      installedTag = normalizeDaemonTag(meta.tag);
-      // Always hash the live bytes on disk — never trust cached metadata alone,
-      // so a corrupted or truncated local binary triggers automatic repair.
-      installedSha = sha256File(meta.binaryPath);
-    } else if (fs.existsSync(legacyDest) && fs.statSync(legacyDest).size > 0) {
       ensureExecutableMode(legacyDest, plat);
       existingPath = legacyDest;
       installedTag = fs.existsSync(verFile)
@@ -347,7 +384,17 @@ export async function ensureNativeDaemonDownloaded(
       installedSha = sha256File(legacyDest);
     }
   } catch {
-    // Continue to download/update
+    if (plat === "win32" && meta?.binaryPath) {
+      suspectedQuarantine = true;
+    }
+  }
+
+  if (suspectedQuarantine) {
+    try {
+      opts.onQuarantineSuspected?.(binDir);
+    } catch {
+      // Isolate UI notification callback errors
+    }
   }
 
   if (existingPath && (!opts.checkVersionUpdate || !wantTag)) {
@@ -359,7 +406,13 @@ export async function ensureNativeDaemonDownloaded(
   if (!assetName || !tag) return existingPath;
 
   const baseRelease = `https://github.com/${PAPERFORGE_GITHUB_REPO}/releases/download/${tag}`;
-  const bases = [baseRelease, `https://ghfast.top/${baseRelease}`];
+  const cnMirrors = [
+    `https://ghfast.top/${baseRelease}`,
+    `https://gh-proxy.com/${baseRelease}`,
+  ];
+  const bases = preferCnGithubMirrors()
+    ? [...cnMirrors, baseRelease]
+    : [baseRelease, ...cnMirrors];
 
   for (const base of bases) {
     try {

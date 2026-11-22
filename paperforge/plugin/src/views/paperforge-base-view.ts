@@ -259,6 +259,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _lastSelectedIdx: number | null = null;
   private _pendingShiftKey = false;
   private _localFilters: BaseFilterState | null = null;
+  private _missingPdfHintDismissed = false;
 
   private _filterKey(): string {
     return (
@@ -961,6 +962,39 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     // Persistent multi-filter bar (survives Obsidian view switches & restarts)
     if (rawFlatItems.length > 0 || this._hasActiveFilters(filters)) {
       this._renderFilterBar(root, rawFlatItems, filters);
+    }
+
+    // Calm diagnostic banner when >=50% of synced papers have no local PDF
+    // (common with Zotero cloud-only sync or unconfigured ZotFile/Attanger base dir).
+    if (
+      snapshot &&
+      !this._missingPdfHintDismissed &&
+      rawFlatItems.length >= 3
+    ) {
+      const missingPdfCount = rawFlatItems.filter(
+        (it) => !it.row.has_pdf
+      ).length;
+      if (missingPdfCount > 0 && missingPdfCount / rawFlatItems.length >= 0.5) {
+        const hintBar = mkEl(root, "div", {
+          cls: "pf-base-missing-pdf-hint",
+          attr: { "data-pf-testid": "base-missing-pdf-hint" },
+        });
+        mkEl(hintBar, "span", {
+          text: `当前有 ${missingPdfCount}/${rawFlatItems.length} 篇文献未检测到本地 PDF：请确认已在 Zotero 中将 PDF 下载到本地（非仅云端同步），或检查 Zotero 链接附件根目录设置。`,
+        });
+        const closeHintBtn = mkEl(hintBar, "button", {
+          cls: "pf-btn pf-btn-ghost",
+          text: "知道了",
+          attr: {
+            type: "button",
+            "data-pf-testid": "base-missing-pdf-dismiss",
+          },
+        });
+        closeHintBtn.addEventListener("click", () => {
+          this._missingPdfHintDismissed = true;
+          this.render();
+        });
+      }
     }
 
     if (flatItems.length === 0) {

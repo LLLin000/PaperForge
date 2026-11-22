@@ -1076,7 +1076,11 @@ export class PaperForgeClient {
   launchRuntimeInstaller(
     action: "install" | "update" | "repair",
     version: string,
-    options?: { allowUvDownload?: boolean }
+    options?: {
+      allowUvDownload?: boolean;
+      proxyUrl?: string;
+      preferCnMirror?: boolean;
+    }
   ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     if (typeof this._transport.launchRuntimeInstaller !== "function") {
       return {

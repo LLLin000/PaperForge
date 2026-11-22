@@ -21,6 +21,76 @@ import {
 interface InlineRenderOpts {
   inline?: boolean;
 }
+
+/** Translate raw provider/HTTP errors into plain beginner-friendly guidance. */
+export function formatProviderConnectionError(
+  rawErr: string,
+  kind: "ocr" | "embed",
+  isZh: boolean
+): string {
+  const lower = String(rawErr || "").toLowerCase();
+  if (
+    lower.includes("401") ||
+    lower.includes("unauthorized") ||
+    lower.includes("invalid_api_key") ||
+    lower.includes("invalid token") ||
+    lower.includes("authentication")
+  ) {
+    return isZh
+      ? "API Key 无效或已过期，请核对是否复制完整"
+      : "API Key is invalid or expired. Please check and re-paste it.";
+  }
+  if (
+    lower.includes("429") ||
+    lower.includes("quota") ||
+    lower.includes("rate limit") ||
+    lower.includes("insufficient") ||
+    lower.includes("balance")
+  ) {
+    return isZh
+      ? "免费额度已用完或触发限流，请稍后再试或检查账户余额"
+      : "Quota exceeded or rate-limited. Check provider balance or retry later.";
+  }
+  if (lower.includes("dimension") || lower.includes("dims")) {
+    return isZh
+      ? "模型向量维度变化，保存后在「智能检索」点击重建索引即可（不影响笔记与 OCR）"
+      : "Embedding dimension changed. Rebuild the vector index in Smart Retrieval (notes & OCR stay untouched).";
+  }
+  if (lower.includes("404") || lower.includes("model_not_found")) {
+    return isZh
+      ? "模型名称或接口地址不匹配，建议先选用内置预设"
+      : "Model or endpoint URL not found. Try selecting a built-in preset.";
+  }
+  if (
+    lower.includes("timeout") ||
+    lower.includes("timed out") ||
+    lower.includes("econnrefused") ||
+    lower.includes("enotfound") ||
+    lower.includes("network") ||
+    lower.includes("connection")
+  ) {
+    return isZh
+      ? "无法连接服务接口，请检查网络或代理设置"
+      : "Cannot reach provider endpoint. Check network or proxy settings.";
+  }
+  if (lower.includes("no_python") || lower.includes("python")) {
+    return isZh
+      ? "请先点击第 1 步「一键启用引擎」，完成后再测通"
+      : "Enable the Compute Engine in Step 1 first, then test connection.";
+  }
+  const compact = String(rawErr || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const fallback =
+    kind === "ocr"
+      ? isZh
+        ? "OCR 连通测试失败"
+        : "OCR connection failed"
+      : isZh
+        ? "向量模型探测失败"
+        : "Embedding probe failed";
+  return compact ? `${fallback}：${compact.slice(0, 72)}` : fallback;
+}
 import type { ZoteroDetectDto } from "./client/paperforge-client";
 import {
   PaperForgeSettings,
@@ -172,6 +242,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _zoteroDetectRan = false;
   private _setupExpressMode = true;
   private _detectedFolderCollisionMsg: string | null = null;
+  private _autoContinueSetupAfterInstall = false;
+  private _setupProxyUrl = "";
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
     current: 0,
@@ -1083,11 +1155,29 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Open the background installer and watch the published pointer. */
-  private _launchRuntimeInstaller(action: RuntimeInstallerAction): void {
+  private _launchRuntimeInstaller(
+    action: RuntimeInstallerAction,
+    opts?: { autoContinueSetup?: boolean }
+  ): void {
+    if (opts?.autoContinueSetup) {
+      this._autoContinueSetupAfterInstall = true;
+    }
+    const isZh = langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
+    const launchOpts: {
+      allowUvDownload: boolean;
+      proxyUrl?: string;
+      preferCnMirror?: boolean;
+    } = { allowUvDownload: true };
+    if (this._setupProxyUrl.trim()) {
+      launchOpts.proxyUrl = this._setupProxyUrl.trim();
+    }
+    if (isZh) {
+      launchOpts.preferCnMirror = true;
+    }
     const result = this.getClient().launchRuntimeInstaller(
       action,
       this.plugin.manifest.version,
-      { allowUvDownload: true }
+      launchOpts
     );
     if (!result.ok) {
       const message = t("runtime_installer_failed").replace(
@@ -1227,10 +1317,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._setupFeedback = cancelReason;
     }
     if (ready) this._setupReinstallRequested = false;
+    const shouldChainSetup = ready && this._autoContinueSetupAfterInstall;
+    this._autoContinueSetupAfterInstall = false;
     this._refreshRuntimeStatus(true);
     this.display();
-    if (ready) new Notice(t("runtime_install_complete"));
-    else if (cancelReason) new Notice(cancelReason);
+    if (ready) {
+      new Notice(t("runtime_install_complete"));
+      if (shouldChainSetup) {
+        this._applyLibraryConfiguration({ autoCompleteOnSuccess: true });
+      }
+    } else if (cancelReason) {
+      new Notice(cancelReason);
+    }
   }
 
   private _cancelRuntimePoll(): void {
@@ -4999,7 +5097,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (this._detectedFolderCollisionMsg) {
       c2.createEl("p", {
         cls: "pf-setup-ok pf-collision-guard-banner",
-        text: "🛡 " + this._detectedFolderCollisionMsg,
+        text: isZh
+          ? `已开启目录防冲突保护：${this._detectedFolderCollisionMsg}`
+          : this._detectedFolderCollisionMsg,
       });
     }
 
@@ -5160,7 +5260,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // OCR quick row
     const ocrBox = aiDetails.createDiv({ cls: "pf-express-subrow" });
-    ocrBox.createEl("label", { text: "PaddleOCR API Key" });
+    const ocrLabelWrap = ocrBox.createDiv({ cls: "pf-express-label-row" });
+    ocrLabelWrap.createEl("label", { text: "PaddleOCR API Key" });
+    ocrLabelWrap.createEl("a", {
+      cls: "pf-express-help-link",
+      text: isZh ? "获取免费密钥 ↗" : "Get free key ↗",
+      attr: {
+        href: "https://aistudio.baidu.com/paddleocr/task",
+        target: "_blank",
+        rel: "noopener noreferrer",
+      },
+    });
     const ocrKeyIn = ocrBox.createEl("input", {
       cls: "pf-setup-input",
       attr: {
@@ -5172,14 +5282,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }) as HTMLInputElement;
     const ocrTestBtn = ocrBox.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
-      text: "保存并测通",
+      text: rtReady
+        ? isZh
+          ? "保存并测通"
+          : "Save & Test"
+        : isZh
+          ? "需先启用引擎"
+          : "Enable engine first",
       attr: { type: "button" },
     });
+    ocrTestBtn.disabled = !rtReady;
     const ocrMsg = ocrBox.createEl("span", { cls: "pf-test-conn-status" });
     ocrTestBtn.addEventListener("click", () => {
       const val = ocrKeyIn.value.trim();
       ocrTestBtn.disabled = true;
-      ocrMsg.textContent = "测试中…";
+      ocrMsg.textContent = isZh ? "测试中…" : "Testing…";
       void (
         val
           ? this._storeSetupSecret("paddleocr-api-key", val)
@@ -5190,12 +5307,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (val) ocrKeyIn.value = "";
           ocrMsg.className = `pf-test-conn-status ${res?.passed ? "is-ok" : "is-err"}`;
           ocrMsg.textContent = res?.passed
-            ? "✓ 已连通"
-            : `✗ ${res?.error || "校验失败"}`;
+            ? isZh
+              ? "已连通"
+              : "Connected"
+            : formatProviderConnectionError(res?.error || "", "ocr", isZh);
         })
         .catch((err) => {
           ocrMsg.className = "pf-test-conn-status is-err";
-          ocrMsg.textContent = `✗ ${String(err?.message || err).slice(0, 60)}`;
+          ocrMsg.textContent = formatProviderConnectionError(
+            String(err?.message || err),
+            "ocr",
+            isZh
+          );
         })
         .finally(() => {
           ocrTestBtn.disabled = false;
@@ -5204,7 +5327,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // Embedding quick row with Preset dropdown
     const memBox = aiDetails.createDiv({ cls: "pf-express-subrow" });
-    memBox.createEl("label", { text: "AI 语义检索预设" });
+    const memLabelWrap = memBox.createDiv({ cls: "pf-express-label-row" });
+    memLabelWrap.createEl("label", {
+      text: isZh ? "AI 语义检索预设" : "Semantic Search Preset",
+    });
+    memLabelWrap.createEl("a", {
+      cls: "pf-express-help-link",
+      text: isZh ? "获取硅基流动密钥 ↗" : "Get SiliconFlow key ↗",
+      attr: {
+        href: "https://cloud.siliconflow.cn/account/ak",
+        target: "_blank",
+        rel: "noopener noreferrer",
+      },
+    });
     const pSel = memBox.createEl("select", {
       cls: "pf-setup-select",
     }) as HTMLSelectElement;
@@ -5243,14 +5378,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }) as HTMLInputElement;
     const memTestBtn = memBox.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
-      text: "保存并测维度",
+      text: rtReady
+        ? isZh
+          ? "保存并测维度"
+          : "Save & Probe"
+        : isZh
+          ? "需先启用引擎"
+          : "Enable engine first",
       attr: { type: "button" },
     });
+    memTestBtn.disabled = !rtReady;
     const memMsg = memBox.createEl("span", { cls: "pf-test-conn-status" });
     memTestBtn.addEventListener("click", () => {
       const val = memKeyIn.value.trim();
       memTestBtn.disabled = true;
-      memMsg.textContent = "探测中…";
+      memMsg.textContent = isZh ? "探测中…" : "Probing…";
       void (
         val
           ? this._storeSetupSecret("vector-db-api-key", val)
@@ -5260,11 +5402,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         .then((res) => {
           if (val) memKeyIn.value = "";
           memMsg.className = "pf-test-conn-status is-ok";
-          memMsg.textContent = `✓ ${res.model} (${res.dimension}维)`;
+          memMsg.textContent = `${res.model} (${res.dimension}${isZh ? "维" : "d"})`;
         })
         .catch((err) => {
           memMsg.className = "pf-test-conn-status is-err";
-          memMsg.textContent = `✗ ${String(err?.message || err).slice(0, 60)}`;
+          memMsg.textContent = formatProviderConnectionError(
+            String(err?.message || err),
+            "embed",
+            isZh
+          );
         })
         .finally(() => {
           memTestBtn.disabled = false;
@@ -5285,7 +5431,42 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // ── Single Big Footer CTA ──
+    // Inline 1-line proxy recovery bar (only shown when download/setup fails!)
+    if (this._setupOperation === "failed" && !rtReady) {
+      const proxyBox = wrapper.createDiv({
+        cls: "pf-express-card pf-proxy-recovery",
+        attr: { "data-pf-testid": "express-proxy-recovery" },
+      });
+      proxyBox.createEl("p", {
+        cls: "setting-item-description",
+        text: isZh
+          ? "校园网 / 医院内网下载受限？可填写本地代理地址（如 http://127.0.0.1:7890）后重试："
+          : "Network restricted? Enter a local proxy URL (e.g. http://127.0.0.1:7890) and retry:",
+      });
+      const proxyRow = proxyBox.createDiv({ cls: "pf-setup-path-row" });
+      const proxyIn = proxyRow.createEl("input", {
+        cls: "pf-setup-input",
+        attr: {
+          type: "text",
+          placeholder: "http://127.0.0.1:7890",
+          "data-pf-testid": "express-proxy-input",
+        },
+      }) as HTMLInputElement;
+      proxyIn.value = this._setupProxyUrl;
+      proxyIn.addEventListener("input", () => {
+        this._setupProxyUrl = proxyIn.value;
+      });
+      renderActionButton(proxyRow, {
+        label: isZh ? "使用代理重试安装" : "Retry with Proxy",
+        variant: "secondary",
+        onClick: () => {
+          this._setupProxyUrl = proxyIn.value.trim();
+          this._launchRuntimeInstaller(action, { autoContinueSetup: true });
+        },
+      });
+    }
+
+    // ── Single Big Footer CTA (True 1-Click Auto Pipeline!) ──
     const footer = wrapper.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(footer, {
       label: isZh ? "稍后配置，先逛逛" : t("setup_nav_later"),
@@ -5293,18 +5474,33 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       disabled: this._setupOperation === "running",
       onClick: () => this._goHome(),
     });
+    const isInstalling = Boolean(this._runtimePollTimer);
     renderActionButton(footer, {
       label:
         this._setupOperation === "running"
-          ? isZh
-            ? "正在同步文献库…"
-            : "Syncing…"
-          : isZh
-            ? "保存配置并立即同步文献库"
-            : "Save & Sync Library Now",
+          ? isInstalling
+            ? isZh
+              ? "正在自动安装引擎，完成后将自动同步…"
+              : "Installing engine, syncing automatically next…"
+            : isZh
+              ? "正在同步文献库…"
+              : "Syncing…"
+          : rtReady
+            ? isZh
+              ? "保存配置并立即同步文献库"
+              : "Save & Sync Library Now"
+            : isZh
+              ? "一键启用引擎并同步文献库"
+              : "Enable Engine & Sync Library",
       disabled: this._setupOperation === "running",
-      onClick: () =>
-        this._applyLibraryConfiguration({ autoCompleteOnSuccess: true }),
+      onClick: () => {
+        if (!rtReady) {
+          void this.plugin.saveSettings();
+          this._launchRuntimeInstaller(action, { autoContinueSetup: true });
+          return;
+        }
+        this._applyLibraryConfiguration({ autoCompleteOnSuccess: true });
+      },
     });
   }
 

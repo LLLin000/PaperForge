@@ -679,9 +679,23 @@ export class NodeProcessTransport implements Transport {
   launchRuntimeInstaller(
     action: RuntimeInstallerAction,
     version: string,
-    options?: { allowUvDownload?: boolean }
+    options?: {
+      allowUvDownload?: boolean;
+      proxyUrl?: string;
+      preferCnMirror?: boolean;
+    }
   ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     const logPath = this._installerLogPath();
+    const extraEnv: Record<string, string> = {};
+    if (options?.proxyUrl?.trim()) {
+      const p = options.proxyUrl.trim();
+      extraEnv.PAPERFORGE_PROXY = p;
+      extraEnv.HTTP_PROXY = p;
+      extraEnv.HTTPS_PROXY = p;
+    }
+    if (options?.preferCnMirror) {
+      extraEnv.PAPERFORGE_PREFER_CN_MIRROR = "1";
+    }
     const python = this.discoverBasePython();
     if (!python) {
       if (!options?.allowUvDownload) {
@@ -699,7 +713,8 @@ export class NodeProcessTransport implements Transport {
             args: ["install-runtime", "--action", action, "--version", version],
           },
           logPath,
-          "rust-uv"
+          "rust-uv",
+          extraEnv
         );
       }
       const uv = this.discoverUv();
@@ -713,7 +728,7 @@ export class NodeProcessTransport implements Transport {
         process.platform === "win32" ? "ps1" : "sh"
       );
       const run = uvInstallerRun(process.platform, scriptPath);
-      return this._spawnDetachedInstaller(run, logPath, uv ?? "uv");
+      return this._spawnDetachedInstaller(run, logPath, uv ?? "uv", extraEnv);
     }
     // The bootstrap step makes the CLI exist (and skips pip when it already
     // does); the CLI then owns the runtime. A source checkout or a private
@@ -738,13 +753,14 @@ export class NodeProcessTransport implements Transport {
       comSpec: process.env.ComSpec,
       scriptPath,
     });
-    return this._spawnDetachedInstaller(run, logPath, python);
+    return this._spawnDetachedInstaller(run, logPath, python, extraEnv);
   }
 
   private _spawnDetachedInstaller(
     run: { command: string; args: string[] },
     logPath: string,
-    python: string
+    python: string,
+    extraEnv: Record<string, string> = {}
   ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     let log: number | undefined;
     try {
@@ -765,7 +781,7 @@ export class NodeProcessTransport implements Transport {
         detached: true,
         stdio: ["ignore", log, log],
         windowsHide: true,
-        env: paperforgeEnrichedEnv(),
+        env: { ...paperforgeEnrichedEnv(), ...extraEnv },
       });
       child.unref?.();
       return { ok: true, python, logPath };
