@@ -265,6 +265,27 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
           arch: process.arch,
         })
       ).toBe(p2);
+
+      // 4. Corrupt 1 byte of the on-disk binary while leaving .daemon-meta.json untouched:
+      //    ensureNativeDaemonDownloaded MUST hash the live file and repair it!
+      const corrupted = Buffer.from(binV2);
+      corrupted[0] ^= 0xff;
+      fs.writeFileSync(p2!, corrupted);
+      let repairStopped = false;
+      const p2Repaired = await ensureNativeDaemonDownloaded("2.0.1", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: mockFetch,
+        onBeforeReplace: async () => {
+          repairStopped = true;
+        },
+      });
+      expect(binFetches).toBe(3);
+      expect(repairStopped).toBe(true);
+      expect(p2Repaired).toBe(p2);
+      expect(fs.readFileSync(p2Repaired!).equals(binV2)).toBe(true);
     } finally {
       rmTempSafe(tmpHome);
     }

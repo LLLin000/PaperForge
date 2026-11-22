@@ -170,7 +170,13 @@ pub fn attach_child_to_job(child: &Child) {
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .process_group(0);
-            let _ = reaper.spawn();
+            if let Ok(mut reaper_child) = reaper.spawn() {
+                // Reap the helper child's exit status in a background thread so
+                // repeated worker runs never accumulate POSIX zombie processes.
+                thread::spawn(move || {
+                    let _ = reaper_child.wait();
+                });
+            }
         }
     }
     #[cfg(not(any(windows, target_os = "macos")))]

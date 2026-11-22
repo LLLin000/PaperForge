@@ -378,12 +378,33 @@ jobs:
               --generate-notes \
               $PRERELEASE_FLAG
           fi
-          # #120-fix (review): upload ALL assets with --clobber — a rerun
-          # after a mid-upload failure must backfill every missing asset,
-          # not just the checksum.
+          # #120-fix (review) + Asset Immutability Gate: compute fresh checksums,
+          # allow idempotent backfill of missing assets on same-SHA retry, and
+          # fail closed if an already-published asset would be overwritten with
+          # different bytes.
           sha256sum paperforge/plugin/main.js paperforge/plugin/styles.css \
             paperforge/plugin/manifest.json versions.json \
             dist/*.whl dist/*.tar.gz dist-daemon/paperforge-daemon-* > checksums.txt
+          if gh release download "$RELEASE_TAG" -p checksums.txt -O /tmp/existing-checksums.txt > /dev/null 2>&1; then
+            python - /tmp/existing-checksums.txt checksums.txt <<'PY'
+          import os, sys
+          def parse(p):
+              out = {}
+              for line in open(p, encoding="utf-8"):
+                  parts = line.strip().split()
+                  if len(parts) >= 2:
+                      out[os.path.basename(parts[-1].lstrip("*"))] = parts[0].lower()
+              return out
+          old_map = parse(sys.argv[1])
+          new_map = parse(sys.argv[2])
+          drift = [k for k, v in old_map.items() if k in new_map and new_map[k] != v]
+          if drift:
+              raise SystemExit(
+                  f"::error::Release Asset Immutability Gate failed: existing release assets differ in SHA-256 ({', '.join(sorted(drift))}). Bump the version instead of mutating published assets."
+              )
+          print("Release Asset Immutability Gate passed (idempotent retry verified).")
+          PY
+          fi
           gh release upload "$RELEASE_TAG" --clobber \
             paperforge/plugin/main.js \
             paperforge/plugin/styles.css \
