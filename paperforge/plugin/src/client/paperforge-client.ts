@@ -404,6 +404,7 @@ export interface VaultUpgradePlanDto {
 export interface VaultUpgradeApplyResultDto {
   dry_run: boolean;
   applied: boolean;
+  status?: "completed" | "partial_success" | "failed" | string;
   fast_cutover?: boolean;
   backup_dir?: string;
   executed_steps: Array<Record<string, unknown>>;
@@ -2666,6 +2667,18 @@ export class PaperForgeClient {
     (
       this._transport as unknown as { shutdownDaemon?: () => void }
     )?.shutdownDaemon?.();
+  }
+
+  async shutdownTransportAsync(): Promise<void> {
+    const t = this._transport as unknown as {
+      shutdownDaemonAsync?: () => Promise<void>;
+      shutdownDaemon?: () => void;
+    };
+    if (typeof t?.shutdownDaemonAsync === "function") {
+      await t.shutdownDaemonAsync();
+    } else {
+      t?.shutdownDaemon?.();
+    }
   }
 
   async daemonSubmitRuntimeUpdate(

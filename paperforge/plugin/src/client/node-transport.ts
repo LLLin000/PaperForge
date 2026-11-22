@@ -1147,6 +1147,36 @@ export class NodeProcessTransport implements Transport {
     }
   }
 
+  /** Gracefully stop the warm daemon and await process exit before hot-update. */
+  async shutdownDaemonAsync(force = false): Promise<void> {
+    const active = this._daemon;
+    if (!active) return;
+    const child = active.child;
+    if (child.exitCode != null || child.signalCode != null) {
+      this.shutdownDaemon(force);
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(fallbackTimer);
+        resolve();
+      };
+      child.once("close", done);
+      child.once("exit", done);
+      const fallbackTimer = setTimeout(() => {
+        if (child.exitCode == null && child.signalCode == null) {
+          hardKill(child);
+        }
+        done();
+      }, 1500);
+      fallbackTimer.unref?.();
+      this.shutdownDaemon(force);
+    });
+  }
+
   private async _executeDaemon(
     target: {
       path: string;

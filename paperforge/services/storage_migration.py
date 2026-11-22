@@ -354,6 +354,9 @@ def migrate_vault_storage(
                         seen_ws_dirs.add(candidate_dir.resolve())
 
             for key, ws_dir, ws_info in ws_targets:
+                p_rewritten_start = len(rewritten_notes)
+                p_fulltext_start = len(restorable_fulltexts)
+                p_assets_start = len(created_assets)
                 try:
                     paper_ocr_dir = ocr_root / key
                     if paper_ocr_dir.exists():
@@ -432,8 +435,21 @@ def migrate_vault_storage(
                 except Exception as paper_exc:  # noqa: BLE001
                     if not isolate_paper_errors:
                         raise
+                    if not dry_run:
+                        # Roll back this failed paper's partial mutations so its workspace stays clean
+                        _rollback_mutations(
+                            rewritten_notes=rewritten_notes[p_rewritten_start:],
+                            restorable_fulltexts=restorable_fulltexts[p_fulltext_start:],
+                            created_assets=created_assets[p_assets_start:],
+                            moved_pairs=[],
+                            config_restorer=lambda: None,
+                        )
+                        del rewritten_notes[p_rewritten_start:]
+                        del restorable_fulltexts[p_fulltext_start:]
+                        del created_assets[p_assets_start:]
                     paper_errors.append({"key": key, "error": str(paper_exc)})
 
+        final_state = "partial_success" if paper_errors else "completed"
         if not dry_run:
             if not cfg_path.exists():
                 bootstrap_config(vault_root)
@@ -453,7 +469,7 @@ def migrate_vault_storage(
             write_json_atomic(
                 journal_path,
                 {
-                    "state": "completed",
+                    "state": final_state,
                     "entries_moved": tree_counts["moved"],
                     "conflicts_quarantined": tree_counts["conflicts_quarantined"],
                     "notes_rewritten": notes_rewritten,
@@ -486,6 +502,7 @@ def migrate_vault_storage(
 
     return {
         "dry_run": dry_run,
+        "state": "partial_success" if paper_errors else "completed",
         "target_engine_dir": ".paperforge",
         "entries_moved": tree_counts["moved"],
         "entries_skipped_existing": tree_counts["skipped_existing"],

@@ -142,12 +142,11 @@ fn dispatch_request(
                     false,
                 );
             }
-            let c = daemon.get_or_refresh_vault(vp);
-            let rel = c.workspace_map.get(key).cloned();
+            let (rel, seq) = daemon.resolve_workspace_key(vp, key);
             return DispatchOutcome::Immediate(
                 json_ok_resp(
                     id,
-                    json!({ "key": key, "workspace_relpath": rel, "seq": c.last_seq }),
+                    json!({ "key": key, "workspace_relpath": rel, "seq": seq }),
                 ),
                 false,
             );
@@ -468,6 +467,12 @@ fn execute_request(daemon: &NativeControlDaemon, req: &Value) -> (Value, bool) {
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
+    if args.first().map(|s| s.as_str()) == Some("--reap-on-parent-exit") {
+        let ppid = args.get(1).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+        let cpid = args.get(2).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+        platform::run_macos_kqueue_reaper(ppid, cpid);
+        return;
+    }
     if args.first().map(|s| s.as_str()) == Some("install-runtime") {
         let mut action = "install".to_string();
         let mut version = PF_VERSION.to_string();
@@ -952,6 +957,155 @@ mod tests {
         // SQLite-only paper is returned even when absent from formal-library.json
         assert_eq!(env["data"]["rows"]["SSOT02"]["title"], "SQLite Only Paper");
         assert_eq!(env["data"]["rows"]["SSOT02"]["ocr_status"], "done");
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn base_snapshot_sqlite_only_preserves_pdf_flags_and_collections() {
+        let tmp = env::temp_dir().join(format!("pf_ssot_pdf_flags_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let idx = tmp.join(".paperforge").join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+
+        // NO formal-library.json at all! SQLite alone must supply has_pdf, do_ocr, analyze, collections.
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE papers (
+                zotero_key TEXT PRIMARY KEY,
+                title TEXT,
+                has_pdf INTEGER,
+                do_ocr INTEGER,
+                analyze INTEGER,
+                collections_json TEXT,
+                ocr_status TEXT
+            );
+            INSERT INTO papers VALUES (
+                'ONLYDB1',
+                'Pure SQLite Paper',
+                1,
+                1,
+                0,
+                '[\"Ortho/ACL\", \"Biomechanics\"]',
+                'done'
+            );",
+        )
+        .unwrap();
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 11,
+                "vault": tmp.to_string_lossy(),
+                "argv": ["memory-card", "base-snapshot", "--json"],
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let env: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(env["data"]["state_authority"], "sqlite");
+        let row = &env["data"]["rows"]["ONLYDB1"];
+        assert_eq!(row["has_pdf"], true);
+        assert_eq!(row["do_ocr"], true);
+        assert_eq!(row["analyze"], false);
+        assert_eq!(row["collections"], json!(["Ortho/ACL", "Biomechanics"]));
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn base_snapshot_does_not_resurrect_stale_json_only_deleted_papers() {
+        let tmp = env::temp_dir().join(format!("pf_ssot_deleted_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let idx = tmp.join(".paperforge").join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+
+        fs::write(
+            idx.join("formal-library.json"),
+            serde_json::to_string(&json!({
+                "items": [
+                    { "zotero_key": "ALIVE01", "title": "Alive Paper" },
+                    { "zotero_key": "DELETED99", "title": "Deleted Ghost Paper" }
+                ]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, ocr_status TEXT);
+            INSERT INTO papers VALUES ('ALIVE01', 'Alive Paper SQLite', 'done');",
+        )
+        .unwrap();
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 12,
+                "vault": tmp.to_string_lossy(),
+                "argv": ["memory-card", "base-snapshot", "--json"],
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let env: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(env["data"]["state_authority"], "sqlite");
+        let rows = env["data"]["rows"].as_object().unwrap();
+        assert!(rows.contains_key("ALIVE01"));
+        assert!(!rows.contains_key("DELETED99"), "Deleted paper must never resurrect from stale JSON");
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn engine_resolve_key_falls_back_to_sqlite_beyond_2048_cache_limit() {
+        let tmp = env::temp_dir().join(format!("pf_resolve_2048_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let idx = tmp.join(".paperforge").join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+
+        let mut conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE workspace_registry (zotero_key TEXT PRIMARY KEY, workspace_relpath TEXT);
+             CREATE TABLE ocr_catalog (zotero_key TEXT PRIMARY KEY, salvage_action TEXT);",
+        )
+        .unwrap();
+        {
+            let tx = conn.transaction().unwrap();
+            for i in 0..2105 {
+                let k = format!("KEY{i:04}");
+                let rel = format!("Literature/Domain/{k}");
+                tx.execute(
+                    "INSERT INTO workspace_registry (zotero_key, workspace_relpath) VALUES (?1, ?2)",
+                    rusqlite::params![k, rel],
+                )
+                .unwrap();
+            }
+            tx.commit().unwrap();
+        }
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        // Verify bounded in-memory cache stays capped at <= 2048
+        let status = daemon.get_or_refresh_vault(&tmp);
+        assert_eq!(status.workspace_map.len(), 2048);
+
+        // Verify key #2104 (outside 2048 in-memory cache) still resolves via SQLite fallback!
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 13,
+                "op": "engine.resolve_key",
+                "vault": tmp.to_string_lossy(),
+                "key": "KEY2104",
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let body: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(body["workspace_relpath"], "Literature/Domain/KEY2104");
 
         let _ = fs::remove_dir_all(&tmp);
     }

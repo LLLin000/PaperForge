@@ -348,4 +348,43 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
       host.querySelector('[data-pf-testid="vault-upgrade-rollback-btn"]')
     ).not.toBeNull();
   });
+
+  it("reports partial or failed cleanup honestly without false success and keeps retry enabled", async () => {
+    const { Notice } = await import("obsidian");
+    vi.mocked(Notice).mockClear();
+
+    const vaultUpgradeApply = vi.fn().mockResolvedValue({
+      applied: true,
+      status: "partial_success",
+      executed_steps: [{ step: "quarantine_residuals", quarantined: 0 }],
+      errors: [
+        {
+          step: "quarantine:cleanup.venv_corrupt",
+          error: "PermissionError: file locked",
+        },
+      ],
+    });
+    const onUpdated = vi.fn();
+    const host = document.createElement("div");
+
+    renderStorageMigrationMaintenanceSection(
+      host,
+      {} as never,
+      { vaultUpgradeApply } as never,
+      sampleVeteranPlan({ rollback_available: false }),
+      onUpdated
+    );
+
+    const quarantineBtn = host.querySelector(
+      '[data-pf-testid="cleanup-quarantine-btn"]'
+    ) as HTMLButtonElement;
+    quarantineBtn.click();
+
+    await vi.waitFor(() => expect(vaultUpgradeApply).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(vi.mocked(Notice)).toHaveBeenCalled());
+    const noticeMsg = String(vi.mocked(Notice).mock.calls[0]?.[0] ?? "");
+    expect(noticeMsg).toContain("失败 1 项");
+    expect(noticeMsg).not.toMatch(/^已将 \d+ 项历史残余安全移入/);
+    expect(quarantineBtn.disabled).toBe(false);
+  });
 });

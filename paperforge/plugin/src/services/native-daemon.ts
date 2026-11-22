@@ -55,6 +55,89 @@ export function managedNativeDaemonPath(
   return path.join(home, ".paperforge", "bin", exe);
 }
 
+export function nativeDaemonMetaFile(
+  home: string = os.homedir(),
+  platform: NodeJS.Platform = process.platform
+): string {
+  return path.join(
+    path.dirname(managedNativeDaemonPath(home, platform)),
+    ".daemon-meta.json"
+  );
+}
+
+export interface NativeDaemonMeta {
+  tag: string;
+  sha256: string;
+  binaryPath: string;
+}
+
+export function readNativeDaemonMeta(
+  home: string = os.homedir(),
+  platform: NodeJS.Platform = process.platform
+): NativeDaemonMeta | null {
+  try {
+    const raw = fs.readFileSync(nativeDaemonMetaFile(home, platform), "utf-8");
+    const parsed = JSON.parse(raw) as Partial<NativeDaemonMeta>;
+    if (
+      typeof parsed?.tag === "string" &&
+      typeof parsed?.sha256 === "string" &&
+      typeof parsed?.binaryPath === "string"
+    ) {
+      return {
+        tag: parsed.tag,
+        sha256: parsed.sha256.toLowerCase(),
+        binaryPath: parsed.binaryPath,
+      };
+    }
+  } catch {
+    // Missing or unreadable metadata
+  }
+  return null;
+}
+
+function versionedNativeDaemonPath(
+  home: string,
+  platform: NodeJS.Platform,
+  tag: string,
+  sha256: string
+): string {
+  const binDir = path.dirname(managedNativeDaemonPath(home, platform));
+  const safeTag = tag.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const shortHash = sha256.slice(0, 10).toLowerCase();
+  const ext = platform === "win32" ? ".exe" : "";
+  return path.join(binDir, `paperforge-daemon-${safeTag}-${shortHash}${ext}`);
+}
+
+function sha256File(filePath: string): string | null {
+  try {
+    const buf = fs.readFileSync(filePath);
+    return crypto.createHash("sha256").update(buf).digest("hex").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function pruneObsoleteDaemonBinaries(
+  binDir: string,
+  activeBinPath: string
+): void {
+  try {
+    const activeName = path.basename(activeBinPath).toLowerCase();
+    for (const entry of fs.readdirSync(binDir)) {
+      const lower = entry.toLowerCase();
+      if (!lower.startsWith("paperforge-daemon-")) continue;
+      if (lower === activeName) continue;
+      try {
+        fs.unlinkSync(path.join(binDir, entry));
+      } catch {
+        // Still locked by an older process on Windows; will be reaped on next update.
+      }
+    }
+  } catch {
+    // Ignore directory read errors
+  }
+}
+
 export function ensureExecutableMode(
   filePath: string,
   platform: NodeJS.Platform = process.platform
@@ -114,6 +197,10 @@ export function resolveNativeDaemonBinary(
     candidates.push(path.join(pluginBinDir, exeName));
   }
   if (home) {
+    const meta = readNativeDaemonMeta(home, plat);
+    if (meta?.binaryPath) {
+      candidates.push(meta.binaryPath);
+    }
     candidates.push(managedNativeDaemonPath(home, plat));
   }
 
@@ -208,7 +295,10 @@ export function nativeDaemonVersionFile(
 
 /**
  * Quietly download, SHA-256 verify, and (when checkVersionUpdate=true) hot-align
- * the prebuilt native `paperforge-daemon` binary against plugin `version`. Never throws.
+ * the prebuilt native `paperforge-daemon` binary against plugin `version` AND
+ * release `checksums.txt` SHA-256 (preventing stale binaries even under the same
+ * SemVer tag and avoiding Windows `.exe` lock races via versioned binary paths).
+ * Never throws.
  */
 export async function ensureNativeDaemonDownloaded(
   version: string,
@@ -218,51 +308,78 @@ export async function ensureNativeDaemonDownloaded(
     arch?: string;
     checkVersionUpdate?: boolean;
     onBeforeReplace?: () => void | Promise<void>;
+    fetchBuffer?: (url: string) => Promise<Buffer>;
   } = {}
 ): Promise<string | null> {
   const plat = opts.platform ?? process.platform;
   const arch = opts.arch ?? process.arch;
   const home = opts.home ?? os.homedir();
-  const dest = managedNativeDaemonPath(home, plat);
-  const verFile = path.join(path.dirname(dest), ".daemon-version");
+  const legacyDest = managedNativeDaemonPath(home, plat);
+  const binDir = path.dirname(legacyDest);
+  const verFile = path.join(binDir, ".daemon-version");
+  const metaFile = nativeDaemonMetaFile(home, plat);
   const wantTag = normalizeDaemonTag(version);
+  const fetcher = opts.fetchBuffer ?? httpsGetBuffer;
 
-  let hasExisting = false;
+  const meta = readNativeDaemonMeta(home, plat);
+  let existingPath: string | null = null;
+  let installedSha: string | null = null;
+  let installedTag = "";
+
   try {
-    if (fs.existsSync(dest) && fs.statSync(dest).size > 0) {
-      ensureExecutableMode(dest, plat);
-      hasExisting = true;
-      if (!opts.checkVersionUpdate || !wantTag) {
-        return dest;
-      }
-      const installedTag = fs.existsSync(verFile)
+    if (
+      meta?.binaryPath &&
+      fs.existsSync(meta.binaryPath) &&
+      fs.statSync(meta.binaryPath).size > 0
+    ) {
+      ensureExecutableMode(meta.binaryPath, plat);
+      existingPath = meta.binaryPath;
+      installedTag = normalizeDaemonTag(meta.tag);
+      installedSha = meta.sha256 || sha256File(meta.binaryPath);
+    } else if (fs.existsSync(legacyDest) && fs.statSync(legacyDest).size > 0) {
+      ensureExecutableMode(legacyDest, plat);
+      existingPath = legacyDest;
+      installedTag = fs.existsSync(verFile)
         ? normalizeDaemonTag(fs.readFileSync(verFile, "utf-8"))
         : "";
-      if (installedTag === wantTag) {
-        return dest;
-      }
+      installedSha = sha256File(legacyDest);
     }
   } catch {
     // Continue to download/update
   }
 
+  if (existingPath && (!opts.checkVersionUpdate || !wantTag)) {
+    return existingPath;
+  }
+
   const assetName = nativeDaemonAssetName(plat, arch);
   const tag = wantTag;
-  if (!assetName || !tag) return hasExisting ? dest : null;
+  if (!assetName || !tag) return existingPath;
 
   const baseRelease = `https://github.com/${PAPERFORGE_GITHUB_REPO}/releases/download/${tag}`;
   const bases = [baseRelease, `https://ghfast.top/${baseRelease}`];
 
   for (const base of bases) {
     try {
-      const checksumBuf = await httpsGetBuffer(`${base}/checksums.txt`);
+      const checksumBuf = await fetcher(`${base}/checksums.txt`);
       const expectedSha = parseChecksumForAsset(
         checksumBuf.toString("utf-8"),
         assetName
       );
       if (!expectedSha) continue;
 
-      const binBuf = await httpsGetBuffer(`${base}/${assetName}`);
+      // Content-addressed short-circuit: only skip download when BOTH tag AND
+      // actual binary SHA-256 match the published checksums.txt!
+      if (
+        existingPath &&
+        installedTag === tag &&
+        installedSha &&
+        installedSha === expectedSha
+      ) {
+        return existingPath;
+      }
+
+      const binBuf = await fetcher(`${base}/${assetName}`);
       const actualSha = crypto
         .createHash("sha256")
         .update(binBuf)
@@ -270,28 +387,56 @@ export async function ensureNativeDaemonDownloaded(
         .toLowerCase();
       if (actualSha !== expectedSha) continue;
 
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      const tmpPath = `${dest}.${process.pid}.${Date.now()}.tmp`;
+      fs.mkdirSync(binDir, { recursive: true });
+      // Write to a content-addressed versioned filename so Windows NEVER fails
+      // trying to overwrite a currently running `paperforge-daemon.exe`.
+      const targetPath = versionedNativeDaemonPath(home, plat, tag, actualSha);
+      const tmpPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
       fs.writeFileSync(tmpPath, binBuf, { mode: 0o755 });
       ensureExecutableMode(tmpPath, plat);
-      if (hasExisting && opts.onBeforeReplace) {
-        try {
-          await opts.onBeforeReplace();
-        } catch {
-          // Best-effort release before rename
+      try {
+        fs.renameSync(tmpPath, targetPath);
+      } catch {
+        // Target already exists with identical content-addressed hash
+        if (fs.existsSync(targetPath) && sha256File(targetPath) === actualSha) {
+          try {
+            fs.unlinkSync(tmpPath);
+          } catch {
+            // ignore
+          }
+        } else {
+          throw new Error(`Failed to stage daemon binary at ${targetPath}`);
         }
       }
-      fs.renameSync(tmpPath, dest);
-      ensureExecutableMode(dest, plat);
+      ensureExecutableMode(targetPath, plat);
+
+      // Atomically flip metadata pointer to the new binary BEFORE stopping old daemon
+      const nextMeta: NativeDaemonMeta = {
+        tag,
+        sha256: actualSha,
+        binaryPath: targetPath,
+      };
+      const metaTmp = `${metaFile}.${process.pid}.${Date.now()}.tmp`;
+      fs.writeFileSync(metaTmp, JSON.stringify(nextMeta, null, 2), "utf-8");
+      fs.renameSync(metaTmp, metaFile);
       try {
         fs.writeFileSync(verFile, tag, "utf-8");
       } catch {
-        // Non-fatal metadata marker write
+        // Non-fatal legacy version marker write
       }
-      return dest;
+
+      if (existingPath && opts.onBeforeReplace) {
+        try {
+          await opts.onBeforeReplace();
+        } catch {
+          // Best-effort old daemon shutdown after atomic pointer flip
+        }
+      }
+      pruneObsoleteDaemonBinaries(binDir, targetPath);
+      return targetPath;
     } catch {
       // Try mirror or silently stay on existing / Python fallback when offline
     }
   }
-  return hasExisting ? dest : null;
+  return existingPath;
 }

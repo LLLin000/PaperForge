@@ -1107,6 +1107,7 @@ def execute_vault_upgrade(
         return {
             "dry_run": False,
             "applied": False,
+            "status": "failed",
             "plan": plan,
             "executed_steps": [],
             "errors": [{"step": "preflight_blocker", "error": b["title"]} for b in blockers],
@@ -1136,6 +1137,7 @@ def execute_vault_upgrade(
         return {
             "dry_run": False,
             "applied": False,
+            "status": "failed",
             "plan": plan,
             "executed_steps": [],
             "errors": [{"step": "disk_space", "error": f"Insufficient disk space ({free_bytes} bytes free)"}],
@@ -1184,6 +1186,13 @@ def execute_vault_upgrade(
             else:
                 sres = migrate_vault_storage(vault_root, dry_run=False, isolate_paper_errors=True)
                 executed_steps.append({"step": "storage_migration", "result": sres})
+                for pe in sres.get("paper_errors") or []:
+                    errors.append(
+                        {
+                            "step": f"storage_migration:{pe.get('key', 'unknown')}",
+                            "error": str(pe.get("error") or "paper migration error"),
+                        }
+                    )
         except Exception as exc:  # noqa: BLE001
             errors.append({"step": "storage_migration", "error": str(exc)})
 
@@ -1227,12 +1236,26 @@ def execute_vault_upgrade(
         try:
             heal_res = heal_vault_progressive(vault_root, backfill_ocr=backfill_ocr)
             executed_steps.append({"step": "progressive_heal", "result": heal_res})
+            for si in heal_res.get("skipped_isolated") or []:
+                errors.append(
+                    {
+                        "step": f"progressive_heal:{si.get('key', 'unknown')}",
+                        "error": str(si.get("reason") or "workspace heal skipped"),
+                    }
+                )
         except Exception as exc:  # noqa: BLE001
             errors.append({"step": "progressive_heal", "error": str(exc)})
     elif not fast_cutover:
         try:
             heal_res = heal_vault_progressive(vault_root, limit=None, backfill_ocr=backfill_ocr)
             executed_steps.append({"step": "workspace_normalize", "result": heal_res})
+            for si in heal_res.get("skipped_isolated") or []:
+                errors.append(
+                    {
+                        "step": f"workspace_normalize:{si.get('key', 'unknown')}",
+                        "error": str(si.get("reason") or "workspace normalize skipped"),
+                    }
+                )
         except Exception as exc:  # noqa: BLE001
             errors.append({"step": "workspace_normalize", "error": str(exc)})
 
@@ -1264,6 +1287,8 @@ def execute_vault_upgrade(
                 errors.append({"step": f"quarantine:{cand['id']}", "error": str(exc)})
         executed_steps.append({"step": "quarantine_residuals", "quarantined": quarantined_count})
 
+    settlement_status = "partial_success" if errors else "completed"
+
     # 6. Stamp `.paperforge/vault-manifest.json` with rollback reference
     try:
         manifest_path = write_vault_manifest(
@@ -1271,6 +1296,7 @@ def execute_vault_upgrade(
             migration_entry={
                 "timestamp": _utcnow_compact(),
                 "mode": "fast_cutover" if fast_cutover else "full",
+                "status": settlement_status,
                 "backup_dir": str(backup_dir),
                 "steps": [s["step"] for s in executed_steps],
                 "error_count": len(errors),
@@ -1279,10 +1305,12 @@ def execute_vault_upgrade(
         executed_steps.append({"step": "write_vault_manifest", "path": str(manifest_path)})
     except Exception as exc:  # noqa: BLE001
         errors.append({"step": "write_vault_manifest", "error": str(exc)})
+        settlement_status = "partial_success"
 
     return {
         "dry_run": False,
         "applied": True,
+        "status": settlement_status,
         "mode": "fast_cutover" if fast_cutover else "full",
         "backup_dir": str(backup_dir),
         "healing_pending": bool(fast_cutover),

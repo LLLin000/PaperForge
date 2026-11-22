@@ -138,8 +138,11 @@ fn daemon_job_handle() -> usize {
 }
 
 /// Bind a spawned worker child to the daemon's OS-level death-cleanup handle.
-/// On Windows, attaches the process to a `KILL_ON_JOB_CLOSE` Job Object so even
-/// hard-killing the daemon immediately tears down every worker process tree.
+/// - Windows: attaches the process to a `KILL_ON_JOB_CLOSE` Job Object.
+/// - Linux: `prctl(PR_SET_PDEATHSIG, SIGTERM)` is armed in `configure_worker_command`.
+/// - macOS: spawns a zero-CPU `kqueue(EVFILT_PROC, NOTE_EXIT)` reaper helper that
+///   watches both daemon PID and child PID and kills the child's process group the
+///   instant the daemon dies (even via `SIGKILL`).
 pub fn attach_child_to_job(child: &Child) {
     #[cfg(windows)]
     {
@@ -154,9 +157,123 @@ pub fn attach_child_to_job(child: &Child) {
             }
         }
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::unix::process::CommandExt;
+        if let Ok(exe) = std::env::current_exe() {
+            let parent_pid = std::process::id().to_string();
+            let child_pid = child.id().to_string();
+            let mut reaper = Command::new(exe);
+            reaper
+                .args(["--reap-on-parent-exit", &parent_pid, &child_pid])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .process_group(0);
+            let _ = reaper.spawn();
+        }
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     let _ = child;
 }
+
+/// macOS kernel-level zero-polling orphan reaper invoked via
+/// `paperforge-daemon --reap-on-parent-exit <parent_pid> <child_pid>`.
+#[cfg(target_os = "macos")]
+pub fn run_macos_kqueue_reaper(parent_pid: u32, child_pid: u32) {
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct KEvent {
+        ident: usize,
+        filter: i16,
+        flags: u16,
+        fflags: u32,
+        data: isize,
+        udata: *mut std::ffi::c_void,
+    }
+    const EVFILT_PROC: i16 = -5;
+    const EV_ADD: u16 = 0x0001;
+    const EV_ONESHOT: u16 = 0x0010;
+    const NOTE_EXIT: u32 = 0x8000_0000;
+
+    extern "C" {
+        fn kqueue() -> i32;
+        fn kevent(
+            kq: i32,
+            changelist: *const KEvent,
+            nchanges: i32,
+            eventlist: *mut KEvent,
+            nevents: i32,
+            timeout: *const std::ffi::c_void,
+        ) -> i32;
+        fn close(fd: i32) -> i32;
+    }
+
+    if parent_pid == 0 || child_pid == 0 {
+        return;
+    }
+
+    let kq = unsafe { kqueue() };
+    if kq < 0 {
+        // Fallback polling if kqueue fd unavailable
+        while is_pid_alive(child_pid, None) {
+            if !is_pid_alive(parent_pid, None) {
+                kill_pid_tree(child_pid);
+                return;
+            }
+            thread::sleep(Duration::from_millis(150));
+        }
+        return;
+    }
+
+    let make_ev = |pid: u32| KEvent {
+        ident: pid as usize,
+        filter: EVFILT_PROC,
+        flags: EV_ADD | EV_ONESHOT,
+        fflags: NOTE_EXIT,
+        data: 0,
+        udata: std::ptr::null_mut(),
+    };
+
+    let parent_ev = make_ev(parent_pid);
+    if unsafe { kevent(kq, &parent_ev, 1, std::ptr::null_mut(), 0, std::ptr::null()) } < 0 {
+        // Parent already exited before registration -> reap child immediately.
+        kill_pid_tree(child_pid);
+        unsafe { close(kq) };
+        return;
+    }
+
+    let child_ev = make_ev(child_pid);
+    if unsafe { kevent(kq, &child_ev, 1, std::ptr::null_mut(), 0, std::ptr::null()) } < 0 {
+        // Child already exited cleanly.
+        unsafe { close(kq) };
+        return;
+    }
+
+    // Re-check parent liveness after registration to close any tiny fork race.
+    if !is_pid_alive(parent_pid, None) {
+        kill_pid_tree(child_pid);
+        unsafe { close(kq) };
+        return;
+    }
+
+    let mut fired = KEvent {
+        ident: 0,
+        filter: 0,
+        flags: 0,
+        fflags: 0,
+        data: 0,
+        udata: std::ptr::null_mut(),
+    };
+    let n = unsafe { kevent(kq, std::ptr::null(), 0, &mut fired, 1, std::ptr::null()) };
+    unsafe { close(kq) };
+    if n > 0 && fired.ident == parent_pid as usize {
+        kill_pid_tree(child_pid);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn run_macos_kqueue_reaper(_parent_pid: u32, _child_pid: u32) {}
 
 pub fn process_rss_bytes() -> u64 {
     #[cfg(windows)]
