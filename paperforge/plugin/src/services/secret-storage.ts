@@ -12,6 +12,9 @@
  * verified → old value cleared.  Normal runtime never consults it.
  */
 
+import { t } from "../i18n";
+import { formatHumanError } from "./feedback";
+
 // ── Env redaction ──
 
 const LEGACY_CREDENTIAL_ENV_PREFIXES = [
@@ -129,17 +132,44 @@ export async function migrateLegacySecret(
     // host-level result — never lets it escape (e.g. the canonical keyring
     // already holds a value and replace:false was declined).
     let ok = false;
+    let writeErr: unknown = null;
     try {
       ok = await deps.writeCredential(kind, value);
-    } catch {
+    } catch (err: unknown) {
       ok = false;
+      writeErr = err;
     }
     if (!ok) {
+      const errLower = String(
+        writeErr instanceof Error ? writeErr.message : (writeErr ?? "")
+      ).toLowerCase();
+      if (
+        errLower.includes("already exists") ||
+        errLower.includes("credential.conflict") ||
+        errLower.includes("conflict")
+      ) {
+        return {
+          migrated: [],
+          warnings: [t("migrate_secret_already_exists")],
+        };
+      }
+      if (
+        errLower.includes("no_python") ||
+        errLower.includes("runtime not installed") ||
+        errLower.includes("daemon shut down")
+      ) {
+        return {
+          migrated: [],
+          warnings: [t("migrate_secret_engine_not_ready")],
+        };
+      }
+      const detail = writeErr
+        ? formatHumanError(writeErr)
+        : t("err_human_generic");
       return {
         migrated: [],
         warnings: [
-          "Keyring write failed — the legacy SecretStorage value was kept. " +
-            "Please re-save this credential in Settings → PaperForge.",
+          t("migrate_secret_write_failed").replace("{detail}", detail),
         ],
       };
     }
@@ -148,10 +178,7 @@ export async function migrateLegacySecret(
     } catch {
       return {
         migrated: [id],
-        warnings: [
-          "Credential migrated and verified, but the old SecretStorage value " +
-            "could not be cleared — delete it manually in Obsidian.",
-        ],
+        warnings: [t("migrate_secret_clear_warn")],
       };
     }
     return { migrated: [id], warnings: [] };

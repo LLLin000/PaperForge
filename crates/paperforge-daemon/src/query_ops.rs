@@ -797,21 +797,46 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
     let manifest_path = dot_pf.join("vault-manifest.json");
     let cfg_path = vault.join("paperforge.json");
 
-    let has_legacy_dir = legacy_sys.is_dir() || legacy_99.is_dir();
-    let legacy_rel = if legacy_sys.is_dir() {
-        Some("System/PaperForge")
+    // Also inspect custom `system_dir` in paperforge.json (matching Python vault_upgrade.py)
+    let mut configured_legacy_rel: Option<String> = None;
+    if cfg_path.is_file() {
+        if let Ok(raw) = std::fs::read_to_string(&cfg_path) {
+            if let Ok(val) = serde_json::from_str::<Value>(&raw) {
+                let sys_d = val
+                    .get("vault_config")
+                    .and_then(|v| v.get("system_dir"))
+                    .and_then(|v| v.as_str())
+                    .or_else(|| val.get("system_dir").and_then(|v| v.as_str()))
+                    .map(str::trim)
+                    .unwrap_or("");
+                if !sys_d.is_empty() && sys_d != ".paperforge" {
+                    let cand = vault.join(sys_d).join("PaperForge");
+                    if cand.is_dir() {
+                        configured_legacy_rel = Some(format!("{sys_d}/PaperForge"));
+                    }
+                }
+            }
+        }
+    }
+
+    let legacy_rel: Option<String> = if legacy_sys.is_dir() {
+        Some("System/PaperForge".to_string())
     } else if legacy_99.is_dir() {
-        Some("99_System/PaperForge")
+        Some("99_System/PaperForge".to_string())
     } else {
-        None
+        configured_legacy_rel
     };
+    let has_legacy_dir = legacy_rel.is_some();
     let has_manifest = manifest_path.is_file();
 
     let (state, needs_upgrade, signals) = if has_legacy_dir {
         (
             "veteran_legacy",
             true,
-            vec![format!("legacy_engine_dir:{}", legacy_rel.unwrap_or("System/PaperForge"))],
+            vec![format!(
+                "legacy_engine_dir:{}",
+                legacy_rel.as_deref().unwrap_or("System/PaperForge")
+            )],
         )
     } else if has_manifest {
         ("standard_current", false, vec!["vault_manifest_v2".to_string()])
@@ -822,7 +847,7 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
     };
 
     let mut auto_items = Vec::new();
-    if let Some(lrel) = legacy_rel {
+    if let Some(ref lrel) = legacy_rel {
         auto_items.push(json!({
             "id": "storage.move_to_dot_paperforge",
             "area": "storage",

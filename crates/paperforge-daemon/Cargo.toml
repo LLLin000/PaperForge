@@ -1,6 +1,6 @@
 [package]
 name = "paperforge-daemon"
-version = "2.0.3"
+version = "2.0.4"
 edition = "2021"
 description = "Cross-platform ultra-low-memory native control & SQLite FTS5 query sidecar for PaperForge"
 license = "MIT"
