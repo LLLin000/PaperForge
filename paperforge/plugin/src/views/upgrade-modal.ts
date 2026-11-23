@@ -22,6 +22,8 @@ import type {
   VaultUpgradePlanDto,
   VaultCleanupCandidateDto,
 } from "../client";
+import { t } from "../i18n";
+import { formatHumanError } from "../services/feedback";
 import { createPfIconBtn, setPfIcon } from "./icons";
 import { PaperForgeConfirmModal } from "./modals";
 
@@ -88,11 +90,11 @@ export class PaperForgeUpgradeModal extends Modal {
     const titleWrap = head.createDiv({ cls: "pf-upgrade-modal-title-wrap" });
     titleWrap.createEl("h2", {
       cls: "pf-upgrade-modal-title",
-      text: "升级至新一代文献库引擎",
+      text: t("upgrade_modal_title"),
     });
     titleWrap.createEl("p", {
       cls: "pf-upgrade-modal-promise",
-      text: "全部个人笔记、双链、PDF 批注与 Zotero 原库保持原位不动；底层索引与缓存将在数秒内安全收拢至隐藏目录 .paperforge/，并支持随时一键还原。",
+      text: t("upgrade_modal_promise"),
     });
 
     // ── Compact Metric Strip (.pf-tnum) ──
@@ -118,9 +120,9 @@ export class PaperForgeUpgradeModal extends Modal {
       });
       cell.createEl("span", { cls: "pf-upgrade-metric-label", text: label });
     };
-    addMetric("受保护文献工作区", String(wsCount));
-    addMetric("可自动归拢优化项", String(autoCount));
-    addMetric("零成本离线恢复全文", String(salvageCount));
+    addMetric(t("upgrade_metric_workspaces"), String(wsCount));
+    addMetric(t("upgrade_metric_auto"), String(autoCount));
+    addMetric(t("upgrade_metric_salvage"), String(salvageCount));
 
     // ── Optional Single-Question Blocker Card (only if file locked / corrupt JSON) ──
     const blockers = this._blockingIssues();
@@ -145,7 +147,7 @@ export class PaperForgeUpgradeModal extends Modal {
       const retryBtn = bActions.createEl("button", {
         cls: "pf-action-btn",
         type: "button",
-        text: "重新检测状态",
+        text: t("upgrade_recheck_btn"),
         attr: { "data-pf-testid": "upgrade-recheck-btn" },
       });
       retryBtn.addEventListener("click", () => {
@@ -164,7 +166,7 @@ export class PaperForgeUpgradeModal extends Modal {
       });
     }
 
-    // ── Iceberg Progressive Disclosure (`查看变更摘要`) ──
+    // ── Iceberg Progressive Disclosure ──
     if (this._plan.category_a_auto.length > 0) {
       const discWrap = contentEl.createDiv({ cls: "pf-upgrade-disclosure" });
       const toggleBtn = discWrap.createEl("button", {
@@ -182,7 +184,10 @@ export class PaperForgeUpgradeModal extends Modal {
       });
       setPfIcon(chev, "chevron-right", 14);
       toggleBtn.createSpan({
-        text: `查看变更摘要（${this._plan.category_a_auto.length} 项）`,
+        text: t("upgrade_disclosure_summary").replace(
+          "{count}",
+          String(this._plan.category_a_auto.length)
+        ),
       });
 
       const drawer = discWrap.createDiv({
@@ -198,14 +203,29 @@ export class PaperForgeUpgradeModal extends Modal {
         const rowHead = row.createDiv({ cls: "pf-upgrade-item-head" });
         const dot = rowHead.createSpan({ cls: "pf-upgrade-item-check" });
         setPfIcon(dot, "check", 13);
-        rowHead.createSpan({ cls: "pf-upgrade-item-title", text: item.title });
+        const itemTitle =
+          item.id === "storage.move_to_dot_paperforge"
+            ? t("upgrade_item_move_title").replace(
+                "{dir}",
+                String(
+                  (item as { legacy_dir?: string }).legacy_dir ||
+                    this._plan.provenance?.legacy_engine_dir ||
+                    "System/PaperForge"
+                )
+              )
+            : item.title;
+        const itemDetail =
+          item.id === "storage.move_to_dot_paperforge"
+            ? t("upgrade_item_move_detail")
+            : item.detail;
+        rowHead.createSpan({ cls: "pf-upgrade-item-title", text: itemTitle });
         rowHead.createSpan({
           cls: "pf-upgrade-item-tag",
-          text: item.fast_cutover ? "即时切流" : "后台静默整理",
+          text: item.fast_cutover ? t("upgrade_tag_fast") : t("upgrade_tag_bg"),
         });
         row.createEl("div", {
           cls: "pf-upgrade-item-detail",
-          text: item.detail,
+          text: itemDetail,
         });
       });
 
@@ -231,7 +251,7 @@ export class PaperForgeUpgradeModal extends Modal {
     const deferBtn = footer.createEl("button", {
       cls: "pf-action-btn",
       type: "button",
-      text: "稍后提醒",
+      text: t("upgrade_btn_defer"),
       attr: { "data-pf-testid": "upgrade-defer-btn" },
     });
     deferBtn.addEventListener("click", () => {
@@ -243,7 +263,7 @@ export class PaperForgeUpgradeModal extends Modal {
     const applyBtn = footer.createEl("button", {
       cls: "paperforge-contextual-btn primary pf-upgrade-primary-btn",
       type: "button",
-      text: "立即无损升级",
+      text: t("upgrade_btn_apply"),
       attr: { "data-pf-testid": "upgrade-apply-btn" },
     });
     applyBtn.addEventListener("click", () => {
@@ -267,18 +287,19 @@ export class PaperForgeUpgradeModal extends Modal {
     this._busy = true;
     applyBtn.disabled = true;
     deferBtn.disabled = true;
-    applyBtn.setText("正在执行原子切流…");
+    applyBtn.setText(t("upgrade_btn_applying"));
     statusSlot.empty();
     statusSlot.createSpan({
       cls: "pf-upgrade-running-hint",
-      text: "正在备份配置并归拢底层目录至 .paperforge/…",
+      text: t("upgrade_status_applying"),
     });
 
     try {
       const res = await this._client.vaultUpgradeApply({ fastCutover: true });
       if (!res.applied || (res.errors && res.errors.length > 0)) {
         const msg =
-          res.errors?.map((e) => e.error).join("; ") || "升级切流未完成";
+          res.errors?.map((e) => formatHumanError(e.error)).join("; ") ||
+          t("upgrade_err_incomplete");
         statusSlot.empty();
         statusSlot.createDiv({
           cls: "pf-upgrade-error-msg",
@@ -286,7 +307,7 @@ export class PaperForgeUpgradeModal extends Modal {
         });
         applyBtn.disabled = false;
         deferBtn.disabled = false;
-        applyBtn.setText("重试升级");
+        applyBtn.setText(t("upgrade_btn_retry"));
         this._busy = false;
         return;
       }
@@ -309,21 +330,21 @@ export class PaperForgeUpgradeModal extends Modal {
       const checkBadge = doneRow.createSpan({ cls: "pf-upgrade-done-icon" });
       setPfIcon(checkBadge, "check", 15);
       doneRow.createSpan({
-        text: "核心目录已完成切流，剩余文献整理已在后台静默接管。",
+        text: t("upgrade_status_done"),
       });
 
       await this._callbacks.onUpgraded?.();
-      new Notice("PaperForge: 文献库已完成无损切流，后台正在静默整理细节。");
+      new Notice(t("upgrade_notice_done"));
       this.close();
     } catch (err: unknown) {
       statusSlot.empty();
       statusSlot.createDiv({
         cls: "pf-upgrade-error-msg",
-        text: err instanceof Error ? err.message : String(err),
+        text: formatHumanError(err, "upgrade_err_incomplete"),
       });
       applyBtn.disabled = false;
       deferBtn.disabled = false;
-      applyBtn.setText("重试升级");
+      applyBtn.setText(t("upgrade_btn_retry"));
       this._busy = false;
     }
   }
@@ -355,25 +376,25 @@ export function renderUpgradeAvailableBanner(
   const copy = left.createDiv({ cls: "pf-upgrade-banner-copy" });
   copy.createEl("div", {
     cls: "pf-upgrade-banner-title",
-    text: "检测到旧版 PaperForge 目录布局，可一键无损升级",
+    text: t("upgrade_banner_title"),
   });
   copy.createEl("div", {
     cls: "pf-upgrade-banner-desc",
-    text: "升级不影响当前阅读、个人笔记与双链引用，约 3 秒完成切流。",
+    text: t("upgrade_banner_desc"),
   });
 
   const actions = banner.createDiv({ cls: "pf-upgrade-banner-actions" });
   const openBtn = actions.createEl("button", {
     cls: "pf-action-btn pf-upgrade-banner-btn",
     type: "button",
-    text: "查看并升级",
+    text: t("upgrade_banner_open"),
     attr: { "data-pf-testid": "vault-upgrade-banner-open" },
   });
   openBtn.addEventListener("click", opts.onOpenModal);
 
   const dismissBtn = createPfIconBtn(actions, {
     icon: "x",
-    label: "本次会话暂不提示",
+    label: t("upgrade_banner_dismiss"),
     size: 13,
     cls: "pf-upgrade-banner-dismiss",
     testid: "vault-upgrade-banner-dismiss",
@@ -404,11 +425,11 @@ export function renderStorageMigrationMaintenanceSection(
   });
   section.createEl("h3", {
     cls: "pf-upgrade-maint-heading",
-    text: "存储与迁移维护",
+    text: t("upgrade_maint_heading"),
   });
   section.createEl("p", {
     cls: "setting-item-description",
-    text: "管理升级后的历史残余文件（仅移入 .paperforge/trash 安全回收站，绝不直接物理删除）或还原升级前的目录布局。",
+    text: t("upgrade_maint_desc"),
   });
 
   if (hasCandidates) {
@@ -445,14 +466,19 @@ export function renderStorageMigrationMaintenanceSection(
     const quarantineBtn = section.createEl("button", {
       cls: "pf-action-btn",
       type: "button",
-      text: "将勾选项移入安全回收站",
+      text: t("upgrade_maint_quarantine_btn"),
       attr: { "data-pf-testid": "cleanup-quarantine-btn" },
+    });
+    const statusMsg = section.createDiv({
+      cls: "pf-upgrade-maint-status",
+      attr: { "aria-live": "polite", "data-pf-testid": "cleanup-status-msg" },
     });
     quarantineBtn.addEventListener("click", () => {
       const ids = [...selected];
       if (!ids.length) return;
       void (async () => {
         quarantineBtn.disabled = true;
+        statusMsg.empty();
         try {
           const res = await client.vaultUpgradeApply({
             fastCutover: true,
@@ -473,30 +499,46 @@ export function renderStorageMigrationMaintenanceSection(
                 : 0;
 
           if (!res || res.applied === false) {
-            const firstErr = errs[0]?.error || "未能应用清理操作";
-            new Notice(`清理未完成: ${firstErr}`, 8000);
+            const firstErr = errs[0]?.error
+              ? formatHumanError(errs[0].error)
+              : t("upgrade_maint_err_unapplied");
+            const msg = t("upgrade_maint_notice_failed").replace(
+              "{detail}",
+              firstErr
+            );
+            statusMsg.setText(msg);
+            new Notice(msg, 8000);
             quarantineBtn.disabled = false;
             return;
           }
           if (errs.length > 0) {
-            const firstErr = errs[0]?.error || "部分项目移入失败";
-            new Notice(
-              `部分残余清理未完成：已移入 ${quarantinedCount} 项，失败 ${errs.length} 项（${firstErr}），失败项已保留可重试。`,
-              8000
-            );
+            const firstErr = errs[0]?.error
+              ? formatHumanError(errs[0].error)
+              : t("upgrade_maint_err_partial_item");
+            const msg = t("upgrade_maint_notice_partial")
+              .replace("{moved}", String(quarantinedCount))
+              .replace("{failed}", String(errs.length))
+              .replace("{detail}", firstErr);
+            statusMsg.setText(msg);
+            new Notice(msg, 8000);
             quarantineBtn.disabled = false;
             onUpdated();
             return;
           }
           new Notice(
-            `已将 ${quarantinedCount} 项历史残余安全移入 .paperforge/trash/`
+            t("upgrade_maint_notice_done").replace(
+              "{count}",
+              String(quarantinedCount)
+            )
           );
           onUpdated();
         } catch (err: unknown) {
-          new Notice(
-            `清理未完成: ${err instanceof Error ? err.message : String(err)}`,
-            8000
+          const msg = t("upgrade_maint_notice_failed").replace(
+            "{detail}",
+            formatHumanError(err)
           );
+          statusMsg.setText(msg);
+          new Notice(msg, 8000);
           quarantineBtn.disabled = false;
         }
       })();
@@ -507,23 +549,22 @@ export function renderStorageMigrationMaintenanceSection(
     const rbRow = section.createDiv({ cls: "pf-upgrade-rollback-row" });
     rbRow.createEl("span", {
       cls: "pf-upgrade-rollback-hint",
-      text: "如需切回升级前的旧目录结构，可使用升级快照无损还原：",
+      text: t("upgrade_maint_rollback_hint"),
     });
     const rbBtn = rbRow.createEl("button", {
       cls: "pf-action-btn",
       type: "button",
-      text: "还原至升级前目录结构",
+      text: t("upgrade_maint_rollback_btn"),
       attr: { "data-pf-testid": "vault-upgrade-rollback-btn" },
     });
     rbBtn.addEventListener("click", () => {
       new PaperForgeConfirmModal(
         app,
         {
-          title: "还原至升级前目录结构",
-          effectLabel:
-            "将从 .paperforge/backups/ 快照恢复升级前的目录布局、配置文件与 Base 视图，您的任何个人笔记与批注均不会丢失。",
-          confirmLabel: "确认还原",
-          cancelLabel: "取消",
+          title: t("upgrade_maint_rollback_btn"),
+          effectLabel: t("upgrade_maint_rollback_body"),
+          confirmLabel: t("upgrade_maint_rollback_confirm"),
+          cancelLabel: t("maintenance_confirm_cancel"),
         },
         () => {
           void (async () => {
@@ -531,15 +572,24 @@ export function renderStorageMigrationMaintenanceSection(
             try {
               const res = await client.vaultUpgradeRollback();
               if (res.rolled_back) {
-                new Notice("已无损还原至升级前目录结构。");
+                new Notice(t("upgrade_maint_rollback_done"));
                 onUpdated();
               } else {
-                new Notice(`无法还原: ${res.reason ?? "未找到快照"}`, 8000);
+                new Notice(
+                  t("upgrade_maint_rollback_unable").replace(
+                    "{detail}",
+                    res.reason ?? t("upgrade_maint_rollback_missing")
+                  ),
+                  8000
+                );
                 rbBtn.disabled = false;
               }
             } catch (err: unknown) {
               new Notice(
-                `还原失败: ${err instanceof Error ? err.message : String(err)}`,
+                t("upgrade_maint_rollback_failed").replace(
+                  "{detail}",
+                  formatHumanError(err)
+                ),
                 8000
               );
               rbBtn.disabled = false;

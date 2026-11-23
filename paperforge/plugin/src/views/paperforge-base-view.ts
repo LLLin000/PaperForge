@@ -228,20 +228,25 @@ interface ColumnSpec {
   numeric: boolean;
 }
 
-const DEFAULT_COLUMN_LABELS: Record<string, string> = {
-  title: "文献标题",
-  name: "文献标题",
-  "file.name": "文献标题",
-  first_author: "第一作者",
-  year: "年份",
-  journal: "期刊",
-  impact_factor: "IF",
-  domain: "领域",
-  annotations: "批注与记忆",
-  ocr_status: "状态",
-  has_pdf: "附件",
-  deep_reading_status: "精读",
+const DEFAULT_COLUMN_LABEL_KEYS: Record<string, string> = {
+  title: "base_col_title",
+  name: "base_col_title",
+  "file.name": "base_col_title",
+  first_author: "base_col_first_author",
+  year: "base_col_year",
+  journal: "base_col_journal",
+  domain: "base_col_domain",
+  annotations: "base_col_annotations",
+  ocr_status: "base_col_status",
+  has_pdf: "base_col_has_pdf",
+  deep_reading_status: "base_col_deep_reading",
 };
+
+function defaultColumnLabel(key: string): string | undefined {
+  if (key === "impact_factor") return "IF";
+  const i18nKey = DEFAULT_COLUMN_LABEL_KEYS[key];
+  return i18nKey ? t(i18nKey) : undefined;
+}
 
 const NUMERIC_COLUMNS = new Set(["year", "impact_factor", "annotations"]);
 
@@ -412,7 +417,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         if (items.length > 0) {
           const rawKey = grp.hasKey?.() ? readValueString(grp.key) : "";
           out.push({
-            groupLabel: rawKey || "未分组",
+            groupLabel: rawKey || t("base_ungrouped"),
             items,
           });
         }
@@ -503,7 +508,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           : str.replace(/^(note|file|formula)\./, "");
       if (seenKey.has(clean)) continue;
       seenKey.add(clean);
-      let display = DEFAULT_COLUMN_LABELS[str] || DEFAULT_COLUMN_LABELS[clean];
+      let display = defaultColumnLabel(str) || defaultColumnLabel(clean);
       if (!display) {
         const cfgName = this.config?.getDisplayName?.(propId);
         display = cfgName && cfgName.trim() ? cfgName.trim() : clean;
@@ -525,7 +530,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         prog && prog.total > 0 ? ` ${prog.current}/${prog.total}` : "";
       mkEl(cell, "span", {
         cls: "pf-badge-outline is-running pf-tnum",
-        text: `解析中${pctLabel}`,
+        text: `${t("ocr_ws_status_processing")}${pctLabel}`,
       });
       return;
     }
@@ -535,11 +540,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       const isFail = status === "failed";
       const btn = mkEl(cell, "button", {
         cls: `pf-badge-outline is-clickable ${isFail ? "is-fail" : "is-warn"}`,
-        text: isFail ? "解析异常" : "部分解析",
+        text: isFail
+          ? t("ocr_ws_status_failed")
+          : t("ocr_ws_status_incomplete"),
         attr: {
           type: "button",
           "data-pf-testid": "base-status-diag",
-          title: "点击查看全文解析诊断",
+          title: t("base_status_diag_tip"),
         },
       });
       btn.addEventListener("click", (e) => {
@@ -552,27 +559,30 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     if (status === "done") {
       mkEl(cell, "span", {
         cls: "pf-badge-outline is-done",
-        text: row.deep_reading_status === "done" ? "已精读" : "已解析",
+        text:
+          row.deep_reading_status === "done"
+            ? t("base_status_deep_done")
+            : t("ocr_ws_status_done"),
       });
       return;
     }
-    if (status === "processing") {
+    if (status === "processing" || status === "queued") {
       mkEl(cell, "span", {
         cls: "pf-badge-outline is-running",
-        text: "排队中",
+        text: t("ocr_ws_status_queued"),
       });
       return;
     }
     if (status === "nopdf") {
       mkEl(cell, "span", {
         cls: "pf-badge-outline is-muted",
-        text: "无附件",
+        text: t("ocr_ws_status_nopdf"),
       });
       return;
     }
     mkEl(cell, "span", {
       cls: "pf-badge-outline is-muted",
-      text: "未解析",
+      text: t("ocr_ws_status_pending"),
     });
   }
 
@@ -604,7 +614,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       cls: "pf-base-filter-search",
       attr: {
         type: "search",
-        placeholder: "筛选标题 / 作者 / 期刊…",
+        placeholder: t("base_filter_search_placeholder"),
         "data-pf-testid": "base-filter-search",
       },
     }) as HTMLInputElement;
@@ -625,7 +635,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         attr: { "data-pf-testid": "base-filter-domain" },
       }) as HTMLSelectElement;
       const allOpt = mkEl(domSel, "option", {
-        text: "全部专题",
+        text: t("base_filter_all_domains"),
         attr: { value: "" },
       }) as HTMLOptionElement;
       allOpt.selected = !activeDomain;
@@ -648,7 +658,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         attr: { "data-pf-testid": "base-filter-collection" },
       }) as HTMLSelectElement;
       const allCol = mkEl(colSel, "option", {
-        text: "全部子分类",
+        text: t("base_filter_all_collections"),
         attr: { value: "" },
       }) as HTMLOptionElement;
       allCol.selected = !filters.collection;
@@ -667,10 +677,10 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     // 4. Quick status pills
     const pills = mkEl(bar, "div", { cls: "pf-base-filter-pills" });
     const statusChoices: Array<[string, string]> = [
-      ["all", "全部"],
-      ["pending", "待解析"],
-      ["done", "已解析"],
-      ["deep_done", "已精读"],
+      ["all", t("base_filter_status_all")],
+      ["pending", t("base_filter_status_pending")],
+      ["done", t("base_filter_status_done")],
+      ["deep_done", t("base_filter_status_deep_done")],
     ];
     const activeStatus = filters.status || "all";
     for (const [val, label] of statusChoices) {
@@ -690,7 +700,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       attr: { "data-pf-testid": "base-filter-if" },
     }) as HTMLSelectElement;
     for (const [val, label] of [
-      ["0", "IF 不限"],
+      ["0", t("base_filter_if_any")],
       ["5", "IF ≥ 5"],
       ["10", "IF ≥ 10"],
       ["20", "IF ≥ 20"],
@@ -708,7 +718,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     if (this._hasActiveFilters(filters)) {
       const reset = mkEl(bar, "button", {
         cls: "pf-btn pf-btn-ghost",
-        text: "重置",
+        text: t("base_filter_reset"),
         attr: { type: "button", "data-pf-testid": "base-filter-reset" },
       });
       reset.addEventListener("click", () => {
@@ -745,7 +755,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         if (row.has_pdf) {
           const pdfBtn = createPfIconBtn(titleWrap, {
             icon: "file-text",
-            label: "打开 PDF",
+            label: t("base_open_pdf"),
             size: 14,
             cls: "pf-base-pdf-trigger",
             testid: "base-open-pdf",
@@ -806,15 +816,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         } else if (src === "openalex_2yr") {
           mkEl(td, "span", { text: val });
           mkEl(td, "span", { cls: "pf-if-approx", text: "≈" });
-          td.setAttribute(
-            "title",
-            "来自 OpenAlex 开源 2 年篇均引文指标（可在设置填写 EasyScholar Key 升级为精确 JCR IF 与中科院分区）"
-          );
+          td.setAttribute("title", t("base_if_tip_openalex"));
         } else {
           td.textContent = val;
           const tipParts: string[] = [];
-          if (src === "jcr") tipParts.push("官方 JCR IF");
-          else if (src === "zotero_plugin") tipParts.push("Zotero 期刊库");
+          if (src === "jcr") tipParts.push(t("base_if_tip_jcr"));
+          else if (src === "zotero_plugin")
+            tipParts.push(t("base_if_tip_zotero"));
           else if (src === "extra") tipParts.push("Zotero Extra");
           if (part) tipParts.push(part);
           if (tipParts.length > 0) {
@@ -839,8 +847,12 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           (row.user_ann_count || 0) + (row.agent_ann_count || 0);
         const memCount = row.memory_facet_count || 0;
         const parts: string[] = [];
-        if (totalAnns > 0) parts.push(`${totalAnns} 批注`);
-        if (memCount > 0) parts.push(`${memCount} 记忆`);
+        if (totalAnns > 0)
+          parts.push(
+            t("base_count_annotations").replace("{n}", String(totalAnns))
+          );
+        if (memCount > 0)
+          parts.push(t("base_count_memory").replace("{n}", String(memCount)));
         td.textContent = parts.length > 0 ? parts.join(" · ") : "—";
         if (parts.length === 0) td.classList.add("pf-base-muted");
         break;
@@ -857,7 +869,10 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       case "deep_reading_status":
         mkEl(td, "span", {
           cls: "pf-base-muted",
-          text: row.deep_reading_status === "done" ? "已精读" : "—",
+          text:
+            row.deep_reading_status === "done"
+              ? t("base_status_deep_done")
+              : "—",
         });
         break;
       default: {
@@ -955,7 +970,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           ? ` ${activeProg.current} / ${activeProg.total}`
           : "";
       mkEl(strip, "span", {
-        text: `正在解析全文${countText}`,
+        text: t("base_parsing_progress").replace("{progress}", countText),
       });
     }
 
@@ -980,11 +995,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           attr: { "data-pf-testid": "base-missing-pdf-hint" },
         });
         mkEl(hintBar, "span", {
-          text: `当前有 ${missingPdfCount}/${rawFlatItems.length} 篇文献未检测到本地 PDF：请确认已在 Zotero 中将 PDF 下载到本地（非仅云端同步），或检查 Zotero 链接附件根目录设置。`,
+          text: t("base_missing_pdf_banner")
+            .replace("{missing}", String(missingPdfCount))
+            .replace("{total}", String(rawFlatItems.length)),
         });
         const closeHintBtn = mkEl(hintBar, "button", {
           cls: "pf-btn pf-btn-ghost",
-          text: "知道了",
+          text: t("base_missing_pdf_dismiss"),
           attr: {
             type: "button",
             "data-pf-testid": "base-missing-pdf-dismiss",
@@ -1001,15 +1018,15 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       const empty = mkEl(root, "div", { cls: "pf-base-empty" });
       mkEl(empty, "span", {
         text: this._loadingSnapshot
-          ? t("pdf_loading") || "正在加载文献数据…"
+          ? t("pdf_loading")
           : this._hasActiveFilters(filters)
-            ? "当前筛选条件下没有匹配的文献。"
-            : t("base_empty_hint") || "当前筛选条件下暂无文献。",
+            ? t("base_empty_filtered")
+            : t("base_empty_hint"),
       });
       if (this._hasActiveFilters(filters)) {
         const resetBtn = mkEl(empty, "button", {
           cls: "pf-btn",
-          text: "重置筛选条件",
+          text: t("base_empty_reset_filters"),
           attr: {
             type: "button",
             "data-pf-testid": "base-reset-filters-empty",
@@ -1027,7 +1044,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       } else if (!this._loadingSnapshot) {
         const syncEmptyBtn = mkEl(empty, "button", {
           cls: "pf-btn",
-          text: t("base_sync_library") || "同步文献库",
+          text: t("base_sync_library"),
           attr: { type: "button", "data-pf-testid": "base-sync-library" },
         });
         syncEmptyBtn.addEventListener("click", () => {
@@ -1046,14 +1063,14 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       const left = mkEl(bar, "div", { cls: "pf-base-selection-left" });
       mkEl(left, "span", {
         cls: "pf-base-selection-count pf-tnum",
-        text: (t("base_selected_count") || "已选 {n} 篇").replace(
+        text: t("base_selected_count").replace(
           "{n}",
           String(selectedKeys.length)
         ),
       });
       const clearBtn = mkEl(left, "button", {
         cls: "pf-btn pf-btn-ghost",
-        text: t("base_clear_selection") || "取消选择",
+        text: t("base_clear_selection"),
         attr: { type: "button", "data-pf-testid": "base-clear-selection" },
       });
       clearBtn.addEventListener("click", () => {
@@ -1066,7 +1083,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       if (selectedItems.length === 1 && selectedItems[0].row.has_pdf) {
         const openPdfBtn = mkEl(right, "button", {
           cls: "pf-btn",
-          text: t("base_open_pdf") || "打开 PDF",
+          text: t("base_open_pdf"),
           attr: { type: "button", "data-pf-testid": "base-selection-open-pdf" },
         });
         openPdfBtn.addEventListener("click", () => {
@@ -1082,7 +1099,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       if (diagTarget) {
         const diagBtn = mkEl(right, "button", {
           cls: "pf-btn",
-          text: t("base_open_diag") || "查看诊断",
+          text: t("base_open_diag"),
           attr: { type: "button", "data-pf-testid": "base-open-diag" },
         });
         diagBtn.addEventListener("click", () => {
@@ -1091,7 +1108,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       }
       const syncBtn = mkEl(right, "button", {
         cls: "pf-btn",
-        text: t("base_sync_library") || "同步文献库",
+        text: t("base_sync_library"),
         attr: { type: "button", "data-pf-testid": "base-sync-library" },
       });
       syncBtn.addEventListener("click", () => {
@@ -1100,7 +1117,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
 
       const parseBtn = mkEl(right, "button", {
         cls: "pf-btn mod-cta",
-        text: t("base_run_selected_ocr") || "解析全文",
+        text: t("base_run_selected_ocr"),
         attr: { type: "button", "data-pf-testid": "base-run-selected-ocr" },
       });
       parseBtn.addEventListener("click", () => {
@@ -1122,7 +1139,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     const selectAllCb = mkEl(checkTh, "input", {
       attr: {
         type: "checkbox",
-        "aria-label": "全选文献",
+        "aria-label": t("base_select_all_aria"),
         "data-pf-testid": "base-select-all",
       },
     }) as HTMLInputElement;
@@ -1166,7 +1183,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         });
         mkEl(gWrap, "span", {
           cls: "pf-base-group-count pf-tnum",
-          text: `${grp.items.length} 篇`,
+          text: t("base_group_count").replace("{n}", String(grp.items.length)),
         });
       }
 

@@ -13,6 +13,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
+import { formatHumanError } from "../services/feedback";
 import { traceConsoleError } from "../client/trace";
 import { PaperForgeConfirmModal } from "./modals";
 import { PaperForgeStatusView } from "./dashboard";
@@ -1031,7 +1032,7 @@ export class OcrWorkspaceView extends ItemView {
         }
         const backups = await restoreClient.versionsBackups(restoreKey);
         if (backups.length === 0) {
-          new Notice("No backup versions available");
+          new Notice(t("ocr_ws_restore_unavailable"));
           return;
         }
         new VersionRestoreModal(
@@ -1047,7 +1048,10 @@ export class OcrWorkspaceView extends ItemView {
           () => restoreClient.versionsResetLive(restoreKey)
         ).open();
       } catch (err: any) {
-        new Notice("读取版本历史失败：" + (err?.message || err), 6000);
+        new Notice(
+          t("ocr_ws_history_failed").replace("{detail}", formatHumanError(err)),
+          6000
+        );
       }
     };
     void (async () => {
@@ -1656,7 +1660,7 @@ export class VersionRestoreModal extends Modal {
       const resetLiveBtn = actionsDiv.createEl("button", {
         cls: "btn-secondary pf-vr-btn pf-vr-reset-live-btn",
         attr: { "data-pf-testid": "version-reset-live" },
-        text: "切回最新规范全文",
+        text: t("ocr_ws_reset_canonical"),
       });
       resetLiveBtn.addEventListener("click", () => {
         void this._executeResetLive();
@@ -1670,13 +1674,11 @@ export class VersionRestoreModal extends Modal {
     const modal = new Modal(this.app);
     modal.contentEl.addClass("paperforge-modal");
     modal.contentEl.createEl("h2", {
-      text: t("ocr_ws_restore_confirm_title") || "恢复展示全文文本",
+      text: t("ocr_ws_restore_confirm_title"),
     });
     modal.contentEl.createEl("div", {
       cls: "pf-vr-confirm-body",
-      text:
-        t("ocr_ws_restore_confirm_body") ||
-        "将用所选版本的 fulltext.md 覆盖 render/fulltext.md。OCR 结构、索引、记忆与向量均不受影响。继续？",
+      text: t("ocr_ws_restore_confirm_body"),
     });
     const row = modal.contentEl.createDiv({ cls: "pf-vr-confirm-actions" });
     const cancel = row.createEl("button", {
@@ -1687,7 +1689,7 @@ export class VersionRestoreModal extends Modal {
     const confirm = row.createEl("button", {
       cls: "btn-primary pf-vr-btn mod-warning",
       attr: { "data-pf-testid": "version-restore-confirm" },
-      text: t("ocr_ws_restore_confirm_btn") || "恢复展示全文",
+      text: t("ocr_ws_restore_confirm_btn"),
     });
     confirm.addEventListener("click", () => {
       modal.close();
@@ -1724,7 +1726,10 @@ export class VersionRestoreModal extends Modal {
       }
       this.onRestored?.();
     } catch (err: any) {
-      new Notice("版本恢复失败：" + (err?.message || err), 6000);
+      new Notice(
+        t("ocr_ws_restore_failed").replace("{detail}", formatHumanError(err)),
+        6000
+      );
     }
   }
 
@@ -1734,11 +1739,14 @@ export class VersionRestoreModal extends Modal {
       await this.resetLive();
       this.contentCache.delete("__current__");
       this.restoreFeedback = null;
-      new Notice("已切回最新规范全文");
+      new Notice(t("ocr_ws_reset_done"));
       this.close();
       this.onRestored?.();
     } catch (err: any) {
-      new Notice("重置全文失败：" + (err?.message || err), 6000);
+      new Notice(
+        t("ocr_ws_reset_failed").replace("{detail}", formatHumanError(err)),
+        6000
+      );
     }
   }
 

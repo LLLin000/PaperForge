@@ -20,6 +20,7 @@ import {
   PaperForgeBasesView,
   type PaperForgeBasesHost,
 } from "../src/views/paperforge-base-view";
+import { setLanguage } from "../src/i18n";
 import { VIEW_TYPE_PF_BASE_TABLE } from "../src/constants";
 import type { BaseTableSnapshotDto } from "../src/client/paperforge-client";
 
@@ -193,20 +194,31 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     expect(rows[1].getAttribute("data-paper-key")).toBe("K_WAIT");
     expect(rows[2].getAttribute("data-paper-key")).toBe("K_DONE");
 
-    // Live running progress & calm outline status labels
-    expect(rows[0].textContent).toContain("解析异常");
-    expect(rows[1].textContent).toContain("解析中 1/2");
-    expect(rows[2].textContent).toContain("已精读");
-    expect(rows[2].textContent).toContain("10 批注 · 4 记忆");
+    // Live running progress & calm outline status labels (follows active i18n locale)
+    setLanguage({} as any, "zh");
+    view.render();
+    const rowsZh = Array.from(container.querySelectorAll("tr.pf-base-row"));
+    expect(rowsZh[0].textContent).toContain("解析异常");
+    expect(rowsZh[1].textContent).toContain("解析中 1/2");
+    expect(rowsZh[2].textContent).toContain("已精读");
+    expect(rowsZh[2].textContent).toContain("10 批注 · 4 记忆");
+
+    setLanguage({} as any, "en");
+    view.render();
+    const rowsEn = Array.from(container.querySelectorAll("tr.pf-base-row"));
+    expect(rowsEn[0].textContent).toContain("Failed");
+    expect(rowsEn[1].textContent).toContain("Processing 1/2");
+    expect(rowsEn[2].textContent).toContain("Deep Read");
+    expect(rowsEn[2].textContent).toContain("10 notes · 4 memory");
 
     // Leading PDF icon opens PDF; title click opens main note
-    const pdfBtn = rows[2].querySelector(
+    const pdfBtn = rowsEn[2].querySelector(
       '[data-pf-testid="base-open-pdf"]'
     ) as HTMLButtonElement;
     pdfBtn.click();
     expect(openPaperPdf).toHaveBeenCalledWith("K_DONE");
 
-    const noteBtn = rows[2].querySelector(
+    const noteBtn = rowsEn[2].querySelector(
       '[data-pf-testid="base-open-note"]'
     ) as HTMLButtonElement;
     noteBtn.click();
@@ -266,7 +278,7 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     // Live state-changed update preserves selection & updates counts
     snapshot.rows.K_DONE.memory_facet_count = 5;
     stateListeners[0]();
-    expect(container.textContent).toContain("10 批注 · 5 记忆");
+    expect(container.textContent).toContain("10 notes · 5 memory");
     expect(
       container.querySelector('[data-pf-testid="base-selection-bar"]')
         ?.textContent
@@ -318,6 +330,7 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
       ],
     };
 
+    setLanguage({} as any, "zh");
     view.onDataUpdated();
     const groups = Array.from(
       container.querySelectorAll("tr.pf-base-group-row")
@@ -326,6 +339,7 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     expect(groups[0].textContent).toContain("Ortho");
     expect(groups[0].textContent).toContain("1 篇");
     expect(groups[1].textContent).toContain("Sports");
+    setLanguage({} as any, "en");
   });
 
   it("provides sticky multi-condition filter bar (domain -> cascading collection, IF threshold, status, openalex_2yr marker)", () => {

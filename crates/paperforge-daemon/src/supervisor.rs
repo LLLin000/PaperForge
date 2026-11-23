@@ -66,6 +66,29 @@ pub fn append_stderr_tail(buf: &mut String, line: &str, max_bytes: usize) {
     }
 }
 
+/// Extract a concise, single-line error reason from raw stderr without leaking
+/// multi-line Python tracebacks into user-facing notices.
+pub fn summarize_stderr_line(stderr: &str, rc: i32) -> String {
+    let lines: Vec<&str> = stderr
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .collect();
+    for line in lines.iter().rev() {
+        if line.starts_with("Traceback (")
+            || line.starts_with("File \"")
+            || line.chars().all(|c| c == '^' || c == '~' || c == ' ')
+        {
+            continue;
+        }
+        return line.chars().take(220).collect();
+    }
+    if let Some(last) = lines.last() {
+        return last.chars().take(220).collect();
+    }
+    format!("exit code {rc}")
+}
+
 pub fn infer_kind_and_scope(
     argv: &[String],
     explicit_kind: Option<&str>,
@@ -704,8 +727,8 @@ impl NativeControlDaemon {
                 daemon_clone.push_notice_traced(
                     "success",
                     "runtime.install.done",
-                    "Python 计算引擎已就绪",
-                    "后台同步与 OCR 全文解析环境已准备完成。",
+                    "Python compute engine is ready",
+                    "Background sync and OCR fulltext environment are ready.",
                     vault_path_opt(&vkey),
                     Some(&tid_worker),
                 );
@@ -713,8 +736,8 @@ impl NativeControlDaemon {
                 daemon_clone.push_notice_traced(
                     "warning",
                     "runtime.install.failed",
-                    "运行环境准备未完成",
-                    &err_msg,
+                    "Runtime setup did not complete",
+                    &summarize_stderr_line(&err_msg, 1),
                     vault_path_opt(&vkey),
                     Some(&tid_worker),
                 );
@@ -921,12 +944,7 @@ impl NativeControlDaemon {
                         let _ = j.transition(JobStatus::Succeeded);
                     } else {
                         let _ = j.transition(JobStatus::Failed);
-                        let tail = j.stderr_tail.trim();
-                        j.error = if tail.is_empty() {
-                            format!("exit code {rc}")
-                        } else {
-                            tail.chars().rev().take(300).collect::<String>().chars().rev().collect()
-                        };
+                        j.error = summarize_stderr_line(&j.stderr_tail, rc);
                     }
                 }
                 (
@@ -961,7 +979,7 @@ impl NativeControlDaemon {
                 daemon_clone.push_notice_traced(
                     "warning",
                     &format!("job.{kind_str}.failed"),
-                    &format!("后台任务未完成 ({kind_str})"),
+                    &format!("Background task did not complete ({kind_str})"),
                     &err_msg,
                     Some(&v_path),
                     Some(&tid_out),
@@ -970,7 +988,7 @@ impl NativeControlDaemon {
                 daemon_clone.push_notice_traced(
                     "success",
                     "job.upgrade.heal.done",
-                    "文献库后台渐进整理已完成",
+                    "Background library organization completed",
                     "",
                     Some(&v_path),
                     Some(&tid_out),
@@ -1174,7 +1192,7 @@ impl NativeControlDaemon {
                 let _ = eh.join();
             }
 
-            let (vault_str, kind_str, final_status, err_msg, stderr_full, final_snap) = {
+            let (vault_str, final_status, stderr_full, final_snap) = {
                 let mut j = job_out.lock().unwrap();
                 j.exit_code = Some(rc);
                 j.finished_at = Some(now_unix_secs());
@@ -1185,19 +1203,12 @@ impl NativeControlDaemon {
                         let _ = j.transition(JobStatus::Succeeded);
                     } else {
                         let _ = j.transition(JobStatus::Failed);
-                        let tail = j.stderr_tail.trim();
-                        j.error = if tail.is_empty() {
-                            format!("exit code {rc}")
-                        } else {
-                            tail.chars().rev().take(300).collect::<String>().chars().rev().collect()
-                        };
+                        j.error = summarize_stderr_line(&j.stderr_tail, rc);
                     }
                 }
                 (
                     j.vault.clone(),
-                    j.kind.clone(),
                     j.status,
-                    j.error.clone(),
                     j.stderr_tail.clone(),
                     j.to_json(),
                 )
@@ -1226,17 +1237,9 @@ impl NativeControlDaemon {
             let v_path = PathBuf::from(&vault_str);
             let _ = daemon_clone.get_or_refresh_vault(&v_path);
             daemon_clone.write_heartbeat(&v_path);
-
-            if final_status == JobStatus::Failed {
-                daemon_clone.push_notice_traced(
-                    "warning",
-                    &format!("job.{kind_str}.failed"),
-                    &format!("任务执行未完成 ({kind_str})"),
-                    &err_msg,
-                    Some(&v_path),
-                    Some(&tid_out),
-                );
-            }
+            // Note: Interactive `job.stream` callers already receive `stream.end`
+            // (exit_code + stderr) and own user-facing failure feedback. Do NOT emit
+            // a redundant `notice.push` here to prevent duplicate top-right Notices.
         });
 
         json!({

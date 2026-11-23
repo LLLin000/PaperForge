@@ -10,6 +10,7 @@ import {
 } from "obsidian";
 import { VIEW_TYPE_PAPERFORGE_PDF } from "../constants";
 import { t } from "../i18n";
+import { formatHumanError } from "../services/feedback";
 import type {
   AnnotationColor,
   AnnotationKind,
@@ -1049,7 +1050,7 @@ export class PaperForgePdfView extends ItemView {
       this._refreshOverlays();
       this._renderSidebarBody();
     } catch (err) {
-      new Notice(err instanceof Error ? err.message : String(err));
+      new Notice(formatHumanError(err));
     }
   }
 
@@ -1573,7 +1574,7 @@ export class PaperForgePdfView extends ItemView {
       this._refreshOverlays();
       this._renderSidebarBody();
     } catch (err) {
-      new Notice(err instanceof Error ? err.message : String(err));
+      new Notice(formatHumanError(err));
     }
   }
 
@@ -1672,7 +1673,7 @@ export class PaperForgePdfView extends ItemView {
           new Notice(t("pdf_ann_saved") || "Area saved");
         }
       } catch (err) {
-        new Notice(err instanceof Error ? err.message : String(err));
+        new Notice(formatHumanError(err));
       }
     };
 
@@ -1863,7 +1864,7 @@ export class PaperForgePdfView extends ItemView {
           this._renderSidebarBody();
         } catch (err) {
           saveBtn.disabled = false;
-          new Notice(err instanceof Error ? err.message : String(err));
+          new Notice(formatHumanError(err));
         }
       })();
     });
