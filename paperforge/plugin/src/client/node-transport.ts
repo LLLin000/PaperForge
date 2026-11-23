@@ -496,6 +496,7 @@ export class NodeProcessTransport implements Transport {
   private readonly _hasCustomSpawn: boolean;
   private _daemonSupported = true;
   private _daemon: DaemonSession | null = null;
+  private _swapInFlight: Promise<void> | null = null;
   private readonly _daemonListeners = new Set<
     (event: DaemonPushEvent) => void
   >();
@@ -1077,6 +1078,28 @@ export class NodeProcessTransport implements Transport {
     payload: Record<string, unknown>,
     timeoutMs = 30000
   ): Promise<string> {
+    if (this._swapInFlight) {
+      await this._swapInFlight.catch(() => undefined);
+    }
+    try {
+      return await this._rpcOnce(payload, timeoutMs);
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        err.message === "PaperForge daemon shut down" &&
+        this._swapInFlight
+      ) {
+        await this._swapInFlight.catch(() => undefined);
+        return await this._rpcOnce(payload, timeoutMs);
+      }
+      throw err;
+    }
+  }
+
+  private async _rpcOnce(
+    payload: Record<string, unknown>,
+    timeoutMs = 30000
+  ): Promise<string> {
     const target = await this._resolveDaemonTarget();
     const session = this._ensureDaemonSession(target);
     const id = session.nextId++;
@@ -1172,7 +1195,7 @@ export class NodeProcessTransport implements Transport {
       this.shutdownDaemon(force);
       return;
     }
-    await new Promise<void>((resolve) => {
+    const swapWork = new Promise<void>((resolve) => {
       let settled = false;
       const done = () => {
         if (settled) return;
@@ -1190,7 +1213,13 @@ export class NodeProcessTransport implements Transport {
       }, 1500);
       fallbackTimer.unref?.();
       this.shutdownDaemon(force);
+    }).finally(() => {
+      if (this._swapInFlight === swapWork) {
+        this._swapInFlight = null;
+      }
     });
+    this._swapInFlight = swapWork;
+    await swapWork;
   }
 
   private async _executeDaemon(
@@ -1250,21 +1279,36 @@ export class NodeProcessTransport implements Transport {
       argv[0] !== "daemon";
 
     if (canUseDaemon) {
+      if (this._swapInFlight) {
+        await this._swapInFlight.catch(() => undefined);
+      }
       const nativeBin = this._resolveNativeDaemon();
       if (nativeBin) {
         const ptrCmd = resolveRuntimeCommand(readRuntimePointer());
-        try {
-          return await this._executeDaemon(
+        const runNative = () => {
+          const freshBin = this._resolveNativeDaemon() || nativeBin;
+          return this._executeDaemon(
             {
-              path: nativeBin,
+              path: freshBin,
               args: [],
-              nativeBin,
+              nativeBin: freshBin,
               pythonWorkerExe: ptrCmd?.command ?? null,
             },
             argv,
             options
           );
+        };
+        try {
+          return await runNative();
         } catch (err: unknown) {
+          if (
+            err instanceof Error &&
+            err.message === "PaperForge daemon shut down" &&
+            this._swapInFlight
+          ) {
+            await this._swapInFlight.catch(() => undefined);
+            return await runNative();
+          }
           const unavailable =
             err !== null &&
             typeof err === "object" &&

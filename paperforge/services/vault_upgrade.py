@@ -885,7 +885,13 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
         "pf_confirmed_residual": len(dedup_cleanup),
         "user_sovereign_untouched": user_sovereign_bases + user_aux_notes_count,
         "ambiguous_or_clone_frozen": len(scan.ambiguous_clones) + len(scan.duplicate_workspaces) + len(scan.sync_conflicts),
+        "pf_canonical": {
+            "workspaces": len(scan.workspaces),
+        },
     }
+
+    backups_root = vault_root / ".paperforge" / "backups"
+    rollback_available = backups_root.is_dir() and any(backups_root.glob("upgrade-*"))
 
     return {
         "schema_version": 2,
@@ -893,6 +899,7 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
         "target_version": PF_VERSION,
         "provenance": provenance,
         "manifest_present": manifest is not None,
+        "rollback_available": rollback_available,
         "census": census,
         "summary": {
             "auto_count": len(auto_items),

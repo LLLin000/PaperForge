@@ -13563,6 +13563,30 @@ body.pf-no-glass
   color: var(--pf-warn, #c47f17);
 }
 
+.pf-cc-topbar-whatsnew {
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: 999px;
+  border: 1px solid var(--interactive-accent);
+  color: var(--interactive-accent);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pf-cc-topbar-whatsnew:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.pf-cc-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Accessibility ReduceMotion */
 body.pf-reduce-motion *,
 body.pf-reduce-motion *::before,

@@ -51,8 +51,10 @@ import {
 } from "./services/managed-runtime";
 import {
   ensureNativeDaemonDownloaded,
+  readNativeDaemonMeta,
   resolveNativeDaemonBinary,
 } from "./services/native-daemon";
+import { normalizeSemverForCompare } from "./services/setup-decision-tree";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -120,8 +122,22 @@ export default class PaperForgePlugin extends Plugin {
   private _quarantinedBinDir: string | null = null;
   private _lastAutoSyncError: { message: string; at: number } | null = null;
   private _pendingReleaseNotesVersion: string | null = null;
+  private _daemonUpdating = false;
 
   private _client: PaperForgeClient | null = null;
+
+  isDaemonUpdating(): boolean {
+    return this._daemonUpdating;
+  }
+
+  isRuntimeUpdating(): boolean {
+    for (const dj of this._daemonJobs.values()) {
+      if (dj.kind === "runtime.install" || dj.kind === "runtime.update") {
+        return true;
+      }
+    }
+    return false;
+  }
 
   getQuarantinedBinDir(): string | null {
     return this._quarantinedBinDir;
@@ -181,16 +197,22 @@ export default class PaperForgePlugin extends Plugin {
     if (ev.event === "task.updated" && ev.data) {
       const job = ev.data as unknown as DaemonJobDto;
       if (job.job_id) {
-        if (
+        const isActive =
           job.status === "queued" ||
           job.status === "running" ||
-          job.status === "cancelling"
-        ) {
+          job.status === "cancelling";
+        if (isActive) {
           this._daemonJobs.set(job.job_id, job);
         } else {
           this._daemonJobs.delete(job.job_id);
         }
         this._emitStateChanged(job.item_id ? [job.item_id] : []);
+        if (job.kind === "runtime.install" || job.kind === "runtime.update") {
+          if (!isActive) {
+            this._settingTab?._refreshAllReadModels();
+          }
+          this._settingTab?.display();
+        }
       }
       return;
     }
@@ -741,7 +763,6 @@ export default class PaperForgePlugin extends Plugin {
       },
     });
 
-    this._startConvergenceTimer();
     this._checkReleaseNotes();
 
     const vaultBase = (
@@ -749,61 +770,19 @@ export default class PaperForgePlugin extends Plugin {
     ).basePath;
 
     const pluginVersion = this.manifest?.version ?? "";
-    const hadNativeBefore = Boolean(
-      resolveNativeDaemonBinary({ vaultPath: vaultBase })
+    const prevNativeBin = resolveNativeDaemonBinary({ vaultPath: vaultBase });
+    const prevMeta = readNativeDaemonMeta();
+    const needsDaemonSwap = Boolean(
+      pluginVersion &&
+      (!prevNativeBin ||
+        !prevMeta?.tag ||
+        normalizeSemverForCompare(prevMeta.tag) !==
+          normalizeSemverForCompare(pluginVersion))
     );
-    void ensureNativeDaemonDownloaded(pluginVersion, {
-      checkVersionUpdate: true,
-      onBeforeReplace: () => this._client?.shutdownTransportAsync(),
-      onQuarantineSuspected: (binDir) => {
-        this._quarantinedBinDir = binDir;
-        this._emitStateChanged();
-        this._settingTab?.display();
-        new Notice(t("main_defender_notice_short"), 8000);
-      },
-    })
-      .then((downloadedBin) => {
-        if (!downloadedBin || !vaultBase) return;
-        // Re-hydrate if transitioning from absent -> present, or silently align
-        // already-installed Python runtime when plugin version jumped on Marketplace.
-        if (!hadNativeBefore) {
-          void this.refreshUpgradePlan().catch(() => undefined);
-          void this.getClient()
-            .configValidate()
-            .then((validation) => {
-              if (validation.state === "migration_required") {
-                this._needsConfigMigration = true;
-              }
-            })
-            .catch(() => undefined);
-          void this.refreshBaseSnapshot().catch(() => undefined);
-          if (this.settings.autoSyncEnabled !== false) {
-            this._autoSync(vaultBase);
-          }
-          this._settingTab?.display();
-        }
-        const ptr = readRuntimePointer();
-        if (ptr && pluginVersion) {
-          const norm = (s: string) =>
-            String(s || "")
-              .trim()
-              .replace(/^[vV]/, "")
-              .replace(/[-_.]?(?:rc)\.?(\d+)/i, "rc$1")
-              .replace(/[-_.]?(?:beta|b)\.?(\d+)/i, "b$1")
-              .replace(/[-_.]?(?:alpha|a)\.?(\d+)/i, "a$1")
-              .toLowerCase();
-          if (norm(ptr.paperforgeVersion) !== norm(pluginVersion)) {
-            void this.getClient()
-              .daemonSubmitRuntimeUpdate(pluginVersion)
-              .catch(() => undefined);
-          }
-        }
-      })
-      .catch(() => undefined);
 
-    // #142/C0: one-time plugin-assisted config migration — detect legacy
-    // vaults and surface an explicit migrate command.
-    if (vaultBase) {
+    const runStartupHydration = () => {
+      this._startConvergenceTimer();
+      if (!vaultBase) return;
       void this.getClient()
         .configValidate()
         .then((validation) => {
@@ -812,7 +791,6 @@ export default class PaperForgePlugin extends Plugin {
           }
         })
         .catch(() => undefined);
-      // #161/R: embed status read model for the vector UI.
       void this.getClient()
         .embedStatus()
         .then((d) => {
@@ -824,6 +802,7 @@ export default class PaperForgePlugin extends Plugin {
       this._startStateSeqWatcher(vaultBase);
       void this.refreshUpgradePlan()
         .then((plan) => {
+          this._settingTab?.display();
           if (
             this.settings._setup_complete === false &&
             this.settings._setup_journey_started !== true &&
@@ -834,7 +813,65 @@ export default class PaperForgePlugin extends Plugin {
           }
         })
         .catch(() => undefined);
+    };
+
+    if (needsDaemonSwap) {
+      this._daemonUpdating = true;
+    } else {
+      // Native binary already matches pluginVersion — start hydration immediately
+      // without waiting on remote checksum verification.
+      runStartupHydration();
     }
+
+    void ensureNativeDaemonDownloaded(pluginVersion, {
+      checkVersionUpdate: true,
+      onBeforeReplace: () => this._client?.shutdownTransportAsync(),
+      onQuarantineSuspected: (binDir) => {
+        this._quarantinedBinDir = binDir;
+        this._emitStateChanged();
+        this._settingTab?.display();
+        new Notice(t("main_defender_notice_short"), 8000);
+      },
+    })
+      .then((downloadedBin) => {
+        const swapped = Boolean(
+          downloadedBin && downloadedBin !== prevNativeBin
+        );
+        this._daemonUpdating = false;
+        if (needsDaemonSwap) {
+          this._lastAutoSyncError = null;
+          runStartupHydration();
+          this._settingTab?._refreshAllReadModels();
+          this._settingTab?.display();
+        } else if (swapped && vaultBase) {
+          this._lastAutoSyncError = null;
+          void this.refreshUpgradePlan()
+            .then(() => this._settingTab?.display())
+            .catch(() => undefined);
+          void this.refreshBaseSnapshot().catch(() => undefined);
+          this._settingTab?._refreshAllReadModels();
+          this._settingTab?.display();
+        }
+        if (!downloadedBin || !vaultBase) return;
+        const ptr = readRuntimePointer();
+        if (ptr && pluginVersion) {
+          if (
+            normalizeSemverForCompare(ptr.paperforgeVersion) !==
+            normalizeSemverForCompare(pluginVersion)
+          ) {
+            void this.getClient()
+              .daemonSubmitRuntimeUpdate(pluginVersion)
+              .catch(() => undefined);
+          }
+        }
+      })
+      .catch(() => {
+        this._daemonUpdating = false;
+        if (needsDaemonSwap) {
+          runStartupHydration();
+          this._settingTab?.display();
+        }
+      });
   }
 
   private _needsConfigMigration = false;
@@ -988,10 +1025,17 @@ export default class PaperForgePlugin extends Plugin {
         }
       } catch (err: unknown) {
         ok = false;
-        this._lastAutoSyncError = {
-          message: formatHumanError(err),
-          at: Date.now(),
-        };
+        const rawMsg = err instanceof Error ? err.message : String(err ?? "");
+        // Never surface transient internal daemon hot-swap restarts as sync errors
+        if (
+          !this._daemonUpdating &&
+          !rawMsg.toLowerCase().includes("daemon shut down")
+        ) {
+          this._lastAutoSyncError = {
+            message: formatHumanError(err),
+            at: Date.now(),
+          };
+        }
       } finally {
         this._autoSyncRunning = false;
         this._memoryStatusText = null;

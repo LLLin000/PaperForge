@@ -640,8 +640,9 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_runtime_unavailable: "Environment unavailable",
     foundation_skills_ready: "Available",
     foundation_skills: "Skills",
-    md_foundation_legacy_migrate: "Migrate legacy configuration",
-    foundation_migrate_btn: "Migrate",
+    md_foundation_legacy_migrate:
+      "Legacy API Keys (SecretStorage → OS Keyring)",
+    foundation_migrate_btn: "Migrate API Keys",
     foundation_migrate_hint:
       "One-time move of Obsidian SecretStorage values into the system keyring.",
     migrate_none_found:
@@ -1406,6 +1407,8 @@ const LANG: Record<string, Record<string, string>> = {
       "Target file is locked or lacks write permission. Close programs using it and retry.",
     err_human_file_missing:
       "Required file or directory was not found. Check your path configuration.",
+    err_human_daemon_restarting:
+      "Compute engine is restarting after an update — status will recover automatically in a moment.",
     err_human_generic: "Operation did not complete. Please retry.",
     daemon_job_kind_ocr: "OCR Fulltext",
     daemon_job_kind_embed: "Smart Retrieval",
@@ -1685,6 +1688,50 @@ const LANG: Record<string, Record<string, string>> = {
     settings_embed_adv_custom:
       "Advanced: custom model, endpoint URL & client mode (optional when using presets)",
     settings_embed_save_test_btn: "Save & Probe Dimension",
+    // ── Deterministic Setup & Readiness Decision Tree ──
+    topbar_whats_new: "What's New",
+    dt_badge_updating: "Updating",
+    dt_badge_upgrade: "Upgrade Available",
+    dt_badge_update_needed: "Update Needed",
+    dt_badge_step1: "Step 1 of 2",
+    dt_badge_step2: "Step 2 of 2",
+    dt_badge_check_failed: "Check Failed",
+    dt_badge_sync_paused: "Sync Paused",
+    dt_engine_hotswap_title: "Updating native accelerator engine…",
+    dt_engine_updating_title: "Installing / updating compute engine…",
+    dt_engine_updating_body:
+      "Please wait a moment — status will refresh automatically when finished.",
+    dt_version_mismatch_title:
+      "Plugin updated to v{expected}; compute engine is still v{current}",
+    dt_version_mismatch_body:
+      "Your Zotero path, notes, and API keys are preserved. Click below to align the compute engine with one click.",
+    dt_btn_update_engine: "Update Compute Engine",
+    dt_step1_title: "Step 1: Enable the compute engine",
+    dt_step1_body:
+      "No local compute engine detected yet. Click below to install it automatically and connect Zotero.",
+    dt_probe_failed_title:
+      "Compute engine v{version} is installed, but status check did not respond",
+    dt_probe_failed_body:
+      "Your existing installation is still on disk. Retry the health check first, or repair the engine if this persists.",
+    dt_btn_repair_engine: "Repair Engine",
+    dt_step2_title: "Step 2: Connect your Zotero library",
+    dt_step2_body:
+      "Compute engine is ready. Confirm your Zotero data directory to run the first sync.",
+    dt_step2_body_detected:
+      "Compute engine is ready and detected {count} papers in Zotero. Confirm to start syncing.",
+    dt_btn_connect_zotero: "Connect Zotero Library",
+    dt_btn_check_zotero: "Check Zotero Settings",
+    dt_ready_with_count: "All ready · {count} papers synced",
+    migrate_secret_already_exists:
+      "A key is already saved in your OS keyring — kept your current key (no overwrite needed).",
+    migrate_secret_engine_not_ready:
+      "Compute engine is not ready or is currently updating. Wait until the engine is ready, then retry migrating legacy keys.",
+    migrate_secret_write_failed:
+      "Could not migrate legacy API key ({detail}). Your legacy value was kept; you can also re-paste your key directly in OCR / Smart Retrieval settings.",
+    migrate_secret_clear_warn:
+      "Key migrated and verified in OS keyring, but the old Obsidian SecretStorage entry could not be cleared automatically.",
+    migrate_secret_migrated_ok:
+      "Migrated legacy {kind} API key to OS keyring successfully.",
   },
   zh: {
     record_save: "保存研究记录",
@@ -2280,8 +2327,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_runtime_unavailable: "运行环境不可用",
     foundation_skills_ready: "可用",
     foundation_skills: "Skills",
-    md_foundation_legacy_migrate: "迁移旧版配置",
-    foundation_migrate_btn: "迁移",
+    md_foundation_legacy_migrate: "旧版 API 密钥（SecretStorage → 系统凭据库）",
+    foundation_migrate_btn: "迁移旧版密钥",
     foundation_migrate_hint:
       "把 Obsidian SecretStorage 里的旧值一次性搬进系统钥匙串。",
     migrate_none_found: "Obsidian SecretStorage 中没有找到旧的凭据。",
@@ -2964,6 +3011,8 @@ const LANG: Record<string, Record<string, string>> = {
     err_human_file_locked:
       "目标文件正被其他程序占用或缺少写入权限，关闭占用后重试。",
     err_human_file_missing: "未找到所需文件或目录，请检查路径设置。",
+    err_human_daemon_restarting:
+      "计算引擎正在热更新重启，状态将在几秒内自动恢复。",
     err_human_generic: "操作未完成，请重试。",
     daemon_job_kind_ocr: "OCR 全文解析",
     daemon_job_kind_embed: "智能检索索引",
@@ -3225,6 +3274,48 @@ const LANG: Record<string, Record<string, string>> = {
     settings_embed_adv_custom:
       "高级：自定义模型名称、端点地址与兼容模式（选上方预设可免填）",
     settings_embed_save_test_btn: "保存并测通维度",
+    // ── Deterministic Setup & Readiness Decision Tree ──
+    topbar_whats_new: "更新说明",
+    dt_badge_updating: "正在更新",
+    dt_badge_upgrade: "可无损升级",
+    dt_badge_update_needed: "待同步更新",
+    dt_badge_step1: "第 1 步 / 共 2 步",
+    dt_badge_step2: "第 2 步 / 共 2 步",
+    dt_badge_check_failed: "检测未响应",
+    dt_badge_sync_paused: "同步受阻",
+    dt_engine_hotswap_title: "正在热更新加速引擎…",
+    dt_engine_updating_title: "正在自动安装 / 更新计算引擎…",
+    dt_engine_updating_body:
+      "请稍候片刻，完成后将自动刷新全部状态，无需手动操作。",
+    dt_version_mismatch_title:
+      "插件已更新至 v{expected}，计算引擎待同步（当前 v{current}）",
+    dt_version_mismatch_body:
+      "你的 Zotero 路径、笔记与 API 密钥均完整保留，点击下方按钮一键同步更新计算引擎即可。",
+    dt_btn_update_engine: "一键更新计算引擎",
+    dt_step1_title: "第 1 步：一键启用计算引擎",
+    dt_step1_body:
+      "尚未检测到本地计算引擎。点击下方按钮将自动完成部署并引导连接 Zotero。",
+    dt_probe_failed_title: "计算引擎已安装（v{version}），但本次状态检测未响应",
+    dt_probe_failed_body:
+      "你的本地环境仍在，并非未安装。建议先点「刷新状态」重试；如反复出现再点「修复计算引擎」。",
+    dt_btn_repair_engine: "修复计算引擎",
+    dt_step2_title: "第 2 步：连接你的 Zotero 文献库",
+    dt_step2_body: "计算引擎已就绪。确认你的 Zotero 数据目录即可完成首次同步。",
+    dt_step2_body_detected:
+      "计算引擎已就绪，并自动检测到 Zotero 内有 {count} 篇文献。点击下方按钮确认即可同步。",
+    dt_btn_connect_zotero: "连接 Zotero 文献库",
+    dt_btn_check_zotero: "检查 Zotero 设置",
+    dt_ready_with_count: "一切就绪 · 已同步 {count} 篇文献",
+    migrate_secret_already_exists:
+      "系统凭据库中已保存有密钥，已保留现有密钥（无需重复迁移）。",
+    migrate_secret_engine_not_ready:
+      "计算引擎尚未就绪或正在热更新，请等待上方状态就绪后再迁移旧版 API 密钥。",
+    migrate_secret_write_failed:
+      "旧版 API 密钥迁移未完成（{detail}）。旧值已保留，你也可以直接在下方 OCR / 智能检索设置中重新粘贴保存。",
+    migrate_secret_clear_warn:
+      "密钥已成功迁移至系统凭据库，但旧版 Obsidian SecretStorage 条目未能自动清除。",
+    migrate_secret_migrated_ok:
+      "已成功将旧版 {kind} API 密钥迁移至系统凭据库。",
   },
 };
 

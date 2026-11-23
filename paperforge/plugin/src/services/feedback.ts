@@ -64,6 +64,9 @@ export function formatHumanError(
   const concise = extractConciseErrorLine(rawErr);
   const lower = concise.toLowerCase();
 
+  if (lower.includes("daemon shut down")) {
+    return t("err_human_daemon_restarting");
+  }
   if (
     lower.includes("no_python") ||
     lower.includes("python worker runtime not installed") ||

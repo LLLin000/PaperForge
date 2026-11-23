@@ -13,6 +13,7 @@ import * as os from "os";
 import { migrateLegacySecret } from "./services/secret-storage";
 import { t, setLanguage, langFromApp } from "./i18n";
 import { formatHumanError } from "./services/feedback";
+import { resolveSetupDecision } from "./services/setup-decision-tree";
 import {
   EMBEDDING_PRESETS,
   matchEmbeddingPresetId,
@@ -265,6 +266,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _probing: Set<string> = new Set();
   private _lastOrphanCount: number = 0;
   private _pendingOrphans: { key: string; title?: string }[] = [];
+  private _upgradePlanRequestedThisSession: boolean = false;
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
   /** Cached modules past TTL waiting for silent background revalidation (never flashed to Checking). */
@@ -447,141 +449,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // Persistent actionable inline banners (Defender quarantine, pending
-    // release notes, auto-sync error, orphan workspaces) — never vanish in 8s
-    // and never interrupt users with unsolicited Modals.
     const pfHost = this.plugin as unknown as {
-      getQuarantinedBinDir?: () => string | null;
-      dismissQuarantineBanner?: () => void;
       getPendingReleaseNotesVersion?: () => string | null;
       openReleaseNotesModal?: () => void;
-      dismissPendingReleaseNotes?: () => void;
-      getLastAutoSyncError?: () => { message: string; at: number } | null;
-      triggerManualSync?: () => void;
     };
-    const quarantinedDir = pfHost.getQuarantinedBinDir?.();
-    if (quarantinedDir) {
-      const qBanner = containerEl.createDiv({
-        cls: "pf-upgrade-banner pf-defender-banner",
-        attr: { role: "alert", "data-pf-testid": "defender-quarantine-banner" },
-      });
-      const copy = qBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
-      copy.createEl("div", {
-        cls: "pf-upgrade-banner-title",
-        text: t("main_defender_banner_title"),
-      });
-      copy.createEl("div", {
-        cls: "pf-upgrade-banner-desc",
-        text: t("main_defender_banner_desc"),
-      });
-      copy.createEl("code", {
-        cls: "pf-defender-path-code",
-        text: quarantinedDir,
-      });
-      const actions = qBanner.createDiv({ cls: "pf-upgrade-banner-actions" });
-      const copyBtn = actions.createEl("button", {
-        cls: "pf-action-btn",
-        type: "button",
-        text: t("main_defender_copy_path"),
-        attr: { "data-pf-testid": "defender-copy-path-btn" },
-      });
-      copyBtn.addEventListener("click", () => {
-        void navigator.clipboard?.writeText?.(quarantinedDir).then(() => {
-          new Notice(t("main_defender_path_copied"));
-        });
-      });
-      const closeBtn = actions.createEl("button", {
-        cls: "pf-btn pf-btn-ghost",
-        type: "button",
-        text: t("base_missing_pdf_dismiss"),
-      });
-      closeBtn.addEventListener("click", () => {
-        pfHost.dismissQuarantineBanner?.();
-      });
-    }
-
-    const pendingRelVer = pfHost.getPendingReleaseNotesVersion?.();
-    if (pendingRelVer) {
-      const relBanner = containerEl.createDiv({
-        cls: "pf-upgrade-banner pf-release-notes-banner",
-        attr: { "data-pf-testid": "release-notes-banner" },
-      });
-      const copy = relBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
-      copy.createEl("div", {
-        cls: "pf-upgrade-banner-title",
-        text: t("main_release_banner_title").replace(
-          "{version}",
-          pendingRelVer
-        ),
-      });
-      const actions = relBanner.createDiv({ cls: "pf-upgrade-banner-actions" });
-      const viewBtn = actions.createEl("button", {
-        cls: "pf-action-btn",
-        type: "button",
-        text: t("main_release_banner_action"),
-        attr: { "data-pf-testid": "release-notes-banner-open" },
-      });
-      viewBtn.addEventListener("click", () => {
-        pfHost.openReleaseNotesModal?.();
-      });
-      const dismissBtn = actions.createEl("button", {
-        cls: "pf-btn pf-btn-ghost",
-        type: "button",
-        text: t("base_missing_pdf_dismiss"),
-      });
-      dismissBtn.addEventListener("click", () => {
-        pfHost.dismissPendingReleaseNotes?.();
-      });
-    }
-
-    const autoSyncErr = pfHost.getLastAutoSyncError?.();
-    if (autoSyncErr?.message) {
-      const syncBanner = containerEl.createDiv({
-        cls: "pf-upgrade-banner pf-autosync-error-banner",
-        attr: { role: "status", "data-pf-testid": "settings-autosync-banner" },
-      });
-      const copy = syncBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
-      copy.createEl("div", {
-        cls: "pf-upgrade-banner-title",
-        text: t("main_autosync_failed_title"),
-      });
-      copy.createEl("div", {
-        cls: "pf-upgrade-banner-desc",
-        text: autoSyncErr.message,
-      });
-      const retryBtn = syncBanner.createEl("button", {
-        cls: "pf-action-btn",
-        type: "button",
-        text: t("main_autosync_retry"),
-      });
-      retryBtn.addEventListener("click", () => {
-        pfHost.triggerManualSync?.();
-      });
-    }
-
-    if (this._pendingOrphans.length > 0) {
-      const oBanner = containerEl.createDiv({
-        cls: "pf-upgrade-banner pf-orphan-banner",
-        attr: { "data-pf-testid": "settings-orphan-banner" },
-      });
-      const copy = oBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
-      copy.createEl("div", {
-        cls: "pf-upgrade-banner-title",
-        text: t("orphan_banner_title").replace(
-          "{count}",
-          String(this._pendingOrphans.length)
-        ),
-      });
-      const reviewBtn = oBanner.createEl("button", {
-        cls: "pf-action-btn",
-        type: "button",
-        text: t("orphan_banner_btn"),
-        attr: { "data-pf-testid": "settings-orphan-review-btn" },
-      });
-      reviewBtn.addEventListener("click", () => {
-        this._openOrphanModal(this._pendingOrphans);
-      });
-    }
     // --- Topbar ---
     const topbar = containerEl.createDiv({ cls: "pf-cc-topbar" });
 
@@ -606,6 +477,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-cc-topbar-version",
       text: "v" + (this.plugin.manifest?.version ?? "?"),
     });
+    const pendingRelVer = pfHost.getPendingReleaseNotesVersion?.();
+    if (pendingRelVer) {
+      const relPill = brandLeft.createEl("button", {
+        cls: "pf-cc-topbar-whatsnew",
+        type: "button",
+        text: t("topbar_whats_new"),
+        attr: { "data-pf-testid": "release-notes-banner-open" },
+      });
+      relPill.addEventListener("click", () => {
+        pfHost.openReleaseNotesModal?.();
+      });
+    }
 
     // Center: Tab buttons
     const tabCenter = topbar.createDiv({ cls: "pf-cc-topbar-center" });
@@ -1133,27 +1016,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._refreshAllReadModels({ silent: !hasNeverProbed });
     }
 
-    // ── Non-blocking Veteran Vault Upgrade Banner (ADR-018) ──
+    // ── Ensure Veteran Vault Upgrade Plan is fetched even if startup missed it ──
     const cachedUpgradePlan =
       typeof this.plugin.getUpgradePlanCache === "function"
         ? this.plugin.getUpgradePlanCache()
         : null;
-    const bannerDismissed =
-      typeof this.plugin.isUpgradeBannerDismissed === "function"
-        ? Boolean(this.plugin.isUpgradeBannerDismissed())
-        : false;
-    renderUpgradeAvailableBanner(containerEl, cachedUpgradePlan, {
-      dismissed: bannerDismissed,
-      onOpenModal: () => {
-        void this.plugin.openUpgradeModal?.();
-      },
-      onDismiss: () => {
-        this.plugin.dismissUpgradeBannerForSession?.();
-        this.display();
-      },
-    });
+    if (
+      !cachedUpgradePlan &&
+      !this._upgradePlanRequestedThisSession &&
+      typeof this.plugin.refreshUpgradePlan === "function"
+    ) {
+      this._upgradePlanRequestedThisSession = true;
+      void this.plugin
+        .refreshUpgradePlan()
+        .then((plan: unknown) => {
+          if (plan && !this._displayInProgress) {
+            this.display();
+          }
+        })
+        .catch(() => undefined);
+    }
 
-    // ── Control Center (Issue #76) ──
+    // ── Control Center (Unified Decision-Tree Hero + In-Place Accordion) ──
     this._renderControlCenter(containerEl);
 
     // ── Deferred Storage Cleanup & Time-Machine Rollback ──
@@ -1426,6 +1310,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   isRuntimeInstallPollingActive(): boolean {
     return Boolean(this._runtimePollTimer);
+  }
+
+  private _triggerRuntimeUpgrade(): void {
+    this._launchRuntimeInstaller("update");
   }
 
   private _stopRuntimePoll(ready: boolean, cancelReason?: string): void {
@@ -4226,61 +4114,130 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         : "Core health & settings in one calm screen — click any row to configure in-place.",
     });
 
-    // ── Summary Card ──
+    // ── Single Deterministic Decision-Tree Hero Card ──
     const foundationEnv =
       envelopes["installation"] ?? createUnknownEnvelope("installation");
     const libraryEnv = envelopes["library"] ?? createUnknownEnvelope("library");
     const foundationReady = foundationEnv.user_state === "ready";
-    const libraryReady = libraryEnv.user_state === "ready";
-    const baselineReady = foundationReady && libraryReady;
-    const baselineChecking = [foundationEnv, libraryEnv].some(
-      (env) => env.user_state === "checking"
-    );
+    const pfState = this.plugin as unknown as {
+      isDaemonUpdating?: () => boolean;
+      isRuntimeUpdating?: () => boolean;
+      getQuarantinedBinDir?: () => string | null;
+      dismissQuarantineBanner?: () => void;
+      getLastAutoSyncError?: () => { message: string; at: number } | null;
+      getUpgradePlanCache?: () => import("./client").VaultUpgradePlanDto | null;
+      isUpgradeBannerDismissed?: () => boolean;
+      openUpgradeModal?: () => Promise<void>;
+      dismissUpgradeBannerForSession?: () => void;
+    };
+    const runtimePtr = readRuntimePointer();
+    const expectedVersion = this.plugin.manifest?.version ?? "";
+    const paperCountRaw = (
+      libraryEnv.details as Record<string, unknown> | undefined
+    )?.["paper_count"];
+    const decision = resolveSetupDecision({
+      daemonUpdating: Boolean(pfState.isDaemonUpdating?.()),
+      runtimeUpdating:
+        Boolean(pfState.isRuntimeUpdating?.()) ||
+        Boolean(this._runtimePollTimer),
+      canCancelInstall: Boolean(this._runtimePollTimer),
+      quarantinedBinDir: pfState.getQuarantinedBinDir?.() ?? null,
+      upgradePlan: pfState.getUpgradePlanCache?.() ?? null,
+      upgradeBannerDismissed: Boolean(pfState.isUpgradeBannerDismissed?.()),
+      runtimePointer: runtimePtr,
+      expectedVersion,
+      installationEnv: foundationEnv,
+      libraryEnv,
+      isProbing: this._probing.size > 0,
+      zoteroDataDir: this.plugin.settings.zotero_data_dir || "",
+      zoteroDetectedPapers: this._zoteroDetectData?.found
+        ? this._zoteroDetectData.total_papers
+        : null,
+      lastAutoSyncError: pfState.getLastAutoSyncError?.()?.message ?? null,
+      paperCount: typeof paperCountRaw === "number" ? paperCountRaw : null,
+    });
 
-    const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
-    const badgeCls = baselineReady
-      ? "ready"
-      : baselineChecking
-        ? "checking"
-        : "attention";
-    const badgeText = baselineReady
-      ? t("cc_badge_ready") || "Ready"
-      : baselineChecking
-        ? t("cc_badge_checking") || "Checking"
-        : t("cc_badge_attention") || "Needs attention";
+    const summaryEl = cc.createEl("div", {
+      cls: "pf-cc-summary",
+      attr: { "data-pf-decision": decision.id },
+    });
     summaryEl.createEl("span", {
-      cls: `pf-cc-summary-badge pf-cc-summary-badge--${badgeCls}`,
-      text: badgeText,
+      cls: `pf-cc-summary-badge pf-cc-summary-badge--${decision.badgeCls}`,
+      text: decision.badgeText,
     });
 
     const summaryCopy = summaryEl.createDiv({ cls: "pf-cc-summary-copy" });
-    const foundationBlocked = !foundationReady && !baselineChecking;
-    const summaryTitle = baselineReady
-      ? t("cc_summary_ready")
-      : baselineChecking
-        ? t("cc_summary_checking")
-        : foundationBlocked
-          ? t("cc_summary_setup_first")
-          : t("cc_summary_connect_library");
-    const summaryBody = baselineReady
-      ? t("cc_summary_ready_body")
-      : baselineChecking
-        ? t("cc_summary_checking_body")
-        : foundationBlocked
-          ? t("module_blocked_by_runtime")
-          : t("cc_summary_connect_library_body");
-    summaryCopy.createEl("strong", { text: summaryTitle });
-    summaryCopy.createEl("span", { cls: "caption", text: summaryBody });
-
-    if (!baselineReady && !baselineChecking) {
-      const startStage = foundationReady ? 2 : 1;
-      renderActionButton(summaryEl, {
-        label:
-          this.plugin.settings._setup_complete === false
-            ? t("cc_start_setup")
-            : t("cc_continue_setup"),
-        onClick: () => this._startSetupJourney(startStage),
+    summaryCopy.createEl("strong", { text: decision.title });
+    summaryCopy.createEl("span", { cls: "caption", text: decision.body });
+    if (decision.codeBlock) {
+      summaryCopy.createEl("code", {
+        cls: "pf-defender-path-code",
+        text: decision.codeBlock,
       });
+    }
+
+    const runDecisionAction = (kind: string): void => {
+      switch (kind) {
+        case "cancel_install":
+          this._cancelRuntimePoll();
+          break;
+        case "copy_quarantine_path":
+          if (decision.codeBlock) {
+            void navigator.clipboard
+              ?.writeText?.(decision.codeBlock)
+              .then(() => {
+                new Notice(t("main_defender_path_copied"));
+              });
+          }
+          break;
+        case "dismiss_quarantine":
+          pfState.dismissQuarantineBanner?.();
+          break;
+        case "open_vault_upgrade":
+          void pfState.openUpgradeModal?.();
+          break;
+        case "dismiss_vault_upgrade":
+          pfState.dismissUpgradeBannerForSession?.();
+          this.display();
+          break;
+        case "start_setup_step1":
+          this._startSetupJourney(1);
+          break;
+        case "update_engine":
+          this._triggerRuntimeUpgrade();
+          break;
+        case "refresh_status":
+          this._refreshAllModules();
+          break;
+        case "repair_engine":
+          this._startSetupJourney(1, true);
+          break;
+        case "connect_zotero":
+          this._startSetupJourney(2);
+          break;
+        case "retry_sync":
+          this._runManualSync();
+          break;
+      }
+    };
+
+    if (decision.primaryAction || decision.secondaryAction) {
+      const actionRow = summaryEl.createDiv({ cls: "pf-cc-summary-actions" });
+      if (decision.primaryAction) {
+        const pAct = decision.primaryAction;
+        renderActionButton(actionRow, {
+          label: pAct.label,
+          onClick: () => runDecisionAction(pAct.kind),
+        });
+      }
+      if (decision.secondaryAction) {
+        const sAct = decision.secondaryAction;
+        renderActionButton(actionRow, {
+          label: sAct.label,
+          variant: "ghost",
+          onClick: () => runDecisionAction(sAct.kind),
+        });
+      }
     }
 
     const summaryMeta = summaryEl.createDiv({ cls: "pf-cc-summary-meta" });
@@ -4305,6 +4262,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("cc_refresh_btn") || "Refresh status",
     });
     refreshBtn.addEventListener("click", () => this._refreshAllModules());
+
+    if (this._pendingOrphans.length > 0 && decision.id === "ready") {
+      const oBanner = cc.createDiv({
+        cls: "pf-upgrade-banner pf-orphan-banner",
+        attr: { "data-pf-testid": "settings-orphan-banner" },
+      });
+      const copy = oBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-title",
+        text: t("orphan_banner_title").replace(
+          "{count}",
+          String(this._pendingOrphans.length)
+        ),
+      });
+      const reviewBtn = oBanner.createEl("button", {
+        cls: "pf-action-btn",
+        type: "button",
+        text: t("orphan_banner_btn"),
+        attr: { "data-pf-testid": "settings-orphan-review-btn" },
+      });
+      reviewBtn.addEventListener("click", () => {
+        this._openOrphanModal(this._pendingOrphans);
+      });
+    }
 
     // ── Group 1: Core Connection (Zotero Library + Runtime merged into 1 calm row) ──
     const coreHead = cc.createDiv({ cls: "pf-cc-section-head" });
@@ -6452,7 +6433,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           model: this.plugin.settings.vector_db_api_model ?? "",
         }
       );
-      if (r.migrated.length) results.push(`${kind}: migrated`);
+      if (r.migrated.length) {
+        results.push(
+          t("migrate_secret_migrated_ok").replace("{kind}", kind.toUpperCase())
+        );
+      }
       for (const w of r.warnings) results.push(w);
     }
   }
