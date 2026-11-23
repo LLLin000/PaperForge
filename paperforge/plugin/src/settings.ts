@@ -324,6 +324,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** True while a library sync or memory build is in flight. */
   _libraryRunning: boolean = false;
   private _displayInProgress: boolean = false;
+  private _isOpen: boolean = false;
+  private _readModelsDirty: boolean = false;
+  private _lastPersistedCapJson: string | null = null;
   _detailReturn: { tab: string; selector: string } | null = null;
   private _agentPlatformDraft: string | null = null;
 
@@ -394,8 +397,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.display();
   }
 
+  /** Re-render only when Settings modal is actually open (0 CPU/DOM churn in background). */
+  refreshIfOpen(): void {
+    if (!this._isOpen || this._displayInProgress) return;
+    this.display();
+  }
+
   display() {
+    this._isOpen = true;
     this._displayInProgress = true;
+    if (this._readModelsDirty) {
+      this._readModelsDirty = false;
+      this._overviewAutoProbedThisSession = false;
+    }
     const { containerEl } = this;
     containerEl.empty();
     containerEl.classList?.add("pf-settings-shell", "pf-settings-scope");
@@ -3654,9 +3668,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._persistCapabilityState();
   }
 
-  /** Persist capability state to plugin settings. */
+  /** Persist capability state to plugin settings (skips disk write when unchanged). */
   _persistCapabilityState(): void {
     if (!this._capabilityState) return;
+    const serialized = JSON.stringify(this._capabilityState);
+    if (serialized === this._lastPersistedCapJson) return;
+    this._lastPersistedCapJson = serialized;
     this.plugin.settings.capabilityState = this._capabilityState;
     this.plugin.saveSettings();
   }
@@ -4459,7 +4476,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-switch",
       attr: { "data-pf-testid": "settings-liquid-glass" },
     }) as HTMLInputElement;
-    glassSwitch.checked = this.plugin.settings.ui_liquid_glass !== false;
+    glassSwitch.checked = this.plugin.settings.ui_liquid_glass === true;
     glassSwitch.addEventListener("change", () => {
       this.plugin.settings.ui_liquid_glass = glassSwitch.checked;
       (
@@ -4699,8 +4716,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _refreshAllReadModels(
     lastLibraryExitCodeOrOpts?:
       | number
-      | { lastLibraryExitCode?: number; silent?: boolean }
+      | { lastLibraryExitCode?: number; silent?: boolean; background?: boolean }
   ): void {
+    const background =
+      typeof lastLibraryExitCodeOrOpts === "object" &&
+      lastLibraryExitCodeOrOpts?.background === true;
+    if (background && !this._isOpen) {
+      // Settings is closed: mark dirty without spawning Python probeAll or rebuilding hidden DOM
+      this._readModelsDirty = true;
+      return;
+    }
     const lastLibraryExitCode =
       typeof lastLibraryExitCodeOrOpts === "number"
         ? lastLibraryExitCodeOrOpts
@@ -6998,6 +7023,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** RC UX Seam P1: closing Settings ends the session — the next open must
    * resume the Setup Journey at the stage the user left. */
   hide(): void {
+    this._isOpen = false;
     this._setupJourneyDismissedForSession = false;
     this._attemptedProbes.delete("help");
     super.hide();

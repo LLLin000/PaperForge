@@ -1,6 +1,23 @@
 {
   "versions": [
     {
+      "version": "2.0.6",
+      "date": "2026-11-24",
+      "title": "极致低占用与零卡顿性能优化 · 消除启动阻塞与后台泄漏",
+      "breaking_or_migration": [],
+      "new_features": [
+        "启动零阻塞改造：将 configList 与后台检查移出 onload() 关键路径并延后至 onLayoutReady 空闲期，启动耗时从秒级降至毫秒级，不再在打开 Obsidian 瞬间并发拉起多个 Python 进程",
+        "Zotero 零开销指纹门禁：定时自动同步前先以异步 stat() 检查 zotero.sqlite/wal 变更指纹，数据库未变动时完全跳过 Python 同步（空闲态 0% CPU、0 MB 额外内存）",
+        "原生守护进程完整性校验改为异步流式 SHA-256（不再阻塞 Electron 主线程），本地完好时 12 小时内免重复远程请求"
+      ],
+      "fixes": [
+        "修复设置页在未打开时仍被后台事件反复触发 probeAll 与重绘 DOM 的性能浪费，现在设置页关闭时仅标脏、打开时再刷新",
+        "修复 Companion 侧栏关闭时未正确调用 offref() 导致 active-leaf-change 与 vault.modify 监听器永久叠加泄漏的问题",
+        "默认关闭高 GPU 开销的液态玻璃大半径模糊（改为零模糊纯色高性能模式，可在「外观」按需开启），并移除全局 .modal:has(...) 选择器与 Base 视图多余重绘"
+      ],
+      "recommended_actions": []
+    },
+    {
       "version": "2.0.5",
       "date": "2026-11-24",
       "title": "设置中心极简分页重构 · Base 文献工作台 60fps 性能与视觉精修",

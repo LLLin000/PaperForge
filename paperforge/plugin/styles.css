@@ -12508,23 +12508,20 @@ input[type="checkbox"].pf-switch:checked::after {
   background: var(--pf-elevated) !important;
 }
 
-/* Solid Dark Mode Modals (prevents see-through bleed-over on dense settings/tables) */
-.theme-dark .modal.pf-modal,
-.theme-dark
-  .modal-container
-  .modal:has(.pf-diag-fulltext-modal, .pf-memory-history-list) {
+/* Solid Dark Mode Modals (explicit class, zero expensive global :has() DOM scan) */
+.theme-dark .modal.pf-modal {
   background: var(--pf-surface) !important;
   border: 1px solid var(--pf-border-strong) !important;
   border-radius: var(--pf-radius-dialog, 12px) !important;
 }
 
-/* 3. Liquid Glass v2: Light Frost + Dark Smoked Clear (toolbars & popovers only) */
+/* 3. Lightweight Opt-In Liquid Glass (disabled by default via body.pf-no-glass for max FPS) */
 body:not(.pf-no-glass) :is(.pf-pdf-toolbar, .pf-pdf-markup-bar) {
   background: var(--pf-glass-bg) !important;
   border-bottom: 1px solid var(--pf-glass-border) !important;
   box-shadow: var(--pf-glass-highlight) !important;
-  backdrop-filter: blur(22px) saturate(185%) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(185%) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
 }
 
 body:not(.pf-no-glass)
@@ -12537,8 +12534,8 @@ body:not(.pf-no-glass)
   background: var(--pf-glass-panel) !important;
   border: 1px solid var(--pf-glass-border) !important;
   box-shadow: var(--pf-glass-highlight), var(--pf-shadow-float) !important;
-  backdrop-filter: blur(22px) saturate(185%) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(185%) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
 }
 
 body.pf-no-glass

@@ -327,6 +327,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
 
   // Performance & surgical update state
   private _searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _rafRenderId: number | null = null;
   private _loadMoreObserver: IntersectionObserver | null = null;
   private _selectionSlotEl: HTMLElement | null = null;
   private _tbodyEl: HTMLElement | null = null;
@@ -469,6 +470,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       clearTimeout(this._searchDebounceTimer);
       this._searchDebounceTimer = null;
     }
+    if (
+      this._rafRenderId !== null &&
+      typeof cancelAnimationFrame === "function"
+    ) {
+      cancelAnimationFrame(this._rafRenderId);
+      this._rafRenderId = null;
+    }
     this._disconnectLoadMoreObserver();
     const app = this.app ?? this.plugin.app;
     const ws = app?.workspace as unknown as {
@@ -480,6 +488,23 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     this._stateRef = null;
   }
 
+  private _scheduleRender(): void {
+    if (
+      typeof requestAnimationFrame === "function" &&
+      this.containerEl?.isConnected
+    ) {
+      if (this._rafRenderId !== null) return;
+      this._rafRenderId = requestAnimationFrame(() => {
+        this._rafRenderId = null;
+        if (this.containerEl?.isConnected) {
+          this.render();
+        }
+      });
+      return;
+    }
+    this.render();
+  }
+
   onDataUpdated(): void {
     if (!this.plugin.getBaseSnapshotCache() && !this._loadingSnapshot) {
       this._loadingSnapshot = true;
@@ -488,10 +513,10 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         .catch(() => null)
         .finally(() => {
           this._loadingSnapshot = false;
-          this.render();
+          this._scheduleRender();
         });
     }
-    this.render();
+    this._scheduleRender();
   }
 
   private _disconnectLoadMoreObserver(): void {

@@ -1,9 +1,9 @@
 {
   "id": "paperforge",
   "name": "PaperForge",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "minAppVersion": "1.11.4",
-  "minEngineVersion": "2.0.5",
+  "minEngineVersion": "2.0.6",
   "description": "Zotero literature pipeline. Sync PDFs, run OCR, and read with AI-assisted deep reading.",
   "author": "Lin Zhaoxuan",
   "authorUrl": "https://github.com/LLLin000",
