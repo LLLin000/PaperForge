@@ -2023,20 +2023,30 @@ describe("Issue #356 recovery: openSetupJourney", () => {
     // Coalesced single background probeAll instead of 5 separate _probeModule bursts
     expect(probeAllMock).toHaveBeenCalledTimes(1);
 
-    // 4 clean grouped accordion rows instead of 5 sub-page cards
-    const heads = root.querySelectorAll<HTMLElement>(".pf-cc-accordion-head");
-    expect(heads).toHaveLength(4);
+    // 5 crisp 1-line module navigation rows on Overview (zero inline drawer clutter)
+    const navRows = root.querySelectorAll<HTMLElement>(".pf-cc-nav-row");
+    expect(navRows).toHaveLength(5);
+    expect(root.querySelector(".pf-cc-inline-drawer")).toBeNull();
+    // 4 clean topbar tabs: Overview, Modules, Appearance, Help
+    const topbarTabs = root.querySelectorAll<HTMLElement>(".pf-cc-topbar-tab");
+    expect(topbarTabs).toHaveLength(4);
 
-    // Clicking OCR expands inline config without navigating away from overview
-    const ocrHead = root.querySelector<HTMLElement>(
-      '.pf-cc-accordion-head[data-module="ocr"]'
+    // Clicking OCR navigates cleanly to dedicated Module Detail page (ocr)
+    const ocrRow = root.querySelector<HTMLElement>(
+      '.pf-cc-nav-row[data-module="ocr"]'
     );
-    ocrHead?.click();
-    expect(tab.activeTab).toBe("overview");
+    ocrRow?.click();
+    expect(tab.activeTab).toBe("module-detail");
+    expect(tab._selectedDetailModule).toBe("ocr");
+
+    // Dedicated Appearance tab hosts theme/glass/motion controls away from Overview
+    const appearanceTab = root.querySelector<HTMLElement>(
+      '.pf-cc-topbar-tab[data-pf-tab="appearance"]'
+    );
+    appearanceTab?.click();
+    expect(tab.activeTab).toBe("appearance");
     expect(
-      root.querySelector(
-        '.pf-cc-accordion-item[data-module="ocr"] .pf-cc-inline-drawer.is-open'
-      )
+      root.querySelector('[data-pf-testid="settings-theme-mode"]')
     ).toBeTruthy();
   });
 });

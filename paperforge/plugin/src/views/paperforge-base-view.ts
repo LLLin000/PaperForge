@@ -99,11 +99,12 @@ function categoricalColor(label: string): string {
 }
 
 function mkEl<K extends keyof HTMLElementTagNameMap>(
-  parent: HTMLElement,
+  parent: Node,
   tag: K,
   opts?: { cls?: string; text?: string; attr?: Record<string, string> }
 ): HTMLElementTagNameMap[K] {
-  const el = (parent.ownerDocument || document).createElement(tag);
+  const doc = parent.ownerDocument || document;
+  const el = doc.createElement(tag);
   if (opts?.cls) {
     for (const c of opts.cls.split(/\s+/).filter(Boolean)) {
       el.classList.add(c);
@@ -133,9 +134,32 @@ function readValueString(val: unknown): string {
   return s === "null" || s === "undefined" || s === "[object Object]" ? "" : s;
 }
 
+/** O(1) main_note_path index cached per snapshot object (eliminates O(N²) render scan). */
+const PATH_INDEX_CACHE = new WeakMap<
+  BaseTableSnapshotDto,
+  Map<string, BasePaperRowDto>
+>();
+
+function getPathIndex(
+  snapshot: BaseTableSnapshotDto | null
+): Map<string, BasePaperRowDto> {
+  if (!snapshot || !snapshot.rows) return new Map();
+  let idx = PATH_INDEX_CACHE.get(snapshot);
+  if (idx) return idx;
+  idx = new Map();
+  for (const row of Object.values(snapshot.rows)) {
+    if (row.main_note_path) {
+      idx.set(row.main_note_path.replace(/\\/g, "/"), row);
+    }
+  }
+  PATH_INDEX_CACHE.set(snapshot, idx);
+  return idx;
+}
+
 function resolveRowForEntry(
   entry: obsidian.BasesEntry,
-  rowsByKey: Record<string, BasePaperRowDto>
+  rowsByKey: Record<string, BasePaperRowDto>,
+  pathIndex: Map<string, BasePaperRowDto>
 ): BasePaperRowDto | null {
   try {
     const val = entry.getValue?.("note.zotero_key" as obsidian.BasesPropertyId);
@@ -148,14 +172,8 @@ function resolveRowForEntry(
   }
   const entryPath = (entry.file?.path || "").replace(/\\/g, "/");
   if (entryPath) {
-    for (const row of Object.values(rowsByKey)) {
-      if (
-        row.main_note_path &&
-        row.main_note_path.replace(/\\/g, "/") === entryPath
-      ) {
-        return row;
-      }
-    }
+    const byPath = pathIndex.get(entryPath);
+    if (byPath) return byPath;
   }
   const baseName = entry.file?.basename || "";
   if (baseName) {
@@ -221,6 +239,10 @@ interface RenderGroup {
   items: RenderItem[];
 }
 
+type RenderSlot =
+  | { kind: "group"; label: string; count: number }
+  | { kind: "row"; item: RenderItem; flatIndex: number };
+
 interface ColumnSpec {
   id: obsidian.BasesPropertyId;
   key: string;
@@ -250,6 +272,43 @@ function defaultColumnLabel(key: string): string | undefined {
 
 const NUMERIC_COLUMNS = new Set(["year", "impact_factor", "annotations"]);
 
+/** Fixed pixel widths for compact scalar/badge columns. */
+const FIXED_COL_WIDTHS: Record<string, string> = {
+  year: "58px",
+  impact_factor: "62px",
+  annotations: "118px",
+  ocr_status: "108px",
+  has_pdf: "52px",
+  deep_reading_status: "78px",
+};
+
+/** Relative weights for flexible text columns (keeps Title snug next to Column 2). */
+const FLEX_COL_WEIGHTS: Record<string, number> = {
+  title: 3.4,
+  "file.name": 3.4,
+  journal: 1.5,
+  first_author: 1.25,
+  domain: 1.05,
+};
+
+function computeColumnWidths(columns: ColumnSpec[]): string[] {
+  let totalWeight = 0;
+  for (const c of columns) {
+    if (!FIXED_COL_WIDTHS[c.key]) {
+      totalWeight += FLEX_COL_WEIGHTS[c.key] ?? 1.1;
+    }
+  }
+  return columns.map((c) => {
+    if (FIXED_COL_WIDTHS[c.key]) return FIXED_COL_WIDTHS[c.key];
+    const w = FLEX_COL_WEIGHTS[c.key] ?? 1.1;
+    const pct = totalWeight > 0 ? (w / totalWeight) * 100 : 20;
+    return `${pct.toFixed(1)}%`;
+  });
+}
+
+const INITIAL_CHUNK_SIZE = 80;
+const LOAD_MORE_CHUNK_SIZE = 80;
+
 export class PaperForgeBasesView extends RuntimeBasesView {
   type = VIEW_TYPE_PF_BASE_TABLE;
   declare app: obsidian.App;
@@ -266,6 +325,18 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _localFilters: BaseFilterState | null = null;
   private _missingPdfHintDismissed = false;
 
+  // Performance & surgical update state
+  private _searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _loadMoreObserver: IntersectionObserver | null = null;
+  private _selectionSlotEl: HTMLElement | null = null;
+  private _tbodyEl: HTMLElement | null = null;
+  private _selectAllCbEl: HTMLInputElement | null = null;
+  private _currentFlatItems: RenderItem[] = [];
+  private _currentSlots: RenderSlot[] = [];
+  private _currentColumns: ColumnSpec[] = [];
+  private _renderedSlotCount = 0;
+  private _renderedPaperCount = 0;
+
   private _filterKey(): string {
     return (
       (
@@ -281,7 +352,10 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     return this._localFilters;
   }
 
-  private _updateFilters(patch: Partial<BaseFilterState>): void {
+  private _updateFilters(
+    patch: Partial<BaseFilterState>,
+    opts?: { preserveSearchFocus?: boolean }
+  ): void {
     const next: BaseFilterState = { ...this._getFilters(), ...patch };
     if (!next.query) delete next.query;
     if (!next.domain) delete next.domain;
@@ -290,6 +364,28 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     if (!next.minIf || next.minIf <= 0) delete next.minIf;
     this._localFilters = next;
     this.plugin.setBaseFilters?.(this._filterKey(), next);
+
+    if (opts?.preserveSearchFocus) {
+      const active = this.containerEl?.ownerDocument
+        ?.activeElement as HTMLInputElement | null;
+      const selStart = active?.selectionStart ?? null;
+      const selEnd = active?.selectionEnd ?? null;
+      this.render();
+      const restored = this.containerEl?.querySelector<HTMLInputElement>(
+        '[data-pf-testid="base-filter-search"]'
+      );
+      if (restored) {
+        restored.focus();
+        if (selStart !== null && selEnd !== null) {
+          try {
+            restored.setSelectionRange(selStart, selEnd);
+          } catch {
+            // ignore
+          }
+        }
+      }
+      return;
+    }
     this.render();
   }
 
@@ -369,6 +465,11 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   }
 
   onunload(): void {
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    this._disconnectLoadMoreObserver();
     const app = this.app ?? this.plugin.app;
     const ws = app?.workspace as unknown as {
       offref?: (ref: obsidian.EventRef) => void;
@@ -393,8 +494,16 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     this.render();
   }
 
+  private _disconnectLoadMoreObserver(): void {
+    if (this._loadMoreObserver) {
+      this._loadMoreObserver.disconnect();
+      this._loadMoreObserver = null;
+    }
+  }
+
   private _collectGroups(snapshot: BaseTableSnapshotDto | null): RenderGroup[] {
     const rowsByKey = snapshot?.rows ?? {};
+    const pathIndex = getPathIndex(snapshot);
     const grouped = this.data?.groupedData;
     if (
       Array.isArray(grouped) &&
@@ -407,7 +516,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         const items: RenderItem[] = [];
         for (const entry of grp.entries ?? []) {
           const matched =
-            resolveRowForEntry(entry, rowsByKey) ??
+            resolveRowForEntry(entry, rowsByKey, pathIndex) ??
             stubRowForEntry(entry, snapshot);
           if (matched && !seen.has(matched.zotero_key)) {
             seen.add(matched.zotero_key);
@@ -431,7 +540,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       const seen = new Set<string>();
       for (const entry of entries) {
         const matched =
-          resolveRowForEntry(entry, rowsByKey) ??
+          resolveRowForEntry(entry, rowsByKey, pathIndex) ??
           stubRowForEntry(entry, snapshot);
         if (matched && !seen.has(matched.zotero_key)) {
           seen.add(matched.zotero_key);
@@ -465,7 +574,6 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         ? [...rawOrder]
         : fallbackOrder;
 
-    // Exclude legacy frontmatter workflow flags from main table clutter even if present in old YAML
     const filtered = order.filter((propId) => {
       const clean = String(propId).replace(/^(note|file|formula)\./, "");
       return (
@@ -589,6 +697,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _renderFilterBar(
     root: HTMLElement,
     rawItems: RenderItem[],
+    matchedCount: number,
     filters: BaseFilterState
   ): void {
     const bar = mkEl(root, "div", {
@@ -609,7 +718,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       )
     ).sort();
 
-    // 1. Live keyword filter
+    // 1. Live keyword filter (debounced live filtering + immediate Enter/change)
     const searchInput = mkEl(bar, "input", {
       cls: "pf-base-filter-search",
       attr: {
@@ -619,12 +728,33 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       },
     }) as HTMLInputElement;
     searchInput.value = filters.query || "";
+    searchInput.addEventListener("input", () => {
+      if (this._searchDebounceTimer) clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = setTimeout(() => {
+        this._searchDebounceTimer = null;
+        this._updateFilters(
+          { query: searchInput.value.trim() },
+          { preserveSearchFocus: true }
+        );
+      }, 150);
+    });
     searchInput.addEventListener("change", () => {
+      if (this._searchDebounceTimer) {
+        clearTimeout(this._searchDebounceTimer);
+        this._searchDebounceTimer = null;
+      }
       this._updateFilters({ query: searchInput.value.trim() });
     });
     searchInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        this._updateFilters({ query: searchInput.value.trim() });
+        if (this._searchDebounceTimer) {
+          clearTimeout(this._searchDebounceTimer);
+          this._searchDebounceTimer = null;
+        }
+        this._updateFilters(
+          { query: searchInput.value.trim() },
+          { preserveSearchFocus: true }
+        );
       }
     });
 
@@ -717,7 +847,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
 
     if (this._hasActiveFilters(filters)) {
       const reset = mkEl(bar, "button", {
-        cls: "pf-btn pf-btn-ghost",
+        cls: "pf-btn pf-btn-ghost pf-base-filter-reset",
         text: t("base_filter_reset"),
         attr: { type: "button", "data-pf-testid": "base-filter-reset" },
       });
@@ -731,6 +861,127 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         });
       });
     }
+
+    // Subtle right-aligned count indicator
+    const countLabel = this._hasActiveFilters(filters)
+      ? t("base_count_filtered")
+          .replace("{shown}", String(matchedCount))
+          .replace("{total}", String(rawItems.length))
+      : t("base_count_total").replace("{n}", String(rawItems.length));
+    mkEl(bar, "span", {
+      cls: "pf-base-filter-count pf-tnum",
+      text: countLabel,
+    });
+  }
+
+  /** Surgical selection update: updates only selection bar + affected TR classes (<0.4ms). */
+  private _syncSelectionUi(): void {
+    const flatItems = this._currentFlatItems;
+    if (this._tbodyEl) {
+      const rows =
+        this._tbodyEl.querySelectorAll<HTMLTableRowElement>("tr.pf-base-row");
+      for (const tr of Array.from(rows)) {
+        const key = tr.getAttribute("data-paper-key") || "";
+        const sel = this._selectedKeys.has(key);
+        tr.classList.toggle("is-selected", sel);
+        const cb = tr.querySelector<HTMLInputElement>(
+          "input[data-pf-select-key]"
+        );
+        if (cb && cb.checked !== sel) cb.checked = sel;
+      }
+    }
+    if (this._selectAllCbEl) {
+      const count = this._selectedKeys.size;
+      this._selectAllCbEl.checked =
+        flatItems.length > 0 && count === flatItems.length;
+      this._selectAllCbEl.indeterminate = count > 0 && count < flatItems.length;
+    }
+    if (this._selectionSlotEl) {
+      this._renderSelectionBar(this._selectionSlotEl, flatItems);
+    }
+  }
+
+  private _renderSelectionBar(
+    slot: HTMLElement,
+    flatItems: RenderItem[]
+  ): void {
+    slot.textContent = "";
+    const selectedItems = flatItems.filter((it) =>
+      this._selectedKeys.has(it.row.zotero_key)
+    );
+    const selectedKeys = selectedItems.map((it) => it.row.zotero_key);
+    if (selectedKeys.length === 0) return;
+
+    const bar = mkEl(slot, "div", {
+      cls: "pf-base-selection-bar",
+      attr: { "data-pf-testid": "base-selection-bar" },
+    });
+    const left = mkEl(bar, "div", { cls: "pf-base-selection-left" });
+    mkEl(left, "span", {
+      cls: "pf-base-selection-count pf-tnum",
+      text: t("base_selected_count").replace(
+        "{n}",
+        String(selectedKeys.length)
+      ),
+    });
+    const clearBtn = mkEl(left, "button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: t("base_clear_selection"),
+      attr: { type: "button", "data-pf-testid": "base-clear-selection" },
+    });
+    clearBtn.addEventListener("click", () => {
+      this._selectedKeys.clear();
+      this._lastSelectedIdx = null;
+      this._syncSelectionUi();
+    });
+
+    const right = mkEl(bar, "div", { cls: "pf-base-selection-actions" });
+    if (selectedItems.length === 1 && selectedItems[0].row.has_pdf) {
+      const openPdfBtn = mkEl(right, "button", {
+        cls: "pf-btn",
+        text: t("base_open_pdf"),
+        attr: { type: "button", "data-pf-testid": "base-selection-open-pdf" },
+      });
+      openPdfBtn.addEventListener("click", () => {
+        void this.plugin.openPaperPdf(selectedItems[0].row.zotero_key);
+      });
+    }
+    const diagTarget = selectedItems.find(
+      (it) =>
+        it.row.needs_diagnostic ||
+        it.row.ocr_status === "failed" ||
+        it.row.ocr_status === "done_incomplete"
+    );
+    if (diagTarget) {
+      const diagBtn = mkEl(right, "button", {
+        cls: "pf-btn",
+        text: t("base_open_diag"),
+        attr: { type: "button", "data-pf-testid": "base-open-diag" },
+      });
+      diagBtn.addEventListener("click", () => {
+        this.plugin.openOcrDiagnostic(diagTarget.row.zotero_key);
+      });
+    }
+    const syncBtn = mkEl(right, "button", {
+      cls: "pf-btn",
+      text: t("base_sync_library"),
+      attr: { type: "button", "data-pf-testid": "base-sync-library" },
+    });
+    syncBtn.addEventListener("click", () => {
+      this.plugin.triggerManualSync();
+    });
+
+    const parseBtn = mkEl(right, "button", {
+      cls: "pf-btn mod-cta",
+      text: t("base_run_selected_ocr"),
+      attr: { type: "button", "data-pf-testid": "base-run-selected-ocr" },
+    });
+    parseBtn.addEventListener("click", () => {
+      void this.plugin.requestOcrRun({
+        kind: "papers",
+        keys: selectedKeys,
+      });
+    });
   }
 
   private _renderCell(
@@ -770,22 +1021,25 @@ export class PaperForgeBasesView extends RuntimeBasesView {
             attr: { "aria-hidden": "true" },
           });
         }
-        const titleBtn = mkEl(titleWrap, "button", {
+        // Semantic <a> link (never <button>) so Obsidian never paints boxed button chrome around titles
+        const titleLink = mkEl(titleWrap, "a", {
           cls: "pf-base-title-link",
           text: row.title || row.zotero_key,
           attr: {
-            type: "button",
+            href: "#",
+            role: "link",
             "data-pf-testid": "base-open-note",
             title: row.title || row.zotero_key,
           },
         });
-        titleBtn.addEventListener("click", (e) => {
+        titleLink.addEventListener("click", (e) => {
+          e.preventDefault();
           e.stopPropagation();
           this._openNote(row.main_note_path);
         });
         bindObsidianHoverPreview(
           this.app ?? this.plugin.app,
-          titleBtn,
+          titleLink,
           "paperforge",
           row.main_note_path
         );
@@ -795,6 +1049,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         mkEl(td, "span", {
           cls: "pf-base-text-ellipsis",
           text: row.first_author || "—",
+          attr: row.first_author ? { title: row.first_author } : undefined,
         });
         break;
       case "year":
@@ -804,6 +1059,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         mkEl(td, "span", {
           cls: "pf-base-text-ellipsis pf-base-muted",
           text: row.journal || "—",
+          attr: row.journal ? { title: row.journal } : undefined,
         });
         break;
       case "impact_factor": {
@@ -835,10 +1091,16 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         if (!row.domain) {
           mkEl(td, "span", { cls: "pf-base-muted", text: "—" });
         } else {
-          const domWrap = mkEl(td, "span", { cls: "pf-base-domain-chip" });
+          const domWrap = mkEl(td, "span", {
+            cls: "pf-base-domain-chip",
+            attr: { title: row.domain },
+          });
           const dot = mkEl(domWrap, "span", { cls: "pf-base-dot" });
           dot.style.background = categoricalColor(row.domain);
-          mkEl(domWrap, "span", { text: row.domain });
+          mkEl(domWrap, "span", {
+            cls: "pf-base-domain-label",
+            text: row.domain,
+          });
         }
         break;
       }
@@ -877,10 +1139,137 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         break;
       default: {
         const val = readValueString(entry?.getValue?.(col.id));
-        td.textContent = val || "—";
-        if (!val) td.classList.add("pf-base-muted");
+        mkEl(td, "span", {
+          cls: val ? "pf-base-text-ellipsis" : "pf-base-muted",
+          text: val || "—",
+          attr: val ? { title: val } : undefined,
+        });
         break;
       }
+    }
+  }
+
+  /** Append the next chunk of rows in a single DocumentFragment for silky 60fps scrolling. */
+  private _appendNextChunk(chunkSize: number): void {
+    const tbody = this._tbodyEl;
+    if (!tbody) return;
+    this._disconnectLoadMoreObserver();
+    const existingSentinel = tbody.querySelector("tr.pf-base-load-more-row");
+    if (existingSentinel) existingSentinel.remove();
+
+    const doc = tbody.ownerDocument || document;
+    const frag = doc.createDocumentFragment();
+    const columns = this._currentColumns;
+    const totalColSpan = columns.length + 1;
+    let papersAppended = 0;
+
+    while (
+      this._renderedSlotCount < this._currentSlots.length &&
+      papersAppended < chunkSize
+    ) {
+      const slot = this._currentSlots[this._renderedSlotCount++];
+      if (slot.kind === "group") {
+        const gTr = mkEl(frag, "tr", { cls: "pf-base-group-row" });
+        const gTd = mkEl(gTr, "td", {
+          attr: { colspan: String(totalColSpan) },
+        });
+        const gWrap = mkEl(gTd, "div", { cls: "pf-base-group-head" });
+        const gDot = mkEl(gWrap, "span", { cls: "pf-base-dot" });
+        gDot.style.background = categoricalColor(slot.label);
+        mkEl(gWrap, "span", {
+          cls: "pf-base-group-name",
+          text: slot.label,
+        });
+        mkEl(gWrap, "span", {
+          cls: "pf-base-group-count pf-tnum",
+          text: t("base_group_count").replace("{n}", String(slot.count)),
+        });
+        continue;
+      }
+
+      papersAppended += 1;
+      this._renderedPaperCount += 1;
+      const { item, flatIndex } = slot;
+      const row = item.row;
+      const isSelected = this._selectedKeys.has(row.zotero_key);
+      const tr = mkEl(frag, "tr", {
+        cls: `pf-base-row${isSelected ? " is-selected" : ""}`,
+        attr: { "data-paper-key": row.zotero_key },
+      });
+      tr.addEventListener("contextmenu", (e) =>
+        this._openRowContextMenu(e, row)
+      );
+
+      const checkTd = mkEl(tr, "td", { cls: "pf-base-cell-check" });
+      const rowCb = mkEl(checkTd, "input", {
+        attr: {
+          type: "checkbox",
+          "data-pf-select-key": row.zotero_key,
+          "aria-label": row.title || row.zotero_key,
+        },
+      }) as HTMLInputElement;
+      rowCb.checked = isSelected;
+      rowCb.addEventListener("click", (e) => {
+        this._pendingShiftKey = e.shiftKey;
+      });
+      rowCb.addEventListener("change", () => {
+        const checked = rowCb.checked;
+        if (this._pendingShiftKey && this._lastSelectedIdx !== null) {
+          const start = Math.min(this._lastSelectedIdx, flatIndex);
+          const end = Math.max(this._lastSelectedIdx, flatIndex);
+          for (let idx = start; idx <= end; idx += 1) {
+            const targetKey = this._currentFlatItems[idx]?.row.zotero_key;
+            if (!targetKey) continue;
+            if (checked) this._selectedKeys.add(targetKey);
+            else this._selectedKeys.delete(targetKey);
+          }
+        } else {
+          if (checked) this._selectedKeys.add(row.zotero_key);
+          else this._selectedKeys.delete(row.zotero_key);
+        }
+        this._pendingShiftKey = false;
+        this._lastSelectedIdx = flatIndex;
+        this._syncSelectionUi();
+      });
+
+      for (const col of columns) {
+        this._renderCell(tr, col, item);
+      }
+    }
+
+    const remainingPapers =
+      this._currentFlatItems.length - this._renderedPaperCount;
+    if (remainingPapers > 0) {
+      const sentinelTr = mkEl(frag, "tr", { cls: "pf-base-load-more-row" });
+      const sentinelTd = mkEl(sentinelTr, "td", {
+        attr: { colspan: String(totalColSpan) },
+      });
+      const moreBtn = mkEl(sentinelTd, "button", {
+        cls: "pf-base-load-more-btn",
+        text: t("base_load_more").replace(
+          "{remaining}",
+          String(remainingPapers)
+        ),
+        attr: { type: "button", "data-pf-testid": "base-load-more" },
+      });
+      moreBtn.addEventListener("click", () => {
+        this._appendNextChunk(LOAD_MORE_CHUNK_SIZE);
+      });
+      tbody.appendChild(frag);
+
+      if (typeof IntersectionObserver !== "undefined") {
+        this._loadMoreObserver = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._appendNextChunk(LOAD_MORE_CHUNK_SIZE);
+            }
+          },
+          { rootMargin: "420px 0px" }
+        );
+        this._loadMoreObserver.observe(sentinelTr);
+      }
+    } else {
+      tbody.appendChild(frag);
     }
   }
 
@@ -924,7 +1313,11 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   render(): void {
     const root = this.containerEl;
     if (!root) return;
-    root.innerHTML = "";
+    this._disconnectLoadMoreObserver();
+    this._tbodyEl = null;
+    this._selectionSlotEl = null;
+    this._selectAllCbEl = null;
+    root.textContent = "";
     root.classList.add("pf-base-view-root");
     const compact = this.config?.get?.("compact_rows") === true;
     root.classList.toggle("is-compact", compact);
@@ -947,10 +1340,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       if (!visibleKeySet.has(k)) this._selectedKeys.delete(k);
     }
 
-    const selectedItems = flatItems.filter((it) =>
-      this._selectedKeys.has(it.row.zotero_key)
-    );
-    const selectedKeys = selectedItems.map((it) => it.row.zotero_key);
+    this._currentFlatItems = flatItems;
 
     // Subtle runtime activity strip (only shown while an OCR batch is active)
     const activeProg = this.plugin._ocrProgress;
@@ -976,11 +1366,10 @@ export class PaperForgeBasesView extends RuntimeBasesView {
 
     // Persistent multi-filter bar (survives Obsidian view switches & restarts)
     if (rawFlatItems.length > 0 || this._hasActiveFilters(filters)) {
-      this._renderFilterBar(root, rawFlatItems, filters);
+      this._renderFilterBar(root, rawFlatItems, flatItems.length, filters);
     }
 
     // Calm diagnostic banner when >=50% of synced papers have no local PDF
-    // (common with Zotero cloud-only sync or unconfigured ZotFile/Attanger base dir).
     if (
       snapshot &&
       !this._missingPdfHintDismissed &&
@@ -1054,83 +1443,29 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       return;
     }
 
-    // Contextual Multi-Select Header Bar (appears strictly when >=1 row selected)
-    if (selectedKeys.length > 0) {
-      const bar = mkEl(root, "div", {
-        cls: "pf-base-selection-bar",
-        attr: { "data-pf-testid": "base-selection-bar" },
-      });
-      const left = mkEl(bar, "div", { cls: "pf-base-selection-left" });
-      mkEl(left, "span", {
-        cls: "pf-base-selection-count pf-tnum",
-        text: t("base_selected_count").replace(
-          "{n}",
-          String(selectedKeys.length)
-        ),
-      });
-      const clearBtn = mkEl(left, "button", {
-        cls: "pf-btn pf-btn-ghost",
-        text: t("base_clear_selection"),
-        attr: { type: "button", "data-pf-testid": "base-clear-selection" },
-      });
-      clearBtn.addEventListener("click", () => {
-        this._selectedKeys.clear();
-        this._lastSelectedIdx = null;
-        this.render();
-      });
-
-      const right = mkEl(bar, "div", { cls: "pf-base-selection-actions" });
-      if (selectedItems.length === 1 && selectedItems[0].row.has_pdf) {
-        const openPdfBtn = mkEl(right, "button", {
-          cls: "pf-btn",
-          text: t("base_open_pdf"),
-          attr: { type: "button", "data-pf-testid": "base-selection-open-pdf" },
-        });
-        openPdfBtn.addEventListener("click", () => {
-          void this.plugin.openPaperPdf(selectedItems[0].row.zotero_key);
-        });
-      }
-      const diagTarget = selectedItems.find(
-        (it) =>
-          it.row.needs_diagnostic ||
-          it.row.ocr_status === "failed" ||
-          it.row.ocr_status === "done_incomplete"
-      );
-      if (diagTarget) {
-        const diagBtn = mkEl(right, "button", {
-          cls: "pf-btn",
-          text: t("base_open_diag"),
-          attr: { type: "button", "data-pf-testid": "base-open-diag" },
-        });
-        diagBtn.addEventListener("click", () => {
-          this.plugin.openOcrDiagnostic(diagTarget.row.zotero_key);
-        });
-      }
-      const syncBtn = mkEl(right, "button", {
-        cls: "pf-btn",
-        text: t("base_sync_library"),
-        attr: { type: "button", "data-pf-testid": "base-sync-library" },
-      });
-      syncBtn.addEventListener("click", () => {
-        this.plugin.triggerManualSync();
-      });
-
-      const parseBtn = mkEl(right, "button", {
-        cls: "pf-btn mod-cta",
-        text: t("base_run_selected_ocr"),
-        attr: { type: "button", "data-pf-testid": "base-run-selected-ocr" },
-      });
-      parseBtn.addEventListener("click", () => {
-        void this.plugin.requestOcrRun({
-          kind: "papers",
-          keys: selectedKeys,
-        });
-      });
-    }
+    // Contextual Multi-Select Header Bar slot (surgically updated on checkbox toggle)
+    this._selectionSlotEl = mkEl(root, "div", {
+      cls: "pf-base-selection-slot",
+    });
+    this._renderSelectionBar(this._selectionSlotEl, flatItems);
 
     const columns = this._resolveColumns();
+    this._currentColumns = columns;
+    const colWidths = computeColumnWidths(columns);
+
     const wrap = mkEl(root, "div", { cls: "pf-base-table-wrap" });
     const table = mkEl(wrap, "table", { cls: "pf-base-table" });
+
+    // Proportional fixed column layout — prevents giant gap between Title and Column 2
+    const colgroup = mkEl(table, "colgroup");
+    const checkCol = mkEl(colgroup, "col", { cls: "pf-base-colgroup-check" });
+    checkCol.style.width = "34px";
+    columns.forEach((col, i) => {
+      const colEl = mkEl(colgroup, "col", {
+        cls: `pf-base-colgroup-${col.key.replace(/[^a-z0-9_-]/gi, "-")}`,
+      });
+      colEl.style.width = colWidths[i];
+    });
 
     // Header Row: Checkbox column + Dynamic Base Columns
     const thead = mkEl(table, "thead");
@@ -1143,10 +1478,11 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         "data-pf-testid": "base-select-all",
       },
     }) as HTMLInputElement;
+    this._selectAllCbEl = selectAllCb;
     selectAllCb.checked =
-      flatItems.length > 0 && selectedKeys.length === flatItems.length;
+      flatItems.length > 0 && this._selectedKeys.size === flatItems.length;
     selectAllCb.indeterminate =
-      selectedKeys.length > 0 && selectedKeys.length < flatItems.length;
+      this._selectedKeys.size > 0 && this._selectedKeys.size < flatItems.length;
     selectAllCb.addEventListener("change", () => {
       if (selectAllCb.checked) {
         for (const it of flatItems) this._selectedKeys.add(it.row.zotero_key);
@@ -1154,87 +1490,41 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         this._selectedKeys.clear();
       }
       this._lastSelectedIdx = null;
-      this.render();
+      this._syncSelectionUi();
     });
 
     for (const col of columns) {
       mkEl(headRow, "th", {
-        cls: col.numeric ? "is-num" : "",
+        cls: [
+          `pf-base-th-${col.key.replace(/[^a-z0-9_-]/gi, "-")}`,
+          col.numeric ? "is-num" : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
         text: col.label,
       });
     }
 
-    const tbody = mkEl(table, "tbody");
+    // Flatten groups + items into render slots for chunked progressive DOM streaming
+    const slots: RenderSlot[] = [];
     let flatIdx = 0;
-    const totalColSpan = columns.length + 1;
-
     for (const grp of groups) {
       if (grp.groupLabel !== null) {
-        const gTr = mkEl(tbody, "tr", { cls: "pf-base-group-row" });
-        const gTd = mkEl(gTr, "td", {
-          attr: { colspan: String(totalColSpan) },
-        });
-        const gWrap = mkEl(gTd, "div", { cls: "pf-base-group-head" });
-        const gDot = mkEl(gWrap, "span", { cls: "pf-base-dot" });
-        gDot.style.background = categoricalColor(grp.groupLabel);
-        mkEl(gWrap, "span", {
-          cls: "pf-base-group-name",
-          text: grp.groupLabel,
-        });
-        mkEl(gWrap, "span", {
-          cls: "pf-base-group-count pf-tnum",
-          text: t("base_group_count").replace("{n}", String(grp.items.length)),
+        slots.push({
+          kind: "group",
+          label: grp.groupLabel,
+          count: grp.items.length,
         });
       }
-
       for (const item of grp.items) {
-        const row = item.row;
-        const rowIndex = flatIdx++;
-        const isSelected = this._selectedKeys.has(row.zotero_key);
-        const tr = mkEl(tbody, "tr", {
-          cls: `pf-base-row${isSelected ? " is-selected" : ""}`,
-          attr: { "data-paper-key": row.zotero_key },
-        });
-        tr.addEventListener("contextmenu", (e) =>
-          this._openRowContextMenu(e, row)
-        );
-
-        const checkTd = mkEl(tr, "td", { cls: "pf-base-cell-check" });
-        const rowCb = mkEl(checkTd, "input", {
-          attr: {
-            type: "checkbox",
-            "data-pf-select-key": row.zotero_key,
-            "aria-label": row.title || row.zotero_key,
-          },
-        }) as HTMLInputElement;
-        rowCb.checked = isSelected;
-        rowCb.addEventListener("click", (e) => {
-          this._pendingShiftKey = e.shiftKey;
-        });
-        rowCb.addEventListener("change", () => {
-          const checked = rowCb.checked;
-          if (this._pendingShiftKey && this._lastSelectedIdx !== null) {
-            const start = Math.min(this._lastSelectedIdx, rowIndex);
-            const end = Math.max(this._lastSelectedIdx, rowIndex);
-            for (let idx = start; idx <= end; idx += 1) {
-              const targetKey = flatItems[idx]?.row.zotero_key;
-              if (!targetKey) continue;
-              if (checked) this._selectedKeys.add(targetKey);
-              else this._selectedKeys.delete(targetKey);
-            }
-          } else {
-            if (checked) this._selectedKeys.add(row.zotero_key);
-            else this._selectedKeys.delete(row.zotero_key);
-          }
-          this._pendingShiftKey = false;
-          this._lastSelectedIdx = rowIndex;
-          this.render();
-        });
-
-        for (const col of columns) {
-          this._renderCell(tr, col, item);
-        }
+        slots.push({ kind: "row", item, flatIndex: flatIdx++ });
       }
     }
+
+    this._currentSlots = slots;
+    this._renderedSlotCount = 0;
+    this._renderedPaperCount = 0;
+    this._tbodyEl = mkEl(table, "tbody");
+    this._appendNextChunk(INITIAL_CHUNK_SIZE);
   }
 }

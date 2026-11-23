@@ -391,14 +391,22 @@ const ICON_PATHS: Record<PfIconName, IconNodeSpec[]> = {
   ],
 };
 
-/** Render a crisp single-color Lucide SVG icon inside `el`. */
-export function setPfIcon(
-  el: HTMLElement,
+const SVG_TEMPLATE_CACHE = new WeakMap<Document, Map<string, SVGSVGElement>>();
+
+function getIconTemplate(
+  doc: Document,
   name: PfIconName,
-  size = 15
+  size: number
 ): SVGSVGElement {
-  const doc = el.ownerDocument || document;
-  el.innerHTML = "";
+  let docMap = SVG_TEMPLATE_CACHE.get(doc);
+  if (!docMap) {
+    docMap = new Map();
+    SVG_TEMPLATE_CACHE.set(doc, docMap);
+  }
+  const cacheKey = `${name}:${size}`;
+  let cached = docMap.get(cacheKey);
+  if (cached) return cached;
+
   const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
   svg.setAttribute("viewBox", "0 0 24 24");
   svg.setAttribute("width", String(size));
@@ -418,6 +426,19 @@ export function setPfIcon(
     }
     svg.appendChild(node);
   }
+  docMap.set(cacheKey, svg);
+  return svg;
+}
+
+/** Render a crisp single-color Lucide SVG icon inside `el` (cached cloneNode for high-FPS tables). */
+export function setPfIcon(
+  el: HTMLElement,
+  name: PfIconName,
+  size = 15
+): SVGSVGElement {
+  const doc = el.ownerDocument || document;
+  el.textContent = "";
+  const svg = getIconTemplate(doc, name, size).cloneNode(true) as SVGSVGElement;
   el.appendChild(svg);
   return svg;
 }

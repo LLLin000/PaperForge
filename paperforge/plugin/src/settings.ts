@@ -490,10 +490,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // Center: Tab buttons
+    // Center: 4 focused pages — Overview, Modules, Appearance, Help
     const tabCenter = topbar.createDiv({ cls: "pf-cc-topbar-center" });
     const tabs = [
       { id: "overview", label: t("tab_overview") || "Overview" },
+      { id: "module-detail", label: t("tab_modules") || "Modules" },
+      { id: "appearance", label: t("tab_appearance") || "Appearance" },
       { id: "help", label: t("tab_help") || "Help" },
     ];
     const tabContents: Record<string, HTMLDivElement> = {};
@@ -504,33 +506,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           "pf-cc-topbar-tab" +
           (tab.id === this.activeTab ? " pf-cc-topbar-tab--active" : ""),
         text: tab.label,
+        attr: { type: "button", "data-pf-tab": tab.id },
       });
       btn.addEventListener("click", () => {
         this._detailReturn = null;
         this.activeTab = tab.id;
+        if (tab.id === "module-detail" && !this._selectedDetailModule) {
+          this._selectedDetailModule = "library";
+        }
         if (tab.id === "help") this._attemptedProbes.delete("help");
         this._navMemory = { destination: tab.id };
         this._persistNavMemory();
         this.display();
       });
     });
-
-    if (onOverview) {
-      const filterWrap = topbar.createDiv({
-        cls: "search-input-container pf-cc-quick-filter",
-      });
-      const filterInput = filterWrap.createEl("input", {
-        cls: "pf-cc-filter-input",
-        attr: {
-          type: "search",
-          placeholder: t("settings_filter_placeholder"),
-          "aria-label": t("settings_filter_aria"),
-        },
-      }) as HTMLInputElement;
-      filterInput.addEventListener("input", () => {
-        this._applyOverviewQuickFilter(containerEl, filterInput.value);
-      });
-    }
 
     // --- Tab content containers ---
     tabs.forEach((tab) => {
@@ -541,20 +530,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     });
 
-    // Module Detail is contextual (not a top-level tab), always create its container
-    tabContents["module-detail"] = containerEl.createDiv({
-      cls:
-        "paperforge-tab-content" +
-        (this.activeTab === "module-detail"
-          ? " paperforge-tab-content--active"
-          : ""),
-    });
-
     // --- Render active tab ---
     if (this.activeTab === "overview") {
       this._renderOverviewTab(tabContents.overview);
     } else if (this.activeTab === "module-detail") {
       this._renderModuleDetailTab(tabContents["module-detail"]);
+    } else if (this.activeTab === "appearance") {
+      this._renderAppearanceTab(tabContents.appearance);
     } else if (this.activeTab === "help") {
       this._renderHelpTab(tabContents.help);
     }
@@ -967,21 +949,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     })();
   }
 
-  /** Render the Overview tab (header + control center + advanced settings). */
+  /** Render the serene Overview tab (Decision-Tree Hero + 1-line module directory). */
   _renderOverviewTab(containerEl: HTMLElement) {
     const vaultPath = this._getVaultBasePath();
     if (!this.plugin.settings.vault_path) {
       this.plugin.settings.vault_path = vaultPath;
       this._debouncedSave();
     }
-
-    // ── Overview ──
-    /* The plugin name and version are already in the tab header, so the
-       description stands alone rather than repeating the title. */
-    containerEl.createEl("p", {
-      text: t("desc"),
-      cls: "paperforge-settings-desc",
-    });
 
     // Coalesce startup checks into ONE background refresh without flashing cached cards to "Checking...".
     let hasNeverProbed = false;
@@ -1037,24 +1011,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         .catch(() => undefined);
     }
 
-    // ── Control Center (Unified Decision-Tree Hero + In-Place Accordion) ──
+    // ── Serene Control Center (Decision-Tree Hero + Compact Navigation Rows) ──
     this._renderControlCenter(containerEl);
-
-    // ── Deferred Storage Cleanup & Time-Machine Rollback ──
-    if (cachedUpgradePlan && typeof this.plugin.getClient === "function") {
-      renderStorageMigrationMaintenanceSection(
-        containerEl,
-        this.app,
-        this.getClient(),
-        cachedUpgradePlan,
-        () => {
-          void (async () => {
-            await this.plugin.refreshUpgradePlan?.();
-            this.display();
-          })();
-        }
-      );
-    }
   }
 
   /** Safe vault base path extraction. */
@@ -1590,6 +1548,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             .setCta()
             .onClick(() => this._startSetupJourney(1))
         );
+    }
+
+    // Deferred Storage Cleanup & Time-Machine Rollback (scoped inside Engine maintenance)
+    if (!opts?.inline) {
+      const cachedUpgradePlan =
+        typeof this.plugin.getUpgradePlanCache === "function"
+          ? this.plugin.getUpgradePlanCache()
+          : null;
+      if (cachedUpgradePlan && typeof this.plugin.getClient === "function") {
+        renderStorageMigrationMaintenanceSection(
+          body,
+          this.app,
+          this.getClient(),
+          cachedUpgradePlan,
+          () => {
+            void (async () => {
+              await this.plugin.refreshUpgradePlan?.();
+              this.display();
+            })();
+          }
+        );
+      }
     }
   }
 
@@ -4103,22 +4083,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState ?? {};
     const isZh = langFromApp(this.app) === "zh";
 
-    cc.createEl("h2", {
-      cls: "pf-cc-heading",
-      text: t("cc_heading") || "Control center",
-    });
-    cc.createEl("p", {
-      cls: "pf-cc-lede",
-      text: isZh
-        ? "核心状态与常用配置同屏展示，点击任意能力行即可就地展开修改，无需来回跳转。"
-        : "Core health & settings in one calm screen — click any row to configure in-place.",
-    });
-
     // ── Single Deterministic Decision-Tree Hero Card ──
     const foundationEnv =
       envelopes["installation"] ?? createUnknownEnvelope("installation");
     const libraryEnv = envelopes["library"] ?? createUnknownEnvelope("library");
-    const foundationReady = foundationEnv.user_state === "ready";
     const pfState = this.plugin as unknown as {
       isDaemonUpdating?: () => boolean;
       isRuntimeUpdating?: () => boolean;
@@ -4260,6 +4228,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const refreshBtn = summaryMeta.createEl("button", {
       cls: "pf-cc-summary-refresh",
       text: t("cc_refresh_btn") || "Refresh status",
+      attr: { type: "button" },
     });
     refreshBtn.addEventListener("click", () => this._refreshAllModules());
 
@@ -4287,68 +4256,43 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // ── Group 1: Core Connection (Zotero Library + Runtime merged into 1 calm row) ──
+    // ── Group 1: Core Setup (clean 1-line rows → click jumps to dedicated Module page) ──
     const coreHead = cc.createDiv({ cls: "pf-cc-section-head" });
     coreHead.createEl("div", {
       cls: "pf-cc-section-title",
-      text: isZh ? "核心连接" : "Core Connection",
-    });
-    const versionTag =
-      this._runtimeStatusVersion || this.plugin.manifest?.version || "";
-    const enginePill = coreHead.createEl("div", {
-      cls: "caption pf-open-module-btn pf-cc-engine-pill",
-      text: isZh
-        ? `计算引擎 ${versionTag ? `v${versionTag}` : ""}（${foundationReady ? "正常" : this._getUserStateLabel(foundationEnv.user_state)}）`
-        : `Engine ${versionTag ? `v${versionTag}` : ""} (${this._getUserStateLabel(foundationEnv.user_state)})`,
-      attr: {
-        "data-module": "installation",
-        role: "button",
-        tabindex: "0",
-      },
-    });
-    enginePill.addEventListener("click", () => {
-      if (!this._expandedInlineModules.has("library")) {
-        this._expandedInlineModules.add("library");
-        this.display();
-      }
-      const sub = this.containerEl?.querySelector<HTMLDetailsElement>(
-        ".pf-cc-inline-subengine"
-      );
-      if (sub) sub.open = true;
+      text: t("cc_group_core") || (isZh ? "核心基础" : "Core Setup"),
     });
 
+    const versionTag =
+      runtimePtr?.paperforgeVersion ||
+      this._runtimeStatusVersion ||
+      this.plugin.manifest?.version ||
+      "";
     const coreList = cc.createDiv({ cls: "pf-cc-module-list" });
-    this._renderAccordionRow(
+    this._renderOverviewNavRow(
       coreList,
-      "library",
-      isZh ? "Zotero 文献库与计算引擎" : "Zotero Library & Core Engine",
-      !foundationReady && libraryEnv.user_state === "ready"
-        ? foundationEnv
-        : libraryEnv,
-      (drawerBody) => {
-        this._renderLibraryDetail(drawerBody, { inline: true });
-        const engineDetails = drawerBody.createEl("details", {
-          cls: "pf-cc-inline-subengine",
-        });
-        if (!foundationReady) engineDetails.open = true;
-        engineDetails.createEl("summary", {
-          text: isZh
-            ? `计算引擎与环境维护（v${versionTag || "?"} · ${this._getUserStateLabel(foundationEnv.user_state)}）`
-            : `Compute Engine & Maintenance (v${versionTag || "?"})`,
-        });
-        const engineSlot = engineDetails.createDiv();
-        this._renderInstallationDetail(engineSlot, { inline: true });
-      },
-      isZh
-        ? `${this.plugin.settings.zotero_data_dir || "未选 Zotero 目录"} · 引擎${foundationReady ? "正常" : "待检查"}`
+      "installation",
+      t("cc_module_foundation") || (isZh ? "计算引擎" : "Compute Engine"),
+      foundationEnv,
+      versionTag
+        ? isZh
+          ? `本地服务 v${versionTag}`
+          : `Local engine v${versionTag}`
         : undefined
     );
+    this._renderOverviewNavRow(
+      coreList,
+      "library",
+      t("cc_module_library") || (isZh ? "Zotero 文献库" : "Zotero Library"),
+      libraryEnv,
+      this.plugin.settings.zotero_data_dir || undefined
+    );
 
-    // ── Group 2: Optional AI & Skills (all editable inline, 0 sub-page hops) ──
+    // ── Group 2: AI & Extensions (clean 1-line rows → dedicated sub-pages) ──
     const optHead = cc.createDiv({ cls: "pf-cc-section-head" });
     optHead.createEl("div", {
       cls: "pf-cc-section-title",
-      text: isZh ? "AI 与扩展能力" : "AI & Agent Capabilities",
+      text: t("cc_group_ai") || (isZh ? "AI 与扩展" : "AI & Extensions"),
     });
     optHead.createEl("span", {
       cls: "caption",
@@ -4359,40 +4303,103 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     const optList = cc.createDiv({ cls: "pf-cc-module-list" });
     const ocrEnv = envelopes["ocr"] ?? createUnknownEnvelope("ocr");
-    this._renderAccordionRow(
+    this._renderOverviewNavRow(
       optList,
       "ocr",
       t("cc_module_ocr") || "PDF 解析 (OCR)",
-      ocrEnv,
-      (drawerBody) => this._renderOcrDetail(drawerBody, { inline: true })
+      ocrEnv
     );
 
     const memEnv = envelopes["memory"] ?? createUnknownEnvelope("memory");
-    this._renderAccordionRow(
+    this._renderOverviewNavRow(
       optList,
       "memory",
-      t("cc_module_memory") || "智能检索（向量与记忆）",
+      t("cc_module_memory") || "智能检索",
       memEnv,
-      (drawerBody) => this._renderMemoryDetail(drawerBody, { inline: true }),
       this.plugin.settings.vector_db_api_model
         ? `${this.plugin.settings.vector_db_api_model} · ${this._getModuleConsequence("memory", memEnv)}`
         : undefined
     );
 
     const agentEnv = this._getAgentPlaceholderEnvelope();
-    this._renderAccordionRow(
+    this._renderOverviewNavRow(
       optList,
       "agent",
-      t("cc_module_agent") || "AI Agent 技能集成",
+      t("cc_module_agent") || "AI Agent 技能",
       agentEnv,
-      (drawerBody) => this._renderAgentDetail(drawerBody, { inline: true }),
       AGENT_PLATFORM_LABELS[
         this.plugin.settings.agent_platform || "opencode"
       ] ?? this.plugin.settings.agent_platform
     );
+  }
 
-    // ── Appearance Palette Mode, Liquid Glass & Reduce Motion ──
-    const appearanceGroup = cc.createDiv({ cls: "pf-cc-appearance-group" });
+  private _renderOverviewNavRow(
+    listEl: HTMLElement,
+    mod: string,
+    label: string,
+    env: ProbeEnvelope,
+    sentenceOverride?: string
+  ): void {
+    const row = listEl.createEl("div", {
+      cls: "pf-cc-module-card pf-open-module-btn pf-cc-nav-row",
+      attr: {
+        "data-module": mod,
+        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+        role: "button",
+        tabindex: "0",
+      },
+    });
+    row.createEl("span", { cls: "pf-cc-card-name", text: label });
+    renderStatusBadge(
+      row,
+      env.user_state,
+      this._getUserStateLabel(env.user_state)
+    );
+    row.createEl("span", {
+      cls: "pf-cc-card-sentence",
+      text: sentenceOverride ?? this._getModuleConsequence(mod, env),
+    });
+    const metricText =
+      env.user_state === "ready" &&
+      env.action?.primary?.scope_count &&
+      env.action.primary.scope_count > 1
+        ? (t("cc_metric_papers") || "Papers: ") + env.action.primary.scope_count
+        : "";
+    row.createEl("span", {
+      cls: "pf-cc-card-metric",
+      text: metricText,
+    });
+    row.createEl("span", {
+      cls: "pf-cc-card-arrow",
+      text: "\u203A",
+    });
+
+    const openPage = () => this._handleCardNavigation(mod);
+    row.addEventListener("click", openPage);
+    row.addEventListener("keydown", (ev: KeyboardEvent) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        openPage();
+      }
+    });
+  }
+
+  /** Dedicated Appearance & Experience tab (keeps Overview calm and uncluttered). */
+  _renderAppearanceTab(containerEl: HTMLElement): void {
+    const page = containerEl.createDiv({ cls: "pf-appearance-page" });
+    const head = page.createDiv({ cls: "pf-settings-page-head" });
+    head.createEl("h2", {
+      cls: "pf-settings-page-title",
+      text: t("cc_appearance_heading") || "Appearance & Experience",
+    });
+    head.createEl("p", {
+      cls: "pf-settings-page-lede",
+      text:
+        t("cc_appearance_lede") ||
+        "Adjust theme palette, translucent surfaces, and motion preferences.",
+    });
+
+    const appearanceGroup = page.createDiv({ cls: "pf-cc-appearance-group" });
 
     const themeBar = appearanceGroup.createDiv({ cls: "pf-cc-theme-bar" });
     const themeCopy = themeBar.createDiv({ cls: "pf-cc-theme-copy" });
@@ -4483,86 +4490,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.plugin as unknown as { applyUiThemeMode?: () => void }
       ).applyUiThemeMode?.();
       void this.plugin.saveSettings();
-    });
-  }
-
-  private _renderAccordionRow(
-    listEl: HTMLElement,
-    mod: string,
-    label: string,
-    env: ProbeEnvelope,
-    renderInlineBody: (drawerBody: HTMLElement) => void,
-    sentenceOverride?: string
-  ): void {
-    const item = listEl.createDiv({
-      cls: "pf-cc-accordion-item",
-      attr: { "data-module": mod },
-    });
-    const isExpanded = this._expandedInlineModules.has(mod);
-    const header = item.createEl("div", {
-      cls: `pf-cc-module-card pf-open-module-btn pf-cc-accordion-head${isExpanded ? " is-expanded" : ""}`,
-      attr: {
-        "data-module": mod,
-        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
-        "aria-expanded": String(isExpanded),
-        role: "button",
-        tabindex: "0",
-      },
-    });
-    header.createEl("span", { cls: "pf-cc-card-name", text: label });
-    renderStatusBadge(
-      header,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
-    header.createEl("span", {
-      cls: "pf-cc-card-sentence",
-      text: sentenceOverride ?? this._getModuleConsequence(mod, env),
-    });
-    const metricText =
-      env.user_state === "ready" &&
-      env.action?.primary?.scope_count &&
-      env.action.primary.scope_count > 1
-        ? (t("cc_metric_papers") || "Papers: ") + env.action.primary.scope_count
-        : "";
-    header.createEl("span", {
-      cls: "pf-cc-card-metric",
-      text: metricText,
-    });
-    header.createEl("span", {
-      cls: `pf-cc-card-arrow pf-cc-row-chevron${isExpanded ? " is-expanded" : ""}`,
-      text: "\u203A",
-    });
-
-    const drawer = item.createDiv({
-      cls: `pf-cc-inline-drawer${isExpanded ? " is-open" : ""}`,
-    });
-    if (isExpanded) {
-      renderInlineBody(drawer);
-    }
-
-    const toggleExpand = () => {
-      if (this._expandedInlineModules.has(mod)) {
-        this._expandedInlineModules.delete(mod);
-        header.classList.remove("is-expanded");
-        header.setAttribute("aria-expanded", "false");
-        drawer.classList.remove("is-open");
-        drawer.innerHTML = "";
-      } else {
-        this._expandedInlineModules.add(mod);
-        header.classList.add("is-expanded");
-        header.setAttribute("aria-expanded", "true");
-        drawer.classList.add("is-open");
-        drawer.innerHTML = "";
-        renderInlineBody(drawer);
-      }
-    };
-    header.addEventListener("click", toggleExpand);
-    header.addEventListener("keydown", (ev: KeyboardEvent) => {
-      if (ev.key === "Enter" || ev.key === " ") {
-        ev.preventDefault();
-        toggleExpand();
-      }
     });
   }
 
