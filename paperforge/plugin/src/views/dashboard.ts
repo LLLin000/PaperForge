@@ -224,17 +224,23 @@ export class PaperForgeStatusView extends ItemView {
   }
   async onClose() {
     if (this._modeSubscribers && this._modeSubscribers.length > 0) {
+      const ws = this.app.workspace as unknown as {
+        offref?: (ref: unknown) => void;
+        off?: (ev: string, cb: unknown) => void;
+      };
+      const vault = this.app.vault as unknown as {
+        offref?: (ref: unknown) => void;
+        off?: (ev: string, cb: unknown) => void;
+      };
       for (const sub of this._modeSubscribers) {
         if (sub.event === "active-leaf-change") {
-          this.app.workspace.off("active-leaf-change", sub.ref);
+          if (typeof ws?.offref === "function") ws.offref(sub.ref);
+          else ws?.off?.("active-leaf-change", sub.ref);
         } else if (sub.event === "modify") {
-          (
-            this.app.vault as unknown as {
-              off?: (ev: string, ref: unknown) => void;
-            }
-          )?.off?.("modify", sub.ref);
+          if (typeof vault?.offref === "function") vault.offref(sub.ref);
+          else vault?.off?.("modify", sub.ref);
         } else if (sub.event === "paperforge:state-changed") {
-          this.app.workspace.offref?.(sub.ref);
+          ws?.offref?.(sub.ref);
         }
       }
       this._modeSubscribers = [];
@@ -4922,7 +4928,7 @@ export class PaperForgeStatusView extends ItemView {
             }
             await this._detectAndSwitch(resolved);
           })();
-        }, 60);
+        }, 140);
       }
     );
     this._modeSubscribers.push({
@@ -4949,6 +4955,7 @@ export class PaperForgeStatusView extends ItemView {
         on?: (ev: string, cb: (payload?: unknown) => void) => unknown;
       }
     )?.on?.("paperforge:state-changed", (payload?: unknown) => {
+      if (!this.containerEl?.isConnected) return;
       this._renderGlobalActivityStrip();
       this._renderUpgradeBanner();
       const changed = (payload as { changedKeys?: string[] } | undefined)

@@ -213,7 +213,7 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   _vector_db_configured: false,
   _setup_complete: false,
   ui_theme_mode: "obsidian",
-  ui_liquid_glass: true,
+  ui_liquid_glass: false,
   reduce_motion: false,
 };
 

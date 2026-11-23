@@ -123,6 +123,8 @@ export default class PaperForgePlugin extends Plugin {
   private _lastAutoSyncError: { message: string; at: number } | null = null;
   private _pendingReleaseNotesVersion: string | null = null;
   private _daemonUpdating = false;
+  private _startupDeferTimer: ReturnType<typeof setTimeout> | null = null;
+  private _lastSyncedZoteroSig: string | null = null;
 
   private _client: PaperForgeClient | null = null;
 
@@ -143,10 +145,23 @@ export default class PaperForgePlugin extends Plugin {
     return this._quarantinedBinDir;
   }
 
+  private _refreshSettingTabIfOpen(): void {
+    const tab = this._settingTab as unknown as {
+      refreshIfOpen?: () => void;
+      display?: () => void;
+    } | null;
+    if (!tab) return;
+    if (typeof tab.refreshIfOpen === "function") {
+      tab.refreshIfOpen();
+    } else if (typeof tab.display === "function") {
+      tab.display();
+    }
+  }
+
   dismissQuarantineBanner(): void {
     this._quarantinedBinDir = null;
     this._emitStateChanged();
-    this._settingTab?.display();
+    this._refreshSettingTabIfOpen();
   }
 
   getLastAutoSyncError(): { message: string; at: number } | null {
@@ -170,7 +185,7 @@ export default class PaperForgePlugin extends Plugin {
       void this.saveSettings();
     }
     this._emitStateChanged();
-    this._settingTab?.display();
+    this._refreshSettingTabIfOpen();
   }
 
   getClient(): PaperForgeClient {
@@ -209,9 +224,9 @@ export default class PaperForgePlugin extends Plugin {
         this._emitStateChanged(job.item_id ? [job.item_id] : []);
         if (job.kind === "runtime.install" || job.kind === "runtime.update") {
           if (!isActive) {
-            this._settingTab?._refreshAllReadModels();
+            this._settingTab?._refreshAllReadModels({ background: true });
           }
-          this._settingTab?.display();
+          this._refreshSettingTabIfOpen();
         }
       }
       return;
@@ -241,7 +256,7 @@ export default class PaperForgePlugin extends Plugin {
       if (nid) {
         void this._client?.daemonAckNotice(nid).catch(() => undefined);
       }
-      this._settingTab?._refreshAllReadModels();
+      this._settingTab?._refreshAllReadModels({ background: true });
       return;
     }
     if (ev.event === "state.changed") {
@@ -480,7 +495,7 @@ export default class PaperForgePlugin extends Plugin {
               ) {
                 failedKeys.push(String(event.item_id ?? ""));
               }
-              this._settingTab?.display();
+              this._refreshSettingTabIfOpen();
               this._emitStateChanged(
                 this._ocrProgress.key ? [this._ocrProgress.key] : []
               );
@@ -516,7 +531,7 @@ export default class PaperForgePlugin extends Plugin {
         }
         this._ocrRunning = false;
         this._emitStateChanged();
-        this._settingTab?.display();
+        this._refreshSettingTabIfOpen();
         const vaultPath = (this.app.vault.adapter as any).basePath as string;
         this._autoSync(vaultPath);
       })().catch((error: Error) => {
@@ -528,7 +543,7 @@ export default class PaperForgePlugin extends Plugin {
             formatHumanError(error, "ocr_error_notice"),
           8000
         );
-        this._settingTab?.display();
+        this._refreshSettingTabIfOpen();
       });
     };
 
@@ -550,7 +565,6 @@ export default class PaperForgePlugin extends Plugin {
   }
   async onload() {
     await this.loadSettings();
-    await this.saveSettings();
     this.applyUiThemeMode();
     // Diagnostic boundary trace (metadata only; see client/trace.ts).
     setTraceEnabled(this.settings.debug_trace === true);
@@ -781,28 +795,12 @@ export default class PaperForgePlugin extends Plugin {
     );
 
     const runStartupHydration = () => {
-      this._startConvergenceTimer();
       if (!vaultBase) return;
-      void this.getClient()
-        .configValidate()
-        .then((validation) => {
-          if (validation.state === "migration_required") {
-            this._needsConfigMigration = true;
-          }
-        })
-        .catch(() => undefined);
-      void this.getClient()
-        .embedStatus()
-        .then((d) => {
-          if (d) {
-            this._embedStatusCache = d as unknown as Record<string, unknown>;
-          }
-        })
-        .catch(() => undefined);
       this._startStateSeqWatcher(vaultBase);
+      // Fast Rust-native upgrade plan check (< 3ms, zero Python spawned)
       void this.refreshUpgradePlan()
         .then((plan) => {
-          this._settingTab?.display();
+          this._refreshSettingTabIfOpen();
           if (
             this.settings._setup_complete === false &&
             this.settings._setup_journey_started !== true &&
@@ -813,65 +811,86 @@ export default class PaperForgePlugin extends Plugin {
           }
         })
         .catch(() => undefined);
+      // Non-blocking config mirror hydration (only when Python runtime exists)
+      if (readRuntimePointer()) {
+        void this._hydrateConfigMirrors(vaultBase).then(() => {
+          this._startConvergenceTimer();
+        });
+      } else {
+        this._startConvergenceTimer();
+      }
     };
 
-    if (needsDaemonSwap) {
-      this._daemonUpdating = true;
-    } else {
-      // Native binary already matches pluginVersion — start hydration immediately
-      // without waiting on remote checksum verification.
-      runStartupHydration();
-    }
+    const scheduleDeferredStartup = () => {
+      this._startupDeferTimer = setTimeout(() => {
+        this._startupDeferTimer = null;
+        if (needsDaemonSwap) {
+          this._daemonUpdating = true;
+        } else {
+          runStartupHydration();
+        }
 
-    void ensureNativeDaemonDownloaded(pluginVersion, {
-      checkVersionUpdate: true,
-      onBeforeReplace: () => this._client?.shutdownTransportAsync(),
-      onQuarantineSuspected: (binDir) => {
-        this._quarantinedBinDir = binDir;
-        this._emitStateChanged();
-        this._settingTab?.display();
-        new Notice(t("main_defender_notice_short"), 8000);
-      },
-    })
-      .then((downloadedBin) => {
-        const swapped = Boolean(
-          downloadedBin && downloadedBin !== prevNativeBin
-        );
-        this._daemonUpdating = false;
-        if (needsDaemonSwap) {
-          this._lastAutoSyncError = null;
-          runStartupHydration();
-          this._settingTab?._refreshAllReadModels();
-          this._settingTab?.display();
-        } else if (swapped && vaultBase) {
-          this._lastAutoSyncError = null;
-          void this.refreshUpgradePlan()
-            .then(() => this._settingTab?.display())
-            .catch(() => undefined);
-          void this.refreshBaseSnapshot().catch(() => undefined);
-          this._settingTab?._refreshAllReadModels();
-          this._settingTab?.display();
-        }
-        if (!downloadedBin || !vaultBase) return;
-        const ptr = readRuntimePointer();
-        if (ptr && pluginVersion) {
-          if (
-            normalizeSemverForCompare(ptr.paperforgeVersion) !==
-            normalizeSemverForCompare(pluginVersion)
-          ) {
-            void this.getClient()
-              .daemonSubmitRuntimeUpdate(pluginVersion)
-              .catch(() => undefined);
-          }
-        }
-      })
-      .catch(() => {
-        this._daemonUpdating = false;
-        if (needsDaemonSwap) {
-          runStartupHydration();
-          this._settingTab?.display();
-        }
-      });
+        void ensureNativeDaemonDownloaded(pluginVersion, {
+          checkVersionUpdate: true,
+          onBeforeReplace: () => this._client?.shutdownTransportAsync(),
+          onQuarantineSuspected: (binDir) => {
+            this._quarantinedBinDir = binDir;
+            this._emitStateChanged();
+            this._refreshSettingTabIfOpen();
+            new Notice(t("main_defender_notice_short"), 8000);
+          },
+        })
+          .then((downloadedBin) => {
+            const swapped = Boolean(
+              downloadedBin && downloadedBin !== prevNativeBin
+            );
+            this._daemonUpdating = false;
+            if (needsDaemonSwap) {
+              this._lastAutoSyncError = null;
+              runStartupHydration();
+              this._settingTab?._refreshAllReadModels({ background: true });
+              this._refreshSettingTabIfOpen();
+            } else if (swapped && vaultBase) {
+              this._lastAutoSyncError = null;
+              void this.refreshUpgradePlan()
+                .then(() => this._refreshSettingTabIfOpen())
+                .catch(() => undefined);
+              void this.refreshBaseSnapshot().catch(() => undefined);
+              this._settingTab?._refreshAllReadModels({ background: true });
+              this._refreshSettingTabIfOpen();
+            }
+            if (!downloadedBin || !vaultBase) return;
+            const ptr = readRuntimePointer();
+            if (ptr && pluginVersion) {
+              if (
+                normalizeSemverForCompare(ptr.paperforgeVersion) !==
+                normalizeSemverForCompare(pluginVersion)
+              ) {
+                void this.getClient()
+                  .daemonSubmitRuntimeUpdate(pluginVersion)
+                  .catch(() => undefined);
+              }
+            }
+          })
+          .catch(() => {
+            this._daemonUpdating = false;
+            if (needsDaemonSwap) {
+              runStartupHydration();
+              this._refreshSettingTabIfOpen();
+            }
+          });
+      }, 1500);
+    };
+
+    // Defer ALL heavy startup hydration until after Obsidian's layout is ready + idle
+    const ws = this.app.workspace as unknown as {
+      onLayoutReady?: (cb: () => void) => void;
+    };
+    if (typeof ws?.onLayoutReady === "function") {
+      ws.onLayoutReady(scheduleDeferredStartup);
+    } else {
+      scheduleDeferredStartup();
+    }
   }
 
   private _needsConfigMigration = false;
@@ -952,11 +971,45 @@ export default class PaperForgePlugin extends Plugin {
     })();
   }
 
+  /** Fast non-blocking stat fingerprint of Zotero DB so idle ticks spawn 0 Python processes. */
+  private async _readZoteroFingerprint(): Promise<string | null> {
+    const zDir = this.settings?.zotero_data_dir?.trim();
+    if (!zDir) return null;
+    try {
+      const dbStat = await fs.promises.stat(path.join(zDir, "zotero.sqlite"));
+      let walPart = "";
+      try {
+        const walStat = await fs.promises.stat(
+          path.join(zDir, "zotero.sqlite-wal")
+        );
+        walPart = `|${walStat.mtimeMs}:${walStat.size}`;
+      } catch {
+        // WAL file absent when Zotero is closed
+      }
+      return `${dbStat.mtimeMs}:${dbStat.size}${walPart}`;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Periodic convergence check: skips Python sync completely if Zotero DB hasn't changed. */
+  private _maybeAutoSync(vaultPath: string): void {
+    if (this._autoSyncRunning) return;
+    if (!readRuntimePointer()) return;
+    void (async () => {
+      const sig = await this._readZoteroFingerprint();
+      if (
+        sig &&
+        this._lastSyncedZoteroSig &&
+        sig === this._lastSyncedZoteroSig
+      ) {
+        return;
+      }
+      this._autoSync(vaultPath, sig ?? undefined);
+    })();
+  }
+
   private _startConvergenceTimer() {
-    // T8 (#169) convergence tick (#158): fires `paperforge sync` only, on a
-    // cadence from data.json (autoSyncIntervalSeconds, default 120).  The
-    // mtime scanner and canonical path/state scanning are DELETED — the
-    // Python side derives state from reconcile(all).
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
     const cadenceMs =
       Math.max(30, this.settings.autoSyncIntervalSeconds ?? 120) * 1000;
@@ -964,50 +1017,38 @@ export default class PaperForgePlugin extends Plugin {
     if (this.settings.autoSyncEnabled === false) {
       return;
     }
-    // Vault-open tick + cadence interval.
-    this._autoSync(vaultPath);
+    this._maybeAutoSync(vaultPath);
     this._pollTimer = setInterval(() => {
       if (!isConfigHydrated()) return;
-      this._autoSync(vaultPath);
+      this._maybeAutoSync(vaultPath);
     }, cadenceMs);
   }
 
   // T8: mtime scanner deleted — the convergence tick fires sync directly.
 
-  private _autoSync(vaultPath: string) {
+  private _autoSync(vaultPath: string, expectedZoteroSig?: string) {
     if (this._autoSyncRunning) return;
     if (this._upgradePlanCache?.provenance?.needs_upgrade === true) {
-      // Pause automatic background sync until veteran layout cutover runs so
-      // legacy System/PaperForge directories stay pristine for 1-click upgrade.
       return;
     }
     this._autoSyncRunning = true;
     this._emitStateChanged();
 
-    // Ticket 07 Stage 2 step 1: the convergence tick routes through the
-    // shared client — same sync PFResult consumer as Settings/Dashboard.
-    // main never assembles sync argv, never spawns, and never duplicates
-    // next_actions policy; NodeProcessTransport owns the redacted env.
     void (async () => {
       let ok = false;
       try {
-        // Item 3: the SAME client instance that executed the sync executes
-        // its next_actions — shared epoch/OperationLock, no second executor.
         const client = this.getClient();
         const result = await client.sync();
         ok = result?.ok !== false;
         if (ok) {
           this._lastAutoSyncError = null;
           this._lastSyncTime = new Date().toLocaleTimeString();
-          // #127/#169: consume next_actions — the Python registry is the
-          // policy authority; the plugin executes via the action bridge.
+          this._lastSyncedZoteroSig =
+            expectedZoteroSig ?? (await this._readZoteroFingerprint());
           void orchestrateFromSync(JSON.stringify(result), {
             runAction: (req) => client.runAction(req),
           });
-          // RC UX Seam: sync settled — refresh the read model so the
-          // Smart Retrieval card durably shows the pending embed CTA
-          // instead of relying on the 8s Notice + convergence tick.
-          this._settingTab?._refreshAllReadModels();
+          this._settingTab?._refreshAllReadModels({ background: true });
           if (vaultPath) this._startStateSeqWatcher(vaultPath);
           if (
             typeof (
@@ -1374,7 +1415,7 @@ export default class PaperForgePlugin extends Plugin {
     document.body.classList.toggle("pf-theme-warm", mode === "warm");
     document.body.classList.toggle(
       "pf-no-glass",
-      this.settings?.ui_liquid_glass === false
+      this.settings?.ui_liquid_glass !== true
     );
     document.body.classList.toggle(
       "pf-reduce-motion",
@@ -1383,6 +1424,10 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   onunload() {
+    if (this._startupDeferTimer) {
+      clearTimeout(this._startupDeferTimer);
+      this._startupDeferTimer = null;
+    }
     if (typeof document !== "undefined" && document.body) {
       document.body.classList.remove(
         "pf-theme-obsidian",
@@ -1444,40 +1489,35 @@ export default class PaperForgePlugin extends Plugin {
       saved._setup_journey_started !== true
     ) {
       this.settings._setup_complete = true;
+      void this.saveSettings();
     }
+  }
 
-    // #142 / C0: display mirrors are hydrated from the Python config
-    // authority; the plugin never parses paperforge.json.
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    if (vaultPath) {
-      try {
-        const list = await this.getClient().configList();
-        applyPathConfigFromList(this.settings, list.fields);
-        const pick = (key: string) =>
-          list.fields.find((f) => f.key === key)?.value;
-        // Provider fields are canonical config: mirrors hydrated for display,
-        // mutations route through config set (#142).
-        const apiBase = String(pick("vector_db_api_base") ?? "");
-        const apiModel = String(pick("vector_db_api_model") ?? "");
-        const providerType = String(pick("vector_db_provider_type") ?? "");
-        const ocrJobUrl = String(pick("paddleocr_job_url") ?? "");
-        const ocrModel = String(pick("paddleocr_model") ?? "");
-        const agentPlatform = String(pick("agent_platform") ?? "");
-        if (apiBase) this.settings.vector_db_api_base = apiBase;
-        if (apiModel) this.settings.vector_db_api_model = apiModel;
-        if (providerType) this.settings.vector_db_provider_type = providerType;
-        if (ocrJobUrl) this.settings.paddleocr_job_url = ocrJobUrl;
-        if (ocrModel) this.settings.paddleocr_model = ocrModel;
-        if (agentPlatform) this.settings.agent_platform = agentPlatform;
-        // agent_platform choices come from Python's config list (#142).
-        const platformField = list.fields.find(
-          (f) => f.key === "agent_platform"
-        );
-        this.agentPlatformChoices = platformField?.choices ?? [];
-      } catch {
-        // Display mirrors keep defaults until Python is reachable; actions
-        // stay disabled until a fresh probe/config response (#144).
-      }
+  /** Hydrate display mirrors asynchronously AFTER Obsidian layout is ready (never blocks onload). */
+  private async _hydrateConfigMirrors(vaultPath: string): Promise<void> {
+    if (!vaultPath) return;
+    try {
+      const list = await this.getClient().configList();
+      applyPathConfigFromList(this.settings, list.fields);
+      const pick = (key: string) =>
+        list.fields.find((f) => f.key === key)?.value;
+      const apiBase = String(pick("vector_db_api_base") ?? "");
+      const apiModel = String(pick("vector_db_api_model") ?? "");
+      const providerType = String(pick("vector_db_provider_type") ?? "");
+      const ocrJobUrl = String(pick("paddleocr_job_url") ?? "");
+      const ocrModel = String(pick("paddleocr_model") ?? "");
+      const agentPlatform = String(pick("agent_platform") ?? "");
+      if (apiBase) this.settings.vector_db_api_base = apiBase;
+      if (apiModel) this.settings.vector_db_api_model = apiModel;
+      if (providerType) this.settings.vector_db_provider_type = providerType;
+      if (ocrJobUrl) this.settings.paddleocr_job_url = ocrJobUrl;
+      if (ocrModel) this.settings.paddleocr_model = ocrModel;
+      if (agentPlatform) this.settings.agent_platform = agentPlatform;
+      const platformField = list.fields.find((f) => f.key === "agent_platform");
+      this.agentPlatformChoices = platformField?.choices ?? [];
+      this._refreshSettingTabIfOpen();
+    } catch {
+      // Display mirrors keep defaults until Python is reachable
     }
   }
 

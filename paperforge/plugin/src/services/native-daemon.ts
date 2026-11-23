@@ -69,6 +69,7 @@ export interface NativeDaemonMeta {
   tag: string;
   sha256: string;
   binaryPath: string;
+  checkedAt?: number;
 }
 
 export function readNativeDaemonMeta(
@@ -87,6 +88,9 @@ export function readNativeDaemonMeta(
         tag: parsed.tag,
         sha256: parsed.sha256.toLowerCase(),
         binaryPath: parsed.binaryPath,
+        ...(typeof parsed.checkedAt === "number"
+          ? { checkedAt: parsed.checkedAt }
+          : {}),
       };
     }
   } catch {
@@ -116,6 +120,23 @@ function sha256File(filePath: string): string | null {
     return null;
   }
 }
+
+/** Non-blocking streaming SHA-256 hash — keeps Electron UI main thread 100% responsive. */
+async function sha256FileAsync(filePath: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    try {
+      const hash = crypto.createHash("sha256");
+      const stream = fs.createReadStream(filePath);
+      stream.on("data", (chunk) => hash.update(chunk));
+      stream.on("end", () => resolve(hash.digest("hex").toLowerCase()));
+      stream.on("error", () => resolve(null));
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+const REMOTE_CHECKSUM_TTL_MS = 12 * 60 * 60 * 1000; // 12h remote check throttle when local binary is intact
 
 function pruneObsoleteDaemonBinaries(
   binDir: string,
@@ -362,9 +383,9 @@ export async function ensureNativeDaemonDownloaded(
         ensureExecutableMode(meta.binaryPath, plat);
         existingPath = meta.binaryPath;
         installedTag = normalizeDaemonTag(meta.tag);
-        // Always hash the live bytes on disk — never trust cached metadata alone,
-        // so a corrupted or truncated local binary triggers automatic repair.
-        installedSha = sha256File(meta.binaryPath);
+        // Async non-blocking hash of live bytes on disk — verifies integrity
+        // without freezing Electron's UI thread on a 3MB synchronous read.
+        installedSha = await sha256FileAsync(meta.binaryPath);
       } else if (plat === "win32") {
         // Metadata points to a binary we previously installed, yet the .exe vanished
         // (typical Windows Defender quarantine signature).
@@ -381,7 +402,7 @@ export async function ensureNativeDaemonDownloaded(
       installedTag = fs.existsSync(verFile)
         ? normalizeDaemonTag(fs.readFileSync(verFile, "utf-8"))
         : "";
-      installedSha = sha256File(legacyDest);
+      installedSha = await sha256FileAsync(legacyDest);
     }
   } catch {
     if (plat === "win32" && meta?.binaryPath) {
@@ -398,6 +419,22 @@ export async function ensureNativeDaemonDownloaded(
   }
 
   if (existingPath && (!opts.checkVersionUpdate || !wantTag)) {
+    return existingPath;
+  }
+
+  // Zero-network fast path: when tag matches, live binary SHA-256 matches
+  // recorded metadata (proving local bytes are uncorrupted), and we verified
+  // remotely within the last 12h, skip the startup GitHub HTTPS round-trip.
+  if (
+    !opts.fetchBuffer &&
+    existingPath &&
+    meta &&
+    installedTag === wantTag &&
+    installedSha &&
+    installedSha === meta.sha256 &&
+    typeof meta.checkedAt === "number" &&
+    Date.now() - meta.checkedAt < REMOTE_CHECKSUM_TTL_MS
+  ) {
     return existingPath;
   }
 
@@ -431,6 +468,21 @@ export async function ensureNativeDaemonDownloaded(
         installedSha &&
         installedSha === expectedSha
       ) {
+        if (meta) {
+          try {
+            const refreshed: NativeDaemonMeta = {
+              ...meta,
+              checkedAt: Date.now(),
+            };
+            fs.writeFileSync(
+              metaFile,
+              JSON.stringify(refreshed, null, 2),
+              "utf-8"
+            );
+          } catch {
+            // Best-effort timestamp refresh
+          }
+        }
         return existingPath;
       }
 
@@ -478,6 +530,7 @@ export async function ensureNativeDaemonDownloaded(
         tag,
         sha256: actualSha,
         binaryPath: targetPath,
+        checkedAt: Date.now(),
       };
       const metaTmp = `${metaFile}.${process.pid}.${Date.now()}.tmp`;
       fs.writeFileSync(metaTmp, JSON.stringify(nextMeta, null, 2), "utf-8");
