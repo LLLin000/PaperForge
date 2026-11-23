@@ -385,4 +385,74 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     resetBtn.click();
     expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(3);
   });
+
+  it("renders title as frameless <a> link with proportional <colgroup>, surgical selection updates, and chunked rendering for 250+ papers", () => {
+    const bigRows: Record<string, BaseTableSnapshotDto["rows"][string]> = {};
+    for (let i = 0; i < 250; i += 1) {
+      const k = `PAPER_${String(i).padStart(4, "0")}`;
+      bigRows[k] = {
+        zotero_key: k,
+        title: `Biomechanical Evaluation of Scaffold Variant #${i}`,
+        first_author: `Author ${i}`,
+        year: "2025",
+        journal: "Biomaterials",
+        impact_factor: "11.2",
+        domain: i % 2 === 0 ? "Ortho" : "Sports",
+        has_pdf: true,
+        do_ocr: false,
+        analyze: false,
+        ocr_status: "done",
+        deep_reading_status: "pending",
+        main_note_path: `Literature/Ortho/${k}.md`,
+        user_ann_count: 1,
+        agent_ann_count: 0,
+        memory_facet_count: 0,
+        memory_updated_at: "",
+        needs_diagnostic: false,
+      };
+    }
+    snapshot = { seq: 99, updated_at: "2026-11-24T00:00:00Z", rows: bigRows };
+
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    setLanguage({} as any, "en");
+    view.render();
+
+    // 1. Title uses semantic <a> link (never boxed <button>) & table has proportional <colgroup>
+    const firstTitle = container.querySelector(
+      '[data-pf-testid="base-open-note"]'
+    )!;
+    expect(firstTitle.tagName).toBe("A");
+    expect(
+      container.querySelectorAll("table.pf-base-table colgroup col").length
+    ).toBeGreaterThanOrEqual(5);
+
+    // 2. Chunked rendering mounts only initial 80 rows + load-more sentinel (fast initial paint)
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(80);
+    const loadMoreBtn = container.querySelector<HTMLButtonElement>(
+      '[data-pf-testid="base-load-more"]'
+    )!;
+    expect(loadMoreBtn).not.toBeNull();
+    expect(loadMoreBtn.textContent).toContain("170");
+
+    // 3. Surgical selection toggle NEVER tears down the <table> element
+    const tableBefore = container.querySelector("table.pf-base-table");
+    const cb0 = container.querySelector<HTMLInputElement>(
+      'input[data-pf-select-key="PAPER_0000"]'
+    )!;
+    cb0.checked = true;
+    cb0.dispatchEvent(new dom.window.Event("change"));
+    expect(container.querySelector("table.pf-base-table")).toBe(tableBefore);
+    expect(
+      container.querySelector('[data-pf-testid="base-selection-bar"]')
+        ?.textContent
+    ).toMatch(/1 selected|已选 1 篇/);
+
+    // 4. Clicking Load More appends the next chunk seamlessly
+    loadMoreBtn.click();
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(160);
+    expect(container.querySelector("table.pf-base-table")).toBe(tableBefore);
+
+    view.onunload();
+  });
 });

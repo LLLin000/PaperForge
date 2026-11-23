@@ -13584,7 +13584,644 @@ body.pf-no-glass
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   v2.0.5 Precision Polish — High-FPS Base Workbench & Serene Multi-Page Settings
+   ========================================================================== */
+
+/* 1. Base Workbench: zero button chrome on titles, tight proportional columns, 60fps isolation */
+.pf-base-view-root {
+  gap: 10px;
+  padding: 6px 2px 12px;
+  font-family: var(--font-interface);
+}
+
+.pf-base-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-bottom: 0;
+  border-radius: var(--pf-radius-panel, 10px);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+}
+
+.pf-base-filter-search {
+  min-width: 132px;
+  flex: 1 1 150px;
+  max-width: 260px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--pf-radius-control, 6px);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-elevated, var(--background-secondary));
+  color: var(--pf-text);
+  font-size: 12.5px;
+  box-shadow: none !important;
+}
+
+.pf-base-filter-search:focus {
+  border-color: var(--pf-accent);
+  background: var(--pf-surface);
+  outline: none;
+}
+
+.pf-base-filter-select {
+  height: 28px;
+  max-width: 150px;
+  padding: 0 22px 0 8px;
+  border-radius: var(--pf-radius-control, 6px);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  font-size: 12px;
+  box-shadow: none !important;
+}
+
+.pf-base-filter-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--pf-elevated, var(--background-secondary));
+  border: 1px solid var(--pf-border);
+}
+
+.pf-base-filter-pill {
+  height: 22px !important;
+  min-height: 22px !important;
+  padding: 0 9px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--pf-text-muted) !important;
+  font-size: 11.5px !important;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pf-base-filter-pill:hover {
+  color: var(--pf-text) !important;
+}
+
+.pf-base-filter-pill.is-active {
+  background: var(--pf-surface) !important;
+  color: var(--pf-text) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+.pf-base-filter-reset {
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+}
+
+.pf-base-filter-count {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--pf-text-subtle, var(--pf-text-muted));
+  white-space: nowrap;
+  padding-left: 6px;
+}
+
+.pf-base-selection-slot:empty {
+  display: none;
+}
+
+.pf-base-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-surface);
+  contain: layout style;
+}
+
+.pf-base-table {
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  color: var(--pf-text);
+}
+
+.pf-base-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--pf-elevated, var(--background-secondary)) !important;
+  color: var(--pf-text-subtle, var(--pf-text-muted)) !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--pf-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-base-table td {
+  height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--pf-border) 72%, transparent);
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-base-view-root.is-compact .pf-base-table td {
+  height: 32px;
+  padding: 0 8px;
+}
+
+.pf-base-table tbody tr.pf-base-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 38px;
+}
+
+.pf-base-view-root.is-compact .pf-base-table tbody tr.pf-base-row {
+  contain-intrinsic-size: auto 32px;
+}
+
+.pf-base-table tbody tr.pf-base-row:hover td {
+  background: color-mix(in srgb, var(--pf-accent) 4%, var(--pf-elevated));
+}
+
+.pf-base-table tbody tr.pf-base-row.is-selected td {
+  background: var(--pf-accent-tint);
+}
+
+.pf-base-col-check,
+.pf-base-cell-check {
+  width: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  padding-left: 10px !important;
+  padding-right: 4px !important;
+  text-align: center !important;
+}
+
+.pf-base-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Strip ALL Obsidian button box-shadow/background/border chrome from PDF trigger & title link */
+.pf-base-table button.pf-base-pdf-trigger {
+  flex: 0 0 20px;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--pf-text-muted);
+  opacity: 0.72;
+  cursor: pointer;
+}
+
+.pf-base-table button.pf-base-pdf-trigger:hover {
+  opacity: 1;
+  color: var(--pf-accent);
+  background: var(--pf-hover, rgba(128, 128, 128, 0.1)) !important;
+}
+
+.pf-base-no-pdf-slot {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.pf-base-table a.pf-base-title-link,
+.pf-base-table .pf-base-title-link {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  text-align: left;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--pf-text);
+  cursor: pointer;
+}
+
+.pf-base-table a.pf-base-title-link:hover,
+.pf-base-table .pf-base-title-link:hover {
+  color: var(--pf-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pf-base-text-ellipsis {
+  display: block;
+  width: 100%;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-base-domain-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--pf-text);
+}
+
+.pf-base-domain-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-base-load-more-row td {
+  height: 40px;
+  padding: 6px 12px;
+  text-align: center;
+  border-bottom: 0;
+  background: var(--pf-surface);
+}
+
+.pf-base-load-more-btn {
+  background: transparent !important;
+  border: 1px solid var(--pf-border) !important;
+  box-shadow: none !important;
+  border-radius: 999px !important;
+  padding: 4px 14px !important;
+  height: 26px !important;
+  font-size: 12px !important;
+  color: var(--pf-text-muted) !important;
+  cursor: pointer;
+}
+
+.pf-base-load-more-btn:hover {
+  color: var(--pf-text) !important;
+  border-color: var(--pf-border-strong) !important;
+  background: var(--pf-elevated) !important;
+}
+
+/* 2. Settings Multi-Page Serenity, CJK Typography & Balanced Rhythm */
+.pf-settings-scope {
+  max-width: 780px;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--pf-text);
+}
+
+.pf-settings-scope .pf-cc-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-settings-scope .pf-cc-topbar-left {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+}
+
+.pf-settings-scope .pf-cc-topbar-brand {
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--pf-text);
+}
+
+.pf-settings-scope .pf-cc-topbar-version {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--pf-text-muted);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--pf-elevated, var(--background-secondary));
+  border: 1px solid var(--pf-border);
+}
+
+.pf-settings-scope .pf-cc-topbar-center {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--pf-radius-panel, 10px);
+  background: var(--pf-elevated, var(--background-secondary));
+  border: 1px solid var(--pf-border);
+}
+
+.pf-settings-scope .pf-cc-topbar-tab {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 13px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--pf-radius-control, 6px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--pf-text-muted) !important;
+  font-size: 12.5px !important;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--pf-ease-out, ease),
+    color 140ms var(--pf-ease-out, ease);
+}
+
+.pf-settings-scope .pf-cc-topbar-tab:hover {
+  color: var(--pf-text) !important;
+}
+
+.pf-settings-scope .pf-cc-topbar-tab--active {
+  background: var(--pf-surface, var(--background-primary)) !important;
+  border-color: var(--pf-border) !important;
+  color: var(--pf-text) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+}
+
+.pf-settings-scope .pf-cc-topbar-home {
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 0 9px !important;
+  font-size: 12px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  border: 1px solid var(--pf-border) !important;
+  box-shadow: none !important;
+  color: var(--pf-text-muted) !important;
+}
+
+.pf-settings-scope .pf-cc-topbar-home:hover {
+  color: var(--pf-text) !important;
+  background: var(--pf-elevated) !important;
+}
+
+/* Decision Tree Hero Card — crisp visual hierarchy + inline horizontal footer */
+.pf-control-center .pf-cc-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 20px 22px 16px !important;
+  border-radius: 12px !important;
+  background: var(--pf-surface) !important;
+  border: 1px solid var(--pf-border) !important;
+  margin-bottom: 22px;
+}
+
+.pf-control-center .pf-cc-summary-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pf-control-center .pf-cc-summary-badge {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  line-height: 1.45;
+}
+
+.pf-control-center .pf-cc-summary-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pf-control-center .pf-cc-summary-copy strong {
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.38;
+  letter-spacing: -0.01em;
+  color: var(--pf-text);
+}
+
+.pf-control-center .pf-cc-summary-copy .caption {
+  font-size: 13px;
+  line-height: 1.62;
+  color: var(--pf-text-muted);
+}
+
+.pf-control-center .pf-cc-summary-meta {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px;
+  padding-top: 12px !important;
+  margin-top: 2px !important;
+  border-top: 1px solid var(--pf-border);
+  font-size: 12px;
+  color: var(--pf-text-subtle, var(--pf-text-muted));
+}
+
+.pf-control-center .pf-cc-summary-refresh {
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 0 10px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--pf-border) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--pf-text-muted) !important;
+  font-size: 12px !important;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pf-control-center .pf-cc-summary-refresh:hover {
+  color: var(--pf-text) !important;
+  background: var(--pf-elevated) !important;
+  border-color: var(--pf-border-strong) !important;
+}
+
+/* Section Labels & Navigation Rows on Overview */
+.pf-control-center .pf-cc-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 2px 8px;
+}
+
+.pf-control-center .pf-cc-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--pf-text-subtle, var(--pf-text-muted));
+}
+
+.pf-control-center .pf-cc-section-head .caption {
+  font-size: 12px;
+  color: var(--pf-text-faint, var(--pf-text-muted));
+}
+
+.pf-control-center .pf-cc-nav-row {
+  grid-template-columns: minmax(128px, 168px) auto minmax(0, 1fr) auto 14px !important;
+  gap: 12px !important;
+  padding: 13px 16px !important;
+  min-height: 48px !important;
+  cursor: pointer;
+}
+
+.pf-control-center .pf-cc-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--pf-text);
+  line-height: 1.4;
+}
+
+.pf-control-center .pf-cc-card-sentence {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--pf-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-control-center .pf-cc-card-metric {
+  font-size: 12px;
+  color: var(--pf-text-subtle, var(--pf-text-muted));
+  white-space: nowrap;
+}
+
+/* Appearance Dedicated Tab */
+.pf-settings-page-head {
+  margin: 0 0 16px;
+}
+
+.pf-settings-page-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--pf-text);
+}
+
+.pf-settings-page-lede {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--pf-text-muted);
+}
+
+.pf-appearance-page .pf-cc-appearance-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  overflow: hidden;
+}
+
+.pf-appearance-page .pf-cc-theme-bar {
+  margin: 0 !important;
+  padding: 14px 18px !important;
+  border: none !important;
+  border-bottom: 1px solid var(--pf-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pf-appearance-page .pf-cc-theme-bar:last-child {
+  border-bottom: none !important;
+}
+
+.pf-appearance-page .pf-cc-theme-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--pf-text);
+  margin-bottom: 2px;
+}
+
+.pf-appearance-page .pf-cc-theme-desc {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--pf-text-muted);
+}
+
+/* Module Detail Typography & Spacing Polish */
+.pf-module-detail .pf-module-detail-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.pf-module-detail .pf-module-detail-selector {
+  margin-bottom: 0 !important;
+}
+
+.pf-settings-scope .pf-module-body {
+  gap: 14px;
+}
+
+.pf-settings-scope .pf-module-body h3 {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--pf-text);
+  margin: 14px 0 4px;
+  letter-spacing: 0.01em;
+}
+
+.pf-settings-scope .pf-module-body p,
+.pf-settings-scope .setting-item-description {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.pf-settings-scope .pf-module-fact {
+  padding: 10px 2px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* Accessibility ReduceMotion */
