@@ -12,6 +12,7 @@ import * as path from "path";
 import * as os from "os";
 import { migrateLegacySecret } from "./services/secret-storage";
 import { t, setLanguage, langFromApp } from "./i18n";
+import { formatHumanError } from "./services/feedback";
 import {
   EMBEDDING_PRESETS,
   matchEmbeddingPresetId,
@@ -263,6 +264,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Tracks which modules are currently being probed. */
   private _probing: Set<string> = new Set();
   private _lastOrphanCount: number = 0;
+  private _pendingOrphans: { key: string; title?: string }[] = [];
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
   /** Cached modules past TTL waiting for silent background revalidation (never flashed to Checking). */
@@ -444,6 +446,142 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         cls: "paperforge-manual-links",
       });
     }
+
+    // Persistent actionable inline banners (Defender quarantine, pending
+    // release notes, auto-sync error, orphan workspaces) — never vanish in 8s
+    // and never interrupt users with unsolicited Modals.
+    const pfHost = this.plugin as unknown as {
+      getQuarantinedBinDir?: () => string | null;
+      dismissQuarantineBanner?: () => void;
+      getPendingReleaseNotesVersion?: () => string | null;
+      openReleaseNotesModal?: () => void;
+      dismissPendingReleaseNotes?: () => void;
+      getLastAutoSyncError?: () => { message: string; at: number } | null;
+      triggerManualSync?: () => void;
+    };
+    const quarantinedDir = pfHost.getQuarantinedBinDir?.();
+    if (quarantinedDir) {
+      const qBanner = containerEl.createDiv({
+        cls: "pf-upgrade-banner pf-defender-banner",
+        attr: { role: "alert", "data-pf-testid": "defender-quarantine-banner" },
+      });
+      const copy = qBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-title",
+        text: t("main_defender_banner_title"),
+      });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-desc",
+        text: t("main_defender_banner_desc"),
+      });
+      copy.createEl("code", {
+        cls: "pf-defender-path-code",
+        text: quarantinedDir,
+      });
+      const actions = qBanner.createDiv({ cls: "pf-upgrade-banner-actions" });
+      const copyBtn = actions.createEl("button", {
+        cls: "pf-action-btn",
+        type: "button",
+        text: t("main_defender_copy_path"),
+        attr: { "data-pf-testid": "defender-copy-path-btn" },
+      });
+      copyBtn.addEventListener("click", () => {
+        void navigator.clipboard?.writeText?.(quarantinedDir).then(() => {
+          new Notice(t("main_defender_path_copied"));
+        });
+      });
+      const closeBtn = actions.createEl("button", {
+        cls: "pf-btn pf-btn-ghost",
+        type: "button",
+        text: t("base_missing_pdf_dismiss"),
+      });
+      closeBtn.addEventListener("click", () => {
+        pfHost.dismissQuarantineBanner?.();
+      });
+    }
+
+    const pendingRelVer = pfHost.getPendingReleaseNotesVersion?.();
+    if (pendingRelVer) {
+      const relBanner = containerEl.createDiv({
+        cls: "pf-upgrade-banner pf-release-notes-banner",
+        attr: { "data-pf-testid": "release-notes-banner" },
+      });
+      const copy = relBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-title",
+        text: t("main_release_banner_title").replace(
+          "{version}",
+          pendingRelVer
+        ),
+      });
+      const actions = relBanner.createDiv({ cls: "pf-upgrade-banner-actions" });
+      const viewBtn = actions.createEl("button", {
+        cls: "pf-action-btn",
+        type: "button",
+        text: t("main_release_banner_action"),
+        attr: { "data-pf-testid": "release-notes-banner-open" },
+      });
+      viewBtn.addEventListener("click", () => {
+        pfHost.openReleaseNotesModal?.();
+      });
+      const dismissBtn = actions.createEl("button", {
+        cls: "pf-btn pf-btn-ghost",
+        type: "button",
+        text: t("base_missing_pdf_dismiss"),
+      });
+      dismissBtn.addEventListener("click", () => {
+        pfHost.dismissPendingReleaseNotes?.();
+      });
+    }
+
+    const autoSyncErr = pfHost.getLastAutoSyncError?.();
+    if (autoSyncErr?.message) {
+      const syncBanner = containerEl.createDiv({
+        cls: "pf-upgrade-banner pf-autosync-error-banner",
+        attr: { role: "status", "data-pf-testid": "settings-autosync-banner" },
+      });
+      const copy = syncBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-title",
+        text: t("main_autosync_failed_title"),
+      });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-desc",
+        text: autoSyncErr.message,
+      });
+      const retryBtn = syncBanner.createEl("button", {
+        cls: "pf-action-btn",
+        type: "button",
+        text: t("main_autosync_retry"),
+      });
+      retryBtn.addEventListener("click", () => {
+        pfHost.triggerManualSync?.();
+      });
+    }
+
+    if (this._pendingOrphans.length > 0) {
+      const oBanner = containerEl.createDiv({
+        cls: "pf-upgrade-banner pf-orphan-banner",
+        attr: { "data-pf-testid": "settings-orphan-banner" },
+      });
+      const copy = oBanner.createDiv({ cls: "pf-upgrade-banner-copy" });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-title",
+        text: t("orphan_banner_title").replace(
+          "{count}",
+          String(this._pendingOrphans.length)
+        ),
+      });
+      const reviewBtn = oBanner.createEl("button", {
+        cls: "pf-action-btn",
+        type: "button",
+        text: t("orphan_banner_btn"),
+        attr: { "data-pf-testid": "settings-orphan-review-btn" },
+      });
+      reviewBtn.addEventListener("click", () => {
+        this._openOrphanModal(this._pendingOrphans);
+      });
+    }
     // --- Topbar ---
     const topbar = containerEl.createDiv({ cls: "pf-cc-topbar" });
 
@@ -502,14 +640,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         cls: "pf-cc-filter-input",
         attr: {
           type: "search",
-          placeholder:
-            langFromApp(this.app) === "zh"
-              ? "筛选模块或配置…"
-              : "Filter settings…",
-          "aria-label":
-            langFromApp(this.app) === "zh"
-              ? "筛选模块或配置"
-              : "Filter settings",
+          placeholder: t("settings_filter_placeholder"),
+          "aria-label": t("settings_filter_aria"),
         },
       }) as HTMLInputElement;
       filterInput.addEventListener("input", () => {
@@ -1290,6 +1422,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     } catch {
       return "";
     }
+  }
+
+  isRuntimeInstallPollingActive(): boolean {
+    return Boolean(this._runtimePollTimer);
   }
 
   private _stopRuntimePoll(ready: boolean, cancelReason?: string): void {
@@ -2157,7 +2293,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               },
               (e) => {
                 new Notice(
-                  `PaperForge: config set agent_platform failed: ${String(e)}`
+                  t("settings_config_set_failed")
+                    .replace("{key}", "agent_platform")
+                    .replace("{detail}", formatHumanError(e)),
+                  6000
                 );
                 this.display();
               }
@@ -2328,7 +2467,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Preset selector at top of Memory config (class pf-sr-cfg-select preserves .pf-sr-cfg-input count = 3)
     const presetRow = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
     presetRow.createEl("label", {
-      text: "服务商预设",
+      text: t("settings_provider_preset"),
       cls: "pf-sr-cfg-lbl",
     });
     const presetSel = presetRow.createEl("select", {
@@ -2437,7 +2576,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     const testBtn = testRow.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
-      text: "测试连接并自动匹配维度",
+      text: t("settings_test_embed_btn"),
       attr: { type: "button", "data-pf-testid": "sr-test-conn-btn" },
     });
     const testOut = testRow.createEl("span", {
@@ -2445,17 +2584,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: "",
     });
     testBtn.addEventListener("click", () => {
+      const isZhNow =
+        langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
       testBtn.disabled = true;
-      testOut.textContent = "探测中…";
+      testOut.textContent = t("settings_probing");
       void this.getClient()
         .embedTestConnection()
         .then((res) => {
           testOut.className = "pf-test-conn-status is-ok";
-          testOut.textContent = `✓ 已连通 · ${res.model} (${res.dimension} 维 · ${res.latency_ms}ms)`;
+          testOut.textContent =
+            "✓ " +
+            t("settings_embed_connected")
+              .replace("{model}", String(res.model))
+              .replace("{dim}", String(res.dimension))
+              .replace("{ms}", String(res.latency_ms));
         })
         .catch((err) => {
           testOut.className = "pf-test-conn-status is-err";
-          testOut.textContent = `✗ 连接失败：${String(err?.message || err).slice(0, 90)}`;
+          testOut.textContent =
+            "✗ " +
+            formatProviderConnectionError(
+              String(err?.message || err),
+              "embed",
+              isZhNow
+            );
         })
         .finally(() => {
           testBtn.disabled = false;
@@ -2467,7 +2619,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-adv-inline-details",
     });
     advClientDetails.createEl("summary", {
-      text: "高级接口模式（一般无需修改，系统已自动容错）",
+      text: t("settings_adv_api_mode"),
     });
     const pr = advClientDetails.createDiv({ cls: "pf-sr-cfg-row" });
     pr.createEl("label", {
@@ -2543,9 +2695,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         })
       )
       .addButton((btn) =>
-        btn.setButtonText("Clear").onClick(() => {
+        btn.setButtonText(t("dash_btn_clear")).onClick(() => {
           clearTrace();
-          new Notice("Trace cleared");
+          new Notice(t("settings_trace_cleared"));
         })
       );
 
@@ -2975,11 +3127,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : typeof payloadError?.message === "string"
                 ? payloadError.message
                 : "";
-          const base = failed || payloadReason;
+          const base =
+            failed || (payloadReason ? formatHumanError(payloadReason) : "");
           const detail =
             skippedCount > 0
               ? `${base ? base + " " : ""}(${skippedCount} skipped)`
-              : base || `exit code ${result.exitCode}`;
+              : base ||
+                formatHumanError(
+                  `exit code ${result.exitCode}`,
+                  "ocr_error_notice"
+                );
           new Notice(t("ocr_failed_notice") + ": " + detail, 8000);
         }
         this._refreshAllReadModels();
@@ -2994,7 +3151,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         new Notice(
           t("ocr_failed_notice") +
             ": " +
-            (err?.message || t("ocr_error_notice")),
+            formatHumanError(err, "ocr_error_notice"),
           8000
         );
         this._refreshAllReadModels();
@@ -3449,7 +3606,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
       } catch (err: unknown) {
         new Notice(
-          `Sync failed: ${err instanceof Error ? err.message : String(err)}`,
+          t("settings_sync_failed").replace("{detail}", formatHumanError(err)),
           8000
         );
       } finally {
@@ -3464,7 +3621,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // library exit code is forwarded for sync-failure detection (#78).
         this._refreshAllReadModels(exitCode);
         this._refreshSnapshots(vp);
-        checkOrphanState(this.app, this.plugin, vp);
       }
     })();
   }
@@ -3498,10 +3654,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderReleaseNotesTab(containerEl: HTMLElement) {
-    containerEl.createEl("h2", { text: "\u66F4\u65B0\u4E0E\u624B\u518C" });
+    containerEl.createEl("h2", { text: t("tab_help") || "Help & Changelog" });
 
     containerEl.createEl("h3", {
-      text: "\u7248\u672C\u66F4\u65B0\u8BB0\u5F55",
+      text: t("settings_changelog_heading"),
     });
 
     const versions = (releaseNotesData as any).versions || [];
@@ -3525,7 +3681,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         section.createEl("div", {
           cls: "paperforge-release-label",
-          text: "\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F",
+          text: t("main_release_recommended"),
         });
         for (const item of ver.breaking_or_migration) {
           section.createEl("div", {
@@ -3541,7 +3697,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         section.createEl("div", {
           cls: "paperforge-release-label",
-          text: "\u65B0\u529F\u80FD",
+          text: t("main_release_new_features"),
         });
         for (const item of ver.new_features) {
           section.createEl("div", {
@@ -3557,7 +3713,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         section.createEl("div", {
           cls: "paperforge-release-label",
-          text: "\u4FEE\u590D",
+          text: t("main_release_fixes"),
         });
         for (const item of ver.fixes) {
           section.createEl("div", {
@@ -3573,7 +3729,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         section.createEl("div", {
           cls: "paperforge-release-label",
-          text: "\u5EFA\u8BAE\u64CD\u4F5C",
+          text: t("main_release_recommended"),
         });
         for (const item of ver.recommended_actions) {
           section.createEl("div", {
@@ -3584,12 +3740,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     }
 
-    containerEl.createEl("h3", { text: "\u4F7F\u7528\u624B\u518C" });
+    containerEl.createEl("h3", { text: t("settings_manual_heading") });
     const manualSection = containerEl.createEl("div", {
       cls: "paperforge-manual-links",
     });
     const manualLink = manualSection.createEl("a", {
-      text: "\u2192 \u67E5\u770B\u5B8C\u6574\u4F7F\u7528\u624B\u518C\uFF08GitHub\uFF09",
+      text: t("settings_manual_link"),
       href: "https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md",
     });
     manualLink.setAttr("target", "_blank");
@@ -4261,28 +4417,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const themeCopy = themeBar.createDiv({ cls: "pf-cc-theme-copy" });
     themeCopy.createEl("div", {
       cls: "pf-cc-theme-label",
-      text: t("settings_theme_label") || "外观与材质",
+      text: t("settings_theme_label"),
     });
     themeCopy.createEl("div", {
       cls: "pf-cc-theme-desc",
-      text:
-        t("settings_theme_desc") ||
-        "默认同步当前 Obsidian 主题色与原生圆角，也可切换为 AsterLab 纯净或经典暖灰。",
+      text: t("settings_theme_desc"),
     });
     const themeSelect = themeBar.createEl("select", {
       cls: "pf-cc-theme-select",
       attr: { "data-pf-testid": "settings-theme-mode" },
     }) as HTMLSelectElement;
     for (const [val, label] of [
-      [
-        "obsidian",
-        t("settings_theme_obsidian") || "跟随 Obsidian 主题与原生圆角（推荐）",
-      ],
-      [
-        "asterlab",
-        t("settings_theme_asterlab") || "AsterLab 纯净白纸 · 深空曜石",
-      ],
-      ["warm", t("settings_theme_warm") || "AsterLab 经典暖纸色盘"],
+      ["obsidian", t("settings_theme_obsidian")],
+      ["asterlab", t("settings_theme_asterlab")],
+      ["warm", t("settings_theme_warm")],
     ] as const) {
       const opt = themeSelect.createEl("option", { text: label });
       opt.value = val;
@@ -4312,13 +4460,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const glassCopy = glassRow.createDiv({ cls: "pf-cc-theme-copy" });
     glassCopy.createEl("div", {
       cls: "pf-cc-theme-label",
-      text: t("settings_liquid_glass_label") || "Liquid Glass 液态玻璃材质",
+      text: t("settings_liquid_glass_label"),
     });
     glassCopy.createEl("div", {
       cls: "pf-cc-theme-desc",
-      text:
-        t("settings_liquid_glass_desc") ||
-        "为工具栏与悬浮气泡开启半透折射与微光描边；暗黑模式自动切换为烟熏深灰清透层。",
+      text: t("settings_liquid_glass_desc"),
     });
     const glassSwitch = glassRow.createEl("input", {
       type: "checkbox",
@@ -4338,13 +4484,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const motionCopy = motionRow.createDiv({ cls: "pf-cc-theme-copy" });
     motionCopy.createEl("div", {
       cls: "pf-cc-theme-label",
-      text: t("settings_reduce_motion_label") || "减弱物理动效（无障碍）",
+      text: t("settings_reduce_motion_label"),
     });
     motionCopy.createEl("div", {
       cls: "pf-cc-theme-desc",
-      text:
-        t("settings_reduce_motion_desc") ||
-        "跳过四档物理弹簧与微缩按压动画，仅保留瞬时状态切换。",
+      text: t("settings_reduce_motion_desc"),
     });
     const motionSwitch = motionRow.createEl("input", {
       type: "checkbox",
@@ -4770,11 +4914,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (lastLibraryExitCode != null && lastLibraryExitCode !== 0) {
           this._probeModule("library", lastLibraryExitCode);
         }
-        // State-machine driven orphan modal (统一出统一回): the maintenance
-        // envelope carries the orphan state from the lineage probe.  NEW
-        // orphans (none before, some now) pop the confirmation modal once;
-        // persistent orphans just stay visible on the module card — never
-        // re-pop on every 120s tick.
+        // Non-blocking orphan detection: record orphans for a calm persistent
+        // inline banner & explicit Review button instead of auto-popping a
+        // blocking Modal during background probes.
         const maint = (data.modules?.["maintenance"] ??
           null) as unknown as Record<string, unknown> | null;
         const orphanInfo = (maint?.orphan ?? {}) as {
@@ -4782,10 +4924,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           orphans?: { key: string; title?: string }[];
         };
         const orphanCount = orphanInfo.count ?? 0;
-        if (orphanCount > 0 && !this._lastOrphanCount) {
-          this._openOrphanModal(orphanInfo.orphans ?? []);
-        }
+        const nextOrphans = orphanCount > 0 ? (orphanInfo.orphans ?? []) : [];
+        const orphanChanged = orphanCount !== this._lastOrphanCount;
+        this._pendingOrphans = nextOrphans;
         this._lastOrphanCount = orphanCount;
+        if (orphanChanged && !this._displayInProgress) {
+          this.display();
+        }
       })
       .catch(() => {
         this._probing.clear();
@@ -5276,8 +5421,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: {
         type: "password",
         placeholder: settings._paddleocr_configured
-          ? "•••• (已保存)"
-          : "粘贴百度 AI Studio OCR 密钥（可选）",
+          ? t("settings_secret_saved_placeholder")
+          : t("settings_ocr_key_placeholder"),
       },
     }) as HTMLInputElement;
     const ocrTestBtn = ocrBox.createEl("button", {
@@ -5372,8 +5517,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: {
         type: "password",
         placeholder: settings._vector_db_configured
-          ? "•••• (已保存)"
-          : "粘贴 AI 检索 API Key（可选）",
+          ? t("settings_secret_saved_placeholder")
+          : t("settings_embed_key_placeholder"),
       },
     }) as HTMLInputElement;
     const memTestBtn = memBox.createEl("button", {
@@ -5809,18 +5954,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             step.id === "zotero"
               ? zotero +
                 (this._zoteroDetectData?.found
-                  ? ` (${this._zoteroDetectData.total_papers} 篇)`
+                  ? t("settings_zotero_papers_count").replace(
+                      "{count}",
+                      String(this._zoteroDetectData.total_papers)
+                    )
                   : "")
               : step.id === "scope"
                 ? useLegacyBbt
                   ? bbtFiles.join(", ")
                   : (settings.domain_mode === "unified"
-                      ? "全部文献统一汇总"
-                      : "按 Zotero 顶级文件夹分专题") +
+                      ? t("settings_zotero_mode_flat")
+                      : t("settings_zotero_mode_topic")) +
                     (Array.isArray(settings.zotero_selected_collections) &&
                     settings.zotero_selected_collections.length > 0
-                      ? ` · 已选 ${settings.zotero_selected_collections.length} 个文件夹`
-                      : " · 同步全库")
+                      ? t("settings_zotero_selected_cols").replace(
+                          "{count}",
+                          String(settings.zotero_selected_collections.length)
+                        )
+                      : t("settings_zotero_all_cols"))
                 : [
                     settings.literature_dir || "Literature",
                     settings.resources_dir || "Resources",
@@ -5984,8 +6135,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             body.createEl("p", {
               cls: "setting-item-description",
               text: this._zoteroDetectBusy
-                ? "正在扫描 Zotero 分类…"
-                : "将同步你的 Zotero 全部文献（稍后可随时勾选特定分类）。",
+                ? t("settings_zotero_scanning_cols")
+                : t("settings_zotero_sync_all_hint"),
             });
           }
 
@@ -6060,8 +6211,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             attr: {
               type: "password",
               placeholder: settings._easyscholar_configured
-                ? "•••• (已保存)"
-                : "EasyScholar SecretKey（可选）",
+                ? t("settings_secret_saved_placeholder")
+                : t("settings_easyscholar_placeholder"),
             },
           }) as HTMLInputElement;
           const esBtn = esRow.createEl("button", {
@@ -6080,12 +6231,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 settings.journal_metrics_mode = "auto";
                 esKey.value = "";
                 esMsg.className = "pf-test-conn-status is-ok";
-                esMsg.textContent = "✓ 已保存";
+                esMsg.textContent = "✓ " + t("settings_saved_ok");
                 void this.plugin.saveSettings();
               })
               .catch(() => {
                 esMsg.className = "pf-test-conn-status is-err";
-                esMsg.textContent = "保存失败";
+                esMsg.textContent = t("settings_save_failed");
               });
           });
         }
@@ -6101,8 +6252,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const modeSwitch = legacyDetails.createEl("button", {
           cls: "pf-btn pf-btn-secondary",
           text: useLegacyBbt
-            ? "切换回 zotero.sqlite 免插件直连（推荐）"
-            : "切换为旧版 BBT JSON 模式",
+            ? t("settings_zotero_switch_sqlite")
+            : t("settings_zotero_switch_bbt"),
           attr: { type: "button" },
         });
         modeSwitch.addEventListener("click", () => {
@@ -6344,7 +6495,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       })
       .catch((error) => {
         input.value = previous;
-        new Notice(`PaperForge: config set ${key} failed: ${String(error)}`);
+        new Notice(
+          t("settings_config_set_failed")
+            .replace("{key}", key)
+            .replace("{detail}", formatHumanError(error)),
+          6000
+        );
       });
   }
 
@@ -6496,7 +6652,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-adv-inline-details",
         });
         ocrAdv.createEl("summary", {
-          text: "高级接口设置（普通用户无需修改，默认使用官方接口）",
+          text: t("settings_ocr_adv_endpoint"),
         });
         ocrAdv.createEl("label", {
           text: t("ocr_job_url_label") || "PaddleOCR Job URL",
@@ -6549,7 +6705,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         const testOcrBtn = ocrSaveFooter.createEl("button", {
           cls: "pf-btn pf-btn-secondary",
-          text: "保存并测试连接",
+          text: t("settings_ocr_save_test_btn"),
           attr: { type: "button" },
         });
         const testOcrMsg = ocrSaveFooter.createEl("span", {
@@ -6559,22 +6715,34 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           void commitOcrKey();
         });
         testOcrBtn.addEventListener("click", () => {
+          const isZhNow =
+            langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
           testOcrBtn.disabled = true;
-          testOcrMsg.textContent = "测试中…";
+          testOcrMsg.textContent = t("settings_testing");
           void commitOcrKey()
             .then(() => this.getClient().ocrTestConnection())
             .then((res) => {
               if (res?.passed) {
                 testOcrMsg.className = "pf-test-conn-status is-ok";
-                testOcrMsg.textContent = "✓ 密钥有效，可正常解析 PDF";
+                testOcrMsg.textContent = "✓ " + t("settings_ocr_test_ok");
               } else {
                 testOcrMsg.className = "pf-test-conn-status is-err";
-                testOcrMsg.textContent = `✗ ${res?.error || "校验失败"}`;
+                testOcrMsg.textContent =
+                  "✗ " +
+                  (res?.error
+                    ? formatProviderConnectionError(res.error, "ocr", isZhNow)
+                    : t("settings_ocr_test_verify_failed"));
               }
             })
             .catch((err) => {
               testOcrMsg.className = "pf-test-conn-status is-err";
-              testOcrMsg.textContent = `✗ 测试失败：${String(err?.message || err).slice(0, 80)}`;
+              testOcrMsg.textContent =
+                "✗ " +
+                formatProviderConnectionError(
+                  String(err?.message || err),
+                  "ocr",
+                  isZhNow
+                );
             })
             .finally(() => {
               testOcrBtn.disabled = false;
@@ -6582,7 +6750,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       } else if (opt.id === "memory") {
         config.createEl("label", {
-          text: "选择 AI 语义服务商（自动匹配模型与维度）",
+          text: t("settings_embed_select_provider"),
         });
         const presetSelect = config.createEl("select", {
           cls: "pf-setup-select",
@@ -6618,7 +6786,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-adv-inline-details",
         });
         memAdv.createEl("summary", {
-          text: "高级：自定义模型名称、端点地址与兼容模式（选上方预设可免填）",
+          text: t("settings_embed_adv_custom"),
         });
         memAdv.createEl("label", { text: t("feat_api_model") });
         const model = memAdv.createEl("input", {
@@ -6697,7 +6865,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
         const testMemBtn = memSaveFooter.createEl("button", {
           cls: "pf-btn pf-btn-secondary",
-          text: "保存并测通维度",
+          text: t("settings_embed_save_test_btn"),
           attr: { type: "button" },
         });
         const testMemMsg = memSaveFooter.createEl("span", {
@@ -6707,17 +6875,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           void commitMemKey();
         });
         testMemBtn.addEventListener("click", () => {
+          const isZhNow =
+            langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
           testMemBtn.disabled = true;
-          testMemMsg.textContent = "探测中…";
+          testMemMsg.textContent = t("settings_probing");
           void commitMemKey()
             .then(() => this.getClient().embedTestConnection())
             .then((res) => {
               testMemMsg.className = "pf-test-conn-status is-ok";
-              testMemMsg.textContent = `✓ 已连通 · ${res.model} (${res.dimension} 维 · ${res.latency_ms}ms)`;
+              testMemMsg.textContent =
+                "✓ " +
+                t("settings_embed_connected")
+                  .replace("{model}", String(res.model))
+                  .replace("{dim}", String(res.dimension))
+                  .replace("{ms}", String(res.latency_ms));
             })
             .catch((err) => {
               testMemMsg.className = "pf-test-conn-status is-err";
-              testMemMsg.textContent = `✗ 测试失败：${String(err?.message || err).slice(0, 80)}`;
+              testMemMsg.textContent =
+                "✗ " +
+                formatProviderConnectionError(
+                  String(err?.message || err),
+                  "embed",
+                  isZhNow
+                );
             })
             .finally(() => {
               testMemBtn.disabled = false;
@@ -6760,7 +6941,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               },
               (e) => {
                 new Notice(
-                  `PaperForge: config set agent_platform failed: ${String(e)}`
+                  t("settings_config_set_failed")
+                    .replace("{key}", "agent_platform")
+                    .replace("{detail}", formatHumanError(e)),
+                  6000
                 );
                 select.value = previous;
                 status.setText(t("setup_optional_config_save_failed"));

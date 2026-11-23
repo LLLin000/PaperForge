@@ -22,6 +22,7 @@ import {
   patchEntryWorkflowState,
 } from "../constants";
 import { t } from "../i18n";
+import { formatHumanError } from "../services/feedback";
 import { classifyError } from "../services/python-bridge";
 import {
   readRuntimePointer,
@@ -722,10 +723,10 @@ export class PaperForgeStatusView extends ItemView {
       return;
     }
     const dimensions: Array<{ key: string; label: string }> = [
-      { key: "pdf_health", label: "PDF 文件" },
-      { key: "ocr_health", label: "全文解析" },
-      { key: "note_health", label: "文献笔记" },
-      { key: "asset_health", label: "关联素材" },
+      { key: "pdf_health", label: t("dash_health_pdf") },
+      { key: "ocr_health", label: t("dash_health_ocr") },
+      { key: "note_health", label: t("dash_health_note") },
+      { key: "asset_health", label: t("dash_health_asset") },
     ];
     const matrix = container.createEl("div", {
       cls: "paperforge-health-matrix",
@@ -737,7 +738,7 @@ export class PaperForgeStatusView extends ItemView {
       if (status === "healthy" || status === "ok") {
         iconName = "check";
         statusClass = "ok";
-        tooltip = `${dim.label}：正常`;
+        tooltip = t("dash_health_ok").replace("{label}", dim.label);
       } else if (
         status === "warn" ||
         status === "warning" ||
@@ -745,11 +746,11 @@ export class PaperForgeStatusView extends ItemView {
       ) {
         iconName = "alert-triangle";
         statusClass = "warn";
-        tooltip = `${dim.label}：需关注`;
+        tooltip = t("dash_health_warn").replace("{label}", dim.label);
       } else {
         iconName = "x";
         statusClass = "fail";
-        tooltip = `${dim.label}：异常`;
+        tooltip = t("dash_health_fail").replace("{label}", dim.label);
       }
       cell.addClass(statusClass);
       cell.setAttribute("title", tooltip);
@@ -1153,7 +1154,7 @@ export class PaperForgeStatusView extends ItemView {
       });
       issueSection.createEl("div", {
         cls: "paperforge-section-label",
-        text: "\u9700\u8981\u5904\u7406",
+        text: t("dash_needs_attention"),
       });
       const issueList = issueSection.createEl("div", {
         cls: "paperforge-issue-list",
@@ -1315,7 +1316,7 @@ export class PaperForgeStatusView extends ItemView {
         | Pick<IPluginRef, "openSetupJourney">
         | undefined;
       if (!plugin?.openSetupJourney?.()) {
-        new Notice("PaperForge Setup is unavailable", 6000);
+        new Notice(t("dash_setup_unavailable"), 6000);
       }
     });
   }
@@ -1328,6 +1329,47 @@ export class PaperForgeStatusView extends ItemView {
     if (!this._contentEl) return;
     if (this._backendUnavailable || !this._getClient()) {
       this._renderBackendMissingCard(this._contentEl);
+      return;
+    }
+    const pfPlugin = (
+      this.app as unknown as {
+        plugins?: {
+          plugins?: Record<
+            string,
+            {
+              getLastAutoSyncError?: () => {
+                message: string;
+                at: number;
+              } | null;
+              triggerManualSync?: () => void;
+            }
+          >;
+        };
+      }
+    )?.plugins?.plugins?.["paperforge"];
+    const syncErr = pfPlugin?.getLastAutoSyncError?.();
+    if (syncErr?.message) {
+      const bar = this._contentEl.createDiv({
+        cls: "pf-upgrade-banner pf-autosync-error-banner",
+        attr: { role: "status", "data-pf-testid": "autosync-error-banner" },
+      });
+      const copy = bar.createDiv({ cls: "pf-upgrade-banner-copy" });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-title",
+        text: t("main_autosync_failed_title"),
+      });
+      copy.createEl("div", {
+        cls: "pf-upgrade-banner-desc",
+        text: syncErr.message,
+      });
+      const retryBtn = bar.createEl("button", {
+        cls: "pf-action-btn",
+        type: "button",
+        text: t("main_autosync_retry"),
+      });
+      retryBtn.addEventListener("click", () => {
+        pfPlugin?.triggerManualSync?.();
+      });
     }
   }
 
@@ -1377,7 +1419,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     titleEl.addEventListener("click", () => {
       navigator.clipboard.writeText(entry.title || "");
-      new Notice("Title copied");
+      new Notice(t("dash_title_copied"));
     });
     const noteLink = entry.main_note_path || entry.note_path || null;
     bindObsidianHoverPreview(this.app, titleEl, "paperforge", noteLink);
@@ -1431,16 +1473,16 @@ export class PaperForgeStatusView extends ItemView {
         key: "ocr",
         label: "OCR",
         ok: entry.ocr_status === "done",
-        pending: ["pending", "queued", "processing"].includes(
+        pending: ["pending", "queued", "processing", "nopdf"].includes(
           entry.ocr_status || ""
         ),
-        fail: ["failed", "blocked", "done_incomplete", "nopdf"].includes(
+        fail: ["failed", "blocked", "done_incomplete"].includes(
           entry.ocr_status || ""
         ),
       },
       {
         key: "deep",
-        label: "\u7CBE\u8BFB",
+        label: t("dash_pill_deep"),
         ok: entry.deep_reading_status === "done",
       },
     ];
@@ -1465,7 +1507,7 @@ export class PaperForgeStatusView extends ItemView {
         cls: "paperforge-contextual-btn-icon",
       });
       setPfIcon(pdfIcon, "file-text", 14);
-      pdfBtn.createEl("span", { text: "\u6253\u5F00 PDF" });
+      pdfBtn.createEl("span", { text: t("base_open_pdf") });
       pdfBtn.addEventListener("click", () => {
         const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
           "paperforge"
@@ -1549,7 +1591,7 @@ export class PaperForgeStatusView extends ItemView {
         });
         setPfIcon(splitIcon, "columns-2", 14);
         splitBtn.createEl("span", {
-          text: "\u5206\u680F\u7CBE\u8BFB",
+          text: t("dash_btn_split_read"),
         });
         splitBtn.addEventListener("click", () => {
           const pfPlugin = ((this.app as any).plugins?.plugins as any)?.[
@@ -1623,7 +1665,7 @@ export class PaperForgeStatusView extends ItemView {
       const checkEl = complete.createEl("span", { cls: "pf-complete-icon" });
       setPfIcon(checkEl, "check", 14);
       complete.createEl("span", {
-        text: "\u5DF2\u5B8C\u6210\uFF0C\u53EF\u76F4\u63A5\u4F7F\u7528",
+        text: t("dash_ready_to_use"),
       });
     } else {
       this._renderNextStepCard(view, entry, key);
@@ -1698,7 +1740,7 @@ export class PaperForgeStatusView extends ItemView {
         cls: "pf-living-memory-editor",
         attr: {
           "data-pf-testid": `memory-facet-editor-${facet}`,
-          placeholder: `记录该论文的「${facetLabel}」要点…`,
+          placeholder: t("dash_mem_placeholder").replace("{label}", facetLabel),
         },
       });
       editor.value = initialContent;
@@ -1708,12 +1750,12 @@ export class PaperForgeStatusView extends ItemView {
       const cancelBtn = actionBar.createEl("button", {
         cls: "btn-secondary pf-living-memory-action-btn",
         attr: { type: "button", "data-pf-testid": "memory-facet-cancel" },
-        text: "取消",
+        text: t("maintenance_confirm_cancel"),
       });
       const saveBtn = actionBar.createEl("button", {
         cls: "btn-primary pf-living-memory-action-btn",
         attr: { type: "button", "data-pf-testid": "memory-facet-save" },
-        text: "保存",
+        text: t("config_save") || "Save",
       });
       cancelBtn.addEventListener("click", () => {
         this._renderLivingMemoryBody(body, card, activeKey);
@@ -1724,7 +1766,7 @@ export class PaperForgeStatusView extends ItemView {
           editor.classList.remove("pf-nudge");
           void editor.offsetWidth;
           editor.classList.add("pf-nudge");
-          new Notice("记忆内容不能为空");
+          new Notice(t("dash_mem_empty_notice"));
           return;
         }
         saveBtn.disabled = true;
@@ -1738,8 +1780,10 @@ export class PaperForgeStatusView extends ItemView {
             saveBtn.disabled = false;
             cancelBtn.disabled = false;
             new Notice(
-              "保存记忆失败: " +
-                (err instanceof Error ? err.message : String(err)),
+              t("dash_mem_save_failed").replace(
+                "{detail}",
+                formatHumanError(err)
+              ),
               5000
             );
           });
@@ -1751,9 +1795,7 @@ export class PaperForgeStatusView extends ItemView {
     if (facets.length === 0) {
       body.createEl("div", {
         cls: "pf-living-memory-empty",
-        text:
-          t("living_memory_empty") ||
-          "\u5C1A\u672A\u6C89\u6DC0\u7814\u7A76\u8BB0\u5FC6 \u2014 \u6279\u6CE8\u6216\u5728\u8BA8\u8BBA\u4E2D\u63D0\u70BC\u89C2\u70B9\u540E\u5C06\u6309\u7EF4\u5EA6\u6301\u7EED\u66F4\u65B0\u3002",
+        text: t("living_memory_empty"),
       });
     } else {
       for (const f of facets) {
@@ -1776,7 +1818,7 @@ export class PaperForgeStatusView extends ItemView {
           metaWrap.createEl("span", {
             cls: "pf-living-memory-facet-date pf-tnum",
             text: dateLabel,
-            attr: { title: `\u7B2C ${f.revision || 1} \u6B21\u6C89\u6DC0` },
+            attr: { title: `r${f.revision || 1}` },
           });
         }
         const fBody = item.createEl("div", {
@@ -1793,7 +1835,7 @@ export class PaperForgeStatusView extends ItemView {
               type: "button",
               "data-pf-testid": `memory-facet-edit-${f.facet}`,
             },
-            text: "编辑",
+            text: t("dash_btn_edit"),
           });
           editBtn.addEventListener("click", () => {
             openInlineEditor(fBody, f.facet, f.label || f.facet, f.content);
@@ -1805,7 +1847,7 @@ export class PaperForgeStatusView extends ItemView {
                 type: "button",
                 "data-pf-testid": `memory-facet-history-${f.facet}`,
               },
-              text: "历史",
+              text: t("dash_btn_history"),
             });
             histBtn.addEventListener("click", () => {
               new MemoryFacetHistoryModal(
@@ -1832,7 +1874,7 @@ export class PaperForgeStatusView extends ItemView {
                 type: "button",
                 "data-pf-testid": `memory-facet-clear-${f.facet}`,
               },
-              text: "清空",
+              text: t("dash_btn_clear"),
             });
             clearBtn.addEventListener("click", () => {
               void client.clearMemoryFacet!(activeKey, f.facet)
@@ -1842,8 +1884,10 @@ export class PaperForgeStatusView extends ItemView {
                 })
                 .catch((err: unknown) => {
                   new Notice(
-                    "清空记忆失败: " +
-                      (err instanceof Error ? err.message : String(err)),
+                    t("dash_mem_clear_failed").replace(
+                      "{detail}",
+                      formatHumanError(err)
+                    ),
                     5000
                   );
                 });
@@ -1865,16 +1909,17 @@ export class PaperForgeStatusView extends ItemView {
           cls: "pf-living-memory-draft-slot",
         });
         for (const def of missingDefs) {
+          const defLabel = t(def.labelKey);
           const chip = addRow.createEl("button", {
             cls: "pf-living-memory-chip",
             attr: {
               type: "button",
               "data-pf-testid": `memory-facet-add-${def.facet}`,
             },
-            text: `+ ${def.label}`,
+            text: `+ ${defLabel}`,
           });
           chip.addEventListener("click", () => {
-            openInlineEditor(draftSlot, def.facet, def.label, "");
+            openInlineEditor(draftSlot, def.facet, defLabel, "");
           });
         }
       }
@@ -1925,7 +1970,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     header.createEl("span", {
       cls: "paperforge-paper-overview-title",
-      text: "\u6587\u7AE0\u6982\u89C8",
+      text: t("dash_overview_title"),
     });
     const body = card.createEl("div", {
       cls: "paperforge-paper-overview-body",
@@ -1936,7 +1981,7 @@ export class PaperForgeStatusView extends ItemView {
       : undefined;
     const excerptEl = body.createEl("div", {
       cls: "paperforge-paper-overview-excerpt",
-      text: cachedExcerpt ? "" : "\u52A0\u8F7D\u4E2D...",
+      text: cachedExcerpt ? "" : t("dash_checking"),
     });
     const renderExtracted = (extracted: string) => {
       const oldToggle = body.querySelector(".paperforge-expand-container");
@@ -1950,7 +1995,7 @@ export class PaperForgeStatusView extends ItemView {
         });
         const expandBtn = expandContainer.createEl("button", {
           cls: "paperforge-expand-icon",
-          title: "\u5C55\u5F00/\u6536\u8D77",
+          title: t("dash_expand_collapse"),
         });
         setPfIcon(expandBtn, "chevron-down", 14);
         let expanded = false;
@@ -1989,20 +2034,16 @@ export class PaperForgeStatusView extends ItemView {
             }
           } else {
             this._overviewTextCache.delete(notePath);
-            excerptEl.setText(
-              "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
-            );
+            excerptEl.setText(t("dash_overview_empty_cta"));
           }
         })
         .catch(() => {
           if (!cachedExcerpt) {
-            excerptEl.setText(
-              "\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9"
-            );
+            excerptEl.setText(t("dash_overview_read_error"));
           }
         });
     } else {
-      excerptEl.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8");
+      excerptEl.setText(t("dash_overview_empty"));
     }
   }
 
@@ -2050,7 +2091,7 @@ export class PaperForgeStatusView extends ItemView {
           attr: {
             "data-pf-testid": `memory-deeplink-p${pageNum}`,
             "data-page": String(pageNum),
-            title: `跳转 PDF 第 ${pageNum} 页`,
+            title: t("dash_jump_pdf_page").replace("{page}", String(pageNum)),
           },
         });
         chip.addEventListener("click", () => {
@@ -2142,7 +2183,7 @@ export class PaperForgeStatusView extends ItemView {
         });
         header.createEl("span", {
           cls: "paperforge-discussion-title",
-          text: "\u6700\u8FD1\u8BA8\u8BBA",
+          text: t("dash_discussions_title"),
         });
         for (const qa of pairs) {
           const item = card.createEl("div", {
@@ -2151,7 +2192,7 @@ export class PaperForgeStatusView extends ItemView {
           const qEl = item.createEl("div", { cls: "paperforge-discussion-q" });
           qEl.createEl("span", {
             cls: "paperforge-discussion-q-label",
-            text: "\u63D0\u95EE\uFF1A",
+            text: "Q: ",
           });
           qEl.createEl("span", {
             cls: "paperforge-discussion-q-text",
@@ -2188,7 +2229,7 @@ export class PaperForgeStatusView extends ItemView {
         }
         const viewAll = card.createEl("a", {
           cls: "paperforge-discussion-viewall",
-          text: "\u67E5\u770B\u5168\u90E8\u8BA8\u8BBA \u2192",
+          text: t("dash_discussions_view_all"),
         });
         viewAll.addEventListener("click", (e: MouseEvent) => {
           e.preventDefault();
@@ -2196,7 +2237,7 @@ export class PaperForgeStatusView extends ItemView {
           if (discFile) {
             this.app.workspace.openLinkText(mdPath, "");
           } else {
-            new Notice("\u8BA8\u8BBA\u6587\u4EF6\u5C1A\u672A\u751F\u6210");
+            new Notice(t("dash_discussions_missing"));
           }
         });
       })
@@ -2247,21 +2288,17 @@ export class PaperForgeStatusView extends ItemView {
     body.style.display = "none";
     if (this._techDetailsExpanded) {
       body.style.display = "block";
-      toggle.setText(
-        "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25BE"
-      );
+      toggle.setText(`${t("dash_advanced_flags_label")} \u25BE`);
     } else {
-      toggle.setText(
-        "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25B8"
-      );
+      toggle.setText(`${t("dash_advanced_flags_label")} \u25B8`);
     }
     toggle.addEventListener("click", () => {
       const visible = body.style.display !== "none";
       body.style.display = visible ? "none" : "block";
       toggle.setText(
         visible
-          ? "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25B8"
-          : "\u9AD8\u7EA7\u9009\u9879\u4E0E\u6280\u672F\u6807\u8BC6 \u25BE"
+          ? `${t("dash_advanced_flags_label")} \u25B8`
+          : `${t("dash_advanced_flags_label")} \u25BE`
       );
       this._techDetailsExpanded = !visible;
     });
@@ -2269,11 +2306,11 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-workflow-toggles",
     });
     const toggleFields = [
-      { key: "do_ocr", label: "OCR", hint: "\u52A0\u5165 OCR" },
+      { key: "do_ocr", label: "OCR", hint: t("dash_flag_ocr_hint") },
       {
         key: "analyze",
-        label: "\u7CBE\u8BFB",
-        hint: "\u6807\u8BB0\u7CBE\u8BFB",
+        label: t("dash_pill_deep"),
+        hint: t("dash_flag_deep_hint"),
       },
     ];
     for (const tf of toggleFields) {
@@ -2344,29 +2381,33 @@ export class PaperForgeStatusView extends ItemView {
         } catch (err: any) {
           // fail closed: revert the checkbox, never leave a lying UI state
           cb.checked = !newVal;
-          this._setRecoveryError("状态更新失败", err?.message || String(err), [
-            {
-              label: t("dash_recovery_retry") || "重试",
-              primary: true,
-              run: () => {
-                cb.checked = newVal;
-                cb.dispatchEvent(new Event("change"));
+          this._setRecoveryError(
+            t("dash_status_update_failed"),
+            formatHumanError(err),
+            [
+              {
+                label: t("dash_recovery_retry"),
+                primary: true,
+                run: () => {
+                  cb.checked = newVal;
+                  cb.dispatchEvent(new Event("change"));
+                },
               },
-            },
-          ]);
+            ]
+          );
         }
       });
     }
     const health = entry.health || {};
     const statusMap: Record<string, string> = {
-      done: t("ocr_ws_status_done") || "已解析",
-      processing: t("ocr_ws_status_processing") || "解析中",
-      queued: "排队中",
-      failed: t("ocr_ws_status_failed") || "解析异常",
-      done_incomplete: t("ocr_ws_status_incomplete") || "部分解析",
-      done_degraded: t("ocr_ws_status_degraded") || "部分解析",
-      nopdf: t("ocr_ws_status_nopdf") || "无附件",
-      pending: t("ocr_ws_status_pending") || "未解析",
+      done: t("ocr_ws_status_done"),
+      processing: t("ocr_ws_status_processing"),
+      queued: t("ocr_ws_status_queued"),
+      failed: t("ocr_ws_status_failed"),
+      done_incomplete: t("ocr_ws_status_incomplete"),
+      done_degraded: t("ocr_ws_status_degraded"),
+      nopdf: t("ocr_ws_status_nopdf"),
+      pending: t("ocr_ws_status_pending"),
     };
     const localizedOcrStatus =
       (entry.ocr_status && statusMap[String(entry.ocr_status)]) ||
@@ -2699,10 +2740,7 @@ export class PaperForgeStatusView extends ItemView {
     this._qualityStagingCache = null;
     void this._loadQualitySection(root, key);
     if (rejected) {
-      new Notice(
-        "Authority rejected the action — re-stage and review the current proposals",
-        8000
-      );
+      new Notice(t("dash_proposal_rejected_stale"), 8000);
     }
   }
 
@@ -2718,14 +2756,17 @@ export class PaperForgeStatusView extends ItemView {
       const ok = result?.ok === true;
       new Notice(
         ok
-          ? `Promoted ${objectId}`
-          : `Promotion rejected: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
+          ? t("dash_promoted_ok").replace("{id}", objectId)
+          : t("dash_promoted_rejected").replace(
+              "{reason}",
+              String(result?.error?.code ?? result?.reason ?? "unknown")
+            ),
         8000
       );
       this._afterQualityMutation(root, key, !ok);
     } catch (err: unknown) {
       new Notice(
-        `Promotion failed: ${err instanceof Error ? err.message : String(err)}`,
+        t("dash_promoted_failed").replace("{detail}", formatHumanError(err)),
         8000
       );
     }
@@ -2746,14 +2787,17 @@ export class PaperForgeStatusView extends ItemView {
       const ok = result?.ok === true;
       new Notice(
         ok
-          ? `Accepted proposal ${label}`
-          : `Acceptance rejected: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
+          ? t("dash_proposal_accepted").replace("{label}", label)
+          : t("dash_proposal_rejected").replace(
+              "{reason}",
+              String(result?.error?.code ?? result?.reason ?? "unknown")
+            ),
         8000
       );
       this._afterQualityMutation(root, key, !ok);
     } catch (err: unknown) {
       new Notice(
-        `Acceptance failed: ${err instanceof Error ? err.message : String(err)}`,
+        t("dash_proposal_failed").replace("{detail}", formatHumanError(err)),
         8000
       );
     }
@@ -2854,8 +2898,8 @@ export class PaperForgeStatusView extends ItemView {
           })
           .catch(() => {
             this._setRecoveryError(
-              "剪贴板写入失败",
-              "请手动复制命令：" + fullCmd,
+              t("dash_clipboard_failed"),
+              t("dash_clipboard_manual").replace("{cmd}", fullCmd),
               []
             );
           });
@@ -2999,9 +3043,9 @@ export class PaperForgeStatusView extends ItemView {
     }
     try {
       if (await this.app.vault.adapter.exists(notePath)) {
-        this._setRecoveryError("笔记尚未被 Obsidian 索引", notePath, [
+        this._setRecoveryError(t("dash_note_not_indexed"), notePath, [
           {
-            label: t("dash_recovery_retry") || "重试",
+            label: t("dash_recovery_retry"),
             primary: true,
             run: () => void this._openSearchResult(notePath, newLeaf),
           },
@@ -3108,8 +3152,7 @@ export class PaperForgeStatusView extends ItemView {
       else if (
         ocs === "failed" ||
         ocs === "blocked" ||
-        ocs === "done_incomplete" ||
-        ocs === "nopdf"
+        ocs === "done_incomplete"
       )
         ocrFailed++;
     }
@@ -3201,10 +3244,22 @@ export class PaperForgeStatusView extends ItemView {
         cls: "paperforge-ocr-counts",
       });
       const ocrLabels = [
-        { cls: "pending", value: ocrPending, label: "Pending" },
-        { cls: "active", value: ocrProcessing, label: "Processing" },
-        { cls: "done", value: ocrDone, label: "Done" },
-        { cls: "failed", value: ocrFailed, label: "Attention" },
+        {
+          cls: "pending",
+          value: ocrPending,
+          label: t("ocr_ws_status_pending"),
+        },
+        {
+          cls: "active",
+          value: ocrProcessing,
+          label: t("ocr_ws_status_processing"),
+        },
+        { cls: "done", value: ocrDone, label: t("ocr_ws_status_done") },
+        {
+          cls: "failed",
+          value: ocrFailed,
+          label: t("dash_status_attention"),
+        },
       ];
       for (const l of ocrLabels) {
         const cnt = ocrCounts.createEl("div", { cls: "paperforge-ocr-count" });
@@ -3558,8 +3613,8 @@ export class PaperForgeStatusView extends ItemView {
               }
             } catch (err: any) {
               this._setRecoveryError(
-                "版本恢复失败",
-                err?.message || String(err),
+                t("dash_version_restore_failed"),
+                formatHumanError(err),
                 []
               );
             }
@@ -3608,7 +3663,11 @@ export class PaperForgeStatusView extends ItemView {
           : "";
         diffs = diffFulltext(textA, textB);
       } catch (err: any) {
-        this._setRecoveryError("版本对比失败", err?.message || String(err), []);
+        this._setRecoveryError(
+          t("dash_version_diff_failed"),
+          formatHumanError(err),
+          []
+        );
         return;
       }
       compareArea.style.display = "block";
@@ -4670,7 +4729,7 @@ export class PaperForgeStatusView extends ItemView {
    * (#99) and never dispatches. */
   async _runAction(a: any, card: HTMLElement) {
     if (a.disabled) {
-      new Notice(a.disabledMsg || "This action is not yet available.", 6000);
+      new Notice(a.disabledMsg || t("main_action_unavailable"), 6000);
       return;
     }
     if (a.id === "paperforge-ocr") {
@@ -4754,22 +4813,19 @@ export class PaperForgeStatusView extends ItemView {
       const unknownMsg =
         "No client route for " + (a.id || a.commandId || "unknown");
       settle(unknownMsg, "error");
-      this._setRecoveryError("未支持的操作", unknownMsg, []);
+      this._setRecoveryError(t("dash_action_unsupported"), unknownMsg, []);
     } catch (err: any) {
-      const failMsg =
-        (a.commandId || a.id) + " failed: " + (err?.message || err);
+      const failMsg = t("main_tool_failed")
+        .replace("{cmd}", String(a.commandId || a.id))
+        .replace("{detail}", formatHumanError(err));
       settle(failMsg, "error");
-      this._setRecoveryError(
-        t("dash_doctor_issues") || "操作执行失败",
-        failMsg,
-        [
-          {
-            label: t("dash_recovery_retry") || "重试",
-            primary: true,
-            run: () => void this._runAction(a, card),
-          },
-        ]
-      );
+      this._setRecoveryError(t("dash_doctor_issues"), failMsg, [
+        {
+          label: t("dash_recovery_retry") || "重试",
+          primary: true,
+          run: () => void this._runAction(a, card),
+        },
+      ]);
       void this._loadDashboardData(true);
     }
   }
@@ -4955,11 +5011,11 @@ export class PaperForgeStatusView extends ItemView {
 }
 
 const LIVING_MEMORY_FACET_DEFS = [
-  { facet: "idea_logic", label: "研究思路与逻辑链" },
-  { facet: "methods_params", label: "实验技术与关键参数" },
-  { facet: "research_craft", label: "研究技巧与巧思" },
-  { facet: "critique_limits", label: "硬伤、边界与存疑" },
-  { facet: "my_connection", label: "课题迁移与灵感" },
+  { facet: "idea_logic", labelKey: "dash_facet_idea_logic" },
+  { facet: "methods_params", labelKey: "dash_facet_methods_params" },
+  { facet: "research_craft", labelKey: "dash_facet_research_craft" },
+  { facet: "critique_limits", labelKey: "dash_facet_critique_limits" },
+  { facet: "my_connection", labelKey: "dash_facet_my_connection" },
 ] as const;
 
 export class MemoryFacetHistoryModal extends Modal {
@@ -5010,19 +5066,19 @@ export class MemoryFacetHistoryModal extends Modal {
     contentEl.empty();
     contentEl.addClass("paperforge-modal");
     contentEl.createEl("h3", {
-      text: `${this.facetLabel} · 修订历史`,
+      text: t("dash_mem_history_title").replace("{label}", this.facetLabel),
     });
     const listEl = contentEl.createDiv({ cls: "pf-memory-history-list" });
     listEl.createEl("div", {
       cls: "pf-living-memory-empty",
-      text: "正在加载历史修订…",
+      text: t("dash_mem_history_loading"),
     });
 
     if (typeof this.client.getMemoryCardHistory !== "function") {
       listEl.empty();
       listEl.createEl("div", {
         cls: "pf-living-memory-empty",
-        text: "当前客户端不支持历史查看。",
+        text: t("dash_mem_history_unsupported"),
       });
       return;
     }
@@ -5034,7 +5090,7 @@ export class MemoryFacetHistoryModal extends Modal {
         if (!entries.length) {
           listEl.createEl("div", {
             cls: "pf-living-memory-empty",
-            text: "暂无历史修订记录。",
+            text: t("dash_mem_history_empty"),
           });
           return;
         }
@@ -5051,7 +5107,7 @@ export class MemoryFacetHistoryModal extends Modal {
                 type: "button",
                 "data-pf-testid": "memory-history-restore",
               },
-              text: "恢复此版本",
+              text: t("dash_mem_history_restore"),
             });
             restoreBtn.addEventListener("click", () => {
               restoreBtn.disabled = true;
@@ -5067,8 +5123,10 @@ export class MemoryFacetHistoryModal extends Modal {
                 .catch((err: unknown) => {
                   restoreBtn.disabled = false;
                   new Notice(
-                    "恢复历史失败: " +
-                      (err instanceof Error ? err.message : String(err)),
+                    t("dash_mem_history_restore_failed").replace(
+                      "{detail}",
+                      formatHumanError(err)
+                    ),
                     5000
                   );
                 });
@@ -5084,9 +5142,10 @@ export class MemoryFacetHistoryModal extends Modal {
         listEl.empty();
         listEl.createEl("div", {
           cls: "pf-living-memory-empty",
-          text:
-            "历史加载失败: " +
-            (err instanceof Error ? err.message : String(err)),
+          text: t("dash_mem_history_load_failed").replace(
+            "{detail}",
+            formatHumanError(err)
+          ),
         });
       });
   }

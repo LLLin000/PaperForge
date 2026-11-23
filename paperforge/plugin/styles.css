@@ -13539,6 +13539,30 @@ body.pf-no-glass
   border-radius: 6px;
 }
 
+.pf-defender-banner,
+.pf-autosync-error-banner {
+  border-left: 3px solid var(--pf-warn, #c47f17);
+}
+
+.pf-defender-path-code {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  word-break: break-all;
+  background: var(--background-primary);
+  border: 1px solid var(--pf-border-strong);
+  border-radius: 4px;
+  user-select: text;
+}
+
+.pf-upgrade-maint-status {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--pf-warn, #c47f17);
+}
+
 /* Accessibility ReduceMotion */
 body.pf-reduce-motion *,
 body.pf-reduce-motion *::before,

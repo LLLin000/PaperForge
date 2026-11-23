@@ -826,10 +826,11 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
         auto_items.push(json!({
             "id": "storage.move_to_dot_paperforge",
             "area": "storage",
-            "title": format!("将底层引擎目录 {lrel} 收拢至隐藏目录 .paperforge/"),
+            "title": format!("Move legacy engine directory {lrel} into hidden .paperforge/"),
             "count": 1,
             "fast_cutover": true,
-            "detail": "保留可见笔记与 Zotero 原库不动。",
+            "detail": "Visible notes and your Zotero library remain untouched.",
+            "legacy_dir": lrel,
         }));
     }
 

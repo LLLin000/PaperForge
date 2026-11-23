@@ -43,6 +43,7 @@ import {
   PaperForgeSettings,
 } from "./constants";
 import { t, setLanguage } from "./i18n";
+import { formatDaemonNotice, formatHumanError } from "./services/feedback";
 import {
   readRuntimePointer,
   resolveRuntimeCommand,
@@ -116,8 +117,45 @@ export default class PaperForgePlugin extends Plugin {
   private _unsubscribeDaemon: (() => void) | null = null;
   private _upgradePlanCache: VaultUpgradePlanDto | null = null;
   private _upgradeBannerDismissedForSession = false;
+  private _quarantinedBinDir: string | null = null;
+  private _lastAutoSyncError: { message: string; at: number } | null = null;
+  private _pendingReleaseNotesVersion: string | null = null;
 
   private _client: PaperForgeClient | null = null;
+
+  getQuarantinedBinDir(): string | null {
+    return this._quarantinedBinDir;
+  }
+
+  dismissQuarantineBanner(): void {
+    this._quarantinedBinDir = null;
+    this._emitStateChanged();
+    this._settingTab?.display();
+  }
+
+  getLastAutoSyncError(): { message: string; at: number } | null {
+    return this._lastAutoSyncError;
+  }
+
+  clearLastAutoSyncError(): void {
+    this._lastAutoSyncError = null;
+    this._emitStateChanged();
+  }
+
+  getPendingReleaseNotesVersion(): string | null {
+    return this._pendingReleaseNotesVersion;
+  }
+
+  dismissPendingReleaseNotes(): void {
+    const v = this._pendingReleaseNotesVersion || this.manifest?.version;
+    this._pendingReleaseNotesVersion = null;
+    if (v) {
+      this.settings.last_seen_version = v;
+      void this.saveSettings();
+    }
+    this._emitStateChanged();
+    this._settingTab?.display();
+  }
 
   getClient(): PaperForgeClient {
     if (!this._client) {
@@ -143,7 +181,11 @@ export default class PaperForgePlugin extends Plugin {
     if (ev.event === "task.updated" && ev.data) {
       const job = ev.data as unknown as DaemonJobDto;
       if (job.job_id) {
-        if (job.status === "running" || job.status === "cancelling") {
+        if (
+          job.status === "queued" ||
+          job.status === "running" ||
+          job.status === "cancelling"
+        ) {
           this._daemonJobs.set(job.job_id, job);
         } else {
           this._daemonJobs.delete(job.job_id);
@@ -153,13 +195,26 @@ export default class PaperForgePlugin extends Plugin {
       return;
     }
     if (ev.event === "notice.push" && ev.data) {
-      const title = String(ev.data.title ?? "").trim();
-      const detail = String(ev.data.detail ?? "").trim();
-      const level = String(ev.data.level ?? "info");
       const nid = String(ev.data.notice_id ?? "");
-      if (title) {
-        const msg = detail ? `${title}: ${detail.slice(0, 140)}` : title;
-        new Notice(msg, level === "warning" || level === "error" ? 8000 : 5000);
+      const suppressRuntimeInstall = Boolean(
+        (
+          this._settingTab as unknown as {
+            isRuntimeInstallPollingActive?: () => boolean;
+          } | null
+        )?.isRuntimeInstallPollingActive?.()
+      );
+      const formatted = formatDaemonNotice(
+        {
+          notice_id: nid,
+          code: String(ev.data.code ?? ""),
+          level: String(ev.data.level ?? "info"),
+          title: String(ev.data.title ?? ""),
+          detail: String(ev.data.detail ?? ""),
+        },
+        { suppressRuntimeInstall }
+      );
+      if (formatted) {
+        new Notice(formatted.message, formatted.durationMs);
       }
       if (nid) {
         void this._client?.daemonAckNotice(nid).catch(() => undefined);
@@ -204,7 +259,7 @@ export default class PaperForgePlugin extends Plugin {
   async openUpgradeModal(): Promise<void> {
     const plan = this._upgradePlanCache ?? (await this.refreshUpgradePlan());
     if (!plan) {
-      new Notice("PaperForge: 暂无法读取文献库升级诊断信息。");
+      new Notice(t("main_upgrade_plan_unavailable"));
       return;
     }
     new PaperForgeUpgradeModal(this.app, this.getClient(), plan, {
@@ -271,7 +326,7 @@ export default class PaperForgePlugin extends Plugin {
       !openSettings ||
       !openTab
     ) {
-      new Notice("PaperForge settings navigation is unavailable", 6000);
+      new Notice(t("main_settings_nav_unavailable"), 6000);
       return false;
     }
     const found = openTab("paperforge");
@@ -430,8 +485,11 @@ export default class PaperForgePlugin extends Plugin {
                 : "";
           const detail =
             failedKeys.filter(Boolean).join(", ") ||
-            payloadReason ||
-            `exit code ${result.exitCode}`;
+            (payloadReason ? formatHumanError(payloadReason) : "") ||
+            formatHumanError(
+              `exit code ${result.exitCode}`,
+              "ocr_error_notice"
+            );
           new Notice(t("ocr_failed_notice") + ": " + detail, 8000);
         }
         this._ocrRunning = false;
@@ -445,7 +503,7 @@ export default class PaperForgePlugin extends Plugin {
         new Notice(
           t("ocr_failed_notice") +
             ": " +
-            (error.message || t("ocr_error_notice")),
+            formatHumanError(error, "ocr_error_notice"),
           8000
         );
         this._settingTab?.display();
@@ -504,7 +562,7 @@ export default class PaperForgePlugin extends Plugin {
     ).registerBasesView;
     if (typeof regBases === "function") {
       regBases.call(this, VIEW_TYPE_PF_BASE_TABLE, {
-        name: t("base_view_name") || "PaperForge 文献库",
+        name: t("base_view_name") || "PaperForge Library",
         icon: "library",
         factory: (controller: unknown, containerEl: HTMLElement) =>
           new PaperForgeBasesView(controller as any, containerEl, this),
@@ -512,13 +570,13 @@ export default class PaperForgePlugin extends Plugin {
           {
             key: "show_annotations",
             type: "toggle",
-            displayName: "显示批注与记忆计数",
+            displayName: t("main_base_opt_annotations"),
             default: true,
           },
           {
             key: "compact_rows",
             type: "toggle",
-            displayName: "紧凑行高",
+            displayName: t("main_base_opt_compact"),
             default: false,
           },
         ],
@@ -621,10 +679,7 @@ export default class PaperForgePlugin extends Plugin {
             return;
           }
           if (a.disabled) {
-            new Notice(
-              `[i] ${a.disabledMsg || "This action is not yet available."}`,
-              6000
-            );
+            new Notice(a.disabledMsg || t("main_action_unavailable"), 6000);
             return;
           }
           // Ticket 07 step 5: command palette routes through the shared
@@ -656,10 +711,15 @@ export default class PaperForgePlugin extends Plugin {
               return;
             }
             // Unknown tool identity — fail closed, never substitute.
-            new Notice(`Unsupported tool: ${a.id}`, 8000);
+            new Notice(
+              t("main_unsupported_tool").replace("{id}", String(a.id)),
+              8000
+            );
           } catch (err: any) {
             new Notice(
-              `${a.commandId} failed: ${String(err?.message || err).slice(0, 120)}`,
+              t("main_tool_failed")
+                .replace("{cmd}", String(a.commandId || a.id))
+                .replace("{detail}", formatHumanError(err)),
               8000
             );
           }
@@ -675,7 +735,7 @@ export default class PaperForgePlugin extends Plugin {
 
     this.addCommand({
       id: "paperforge-vault-upgrade",
-      name: "检查并无损升级文献库目录结构",
+      name: t("main_cmd_check_upgrade"),
       callback: () => {
         void this.openUpgradeModal();
       },
@@ -696,10 +756,10 @@ export default class PaperForgePlugin extends Plugin {
       checkVersionUpdate: true,
       onBeforeReplace: () => this._client?.shutdownTransportAsync(),
       onQuarantineSuspected: (binDir) => {
-        new Notice(
-          `PaperForge 检测到原生加速引擎文件异常消失（可能被安全软件隔离），正在尝试自动修复。如反复出现，可将目录 ${binDir} 加入 Windows 安全中心排除项。`,
-          12000
-        );
+        this._quarantinedBinDir = binDir;
+        this._emitStateChanged();
+        this._settingTab?.display();
+        new Notice(t("main_defender_notice_short"), 8000);
       },
     })
       .then((downloadedBin) => {
@@ -770,10 +830,7 @@ export default class PaperForgePlugin extends Plugin {
             !readRuntimePointer() &&
             !plan?.provenance?.needs_upgrade
           ) {
-            new Notice(
-              "PaperForge 已就绪：请前往「设置 → PaperForge」完成初始引导，或在侧边栏浏览已有文献。",
-              8000
-            );
+            new Notice(t("main_first_open_ready"), 8000);
           }
         })
         .catch(() => undefined);
@@ -801,7 +858,10 @@ export default class PaperForgePlugin extends Plugin {
         // The dry run is the authority's verdict: a legacy file it cannot
         // migrate must not be offered as "No conflicts".
         new Notice(
-          `PaperForge: config migrate failed: ${String(dryError)}`,
+          t("main_config_migrate_failed").replace(
+            "{detail}",
+            formatHumanError(dryError)
+          ),
           10000
         );
         return;
@@ -816,7 +876,13 @@ export default class PaperForgePlugin extends Plugin {
         } catch (e) {
           // A failed migrate must not fall through to the success path
           // (re-hydrate, clear the flag, "configuration migrated").
-          new Notice(`PaperForge: config migrate failed: ${String(e)}`, 10000);
+          new Notice(
+            t("main_config_migrate_failed").replace(
+              "{detail}",
+              formatHumanError(e)
+            ),
+            10000
+          );
           return;
         }
         // Re-hydrate mirrors from the canonical config, then purge the
@@ -844,7 +910,7 @@ export default class PaperForgePlugin extends Plugin {
         }
         this._needsConfigMigration = false;
         await this.saveSettings();
-        new Notice("PaperForge: configuration migrated");
+        new Notice(t("main_config_migrated"));
       }).open();
     })();
   }
@@ -894,6 +960,7 @@ export default class PaperForgePlugin extends Plugin {
         const result = await client.sync();
         ok = result?.ok !== false;
         if (ok) {
+          this._lastAutoSyncError = null;
           this._lastSyncTime = new Date().toLocaleTimeString();
           // #127/#169: consume next_actions — the Python registry is the
           // policy authority; the plugin executes via the action bridge.
@@ -912,9 +979,19 @@ export default class PaperForgePlugin extends Plugin {
           ) {
             void this.refreshBaseSnapshot().catch(() => undefined);
           }
+        } else {
+          const errObj = (result as { error?: { message?: string } })?.error;
+          this._lastAutoSyncError = {
+            message: formatHumanError(errObj?.message || "sync_failed"),
+            at: Date.now(),
+          };
         }
-      } catch {
+      } catch (err: unknown) {
         ok = false;
+        this._lastAutoSyncError = {
+          message: formatHumanError(err),
+          at: Date.now(),
+        };
       } finally {
         this._autoSyncRunning = false;
         this._memoryStatusText = null;
@@ -1097,7 +1174,7 @@ export default class PaperForgePlugin extends Plugin {
         kind: mappedKind,
         label:
           mappedKind === "heal"
-            ? "正在后台整理历史文献结构"
+            ? t("main_activity_heal")
             : mappedKind === "ocr"
               ? t("activity_ocr") || "Parsing fulltext"
               : mappedKind === "embed"
@@ -1156,7 +1233,7 @@ export default class PaperForgePlugin extends Plugin {
       this.app.vault.adapter as unknown as { basePath?: string }
     )?.basePath;
     if (vaultPath) {
-      new Notice("PaperForge: syncing library...");
+      new Notice(t("main_syncing_library"));
       this._autoSync(vaultPath);
     }
   }
@@ -1376,7 +1453,14 @@ export default class PaperForgePlugin extends Plugin {
     // A fresh profile has no previous version to compare against: release
     // notes for an upgrade they never ran are noise before first setup.
     if (!seen || seen === currentVersion) return;
+    // Non-blocking: record pending release notes for an inline banner in
+    // Settings / Help instead of interrupting startup with an unsolicited Modal.
+    this._pendingReleaseNotesVersion = currentVersion;
+  }
 
+  openReleaseNotesModal(): void {
+    const currentVersion =
+      this._pendingReleaseNotesVersion || this.manifest.version;
     const releaseNotesData = require("./release-notes.json");
     const versions = releaseNotesData.versions || [];
     const currentEntry = versions.find(
@@ -1392,7 +1476,10 @@ export default class PaperForgePlugin extends Plugin {
       onOpen() {
         const { contentEl } = this;
         contentEl.createEl("h2", {
-          text: `PaperForge v${currentVersion} \u66F4\u65B0\u8BF4\u660E`,
+          text: t("main_release_modal_title").replace(
+            "{version}",
+            currentVersion
+          ),
         });
         if (this._entry) {
           contentEl.createEl("p", {
@@ -1404,7 +1491,7 @@ export default class PaperForgePlugin extends Plugin {
             this._entry.breaking_or_migration.length > 0
           ) {
             contentEl.createEl("h4", {
-              text: "\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F",
+              text: t("main_release_recommended"),
             });
             for (const item of this._entry.breaking_or_migration) {
               contentEl.createEl("p", {
@@ -1414,7 +1501,7 @@ export default class PaperForgePlugin extends Plugin {
             }
           }
           if (this._entry.new_features && this._entry.new_features.length > 0) {
-            contentEl.createEl("h4", { text: "\u65B0\u529F\u80FD" });
+            contentEl.createEl("h4", { text: t("main_release_new_features") });
             for (const item of this._entry.new_features) {
               contentEl.createEl("p", {
                 text: `\u2022 ${item}`,
@@ -1423,7 +1510,7 @@ export default class PaperForgePlugin extends Plugin {
             }
           }
           if (this._entry.fixes && this._entry.fixes.length > 0) {
-            contentEl.createEl("h4", { text: "\u4FEE\u590D" });
+            contentEl.createEl("h4", { text: t("main_release_fixes") });
             for (const item of this._entry.fixes) {
               contentEl.createEl("p", {
                 text: `\u2022 ${item}`,
@@ -1439,7 +1526,7 @@ export default class PaperForgePlugin extends Plugin {
               cls: "paperforge-release-recommended",
             });
             section.createEl("h4", {
-              text: "\u5EFA\u8BAE\u64CD\u4F5C",
+              text: t("main_release_recommended"),
               cls: "",
             });
             section.style.marginBottom = "8px";
@@ -1452,15 +1539,15 @@ export default class PaperForgePlugin extends Plugin {
           }
         } else {
           contentEl.createEl("p", {
-            text:
-              "\u7248\u672C\u5DF2\u66F4\u65B0\u81F3 v" +
-              currentVersion +
-              "\uFF0C\u8BF7\u524D\u5F80\u8BBE\u7F6E \u2192 \u66F4\u65B0\u4E0E\u624B\u518C \u67E5\u770B\u5B8C\u6574\u66F4\u65B0\u8BB0\u5F55\u3002",
+            text: t("main_release_fallback_body").replace(
+              "{version}",
+              currentVersion
+            ),
           });
         }
         new Setting(contentEl).addButton((btn) =>
           btn
-            .setButtonText("\u77E5\u9053\u4E86")
+            .setButtonText(t("main_release_got_it"))
             .setCta()
             .onClick(() => {
               this.close();
@@ -1474,7 +1561,6 @@ export default class PaperForgePlugin extends Plugin {
     }
 
     new ReleaseNotesModal(this.app, currentEntry).open();
-    this.settings.last_seen_version = currentVersion;
-    this.saveSettings();
+    this.dismissPendingReleaseNotes();
   }
 }

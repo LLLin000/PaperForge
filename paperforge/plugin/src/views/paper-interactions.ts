@@ -71,21 +71,21 @@ export function openUnifiedPaperContextMenu(
   const menu = new MenuCtor();
   if (opts.onOpenNote && opts.notePath) {
     menu.addItem((item) => {
-      item.setTitle("打开文献笔记");
+      item.setTitle(t("ctx_open_note"));
       item.setIcon?.("file-text");
       item.onClick(() => opts.onOpenNote?.());
     });
   }
   if (opts.hasPdf && opts.onOpenPdf) {
     menu.addItem((item) => {
-      item.setTitle("打开内置 PDF 阅读");
+      item.setTitle(t("ctx_open_pdf"));
       item.setIcon?.("book-open");
       item.onClick(() => opts.onOpenPdf?.());
     });
   }
   if (opts.hasPdf && opts.notePath && opts.onOpenSplit) {
     menu.addItem((item) => {
-      item.setTitle(t("pdf_open_note_split") || "左右分栏对照精读");
+      item.setTitle(t("pdf_open_note_split"));
       item.setIcon?.("columns-2");
       item.onClick(() => opts.onOpenSplit?.());
     });
@@ -93,7 +93,7 @@ export function openUnifiedPaperContextMenu(
   if (opts.key) {
     menu.addSeparator?.();
     menu.addItem((item) => {
-      item.setTitle(`复制 Key (${opts.key})`);
+      item.setTitle(t("ctx_copy_key").replace("{key}", opts.key));
       item.setIcon?.("copy");
       item.onClick(() => {
         if (
@@ -101,7 +101,7 @@ export function openUnifiedPaperContextMenu(
           navigator.clipboard?.writeText
         ) {
           void navigator.clipboard.writeText(opts.key).then(() => {
-            new Notice(`已复制 ${opts.key}`);
+            new Notice(t("ctx_copied_key").replace("{key}", opts.key));
           });
         }
       });
@@ -109,14 +109,14 @@ export function openUnifiedPaperContextMenu(
   }
   if (opts.onRunOcr) {
     menu.addItem((item) => {
-      item.setTitle(t("base_run_selected_ocr") || "解析全文");
+      item.setTitle(t("base_run_selected_ocr"));
       item.setIcon?.("play");
       item.onClick(() => opts.onRunOcr?.());
     });
   }
   if (opts.needsDiagnostic && opts.onOpenDiagnostic) {
     menu.addItem((item) => {
-      item.setTitle("查看解析诊断");
+      item.setTitle(t("ctx_open_diag"));
       item.setIcon?.("stethoscope");
       item.onClick(() => opts.onOpenDiagnostic?.());
     });

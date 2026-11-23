@@ -351,7 +351,9 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
 
   it("reports partial or failed cleanup honestly without false success and keeps retry enabled", async () => {
     const { Notice } = await import("obsidian");
+    const { setLanguage } = await import("../src/i18n");
     vi.mocked(Notice).mockClear();
+    setLanguage({} as never, "zh");
 
     const vaultUpgradeApply = vi.fn().mockResolvedValue({
       applied: true,
@@ -386,6 +388,32 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
     expect(noticeMsg).toContain("失败 1 项");
     expect(noticeMsg).not.toMatch(/^已将 \d+ 项历史残余安全移入/);
     expect(quarantineBtn.disabled).toBe(false);
+    // Inline persistent status slot also preserves the failure message
+    const inlineStatus = host.querySelector(
+      '[data-pf-testid="cleanup-status-msg"]'
+    );
+    expect(inlineStatus?.textContent).toContain("失败 1 项");
+
+    // Verify English locale renders cleanly too
+    vi.mocked(Notice).mockClear();
+    setLanguage({} as never, "en");
+    const hostEn = document.createElement("div");
+    renderStorageMigrationMaintenanceSection(
+      hostEn,
+      {} as never,
+      { vaultUpgradeApply } as never,
+      sampleVeteranPlan({ rollback_available: false }),
+      onUpdated
+    );
+    const btnEn = hostEn.querySelector(
+      '[data-pf-testid="cleanup-quarantine-btn"]'
+    ) as HTMLButtonElement;
+    expect(btnEn.textContent).toContain("Safe Trash");
+    btnEn.click();
+    await vi.waitFor(() => expect(vi.mocked(Notice)).toHaveBeenCalled());
+    const noticeEn = String(vi.mocked(Notice).mock.calls[0]?.[0] ?? "");
+    expect(noticeEn).toContain("failed 1");
+    expect(noticeEn).toContain("locked");
   });
 
   it("translates raw OCR and Embedding API errors into beginner-friendly Chinese/English guidance", async () => {

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as https from "https";
 import { t } from "../i18n";
+import { formatHumanError } from "../services/feedback";
 import { PaperForgeSettings } from "../constants";
 import type { PythonResult } from "../services/python-bridge";
 
@@ -202,7 +203,7 @@ export class PaperForgeOrphanModal extends Modal {
         new Notice(t("orphan_none_selected"));
         return;
       }
-      this._countEl.setText("Deleting...");
+      this._countEl.setText(t("orphan_deleting"));
       this._countEl.setAttr("disabled", "");
       this._selectAllBtn.setAttr("disabled", "");
       const keys = selected.map((o) => o.key);
@@ -211,7 +212,7 @@ export class PaperForgeOrphanModal extends Modal {
       ];
       const client = plugin?.getClient?.();
       if (!client) {
-        new Notice("PaperForge: client unavailable");
+        new Notice(t("orphan_client_unavailable"));
         this.close();
         return;
       }
@@ -238,19 +239,32 @@ export class PaperForgeOrphanModal extends Modal {
             ? data.failed_keys.map(String)
             : [];
           if (res?.ok && failed.length === 0) {
-            new Notice("Deleted " + deleted.length + " orphan workspace(s)");
+            new Notice(
+              t("orphan_deleted_notice").replace(
+                "{count}",
+                String(deleted.length)
+              )
+            );
           } else if (failed.length > 0) {
             new Notice(
-              `PaperForge: prune incomplete (${failed.length} failed: ${failed.join(", ")})`
+              t("orphan_prune_incomplete")
+                .replace("{count}", String(failed.length))
+                .replace("{keys}", failed.join(", ")),
+              8000
             );
           } else {
-            new Notice("PaperForge: prune failed"); // ok===false with no failed_keys
+            new Notice(t("orphan_prune_failed"), 6000);
           }
           this.close();
         })
         .catch((err: unknown) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          new Notice("PaperForge: prune failed — " + msg, 6000);
+          new Notice(
+            t("orphan_prune_failed_detail").replace(
+              "{detail}",
+              formatHumanError(err)
+            ),
+            6000
+          );
           this.close();
         });
     });
@@ -315,7 +329,7 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
       }
     })
     .catch(() => {
-      new Notice("PaperForge: orphan detection failed");
+      new Notice(t("orphan_detect_failed"), 6000);
     });
 }
 

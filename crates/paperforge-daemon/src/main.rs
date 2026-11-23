@@ -877,6 +877,14 @@ mod tests {
         assert!(buf.len() <= 64);
         assert!(buf.is_char_boundary(0));
 
+        // Concise stderr summary strips Python traceback frames and keeps the real error
+        let tb = "Traceback (most recent call last):\n  File \"cli.py\", line 12, in main\n    run()\nRuntimeError: ZOTERO_DB_UNREADABLE\n";
+        assert_eq!(
+            supervisor::summarize_stderr_line(tb, 1),
+            "RuntimeError: ZOTERO_DB_UNREADABLE"
+        );
+        assert_eq!(supervisor::summarize_stderr_line("   \n ", 2), "exit code 2");
+
         // Scope key distinguishes individual paper jobs from vault-wide jobs
         let (k1, s1) = infer_kind_and_scope(
             &["action".into(), "run".into(), "ocr.run".into(), "--keys".into(), "A1".into()],
