@@ -239,7 +239,12 @@ class TestOcrBatchStress:
                 if key in {"P09_RESULT_DL_FAIL", "P10_RESULT_DL_FAIL_2"}:
                     raise requests.exceptions.ConnectionError(f"download failed for {key}")
                 if key == "P15_POSTPROCESS_CRASH":
-                    return _Resp(status_code=200, text="NOT_JSON{{{CORRUPT")
+                    return _Resp(
+                        status_code=200,
+                        text=json.dumps(
+                            {"result": {"layoutParsingResults": [{"prunedResult": "CORRUPT_POSTPROCESS"}]}}
+                        ),
+                    )
                 return _Resp(status_code=200, text=_valid_jsonl_result(key))
 
             job_id = url.rsplit("/", 1)[-1]

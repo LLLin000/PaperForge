@@ -20,7 +20,7 @@ def _canonical_vault_config(tmp_path: Path) -> None:
 @pytest.fixture
 def mock_client():
     """Patch openai.OpenAI and return the mock client instance."""
-    with patch("paperforge.embedding.providers.openai_compatible.openai.OpenAI") as mock_cls:
+    with patch("openai.OpenAI") as mock_cls:
         client = MagicMock()
         mock_cls.return_value = client
 
@@ -61,7 +61,7 @@ class TestOpenAICompatibleProvider:
         assert result == [0.1, 0.2, 0.3]
 
     def test_timeout_and_retries_applied(self, tmp_path: Path):
-        with patch("paperforge.embedding.providers.openai_compatible.openai.OpenAI") as mock_cls:
+        with patch("openai.OpenAI") as mock_cls:
             OpenAICompatibleProvider(tmp_path)
 
             mock_cls.assert_called_once()

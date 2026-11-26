@@ -104,7 +104,16 @@ def candidate_is_healthy_with_rows(candidate: Path) -> bool:
         if layout.unreadable:
             return False
         all_missing = len(layout.missing) >= len(layout.dimensions or ())
-        if not all_missing and not layout.compatible:
+        if not all_missing and layout.missing:
+            return False
+        dims = {d for d in layout.dimensions.values() if d is not None}
+        if len(dims) > 1:
+            return False
+        # When vec0 tables already hold rows, enforce full layout/orphan
+        # compatibility so dropped/rebuilt vec0 tables never shadow live.
+        # Meta-only seed states (total_vec_rows == 0 with intact, readable
+        # schema) still count as a resumable candidate for probe/effective_vector_db.
+        if not all_missing and layout.total_vec_rows > 0 and not layout.compatible:
             return False
         return True
     except Exception:  # noqa: BLE001 — corrupt/locked candidate never shadows live

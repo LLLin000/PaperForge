@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from paperforge.worker.ocr_maintenance import OCRMaintenanceRow
 from tests.conftest import canonical_test_config
 
 

@@ -4,20 +4,16 @@ All notable changes to PaperForge.
 
 ---
 
-## [Unreleased]
+## [2.0.7] - 2026-11-26
 
-### Added
+### Release Qualification & Hardening
 
-- Native Rust MCP server (`paperforge-daemon --mcp`) with 7 tools (`paperforge_brief`, `paperforge_search`, `paperforge_library_query`, `paperforge_paper_context`, `paperforge_retrieve`, `paperforge_annotate_batch`, `paperforge_memory_refine`), plus `agent-brief`, `agent-onboarding`, `mcp-config`, `mcp-install`, `mcp-check`, and `skill-sync-all` Skill Hub commands.
-- Obsidian UIKit foundation (`paperforge/plugin/src/uikit/`), Paper Quick Switcher (`paperforge-quick-switcher`), Unified Command Palette (`paperforge-command-palette`), Citation Inserter (`paperforge-insert-citation`), and Developer UI Gallery (`open-ui-gallery`).
-- New CLI endpoints: `paperforge embed list-models`, `paperforge annotations agent-apply`.
-
-### Security & Packaging
-
-- Hardened `.github/workflows/publish.yml` and CI workflows: added top-level `concurrency:` guard, least-privilege `permissions:`, pinned third-party GitHub Action commit SHAs and cross-build tool versions, moved Release Identity Gate (`Tag vs SHA`) and plugin build/prerelease projection before Python wheel build and optional PyPI OIDC publish, enforced `SOURCE_DATE_EPOCH` deterministic wheel/sdist builds, made missing `checksums.txt` fail closed on existing releases, removed unsafe `--clobber` overwrites, and fixed Stable promotion (`gh release edit --prerelease=false`).
-- Tightened `pyproject.toml` `packages.find` excludes and `package-data` globs so `package-lock.json`, `tsconfig.json`, `test/fixtures/`, `prototypes/`, and internal `architecture-review` harness scripts do not leak into built wheels; aligned license metadata to `CC-BY-NC-SA-4.0`.
-- Fixed Linux `NUL` file creation bug in `paperforge/plugin/package.json` `typecheck` script and synchronized `package.json` version metadata.
-- Reconciled `docs/COMMANDS.md`, `README.md`, `README.en.md`, `README.zh.md`, `INSTALLATION.md`, `docs/getting-started.md`, `docs/user-manual.md`, `docs/INSTALL-AND-UPDATE-ARCHITECTURE.md`, and Handbook Chapter 13 (`docs/handbook/13-obsidian-plugin-and-views.md`) with shipped 2.0.x architecture.
+- **Native MCP & Agent Skill Hub (`paperforge-daemon`)**: Added native Rust MCP server (`--mcp`) with 7 tools, `agent-brief`, `agent-onboarding`, `mcp-config`, `mcp-install`, `mcp-check`, and `skill-sync-all`. Hardened MCP vault pinning, argument validation, `--` positional separators, `exclusive_barrier` serialization across `cli.run` and mutating MCP tools, binary path/SHA-256/anti-downgrade verification in `maybe_reexec_latest_binary`, Windows Job Object reaping for reexec/runtime subprocesses, skill containment checks, and corrupt DB / `tier0_truth_intact` / `base-snapshot` parity.
+- **Runtime Installer & Supply-Chain Security**: Enforced authoritative GitHub Release `checksums.txt` SHA-256 + ZIP integrity validation for wheel downloads (`runtime_ops.rs` and `runtime_uv.py`), removed `--trusted-host` TLS bypasses, and added secret redaction in `installer.log`.
+- **OCR, Retrieval, Memory & Annotations**: Added CJK LIKE fallback for FTS5 metadata/content search, loaded `sqlite-vec` during paper vector deletion (`delete_paper_vectors_in_conn`), purged deleted keys from `workspace_registry`/`ocr_catalog`/`lineage`/`paper_memory_history`, made `agent_apply_annotations` two-phase atomic on `replace_lens`, added `--domain` filtering to `retrieve` and `done_incomplete` to `search`, fixed `ocr rebuild` `PFError` lookup, fixed `ocr --json run` stdout purity, treated truncated NDJSON OCR results as retryable, aligned dashboard/maintenance statuses, allowed `x0=0`/`y0=0` object crop bboxes, and preserved resumable `.db.build` candidates in `probe_memory`.
+- **Data Safety, Migration & Zotero Sync**: Hardened vault upgrade per-file verification, rollback, Zotero sync fingerprint/backup handling, and trash boundary checks.
+- **Obsidian Plugin & UIKit**: Added UIKit foundation, Quick Switcher, Unified Command Palette, Citation Inserter, and UI Gallery; fixed `paperforge-build-embeddings` action/scope/confirmation contract, virtual scroll freeze, layout-change listener leaks, shift-select, deep-link handling, inline rollback, CSS scoping, and bilingual i18n parity.
+- **CI, Packaging & Docs**: Hardened `.github/workflows/publish.yml` and CI workflows with `SOURCE_DATE_EPOCH` deterministic wheel/sdist builds, cleaned `pyproject.toml` wheel excludes/package-data, synchronized `ci-shards.json`, and reconciled 2.0.x documentation and technical reference.
 
 ---
 

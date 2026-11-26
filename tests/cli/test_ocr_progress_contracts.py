@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from argparse import Namespace as SimpleNamespace
+from pathlib import Path
 
 import pytest
 

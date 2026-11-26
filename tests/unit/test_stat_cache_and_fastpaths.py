@@ -117,7 +117,13 @@ def test_read_index_mtime_cache_and_sqlite_first_base_snapshot(
     assert isinstance(first, dict) and len(first["items"]) == 2
     assert read_index(vault) == first
 
-    # Populate DB for K1 ONLY; put sidecar annotation on K2 before DB knows about K2
+    # Before DB exists: sidecar annotation on K2 is read via index_json fallback
+    add_annotation(vault, "K2", page=1, rects=[[0.1, 0.1, 0.4, 0.2]], exact_text="new finding")
+    snap_pre_db = get_base_table_snapshot(vault)
+    assert snap_pre_db["state_authority"] == "index_json"
+    assert snap_pre_db["rows"]["K2"]["user_ann_count"] == 1
+
+    # Populate DB for K1 ONLY: SQLite papers SSOT governs; K2 is not resurrected
     db_path = get_memory_db_path(vault)
     conn = sqlite3.connect(str(db_path))
     ensure_schema(conn)
@@ -128,10 +134,9 @@ def test_read_index_mtime_cache_and_sqlite_first_base_snapshot(
     conn.commit()
     conn.close()
 
-    add_annotation(vault, "K2", page=1, rects=[[0.1, 0.1, 0.4, 0.2]], exact_text="new finding")
-
     snap = get_base_table_snapshot(vault)
-    assert snap["rows"]["K2"]["user_ann_count"] == 1
+    assert snap["state_authority"] == "sqlite"
+    assert "K2" not in snap["rows"]
     assert snap["rows"]["K1"]["user_ann_count"] == 0
 
     # Ensure K1 (which IS in db_papers) never triggers workspace card read fallback

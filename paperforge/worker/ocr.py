@@ -3276,8 +3276,6 @@ def _run_ocr_impl(
                         continue
                     lines = [line.strip() for line in result_response.text.splitlines() if line.strip()]
                     try:
-                        if not lines:
-                            raise json.JSONDecodeError("Empty OCR result payload", "", 0)
                         parsed_lines = [json.loads(line) for line in lines]
                     except json.JSONDecodeError as exc:
                         # Truncated or malformed HTTP NDJSON body is recoverable; classify as
@@ -3728,8 +3726,6 @@ def _run_ocr_impl(
                         continue
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
                     try:
-                        if not lines:
-                            raise json.JSONDecodeError("Empty OCR result payload", "", 0)
                         parsed_lines = [json.loads(l) for l in lines]
                     except json.JSONDecodeError as exc:
                         # Truncated/malformed HTTP NDJSON body is retryable; preserve ocr_job_id (PF-OCR-009).

@@ -276,7 +276,7 @@ class TestForceRebuildBackup:
         import shutil
 
         from paperforge.embedding.dim_detect import ensure_vec_tables
-        from paperforge.memory.db import get_connection, get_memory_db_path
+        from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
         from paperforge.memory.schema import ensure_schema
 
         vault = tmp_path / "vault"
