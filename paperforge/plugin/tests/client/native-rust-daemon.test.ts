@@ -124,11 +124,15 @@ function writeMockWorkerPackage(vaultDir: string): void {
 
 import {
   ensureNativeDaemonDownloaded,
+  httpsGetBuffer,
+  isManagedDaemonBinaryPath,
   managedNativeDaemonPath,
   nativeDaemonAssetName,
+  nativeDaemonMetaFile,
   nativeDaemonTargetTriple,
   readNativeDaemonMeta,
   resolveNativeDaemonBinary,
+  resolveProxyForUrl,
 } from "../../src/services/native-daemon";
 import { NodeProcessTransport } from "../../src/client/node-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
@@ -641,4 +645,218 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       }
     }
   );
+
+  it("PF-SEC-001: fetches checksums.txt ONLY from github.com and rejects forged mirror checksums + binaries", async () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-sec001-"));
+    try {
+      const asset = nativeDaemonAssetName(process.platform, process.arch)!;
+      const evilBin = Buffer.from("trojanized-daemon-binary");
+      const evilSha = crypto.createHash("sha256").update(evilBin).digest("hex");
+      const fetchedUrls: string[] = [];
+
+      const res = await ensureNativeDaemonDownloaded("2.0.7", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: async (url: string) => {
+          fetchedUrls.push(url);
+          if (
+            url.startsWith("https://github.com/") &&
+            url.endsWith("/checksums.txt")
+          ) {
+            throw new Error("github offline");
+          }
+          if (url.endsWith("/checksums.txt")) {
+            return Buffer.from(`${evilSha}  ${asset}\n`, "utf-8");
+          }
+          return evilBin;
+        },
+      });
+
+      expect(res).toBeNull();
+      expect(
+        fetchedUrls.some(
+          (u) =>
+            !u.startsWith("https://github.com/") && u.endsWith("/checksums.txt")
+        )
+      ).toBe(false);
+    } finally {
+      rmTempSafe(tmpHome);
+    }
+  });
+
+  it("PF-RT-005 / PF-SEC-016: fails closed on corrupted binary offline, honors proxy env, rejects non-HTTPS, and cleans .tmp on swap failure", async () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-rt005-"));
+    try {
+      const asset = nativeDaemonAssetName(process.platform, process.arch)!;
+      const validBin = Buffer.from("valid-native-daemon-bytes");
+      const validSha = crypto
+        .createHash("sha256")
+        .update(validBin)
+        .digest("hex");
+
+      const installed = await ensureNativeDaemonDownloaded("2.0.7", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: async (url: string) =>
+          url.endsWith("/checksums.txt")
+            ? Buffer.from(`${validSha}  ${asset}\n`, "utf-8")
+            : validBin,
+      });
+      expect(installed).toBeTruthy();
+
+      // Corrupt 1 byte on disk and go offline -> MUST return null, never corrupted path!
+      const bad = Buffer.from(validBin);
+      bad[0] ^= 0xff;
+      fs.writeFileSync(installed!, bad);
+      const offlineRes = await ensureNativeDaemonDownloaded("2.0.7", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: async () => {
+          throw new Error("ENOTFOUND");
+        },
+      });
+      expect(offlineRes).toBeNull();
+
+      // Simulate renameSync failure during promotion (pre-existing directory at targetPath) -> zero .tmp files left behind
+      fs.unlinkSync(installed!);
+      fs.mkdirSync(installed!, { recursive: true });
+      await ensureNativeDaemonDownloaded("2.0.7", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        fetchBuffer: async (url: string) =>
+          url.endsWith("/checksums.txt")
+            ? Buffer.from(`${validSha}  ${asset}\n`, "utf-8")
+            : validBin,
+      });
+      const binDir = path.dirname(
+        managedNativeDaemonPath(tmpHome, process.platform)
+      );
+      const leftoverTmp = fs
+        .readdirSync(binDir)
+        .filter((f) => f.endsWith(".tmp"));
+      expect(leftoverTmp).toEqual([]);
+
+      // Proxy env resolution & non-HTTPS rejection
+      expect(
+        resolveProxyForUrl("https://github.com/a/b", {
+          HTTPS_PROXY: "http://127.0.0.1:8888",
+        })?.toString()
+      ).toBe("http://127.0.0.1:8888/");
+      expect(
+        resolveProxyForUrl("https://github.com/a/b", {
+          HTTPS_PROXY: "http://127.0.0.1:8888",
+          NO_PROXY: "github.com",
+        })
+      ).toBeNull();
+      await expect(httpsGetBuffer("http://example.com/bin")).rejects.toThrow(
+        /non-HTTPS/i
+      );
+    } finally {
+      rmTempSafe(tmpHome);
+    }
+  });
+
+  it("PF-SEC-007: resolveNativeDaemonBinary rejects .daemon-meta.json pointing outside ~/.paperforge/bin or mismatched SHA-256", () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-sec007-"));
+    const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-outside-"));
+    try {
+      const binDir = path.dirname(
+        managedNativeDaemonPath(tmpHome, process.platform)
+      );
+      fs.mkdirSync(binDir, { recursive: true });
+      const evilExe = path.join(outsideDir, "paperforge-daemon-evil.exe");
+      const evilBuf = Buffer.from("outside-binary");
+      fs.writeFileSync(evilExe, evilBuf);
+      const evilSha = crypto.createHash("sha256").update(evilBuf).digest("hex");
+
+      fs.writeFileSync(
+        nativeDaemonMetaFile(tmpHome, process.platform),
+        JSON.stringify({
+          tag: "2.0.7",
+          sha256: evilSha,
+          binaryPath: evilExe,
+        }),
+        "utf-8"
+      );
+      expect(
+        resolveNativeDaemonBinary({
+          home: tmpHome,
+          platform: process.platform,
+          arch: process.arch,
+        })
+      ).toBeNull();
+
+      // Inside binDir, but mismatched SHA-256 -> still rejected!
+      const insideExe = path.join(
+        binDir,
+        "paperforge-daemon-2.0.7-deadbeef00.exe"
+      );
+      fs.writeFileSync(insideExe, evilBuf);
+      fs.writeFileSync(
+        nativeDaemonMetaFile(tmpHome, process.platform),
+        JSON.stringify({
+          tag: "2.0.7",
+          sha256: "0".repeat(64),
+          binaryPath: insideExe,
+        }),
+        "utf-8"
+      );
+      expect(
+        resolveNativeDaemonBinary({
+          home: tmpHome,
+          platform: process.platform,
+          arch: process.arch,
+        })
+      ).toBeNull();
+    } finally {
+      rmTempSafe(tmpHome);
+      rmTempSafe(outsideDir);
+    }
+  });
+
+  it("isManagedDaemonBinaryPath handles deleted files and symlinked parent directories", () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pf-managed-bin-"));
+    try {
+      const binDir = path.join(tmpRoot, "real", ".paperforge", "bin");
+      fs.mkdirSync(binDir, { recursive: true });
+
+      const missingManaged = path.join(binDir, "paperforge-daemon-2.0.1.exe");
+      expect(isManagedDaemonBinaryPath(binDir, missingManaged)).toBe(true);
+
+      const missingOutside = path.join(
+        binDir,
+        "..",
+        "paperforge-daemon-2.0.1.exe"
+      );
+      expect(isManagedDaemonBinaryPath(binDir, missingOutside)).toBe(false);
+
+      const symParent = path.join(tmpRoot, "alias");
+      let symlinkCreated = false;
+      try {
+        fs.symlinkSync(path.join(tmpRoot, "real"), symParent, "dir");
+        symlinkCreated = true;
+      } catch {
+        // Windows without Developer Mode may forbid directory symlinks (EPERM).
+      }
+      if (symlinkCreated) {
+        const deletedViaAlias = path.join(
+          symParent,
+          ".paperforge",
+          "bin",
+          "paperforge-daemon-2.0.1"
+        );
+        expect(isManagedDaemonBinaryPath(binDir, deletedViaAlias)).toBe(true);
+      }
+    } finally {
+      rmTempSafe(tmpRoot);
+    }
+  });
 });

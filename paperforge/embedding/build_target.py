@@ -94,18 +94,34 @@ class ShadowBuild:
             )
         conn = self.candidate_conn()
         try:
+            qc = conn.execute("PRAGMA quick_check(1)").fetchone()
+            if not qc or str(qc[0]).lower() != "ok":
+                raise BuildTargetError(
+                    f"recover: candidate failed integrity check at {self.target.vector_path}"
+                )
             from paperforge.embedding.substrate import _has_any_rows
 
+            vec_loaded = False
             try:
                 from paperforge.memory.db import ensure_vec_extension
 
                 ensure_vec_extension(conn)
+                vec_loaded = True
             except Exception:  # noqa: BLE001
                 pass
             if not _has_any_rows(conn):
                 raise BuildTargetError(
                     f"recover: candidate has no vector rows at {self.target.vector_path}"
                 )
+            if vec_loaded:
+                from paperforge.embedding.dim_detect import inspect_vector_layout
+
+                layout = inspect_vector_layout(conn)
+                all_missing = len(layout.missing) >= len(layout.dimensions or ())
+                if layout.unreadable or (not all_missing and not layout.compatible):
+                    raise BuildTargetError(
+                        f"recover: candidate vector layout damaged ({layout.reason})"
+                    )
         finally:
             self.close_candidate_conn()
         self.state = self.BUILDING
@@ -380,6 +396,36 @@ def _reader_barrier(live_path: Path):
     from filelock import FileLock
 
     return FileLock(str(live_path) + ".read.lock", timeout=10)
+
+
+def restore_db_from_backup(backup_path: Path, live_path: Path) -> None:
+    """Restore *backup_path* onto *live_path*, clearing stale WAL/SHM sidecars under barrier."""
+    import contextlib
+
+    barrier_ctx = None
+    try:
+        barrier_ctx = _reader_barrier(live_path)
+    except Exception:  # noqa: BLE001
+        barrier_ctx = None
+
+    def _swap() -> None:
+        for suffix in ("-wal", "-shm"):
+            p = Path(str(live_path) + suffix)
+            with contextlib.suppress(OSError):
+                if p.exists():
+                    p.unlink()
+        os.replace(str(backup_path), str(live_path))
+        for suffix in ("-wal", "-shm"):
+            p = Path(str(live_path) + suffix)
+            with contextlib.suppress(OSError):
+                if p.exists():
+                    p.unlink()
+
+    if barrier_ctx is not None:
+        with barrier_ctx:
+            _swap()
+    else:
+        _swap()
 
 
 def partial_publish_shadow(vector_path: Path, live_path: Path) -> None:

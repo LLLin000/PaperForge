@@ -11,7 +11,7 @@ from paperforge.config import paperforge_paths
 from paperforge.core.io import read_json, read_jsonl
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import get_connection, get_memory_db_path, quarantine_corrupt_db
 from paperforge.memory.paper_state import ASSET_FIELDS, ALIAS_TYPES, _paper_state_hash, upsert_paper_state
 from paperforge.memory.schema import (
     CURRENT_SCHEMA_VERSION,
@@ -96,6 +96,9 @@ def _import_reading_log(conn, vault: Path, valid_keys: set[str] | None = None) -
     return {"imported": imported, "orphaned_skipped": skipped}
 
 
+import_reading_log = _import_reading_log
+
+
 def _import_project_log(conn, vault: Path) -> int:
     """Import project-log.jsonl into project_log table. Returns count."""
     from paperforge.memory.permanent import read_all_project_entries
@@ -122,6 +125,9 @@ def _import_project_log(conn, vault: Path) -> int:
         )
         count += 1
     return count
+
+
+import_project_log = _import_project_log
 
 
 def _import_paper_annotations(
@@ -181,6 +187,9 @@ def _import_paper_annotations(
             )
             imported += 1
     return imported
+
+
+import_paper_annotations = _import_paper_annotations
 
 
 def _import_paper_memory_cards(
@@ -268,6 +277,9 @@ def _import_paper_memory_cards(
                     )
     return imported
 
+
+import_paper_memory_cards = _import_paper_memory_cards
+
 def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: set[str] | None = None) -> dict:
     """Import correction-log.jsonl into paper_events for FTS search.
 
@@ -294,6 +306,9 @@ def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: se
         )
         imported += 1
     return {"imported": imported, "orphaned_skipped": skipped}
+
+
+import_correction_log = _import_correction_log
 
 
 def _hydrate_reading_log_for_keys(conn: sqlite3.Connection, vault: Path, keys: set[str]) -> int:
@@ -384,11 +399,11 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
     try:
         delete_paper_vectors_in_conn(conn, key)
     except Exception:
-        logger.warning("Vector deletion failed for %s, deleting meta only", key)
+        logger.warning("Vector deletion failed for %s, deleting meta only", key, exc_info=True)
         for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
             conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
 
-    # 1. FK-referencing tables
+    # 1. FK-referencing and paper-scoped tables
     conn.execute("DELETE FROM body_units_fts WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM body_units WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM object_units WHERE paper_id=?", (key,))
@@ -396,8 +411,12 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
     conn.execute("DELETE FROM reading_log WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_annotations WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_memory_cards WHERE zotero_key=?", (key,))
+    conn.execute("DELETE FROM paper_memory_history WHERE zotero_key=?", (key,))
     conn.execute("DELETE FROM paper_aliases WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_assets WHERE paper_id=?", (key,))
+    conn.execute("DELETE FROM lineage WHERE paper_id=?", (key,))
+    conn.execute("DELETE FROM workspace_registry WHERE zotero_key=?", (key,))
+    conn.execute("DELETE FROM ocr_catalog WHERE zotero_key=?", (key,))
 
     # 2. Meta entries
     conn.execute(
@@ -471,6 +490,11 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         items = [e for e in items if e.get("zotero_key") in set(keys)]
 
     db_path = get_memory_db_path(vault)
+    quarantined_path: Path | None = None
+    if keys is None:
+        quarantined_path = quarantine_corrupt_db(db_path)
+        if quarantined_path is not None:
+            logger.warning("Quarantined corrupt memory DB to %s before rebuild", quarantined_path)
     conn = get_connection(db_path, read_only=False)
     try:
         # ── 0. Read version BEFORE ensure_schema/migrate_schema ──────────
@@ -497,6 +521,8 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
                     "requested_keys": list(keys),
                 }
             result = _full_rebuild(conn, vault, items, canonical_hash, generated_at, ocr_root)
+            if quarantined_path is not None:
+                result["quarantined_corrupt_db"] = str(quarantined_path)
             conn.commit()
             conn.close()
             try:
@@ -692,15 +718,23 @@ def _full_rebuild(
     placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
     paper_sql = f"INSERT OR REPLACE INTO papers ({cols}) VALUES ({placeholders})"
 
+    from paperforge.memory.paper_state import resolve_effective_note_relpath
+
     for entry in items:
         zotero_key = entry.get("zotero_key", "")
         if not zotero_key:
             continue
         entry = materialize_paper_entry(entry)
-        paper_rows.append(build_paper_row(entry, now_utc))
         all_hashes.append((f"paper_state_hash:{zotero_key}", _paper_state_hash(entry, "")))
+        row_entry = dict(entry)
+        resolved_note = resolve_effective_note_relpath(vault, row_entry)
+        if resolved_note:
+            row_entry["note_path"] = resolved_note
+            if not row_entry.get("main_note_path"):
+                row_entry["main_note_path"] = resolved_note
+        paper_rows.append(build_paper_row(row_entry, now_utc))
         for asset_type, entry_field in ASSET_FIELDS:
-            path_val = entry.get(entry_field, "")
+            path_val = row_entry.get(entry_field, "")
             if not path_val:
                 continue
             rel_path = str(path_val).replace("\\", "/")

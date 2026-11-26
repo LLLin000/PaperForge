@@ -22,6 +22,20 @@ describe("i18n dictionary parity & zero-leak guards", () => {
     expect(enKeys.length).toBeGreaterThan(1300);
   });
 
+  it("PF-UI-008: keeps identical {placeholder} sets across EN and ZH for every i18n key", () => {
+    const extractPlaceholders = (str: string) =>
+      [...new Set(str.match(/\{[a-zA-Z0-9_]+\}/g) ?? [])].sort();
+    const mismatches: Array<{ key: string; en: string[]; zh: string[] }> = [];
+    for (const key of Object.keys(I18N_DICTIONARIES.en)) {
+      const enPh = extractPlaceholders(I18N_DICTIONARIES.en[key]);
+      const zhPh = extractPlaceholders(I18N_DICTIONARIES.zh[key]);
+      if (JSON.stringify(enPh) !== JSON.stringify(zhPh)) {
+        mismatches.push({ key, en: enPh, zh: zhPh });
+      }
+    }
+    expect(mismatches).toEqual([]);
+  });
+
   it("ensures Rust daemon production code emits zero hardcoded Chinese strings", () => {
     const rustDir = path.resolve(
       __dirname,
@@ -243,6 +257,46 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
     });
     expect(legacy.id).toBe("legacy_vault_upgrade");
     expect(legacy.primaryAction?.kind).toBe("open_vault_upgrade");
+
+    // 2b. Veteran vault with missing/mismatched engine asks to align engine FIRST
+    const legacyNoEngine = resolveSetupDecision({
+      ...base,
+      runtimePointer: null,
+      installationEnv: failedInst,
+      upgradePlan: legacy.primaryAction
+        ? {
+            vault: "/v",
+            provenance: {
+              state: "veteran_legacy",
+              needs_upgrade: true,
+              confidence: "high",
+              signals: ["legacy_engine_dir:System/PaperForge"],
+            },
+            census: {},
+            manifest: null,
+            rollback_available: false,
+            category_a_auto: [],
+            category_b_reconfig: [],
+            category_c_tamper: [],
+            cleanup_candidates: [],
+            summary: {
+              auto_count: 1,
+              reconfig_critical_count: 0,
+              reconfig_minor_count: 0,
+              tamper_count: 0,
+              cleanup_candidate_count: 0,
+              ocr_atoms: {
+                total: 0,
+                current: 0,
+                rebuild_derived_local: 0,
+                backfill_from_result_json: 0,
+                re_ocr_needed: 0,
+              },
+            },
+          }
+        : null,
+    });
+    expect(legacyNoEngine.id).toBe("engine_not_installed");
 
     // 4. Version mismatch offers 1-click engine update (not Step 1 install!)
     const mismatch = resolveSetupDecision({

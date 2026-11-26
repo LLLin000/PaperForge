@@ -150,3 +150,39 @@ def test_backfill_from_result_handles_list_format(tmp_path) -> None:
     result = backfill_from_result(vault, "LIST001")
 
     assert result["backfill_status"] == "done"
+
+
+def test_backfill_and_rebuild_preserve_tier0_result_json_bytes(tmp_path) -> None:
+    """PF-MIG-012: Tier-0 json/result.json bytes & SHA-256 must stay immutable on backfill/rebuild."""
+    import hashlib
+    from paperforge.worker.ocr_rebuild import backfill_from_result, run_derived_rebuild_for_keys
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        '{"schema_version": 2, "vault_config": {"system_dir": ".paperforge", "resources_dir": "Resources"}}',
+        encoding="utf-8",
+    )
+    ocr_dir = vault / ".paperforge" / "ocr" / "TIER0K1"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"TIER0K1","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+    (ocr_dir / "json").mkdir(parents=True)
+    raw_bytes = (
+        b'{\n  "pages": [  {\n    "layoutParsingResults": [\n'
+        b'      { "prunedResult": { "parsing_res_list": [ { "block_label": "text", "block_content": "Immutable raw Tier-0.", "block_bbox": [10, 20, 300, 50] } ] } }\n'
+        b'    ]\n  }  ]\n}\n\n'
+    )
+    result_path = ocr_dir / "json" / "result.json"
+    result_path.write_bytes(raw_bytes)
+    before_sha = hashlib.sha256(result_path.read_bytes()).hexdigest()
+
+    res = backfill_from_result(vault, "TIER0K1")
+    assert res["backfill_status"] == "done"
+    assert hashlib.sha256(result_path.read_bytes()).hexdigest() == before_sha
+
+    reb = run_derived_rebuild_for_keys(vault, ["TIER0K1"])
+    assert reb["rebuild_count"] == 1
+    assert hashlib.sha256(result_path.read_bytes()).hexdigest() == before_sha

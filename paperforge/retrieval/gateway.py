@@ -53,9 +53,7 @@ def route_gateway(
     if intent == "paper-lookup":
         return _run_paper_lookup(vault, query, limit=limit)
     if intent == "content-discovery":
-        if _body_units_fts_exists(vault):
-            return _run_body_unit_discovery(vault, query, limit=limit)
-        return _run_compat_content_discovery(vault, query, limit=limit)
+        return _run_body_unit_discovery(vault, query, limit=limit)
     if intent == "paper-navigation":
         return _run_paper_navigation(vault, query)
     if intent == "scoped-fetch":
@@ -89,14 +87,14 @@ def _get_body_coverage(conn) -> dict:
 
 
 def _body_units_fts_exists(vault: Path) -> bool:
-    """Check whether the body_units_fts table exists and has rows."""
+    """Check whether the body_units_fts table exists and has at least one row (O(1))."""
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return False
     try:
         with open_live_reader(vault, db_path) as conn:
-            row = conn.execute("SELECT COUNT(*) AS cnt FROM body_units_fts").fetchone()
-            return row["cnt"] > 0
+            row = conn.execute("SELECT 1 FROM body_units_fts LIMIT 1").fetchone()
+            return row is not None
     except Exception:
         return False
 
@@ -194,6 +192,53 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
 # ---------------------------------------------------------------------------
 
 
+def _escape_like(term: str) -> str:
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _like_body_unit_discovery(conn, query: str, limit: int) -> list[dict]:
+    """SQL LIKE fallback on body_units when FTS5 returns 0 hits (e.g., CJK substrings)."""
+    tokens = re.findall(r"[\w\u4e00-\u9fff]+", query)
+    if not tokens:
+        raw = query.strip()
+        tokens = [raw] if raw else []
+    if not tokens:
+        return []
+
+    seen: set[str] = set()
+    results: list[dict] = []
+
+    def _collect(joiner: str) -> None:
+        clauses = []
+        params: list[Any] = []
+        for t in tokens:
+            pat = f"%{_escape_like(t)}%"
+            clauses.append("(unit_text LIKE ? ESCAPE '\\' OR section_path LIKE ? ESCAPE '\\')")
+            params.extend([pat, pat])
+        where = f" {joiner} ".join(clauses)
+        params.append(limit)
+        rows = conn.execute(
+            f"""SELECT unit_id, paper_id, section_path, unit_text, 0.0 AS rank
+                FROM body_units
+                WHERE indexable = 1 AND ({where})
+                LIMIT ?""",
+            params,
+        ).fetchall()
+        for r in rows:
+            d = dict(r)
+            uid = str(d.get("unit_id") or "")
+            if uid and uid in seen:
+                continue
+            if uid:
+                seen.add(uid)
+            results.append(d)
+
+    _collect("AND")
+    if not results and len(tokens) > 1:
+        _collect("OR")
+    return results[:limit]
+
+
 def _run_body_unit_discovery(
     vault: Path, query: str, *, limit: int = 5
 ) -> PFResult:
@@ -218,26 +263,58 @@ def _run_body_unit_discovery(
                 },
             },
         )
+    fallback_to_compat = False
     try:
         with open_live_reader(vault, db_path) as conn:
-            fts_query = _tokenize_for_fts(query)
-            rows = conn.execute(
-                """SELECT unit_id, paper_id, section_path, unit_text, rank
-                   FROM body_units_fts
-                   WHERE body_units_fts MATCH ?
-                   ORDER BY rank
-                   LIMIT ?""",
-                (fts_query, limit),
-            ).fetchall()
-            results = [dict(r) for r in rows]
-            # #159 §6 / #168 T7 P0-3: body_units_fts is RETRIEVAL
-            # materialization — gate on the retrieval lineage (no vector
-            # requirement for this arm).
-            from paperforge.reader_gate import filter_readable
+            has_fts = conn.execute("SELECT 1 FROM body_units_fts LIMIT 1").fetchone()
+            if has_fts is None:
+                fallback_to_compat = True
+            else:
+                fts_query = _tokenize_for_fts(query)
+                rows = conn.execute(
+                    """SELECT unit_id, paper_id, section_path, unit_text, rank
+                       FROM body_units_fts
+                       WHERE body_units_fts MATCH ?
+                       ORDER BY rank
+                       LIMIT ?""",
+                    (fts_query, limit),
+                ).fetchall()
+                results = [dict(r) for r in rows]
+                if not results:
+                    results = _like_body_unit_discovery(conn, query, limit)
+                # #159 §6 / #168 T7 P0-3: body_units_fts is RETRIEVAL
+                # materialization — gate on the retrieval lineage (no vector
+                # requirement for this arm).
+                from paperforge.reader_gate import filter_readable
 
-            results = filter_readable(vault, results, require_vector=False)
-            coverage = _get_body_coverage(conn)
-            if not results:
+                results = filter_readable(vault, results, require_vector=False)
+                coverage = _get_body_coverage(conn)
+                if not results:
+                    return PFResult(
+                        ok=True,
+                        command="content-discovery",
+                        version=PF_VERSION,
+                        data={
+                            "intent": "content-discovery",
+                            "query": query,
+                            "results": [],
+                            "count": 0,
+                            "coverage": coverage,
+                            "route_explanation": {
+                                "primary_arm": "body_units_fts",
+                                "matched": False,
+                            },
+                            # T9 (#170): no command strings in recommendation data.
+                            "next_action": {
+                                "reason_code": "gateway.metadata_search_suggested",
+                                "reason": (
+                                    f"正文检索无匹配。正文索引覆盖 "
+                                    f"{coverage['body_papers']}/{coverage['ocr_papers']} 篇 OCR 完成论文。"
+                                    f"尝试元数据全文搜索。"
+                                ),
+                            },
+                        },
+                    )
                 return PFResult(
                     ok=True,
                     command="content-discovery",
@@ -245,58 +322,38 @@ def _run_body_unit_discovery(
                     data={
                         "intent": "content-discovery",
                         "query": query,
-                        "results": [],
-                        "count": 0,
+                        "results": results,
+                        "count": len(results),
                         "coverage": coverage,
                         "route_explanation": {
                             "primary_arm": "body_units_fts",
-                            "matched": False,
-                        },
-                        # T9 (#170): no command strings in recommendation data.
-                        "next_action": {
-                            "reason_code": "gateway.metadata_search_suggested",
-                            "reason": (
-                                f"正文检索无匹配。正文索引覆盖 "
-                                f"{coverage['body_papers']}/{coverage['ocr_papers']} 篇 OCR 完成论文。"
-                                f"尝试元数据全文搜索。"
-                            ),
+                            "fallback_arms": ["vector_retrieve"],
+                            "compatibility_mode": False,
+                            "matched": True,
                         },
                     },
                 )
+    except Exception as exc:
+        if "no such table" in str(exc).lower():
+            fallback_to_compat = True
+        else:
             return PFResult(
-                ok=True,
+                ok=False,
                 command="content-discovery",
                 version=PF_VERSION,
                 data={
                     "intent": "content-discovery",
                     "query": query,
-                    "results": results,
-                    "count": len(results),
-                    "coverage": coverage,
+                    "results": [],
+                    "error": str(exc),
                     "route_explanation": {
                         "primary_arm": "body_units_fts",
-                        "fallback_arms": ["vector_retrieve"],
-                        "compatibility_mode": False,
-                        "matched": True,
+                        "error": f"fts_query_failed: {exc}",
                     },
                 },
             )
-    except Exception as exc:
-        return PFResult(
-            ok=False,
-            command="content-discovery",
-            version=PF_VERSION,
-            data={
-                "intent": "content-discovery",
-                "query": query,
-                "results": [],
-                "error": str(exc),
-                "route_explanation": {
-                    "primary_arm": "body_units_fts",
-                    "error": f"fts_query_failed: {exc}",
-                },
-            },
-        )
+    if fallback_to_compat:
+        return _run_compat_content_discovery(vault, query, limit=limit)
 
 
 def _run_compat_content_discovery(
@@ -353,11 +410,15 @@ def _run_compat_content_discovery(
         )
     else:
         try:
-            from paperforge.embedding import get_embed_status, retrieve_chunks
+            from paperforge.embedding import get_embed_status, merge_retrieve, retrieve_chunks
 
             status = get_embed_status(vault)
-            if status.get("healthy") and status.get("chunk_count", 0) > 0:
-                chunks = retrieve_chunks(vault, query, limit=limit)
+            if status.get("healthy") and not status.get("identity_changed"):
+                chunks: list[dict] = []
+                if status.get("valid_total_chunks", 0) > 0:
+                    chunks = merge_retrieve(vault, query, limit=limit)
+                elif status.get("chunk_count", 0) > 0:
+                    chunks = retrieve_chunks(vault, query, limit=limit)
                 if chunks:
                     secondary_arm = "vector_retrieve"
                     vector_results = chunks

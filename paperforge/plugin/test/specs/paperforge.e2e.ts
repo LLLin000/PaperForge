@@ -144,7 +144,13 @@ function sourceSha(): string {
     .trim();
 }
 
-const POINTER_PATH = path.join(os.homedir(), ".paperforge", "runtime", "pointer.json");
+const RUNTIME_HOME = process.env.PF_E2E_RUNTIME_HOME || os.homedir();
+const POINTER_PATH = path.join(
+  RUNTIME_HOME,
+  ".paperforge",
+  "runtime",
+  "pointer.json"
+);
 
 /** Obsidian modals (release notes, confirmations) block clicks — close them. */
 async function dismissModals(): Promise<void> {
@@ -305,12 +311,14 @@ describe("PaperForge real-host gate", function () {
       if (!plugin) throw new Error("paperforge plugin not loaded");
       plugin.settings._setup_complete = false;
       plugin._settingTab._setupJourneyDismissedForSession = false;
-      const setting = (app as unknown as {
-        setting?: {
-          open?: () => void;
-          openTabById?: (id: string) => void;
-        };
-      }).setting;
+      const setting = (
+        app as unknown as {
+          setting?: {
+            open?: () => void;
+            openTabById?: (id: string) => void;
+          };
+        }
+      ).setting;
       if (!setting?.open || !setting.openTabById) {
         throw new Error("Obsidian settings navigation API unavailable");
       }
@@ -318,6 +326,12 @@ describe("PaperForge real-host gate", function () {
       setting.openTabById("paperforge");
       await new Promise<void>((resolve) => setTimeout(resolve, 1000));
       plugin._settingTab.display();
+      const toStep = plugin._settingTab.containerEl.querySelector(
+        '[data-pf-testid="express-to-step-btn"]'
+      ) as HTMLButtonElement | null;
+      if (toStep) {
+        toStep.click();
+      }
 
       const install = Array.from(
         plugin._settingTab.containerEl.querySelectorAll(
@@ -334,7 +348,8 @@ describe("PaperForge real-host gate", function () {
       (install as HTMLButtonElement).click();
     });
 
-    await waitForOutcome(async () => {
+    await waitForOutcome(
+      async () => {
         const status = await browser.executeObsidian(async ({ app }) => {
           const plugin = app.plugins.plugins["paperforge"] as unknown as {
             getManagedRuntime(): { readPointer(): unknown };
@@ -348,7 +363,8 @@ describe("PaperForge real-host gate", function () {
             };
           };
           const pointer = plugin.getManagedRuntime().readPointer();
-          const installation = plugin._settingTab._capabilityState?.installation;
+          const installation =
+            plugin._settingTab._capabilityState?.installation;
           return {
             ready:
               pointer !== null && plugin._settingTab._setupOperation === "idle",
@@ -364,12 +380,14 @@ describe("PaperForge real-host gate", function () {
           );
         }
         return status.ready;
-    }, {
-      timeoutMs: 1500000,
-      label: "first-use setup did not publish a runtime pointer",
-      evidence: "a01-first-use.json",
-      caseId: "A01",
-    });
+      },
+      {
+        timeoutMs: 1500000,
+        label: "first-use setup did not publish a runtime pointer",
+        evidence: "a01-first-use.json",
+        caseId: "A01",
+      }
+    );
 
     const state = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -451,10 +469,14 @@ describe("PaperForge real-host gate", function () {
           };
           return plugin._settingTab._setupOperation !== "idle";
         }),
-      { timeout: 30000, timeoutMsg: "reinstall click never started the operation" }
+      {
+        timeout: 30000,
+        timeoutMsg: "reinstall click never started the operation",
+      }
     );
 
-    await waitForOutcome(async () => {
+    await waitForOutcome(
+      async () => {
         const status = await browser.executeObsidian(
           async ({ app }, previousRoot) => {
             const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -486,12 +508,14 @@ describe("PaperForge real-host gate", function () {
           );
         }
         return status.ready;
-    }, {
-      timeoutMs: 1500000,
-      label: "reinstall did not republish a runtime pointer",
-      evidence: "a06-reinstall-switch.json",
-      caseId: "A06",
-    });
+      },
+      {
+        timeoutMs: 1500000,
+        label: "reinstall did not republish a runtime pointer",
+        evidence: "a06-reinstall-switch.json",
+        caseId: "A06",
+      }
+    );
 
     const pointerAfter = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -561,7 +585,9 @@ describe("PaperForge real-host gate", function () {
     );
     // The plugin directory the host loaded is this repo's build.
     expect(sha256(path.join(PLUGIN_DIR, "manifest.json"))).toBe(
-      sha256(path.join(base, ".obsidian", "plugins", "paperforge", "manifest.json"))
+      sha256(
+        path.join(base, ".obsidian", "plugins", "paperforge", "manifest.json")
+      )
     );
     expect(builtBundle.length).toBe(64);
   });

@@ -139,19 +139,73 @@ def list_trash(vault: Path) -> list[dict[str, Any]]:
     return records
 
 
+def _validate_restore_paths(vault: Path, record: dict[str, Any]) -> tuple[Path, Path]:
+    """Fail-closed containment check for restore_trash: both ends stay inside allowed roots."""
+    vault_resolved = Path(vault).expanduser().resolve()
+    troot_resolved = trash_root(vault).resolve()
+
+    orig_raw = str(record.get("original_path") or "").strip()
+    trash_raw = str(record.get("trash_path") or "").strip()
+    if not orig_raw or orig_raw in (".", "..") or not trash_raw or trash_raw in (".", ".."):
+        raise DangerousPathError("trash manifest contains empty or relative-dot path")
+
+    trashed_path = Path(trash_raw)
+    if trashed_path.is_symlink():
+        raise DangerousPathError(f"refusing symlink trash_path: {trashed_path}")
+    trashed_resolved = trashed_path.resolve()
+    if trashed_resolved == troot_resolved or not trashed_resolved.is_relative_to(troot_resolved):
+        raise DangerousPathError(
+            f"trash_path escapes trash root {troot_resolved}: {trashed_resolved}"
+        )
+
+    original_path = Path(orig_raw)
+    if original_path.is_symlink():
+        raise DangerousPathError(f"refusing symlink original_path: {original_path}")
+    original_resolved = original_path.resolve()
+    if original_resolved == vault_resolved or not original_resolved.is_relative_to(vault_resolved):
+        raise DangerousPathError(
+            f"original_path escapes vault root {vault_resolved}: {original_resolved}"
+        )
+    if original_resolved == troot_resolved or original_resolved.is_relative_to(troot_resolved):
+        raise DangerousPathError(
+            f"original_path points inside trash root {troot_resolved}: {original_resolved}"
+        )
+    return trashed_resolved, original_resolved
+
+
 def restore_trash(vault: Path, trash_id: str) -> Path:
-    """Move a trashed item back to its original path."""
+    """Move a trashed item back to its original path and clean up its manifest."""
+    troot_resolved = trash_root(vault).resolve()
     for record in list_trash(vault):
         if record.get("trash_id") != trash_id:
             continue
-        original = Path(record["original_path"])
-        trashed = Path(record["trash_path"])
+        trashed, original = _validate_restore_paths(vault, record)
         if not trashed.exists():
             raise FileNotFoundError(f"trashed item gone: {trashed}")
         if original.exists():
             raise FileExistsError(f"original path already exists: {original}")
         original.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(trashed), str(original))
+
+        # PF-MIG-016: Remove stale manifest and empty container dirs so restored
+        # items never linger as ghost entries in `trash list`.
+        record_dir = trashed.parent
+        if record_dir.is_relative_to(troot_resolved) and record_dir != troot_resolved:
+            manifest_file = record_dir / MANIFEST_NAME
+            manifest_file.unlink(missing_ok=True)
+            try:
+                if record_dir.is_dir() and not any(record_dir.iterdir()):
+                    record_dir.rmdir()
+                stamp_dir = record_dir.parent
+                if (
+                    stamp_dir != troot_resolved
+                    and stamp_dir.is_relative_to(troot_resolved)
+                    and stamp_dir.is_dir()
+                    and not any(stamp_dir.iterdir())
+                ):
+                    stamp_dir.rmdir()
+            except OSError:
+                pass
         return original
     raise KeyError(f"no trash record with id {trash_id}")
 

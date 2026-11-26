@@ -6,6 +6,8 @@ from pathlib import Path
 
 def obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path | None = None) -> str:
     text = str(pdf_path or "").strip()
+    if text.startswith("absolute:"):
+        text = text[len("absolute:") :].strip()
     if not text:
         return ""
     # Handle storage: prefix paths by resolving through zotero_dir
@@ -40,6 +42,8 @@ def obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path |
 
 def absolutize_vault_path(vault: Path, path: str, resolve_junction: bool = False) -> str:
     text = str(path or "").strip()
+    if text.startswith("absolute:"):
+        text = text[len("absolute:") :].strip()
     if not text:
         return ""
     candidate = Path(text)

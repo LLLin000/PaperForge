@@ -249,28 +249,46 @@ def open_zotero_snapshot_ro(zotero_dir: Path) -> Iterator[tuple[sqlite3.Connecti
                         pass
 
 
+def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
 def list_zotero_collections(zotero_dir: Path) -> dict:
     """List Zotero collections (with hierarchy & item counts) for UI selection."""
     if not (zotero_dir / "zotero.sqlite").is_file():
         return {"found": False, "zotero_dir": str(zotero_dir), "total_papers": 0, "collections": []}
 
     with open_zotero_snapshot_ro(zotero_dir) as (conn, _):
+        has_deleted_items = _table_exists(conn, "deletedItems")
+        has_deleted_cols = _table_exists(conn, "deletedCollections")
+
+        deleted_items_clause = "AND i.itemID NOT IN (SELECT itemID FROM deletedItems)" if has_deleted_items else ""
+        deleted_cols_clause = (
+            "WHERE collectionID NOT IN (SELECT collectionID FROM deletedCollections)"
+            if has_deleted_cols
+            else ""
+        )
+
         total_row = conn.execute(
-            """
+            f"""
             SELECT COUNT(*) AS cnt
             FROM items i
             JOIN itemTypes it ON i.itemTypeID = it.itemTypeID
-            WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems)
-              AND it.typeName NOT IN ('attachment', 'note', 'annotation')
+            WHERE it.typeName NOT IN ('attachment', 'note', 'annotation')
+              {deleted_items_clause}
             """
         ).fetchone()
         total_papers = int(total_row["cnt"] if total_row else 0)
 
         col_rows = conn.execute(
-            """
+            f"""
             SELECT collectionID, key, collectionName, parentCollectionID
             FROM collections
-            WHERE collectionID NOT IN (SELECT collectionID FROM deletedCollections)
+            {deleted_cols_clause}
             ORDER BY collectionName COLLATE NOCASE
             """
         ).fetchall()
@@ -307,13 +325,13 @@ def list_zotero_collections(zotero_dir: Path) -> dict:
 
         direct_counts: dict[int, set[int]] = {cid: set() for cid in by_id}
         ci_rows = conn.execute(
-            """
+            f"""
             SELECT ci.collectionID, ci.itemID
             FROM collectionItems ci
             JOIN items i ON ci.itemID = i.itemID
             JOIN itemTypes it ON i.itemTypeID = it.itemTypeID
-            WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems)
-              AND it.typeName NOT IN ('attachment', 'note', 'annotation')
+            WHERE it.typeName NOT IN ('attachment', 'note', 'annotation')
+              {deleted_items_clause}
             """
         ).fetchall()
         for r in ci_rows:
@@ -416,11 +434,22 @@ def build_bbt_export_documents_from_sqlite(
     base_att_dir = read_zotero_base_attachment_path()
 
     with open_zotero_snapshot_ro(zotero_dir) as (conn, bbt_conn):
-        # 1. Collection hierarchy
+        has_deleted_items = _table_exists(conn, "deletedItems")
+        has_deleted_cols = _table_exists(conn, "deletedCollections")
+        deleted_cols_clause = (
+            "WHERE collectionID NOT IN (SELECT collectionID FROM deletedCollections)"
+            if has_deleted_cols
+            else ""
+        )
+        deleted_items_and = "AND i.itemID NOT IN (SELECT itemID FROM deletedItems)" if has_deleted_items else ""
+        deleted_att_and = "AND ia.itemID NOT IN (SELECT itemID FROM deletedItems)" if has_deleted_items else ""
+
+        # 1. Collection hierarchy (excluding deletedCollections)
         col_rows = conn.execute(
-            """
+            f"""
             SELECT collectionID, key, collectionName, parentCollectionID
             FROM collections
+            {deleted_cols_clause}
             """
         ).fetchall()
         cols_by_id: dict[int, dict] = {}
@@ -464,12 +493,12 @@ def build_bbt_export_documents_from_sqlite(
 
         # 4. Items (non-deleted documents)
         doc_rows = conn.execute(
-            """
+            f"""
             SELECT i.itemID, i.key, it.typeName
             FROM items i
             JOIN itemTypes it ON i.itemTypeID = it.itemTypeID
-            WHERE i.itemID NOT IN (SELECT itemID FROM deletedItems)
-              AND it.typeName NOT IN ('attachment', 'note', 'annotation')
+            WHERE it.typeName NOT IN ('attachment', 'note', 'annotation')
+              {deleted_items_and}
             ORDER BY i.itemID
             """
         ).fetchall()
@@ -523,12 +552,12 @@ def build_bbt_export_documents_from_sqlite(
 
         # 7. Attachments (with local storage size & path resolution)
         att_rows = conn.execute(
-            """
+            f"""
             SELECT ia.parentItemID, ia.itemID, i.key AS attKey, ia.linkMode, ia.contentType, ia.path
             FROM itemAttachments ia
             JOIN items i ON ia.itemID = i.itemID
             WHERE ia.parentItemID IS NOT NULL
-              AND ia.itemID NOT IN (SELECT itemID FROM deletedItems)
+              {deleted_att_and}
             """
         ).fetchall()
         att_title_rows = conn.execute(
@@ -568,7 +597,7 @@ def build_bbt_export_documents_from_sqlite(
                 }
             )
 
-    def _assemble_item(iid: int) -> dict:
+    def _assemble_item(iid: int, allowed_col_keys: set[str] | None = None) -> dict:
         doc = docs_by_id[iid]
         flds = fields_by_item.get(iid, {})
         creators = creators_by_item.get(iid, [])
@@ -597,6 +626,10 @@ def build_bbt_export_documents_from_sqlite(
             if pm:
                 pmid = pm.group(1)
 
+        col_keys = item_to_col_keys.get(iid, [])
+        if allowed_col_keys is not None:
+            col_keys = [ck for ck in col_keys if ck in allowed_col_keys]
+
         out = {
             "itemID": iid,
             "key": zkey,
@@ -612,7 +645,7 @@ def build_bbt_export_documents_from_sqlite(
             "PMID": pmid,
             "extra": extra,
             "citationKey": ckey,
-            "collections": item_to_col_keys.get(iid, []),
+            "collections": col_keys,
             "attachments": atts_by_item.get(iid, []),
         }
         return out
@@ -645,40 +678,80 @@ def build_bbt_export_documents_from_sqlite(
             }
         return out
 
+    def _collection_full_path(cid: int, seen: set[int] | None = None) -> str:
+        seen = seen or set()
+        if cid in seen or cid not in cols_by_id:
+            return ""
+        seen.add(cid)
+        node = cols_by_id[cid]
+        pid = node["parent_id"]
+        if pid and pid in cols_by_id:
+            parent_p = _collection_full_path(pid, seen)
+            return f"{parent_p}/{node['name']}" if parent_p else node["name"]
+        return node["name"]
+
     sel = [s.strip() for s in (selected_collections or []) if str(s or "").strip()]
     use_all = not sel or sel == ["*"]
 
-    # Resolve selected collection IDs (accept either collection key or path/name)
+    # Resolve selected collection IDs (accept collection key, name, or full path)
     resolved_root_cids: list[int] = []
     if not use_all:
         name_to_cid = {node["name"]: cid for cid, node in cols_by_id.items()}
+        path_to_cid = {_collection_full_path(cid): cid for cid in cols_by_id}
         for token in sel:
             if token in key_to_cid:
                 resolved_root_cids.append(key_to_cid[token])
+            elif token in path_to_cid:
+                resolved_root_cids.append(path_to_cid[token])
             elif token in name_to_cid:
                 resolved_root_cids.append(name_to_cid[token])
+        if not resolved_root_cids:
+            raise ValueError(
+                f"Configured zotero_selected_collections matched no active Zotero collections: {sel}"
+            )
 
     docs_out: dict[str, dict] = {}
-    if domain_mode == "per_collection" and resolved_root_cids:
-        used_names: set[str] = set()
-        for root_cid in resolved_root_cids:
-            cids = _descendant_cids(root_cid)
-            iids_set: set[int] = set()
-            for cid in cids:
-                iids_set.update(col_items_by_cid.get(cid, []))
-            iids = sorted(iid for iid in iids_set if iid in docs_by_id)
-            dom_name = _safe_domain_filename(cols_by_id[root_cid]["name"])
-            if dom_name in used_names:
-                dom_name = f"{dom_name}_{cols_by_id[root_cid]['key']}"
-            used_names.add(dom_name)
-            docs_out[dom_name] = {
-                "__managed_by": "zotero_sqlite",
-                "collections": _serialize_collections(cids, set(iids)),
-                "items": [_assemble_item(iid) for iid in iids],
-            }
-        return docs_out
+    if domain_mode == "per_collection":
+        if use_all:
+            resolved_root_cids = [
+                cid
+                for cid, node in sorted(cols_by_id.items(), key=lambda kv: kv[1]["name"].lower())
+                if node["parent_id"] is None or node["parent_id"] not in cols_by_id
+            ]
+        if resolved_root_cids:
+            used_names: set[str] = set()
+            assigned_iids: set[int] = set()
+            for root_cid in resolved_root_cids:
+                cids = _descendant_cids(root_cid)
+                col_keys_in_slice = {cols_by_id[cid]["key"] for cid in cids}
+                iids_set: set[int] = set()
+                for cid in cids:
+                    iids_set.update(col_items_by_cid.get(cid, []))
+                iids = sorted(iid for iid in iids_set if iid in docs_by_id)
+                assigned_iids.update(iids)
+                dom_name = _safe_domain_filename(cols_by_id[root_cid]["name"])
+                if dom_name in used_names:
+                    dom_name = f"{dom_name}_{cols_by_id[root_cid]['key']}"
+                used_names.add(dom_name)
+                docs_out[dom_name] = {
+                    "__managed_by": "zotero_sqlite",
+                    "collections": _serialize_collections(cids, set(iids)),
+                    "items": [_assemble_item(iid, col_keys_in_slice) for iid in iids],
+                }
+            if use_all:
+                unfiled_iids = sorted(iid for iid in docs_by_id if iid not in assigned_iids)
+                if unfiled_iids:
+                    unfiled_name = "Unfiled"
+                    if unfiled_name in used_names:
+                        unfiled_name = "Unfiled_Items"
+                    docs_out[unfiled_name] = {
+                        "__managed_by": "zotero_sqlite",
+                        "collections": {},
+                        "items": [_assemble_item(iid, set()) for iid in unfiled_iids],
+                    }
+            return docs_out
 
-    # Unified mode (or full library when no specific collections filtered)
+    # Unified mode (or collectionless library in per_collection mode)
     if resolved_root_cids:
         all_cids_set: set[int] = set()
         iids_set: set[int] = set()
@@ -693,11 +766,12 @@ def build_bbt_export_documents_from_sqlite(
         cids_list = sorted(cols_by_id.keys())
         iids = sorted(docs_by_id.keys())
 
+    allowed_col_keys = {cols_by_id[cid]["key"] for cid in cids_list}
     dom_name = _safe_domain_filename(unified_domain)
     docs_out[dom_name] = {
         "__managed_by": "zotero_sqlite",
         "collections": _serialize_collections(cids_list, set(iids)),
-        "items": [_assemble_item(iid) for iid in iids],
+        "items": [_assemble_item(iid, allowed_col_keys) for iid in iids],
     }
     return docs_out
 

@@ -105,7 +105,7 @@ def read_vector_build_state(vault: Path) -> dict:
                 rows = conn.execute("SELECT key, value FROM build_state").fetchall()
             except sqlite3.OperationalError:
                 return _default_state()
-    except (FileNotFoundError, sqlite3.OperationalError, OSError):
+    except (FileNotFoundError, sqlite3.DatabaseError, OSError):
         return _default_state()
 
     if not rows:

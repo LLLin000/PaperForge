@@ -111,62 +111,64 @@ def _render_views_section(views: list[dict]) -> str:
         lines.append("    order:")
         for col in v["order"]:
             lines.append(f"      - {col}")
-        if v["filter"]:
-            lines.append(f"    filter: '{v['filter']}'")
+        v_filters = v.get("filters") or v.get("filter")
+        if v_filters:
+            if isinstance(v_filters, str):
+                lines.append("    filters:")
+                lines.append("      and:")
+                lines.append(f"        - '{v_filters}'")
+            else:
+                lines.append(f"    filter: '{v_filters}'")
         if v.get("sort"):
             lines.append("    sort:")
             for sort_item in v["sort"]:
-                lines.append(f"      - field: {sort_item['field']}")
+                prop = sort_item.get("property") or sort_item.get("field") or ""
+                lines.append(f"      - property: {prop}")
                 lines.append(f"        direction: {sort_item['direction']}")
     return "\n".join(lines)
 
 
-def _extract_widths_from_block(text: str) -> dict[str, int] | None:
-    """Extract column widths from an existing view block text.
-
-    Args:
-        text: Raw text of a single view block (PF prefix line through its last indented line).
+def _extract_widths_from_block(text: str) -> tuple[str, dict[str, int]] | None:
+    """Extract column widths (``columnSize:`` or legacy ``widths:``) from a view block.
 
     Returns:
-        dict of column_name -> width_pixels, or None if no widths found.
+        Tuple of (key_name, dict of column_name -> width_pixels), or None if absent.
     """
     in_widths = False
-    widths = {}
+    key_name = "columnSize"
+    widths: dict[str, int] = {}
     for line in text.split("\n"):
         stripped = line.strip()
-        if stripped == "widths:" and not in_widths:
+        if not in_widths and stripped in {"columnSize:", "widths:"}:
             in_widths = True
+            key_name = stripped[:-1]
             continue
         if in_widths:
-            if not stripped:
-                break
-            if ":" not in stripped:
+            if not stripped or ":" not in stripped:
                 break
             key, _, val = stripped.partition(":")
             try:
                 widths[key.strip()] = int(val.strip())
             except ValueError:
                 pass
-    return widths if widths else None
+    return (key_name, widths) if widths else None
 
 
-def _inject_widths_into_block(text: str, widths: dict[str, int]) -> str:
-    """Inject widths: section into a fresh PF view block after the name: line.
-
-    Args:
-        text: Fresh PF view block text (with PF prefix marker).
-        widths: Column width mapping to inject.
-
-    Returns:
-        Block text with widths section inserted between name: and order:.
-    """
+def _inject_widths_into_block(
+    text: str, widths_info: tuple[str, dict[str, int]] | dict[str, int]
+) -> str:
+    """Inject column widths section into a fresh PF view block after the name: line."""
+    if isinstance(widths_info, tuple):
+        key_name, widths = widths_info
+    else:
+        key_name, widths = "columnSize", widths_info
     lines = text.split("\n")
     result = []
     injected = False
     for line in lines:
         result.append(line)
         if not injected and line.strip().startswith("name:"):
-            result.append("    widths:")
+            result.append(f"    {key_name}:")
             for col, w in sorted(widths.items()):
                 result.append(f"      {col}: {w}")
             injected = True
@@ -264,14 +266,20 @@ views:
         rendered += "    order:\n"
         for col in v["order"]:
             rendered += f"      - {col}\n"
-        if v["filter"]:
-            rendered += f"    filter: '{v['filter']}'\n"
+        v_filters = v.get("filters") or v["filter"]
+        if v_filters:
+            if isinstance(v_filters, str):
+                rendered += "    filters:\n      and:\n"
+                rendered += f"        - '{v_filters}'\n"
+            else:
+                rendered += f"    filter: '{v_filters}'\n"
         else:
             rendered += "\n"
         if v.get("sort"):
             rendered += "    sort:\n"
             for sort_item in v["sort"]:
-                rendered += f"      - field: {sort_item['field']}\n"
+                prop = sort_item.get("property") or sort_item.get("field") or ""
+                rendered += f"      - property: {prop}\n"
                 rendered += f"        direction: {sort_item['direction']}\n"
         new_pf_blocks.append((v["name"], rendered))
 
@@ -351,14 +359,20 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
         views_yaml += "    order:\n"
         for col in v["order"]:
             views_yaml += f"      - {col}\n"
-        if v["filter"]:
-            views_yaml += f"    filter: '{v['filter']}'\n"
+        v_filters = v.get("filters") or v["filter"]
+        if v_filters:
+            if isinstance(v_filters, str):
+                views_yaml += "    filters:\n      and:\n"
+                views_yaml += f"        - '{v_filters}'\n"
+            else:
+                views_yaml += f"    filter: '{v_filters}'\n"
         else:
             views_yaml += "\n"
         if v.get("sort"):
             views_yaml += "    sort:\n"
             for sort_item in v["sort"]:
-                views_yaml += f"      - field: {sort_item['field']}\n"
+                prop = sort_item.get("property") or sort_item.get("field") or ""
+                views_yaml += f"      - property: {prop}\n"
                 views_yaml += f"        direction: {sort_item['direction']}\n"
     views_yaml = views_yaml.rstrip("\n")
     return f"""filters:
@@ -397,6 +411,17 @@ properties:
     displayName: "PDF 路径"
 views:
 {views_yaml}"""
+
+
+_UNQUOTED_BANG_FILTER_RE = re.compile(
+    r"^(\s*(?:-\s+)?)(!(?!\!)[^\n\"']+?)\s*$",
+    re.MULTILINE,
+)
+
+
+def _quote_unquoted_bang_filters(text: str) -> str:
+    """Quote unquoted `!`-prefixed filter expressions so YAML never reads them as tags."""
+    return _UNQUOTED_BANG_FILTER_RE.sub(lambda m: f'{m.group(1)}"{m.group(2)}"', text)
 
 
 def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> str:
@@ -522,15 +547,8 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             deduped[vname] = block
 
     # --- Phase 5: fix properties section ---
-    header_text = "\n".join(header_lines)
+    header_text = _quote_unquoted_bang_filters("\n".join(header_lines))
     header_lines_fixed = header_text.split("\n")
-
-    # 5a: Ensure !zotero_key.isEmpty() is properly quoted (YAML treats ! as tag prefix)
-    for j in range(len(header_lines_fixed)):
-        stripped = header_lines_fixed[j].strip()
-        if stripped == "!zotero_key.isEmpty()":
-            indent = header_lines_fixed[j][: len(header_lines_fixed[j]) - len(header_lines_fixed[j].lstrip())]
-            header_lines_fixed[j] = f'{indent}"!zotero_key.isEmpty()"'
 
     # 5b: Remove legacy ocr_redo blocks (no longer used)
     cleaned = []
@@ -572,7 +590,7 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             seen.add(view_name)
 
     for view_name in view_order:
-        rebuilt += deduped[view_name] + "\n"
+        rebuilt += _quote_unquoted_bang_filters(deduped[view_name]) + "\n"
 
     return rebuilt
 

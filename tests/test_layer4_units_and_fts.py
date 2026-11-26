@@ -425,3 +425,35 @@ def test_fresh_schema_v7_columns(tmp_path):
     assert "unit_id" in vo_cols, "vec_objects_meta missing unit_id"
 
     conn.close()
+
+
+def test_cjk_search_papers_like_fallback(tmp_path):
+    """PF-OCR-001: CJK metadata queries fall back cleanly when FTS5 returns 0 hits."""
+    from paperforge.memory.fts import search_papers
+
+    db = tmp_path / "cjk_fts.db"
+    conn = sqlite3.connect(str(db))
+    conn.row_factory = sqlite3.Row
+    ensure_schema(conn)
+    conn.execute(
+        """INSERT INTO papers(
+               zotero_key, citation_key, title, year, doi, pmid, journal,
+               first_author, authors_json, abstract, domain, collection_path,
+               collections_json, has_pdf, do_ocr, analyze, ocr_status,
+               deep_reading_status, ocr_job_id, impact_factor, lifecycle,
+               maturity_level, maturity_name, next_step, pdf_path, note_path,
+               main_note_path, paper_root, fulltext_path, ocr_md_path,
+               ocr_json_path, ai_path, deep_reading_md_path, updated_at
+           ) VALUES (
+               'CJK001', 'Zhang2025', '脉冲电磁场促进软骨修复机制研究', '2025', '', '', '骨科杂志',
+               '张伟', '["张伟"]', '探讨电磁场对软骨细胞增殖的影响', 'Ortho', 'Ortho',
+               '["Ortho"]', 1, 1, 0, 'done', 'pending', '', '5.0', 'fulltext_ready',
+               2, 'fulltext', '/pf-deep', '', '', '', '', '', '', '', '', '', ''
+           )"""
+    )
+    conn.commit()
+    hits = search_papers(conn, "软骨修复", domain="Ortho")
+    assert len(hits) == 1
+    assert hits[0]["zotero_key"] == "CJK001"
+    assert search_papers(conn, "软骨修复", domain="Cardio") == []
+    conn.close()

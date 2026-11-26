@@ -210,3 +210,92 @@ def test_bump_state_seq_is_lossless_under_concurrent_subprocesses(tmp_path: Path
             fut.result()
 
     assert read_state_seq(vault)["seq"] == seq0 + 20
+
+
+def test_delete_paper_purges_registry_catalog_lineage_and_history(tmp_path: Path):
+    """PF-ARCH-003 / PF-OCR-003: removing a paper purges all dependent SSOT/telemetry tables."""
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+
+    vault, _, _ = _make_vault(tmp_path, key="PURGE01")
+    db_path = get_memory_db_path(vault)
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO workspace_registry(zotero_key, domain, workspace_relpath, main_note_relpath, verified_at) "
+            "VALUES ('PURGE01', 'Ortho', 'Resources/Literature/Ortho/PURGE01', 'Resources/Literature/Ortho/PURGE01/PURGE01.md', '2026-01-01')"
+        )
+        conn.execute(
+            "INSERT INTO ocr_catalog(zotero_key, ocr_status, updated_at) VALUES ('PURGE01', 'done', '2026-01-01')"
+        )
+        conn.execute(
+            "INSERT INTO lineage(paper_id, layer, identity, updated_at) VALUES ('PURGE01', 'ocr', 'h1', '2026-01-01')"
+        )
+        conn.execute(
+            "INSERT INTO paper_memory_history(zotero_key, facet, content, revision, created_at) "
+            "VALUES ('PURGE01', 'thesis', 'old', 1, '2026-01-01')"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    atomic_write_index(get_index_path(vault), build_envelope([]))
+    build_for_keys(vault)
+
+    conn = get_connection(db_path, read_only=True)
+    try:
+        for table, col in (
+            ("papers", "zotero_key"),
+            ("workspace_registry", "zotero_key"),
+            ("ocr_catalog", "zotero_key"),
+            ("lineage", "paper_id"),
+            ("paper_memory_history", "zotero_key"),
+        ):
+            cnt = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE {col}='PURGE01'").fetchone()[0]
+            assert cnt == 0, f"{table} still contains PURGE01"
+    finally:
+        conn.close()
+
+
+def test_base_snapshot_obeys_sqlite_ssot(tmp_path: Path):
+    """PF-ARCH-005: get_base_table_snapshot obeys SQLite papers SSOT and never resurrects deleted keys."""
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+
+    vault, _, _ = _make_vault(tmp_path, key="ACTIVE01")
+    snap_before = get_base_table_snapshot(vault)
+    assert snap_before["state_authority"] == "sqlite"
+    assert list(snap_before["rows"].keys()) == ["ACTIVE01"]
+
+    # Inject stale JSON rows and mutate SQLite ocr_status -> SQLite must win & ghosts excluded
+    atomic_write_index(
+        get_index_path(vault),
+        build_envelope([
+            {"zotero_key": "ACTIVE01", "title": "Stale Title", "ocr_status": "pending", "domain": "Ortho"},
+            {"zotero_key": "GHOST_JSON", "title": "Ghost Paper", "ocr_status": "done", "domain": "Ortho"},
+        ]),
+    )
+    db_path = get_memory_db_path(vault)
+    conn = get_connection(db_path)
+    try:
+        conn.execute("UPDATE papers SET ocr_status='done' WHERE zotero_key='ACTIVE01'")
+        conn.commit()
+    finally:
+        conn.close()
+
+    snap_after = get_base_table_snapshot(vault)
+    assert snap_after["state_authority"] == "sqlite"
+    assert list(snap_after["rows"].keys()) == ["ACTIVE01"]
+    assert snap_after["rows"]["ACTIVE01"]["ocr_status"] == "done"
+
+    # Empty papers table must stay empty even if formal-library.json still has stale rows
+    conn = get_connection(db_path)
+    try:
+        conn.execute("PRAGMA foreign_keys=OFF")
+        conn.execute("DELETE FROM papers")
+        conn.commit()
+    finally:
+        conn.close()
+    snap_empty = get_base_table_snapshot(vault)
+    assert snap_empty["state_authority"] == "sqlite"
+    assert snap_empty["rows"] == {}

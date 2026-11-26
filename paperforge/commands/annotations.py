@@ -19,6 +19,7 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.services.annotations_service import (
         add_annotation,
         adopt_agent_annotation,
+        agent_apply_annotations,
         agent_mark_annotation,
         clear_agent_annotations,
         delete_annotation,
@@ -103,6 +104,46 @@ def run(args: argparse.Namespace) -> int:
                 color=str(getattr(args, "color", "purple") or "purple"),
                 lens=str(getattr(args, "lens", "skeleton") or "skeleton"),
                 tags=tags,
+            )
+        elif verb == "agent-apply":
+            import sys
+
+            raw_src = ""
+            input_arg = str(getattr(args, "input", "") or "").strip()
+            items_json_arg = str(getattr(args, "items_json", "") or "").strip()
+            if input_arg == "-":
+                raw_src = sys.stdin.read()
+            elif input_arg:
+                raw_src = Path(input_arg).read_text(encoding="utf-8")
+            elif items_json_arg:
+                raw_src = items_json_arg
+            else:
+                raise ValueError("Provide --input <file|-> or --items-json <json>")
+
+            parsed = json.loads(raw_src)
+            lens = str(getattr(args, "lens", "skeleton") or "skeleton")
+            replace_lens = bool(getattr(args, "replace_lens", False))
+            max_items = int(getattr(args, "max_items", 15) or 15)
+            if isinstance(parsed, dict):
+                items_list = parsed.get("items") or []
+                if parsed.get("lens"):
+                    lens = str(parsed["lens"])
+                if "replace_lens" in parsed:
+                    replace_lens = bool(parsed["replace_lens"])
+                if parsed.get("max_items"):
+                    max_items = int(parsed["max_items"])
+            elif isinstance(parsed, list):
+                items_list = parsed
+            else:
+                raise ValueError("Input must be a JSON array or {items: [...]}")
+
+            data = agent_apply_annotations(
+                vault,
+                paper_key,
+                items_list,
+                lens=lens,
+                replace_lens=replace_lens,
+                max_items=max_items,
             )
         elif verb == "adopt":
             data = adopt_agent_annotation(vault, paper_key, str(args.ann_id))

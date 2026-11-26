@@ -8,11 +8,11 @@
  * Strict priority order:
  *  0. engine_updating        — native daemon hot-swap or runtime install/update in progress
  *  1. engine_quarantined     — native binary vanished (antivirus quarantine)
- *  2. legacy_vault_upgrade   — veteran vault detected, 1-click lossless cutover available
- *  3. checking               — initial/active probe in flight
+ *  2. checking               — initial/active probe in flight
+ *  3. engine_version_mismatch— runtime exists but version != plugin version
  *  4. engine_not_installed   — no managed Python runtime pointer on disk
- *  5. engine_version_mismatch— runtime exists but version != plugin version
- *  6. engine_probe_failed    — runtime exists & version matches, yet probe failed/unresponsive
+ *  5. engine_probe_failed    — runtime exists & version matches, yet probe failed/unresponsive
+ *  6. legacy_vault_upgrade   — engine ready & veteran vault detected, 1-click lossless cutover available
  *  7. zotero_not_configured  — engine ready, Zotero directory not yet connected
  *  8. library_sync_error     — engine & Zotero configured, sync blocked/failed
  *  9. ready                  — core engine + Zotero library healthy and ready
@@ -74,6 +74,7 @@ export interface SetupDecisionInput {
   upgradeBannerDismissed: boolean;
   runtimePointer: PointerInfo | null;
   expectedVersion: string;
+  minEngineVersion?: string;
   installationEnv: ProbeEnvelope;
   libraryEnv: ProbeEnvelope;
   isProbing: boolean;
@@ -82,6 +83,13 @@ export interface SetupDecisionInput {
   lastAutoSyncError: string | null;
   paperCount: number | null;
 }
+
+const STAGE_ORDER: Record<string, number> = {
+  a: -3,
+  b: -2,
+  rc: -1,
+  "": 0,
+};
 
 export function normalizeSemverForCompare(
   raw: string | null | undefined
@@ -93,6 +101,69 @@ export function normalizeSemverForCompare(
     .replace(/[-_.]?(?:beta|b)\.?(\d+)/i, "b$1")
     .replace(/[-_.]?(?:alpha|a)\.?(\d+)/i, "a$1")
     .toLowerCase();
+}
+
+export function parseReleaseTuple(
+  version: string | null | undefined
+): [number, number, number, number, number, number] | null {
+  const norm = normalizeSemverForCompare(version);
+  if (!norm) return null;
+  const preMatch =
+    /^(\d+(?:\.\d+)*)(a|b|rc)(\d+)(?:\.post(\d+))?$/.exec(norm);
+  let nums: number[];
+  let stage = 0;
+  let stageNum = 0;
+  let postNum = 0;
+  if (preMatch) {
+    nums = preMatch[1].split(".").map((n) => parseInt(n, 10));
+    stage = STAGE_ORDER[preMatch[2]] ?? 0;
+    stageNum = parseInt(preMatch[3], 10);
+    postNum = preMatch[4] ? parseInt(preMatch[4], 10) : 0;
+  } else {
+    const finalMatch = /^(\d+(?:\.\d+)*)(?:\.post(\d+))?$/.exec(norm);
+    if (!finalMatch) return null;
+    nums = finalMatch[1].split(".").map((n) => parseInt(n, 10));
+    postNum = finalMatch[2] ? parseInt(finalMatch[2], 10) : 0;
+  }
+  while (nums.length < 3) nums.push(0);
+  return [nums[0], nums[1], nums[2], stage, stageNum, postNum];
+}
+
+export function compareReleaseVersions(
+  a: string | null | undefined,
+  b: string | null | undefined
+): number | null {
+  const ta = parseReleaseTuple(a);
+  const tb = parseReleaseTuple(b);
+  if (!ta || !tb) return null;
+  for (let i = 0; i < 6; i++) {
+    if (ta[i] !== tb[i]) return ta[i] < tb[i] ? -1 : 1;
+  }
+  return 0;
+}
+
+/**
+ * Evaluate runtime compatibility matching `paperforge/core/versioning.py`:
+ * when `minEngineVersion` is provided, any runtime >= `minEngineVersion` is
+ * compatible (so UI-only patch bumps do not force unnecessary backend updates);
+ * otherwise falls back to exact normalized equality against `expectedVersion`.
+ */
+export function isEngineVersionCompatible(
+  coreVersion: string | null | undefined,
+  expectedVersion: string | null | undefined,
+  minEngineVersion?: string | null
+): boolean {
+  const core = normalizeSemverForCompare(coreVersion);
+  if (!core) return false;
+  const minEng = normalizeSemverForCompare(minEngineVersion);
+  if (minEng) {
+    const cmp = compareReleaseVersions(core, minEng);
+    if (cmp !== null) return cmp >= 0;
+    return core === minEng;
+  }
+  const exp = normalizeSemverForCompare(expectedVersion);
+  if (exp) return core === exp;
+  return true;
 }
 
 export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
@@ -132,32 +203,10 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 2. Veteran vault lossless directory upgrade (highest user priority after engine alive)
-  if (
-    input.upgradePlan?.provenance?.needs_upgrade === true &&
-    !input.upgradeBannerDismissed
-  ) {
-    return {
-      id: "legacy_vault_upgrade",
-      badgeCls: "attention",
-      badgeText: t("dt_badge_upgrade"),
-      title: t("upgrade_banner_title"),
-      body: t("upgrade_banner_desc"),
-      primaryAction: {
-        kind: "open_vault_upgrade",
-        label: t("upgrade_banner_open"),
-      },
-      secondaryAction: {
-        kind: "dismiss_vault_upgrade",
-        label: t("upgrade_btn_defer"),
-      },
-    };
-  }
-
   const instState = input.installationEnv.user_state;
   const libState = input.libraryEnv.user_state;
 
-  // 3. Active checking state
+  // 2. Active checking state
   if (
     instState === "checking" ||
     libState === "checking" ||
@@ -173,14 +222,24 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
   }
 
   const ptr = input.runtimePointer;
-  const expNorm = normalizeSemverForCompare(input.expectedVersion);
-  const ptrNorm = normalizeSemverForCompare(ptr?.paperforgeVersion);
+  const versionCompatible = ptr
+    ? isEngineVersionCompatible(
+        ptr.paperforgeVersion,
+        input.expectedVersion,
+        input.minEngineVersion
+      )
+    : true;
   const versionMismatch =
-    Boolean(ptr && expNorm && ptrNorm && ptrNorm !== expNorm) ||
+    Boolean(ptr && !versionCompatible) ||
     input.installationEnv.reason?.code === "version_mismatch";
+  const needsVaultUpgrade =
+    input.upgradePlan?.provenance?.needs_upgrade === true;
 
-  // 4. Engine version mismatch (existing user upgraded plugin, engine still on older version)
+  // 3. Engine version mismatch (ensure compute engine is aligned before any vault migration)
   if (versionMismatch && ptr) {
+    const body = needsVaultUpgrade
+      ? `${t("dt_version_mismatch_body")} ${t("dt_legacy_after_engine_hint")}`
+      : t("dt_version_mismatch_body");
     return {
       id: "engine_version_mismatch",
       badgeCls: "attention",
@@ -188,7 +247,7 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
       title: t("dt_version_mismatch_title")
         .replace("{expected}", input.expectedVersion || "?")
         .replace("{current}", ptr.paperforgeVersion || "?"),
-      body: t("dt_version_mismatch_body"),
+      body,
       primaryAction: {
         kind: "update_engine",
         label: t("dt_btn_update_engine"),
@@ -196,14 +255,17 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 5. Engine not installed at all (brand-new user)
-  if (instState !== "ready" && !ptr) {
+  // 4. Engine not installed at all (brand-new user or legacy user before new runtime install)
+  if (!ptr) {
+    const body = needsVaultUpgrade
+      ? `${t("dt_step1_body")} ${t("dt_legacy_after_engine_hint")}`
+      : t("dt_step1_body");
     return {
       id: "engine_not_installed",
       badgeCls: "attention",
       badgeText: t("dt_badge_step1"),
       title: t("dt_step1_title"),
-      body: t("dt_step1_body"),
+      body,
       primaryAction: {
         kind: "start_setup_step1",
         label: t("cc_start_setup"),
@@ -211,7 +273,7 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 6. Engine IS installed on disk, but probe failed / unresponsive — NEVER lie and say "install step 1"!
+  // 5. Engine IS installed on disk, but probe failed / unresponsive — NEVER lie and say "install step 1"!
   if (instState !== "ready" && ptr) {
     return {
       id: "engine_probe_failed",
@@ -229,6 +291,25 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
       secondaryAction: {
         kind: "repair_engine",
         label: t("dt_btn_repair_engine"),
+      },
+    };
+  }
+
+  // 6. Veteran vault lossless directory upgrade (compute engine is ready, cutover runs cleanly)
+  if (needsVaultUpgrade && !input.upgradeBannerDismissed) {
+    return {
+      id: "legacy_vault_upgrade",
+      badgeCls: "attention",
+      badgeText: t("dt_badge_upgrade"),
+      title: t("upgrade_banner_title"),
+      body: t("upgrade_banner_desc"),
+      primaryAction: {
+        kind: "open_vault_upgrade",
+        label: t("upgrade_banner_open"),
+      },
+      secondaryAction: {
+        kind: "dismiss_vault_upgrade",
+        label: t("upgrade_btn_defer"),
       },
     };
   }

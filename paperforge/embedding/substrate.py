@@ -80,6 +80,55 @@ def _has_any_rows(conn: sqlite3.Connection) -> bool:
     return False
 
 
+def candidate_is_healthy_with_rows(candidate: Path) -> bool:
+    """Return True only when *candidate* passes SQLite integrity + has vector rows + intact layout."""
+    if not candidate.exists():
+        return False
+    conn: sqlite3.Connection | None = None
+    try:
+        conn = sqlite3.connect(f"file:{candidate.as_posix()}?mode=ro", uri=True)
+        qc = conn.execute("PRAGMA quick_check(1)").fetchone()
+        if not qc or str(qc[0]).lower() != "ok":
+            return False
+        if not _has_any_rows(conn):
+            return False
+        try:
+            from paperforge.memory.db import ensure_vec_extension
+
+            ensure_vec_extension(conn)
+        except Exception:  # noqa: BLE001 — sqlite_vec unavailable in caller environment
+            return True
+        from paperforge.embedding.dim_detect import inspect_vector_layout
+
+        layout = inspect_vector_layout(conn)
+        if layout.unreadable:
+            return False
+        all_missing = len(layout.missing) >= len(layout.dimensions or ())
+        if not all_missing and layout.missing:
+            return False
+        dims = {d for d in layout.dimensions.values() if d is not None}
+        if len(dims) > 1:
+            return False
+        # When vec0 tables already hold rows, enforce full layout/orphan
+        # compatibility so dropped/rebuilt vec0 tables never shadow live.
+        # Meta-only seed states (total_vec_rows == 0 with intact, readable
+        # schema) still count as a resumable candidate for probe/effective_vector_db.
+        if not all_missing and layout.total_vec_rows > 0 and not layout.compatible:
+            return False
+        return True
+    except Exception:  # noqa: BLE001 — corrupt/locked candidate never shadows live
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+
+_candidate_is_healthy_with_rows = candidate_is_healthy_with_rows
+
+
 def effective_vector_db(vault: Path) -> Path:
     """Return the DB that holds the CURRENT vector truth.
 
@@ -88,25 +137,14 @@ def effective_vector_db(vault: Path) -> Path:
     interrupted/failed/in-flight shadow, the candidate is the ONLY place
     with real rows and a real build_state.  Every observer (substrate,
     build_state reads, embed status, probe) must look at the SAME file:
-    candidate when it has rows, else live.
-
-    Returns the candidate path when it exists AND has vector rows; live
-    otherwise.  Never guesses — an empty/absent candidate falls back to live.
+    candidate when it is healthy AND has vector rows; live otherwise.
     """
     from paperforge.memory.db import get_memory_db_path
 
     live = get_memory_db_path(vault)
     candidate = live.with_suffix(".db.build")
-    if candidate.exists():
-        try:
-            conn = sqlite3.connect(f"file:{candidate.as_posix()}?mode=ro", uri=True)
-            try:
-                if _has_any_rows(conn):
-                    return candidate
-            finally:
-                conn.close()
-        except Exception:  # noqa: BLE001 — unreadable candidate falls back
-            pass
+    if _candidate_is_healthy_with_rows(candidate):
+        return candidate
     return live
 
 
@@ -139,45 +177,58 @@ def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> Vect
     layout_incompatible = False
 
     if db_exists:
-        conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+        conn: sqlite3.Connection | None = None
         try:
-            bs = _read_build_state_ro(conn)
-            stored_model = str(bs.get("model", "") or "")
-            stored_endpoint = str(bs.get("vector_provider_endpoint", "") or "")
-            stored_dimension = int(bs.get("vector_dimension", 0) or 0)
-            identity_version = int(bs.get("vector_identity_version", 0) or 0)
-            has_any_rows = _has_any_rows(conn)
-            if stored_dimension:
-                try:
-                    from paperforge.memory.db import ensure_vec_extension
-
-                    ensure_vec_extension(conn)
-                except Exception:  # noqa: BLE001
-                    # No vec0 capability (extension cannot load) == vec0
-                    # never built — NOT a substrate incompatibility; the
-                    # per-paper missing facet routes to embed.resume, which
-                    # self-ensures vec0 when the extension is present.
-                    pass
-                else:
+            conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+            qc = conn.execute("PRAGMA quick_check(1)").fetchone()
+            if not qc or str(qc[0]).lower() != "ok":
+                layout_incompatible = True
+                reason_codes.append("vector.db_corrupt")
+            else:
+                bs = _read_build_state_ro(conn)
+                stored_model = str(bs.get("model", "") or "")
+                stored_endpoint = str(bs.get("vector_provider_endpoint", "") or "")
+                stored_dimension = int(bs.get("vector_dimension", 0) or 0)
+                identity_version = int(bs.get("vector_identity_version", 0) or 0)
+                has_any_rows = _has_any_rows(conn)
+                if stored_dimension:
                     try:
-                        from paperforge.embedding.dim_detect import inspect_vector_layout
+                        from paperforge.memory.db import ensure_vec_extension
 
-                        layout = inspect_vector_layout(conn, stored_dimension)
-                        # Owner review (#166): vec0 tables NEVER built is NOT
-                        # a substrate incompatibility — that is a per-paper
-                        # missing deficit (embed.resume repairs it,
-                        # self-ensuring vec0).  Only a PARTIAL/incompatible
-                        # layout (some tables exist but dims/counts
-                        # disagree) is a global defect.
-                        all_missing = len(layout.missing) >= len(layout.dimensions or ())
-                        layout_incompatible = not all_missing and not layout.compatible
-                        if layout_incompatible:
-                            reason_codes.append(f"vector.layout({layout.reason or 'incompatible'})")
-                    except Exception:  # noqa: BLE001 — fail-closed
-                        layout_incompatible = True
-                        reason_codes.append("vector.layout_unreadable")
+                        ensure_vec_extension(conn)
+                    except Exception:  # noqa: BLE001
+                        # No vec0 capability (extension cannot load) == vec0
+                        # never built — NOT a substrate incompatibility; the
+                        # per-paper missing facet routes to embed.resume, which
+                        # self-ensures vec0 when the extension is present.
+                        pass
+                    else:
+                        try:
+                            from paperforge.embedding.dim_detect import inspect_vector_layout
+
+                            layout = inspect_vector_layout(conn, stored_dimension)
+                            # Owner review (#166): vec0 tables NEVER built is NOT
+                            # a substrate incompatibility — that is a per-paper
+                            # missing deficit (embed.resume repairs it,
+                            # self-ensuring vec0).  Only a PARTIAL/incompatible
+                            # layout (some tables exist but dims/counts
+                            # disagree) is a global defect.
+                            all_missing = len(layout.missing) >= len(layout.dimensions or ())
+                            layout_incompatible = not all_missing and not layout.compatible
+                            if layout_incompatible:
+                                reason_codes.append(f"vector.layout({layout.reason or 'incompatible'})")
+                        except Exception:  # noqa: BLE001 — fail-closed
+                            layout_incompatible = True
+                            reason_codes.append("vector.layout_unreadable")
+        except sqlite3.DatabaseError:
+            layout_incompatible = True
+            reason_codes.append("vector.db_corrupt")
         finally:
-            conn.close()
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:  # noqa: BLE001
+                    pass
     else:
         reason_codes.append("vector.db_missing")
 

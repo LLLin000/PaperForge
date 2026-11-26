@@ -26,8 +26,8 @@ COMMANDS = {
         "purpose": "Semantic content retrieval across OCR fulltext — use this first when the user wants something inside papers",
     },
     "annotations": {
-        "usage": "paperforge annotations list|agent-mark|adopt|clear-agent <zotero_key> [--quote TEXT] [--comment TEXT] [--lens skeleton|methods|critique|custom] --json",
-        "purpose": "Read user PDF highlights/crops or place non-destructive AI layer annotations via 3-stage fuzzy PDF grounding",
+        "usage": "paperforge annotations list|agent-apply|agent-mark|adopt|clear-agent <zotero_key> [--input -] [--lens skeleton|methods|critique|custom] --json",
+        "purpose": "Read user PDF highlights/crops or apply non-destructive AI layer annotations in batch via 3-stage fuzzy PDF grounding",
     },
     "memory-card": {
         "usage": "paperforge memory-card get|refine|history <zotero_key> [--facet idea_logic|methods_params|research_craft|critique_limits|my_connection] [--content TEXT] --json",

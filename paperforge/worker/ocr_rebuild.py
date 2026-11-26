@@ -975,7 +975,9 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         # version payloads written inside postprocess land in the SAME
         # object written back below (no second read that loses fields).
         meta = read_json(paper_dir / "meta.json") if (paper_dir / "meta.json").exists() else {}
-        _, _, _, _, meta = postprocess_ocr_result(vault, key, all_results, meta=meta)
+        _, _, _, _, meta = postprocess_ocr_result(
+            vault, key, all_results, meta=meta, preserve_raw_result=True
+        )
 
         # Add backfill metadata
         meta_path = paper_dir / "meta.json"

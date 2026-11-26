@@ -291,7 +291,7 @@ class SyncService:
         return candidates
 
     def _compute_sync_fastpath_digest(self, paths: dict[str, Path]) -> str:
-        """O(1) stat-based digest across exports, OCR meta.json, paperforge.json, and domain notes."""
+        """Stat-based digest across exports, OCR meta.json, paperforge.json, workspace notes, and Zotero storage."""
         import hashlib
         import os as _os
 
@@ -334,6 +334,19 @@ class SyncService:
                             if ne.is_file() and ne.name.endswith(".md"):
                                 st = ne.stat()
                                 h.update(f"note:{dname}/{ne.name}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
+                            elif ne.is_dir():
+                                try:
+                                    ws_st = _os.stat(ne.path)
+                                    h.update(f"ws:{dname}/{ne.name}:{ws_st.st_mtime_ns}\n".encode("utf-8"))
+                                    with _os.scandir(ne.path) as ws_it:
+                                        for wse in sorted(ws_it, key=lambda x: x.name):
+                                            if wse.is_file() and wse.name.endswith(".md"):
+                                                wst = _os.stat(wse.path)
+                                                h.update(
+                                                    f"wsn:{dname}/{ne.name}/{wse.name}:{wst.st_size}:{wst.st_mtime_ns}\n".encode("utf-8")
+                                                )
+                                except OSError:
+                                    pass
             except OSError:
                 pass
         zdir = paths.get("zotero_dir")
@@ -346,43 +359,41 @@ class SyncService:
                         h.update(f"zot:{zname}:{st.st_size}:{st.st_mtime_ns}\n".encode("utf-8"))
                     except OSError:
                         pass
+            storage_dir = zdir / "storage"
+            if storage_dir.is_dir():
+                try:
+                    h.update(f"zst:{storage_dir.stat().st_mtime_ns}\n".encode("utf-8"))
+                    with _os.scandir(storage_dir) as s_it:
+                        for se in sorted(s_it, key=lambda x: x.name):
+                            if se.is_dir():
+                                h.update(f"zsd:{se.name}:{_os.stat(se.path).st_mtime_ns}\n".encode("utf-8"))
+                                with _os.scandir(se.path) as f_it:
+                                    for fe in sorted(f_it, key=lambda x: x.name):
+                                        if fe.is_file():
+                                            fst = fe.stat()
+                                            h.update(f"zsf:{se.name}/{fe.name}:{fst.st_size}:{fst.st_mtime_ns}\n".encode("utf-8"))
+                except OSError:
+                    pass
         return h.hexdigest()
 
     def _materialize_sqlite_exports_if_enabled(self, paths: dict[str, Path]) -> None:
-        """Direct read-only sync from zotero.sqlite when enabled and zotero.sqlite exists."""
-        try:
-            from paperforge.config import load_config
+        """Direct read-only sync from zotero.sqlite when enabled. Fails closed on DB errors."""
+        enabled, zdir, domain_mode, selected = self._validate_sqlite_source_if_enabled(paths)
+        if not enabled or zdir is None:
+            return
+        from paperforge.adapters.zotero_sqlite import materialize_zotero_sqlite_exports
 
-            snap = load_config(self.vault)
-            mode = str(snap.values["zotero_source_mode"].value or "sqlite")
-            if mode != "sqlite":
-                return
-            zdir = paths.get("zotero_dir")
-            if not zdir or not (zdir / "zotero.sqlite").is_file():
-                return
-            domain_mode = str(snap.values["domain_mode"].value or "per_collection")
-            raw_sel = str(snap.values["zotero_selected_collections"].value or "").strip()
-            selected: list[str] | None = None
-            if raw_sel:
-                if raw_sel.startswith("["):
-                    import json as _json
+        materialize_zotero_sqlite_exports(
+            self.vault,
+            paths["exports"],
+            zdir,
+            selected_collections=selected,
+            domain_mode=domain_mode,
+        )
 
-                    parsed = _json.loads(raw_sel)
-                    if isinstance(parsed, list):
-                        selected = [str(x).strip() for x in parsed if str(x).strip()]
-                else:
-                    selected = [s.strip() for s in raw_sel.split(",") if s.strip()]
-            from paperforge.adapters.zotero_sqlite import materialize_zotero_sqlite_exports
-
-            materialize_zotero_sqlite_exports(
-                self.vault,
-                paths["exports"],
-                zdir,
-                selected_collections=selected,
-                domain_mode=domain_mode,
-            )
-        except Exception as exc:
-            logger.warning("Zotero SQLite auto-materialization skipped: %s", exc)
+    def _check_fastpath_preflight(self) -> tuple[dict[str, Path] | None, PFResult | None]:
+        """Delegate to bottom-defined helper."""
+        return self._check_fastpath_or_sqlite_preflight()
 
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
@@ -396,27 +407,16 @@ class SyncService:
         fastpath_paths: dict[str, Path] | None = None
         fastpath_digest = ""
         if fastpath_eligible:
-            try:
-                fastpath_paths = self.resolve_paths()
-                fp_file = fastpath_paths["paperforge"] / "indexes" / ".sync-fastpath.json"
-                idx_file = fastpath_paths["index"]
-                if fp_file.exists() and idx_file.exists():
-                    fastpath_digest = self._compute_sync_fastpath_digest(fastpath_paths)
-                    cached = _json.loads(fp_file.read_text(encoding="utf-8"))
-                    if cached.get("digest") == fastpath_digest and isinstance(cached.get("data"), dict):
-                        return PFResult(
-                            ok=True,
-                            command="sync",
-                            version=__version__,
-                            data=cached["data"],
-                        )
-            except Exception:
-                fastpath_paths = None
+            fastpath_paths, fp_err_or_hit = self._check_fastpath_or_sqlite_preflight()
+            if fp_err_or_hit is not None:
+                return fp_err_or_hit
 
         # ── Phase 0: Direct zotero.sqlite materialization (when fastpath missed) ──
         if fastpath_paths is None:
             fastpath_paths = self.resolve_paths()
-        self._materialize_sqlite_exports_if_enabled(fastpath_paths)
+        mat_err = self._safe_materialize_sqlite_phase0(fastpath_paths)
+        if mat_err is not None:
+            return mat_err
 
         # ── Pre-check: BBT / materialized exports ──
         _export_code = "ok"
@@ -528,13 +528,12 @@ class SyncService:
                 _zotero_keys = {
                     k for _domain in exports.values() for k in _domain
                 }
+                _source_ok = _export_code == "ok" and bool(_zotero_keys)
                 with timing.phase("sync.prune_preview"):
-                    prune_data = self.prune(
-                        paths, fresh_keys=_zotero_keys, dry_run=True
-                    )
+                    prune_data = self.prune(paths, fresh_keys=_zotero_keys, dry_run=True, source_ok=_source_ok)
                 if prune_force:
                     prune_data = self.prune(
-                        paths, fresh_keys=_zotero_keys, dry_run=False
+                        paths, fresh_keys=_zotero_keys, dry_run=False, source_ok=_source_ok
                     )
             except Exception as exc:
                 logger.warning("prune skipped: %s", exc)
@@ -566,6 +565,7 @@ class SyncService:
             # ── Phase 5: OCR version scan ──
             try:
                 from paperforge.core.io import read_json
+
                 from paperforge.worker._utils import pipeline_paths
                 from paperforge.worker.ocr_versions import (
                     classify_legacy_ocr_state,
@@ -700,6 +700,7 @@ class SyncService:
         *,
         fresh_keys: set[str] | None = None,
         dry_run: bool = True,
+        source_ok: bool = True,
     ) -> dict:
         """Run orphan paper cleanup. Default dry_run=True (preview only).
 
@@ -709,7 +710,11 @@ class SyncService:
         from paperforge.worker.prune import prune_orphan_papers
 
         return prune_orphan_papers(
-            self.vault, fresh_index=fresh_index, fresh_keys=fresh_keys, dry_run=dry_run
+            self.vault,
+            fresh_index=fresh_index,
+            fresh_keys=fresh_keys,
+            dry_run=dry_run,
+            source_ok=source_ok,
         )
 
     # ── Legacy passthrough (backward-compat for commands/sync.py) ──
@@ -717,3 +722,89 @@ class SyncService:
     def run_sync(self, verbose: bool = False, json_output: bool = False) -> PFResult:
         """Alias for run(). Returns PFResult (not int|dict)."""
         return self.run(verbose=verbose, json_output=json_output)
+
+    def _validate_sqlite_source_if_enabled(self, paths: dict[str, Path]) -> tuple[bool, Path | None, str, list[str] | None]:
+        """Check Zotero SQLite configuration & readability; fail closed on missing/locked/corrupt DB."""
+        from paperforge.config import load_config
+
+        snap = load_config(self.vault)
+        mode = str(snap.values["zotero_source_mode"].value or "sqlite")
+        if mode != "sqlite":
+            return (False, None, "per_collection", None)
+
+        raw_zdir_cfg = str(snap.values["zotero_data_dir"].value or "").strip()
+        zdir = paths.get("zotero_dir")
+        db_file = (zdir / "zotero.sqlite") if zdir else None
+
+        if raw_zdir_cfg:
+            if not zdir or not db_file or not db_file.is_file():
+                raise FileNotFoundError(
+                    f"Configured Zotero database not found: {db_file or raw_zdir_cfg}"
+                )
+        elif not zdir or not db_file or not db_file.is_file():
+            return (False, None, "per_collection", None)
+
+        with open(db_file, "rb") as fh:
+            hdr = fh.read(16)
+        if hdr != b"SQLite format 3\x00":
+            raise ValueError(f"Invalid or corrupt Zotero SQLite database header: {db_file}")
+
+        domain_mode = str(snap.values["domain_mode"].value or "per_collection")
+        raw_sel = str(snap.values["zotero_selected_collections"].value or "").strip()
+        selected: list[str] | None = None
+        if raw_sel:
+            if raw_sel.startswith("["):
+                import json as _json
+
+                parsed = _json.loads(raw_sel)
+                if isinstance(parsed, list):
+                    selected = [str(x).strip() for x in parsed if str(x).strip()]
+            else:
+                selected = [s.strip() for s in raw_sel.split(",") if s.strip()]
+        return (True, zdir, domain_mode, selected)
+
+    def _check_fastpath_or_sqlite_preflight(self) -> tuple[dict[str, Path] | None, PFResult | None]:
+        import json as _json
+
+        try:
+            fastpath_paths = self.resolve_paths()
+            self._validate_sqlite_source_if_enabled(fastpath_paths)
+            fp_file = fastpath_paths["paperforge"] / "indexes" / ".sync-fastpath.json"
+            idx_file = fastpath_paths["index"]
+            if fp_file.exists() and idx_file.exists():
+                fastpath_digest = self._compute_sync_fastpath_digest(fastpath_paths)
+                cached = _json.loads(fp_file.read_text(encoding="utf-8"))
+                if cached.get("digest") == fastpath_digest and isinstance(cached.get("data"), dict):
+                    return fastpath_paths, PFResult(
+                        ok=True, command="sync", version=__version__, data=cached["data"]
+                    )
+            return fastpath_paths, None
+        except (FileNotFoundError, PermissionError, OSError, ValueError) as exc:
+            return None, PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.SYNC_FAILED,
+                    message=f"Zotero SQLite source unreadable: {exc}",
+                    details={"phase": "sqlite_preflight", "exception_type": type(exc).__name__},
+                ),
+            )
+        except Exception:
+            return None, None
+
+    def _safe_materialize_sqlite_phase0(self, fastpath_paths: dict[str, Path]) -> PFResult | None:
+        try:
+            self._materialize_sqlite_exports_if_enabled(fastpath_paths)
+            return None
+        except Exception as exc:
+            return PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.SYNC_FAILED,
+                    message=f"Zotero SQLite materialization failed: {exc}",
+                    details={"phase": "sqlite_materialization", "exception_type": type(exc).__name__},
+                ),
+            )

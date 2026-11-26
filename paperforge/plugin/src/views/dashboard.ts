@@ -131,6 +131,7 @@ export class PaperForgeStatusView extends ItemView {
   _searchGeneration = 0;
   _searchState: string = "idle";
   _searchMode: "M" | "@" = "M";
+  _searchModeBadgeEl: HTMLButtonElement | null = null;
   _searchResults: unknown[] | null = null;
   _searchActiveIndex: number = -1;
   _searchDeep = false;
@@ -147,6 +148,8 @@ export class PaperForgeStatusView extends ItemView {
   private _overviewTextCache = new Map<string, string>();
   private _memoryCardCache = new Map<string, PaperMemoryCardDto>();
   private _scrollOffsets = new Map<string, number>();
+  private _dirtyOnReveal = false;
+  private _pendingRevealLeaf: WorkspaceLeaf | null = null;
 
   private _setBoundedCache<K, V>(
     cache: Map<K, V>,
@@ -236,11 +239,15 @@ export class PaperForgeStatusView extends ItemView {
         if (sub.event === "active-leaf-change") {
           if (typeof ws?.offref === "function") ws.offref(sub.ref);
           else ws?.off?.("active-leaf-change", sub.ref);
+        } else if (sub.event === "layout-change") {
+          if (typeof ws?.offref === "function") ws.offref(sub.ref);
+          else ws?.off?.("layout-change", sub.ref);
         } else if (sub.event === "modify") {
           if (typeof vault?.offref === "function") vault.offref(sub.ref);
           else vault?.off?.("modify", sub.ref);
         } else if (sub.event === "paperforge:state-changed") {
-          ws?.offref?.(sub.ref);
+          if (typeof ws?.offref === "function") ws.offref(sub.ref);
+          else ws?.off?.("paperforge:state-changed", sub.ref);
         }
       }
       this._modeSubscribers = [];
@@ -879,6 +886,19 @@ export class PaperForgeStatusView extends ItemView {
     if (cached) {
       return cached;
     }
+    const ext = String((file as { extension?: string }).extension ?? "")
+      .trim()
+      .toLowerCase();
+    if (ext && ext !== "md" && ext !== "base") {
+      const nonDoc = {
+        mode: "global" as const,
+        filePath,
+        key: null,
+        domain: null,
+      };
+      this._setBoundedCache(this._resolvedFileCache, filePath, nonDoc);
+      return nonDoc;
+    }
     let resolvedOk = false;
     const identity = await this._getClient()
       ?.resolvePaperContext(filePath)
@@ -1489,7 +1509,9 @@ export class PaperForgeStatusView extends ItemView {
       {
         key: "deep",
         label: t("dash_pill_deep"),
-        ok: entry.deep_reading_status === "done",
+        ok:
+          entry.deep_reading_status === "done" ||
+          entry.deep_reading_status === "complete",
       },
     ];
     for (const item of items) {
@@ -1648,6 +1670,11 @@ export class PaperForgeStatusView extends ItemView {
               show.current_path,
               (label) => client.versionsRestore(k, label)
             ).open();
+          } else {
+            new Notice(
+              t("ocr_ws_restore_unavailable") ||
+                "No backup versions available"
+            );
           }
         } catch (err: any) {
           this._setRecoveryError(
@@ -1666,7 +1693,11 @@ export class PaperForgeStatusView extends ItemView {
     });
     this._renderPaperOverviewCard(view, entry);
     this._renderLivingMemoryCard(view, key);
-    if (entry.next_step === "ready" && entry.deep_reading_status === "done") {
+    if (
+      entry.next_step === "ready" &&
+      (entry.deep_reading_status === "done" ||
+        entry.deep_reading_status === "complete")
+    ) {
       const complete = view.createEl("div", { cls: "paperforge-complete-row" });
       const checkEl = complete.createEl("span", { cls: "pf-complete-icon" });
       setPfIcon(checkEl, "check", 14);
@@ -2929,14 +2960,14 @@ export class PaperForgeStatusView extends ItemView {
       });
       labelEl.setText(t("run_in_agent").replace("{0}", platformName));
     } else if (nextStep === "ready") {
-      const trigger = card.createEl("button", {
-        cls: "paperforge-next-step-trigger",
+      const completeRow = card.createEl("div", {
+        cls: "paperforge-complete-row",
       });
-      const iconSpan = trigger.createEl("span", {
-        cls: "paperforge-contextual-btn-icon",
+      const iconSpan = completeRow.createEl("span", {
+        cls: "pf-complete-icon",
       });
       setPfIcon(iconSpan, "check", 14);
-      trigger.createEl("span", { text: info.label });
+      completeRow.createEl("span", { text: info.label });
     }
   }
 
@@ -3755,9 +3786,36 @@ export class PaperForgeStatusView extends ItemView {
     });
     const initDeep =
       this._searchQuery.trim().startsWith("@") || this._searchMode === "@";
-    const modeBadge = inputRow.createEl("span", {
+    const modeBadge = inputRow.createEl("button", {
       cls: initDeep ? "paperforge-search-mode deep" : "paperforge-search-mode",
       text: initDeep ? "@" : "M",
+      attr: {
+        type: "button",
+        "data-pf-testid": "dash-search-mode-toggle",
+        "aria-pressed": initDeep ? "true" : "false",
+        title:
+          t("nav_close") === "关闭"
+            ? "切换检索模式：M 元数据快速筛选 / @ 全文与图表混合深检"
+            : "Toggle search mode: M metadata filter / @ hybrid deep search",
+      },
+    }) as HTMLButtonElement;
+    this._searchModeBadgeEl = modeBadge;
+    modeBadge.addEventListener("click", () => {
+      const nextDeep = this._searchMode !== "@";
+      this._searchMode = nextDeep ? "@" : "M";
+      this._searchDeep = nextDeep;
+      modeBadge.setText(nextDeep ? "@" : "M");
+      modeBadge.toggleClass("deep", nextDeep);
+      modeBadge.setAttribute("aria-pressed", nextDeep ? "true" : "false");
+      if (this._searchInput) {
+        this._searchInput.placeholder = nextDeep
+          ? t("retrieval_search_placeholder_deep")
+          : t("retrieval_search_placeholder");
+        this._searchInput.focus();
+      }
+      if ((this._searchInput?.value || "").trim()) {
+        void this.executeSearch(nextDeep);
+      }
     });
     this._searchInput = inputRow.createEl("input", {
       cls: "paperforge-search-input",
@@ -4010,8 +4068,19 @@ export class PaperForgeStatusView extends ItemView {
     this._searchResultsEl.empty();
     this._searchResultsEl.removeAttribute("role");
     this._searchResultsEl.removeAttribute("aria-live");
-    // Re-enable input on any state change
+    // Re-enable input on any state change and keep M / @ mode indicator consistent
     if (this._searchInput) this._searchInput.disabled = false;
+    const rawVal = (this._searchInput?.value || this._searchQuery || "").trim();
+    const syncDeep =
+      this._searchDeep || this._searchMode === "@" || rawVal.startsWith("@");
+    if (this._searchModeBadgeEl) {
+      this._searchModeBadgeEl.setText(syncDeep ? "@" : "M");
+      this._searchModeBadgeEl.toggleClass("deep", syncDeep);
+      this._searchModeBadgeEl.setAttribute(
+        "aria-pressed",
+        syncDeep ? "true" : "false"
+      );
+    }
     const state = this._searchState;
 
     switch (state) {
@@ -4522,13 +4591,18 @@ export class PaperForgeStatusView extends ItemView {
       }
 
       const openResult = (event: MouseEvent | KeyboardEvent) => {
-        void this._openSearchResultByKey(
-          resolvedPath,
-          zoteroKey,
-          event.ctrlKey || event.metaKey
-        );
+        const mod =
+          event instanceof MouseEvent
+            ? Boolean(event.ctrlKey || event.metaKey)
+            : Boolean(event.ctrlKey || event.metaKey);
+        void this._openSearchResultByKey(resolvedPath, zoteroKey, mod);
       };
       card.addEventListener("click", openResult);
+      card.addEventListener("auxclick", (ev: MouseEvent) => {
+        if (ev.button !== 1) return;
+        ev.preventDefault();
+        void this._openSearchResultByKey(resolvedPath, zoteroKey, true);
+      });
       bindObsidianHoverPreview(this.app, card, "paperforge", resolvedPath);
       if (zoteroKey) {
         card.addEventListener("contextmenu", (ev: MouseEvent) => {
@@ -4594,19 +4668,32 @@ export class PaperForgeStatusView extends ItemView {
           (typeof rec["heading"] === "string" && rec["heading"]) ||
           "";
         if (sectionOrObject) {
+          const prettyLabel = sectionOrObject
+            .replace(/^figure_0*(\d+)$/i, "Fig. $1")
+            .replace(/^table_0*(\d+)$/i, "Table $1")
+            .replace(/^equation_0*(\d+)$/i, "Eq. $1");
           meta.createEl("span", {
-            cls: "paperforge-search-result-section",
-            text: sectionOrObject,
+            cls: "paperforge-search-result-section pf-tnum",
+            text: prettyLabel,
           });
         }
+      }
+      if (typeof rec["year"] === "string" || typeof rec["year"] === "number") {
+        meta.createEl("span", {
+          cls: "paperforge-search-result-year pf-tnum",
+          text: String(rec["year"]),
+        });
       }
       if (rec["score"] !== undefined) {
         const score = rec["score"];
         const scoreText =
-          typeof score === "number" ? score.toFixed(3) : String(score);
+          typeof score === "number" ? score.toFixed(2) : String(score);
         meta.createEl("span", {
-          cls: "paperforge-search-result-score",
-          text: t("dash_score") + scoreText,
+          cls: "paperforge-search-result-score pf-tnum",
+          text: isDeep ? `rel ${scoreText}` : `${scoreText}`,
+          attr: {
+            title: `${t("dash_score")}${typeof score === "number" ? score.toFixed(3) : String(score)}`,
+          },
         });
       }
 
@@ -4618,22 +4705,53 @@ export class PaperForgeStatusView extends ItemView {
         });
       }
 
-      // Abstract snippet
-      if (typeof rec["abstract"] === "string" && rec["abstract"]) {
-        const abs = rec["abstract"] as string;
-        card.createEl("div", {
-          cls: "paperforge-search-result-abstract",
-          text: abs.length > 200 ? abs.slice(0, 200) + "..." : abs,
+      // Matched text / abstract / snippet with query highlighting
+      const snippetRaw =
+        (typeof rec["snippet"] === "string" && rec["snippet"]) ||
+        (isDeep && typeof rec["text"] === "string" && rec["text"]) ||
+        (typeof rec["abstract"] === "string" && rec["abstract"]) ||
+        "";
+      if (snippetRaw) {
+        const truncated =
+          snippetRaw.length > 260
+            ? snippetRaw.slice(0, 260) + "..."
+            : snippetRaw;
+        const snipEl = card.createEl("div", {
+          cls: isDeep
+            ? "paperforge-search-result-source"
+            : "paperforge-search-result-abstract",
         });
-      }
-
-      // @ mode: matched text
-      if (isDeep && typeof rec["text"] === "string" && rec["text"]) {
-        const mt = rec["text"] as string;
-        card.createEl("div", {
-          cls: "paperforge-search-result-source",
-          text: mt.length > 300 ? mt.slice(0, 300) + "..." : mt,
-        });
+        const cleanQuery = (
+          this._searchRequestInput ||
+          this._searchQuery ||
+          this._searchInput?.value ||
+          ""
+        )
+          .replace(/^@\s*/, "")
+          .trim();
+        const terms = cleanQuery
+          .split(/\s+/)
+          .map((w) => w.trim())
+          .filter((w) => w.length >= 2)
+          .slice(0, 5);
+        if (terms.length > 0) {
+          const esc = terms.map((w) =>
+            w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+          );
+          const re = new RegExp(`(${esc.join("|")})`, "gi");
+          const parts = truncated.split(re);
+          parts.forEach((part, idx) => {
+            if (!part) return;
+            if (idx % 2 === 1) {
+              snipEl.createEl("mark", { cls: "pf-search-hl", text: part });
+            } else {
+              const doc = snipEl.ownerDocument || document;
+              snipEl.appendChild(doc.createTextNode(part));
+            }
+          });
+        } else {
+          snipEl.textContent = truncated;
+        }
       }
     }
   }
@@ -4908,26 +5026,53 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  private _isPanelVisible(): boolean {
+    if (!this.containerEl) return false;
+    if (
+      this.containerEl.closest?.(
+        ".mod-sidedock.is-collapsed, .workspace-split.is-collapsed"
+      )
+    ) {
+      return false;
+    }
+    const leafEl = this.containerEl.closest?.(".workspace-leaf") as
+      | (HTMLElement & { style?: CSSStyleDeclaration })
+      | null;
+    if (leafEl?.style?.display === "none") {
+      return false;
+    }
+    return true;
+  }
+
+  private async _syncFromLeaf(leaf?: WorkspaceLeaf | null): Promise<void> {
+    const resolved = await this._resolveWorkspaceContext(leaf);
+    if (resolved === "keep") return;
+    const nextMode = resolved.mode;
+    const nextFilePath = resolved.filePath;
+    if (
+      this._currentMode === nextMode &&
+      this._currentFilePath === nextFilePath
+    ) {
+      return;
+    }
+    await this._detectAndSwitch(resolved);
+  }
+
   /* ── Event Subscriptions (D-08, D-09, D-19) ── */
   _setupEventSubscriptions() {
     const leafHandler = this.app.workspace.on(
       "active-leaf-change",
       (leaf?: WorkspaceLeaf | null) => {
+        if (!this._isPanelVisible()) {
+          this._dirtyOnReveal = true;
+          this._pendingRevealLeaf = leaf ?? null;
+          return;
+        }
+        this._dirtyOnReveal = false;
+        this._pendingRevealLeaf = null;
         if (this._leafChangeTimer) clearTimeout(this._leafChangeTimer);
         this._leafChangeTimer = setTimeout(() => {
-          void (async () => {
-            const resolved = await this._resolveWorkspaceContext(leaf);
-            if (resolved === "keep") return;
-            const nextMode = resolved.mode;
-            const nextFilePath = resolved.filePath;
-            if (
-              this._currentMode === nextMode &&
-              this._currentFilePath === nextFilePath
-            ) {
-              return;
-            }
-            await this._detectAndSwitch(resolved);
-          })();
+          void this._syncFromLeaf(leaf);
         }, 140);
       }
     );
@@ -4935,6 +5080,22 @@ export class PaperForgeStatusView extends ItemView {
       event: "active-leaf-change",
       ref: leafHandler,
     });
+    const layoutRef = this.app.workspace.on?.("layout-change", () => {
+      if (!this._dirtyOnReveal || !this._isPanelVisible()) return;
+      this._dirtyOnReveal = false;
+      const pendingLeaf = this._pendingRevealLeaf;
+      this._pendingRevealLeaf = null;
+      if (this._leafChangeTimer) clearTimeout(this._leafChangeTimer);
+      this._leafChangeTimer = setTimeout(() => {
+        void this._syncFromLeaf(pendingLeaf);
+      }, 60);
+    });
+    if (layoutRef) {
+      this._modeSubscribers.push({
+        event: "layout-change",
+        ref: layoutRef,
+      });
+    }
     const modifyRef = (
       this.app.vault as unknown as {
         on?: (ev: string, cb: (file: { path?: string }) => void) => unknown;

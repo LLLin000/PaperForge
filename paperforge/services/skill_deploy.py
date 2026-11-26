@@ -75,6 +75,9 @@ def _atomic_replace_skill_tree(src_skill: Path, dst_skill: Path) -> None:
     import uuid
 
     dst_skill.parent.mkdir(parents=True, exist_ok=True)
+    for item in src_skill.rglob("*"):
+        if item.is_symlink():
+            raise OSError(f"Refusing to deploy symlink inside skill bundle: {item}")
     stage_dir = dst_skill.parent / f".paperforge-skill-stage-{uuid.uuid4().hex[:8]}"
     backup_dir: Path | None = None
     try:
@@ -287,15 +290,209 @@ def _validate_target(vault: Path, target_dir: str) -> Path | None:
 
 def _skill_tree_digest(root: Path) -> str:
     """Deterministic digest over every managed file: relative path + bytes,
-    sorted, CRLF-normalized (platform checkout variance must not matter)."""
+    sorted by POSIX relative path, CRLF-normalized, ignoring __pycache__/.pyc."""
     import hashlib
 
+    files = [
+        p
+        for p in root.rglob("*")
+        if not p.is_symlink()
+        and p.is_file()
+        and "__pycache__" not in p.relative_to(root).parts
+        and p.suffix.lower() != ".pyc"
+    ]
+    files.sort(key=lambda p: p.relative_to(root).as_posix())
     h = hashlib.sha256()
-    for path in sorted(root.rglob("*")):
-        if not path.is_file():
-            continue
+    for path in files:
         rel = path.relative_to(root).as_posix()
         h.update(rel.encode("utf-8"))
         h.update(b"\x00")
         h.update(path.read_bytes().replace(b"\r\n", b"\n"))
     return h.hexdigest()
+
+
+def machine_skill_source_dir(home: Path | None = None) -> Path:
+    return (home or Path.home()) / ".paperforge" / "skills" / "paperforge"
+
+
+def machine_skill_meta_path(home: Path | None = None) -> Path:
+    return (home or Path.home()) / ".paperforge" / "skills" / ".skill-meta.json"
+
+
+def agent_installs_registry_path(home: Path | None = None) -> Path:
+    return (home or Path.home()) / ".paperforge" / "agent-installs.json"
+
+
+def _atomic_write_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(str(tmp), str(path))
+
+
+def _is_link_to_hub(dst: Path, hub_dir: Path) -> bool:
+    try:
+        return (
+            dst.exists()
+            and hub_dir.exists()
+            and dst.resolve() == hub_dir.resolve()
+            and dst != hub_dir
+        )
+    except OSError:
+        return False
+
+
+def _is_safe_registered_skill_dir(dst: Path, *, home: Path | None = None) -> bool:
+    """Allow skill sync only inside known agent skill folders named ``paperforge``."""
+    if not dst.is_absolute() or ".." in dst.parts or dst.name != "paperforge":
+        return False
+    parent = dst.parent
+    if parent == dst:
+        return False
+    actual_home = (home or Path.home()).resolve()
+    try:
+        if dst.resolve() == actual_home or parent.resolve() == actual_home:
+            return False
+    except OSError:
+        return False
+    parent_name = parent.name.lower()
+    if (
+        parent_name in {"skills", ".skills"}
+        or parent_name.endswith(("_skills", "-skills"))
+        or (not dst.is_symlink() and (dst / "SKILL.md").is_file())
+    ):
+        return True
+    return False
+
+
+def sync_registered_agent_skills(*, home: Path | None = None) -> dict:
+    """Propagate machine Skill Hub updates to all registered external Agent copies.
+
+    - Symlinks / Windows NTFS junctions resolve live to the hub and just refresh
+      their recorded digest.
+    - Unmodified official copies (digest == recorded ``last_synced_digest``) are
+      atomically replaced from the hub.
+    - User-customized copies (digest != hub_digest and != last_synced_digest) are
+      never overwritten.
+    - Deleted paths are pruned from the registry.
+    """
+    hub_dir = machine_skill_source_dir(home)
+    reg_path = agent_installs_registry_path(home)
+    if not hub_dir.exists():
+        return {"hub_digest": "", "updated": 0, "up_to_date": 0, "customized_preserved": 0, "pruned": 0}
+    hub_digest = _skill_tree_digest(hub_dir)
+
+    if not reg_path.exists():
+        return {"hub_digest": hub_digest, "updated": 0, "up_to_date": 0, "customized_preserved": 0, "pruned": 0}
+
+    try:
+        reg = json.loads(reg_path.read_text(encoding="utf-8"))
+        installs = reg.get("installs") if isinstance(reg, dict) else []
+        if not isinstance(installs, list):
+            installs = []
+    except (OSError, ValueError):
+        return {"hub_digest": hub_digest, "updated": 0, "up_to_date": 0, "customized_preserved": 0, "pruned": 0}
+
+    updated = 0
+    up_to_date = 0
+    customized_preserved = 0
+    pruned = 0
+    next_installs: list[dict] = []
+
+    for entry in installs:
+        if not isinstance(entry, dict):
+            continue
+        raw_dir = str(entry.get("skill_dir") or "").strip()
+        if not raw_dir:
+            pruned += 1
+            continue
+        dst = Path(raw_dir)
+        if not _is_safe_registered_skill_dir(dst):
+            pruned += 1
+            continue
+        if not dst.exists() and not dst.is_symlink():
+            pruned += 1
+            continue
+        if dst.is_symlink() and not _is_link_to_hub(dst, hub_dir):
+            pruned += 1
+            continue
+
+        item = dict(entry)
+        if _is_link_to_hub(dst, hub_dir):
+            item["link_mode"] = "link"
+            item["last_synced_digest"] = hub_digest
+            up_to_date += 1
+            next_installs.append(item)
+            continue
+
+        cur_digest = _skill_tree_digest(dst)
+        recorded = str(item.get("last_synced_digest") or "")
+        if cur_digest == hub_digest:
+            item["last_synced_digest"] = hub_digest
+            up_to_date += 1
+        elif recorded and cur_digest == recorded:
+            _atomic_replace_skill_tree(hub_dir, dst)
+            item["last_synced_digest"] = hub_digest
+            updated += 1
+        else:
+            customized_preserved += 1
+        next_installs.append(item)
+
+    try:
+        _atomic_write_json(reg_path, {"schema_version": 1, "installs": next_installs})
+    except OSError:
+        pass
+
+    return {
+        "hub_digest": hub_digest,
+        "updated": updated,
+        "up_to_date": up_to_date,
+        "customized_preserved": customized_preserved,
+        "pruned": pruned,
+    }
+
+
+def sync_machine_skill_hub(
+    *,
+    home: Path | None = None,
+    source_skill_dir: Path | None = None,
+) -> dict:
+    """Sync canonical packaged PaperForge skill to ``~/.paperforge/skills/paperforge``
+    and propagate updates to all registered Agent installs."""
+    from datetime import datetime, timezone
+
+    src = source_skill_dir or (_resolve_source_root() / "skills" / "paperforge")
+    if not src.exists():
+        return {"ok": False, "hub_updated": False, "error": "Skills source not found"}
+
+    src_digest = _skill_tree_digest(src)
+    hub_dir = machine_skill_source_dir(home)
+    hub_updated = False
+    if not hub_dir.exists() or _skill_tree_digest(hub_dir) != src_digest:
+        _atomic_replace_skill_tree(src, hub_dir)
+        hub_updated = True
+
+    try:
+        from paperforge import __version__ as pf_version
+    except Exception:  # noqa: BLE001
+        pf_version = ""
+
+    meta_payload = {
+        "schema_version": 1,
+        "digest": src_digest,
+        "paperforge_version": pf_version,
+        "source_dir": str(hub_dir),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        _atomic_write_json(machine_skill_meta_path(home), meta_payload)
+    except OSError:
+        pass
+
+    sync_res = sync_registered_agent_skills(home=home)
+    return {
+        "ok": True,
+        "hub_dir": str(hub_dir),
+        "hub_updated": hub_updated,
+        **sync_res,
+    }

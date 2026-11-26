@@ -26,79 +26,32 @@ PaperForge 将文献、阅读痕迹、工作过程、方法论和产物
 
 ---
 
-## 1. Bootstrap — 必须先执行
+## 1. 一键状态交接（State-Machine Handoff — 必须最先执行）
 
-```bash
-python $SKILL_DIR/scripts/pf_bootstrap.py --vault "$VAULT"
-```
+不要分三步跑慢速脚本。直接从 PaperForge Rust 状态机一次性领取运行路径、库概览、collection 树、实时后台作业、可用能力与高优先级提醒：
 
-返回 JSON。记录以下变量（所有 molecule 文件继承，不再重复声明）：
+- **首选（MCP 已接入时，0 转义 / `<5ms`）**：直接调用 **`paperforge_brief`**（如已锁定单篇论文，可传 `paper_key`）。
+- **回退 A（原生二进制 CLI）**：
+  ```bash
+  ~/.paperforge/bin/paperforge-daemon agent-brief --vault "$VAULT" --json
+  ```
+- **回退 B（无二进制时的 Python 兜底）**：按顺序执行 `python $SKILL_DIR/scripts/pf_bootstrap.py --vault "$VAULT"` → `$PYTHON -m paperforge --vault "$VAULT" agent-context --json` → `$PYTHON -m paperforge --vault "$VAULT" runtime-health --json`。
 
-| 变量          | JSON 字段               | 用途                           |
-| ------------- | ----------------------- | ------------------------------ |
-| `$VAULT`      | `vault_root`            | 所有 `--vault` 参数            |
-| `$PYTHON`     | `python_candidate`      | 所有 `python -m paperforge` 调用 |
-| `$LIT_DIR`    | `paths.literature_dir`  | 文献笔记根目录                 |
-| `$SKILL_DIR`  | `skill_dir`             | 当前执行的 skill 脚本目录       |
-| `$METHODS`    | `methodology_index`     | 可用方法论索引                 |
+拿到交接结果后记录变量：`$VAULT = data.vault.root`、`$PYTHON = data.runtime.python_exe`、`$LIT_DIR = data.vault.paths.literature`、`$METHODS = data.methodology_index`。
 
-bootstrap 使用 Python-owned runtime pointer 作为已安装环境的唯一事实源：
+## 1a. Pre-flight Checklist（强制门禁）
 
-- `runtime_pointer.status == "valid"`：`python_candidate` 必须来自 pointer；
-- pointer 存在但无效或验证失败：报告 `python_error`，停止，禁止切换到 vault `.venv` 或全局 Python；
-- 没有 pointer：bootstrap 只允许验证显式 `python_path`、vault-local venv 或已能导入 PaperForge 的 ambient Python。
+**进入任何 molecule 之前，必须核对以下事项：**
 
-如果 `ok: false`，报告 `error` 给用户，**停止。禁止自己拼路径。**
-
-如果 `python_verified` 为 `false` 或 `python_candidate` 为 `null`，报告 `python_error` 并停止。禁止再次尝试未验证的 `python` / `python3`。
-
-bootstrap 现在也返回一个 `capabilities` 块（rg, semantic, metadata 等）。
-
-## 1a. Pre-flight Checklist
-
-**进入任何 molecule 之前，必须完成以下检查。标记为 `[x]` 后才可前进。**
-
-- [ ] **bootstrap completed**：`$VAULT`、`$PYTHON`、`$LIT_DIR`、`$SKILL_DIR` 已定义
-- [ ] **skill contract**：bootstrap 已返回 `plugin_version`、`skill_version`、`skill_api_version`；若 `skill_api_version` 不兼容，提示用户运行 `paperforge update`
-- [ ] **runtime-health passed**：`safe_read`、`safe_write` 已知
+- [ ] **handoff completed**：已通过 `paperforge_brief`（或回退链）拿到 `data.capabilities` 与 `data.hints`
+- [ ] **respect blocked_actions & hints**：
+  - `capabilities.safe_read == false`：禁止路由到 discover-papers、read-known-paper、deep-analyze-paper
+  - `capabilities.safe_write == false`：禁止路由到任何日志/记忆/批注写入操作
+  - `hints` 中存在 `blocker` 或 `repair_command`（如 `job.ocr.running` / `paper.not_ocr_ready`）：严格遵守提醒，必要时优先把 `repair_command` 返回给用户
 - [ ] **intent identified**：用户意图已映射到一个顶层 research intent
 - [ ] **molecule selected**：已路由到对应的 `molecules/<intent>.md`
----
 
-## 2. Agent Context — bootstrap 成功后执行
-
-```bash
-$PYTHON -m paperforge --vault "$VAULT" agent-context --json
-```
-
-返回 library overview、collection tree、可用命令和规则。Agent 注入为会话上下文。
-
----
-
-## 3. Runtime Health — compound 启动原子
-
-在 compound 启动链中，只执行一次：
-
-```text
-bootstrap -> agent-context -> runtime-health -> route -> molecule
-```
-
-执行命令：
-
-```bash
-$PYTHON -m paperforge --vault "$VAULT" runtime-health --json
-```
-
-检查返回 JSON：
-
-- `data.summary.safe_read == false`：禁止路由到 discover-papers、read-known-paper、deep-analyze-paper
-- `data.summary.safe_write == false`：禁止路由到 write-reading-log-jsonl、write-project-reading-log、write-project-log
-- `data.layers.*.repair_command` 存在时，优先把该命令作为修复建议返回给用户
-
-**检索可用性不由 runtime-health 决定。** 检索命令选择由 `query-plan` 决定。
-执行语义和 fallback 规则完全以 `atoms/retrieval-routing.md` 为准。
-CLI 返回 `ok=false` 时报告错误和 repair action；返回 `ok=true` 但无结果时按 fallback 协议处理。
-不要基于 capabilities 自行替换 primary 命令。
+> **检索路由原则**：执行语义和 fallback 规则以 `atoms/retrieval-routing.md` 为准；MCP 可用时优先使用 `paperforge_search` / `paperforge_retrieve` / `paperforge_library_query`，无结果时再按 fallback 梯队降级。
 
 ## 4. 意图路由
 

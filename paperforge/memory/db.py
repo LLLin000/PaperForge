@@ -105,6 +105,47 @@ def get_connection(db_path: Path, read_only: bool = False) -> sqlite3.Connection
     return conn
 
 
+def quarantine_corrupt_db(db_path: Path) -> Path | None:
+    """Detect an unreadable/corrupt SQLite file at *db_path* and move it aside.
+
+    Returns the quarantine Path when *db_path* was quarantined, or None when
+    *db_path* does not exist or is a valid SQLite database.
+    """
+    if not db_path.is_file():
+        return None
+    corrupt = False
+    conn: sqlite3.Connection | None = None
+    try:
+        conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+        conn.execute("SELECT COUNT(*) FROM sqlite_master").fetchone()
+    except sqlite3.DatabaseError:
+        corrupt = True
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    if not corrupt:
+        return None
+
+    import shutil
+    import time
+
+    ts = time.strftime("%Y%m%dT%H%M%S")
+    ns = str(int(time.time_ns() % 1_000_000_000)).zfill(9)
+    quarantine_path = db_path.with_name(f"paperforge.corrupt-{ts}-{ns}.db")
+    shutil.move(str(db_path), str(quarantine_path))
+    for suffix in ("-wal", "-shm", "-journal"):
+        sidecar = Path(str(db_path) + suffix)
+        if sidecar.exists():
+            try:
+                sidecar.unlink()
+            except OSError:
+                pass
+    return quarantine_path
+
+
 def ensure_vec_extension(conn: sqlite3.Connection) -> None:
     """Load the sqlite-vec extension if available.
 

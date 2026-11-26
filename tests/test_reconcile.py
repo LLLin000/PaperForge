@@ -15,6 +15,7 @@ from pathlib import Path
 from paperforge.actions.registry import ACTION_REGISTRY
 from paperforge.actions.types import ActionIntent, PapersScope
 from paperforge.reconcile import (
+    PaperObservation,
     _intent_input_digest,
     observe,
     reconcile,

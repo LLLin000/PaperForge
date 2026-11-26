@@ -33,8 +33,24 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
     from paperforge.memory.db import open_live_reader
-    reader = open_live_reader(vault, db_path)
-    conn = reader.__enter__()
+    try:
+        reader = open_live_reader(vault, db_path)
+        conn = reader.__enter__()
+    except Exception as exc:
+        err_msg = str(exc)
+        if "not a database" in err_msg.lower() or "malformed" in err_msg.lower():
+            err_msg = f"Memory database is corrupt ({err_msg}). Run `paperforge memory build` or `paperforge engine rebuild-db` to rebuild."
+        result = PFResult(
+            ok=False,
+            command="search",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=err_msg),
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"Error: {result.error.message}", file=sys.stderr)
+        return 1
     try:
         results = search_papers(
             conn,
@@ -106,11 +122,11 @@ def run(args: argparse.Namespace) -> int:
                     "recommended_primary": plan.get("primary"),
                     "recommended_fallback": plan.get("fallback"),
                 }
-            if plan.get("primary", {}).get("command") != "search":
-                # T9 (#170): diagnostic, never a command-string action wire.
-                data["query_diagnostic"]["recommended_command_id"] = (
-                    plan.get("primary", {}).get("command")
-                )
+                if plan.get("primary", {}).get("command") != "search":
+                    # T9 (#170): diagnostic, never a command-string action wire.
+                    data["query_diagnostic"]["recommended_command_id"] = (
+                        plan.get("primary", {}).get("command")
+                    )
         result = PFResult(
             ok=True, command="search", version=PF_VERSION, data=data, warnings=warnings
         )

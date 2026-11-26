@@ -20,7 +20,12 @@ _VISUAL_MD_EMBED_RE = re.compile(
 )
 
 
-def rewrite_visual_embeds_for_key(markdown: str, zotero_key: str) -> tuple[str, int]:
+def rewrite_visual_embeds_for_key(
+    markdown: str,
+    zotero_key: str,
+    *,
+    available_assets: set[str] | None = None,
+) -> tuple[str, int]:
     """Rewrite legacy object embeds to ``![[<KEY>_figure_001.jpg]]`` inside one note."""
     replacements = 0
 
@@ -30,7 +35,10 @@ def rewrite_visual_embeds_for_key(markdown: str, zotero_key: str) -> tuple[str, 
         alias = match.group(2) or ""
         prefix = f"{zotero_key}_"
         stem = obj_stem if obj_stem.startswith(prefix) else f"{prefix}{obj_stem}"
-        target = f"![[{stem}.jpg{alias}]]"
+        filename = f"{stem}.jpg"
+        if available_assets is not None and filename not in available_assets:
+            return match.group(0)
+        target = f"![[{filename}{alias}]]"
         if target != match.group(0):
             replacements += 1
         return target
@@ -113,6 +121,10 @@ def _move_tree_entries(
                 dest_dir = conflict_backup_dir / sub_dir
                 dest_dir.mkdir(parents=True, exist_ok=True)
                 dest = dest_dir / f"{child.parent.name}__{child.name}"
+                counter = 1
+                while dest.exists():
+                    dest = dest_dir / f"{child.parent.name}__{child.stem}__{counter}{child.suffix}"
+                    counter += 1
                 shutil.move(str(child), str(dest))
                 if moved_pairs is not None:
                     moved_pairs.append((child, dest))
@@ -158,12 +170,38 @@ def _rollback_mutations(
                 shutil.move(str(dst_p), str(src_p))
 
 
+def _validate_vault_contained_path(
+    raw: str | Path,
+    *,
+    allowed_root: Path,
+    allow_root: bool = False,
+    label: str = "path",
+) -> Path:
+    """Fail-closed containment check: reject empty, ``..``, symlinks, or paths escaping *allowed_root*."""
+    from paperforge.worker.trash import DangerousPathError
+
+    text = str(raw or "").strip()
+    if not text or text in (".", ".."):
+        raise DangerousPathError(f"forbidden {label}: {text!r}")
+    p = Path(text)
+    if p.is_symlink():
+        raise DangerousPathError(f"refusing symlink {label}: {p}")
+    root_resolved = allowed_root.resolve()
+    resolved = p.resolve()
+    if not allow_root and resolved == root_resolved:
+        raise DangerousPathError(f"{label} points to forbidden root {root_resolved}")
+    if not resolved.is_relative_to(root_resolved):
+        raise DangerousPathError(f"{label} escapes allowed root {root_resolved}: {resolved}")
+    return resolved
+
+
 def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
     """Roll back an interrupted ``in_progress`` migration using ``.migration-journal.json``."""
     import json
 
     vault_root = Path(vault).expanduser().resolve()
-    journal_path = vault_root / ".paperforge" / ".migration-journal.json"
+    dot_pf_root = (vault_root / ".paperforge").resolve()
+    journal_path = dot_pf_root / ".migration-journal.json"
     if not journal_path.is_file():
         return {"recovered": False, "state": "no_journal"}
     data = json.loads(journal_path.read_text(encoding="utf-8"))
@@ -171,23 +209,37 @@ def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
         return {"recovered": False, "state": str(data.get("state") or "unknown")}
 
     moved_pairs = [
-        (Path(item["src"]), Path(item["dst"]))
+        (
+            _validate_vault_contained_path(item["src"], allowed_root=vault_root, label="moved_pairs.src"),
+            _validate_vault_contained_path(item["dst"], allowed_root=vault_root, label="moved_pairs.dst"),
+        )
         for item in (data.get("moved_pairs") or [])
         if isinstance(item, dict) and item.get("src") and item.get("dst")
     ]
     rewritten_notes = [
-        (Path(item["path"]), str(item["original_text"]))
+        (
+            _validate_vault_contained_path(item["path"], allowed_root=vault_root, label="rewritten_notes.path"),
+            str(item["original_text"]),
+        )
         for item in (data.get("rewritten_notes") or [])
         if isinstance(item, dict) and item.get("path") and "original_text" in item
     ]
-    created_assets = [Path(p) for p in (data.get("created_assets") or [])]
+    created_assets = [
+        _validate_vault_contained_path(p, allowed_root=vault_root, label="created_assets")
+        for p in (data.get("created_assets") or [])
+    ]
     restorable_fulltexts: list[tuple[Path, bytes]] = []
     for pf_item in (data.get("preserved_fulltexts") or []):
         if isinstance(pf_item, dict) and pf_item.get("orig") and pf_item.get("backup"):
-            bp = Path(str(pf_item["backup"]))
+            orig_p = _validate_vault_contained_path(
+                pf_item["orig"], allowed_root=vault_root, label="preserved_fulltexts.orig"
+            )
+            bp = _validate_vault_contained_path(
+                pf_item["backup"], allowed_root=dot_pf_root, label="preserved_fulltexts.backup"
+            )
             if bp.is_file():
                 with contextlib.suppress(OSError):
-                    restorable_fulltexts.append((Path(str(pf_item["orig"])), bp.read_bytes()))
+                    restorable_fulltexts.append((orig_p, bp.read_bytes()))
 
     prev_sys = data.get("previous_system_dir")
 
@@ -224,6 +276,7 @@ def migrate_vault_storage(
     *,
     dry_run: bool = False,
     isolate_paper_errors: bool = False,
+    backup_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Transactionally migrate an existing vault to `.paperforge/` with rollback."""
     vault_root = Path(vault).expanduser().resolve()
@@ -305,30 +358,9 @@ def migrate_vault_storage(
         )
 
         old_zotero = old_sys / "Zotero"
-        target_zotero = target_pf / "Zotero"
-        if (
-            old_zotero.exists()
-            and not old_zotero.is_symlink()
-            and old_zotero.resolve() != target_zotero.resolve()
-            and not target_zotero.exists()
-        ):
-            points_to_old_zotero = (
-                configured_zotero_path is not None
-                and (
-                    configured_zotero_path == old_zotero.resolve()
-                    or old_zotero.resolve() in configured_zotero_path.parents
-                )
-            )
-            if points_to_old_zotero:
-                # Never bury an active user Zotero library inside hidden `.paperforge/`
-                zotero_preserved_in_place = True
-            else:
-                moved_zotero = True
-                if not dry_run:
-                    target_pf.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(old_zotero), str(target_zotero))
-                    moved_pairs.append((old_zotero, target_zotero))
-                    _flush_journal()
+        if old_zotero.exists() and not old_zotero.is_symlink():
+            # Never bury a user Zotero library inside hidden `.paperforge/`
+            zotero_preserved_in_place = True
 
         if lit_root.exists():
             from paperforge.services.identity_resolver import scan_vault_identities
@@ -389,6 +421,14 @@ def migrate_vault_storage(
                             ws_dir.parent / f"{key}.md",
                         ]
                     )
+                    ws_assets_dir = ws_dir / "assets"
+                    avail_assets: set[str] | None = None
+                    if not dry_run:
+                        if ws_assets_dir.is_dir():
+                            avail_assets = {p.name for p in ws_assets_dir.glob("*.jpg")}
+                        elif (paper_ocr_dir / "assets").is_dir():
+                            avail_assets = set()
+
                     seen_notes: set[Path] = set()
                     for candidate_note in note_candidates:
                         if candidate_note.exists() and candidate_note.is_file():
@@ -397,7 +437,9 @@ def migrate_vault_storage(
                                 continue
                             seen_notes.add(resolved_note)
                             original = candidate_note.read_text(encoding="utf-8")
-                            updated, count = rewrite_visual_embeds_for_key(original, key)
+                            updated, count = rewrite_visual_embeds_for_key(
+                                original, key, available_assets=avail_assets
+                            )
                             if count > 0:
                                 notes_rewritten += 1
                                 if not dry_run:
@@ -466,10 +508,34 @@ def migrate_vault_storage(
                     ):
                         leftover.rmdir()
 
+            serialized_pairs = [{"src": str(s), "dst": str(d)} for s, d in moved_pairs]
+            serialized_notes = [
+                {"path": str(p), "original_text": txt} for p, txt in rewritten_notes
+            ]
+            serialized_assets = [str(p) for p in created_assets]
+            if backup_dir is not None:
+                backup_dir.mkdir(parents=True, exist_ok=True)
+                write_json_atomic(backup_dir / "moved-pairs.json", serialized_pairs)
+                write_json_atomic(
+                    backup_dir / "migration-mutations.json",
+                    {
+                        "rewritten_notes": serialized_notes,
+                        "created_assets": serialized_assets,
+                        "preserved_fulltexts": journal_fulltexts,
+                    },
+                )
             write_json_atomic(
                 journal_path,
                 {
                     "state": final_state,
+                    "mode": "full",
+                    "source_engine_dir": str(old_pf),
+                    "target_engine_dir": str(target_pf),
+                    "previous_system_dir": previous_system_dir,
+                    "moved_pairs": serialized_pairs,
+                    "rewritten_notes": serialized_notes,
+                    "created_assets": serialized_assets,
+                    "preserved_fulltexts": journal_fulltexts,
                     "entries_moved": tree_counts["moved"],
                     "conflicts_quarantined": tree_counts["conflicts_quarantined"],
                     "notes_rewritten": notes_rewritten,

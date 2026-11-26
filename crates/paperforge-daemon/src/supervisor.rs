@@ -7,7 +7,7 @@ use crate::platform::{
     kill_pid_tree, kill_process_tree, now_unix_secs, process_rss_bytes,
 };
 use crate::query_ops::{open_readonly_db, read_state_seq, resolve_engine_dir};
-use crate::runtime_ops::install_runtime_native;
+use crate::runtime_ops::install_runtime_native_cancellable;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::env;
@@ -15,11 +15,13 @@ use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
 const MAX_CACHED_VAULTS: usize = 4;
+const MAX_SNAPSHOT_CACHE: usize = 2;
 const MAX_WORKSPACES_PER_VAULT: usize = 2048;
 const MAX_NOTICES: usize = 100;
 const MAX_RECENT_JOBS: usize = 25;
@@ -180,6 +182,8 @@ pub struct JobRecord {
     pub stderr_tail: String,
     pub pid: Option<u32>,
     pub child: Option<Child>,
+    pub cancel_flag: Option<Arc<AtomicBool>>,
+    pub runtime_child_pid: Option<Arc<AtomicU32>>,
 }
 
 impl JobRecord {
@@ -249,6 +253,14 @@ impl JobRecord {
 
 pub type PushSink = Arc<dyn Fn(Value) + Send + Sync>;
 
+#[derive(Clone)]
+struct CachedBaseSnapshot {
+    vault_key: String,
+    fingerprint: (i64, u64, u64, u64, u64, u64, u64),
+    payload: (i32, String, String),
+    last_access: Instant,
+}
+
 struct InnerState {
     started_at: f64,
     parent_pid: Option<u32>,
@@ -259,6 +271,7 @@ struct InnerState {
     notice_counter: u64,
     push_sink: Option<PushSink>,
     vault_lru: VecDeque<VaultCacheEntry>,
+    base_snapshot_cache: VecDeque<CachedBaseSnapshot>,
     notices: VecDeque<Value>,
     active_jobs: HashMap<String, Arc<Mutex<JobRecord>>>,
     delegated_pids: HashSet<u32>,
@@ -285,6 +298,7 @@ impl NativeControlDaemon {
                 notice_counter: 0,
                 push_sink,
                 vault_lru: VecDeque::new(),
+                base_snapshot_cache: VecDeque::new(),
                 notices: VecDeque::new(),
                 active_jobs: HashMap::new(),
                 delegated_pids: HashSet::new(),
@@ -467,10 +481,49 @@ impl NativeControlDaemon {
         (None, c.last_seq)
     }
 
+    pub fn get_or_build_base_snapshot(&self, vault: &Path) -> (i32, String, String) {
+        let vkey = Self::norm_vault(vault);
+        let fp = crate::query_ops::base_snapshot_fingerprint(vault);
+        {
+            let mut g = self.inner.lock().unwrap();
+            if let Some(pos) = g
+                .base_snapshot_cache
+                .iter()
+                .position(|c| c.vault_key == vkey && c.fingerprint == fp)
+            {
+                let mut entry = g.base_snapshot_cache.remove(pos).unwrap();
+                entry.last_access = Instant::now();
+                let res = entry.payload.clone();
+                g.base_snapshot_cache.push_back(entry);
+                return res;
+            }
+        }
+        let fresh = crate::query_ops::handle_base_snapshot(vault);
+        let mut g = self.inner.lock().unwrap();
+        if let Some(pos) = g
+            .base_snapshot_cache
+            .iter()
+            .position(|c| c.vault_key == vkey)
+        {
+            g.base_snapshot_cache.remove(pos);
+        }
+        while g.base_snapshot_cache.len() >= MAX_SNAPSHOT_CACHE {
+            g.base_snapshot_cache.pop_front();
+        }
+        g.base_snapshot_cache.push_back(CachedBaseSnapshot {
+            vault_key: vkey,
+            fingerprint: fp,
+            payload: fresh.clone(),
+            last_access: Instant::now(),
+        });
+        fresh
+    }
+
     pub fn invalidate_vault(&self, vault: Option<&Path>) -> usize {
         let mut g = self.inner.lock().unwrap();
         if let Some(v) = vault {
             let vkey = Self::norm_vault(v);
+            g.base_snapshot_cache.retain(|c| c.vault_key != vkey);
             if let Some(pos) = g.vault_lru.iter().position(|e| e.vault_key == vkey) {
                 g.vault_lru.remove(pos);
                 return 1;
@@ -479,6 +532,7 @@ impl NativeControlDaemon {
         } else {
             let n = g.vault_lru.len();
             g.vault_lru.clear();
+            g.base_snapshot_cache.clear();
             n
         }
     }
@@ -492,6 +546,8 @@ impl NativeControlDaemon {
                 g.vault_lru
                     .retain(|e| e.last_access.elapsed().as_secs_f64() < 120.0);
                 evicted = before.saturating_sub(g.vault_lru.len());
+                g.base_snapshot_cache
+                    .retain(|c| c.last_access.elapsed().as_secs_f64() < 120.0);
             }
         }
         json!({ "evicted_vaults": evicted, "gc_collected": 0 })
@@ -534,6 +590,9 @@ impl NativeControlDaemon {
             n
         };
         self.emit_push("notice.push", norm_v.as_deref(), notice.clone());
+        if let Some(v) = vault {
+            self.write_heartbeat(v);
+        }
         notice
     }
 
@@ -570,6 +629,16 @@ impl NativeControlDaemon {
         false
     }
 
+    pub fn has_exclusive_barrier(&self, vault: &Path) -> Option<String> {
+        let vkey = Self::norm_vault(vault);
+        self.inner
+            .lock()
+            .unwrap()
+            .exclusive_barriers
+            .get(&vkey)
+            .cloned()
+    }
+
     pub fn acquire_exclusive_barrier(&self, vault: &Path, reason: &str) {
         let vkey = Self::norm_vault(vault);
         let to_cancel: Vec<String> = {
@@ -579,7 +648,7 @@ impl NativeControlDaemon {
                 .iter()
                 .filter_map(|(jid, job_arc)| {
                     let j = job_arc.lock().unwrap();
-                    if j.vault == vkey && j.kind == "upgrade.heal" {
+                    if j.vault == vkey && !j.status.is_terminal() {
                         Some(jid.clone())
                     } else {
                         None
@@ -590,11 +659,13 @@ impl NativeControlDaemon {
         for jid in to_cancel {
             let _ = self.cancel_job(&jid, 1500, true);
         }
+        self.write_heartbeat(vault);
     }
 
     pub fn release_exclusive_barrier(&self, vault: &Path) {
         let vkey = Self::norm_vault(vault);
         self.inner.lock().unwrap().exclusive_barriers.remove(&vkey);
+        self.write_heartbeat(vault);
     }
 
     fn default_argv_for_kind(kind: &str, priority_key: Option<&str>, backfill_ocr: bool) -> Result<Vec<String>, String> {
@@ -633,6 +704,8 @@ impl NativeControlDaemon {
         };
 
         let trace_id = self.next_trace_id(None);
+        let cancel_flag = Arc::new(AtomicBool::new(false));
+        let runtime_child_pid = Arc::new(AtomicU32::new(0));
         let (job_id, job_arc) = {
             let mut g = self.inner.lock().unwrap();
             for active in g.active_jobs.values() {
@@ -668,6 +741,8 @@ impl NativeControlDaemon {
                 stderr_tail: String::new(),
                 pid: Some(std::process::id()),
                 child: None,
+                cancel_flag: Some(cancel_flag.clone()),
+                runtime_child_pid: Some(runtime_child_pid.clone()),
             };
             let _ = rec_val.transition(JobStatus::Running);
             let rec = Arc::new(Mutex::new(rec_val));
@@ -681,34 +756,55 @@ impl NativeControlDaemon {
         let daemon_clone = self.clone();
         let job_worker = job_arc.clone();
         let tid_worker = trace_id.clone();
+        let cf_worker = cancel_flag.clone();
+        let rpid_worker = runtime_child_pid.clone();
         thread::spawn(move || {
             let v_opt = if vkey == "global" { None } else { Some(vkey.as_str()) };
-            let res = install_runtime_native(&act, &ver, |phase, cur, tot| {
-                let ev_snap = {
-                    let mut j = job_worker.lock().unwrap();
-                    j.phase = phase.to_string();
-                    j.current = cur;
-                    j.total = tot;
-                    j.to_json()
-                };
-                daemon_clone.emit_push("task.updated", v_opt, ev_snap);
-            });
+            let res = install_runtime_native_cancellable(
+                &act,
+                &ver,
+                Some(cf_worker.as_ref()),
+                Some(rpid_worker.as_ref()),
+                |phase, cur, tot| {
+                    let ev_snap = {
+                        let mut j = job_worker.lock().unwrap();
+                        if !j.status.is_terminal() {
+                            j.phase = phase.to_string();
+                            j.current = cur;
+                            j.total = tot;
+                        }
+                        j.to_json()
+                    };
+                    daemon_clone.emit_push("task.updated", v_opt, ev_snap);
+                },
+            );
 
-            let (ok, err_msg, final_snap) = {
+            let (final_status, err_msg, final_snap) = {
                 let mut j = job_worker.lock().unwrap();
                 j.finished_at = Some(now_unix_secs());
                 match res {
-                    Ok(_) => {
+                    Ok(_) if !cf_worker.load(Ordering::SeqCst) && j.status != JobStatus::Cancelling => {
                         let _ = j.transition(JobStatus::Succeeded);
                         j.current = 5;
                         j.exit_code = Some(0);
-                        (true, String::new(), j.to_json())
+                        (JobStatus::Succeeded, String::new(), j.to_json())
+                    }
+                    Ok(_) => {
+                        let _ = j.transition(JobStatus::Cancelled);
+                        j.exit_code = Some(130);
+                        (JobStatus::Cancelled, String::new(), j.to_json())
+                    }
+                    Err(_e) if cf_worker.load(Ordering::SeqCst) || j.status == JobStatus::Cancelling => {
+                        let _ = j.transition(JobStatus::Cancelled);
+                        j.exit_code = Some(130);
+                        j.error = "cancelled".into();
+                        (JobStatus::Cancelled, String::new(), j.to_json())
                     }
                     Err(e) => {
                         let _ = j.transition(JobStatus::Failed);
                         j.exit_code = Some(1);
                         j.error = e.clone();
-                        (false, e, j.to_json())
+                        (JobStatus::Failed, e, j.to_json())
                     }
                 }
             };
@@ -723,24 +819,28 @@ impl NativeControlDaemon {
             }
 
             daemon_clone.emit_push("task.updated", v_opt, final_snap);
-            if ok {
-                daemon_clone.push_notice_traced(
-                    "success",
-                    "runtime.install.done",
-                    "Python compute engine is ready",
-                    "Background sync and OCR fulltext environment are ready.",
-                    vault_path_opt(&vkey),
-                    Some(&tid_worker),
-                );
-            } else {
-                daemon_clone.push_notice_traced(
-                    "warning",
-                    "runtime.install.failed",
-                    "Runtime setup did not complete",
-                    &summarize_stderr_line(&err_msg, 1),
-                    vault_path_opt(&vkey),
-                    Some(&tid_worker),
-                );
+            match final_status {
+                JobStatus::Succeeded => {
+                    daemon_clone.push_notice_traced(
+                        "success",
+                        "runtime.install.done",
+                        "Python compute engine is ready",
+                        "Background sync and OCR fulltext environment are ready.",
+                        vault_path_opt(&vkey),
+                        Some(&tid_worker),
+                    );
+                }
+                JobStatus::Failed => {
+                    daemon_clone.push_notice_traced(
+                        "warning",
+                        "runtime.install.failed",
+                        "Runtime setup did not complete",
+                        &summarize_stderr_line(&err_msg, 1),
+                        vault_path_opt(&vkey),
+                        Some(&tid_worker),
+                    );
+                }
+                _ => {}
             }
         });
 
@@ -836,6 +936,8 @@ impl NativeControlDaemon {
                 stderr_tail: String::new(),
                 pid: None,
                 child: None,
+                cancel_flag: None,
+                runtime_child_pid: None,
             }));
             g.active_jobs.insert(jid.clone(), rec.clone());
             (jid, rec)
@@ -1072,6 +1174,8 @@ impl NativeControlDaemon {
                 stderr_tail: String::new(),
                 pid: None,
                 child: None,
+                cancel_flag: None,
+                runtime_child_pid: None,
             }));
             g.active_jobs.insert(jid.clone(), rec.clone());
             (jid, rec)
@@ -1269,10 +1373,17 @@ impl NativeControlDaemon {
             }
         };
 
-        let (vault_str, snap, transitioned) = {
+        let (vault_str, snap, transitioned, is_runtime_job, rt_child_pid) = {
             let mut j = job_arc.lock().unwrap();
             let ok = j.transition(JobStatus::Cancelling).is_ok();
+            let mut rt_pid = 0u32;
             if ok {
+                if let Some(ref cf) = j.cancel_flag {
+                    cf.store(true, Ordering::SeqCst);
+                }
+                if let Some(ref rpid) = j.runtime_child_pid {
+                    rt_pid = rpid.load(Ordering::SeqCst);
+                }
                 if let Some(ref mut c) = j.child {
                     if let Some(ref mut sin) = c.stdin {
                         let _ = sin.write_all(b"PAPERFORGE_STOP\n");
@@ -1280,7 +1391,13 @@ impl NativeControlDaemon {
                     }
                 }
             }
-            (j.vault.clone(), j.to_json(), ok)
+            (
+                j.vault.clone(),
+                j.to_json(),
+                ok,
+                j.source == "runtime",
+                rt_pid,
+            )
         };
         if !transitioned {
             return json!({
@@ -1290,6 +1407,9 @@ impl NativeControlDaemon {
                 "status": snap["status"],
             });
         }
+        if is_runtime_job && rt_child_pid != 0 {
+            kill_pid_tree(rt_child_pid);
+        }
         self.emit_push("task.updated", Some(&vault_str), snap);
 
         let escalate = move || {
@@ -1297,18 +1417,34 @@ impl NativeControlDaemon {
             while Instant::now() < deadline {
                 let done = {
                     let mut j = job_arc.lock().unwrap();
-                    match j.child.as_mut() {
-                        Some(c) => matches!(c.try_wait(), Ok(Some(_))),
-                        None => true,
+                    if is_runtime_job {
+                        if let Some(ref rpid) = j.runtime_child_pid {
+                            let p = rpid.load(Ordering::SeqCst);
+                            if p != 0 {
+                                kill_pid_tree(p);
+                            }
+                        }
+                        j.status.is_terminal()
+                    } else {
+                        match j.child.as_mut() {
+                            Some(c) => matches!(c.try_wait(), Ok(Some(_))),
+                            None => true,
+                        }
                     }
                 };
                 if done {
                     return;
                 }
-                thread::sleep(Duration::from_millis(80));
+                thread::sleep(Duration::from_millis(30));
             }
             let mut j = job_arc.lock().unwrap();
-            if let Some(ref mut c) = j.child {
+            if is_runtime_job {
+                if !j.status.is_terminal() {
+                    let _ = j.transition(JobStatus::Cancelled);
+                    j.finished_at = Some(now_unix_secs());
+                    j.exit_code = Some(130);
+                }
+            } else if let Some(ref mut c) = j.child {
                 kill_process_tree(c);
             }
         };
@@ -1384,12 +1520,12 @@ impl NativeControlDaemon {
     }
 
     pub fn write_heartbeat(&self, vault: &Path) {
-        let indexes_dir = vault.join(".paperforge").join("indexes");
+        let indexes_dir = resolve_engine_dir(vault).join("indexes");
         if !indexes_dir.is_dir() {
             return;
         }
         let vkey = Self::norm_vault(vault);
-        let (parent_pid, active) = {
+        let (parent_pid, active, exclusive_barrier, recent_notices) = {
             let g = self.inner.lock().unwrap();
             let act: Vec<Value> = g
                 .active_jobs
@@ -1403,7 +1539,27 @@ impl NativeControlDaemon {
                     }
                 })
                 .collect();
-            (g.parent_pid, act)
+            let barrier = g.exclusive_barriers.get(&vkey).cloned();
+            let mut notices_vec: Vec<Value> = g
+                .notices
+                .iter()
+                .rev()
+                .filter(|n| {
+                    if n.get("acked").and_then(|v| v.as_bool()) == Some(true) {
+                        return false;
+                    }
+                    let lvl = n.get("level").and_then(|v| v.as_str()).unwrap_or("info");
+                    let same_vault = n
+                        .get("vault")
+                        .and_then(|v| v.as_str())
+                        .is_none_or(|nv| nv == vkey);
+                    same_vault && matches!(lvl, "warning" | "error")
+                })
+                .take(5)
+                .cloned()
+                .collect();
+            notices_vec.reverse();
+            (g.parent_pid, act, barrier, notices_vec)
         };
         let payload = json!({
             "schema_version": 1,
@@ -1412,6 +1568,8 @@ impl NativeControlDaemon {
             "parent_pid": parent_pid,
             "rss_bytes": process_rss_bytes(),
             "active_jobs": active,
+            "exclusive_barrier": exclusive_barrier,
+            "recent_notices": recent_notices,
             "updated_at": now_unix_secs(),
         });
         if let Ok(bytes) = serde_json::to_vec_pretty(&payload) {
@@ -1464,6 +1622,27 @@ impl NativeControlDaemon {
         argv: &[String],
         stdin_text: Option<&str>,
     ) -> (i32, String, String) {
+        let is_exclusive_upgrade = argv.first().map(|s| s.as_str()) == Some("upgrade")
+            && argv.iter().any(|a| a == "--apply" || a == "--rollback");
+
+        if let Some(v) = vault {
+            if let Some(barrier) = self.has_exclusive_barrier(v) {
+                let cmd_name = argv.first().map(|s| s.as_str()).unwrap_or("cli");
+                let err = pf_err(
+                    cmd_name,
+                    "VAULT_UPGRADE_BARRIER_ACTIVE",
+                    &format!("Vault exclusive upgrade barrier is active ({barrier}); try again after upgrade completes."),
+                    json!({ "barrier": barrier }),
+                    &["Wait for the active vault upgrade/rollback operation to finish."],
+                );
+                return (
+                    1,
+                    format!("{err}\n"),
+                    format!("vault_upgrade_barrier_active: {barrier}"),
+                );
+            }
+        }
+
         let Some(py_exe) = Self::resolve_python_exe() else {
             let cmd_name = argv.first().map(|s| s.as_str()).unwrap_or("cli");
             let err = pf_err(
@@ -1479,9 +1658,6 @@ impl NativeControlDaemon {
                 "NO_PYTHON: PaperForge runtime not ready.".into(),
             );
         };
-
-        let is_exclusive_upgrade = argv.first().map(|s| s.as_str()) == Some("upgrade")
-            && argv.iter().any(|a| a == "--apply" || a == "--rollback");
 
         if let Some(v) = vault {
             if is_exclusive_upgrade {

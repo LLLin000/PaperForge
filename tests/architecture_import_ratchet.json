@@ -18,10 +18,10 @@
       "54:paperforge.worker._utils"
     ],
     "paperforge.commands.embed": [
+      "140:paperforge.embedding._chroma",
       "21:paperforge.embedding._chroma",
       "34:paperforge.embedding.preflight:_preflight_check",
-      "38:paperforge.worker._progress",
-      "122:paperforge.embedding._chroma"
+      "38:paperforge.worker._progress"
     ],
     "paperforge.commands.finalize": [
       "33:paperforge.worker._utils"
@@ -60,15 +60,14 @@
       "197:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.services.embedding": [
-      "1105:paperforge.embedding.substrate:_has_any_rows",
-      "1202:paperforge.embedding.build_state:_dict_to_build_state",
-      "227:paperforge.lineage:_vec_dimension_from_ddl",
-      "348:paperforge.embedding._config",
-      "407:paperforge.embedding.substrate:_has_any_rows",
-      "50:paperforge.worker._progress",
-      "735:paperforge.embedding.build_state:_build_state_to_dict",
-      "735:paperforge.embedding.build_state:_default_state",
-      "735:paperforge.embedding.build_state:_dict_to_build_state"
+      "1171:paperforge.embedding.substrate:_has_any_rows",
+      "1266:paperforge.embedding.build_state:_dict_to_build_state",
+      "233:paperforge.lineage:_vec_dimension_from_ddl",
+      "357:paperforge.embedding._config",
+      "53:paperforge.worker._progress",
+      "743:paperforge.embedding.build_state:_build_state_to_dict",
+      "743:paperforge.embedding.build_state:_default_state",
+      "743:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
       "480:paperforge.worker._domain",
@@ -83,7 +82,7 @@
       "677:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
-      "3011:paperforge.lineage:_resolve_canonical_pdf"
+      "3053:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
       "235:paperforge.embedding.vectors:_delete_paper_vectors_locked"

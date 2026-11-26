@@ -36,6 +36,8 @@ def filter_readable(vault: Path, hits: list[dict[str, Any]], *, require_vector: 
     hits pass through (compat for pre-convergence/test environments).  The
     gate binds the moment a chain is observable.
     """
+    if not hits:
+        return []
     # Scope fidelity: a paper-scoped reader (e.g. `retrieve --paper KEY`)
     # must NOT pay for — or be polluted by — full-library observation.
     # Observe only the hit papers' lineage; fall back to the full probe

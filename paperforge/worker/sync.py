@@ -1171,8 +1171,24 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
     flat_notes: list[tuple[Path, str, str]] = []
     lit_root = paths.get("literature")
     if lit_root and lit_root.exists():
+        import stat as _stat
+
+        _conflict_re = re.compile(
+            r"(?:\.sync-conflict-|conflicted copy|冲突副本|\bconflict\b.*\(\d+\))",
+            re.IGNORECASE,
+        )
+
+        def _is_reparse(p: Path) -> bool:
+            try:
+                st = os.lstat(p)
+                return _stat.S_ISLNK(st.st_mode) or bool(getattr(st, "st_file_attributes", 0) & 0x0400)
+            except OSError:
+                return False
+
         for note_path in lit_root.rglob("*.md"):
             if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                continue
+            if _is_reparse(note_path) or _is_reparse(note_path.parent) or _conflict_re.search(note_path.name):
                 continue
             relative = note_path.relative_to(lit_root)
             if len(relative.parts) != 2:
@@ -1185,11 +1201,14 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
             key_match = re.search(r'^zotero_key:\s*"?(\S+?)"?\s*$', text, re.MULTILINE)
             zotero_key = key_match.group(1) if key_match else ""
             if not zotero_key:
+                # Never hijack user-sovereign Markdown notes lacking `zotero_key`:
+                # only accept stem-prefix `<KEY> - <Title>.md` when `<KEY>` is
+                # already an indexed PaperForge paper.
                 stem = note_path.stem
                 if " - " in stem:
-                    zotero_key = stem.split(" - ", 1)[0].strip()
-                else:
-                    zotero_key = stem
+                    cand_key = stem.split(" - ", 1)[0].strip()
+                    if cand_key in indexed_entries:
+                        zotero_key = cand_key
             if not zotero_key:
                 continue
             flat_notes.append((note_path, domain, zotero_key))

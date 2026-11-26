@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from paperforge.worker.ocr_maintenance import OCRMaintenanceRow
 from tests.conftest import canonical_test_config
 
 
@@ -294,6 +295,19 @@ class TestDisplayReasonCleanliness:
     def test_blocked_reason_clean(self) -> None:
         df = _call(status="blocked")
         self._assert_clean(df["display_reason"])
+
+    def test_blocked_source_stage_surfaces_add_pdf(self) -> None:
+        """PF-OCR-010: blocked with error_stage='source' prompts missing PDF instead of API token."""
+        df = _call(status="blocked", error_stage="source")
+        _assert(
+            df,
+            action="add_pdf",
+            label="补充 PDF",
+            group="external_action",
+            severity="external",
+            visible=True,
+            reason="未找到可用的源 PDF 文件，请检查 Zotero 附件或重新同步",
+        )
 
 
 # ===========================================================================

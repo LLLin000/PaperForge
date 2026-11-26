@@ -216,7 +216,11 @@ export function runLongTask(
   child.stdout?.on("data", (chunk: string) => {
     for (const ev of parser.feed(chunk)) {
       events.push(ev);
-      opts.onEvent(ev);
+      try {
+        opts.onEvent(ev);
+      } catch {
+        // Isolate UI listener errors so remaining NDJSON events & terminal survive.
+      }
     }
   });
   if (typeof child.stderr?.setEncoding === "function") {
@@ -310,31 +314,40 @@ export function runLongTask(
 let _gitDir: string | null = null;
 let _gitDirResolved = false;
 
-/** Host bootstrap seam: locate git for the child PATH. This is a host
- * environment probe, NOT PaperForge process execution. */
+/** Locate git directory via pure-JS PATH + standard locations without blocking the main thread with execFileSync. */
 function resolveGitDir(): string | null {
   if (_gitDirResolved) return _gitDir;
   _gitDirResolved = true;
-  try {
-    let out: string;
-    if (process.platform === "win32") {
-      const cmdExe = process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe";
-      out = execFileSync(cmdExe, ["/c", "where", "git"], {
-        timeout: 5000,
-        windowsHide: true,
-        encoding: "utf-8",
-      });
-    } else {
-      out = execFileSync("which", ["git"], {
-        timeout: 5000,
-        encoding: "utf-8",
-      });
+  const exeName = process.platform === "win32" ? "git.exe" : "git";
+  const pathEnv = process.env.PATH || "";
+  const candidates: string[] = [];
+  for (const dir of pathEnv.split(path.delimiter)) {
+    const trimmed = dir.trim();
+    if (trimmed) candidates.push(trimmed);
+  }
+  if (process.platform === "win32") {
+    candidates.push(
+      "C:\\Program Files\\Git\\cmd",
+      "C:\\Program Files\\Git\\bin",
+      "C:\\Program Files (x86)\\Git\\cmd"
+    );
+    const localAppData = process.env.LOCALAPPDATA;
+    if (localAppData) {
+      candidates.push(path.join(localAppData, "Programs", "Git", "cmd"));
     }
-    if (out) {
-      const line = out.split("\n")[0].trim();
-      if (line) _gitDir = path.dirname(line);
+  } else {
+    candidates.push("/usr/bin", "/usr/local/bin", "/opt/homebrew/bin");
+  }
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(path.join(dir, exeName))) {
+        _gitDir = dir;
+        return _gitDir;
+      }
+    } catch {
+      // ignore inaccessible directory entries
     }
-  } catch (_) {}
+  }
   return _gitDir;
 }
 
@@ -742,7 +755,8 @@ export class NodeProcessTransport implements Transport {
       python,
       action,
       version,
-      bootstrapPath
+      bootstrapPath,
+      process.platform
     );
     const scriptPath = this._writeInstallerScript(
       process.platform === "win32"
@@ -1195,6 +1209,7 @@ export class NodeProcessTransport implements Transport {
       this.shutdownDaemon(force);
       return;
     }
+    const hadOuterSwap = Boolean(this._swapInFlight);
     const swapWork = new Promise<void>((resolve) => {
       let settled = false;
       const done = () => {
@@ -1218,8 +1233,36 @@ export class NodeProcessTransport implements Transport {
         this._swapInFlight = null;
       }
     });
-    this._swapInFlight = swapWork;
+    if (!hadOuterSwap) {
+      this._swapInFlight = swapWork;
+    }
     await swapWork;
+  }
+
+  /**
+   * Hold the `_swapInFlight` barrier across both daemon shutdown AND the
+   * replacement operation (e.g. `fs.renameSync` on Windows) so concurrent RPCs
+   * cannot respawn and re-lock the binary mid-repair.
+   */
+  async runWithDaemonSwap<T>(fn: () => Promise<T> | T): Promise<T> {
+    const prev = this._swapInFlight;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this._swapInFlight = gate;
+    try {
+      if (prev) {
+        await prev.catch(() => undefined);
+      }
+      await this.shutdownDaemonAsync();
+      return await fn();
+    } finally {
+      if (this._swapInFlight === gate) {
+        this._swapInFlight = null;
+      }
+      release();
+    }
   }
 
   private async _executeDaemon(
@@ -1588,6 +1631,9 @@ export class NodeProcessTransport implements Transport {
     let daemonStreamCancel: (() => void) | null = null;
 
     const outcomePromise = (async (): Promise<LongTaskOutcome> => {
+      if (this._swapInFlight) {
+        await this._swapInFlight.catch(() => undefined);
+      }
       const canUseNativeDaemon =
         this._useDaemon &&
         this._daemonSupported &&

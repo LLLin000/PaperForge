@@ -137,3 +137,23 @@ class TestObsidianWikilinkForPath:
         abs_path.write_text("content")
         result = obsidian_wikilink_for_path(vault, str(abs_path))
         assert result == f"[[{abs_path.as_posix()}]]"
+
+
+def test_external_linked_pdf_absolute_prefix_resolves_cleanly(tmp_path: Path) -> None:
+    """PF-MIG-005: external linked PDFs with `absolute:` prefix produce clean wikilinks and resolve on disk."""
+    from paperforge.pdf_resolver import resolve_pdf_path
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    ext_pdf = tmp_path / "ExternalPDFs" / "tendon_external.pdf"
+    ext_pdf.parent.mkdir(parents=True)
+    ext_pdf.write_bytes(b"%PDF-1.4\nexternal\n")
+
+    tagged = f"absolute:{ext_pdf}"
+    wikilink = obsidian_wikilink_for_pdf(tagged, vault)
+    assert "absolute:" not in wikilink
+    assert wikilink == f"[[{ext_pdf.as_posix()}]]"
+
+    assert Path(resolve_pdf_path(tagged, True, vault)).resolve() == ext_pdf.resolve()
+    assert Path(resolve_pdf_path(f"[[{tagged}]]", True, vault)).resolve() == ext_pdf.resolve()
+    assert Path(resolve_pdf_path(wikilink, True, vault)).resolve() == ext_pdf.resolve()

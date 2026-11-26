@@ -453,8 +453,18 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
         set_stream_diagnostics(False)
     per_key = sink.get("per_key", {})
     if hooks is not None and hooks.item_result is not None:
+        emitted_item_keys: set[str] = set()
         for key in progress_keys:
+            if key in emitted_item_keys:
+                continue
+            emitted_item_keys.add(key)
             hooks.item_result(key, str(per_key.get(key, "unknown")))
+        for key, status in per_key.items():
+            if key in emitted_item_keys:
+                continue
+            if str(status) in ("error", "fatal_error", "blocked", "nopdf"):
+                emitted_item_keys.add(key)
+                hooks.item_result(key, str(status))
     # M2-D: standardized settlement — outcome vocabulary + summary +
     # successful_keys derived from per_key (single truth).
     from paperforge.core.settlement import settlement_payload
@@ -1088,7 +1098,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         preflight=_library_prune_preflight,
         scope_kinds=("all", "papers"),
         cost="local",
-        impact="mutating",
+        impact="destructive",
         confirmation="required",
         automatic=False,
         interruptible=True,

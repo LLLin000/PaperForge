@@ -2685,6 +2685,19 @@ export class PaperForgeClient {
     }
   }
 
+  async runWithTransportSwap<T>(fn: () => Promise<T> | T): Promise<T> {
+    const t = this._transport as unknown as {
+      runWithDaemonSwap?: <R>(cb: () => Promise<R> | R) => Promise<R>;
+      shutdownDaemonAsync?: () => Promise<void>;
+      shutdownDaemon?: () => void;
+    };
+    if (typeof t?.runWithDaemonSwap === "function") {
+      return await t.runWithDaemonSwap(fn);
+    }
+    await this.shutdownTransportAsync();
+    return await fn();
+  }
+
   async daemonSubmitRuntimeUpdate(
     version: string
   ): Promise<{ accepted: boolean; coalesced?: boolean; reason?: string }> {
@@ -2729,6 +2742,21 @@ export class PaperForgeClient {
     });
   }
 
+  /** Probe local Ollama or OpenAI-compatible `/models` for embedding candidates. */
+  async embedListModels(baseUrl?: string): Promise<{
+    source: string;
+    base_url: string;
+    reachable: boolean;
+    models: string[];
+    embedding_models: string[];
+    error?: string;
+  }> {
+    const argv = ["embed", "list-models"];
+    if (baseUrl?.trim()) argv.push("--base-url", baseUrl.trim());
+    argv.push("--json");
+    return this._executePfResult(argv, { timeoutMs: 12000 });
+  }
+
   /** Quick OCR token & endpoint connectivity probe (`ocr test-connection --json`). */
   async ocrTestConnection(): Promise<{
     passed: boolean;
@@ -2739,6 +2767,103 @@ export class PaperForgeClient {
     return this._executePfResult(["ocr", "test-connection", "--json"], {
       timeoutMs: 35000,
     });
+  }
+
+  /** Deploy the packaged PaperForge agent skill into the vault. */
+  async skillDeploy(targetDir?: string, overwrite = false): Promise<string> {
+    const argv = ["skill", "deploy"];
+    if (targetDir && targetDir.trim()) argv.push("--to", targetDir.trim());
+    if (overwrite) argv.push("--overwrite");
+    return this._executeRaw(argv, { timeoutMs: 25000 });
+  }
+
+  /** Safely sync the vault PaperForge agent skill if unmodified by the user. */
+  async skillSync(targetDir?: string): Promise<string> {
+    const argv = ["skill", "sync"];
+    if (targetDir && targetDir.trim()) argv.push("--to", targetDir.trim());
+    return this._executeRaw(argv, { timeoutMs: 25000 });
+  }
+
+  /** Native `<5ms` Rust MCP vault config merge (`mcp-install`). */
+  async mcpInstall(
+    platform: string,
+    binaryPath?: string
+  ): Promise<{
+    installed: boolean;
+    created_new: boolean;
+    platform: string;
+    vault: string;
+    binary_path: string;
+    target_file: string;
+    target_relpath: string;
+    toml_snippet?: string;
+  }> {
+    const argv = ["mcp-install", "--platform", platform];
+    if (binaryPath && binaryPath.trim())
+      argv.push("--binary", binaryPath.trim());
+    return this._executePfResult(argv, { timeoutMs: 10000 });
+  }
+
+  /** Native `<5ms` Rust MCP config snippet generator (`mcp-config`). */
+  async mcpConfig(
+    platform: string,
+    binaryPath?: string
+  ): Promise<{
+    platform: string;
+    vault: string;
+    binary_path: string;
+    target_file: string;
+    target_relpath: string;
+    config_snippet: Record<string, unknown>;
+    toml_snippet?: string;
+  }> {
+    const argv = ["mcp-config", "--platform", platform];
+    if (binaryPath && binaryPath.trim())
+      argv.push("--binary", binaryPath.trim());
+    return this._executePfResult(argv, { timeoutMs: 10000 });
+  }
+
+  /** Native `<5ms` zero-vault-pollution Agent self-onboarding prompt generator (`agent-onboarding`). */
+  async agentOnboarding(
+    lang = "zh",
+    binaryPath?: string
+  ): Promise<{
+    vault: string;
+    binary_path: string;
+    binary_exists: boolean;
+    mcp_args: string[];
+    skill_source_dir: string;
+    skill_source_exists: boolean;
+    self_check_template: string;
+    prompt: string;
+  }> {
+    const argv = ["agent-onboarding", "--lang", lang];
+    if (binaryPath && binaryPath.trim())
+      argv.push("--binary", binaryPath.trim());
+    return this._executePfResult(argv, { timeoutMs: 10000 });
+  }
+
+  /** Sync machine-wide `~/.paperforge/skills/paperforge` Hub from packaged Python runtime. */
+  async skillSyncHub(): Promise<{
+    hub_dir?: string;
+    hub_updated?: boolean;
+    updated?: number;
+  }> {
+    const raw = await this._executeRaw(["skill", "sync-hub", "--json"], {
+      timeoutMs: 20000,
+    });
+    return JSON.parse(raw);
+  }
+
+  /** Fast Rust auto-update across all registered external Agent Skill copies (`skill-sync-all`). */
+  async skillSyncAll(): Promise<{
+    hub_exists?: boolean;
+    updated?: number;
+    up_to_date?: number;
+    customized_preserved?: number;
+    pruned?: number;
+  }> {
+    return this._executePfResult(["skill-sync-all"], { timeoutMs: 10000 });
   }
 }
 

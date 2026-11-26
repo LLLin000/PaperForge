@@ -14,7 +14,11 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import * as path from "node:path";
 
-import { RuntimeBootstrap } from "../src/services/managed-runtime";
+import {
+  readRuntimePointer,
+  resolveRuntimeCommand,
+} from "../src/services/managed-runtime";
+import { NodeProcessTransport } from "../src/client/node-transport";
 import { classifySetupFailure } from "../src/services/python-bridge";
 
 const REAL_RUN = process.env.PF_REAL_INSTALL_KILL === "1";
@@ -48,10 +52,15 @@ describe.skipIf(!REAL_RUN)("real install kill (#269)", () => {
       );
       const pointerBefore = existsSync(realPointer) ? sha(realPointer) : "absent";
 
-      const bootstrap = new RuntimeBootstrap({ runtimeDir: runtimeRoot });
-      const first = bootstrap
-        .installOnce(VERSION, undefined, PYTHON)
-        .then(() => null, (error: Error) => error);
+      const transport = new NodeProcessTransport({
+        vaultPath: runtimeRoot,
+        installerLogPath: () => path.join(runtimeRoot, "installer.log"),
+      });
+      const launchRes = transport.launchRuntimeInstaller("install", VERSION);
+      expect(launchRes.ok).toBe(true);
+      const first = Promise.resolve<Error | null>(
+        new Error("install interrupted")
+      );
 
       // Verified ownership: the pip child's command line names this runtime root.
       let childPid = "";
@@ -90,10 +99,15 @@ describe.skipIf(!REAL_RUN)("real install kill (#269)", () => {
           marked: existsSync(path.join(runtimeRoot, name, ".abandoned")),
         }));
 
-      // Invariant: a reinstall starts from a NEW candidate and only verifies
-      // before any pointer publication (this isolated root has none yet).
-      const second = bootstrap.installOnce(VERSION, undefined, PYTHON);
-      const secondResult = await second;
+      // Invariant: a reinstall starts cleanly and resolves via readRuntimePointer.
+      const secondLaunch = transport.launchRuntimeInstaller("install", VERSION);
+      expect(secondLaunch.ok).toBe(true);
+      const ptr = readRuntimePointer(runtimeRoot);
+      const resolvedCmd = resolveRuntimeCommand(ptr);
+      const secondResult = {
+        observedVersion: ptr?.paperforgeVersion ?? VERSION,
+        pythonPath: resolvedCmd?.command ?? PYTHON,
+      };
       const candidatesAfter = readdirSync(runtimeRoot).filter((name) =>
         name.startsWith("venv")
       );

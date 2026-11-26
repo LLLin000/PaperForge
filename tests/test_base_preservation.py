@@ -365,3 +365,62 @@ views:
         result = merge_base_views(existing, views)
 
         assert "widths:" not in result
+        assert "columnSize:" not in result
+
+    def test_merge_base_views_preserves_native_column_size_and_sort_property(self):
+        """Obsidian native columnSize: survives merge and sort uses property:."""
+        existing = """
+filters:
+  and:
+    - file.inFolder("骨科")
+views:
+# PAPERFORGE_VIEW: 文献库
+  - type: paperforge-table
+    name: "文献库"
+    columnSize:
+      note.title: 340
+      note.year: 64
+    order:
+      - title
+      - year
+"""
+        views = [
+            {
+                "type": "paperforge-table",
+                "name": "文献库",
+                "order": ["title", "year"],
+                "filter": None,
+                "sort": [{"property": "note.year", "direction": "DESC"}],
+            }
+        ]
+        result = merge_base_views(existing, views)
+
+        assert "columnSize:" in result
+        assert "note.title: 340" in result
+        assert "note.year: 64" in result
+        assert "property: note.year" in result
+        assert "field:" not in result
+
+    def test_sanitize_quotes_list_item_unquoted_bang_filter(self):
+        """PF-MIG-009: _sanitize_base_file quotes `- !zotero_key.isEmpty()` so .base parses as valid YAML."""
+        import yaml
+        from paperforge.worker.base_views import _sanitize_base_file, build_base_views
+
+        legacy = (
+            "filters:\n"
+            "  and:\n"
+            '    - file.inFolder("Resources/Literature/Ortho")\n'
+            "    - !zotero_key.isEmpty()\n"
+            "views:\n"
+            "  - type: table\n"
+            '    name: "文献库"\n'
+            "    order:\n"
+            "      - title\n"
+        )
+        sanitized = _sanitize_base_file(
+            legacy, build_base_views("Ortho"), folder_filter="Resources/Literature/Ortho"
+        )
+        assert '- "!zotero_key.isEmpty()"' in sanitized
+        parsed = yaml.safe_load(sanitized)
+        assert isinstance(parsed, dict)
+        assert "!zotero_key.isEmpty()" in parsed["filters"]["and"]

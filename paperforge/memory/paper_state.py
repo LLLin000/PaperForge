@@ -35,6 +35,28 @@ def _paper_state_hash(entry: dict, generated_at: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def resolve_effective_note_relpath(vault: Path, entry: dict) -> str:
+    """Resolve the best existing note relpath for SQLite indexing (PF-UX-005).
+
+    Prefers the stored ``note_path`` only when it actually exists on disk (or
+    when neither exists); falls back to ``main_note_path`` or a workspace
+    ``<key>.md`` file on disk so v2 workspace notes are indexed accurately.
+    """
+    note_rel = str(entry.get("note_path") or "").strip().replace("\\", "/")
+    main_rel = str(entry.get("main_note_path") or "").strip().replace("\\", "/")
+    if note_rel and (vault / note_rel).is_file():
+        return note_rel
+    if main_rel and (vault / main_rel).is_file():
+        return main_rel
+    paper_root = str(entry.get("paper_root") or "").strip().rstrip("/").replace("\\", "/")
+    key = str(entry.get("zotero_key") or "").strip()
+    if paper_root and key:
+        ws_note_rel = f"{paper_root}/{key}.md"
+        if (vault / ws_note_rel).is_file():
+            return ws_note_rel
+    return note_rel or main_rel
+
+
 def upsert_paper_state(
     conn: sqlite3.Connection,
     *,
@@ -57,11 +79,18 @@ def upsert_paper_state(
     if not key:
         raise ValueError("entry must have a zotero_key")
 
+    resolved_note = resolve_effective_note_relpath(vault, entry)
+    row_entry = dict(entry)
+    if resolved_note:
+        row_entry["note_path"] = resolved_note
+        if not row_entry.get("main_note_path"):
+            row_entry["main_note_path"] = resolved_note
+
     # ── 1. Papers row ────────────────────────────────────────────────
     cols = ", ".join(PAPER_COLUMNS)
     placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
     update_set = ", ".join(f"{c}=excluded.{c}" for c in PAPER_COLUMNS if c != "zotero_key")
-    paper_values = build_paper_row(entry, generated_at)
+    paper_values = build_paper_row(row_entry, generated_at)
     conn.execute(
         f"INSERT INTO papers ({cols}) VALUES ({placeholders}) "
         f"ON CONFLICT(zotero_key) DO UPDATE SET {update_set}",
@@ -83,7 +112,7 @@ def upsert_paper_state(
     # ── 3. Assets ────────────────────────────────────────────────────
     conn.execute("DELETE FROM paper_assets WHERE paper_id=?", (key,))
     for asset_type, entry_field in ASSET_FIELDS:
-        path_val = entry.get(entry_field, "")
+        path_val = row_entry.get(entry_field, "")
         if not path_val:
             continue
         rel_path = str(path_val).replace("\\", "/")

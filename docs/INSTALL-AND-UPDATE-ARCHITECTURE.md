@@ -2,16 +2,17 @@
 
 > **定位**：面向维护者与工程演进的架构设计文档。  
 > **适用范围**：Obsidian 桌面端全平台（**Windows x64/ARM64、macOS Apple Silicon/Intel、Linux x64/ARM64**；移动端 iOS/Android 暂不纳入）。  
-> **当前基线版本**：`2.0.0`（[**init**.py](../paperforge/__init__.py) / [manifest.json](../paperforge/plugin/manifest.json) / [versions.json](../versions.json)）。
+> **当前基线版本**：`2.0.6+`（[`__init__.py`](../paperforge/__init__.py) / [`manifest.json`](../paperforge/plugin/manifest.json) / [`versions.json`](../versions.json) / [`Cargo.toml`](../crates/paperforge-daemon/Cargo.toml)）。
 
 > [!IMPORTANT]
-> **当前已上线架构边界说明（Single-Channel GitHub Release + v2.1 全阶段落地）：**
+> **当前已上线架构边界说明（Native Rust Sidecar + Single-Channel GitHub Release + v2.0.x 全阶段落地）：**
 >
-> - **当前已上线（Phase 1 + Phase 2 + Phase 3 + 单源 GitHub Release 分发均已落地）**：
->   - **单一分发源**：仓库根目录 `manifest.json` + `versions.json` 使用纯三位 SemVer（`2.0.0`），通过 GitHub Pre-release 区分内测（BRAT）与正式发布（Obsidian 商店自动同步）；Python Wheel（`paperforge-<ver>-py3-none-any.whl`）优先直连 GitHub Release（含 `ghfast.top` 镜像）下载至 `~/.paperforge/runtime/cache/wheels/` 并通过 `--find-links` 安装，不强制依赖 PyPI 发包或国内镜像同步，PyPI 在 `publish.yml` 中仅保留为可选发布开关。
->   - **Phase 1（隔离运行时指针）**：由 Python `runtime_installer` 在 `~/.paperforge/runtime/` 下创建隔离虚拟环境并原子发布 `pointer.json`；SemVer ↔ PEP 440 版本统一由 `paperforge/core/versioning.py`（与插件 `normalizePep440Version`）双端对齐。
->   - **Phase 2（四维解耦与极速热修）**：`manifest.json` 声明 `minEngineVersion`，`probe`/`runtime status` 支持 `--min-engine-version` 兼容窗口校验；`pointer.json` 记录 `deps_lock_hash` 与 `runtime_abi` 并校验实装 `.dist-info/METADATA` 区间，纯代码补丁命中时复用 `site-packages` 进行 `--no-deps` 秒级升级；`paperforge skill sync` 基于状态摘要与暂存原子替换无损更新未改动的 Skill。
->   - **Phase 3（便携 `uv 0.13.9` 零前置引导）**：无本机 Python 3.11+ 时，插件与 `paperforge/runtime_uv.py` 可自动下载经官方 SHA-256 校验的便携 `uv` 并拉取独立托管 Python 3.12（含国内镜像兜底）完成全自动安装；真实桌面端 Obsidian Vault 的首装/热修体感验收仍在持续跟进中。
+> - **当前已上线（Native Rust Daemon + Phase 1/2/3 + 单源 GitHub Release 分发均已落地）**：
+>   - **单一分发源**：仓库根目录 `manifest.json` + `versions.json` 使用三位 SemVer，通过 GitHub Pre-release 区分内测（BRAT）与正式发布（Obsidian 商店同步）；Python Wheel（`paperforge-<ver>-py3-none-any.whl`）与 6 平台原生守护进程（`paperforge-daemon-<target>`）由 GitHub Release 发布并附带强制 `checksums.txt`（SHA-256 不可变校验），国内网络自动回退 `ghfast.top` / `gh-proxy.com` 及清华/阿里云 PyPI 镜像；PyPI 在 `publish.yml` 中作为可选 OIDC 发布通道。
+>   - **原生 Rust 侧车（`paperforge-daemon`）**：随插件按需下载并内容寻址部署至 `~/.paperforge/bin/`（`.daemon-meta.json` + SHA-256 校验），以 `< 6–15 MB` RSS 提供零 Python 快路径（`daemon.health`、`memory-card base-snapshot`、`search`、`config`、`zotero detect`、`agent-brief`、`mcp-*`、`skill-sync-all`）、MCP 服务器（`--mcp` 7 工具）及原生 `install-runtime` 引导。
+>   - **Phase 1（隔离运行时指针）**：由 Rust/Python `runtime_installer` 在 `~/.paperforge/runtime/` 下创建隔离虚拟环境并原子发布 `pointer.json`；SemVer ↔ PEP 440 版本统一由 `paperforge/core/versioning.py`（与插件 `normalizePep440Version` / `normalizeSemverForCompare`）双端对齐。
+>   - **Phase 2（四维解耦与极速热修）**：`manifest.json` 声明 `minEngineVersion`，`probe`/`runtime status` 支持 `--min-engine-version` 兼容窗口校验；`pointer.json` 记录 `deps_lock_hash` 与 `runtime_abi` 并校验实装 `.dist-info/METADATA` 区间，纯代码补丁命中时复用 `site-packages` 进行 `--no-deps` 秒级升级；`paperforge skill sync` 与 `paperforge-daemon skill-sync-all` 基于摘要无损刷新未改动的 Skill。
+>   - **Phase 3（便携 `uv` 零前置引导）**：无本机 Python 3.11+ 时，`paperforge-daemon install-runtime` 与 `paperforge/runtime_uv.py` 自动下载经 SHA-256 校验的便携 `uv` 并拉取独立托管 Python 3.12 完成全自动安装。
 
 ---
 
@@ -39,11 +40,12 @@
 
 | 层级                      | 组件                                                                                    | 存储位置                                                             | 体积 / 频次                        | 权威性 & 多设备同步属性                                                                                                   |
 | :------------------------ | :-------------------------------------------------------------------------------------- | :------------------------------------------------------------------- | :--------------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
-| **L1 前端插件**           | `main.js`、`styles.css`、`manifest.json`                                                | `<vault>/.obsidian/plugins/paperforge/`                              | `~600 KB`<br>最高频更新            | 随 Vault 跨设备同步（`isDesktopOnly: true`），只读消费后端契约                                                            |
-| **L2 Python 解释器**      | CPython 3.12（`python.exe` / `python3`）                                                | **OS 本机用户目录**（见 §5 矩阵）                                    | `~65 MB`<br>极低频更新             | **严禁放入 Vault**：跨 OS 不可共享，且小文件极多会拖垮同步网盘                                                            |
-| **L3 引擎与原生依赖**     | `paperforge`（纯 Python Wheel）+ `pymupdf`、`pillow`、`sqlite-vec`、`openai`、`keyring` | **OS 本机目录**（独立版本化 `envs/<ver>-<hash>/` + 全局 Wheel 缓存） | 依赖 `~150 MB`<br>业务包 `~400 KB` | L3 代码高频更新、重依赖低频更新；通过 `pointer.json` 原子指针暴露给 L1                                                    |
-| **L4 Vault 协同资产**     | Agent Skill 树（`.agents/skills/paperforge/SKILL.md`）、配置（`.paperforge/config/`）   | Vault 内部                                                           | `< 200 KB`<br>随后端升级           | 跨设备同步；升级需尊重用户本地改写（先验摘要再覆写）                                                                      |
-| **L5 派生索引与渲染缓存** | `paperforge.db`（FTS5 + Vec0）、`ocr/<KEY>/render/`、`structure/`                       | Vault `.paperforge/` 内部                                            | 数十 MB ~ GB<br>按需演化           | **可丢弃重建的派生层**：真实来源（BBT 导出、`annotations.jsonl`、`memory-card.json`、`blocks.raw.jsonl`）全在独立侧车文件 |
+| **L1 前端插件**           | `main.js`、`styles.css`、`manifest.json`                                                | `<vault>/.obsidian/plugins/paperforge/`                              | `~900 KB`<br>最高频更新            | 随 Vault 跨设备同步（`isDesktopOnly: true`），只读消费后端契约                                                            |
+| **L1.5 原生守护侧车**     | `paperforge-daemon`（Rust 单二进制，6 平台）                                            | `~/.paperforge/bin/`（内容寻址 + `.daemon-meta.json`）               | `~3 MB`<br>随 Release 对齐热替换   | **严禁放入 Vault**：绑定当前 OS/CPU 架构，承担零 Python 快路径、MCP 服务与 Runtime 引导                                   |
+| **L2 Python 解释器**      | 托管绿色版 Python 3.12（`python-build-standalone`）                                     | **OS 本机用户目录** `~/.paperforge/runtime/`（见 §5 矩阵）           | `~65 MB`<br>极低频更新             | **严禁放入 Vault**：跨 OS 不可共享，且小文件极多会拖垮同步网盘                                                            |
+| **L3 引擎与原生依赖**     | `paperforge`（纯 Python Wheel）+ `pymupdf`、`pillow`、`sqlite-vec`、`openai`、`keyring` | `~/.paperforge/runtime/`（独立 `.venv-*` + `cache/wheels` 硬链接缓存） | 依赖 `~150 MB`<br>业务包 `~1.6 MB` | L3 代码高频更新、重依赖低频更新；通过 `pointer.json` 原子指针暴露给 L1                                                    |
+| **L4 Vault 协同资产**     | Agent Skill 树（`.agents/skills/paperforge/SKILL.md`）、配置（`paperforge.json`）       | Vault 内部                                                           | `< 200 KB`<br>随后端升级           | 跨设备同步；升级需尊重用户本地改写（先验摘要再覆写），并同步至 `~/.paperforge/skills/` Skill Hub                          |
+| **L5 派生索引与渲染缓存** | `paperforge.db`（FTS5 + `sqlite-vec` `vec0`）、`ocr/<KEY>/render/`、`structure/`        | Vault `.paperforge/` 内部                                            | 数十 MB ~ GB<br>按需演化           | **可丢弃重建的派生层**：真实来源（`zotero.sqlite` / BBT 导出、`annotations.jsonl`、`memory-card.json`、`blocks.raw.jsonl`）全在独立侧车文件 |
 
 > **关键设计约束**：L1 随 Vault 跨机漂移，L2/L3 绑定当前电脑 OS 与 CPU 架构，L4/L5 在 Vault 内共享。只要遵守这一物理边界，**多台电脑之间（如办公室 Windows 台式机 + 家里 MacBook）就不会发生二进制污染**。
 
@@ -204,17 +206,22 @@ sequenceDiagram
 
 ### 5.1 跨平台目录与链接策略矩阵
 
-| 路径项                             | Windows (10/11 x64 & ARM64)                                                                     | macOS (Apple Silicon & Intel)                       | Linux (x64 & ARM64)                                                                                 |
-| :--------------------------------- | :---------------------------------------------------------------------------------------------- | :-------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
-| **引擎根目录**<br>(`RUNTIME_HOME`) | `%LOCALAPPDATA%\PaperForge\runtime\`                                                            | `~/Library/Application Support/PaperForge/runtime/` | `${XDG_DATA_HOME:-~/.local/share}/paperforge/runtime/`<br>_(兼容迁移旧版 `~/.paperforge/runtime/`)_ |
-| **便携 `uv` 位置**                 | `<RUNTIME_HOME>\bin\uv.exe`                                                                     | `<RUNTIME_HOME>/bin/uv` (`chmod +x`)                | `<RUNTIME_HOME>/bin/uv` (`chmod +x`)                                                                |
-| **托管绿版 Python**                | `<RUNTIME_HOME>\python\`                                                                        | `<RUNTIME_HOME>/python/`                            | `<RUNTIME_HOME>/python/`                                                                            |
-| **全局硬链接缓存**                 | `<RUNTIME_HOME>\cache\uv`（NTFS Hardlink）                                                      | `<RUNTIME_HOME>/cache/uv`（APFS `clonefile` COW）   | `<RUNTIME_HOME>/cache/uv`（Hardlink / Reflink）                                                     |
-| **版本化运行时**                   | `<RUNTIME_HOME>\envs\<ver>-<hash>\Scripts\python.exe`                                           | `<RUNTIME_HOME>/envs/<ver>-<hash>/bin/python3`      | `<RUNTIME_HOME>/envs/<ver>-<hash>/bin/python3`                                                      |
-| **原子切换指针**                   | `<RUNTIME_HOME>\pointer.json`                                                                   | `<RUNTIME_HOME>/pointer.json`                       | `<RUNTIME_HOME>/pointer.json`                                                                       |
-| **跨盘符退化处理**                 | 保证 `cache` 与 `envs` 同在 `RUNTIME_HOME` 同分区下，确保 NTFS 硬链接 100% 命中，不退化为慢拷贝 | 保证同卷 APFS，几乎零额外磁盘开销                   | 若 `/tmp` 与 `$HOME` 分区不同，`UV_CACHE_DIR` 固定设于 `RUNTIME_HOME` 下避免跨挂载点复制            |
+> **单一规范根目录（Cross-Platform Parity）**：实际代码（`paperforge/runtime_pointer.py`、`paperforge/runtime_installer.py`、`crates/paperforge-daemon/src/runtime_ops.rs`、`native-daemon.ts`）在 Windows / macOS / Linux 三端统一锚定用户主目录 `~/.paperforge/`（Windows 上 `~` 为 `%USERPROFILE%`，可通过 `PAPERFORGE_HOME` / `HOME` 隔离覆写），不再分裂为 `%LOCALAPPDATA%` 或 `Application Support`：
 
-> **兼容历史环境**：若检测用户已有老版本 `~/.paperforge/runtime/pointer.json`，启动时按旧路径只读兼容并优先迁移；卸载或切换后旧文件按 `keep_previous=1` 自动回收，绝不破坏用户现有数据。
+| 路径项                             | Windows (10/11 x64 & ARM64)                                      | macOS (Apple Silicon & Intel)                          | Linux (x64 & ARM64)                                   |
+| :--------------------------------- | :--------------------------------------------------------------- | :----------------------------------------------------- | :---------------------------------------------------- |
+| **原生守护进程目录**<br>(`BIN_DIR`) | `%USERPROFILE%\.paperforge\bin\`                                 | `~/.paperforge/bin/`                                   | `~/.paperforge/bin/`                                  |
+| **守护进程元数据与主程序**          | `<BIN_DIR>\.daemon-meta.json` & `paperforge-daemon-<ver>-<hash>.exe` | `<BIN_DIR>/.daemon-meta.json` & `paperforge-daemon-*`  | `<BIN_DIR>/.daemon-meta.json` & `paperforge-daemon-*` |
+| **Skill Hub 中央仓库**             | `%USERPROFILE%\.paperforge\skills\paperforge\`                   | `~/.paperforge/skills/paperforge/`                     | `~/.paperforge/skills/paperforge/`                    |
+| **引擎运行时根目录**<br>(`RUNTIME_HOME`) | `%USERPROFILE%\.paperforge\runtime\`                        | `~/.paperforge/runtime/`                               | `~/.paperforge/runtime/`                              |
+| **便携 `uv` 位置**                 | `<RUNTIME_HOME>\bin\uv.exe`                                      | `<RUNTIME_HOME>/bin/uv` (`chmod +x`)                   | `<RUNTIME_HOME>/bin/uv` (`chmod +x`)                  |
+| **托管绿版 Python**                | `<RUNTIME_HOME>\python\`                                         | `<RUNTIME_HOME>/python/`                               | `<RUNTIME_HOME>/python/`                              |
+| **全局硬链接与 Wheel 缓存**        | `<RUNTIME_HOME>\cache\uv` & `cache\wheels\`（NTFS Hardlink）     | `<RUNTIME_HOME>/cache/uv` & `cache/wheels/`（APFS COW）| `<RUNTIME_HOME>/cache/uv` & `cache/wheels/`（Hardlink）|
+| **版本化候选与活跃虚拟环境**       | `<RUNTIME_HOME>\.venv-*\Scripts\python.exe`                      | `<RUNTIME_HOME>/.venv-*/bin/python3`                   | `<RUNTIME_HOME>/.venv-*/bin/python3`                  |
+| **原子切换指针与安装日志**         | `<RUNTIME_HOME>\pointer.json` & `installer.log`                  | `<RUNTIME_HOME>/pointer.json` & `installer.log`        | `<RUNTIME_HOME>/pointer.json` & `installer.log`       |
+| **跨盘符退化处理**                 | `cache` 与 `.venv-*` 同位于 `%USERPROFILE%\.paperforge\runtime\` 同分区，确保 NTFS 硬链接命中 | 同卷 APFS，几乎零额外磁盘开销                          | `UV_CACHE_DIR` 固定设于 `RUNTIME_HOME` 下避免跨挂载点复制 |
+
+> **环境生命周期管理**：`runtime_installer` 始终在新候选环境自检（`_fresh_verify` + `_vector_imports_ok`）通过后再原子替换 `pointer.json`，并保留 `keep_previous=1` 份上一健康环境以支持即时回滚。
 
 ### 5.2 三阶段平滑落地路线（供评审确认后按阶段实施）
 

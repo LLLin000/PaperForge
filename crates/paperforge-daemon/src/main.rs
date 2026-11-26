@@ -6,16 +6,21 @@
 //! config management, and veteran upgrade detection, while delegating heavy
 //! OCR / Embedding / Sync workers to Python on demand.
 
+mod brief;
 mod config_ops;
+mod mcp;
 mod platform;
 mod query_ops;
 mod runtime_ops;
 mod supervisor;
 
-use config_ops::{try_handle_config_cli, PF_VERSION};
-use query_ops::{
-    handle_base_snapshot, handle_zero_python_upgrade_plan, try_handle_search_cli,
+use brief::{build_agent_brief, discover_vault_from_cwd};
+use config_ops::{pf_err, try_handle_config_cli, PF_VERSION};
+use mcp::{
+    handle_agent_onboarding, handle_mcp_check_with_options, handle_mcp_config, handle_mcp_install,
+    handle_skill_sync_all, maybe_reexec_latest_binary, serve_mcp,
 };
+use query_ops::{handle_zero_python_upgrade_plan, try_handle_search_cli};
 use serde_json::{json, Value};
 use std::env;
 use std::io::{self, BufRead, Write};
@@ -391,9 +396,135 @@ fn dispatch_request(
 
     // 2. Native `< 2ms` fast-paths when vault is supplied
     if let Some(ref vp) = vault_path {
+        if let Some(barrier) = daemon.has_exclusive_barrier(vp) {
+            let cmd_name = argv.first().map(|s| s.as_str()).unwrap_or("cli");
+            let err = pf_err(
+                cmd_name,
+                "VAULT_UPGRADE_BARRIER_ACTIVE",
+                &format!("Vault exclusive upgrade barrier is active ({barrier}); try again after upgrade completes."),
+                json!({ "barrier": barrier }),
+                &["Wait for the active vault upgrade/rollback operation to finish."],
+            );
+            return DispatchOutcome::Immediate(
+                json!({
+                    "id": id,
+                    "exit_code": 1,
+                    "stdout": format!("{err}\n"),
+                    "stderr": format!("vault_upgrade_barrier_active: {barrier}"),
+                }),
+                false,
+            );
+        }
         if let Some((rc, out, err)) = try_handle_config_cli(vp, &argv) {
             return DispatchOutcome::Immediate(
                 json!({ "id": id, "exit_code": rc, "stdout": out, "stderr": err }),
+                false,
+            );
+        }
+        if argv.first().map(|s| s.as_str()) == Some("agent-brief") {
+            let mut paper_arg: Option<&str> = None;
+            let mut idx = 1;
+            while idx < argv.len() {
+                if argv[idx] == "--paper" {
+                    paper_arg = argv.get(idx + 1).map(String::as_str);
+                    idx += 1;
+                } else if let Some(v) = argv[idx].strip_prefix("--paper=") {
+                    paper_arg = Some(v);
+                }
+                idx += 1;
+            }
+            let out = build_agent_brief(vp, paper_arg);
+            let rc = if out.get("ok").and_then(|v| v.as_bool()) == Some(true) {
+                0
+            } else {
+                1
+            };
+            return DispatchOutcome::Immediate(
+                json!({ "id": id, "exit_code": rc, "stdout": format!("{out}\n"), "stderr": "" }),
+                false,
+            );
+        }
+        if argv.first().map(|s| s.as_str()) == Some("skill-sync-all") {
+            let out = handle_skill_sync_all();
+            return DispatchOutcome::Immediate(
+                json!({ "id": id, "exit_code": 0, "stdout": format!("{out}\n"), "stderr": "" }),
+                false,
+            );
+        }
+        if let Some(cmd @ ("mcp-config" | "mcp-install" | "mcp-check" | "agent-onboarding")) =
+            argv.first().map(|s| s.as_str())
+        {
+            let mut platform_arg = "claude";
+            let mut lang_arg = "zh";
+            let mut bin_arg: Option<PathBuf> = None;
+            let mut skill_arg: Option<PathBuf> = None;
+            let mut cfg_arg: Option<PathBuf> = None;
+            let mut probe_mcp = false;
+            let mut register = false;
+            let mut idx = 1;
+            while idx < argv.len() {
+                if argv[idx] == "--platform" {
+                    if let Some(v) = argv.get(idx + 1) {
+                        platform_arg = v.as_str();
+                        idx += 1;
+                    }
+                } else if let Some(v) = argv[idx].strip_prefix("--platform=") {
+                    platform_arg = v;
+                } else if argv[idx] == "--lang" {
+                    if let Some(v) = argv.get(idx + 1) {
+                        lang_arg = v.as_str();
+                        idx += 1;
+                    }
+                } else if let Some(v) = argv[idx].strip_prefix("--lang=") {
+                    lang_arg = v;
+                } else if argv[idx] == "--binary" {
+                    if let Some(v) = argv.get(idx + 1) {
+                        bin_arg = Some(PathBuf::from(v));
+                        idx += 1;
+                    }
+                } else if let Some(v) = argv[idx].strip_prefix("--binary=") {
+                    bin_arg = Some(PathBuf::from(v));
+                } else if argv[idx] == "--skill-dir" {
+                    if let Some(v) = argv.get(idx + 1) {
+                        skill_arg = Some(PathBuf::from(v));
+                        idx += 1;
+                    }
+                } else if let Some(v) = argv[idx].strip_prefix("--skill-dir=") {
+                    skill_arg = Some(PathBuf::from(v));
+                } else if argv[idx] == "--mcp-config" {
+                    if let Some(v) = argv.get(idx + 1) {
+                        cfg_arg = Some(PathBuf::from(v));
+                        idx += 1;
+                    }
+                } else if let Some(v) = argv[idx].strip_prefix("--mcp-config=") {
+                    cfg_arg = Some(PathBuf::from(v));
+                } else if argv[idx] == "--probe-mcp" {
+                    probe_mcp = true;
+                } else if argv[idx] == "--register" {
+                    register = true;
+                }
+                idx += 1;
+            }
+            let (rc, out) = match cmd {
+                "mcp-config" => (0, handle_mcp_config(vp, platform_arg, bin_arg.as_deref())),
+                "mcp-install" => handle_mcp_install(vp, platform_arg, bin_arg.as_deref()),
+                "mcp-check" => (
+                    0,
+                    handle_mcp_check_with_options(
+                        vp,
+                        platform_arg,
+                        skill_arg.as_deref(),
+                        cfg_arg.as_deref(),
+                        probe_mcp,
+                        register,
+                        None,
+                    ),
+                ),
+                "agent-onboarding" => (0, handle_agent_onboarding(vp, lang_arg, bin_arg.as_deref())),
+                _ => unreachable!(),
+            };
+            return DispatchOutcome::Immediate(
+                json!({ "id": id, "exit_code": rc, "stdout": format!("{out}\n"), "stderr": "" }),
                 false,
             );
         }
@@ -401,7 +532,7 @@ fn dispatch_request(
             && argv.get(1).map(|s| s.as_str()) == Some("base-snapshot")
             && argv.iter().any(|a| a == "--json")
         {
-            let (rc, out, err) = handle_base_snapshot(vp);
+            let (rc, out, err) = daemon.get_or_build_base_snapshot(vp);
             return DispatchOutcome::Immediate(
                 json!({ "id": id, "exit_code": rc, "stdout": out, "stderr": err }),
                 false,
@@ -465,6 +596,59 @@ fn execute_request(daemon: &NativeControlDaemon, req: &Value) -> (Value, bool) {
     }
 }
 
+fn parse_cli_kv(args: &[String], flag: &str) -> Option<String> {
+    let prefix = format!("{flag}=");
+    let mut i = 0;
+    while i < args.len() {
+        if args[i] == flag {
+            return args.get(i + 1).cloned();
+        }
+        if let Some(rest) = args[i].strip_prefix(&prefix) {
+            return Some(rest.to_string());
+        }
+        i += 1;
+    }
+    None
+}
+
+fn print_cli_usage() {
+    println!(
+        "paperforge-daemon {PF_VERSION} — Native Rust control, MCP & query sidecar\n\n\
+USAGE:\n\
+  paperforge-daemon [--stdio] [--idle-timeout SEC] [--parent-pid PID]\n\
+  paperforge-daemon --mcp [--vault PATH]\n\
+  paperforge-daemon [--vault PATH] <SUBCOMMAND> [OPTIONS]\n\n\
+SUBCOMMANDS:\n\
+  agent-brief        Session state-machine brief (--vault PATH, --paper KEY, --json)\n\
+  agent-onboarding   Generate Agent MCP & Skill onboarding prompt (--vault PATH, --lang zh|en)\n\
+  mcp-config         Print MCP config snippet (--vault PATH, --platform NAME)\n\
+  mcp-install        Merge paperforge MCP server into vault config (--vault PATH, --platform NAME)\n\
+  mcp-check          Verify MCP & Skill status (--vault PATH, --probe-mcp, --register, --json)\n\
+  skill-sync-all     Sync registered Agent Skill copies with ~/.paperforge/skills/paperforge\n\
+  install-runtime    Bootstrap managed Python runtime via uv (--action install|update|repair)\n\n\
+OPTIONS:\n\
+  -h, --help         Show this help message and exit\n\
+  -V, --version      Print daemon version and exit"
+    );
+}
+
+fn extract_leading_subcommand(args: &[String]) -> Option<&str> {
+    let mut i = 0;
+    while i < args.len() {
+        let a = args[i].as_str();
+        if a == "--vault" {
+            i += 2;
+            continue;
+        }
+        if a.starts_with("--vault=") {
+            i += 1;
+            continue;
+        }
+        return Some(a);
+    }
+    None
+}
+
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     if args.first().map(|s| s.as_str()) == Some("--reap-on-parent-exit") {
@@ -473,17 +657,107 @@ fn main() {
         platform::run_macos_kqueue_reaper(ppid, cpid);
         return;
     }
-    if args.first().map(|s| s.as_str()) == Some("install-runtime") {
+    if let Some(code) = maybe_reexec_latest_binary(&args) {
+        std::process::exit(code);
+    }
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print_cli_usage();
+        return;
+    }
+    if args.iter().any(|a| a == "--mcp") {
+        let vault_arg = parse_cli_kv(&args, "--vault").map(PathBuf::from);
+        let resolved = discover_vault_from_cwd(vault_arg.as_deref());
+        serve_mcp(resolved);
+        return;
+    }
+    let subcmd = extract_leading_subcommand(&args);
+    if subcmd == Some("skill-sync-all") {
+        let out = handle_skill_sync_all();
+        println!("{}", serde_json::to_string_pretty(&out).unwrap());
+        std::process::exit(0);
+    }
+    if matches!(
+        subcmd,
+        Some("agent-brief" | "agent-onboarding" | "mcp-config" | "mcp-install" | "mcp-check")
+    ) {
+        let sub = subcmd.unwrap();
+        let vault_arg = parse_cli_kv(&args, "--vault").map(PathBuf::from);
+        let Some(vp) = discover_vault_from_cwd(vault_arg.as_deref()) else {
+            let err = pf_err(
+                sub,
+                "PATH_NOT_FOUND",
+                "paperforge.json not found from CWD upward. Pass --vault <path>.",
+                json!({}),
+                &["Pass --vault <VAULT_DIR> or run inside an initialized PaperForge vault."],
+            );
+            println!("{}", serde_json::to_string_pretty(&err).unwrap());
+            std::process::exit(1);
+        };
+        let (rc, payload) = match sub {
+            "agent-brief" => {
+                let paper = parse_cli_kv(&args, "--paper");
+                let out = build_agent_brief(&vp, paper.as_deref());
+                let code = if out.get("ok").and_then(|v| v.as_bool()) == Some(true) {
+                    0
+                } else {
+                    1
+                };
+                (code, out)
+            }
+            "agent-onboarding" => {
+                let lang = parse_cli_kv(&args, "--lang").unwrap_or_else(|| "zh".into());
+                let bin = parse_cli_kv(&args, "--binary").map(PathBuf::from);
+                (0, handle_agent_onboarding(&vp, &lang, bin.as_deref()))
+            }
+            "mcp-config" => {
+                let plat = parse_cli_kv(&args, "--platform").unwrap_or_else(|| "claude".into());
+                let bin = parse_cli_kv(&args, "--binary").map(PathBuf::from);
+                (0, handle_mcp_config(&vp, &plat, bin.as_deref()))
+            }
+            "mcp-install" => {
+                let plat = parse_cli_kv(&args, "--platform").unwrap_or_else(|| "claude".into());
+                let bin = parse_cli_kv(&args, "--binary").map(PathBuf::from);
+                handle_mcp_install(&vp, &plat, bin.as_deref())
+            }
+            "mcp-check" => {
+                let plat = parse_cli_kv(&args, "--platform").unwrap_or_else(|| "claude".into());
+                let skill_dir = parse_cli_kv(&args, "--skill-dir").map(PathBuf::from);
+                let mcp_cfg = parse_cli_kv(&args, "--mcp-config").map(PathBuf::from);
+                let probe_mcp = args.iter().any(|a| a == "--probe-mcp");
+                let register = args.iter().any(|a| a == "--register");
+                (
+                    0,
+                    handle_mcp_check_with_options(
+                        &vp,
+                        &plat,
+                        skill_dir.as_deref(),
+                        mcp_cfg.as_deref(),
+                        probe_mcp,
+                        register,
+                        None,
+                    ),
+                )
+            }
+            _ => unreachable!(),
+        };
+        println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+        std::process::exit(rc);
+    }
+    if subcmd == Some("install-runtime") {
         let mut action = "install".to_string();
         let mut version = PF_VERSION.to_string();
-        let mut idx = 1;
+        let mut idx = 0;
         while idx < args.len() {
             match args[idx].as_str() {
+                "install-runtime" | "--json" => {}
                 "--action" => {
                     idx += 1;
                     if let Some(v) = args.get(idx) {
                         action = v.clone();
                     }
+                }
+                s if s.starts_with("--action=") => {
+                    action = s.trim_start_matches("--action=").to_string();
                 }
                 "--version" | "--expected-version" => {
                     idx += 1;
@@ -491,7 +765,20 @@ fn main() {
                         version = v.clone();
                     }
                 }
-                _ => {}
+                s if s.starts_with("--version=") => {
+                    version = s.trim_start_matches("--version=").to_string();
+                }
+                s if s.starts_with("--expected-version=") => {
+                    version = s.trim_start_matches("--expected-version=").to_string();
+                }
+                "--vault" => {
+                    idx += 1;
+                }
+                s if s.starts_with("--vault=") => {}
+                other => {
+                    eprintln!("Unknown argument for install-runtime: {other}");
+                    std::process::exit(2);
+                }
             }
             idx += 1;
         }
@@ -524,17 +811,40 @@ fn main() {
             "--stdio" => {}
             "--idle-timeout" => {
                 i += 1;
-                if let Some(val) = args.get(i).and_then(|s| s.parse::<u64>().ok()) {
-                    idle_timeout_secs = val;
-                }
+                let Some(val) = args.get(i).and_then(|s| s.parse::<u64>().ok()) else {
+                    eprintln!("--idle-timeout requires an integer value");
+                    std::process::exit(2);
+                };
+                idle_timeout_secs = val;
+            }
+            s if s.starts_with("--idle-timeout=") => {
+                let raw = s.trim_start_matches("--idle-timeout=");
+                let Ok(val) = raw.parse::<u64>() else {
+                    eprintln!("--idle-timeout requires an integer value");
+                    std::process::exit(2);
+                };
+                idle_timeout_secs = val;
             }
             "--parent-pid" => {
                 i += 1;
-                if let Some(val) = args.get(i).and_then(|s| s.parse::<u32>().ok()) {
-                    parent_pid = Some(val);
-                }
+                let Some(val) = args.get(i).and_then(|s| s.parse::<u32>().ok()) else {
+                    eprintln!("--parent-pid requires an integer PID");
+                    std::process::exit(2);
+                };
+                parent_pid = Some(val);
             }
-            _ => {}
+            s if s.starts_with("--parent-pid=") => {
+                let raw = s.trim_start_matches("--parent-pid=");
+                let Ok(val) = raw.parse::<u32>() else {
+                    eprintln!("--parent-pid requires an integer PID");
+                    std::process::exit(2);
+                };
+                parent_pid = Some(val);
+            }
+            other => {
+                eprintln!("Unknown argument or subcommand: {other}\nRun `paperforge-daemon --help` for usage.");
+                std::process::exit(2);
+            }
         }
         i += 1;
     }
@@ -859,6 +1169,8 @@ mod tests {
             stderr_tail: String::new(),
             pid: None,
             child: None,
+            cancel_flag: None,
+            runtime_child_pid: None,
         };
         assert!(rec.transition(JobStatus::Running).is_ok());
         assert!(rec.transition(JobStatus::Cancelling).is_ok());
@@ -1159,6 +1471,543 @@ mod tests {
         assert_eq!(resp["exit_code"], 0);
         let body: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
         assert_eq!(body["workspace_relpath"], "Literature/Domain/KEY2104");
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn agent_brief_and_mcp_server_and_installer_work_end_to_end() {
+        use std::io::Cursor;
+
+        let tmp = env::temp_dir().join(format!("pf_mcp_e2e_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let _ = execute_request(
+            &daemon,
+            &json!({ "id": 1, "vault": tmp.to_string_lossy(), "argv": ["config", "init", "--json"] }),
+        );
+        let _ = execute_request(
+            &daemon,
+            &json!({ "id": 2, "vault": tmp.to_string_lossy(), "argv": ["config", "set", "system_dir", ".paperforge", "--json"] }),
+        );
+
+        let pf = tmp.join(".paperforge");
+        let idx = pf.join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+        fs::create_dir_all(pf.join("logs")).unwrap();
+        fs::create_dir_all(pf.join("ocr").join("MCP001")).unwrap();
+        fs::write(pf.join("ocr").join("MCP001").join("fulltext.md"), "Body text").unwrap();
+
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE papers (
+                zotero_key TEXT PRIMARY KEY,
+                citation_key TEXT,
+                title TEXT,
+                year INTEGER,
+                doi TEXT,
+                first_author TEXT,
+                journal TEXT,
+                domain TEXT,
+                collection_path TEXT,
+                collections_json TEXT,
+                has_pdf INTEGER,
+                do_ocr INTEGER,
+                analyze INTEGER,
+                lifecycle TEXT,
+                ocr_status TEXT,
+                deep_reading_status TEXT,
+                main_note_path TEXT,
+                abstract TEXT
+            );
+            CREATE TABLE body_units (paper_id TEXT, indexable INTEGER);
+            CREATE TABLE paper_annotations (ann_id TEXT PRIMARY KEY, paper_id TEXT, intent TEXT, author TEXT, lens TEXT);
+            CREATE TABLE paper_memory_cards (zotero_key TEXT, facet TEXT, updated_at TEXT);
+            CREATE VIRTUAL TABLE paper_fts USING fts5(title, abstract, domain, content='papers', content_rowid='rowid');
+            INSERT INTO papers VALUES ('MCP001','lin2026mcp','PEMF Regeneration Study',2026,'10.1000/mcp','Lin','Nature','Ortho','Ortho/PEMF','[\"Ortho/PEMF\"]',1,1,1,'fulltext_ready','done','pending','Resources/Literature/Ortho/MCP001.md','Pulsed electromagnetic field study');
+            INSERT INTO papers VALUES ('MCP002','chen2025','Failed OCR Paper',2025,'10.1000/f','Chen','Science','Ortho','Ortho/Cartilage','[\"Ortho/Cartilage\"]',1,1,0,'pdf_ready','failed','pending','Resources/Literature/Ortho/MCP002.md','Cartilage repair');
+            INSERT INTO paper_fts(rowid, title, abstract, domain) SELECT rowid, title, abstract, domain FROM papers;
+            INSERT INTO paper_annotations VALUES ('ann1','MCP001','question','user','');
+            INSERT INTO paper_annotations VALUES ('ann2','MCP001','evidence','agent','skeleton');
+            INSERT INTO paper_memory_cards VALUES ('MCP001','idea_logic','2026-11-26T00:00:00Z');",
+        )
+        .unwrap();
+        drop(conn);
+
+        // Live daemon heartbeat with current PID + dead PID negative check
+        fs::write(
+            idx.join(".daemon-state.json"),
+            serde_json::to_string(&json!({
+                "pid": std::process::id(),
+                "active_jobs": [{ "kind": "ocr", "status": "running", "current": 1, "total": 3, "item_id": "MCP002" }],
+                "exclusive_barrier": null,
+                "recent_notices": []
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        // 1. agent-brief with single-paper enrichment
+        let brief = build_agent_brief(&tmp, Some("MCP001"));
+        assert_eq!(brief["ok"], true);
+        assert_eq!(brief["data"]["library"]["paper_count"], 2);
+        assert_eq!(brief["data"]["library"]["ocr_failed_count"], 1);
+        assert_eq!(brief["data"]["runtime"]["daemon_alive"], true);
+        assert_eq!(brief["data"]["paper"]["user_question_count"], 1);
+        assert_eq!(brief["data"]["paper"]["agent_lenses"], json!(["skeleton"]));
+        assert!(brief["data"]["capabilities"]["blocked_actions"]["ocr"].is_string());
+        let hint_codes: Vec<&str> = brief["data"]["hints"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|h| h.get("code").and_then(|v| v.as_str()))
+            .collect();
+        assert!(hint_codes.contains(&"job.ocr.running"));
+        assert!(hint_codes.contains(&"paper.has_user_questions"));
+
+        // 2. MCP initialize -> tools/list (exact 7) -> tools/call
+        let init_resp = mcp::process_mcp_message(
+            &daemon,
+            Some(&tmp),
+            &json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-03-26" } }),
+        )
+        .unwrap();
+        assert_eq!(init_resp["result"]["protocolVersion"], "2025-03-26");
+        assert_eq!(init_resp["result"]["serverInfo"]["name"], "paperforge");
+
+        let notif_resp = mcp::process_mcp_message(
+            &daemon,
+            Some(&tmp),
+            &json!({ "jsonrpc": "2.0", "method": "notifications/initialized" }),
+        );
+        assert!(notif_resp.is_none());
+
+        let tools_resp = mcp::process_mcp_message(
+            &daemon,
+            Some(&tmp),
+            &json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }),
+        )
+        .unwrap();
+        assert_eq!(tools_resp["result"]["tools"].as_array().unwrap().len(), 7);
+
+        let lib_resp = mcp::process_mcp_message(
+            &daemon,
+            Some(&tmp),
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "tools/call",
+                "params": {
+                    "name": "paperforge_library_query",
+                    "arguments": { "ocr_status": "failed", "limit": 10 }
+                }
+            }),
+        )
+        .unwrap();
+        assert_eq!(lib_resp["result"]["isError"], false);
+        let lib_text = lib_resp["result"]["content"][0]["text"].as_str().unwrap();
+        let lib_json: Value = serde_json::from_str(lib_text).unwrap();
+        assert_eq!(lib_json["data"]["total_matched"], 1);
+        assert_eq!(lib_json["data"]["items"][0]["zotero_key"], "MCP002");
+
+        // 3. Content-Length framing roundtrip
+        let sample = json!({ "jsonrpc": "2.0", "id": 9, "method": "ping" }).to_string();
+        let framed = format!("Content-Length: {}\r\n\r\n{}", sample.len(), sample);
+        let mut cur = Cursor::new(framed.into_bytes());
+        let (decoded, mode) = mcp::read_next_mcp_message(&mut cur).unwrap().unwrap();
+        assert_eq!(mode, mcp::FramingMode::ContentLength);
+        assert_eq!(decoded["method"], "ping");
+
+        // 4. mcp-install preserves unrelated servers & refuses corrupt JSON
+        let fake_bin = tmp.join(if cfg!(windows) { "paperforge-daemon.exe" } else { "paperforge-daemon" });
+        fs::write(&fake_bin, b"bin").unwrap();
+        fs::write(
+            tmp.join(".mcp.json"),
+            serde_json::to_string_pretty(&json!({ "mcpServers": { "other": { "command": "x" } }, "custom": 42 })).unwrap(),
+        )
+        .unwrap();
+        let (rc, inst) = handle_mcp_install(&tmp, "claude", Some(&fake_bin));
+        assert_eq!(rc, 0);
+        assert_eq!(inst["data"]["created_new"], false);
+        let merged: Value = serde_json::from_str(&fs::read_to_string(tmp.join(".mcp.json")).unwrap()).unwrap();
+        assert_eq!(merged["custom"], 42);
+        assert_eq!(merged["mcpServers"]["other"]["command"], "x");
+        assert!(merged["mcpServers"]["paperforge"]["args"].as_array().unwrap().contains(&json!("--mcp")));
+
+        let chk = mcp::handle_mcp_check(&tmp, "claude");
+        assert_eq!(chk["data"]["mcp_configured"], true);
+        assert_eq!(chk["data"]["mcp_binary_valid"], true);
+
+        // Corrupt JSON guard
+        fs::write(tmp.join(".cursor").join("mcp.json").parent().unwrap().join("temp_ignored"), b"").ok();
+        fs::create_dir_all(tmp.join(".cursor")).unwrap();
+        fs::write(tmp.join(".cursor").join("mcp.json"), "{ invalid json").unwrap();
+        let (rc_bad, bad_out) = handle_mcp_install(&tmp, "cursor", Some(&fake_bin));
+        assert_eq!(rc_bad, 1);
+        assert_eq!(bad_out["ok"], false);
+        assert_eq!(fs::read_to_string(tmp.join(".cursor").join("mcp.json")).unwrap(), "{ invalid json");
+
+        // Re-exec version guard prevents downgrading a newer shim to an older cached binary
+        assert!(!mcp::is_meta_tag_compatible_for_reexec("2.0.3", "2.0.6"));
+        assert!(!mcp::is_meta_tag_compatible_for_reexec("2.0.6-rc.1", "2.0.6"));
+        assert!(mcp::is_meta_tag_compatible_for_reexec("2.0.6", "2.0.6-rc.1"));
+        assert!(mcp::is_meta_tag_compatible_for_reexec("2.0.6", "2.0.6"));
+        assert!(mcp::is_meta_tag_compatible_for_reexec("v2.0.7", "2.0.6"));
+
+        // Self-onboarding prompt, external TOML/skill check + register + probe-mcp + skill-sync-all
+        let onb = handle_agent_onboarding(&tmp, "zh", Some(&fake_bin));
+        assert_eq!(onb["ok"], true);
+        let prompt = onb["data"]["prompt"].as_str().unwrap();
+        assert!(prompt.contains("mcp-check") && prompt.contains("--probe-mcp"));
+
+        let ext_root = tmp.join("external_agent_home");
+        let hub_dir = ext_root.join("hub_paperforge");
+        let copy_skill = ext_root.join("agent_copy").join("skills").join("paperforge");
+        let custom_skill = ext_root.join("agent_custom").join("skills").join("paperforge");
+        fs::create_dir_all(&hub_dir).unwrap();
+        fs::write(hub_dir.join("SKILL.md"), "---\nname: paperforge\n---\nv1\r\n").unwrap();
+        fs::create_dir_all(&copy_skill).unwrap();
+        fs::write(copy_skill.join("SKILL.md"), "---\nname: paperforge\n---\nv1\n").unwrap();
+        fs::create_dir_all(&custom_skill).unwrap();
+        fs::write(custom_skill.join("SKILL.md"), "# User Customized\n").unwrap();
+        // Digest parity across CRLF vs LF
+        assert_eq!(
+            mcp::skill_tree_digest(&hub_dir),
+            mcp::skill_tree_digest(&copy_skill)
+        );
+
+        let codex_toml = ext_root.join("codex_config.toml");
+        fs::write(
+            &codex_toml,
+            format!(
+                "[mcp_servers.paperforge]\ncommand = \"{}\"\nargs = [\"--mcp\", \"--vault\", \"{}\"]\n",
+                fake_bin.to_string_lossy().replace('\\', "\\\\"),
+                tmp.to_string_lossy().replace('\\', "\\\\")
+            ),
+        )
+        .unwrap();
+        let reg_file = ext_root.join("agent-installs.json");
+        // Dummy non-executable fake_bin -> probe_mcp must report false (never mask broken binary)
+        let chk_ext = handle_mcp_check_with_options(
+            &tmp,
+            "codex",
+            Some(&copy_skill),
+            Some(&codex_toml),
+            true,
+            true,
+            Some(&reg_file),
+        );
+        assert_eq!(chk_ext["data"]["config_format"], "toml");
+        assert_eq!(chk_ext["data"]["mcp_configured"], true);
+        assert_eq!(chk_ext["data"]["mcp_args_ok"], true);
+        assert_eq!(chk_ext["data"]["mcp_binary_valid"], true);
+        assert_eq!(chk_ext["data"]["mcp_handshake_ok"], false);
+        assert_eq!(chk_ext["data"]["registered"], true);
+
+        // Register unmodified copy & customized copy with v1 hub digest in isolated test registry
+        let v1_digest = mcp::skill_tree_digest(&hub_dir).unwrap();
+        let reg_raw: Value = serde_json::from_str(&fs::read_to_string(&reg_file).unwrap()).unwrap();
+        let mut installs: Vec<Value> = reg_raw["installs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|entry| {
+                let mut obj = entry.as_object().cloned().unwrap();
+                obj.insert("last_synced_digest".into(), json!(v1_digest));
+                Value::Object(obj)
+            })
+            .collect();
+        installs.push(json!({
+            "skill_dir": custom_skill.to_string_lossy(),
+            "link_mode": "copy",
+            "last_synced_digest": v1_digest,
+        }));
+        fs::write(
+            &reg_file,
+            serde_json::to_string_pretty(&json!({ "schema_version": 1, "installs": installs })).unwrap(),
+        )
+        .unwrap();
+
+        // Update hub -> sync-all updates unmodified copy and preserves customized copy!
+        fs::write(hub_dir.join("SKILL.md"), "---\nname: paperforge\n---\nv2\n").unwrap();
+        let synced = mcp::sync_all_registered_installs_with_paths(&hub_dir, &reg_file);
+        assert_eq!(synced["data"]["updated"], 1);
+        assert_eq!(synced["data"]["customized_preserved"], 1);
+        assert!(fs::read_to_string(copy_skill.join("SKILL.md")).unwrap().contains("v2"));
+        assert_eq!(
+            fs::read_to_string(custom_skill.join("SKILL.md")).unwrap(),
+            "# User Customized\n"
+        );
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn runtime_checksum_zip_validation_and_secret_redaction() {
+        let valid_hash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        let txt = format!("{valid_hash}  *paperforge-2.0.7-py3-none-any.whl\n");
+        assert_eq!(
+            runtime_ops::parse_checksum_for_asset(&txt, "paperforge-2.0.7-py3-none-any.whl").as_deref(),
+            Some(valid_hash)
+        );
+        assert_eq!(
+            runtime_ops::parse_checksum_for_asset(&txt, "other.whl"),
+            None
+        );
+
+        // Corrupt zip bytes fail validation
+        assert!(!runtime_ops::is_valid_wheel_zip(b"not a zip"));
+        // Minimal valid zip archive passes validation
+        let mut cursor = std::io::Cursor::new(Vec::<u8>::new());
+        {
+            let mut zw = zip::ZipWriter::new(&mut cursor);
+            zw.start_file("METADATA", zip::write::SimpleFileOptions::default()).unwrap();
+            std::io::Write::write_all(&mut zw, b"Name: paperforge\n").unwrap();
+            zw.finish().unwrap();
+        }
+        assert!(runtime_ops::is_valid_wheel_zip(&cursor.into_inner()));
+
+        // Secret redaction in installer log lines
+        let line = "GET https://user:supersecret@mirror.example/pkg Authorization: Bearer sk-abc12345 api_key=topsecret";
+        let red = runtime_ops::redact_log_line(line);
+        assert!(!red.contains("supersecret"));
+        assert!(!red.contains("sk-abc12345"));
+        assert!(!red.contains("topsecret"));
+    }
+
+    #[test]
+    fn reexec_meta_containment_sha256_and_prerelease_guards() {
+        use sha2::{Digest, Sha256};
+
+        let tmp = std::env::temp_dir().join(format!("pf-reexec-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let bin_dir = tmp.join("bin");
+        let outside_dir = tmp.join("outside");
+        fs::create_dir_all(&bin_dir).unwrap();
+        fs::create_dir_all(&outside_dir).unwrap();
+
+        let good_bin = bin_dir.join("paperforge-daemon-2.0.7");
+        fs::write(&good_bin, b"daemon-binary-bytes").unwrap();
+        let mut hasher = Sha256::new();
+        hasher.update(b"daemon-binary-bytes");
+        let good_sha = format!("{:x}", hasher.finalize());
+
+        let outside_bin = outside_dir.join("paperforge-daemon-2.0.7");
+        fs::write(&outside_bin, b"daemon-binary-bytes").unwrap();
+
+        // Valid entry inside bin_dir with matching sha256 & >= tag succeeds
+        let ok_meta = json!({
+            "tag": "v2.0.7",
+            "sha256": good_sha,
+            "binaryPath": good_bin.to_string_lossy(),
+        });
+        assert!(mcp::validate_meta_binary_for_reexec(&bin_dir, &ok_meta, "2.0.6").is_some());
+
+        // Reject binary outside managed bin_dir even if sha256 matches
+        let esc_meta = json!({
+            "tag": "v2.0.7",
+            "sha256": good_sha,
+            "binaryPath": outside_bin.to_string_lossy(),
+        });
+        assert!(mcp::validate_meta_binary_for_reexec(&bin_dir, &esc_meta, "2.0.6").is_none());
+
+        // Reject mismatched sha256
+        let bad_sha = json!({
+            "tag": "v2.0.7",
+            "sha256": "f".repeat(64),
+            "binaryPath": good_bin.to_string_lossy(),
+        });
+        assert!(mcp::validate_meta_binary_for_reexec(&bin_dir, &bad_sha, "2.0.6").is_none());
+
+        // Reject pre-release downgrade 2.0.6 -> 2.0.6-rc.1
+        let pre_meta = json!({
+            "tag": "2.0.6-rc.1",
+            "sha256": good_sha,
+            "binaryPath": good_bin.to_string_lossy(),
+        });
+        assert!(mcp::validate_meta_binary_for_reexec(&bin_dir, &pre_meta, "2.0.6").is_none());
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn mcp_security_pin_enum_validation_toml_and_skill_containment() {
+        let tmp = std::env::temp_dir().join(format!("pf-mcp-sec-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let pinned = tmp.join("pinned_vault");
+        let other = tmp.join("other_vault");
+        fs::create_dir_all(&pinned).unwrap();
+        fs::create_dir_all(&other).unwrap();
+
+        let daemon = NativeControlDaemon::new(None, None);
+
+        // Reject vault override outside pinned --vault
+        let cross = mcp::process_mcp_message(
+            &daemon,
+            Some(&pinned),
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                    "name": "paperforge_brief",
+                    "arguments": { "vault": other.to_string_lossy() }
+                }
+            }),
+        )
+        .unwrap();
+        assert_eq!(cross["result"]["isError"], true);
+
+        // Reject invalid enum on paperforge_search
+        let bad_enum = mcp::process_mcp_message(
+            &daemon,
+            Some(&pinned),
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/call",
+                "params": {
+                    "name": "paperforge_search",
+                    "arguments": { "query": "cancer", "ocr": "--malicious-flag" }
+                }
+            }),
+        )
+        .unwrap();
+        assert_eq!(bad_enum["result"]["isError"], true);
+
+        // Exclusive upgrade barrier blocks mutating MCP tools and cli.run
+        daemon.acquire_exclusive_barrier(&pinned, "test-upgrade");
+        let blocked_mcp = mcp::process_mcp_message(
+            &daemon,
+            Some(&pinned),
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "tools/call",
+                "params": { "name": "paperforge_memory_refine", "arguments": {} }
+            }),
+        )
+        .unwrap();
+        assert_eq!(blocked_mcp["result"]["isError"], true);
+        assert!(blocked_mcp["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("test-upgrade"));
+
+        let (blocked_cli, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": "r1",
+                "vault": pinned.to_string_lossy(),
+                "argv": ["search", "x"]
+            }),
+        );
+        assert_eq!(blocked_cli["exit_code"], 1);
+        let blocked_payload: Value = serde_json::from_str(blocked_cli["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(blocked_payload["ok"], false);
+        assert_eq!(blocked_payload["error"]["code"], "VAULT_UPGRADE_BARRIER_ACTIVE");
+        daemon.release_exclusive_barrier(&pinned);
+
+        // TOML multi-line args & `#` inside string values
+        let fake_bin = tmp.join("pf-dummy");
+        fs::write(&fake_bin, b"not-exec").unwrap();
+        let codex_toml = tmp.join("codex.toml");
+        fs::write(
+            &codex_toml,
+            format!(
+                "[mcp_servers.paperforge]\ncommand = \"{}\"\nargs = [\n  \"--mcp\",\n  \"--vault\",\n  \"{}\", # trailing comment\n]\n# [other.section]\n",
+                fake_bin.to_string_lossy().replace('\\', "\\\\"),
+                pinned.to_string_lossy().replace('\\', "\\\\")
+            ),
+        )
+        .unwrap();
+        let chk = mcp::handle_mcp_check_with_options(
+            &pinned,
+            "codex",
+            None,
+            Some(&codex_toml),
+            false,
+            false,
+            None,
+        );
+        assert_eq!(chk["data"]["mcp_configured"], true);
+        assert_eq!(chk["data"]["mcp_args_ok"], true);
+
+        // Skill-sync containment rejects paths outside known skill dirs or with '..' or non-'paperforge' leaf
+        let hub_dir = tmp.join("hub");
+        let unsafe_non_pf = tmp.join("agent").join("skills").join("other_dir");
+        let unsafe_file = unsafe_non_pf.join("keep.txt");
+        fs::create_dir_all(&hub_dir).unwrap();
+        fs::write(hub_dir.join("SKILL.md"), "# hub v1\n").unwrap();
+        fs::create_dir_all(&unsafe_non_pf).unwrap();
+        fs::write(&unsafe_file, "must survive").unwrap();
+        let reg_path = tmp.join("agent-installs.json");
+        fs::write(
+            &reg_path,
+            serde_json::to_string_pretty(&json!({
+                "schema_version": 1,
+                "installs": [{
+                    "skill_dir": unsafe_non_pf.to_string_lossy(),
+                    "link_mode": "copy",
+                    "last_synced_digest": "deadbeef"
+                }]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let sync_res = mcp::sync_all_registered_installs_with_paths(&hub_dir, &reg_path);
+        assert_eq!(sync_res["data"]["updated"], 0);
+        assert!(!sync_res["data"]["errors"].as_array().unwrap().is_empty());
+        assert_eq!(fs::read_to_string(&unsafe_file).unwrap(), "must survive");
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn brief_corrupt_db_config_validation_and_upgrade_plan_schema() {
+        let tmp = std::env::temp_dir().join(format!("pf-brief-cfg-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let pf_dir = tmp.join(".paperforge");
+        let idx_dir = pf_dir.join("indexes");
+        fs::create_dir_all(&idx_dir).unwrap();
+        fs::write(pf_dir.join("paperforge.json"), json!({ "schema_version": 2 }).to_string()).unwrap();
+        fs::write(idx_dir.join("paperforge.db"), b"this is corrupt sqlite data").unwrap();
+
+        let brief = brief::build_agent_brief(&tmp, None);
+        assert_eq!(brief["data"]["capabilities"]["db_corrupt"], true);
+        assert_eq!(brief["data"]["capabilities"]["safe_read"], false);
+        assert_eq!(brief["data"]["capabilities"]["safe_write"], false);
+        let hints = brief["data"]["hints"].as_array().unwrap();
+        assert!(hints.iter().any(|h| h["code"] == "db.corrupt"));
+
+        // Config URL `@` userinfo & profile regex validation + UPPERCASE error codes
+        let bad_url = config_ops::try_handle_config_cli(
+            &tmp,
+            &[
+                "config".into(),
+                "set".into(),
+                "vector_db_api_base".into(),
+                "https://user:secret@example.com".into(),
+                "--json".into(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(bad_url.0, 1);
+        let err_val: Value = serde_json::from_str(&bad_url.1).unwrap();
+        assert_eq!(err_val["error"]["code"], "VALIDATION_ERROR");
+
+        // Zero-python upgrade --plan parity fields
+        let (rc, plan_out, _) = query_ops::handle_zero_python_upgrade_plan(&tmp);
+        assert_eq!(rc, 0);
+        let plan_json: Value = serde_json::from_str(&plan_out).unwrap();
+        assert_eq!(plan_json["ok"], true);
+        assert_eq!(plan_json["data"]["schema_version"], 2);
+        assert!(plan_json["data"]["census"]["pf_machine_pure"].is_number());
+        assert!(plan_json["data"]["census"]["pf_canonical"]["workspaces"].is_number());
+        assert!(plan_json["data"]["provenance"]["needs_upgrade"].is_boolean());
+        assert!(plan_json["data"]["target_version"].is_string());
 
         let _ = fs::remove_dir_all(&tmp);
     }

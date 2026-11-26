@@ -210,3 +210,178 @@ def test_agent_mark_adopt_and_clear_preserves_user_highlights(tmp_path: Path):
     assert cleared["deleted_ids"] == [ai_ann2["ann_id"]]
     remaining_ids = {a["ann_id"] for a in list_annotations(vault, "GRD00002")}
     assert remaining_ids == {user_ann["ann_id"], ai_ann1["ann_id"]}
+
+
+def test_cluster_chars_splits_dual_column_gutter_and_ignores_giant_spaces():
+    import pymupdf
+    from paperforge.services.pdf_grounding import _cluster_chars_to_rects, _rects_look_distorted
+
+    class FakePage:
+        rect = pymupdf.Rect(0, 0, 600, 800)
+
+    chars = [
+        ("a", pymupdf.Rect(50, 100, 120, 112), "left"),
+        # Oversized invisible space glyph spanning gutter
+        ("", pymupdf.Rect(120, 100, 340, 112), " "),
+        # Right column word at exact same Y
+        ("b", pymupdf.Rect(340, 100, 420, 112), "right"),
+    ]
+    rects, _ = _cluster_chars_to_rects(chars, FakePage())
+    assert len(rects) == 2
+    assert rects[0][2] <= 0.25
+    assert rects[1][0] >= 0.55
+
+    assert _rects_look_distorted([[0.05, 0.1, 0.96, 0.12]], char_count=10) is True
+    assert _rects_look_distorted([[0.05, 0.1, 0.45, 0.12]], char_count=18) is False
+
+
+def test_agent_apply_enforces_ocr_dedup_paraphrase_cap_and_replace_lens(tmp_path: Path, monkeypatch):
+    import io
+    import pytest
+    from paperforge import cli
+    from paperforge.services.annotations_service import agent_apply_annotations
+
+    vault, _pdf = _make_pdf_test_vault(tmp_path, key="APPLY001")
+
+    # 1. Existing user highlight & adopted highlight on page 1
+    user_ann = add_annotation(
+        vault,
+        "APPLY001",
+        page=1,
+        rects=[[0.1, 0.80, 0.4, 0.84]],
+        kind="highlight",
+        color="yellow",
+        comment="Personal highlight stays forever",
+    )
+
+    # 2. Batch transaction with: valid quote, paraphrase reject, short reject, duplicate skip, figure, and cap=2
+    res = agent_apply_annotations(
+        vault,
+        "APPLY001",
+        [
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+            },
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "Too短",
+            },
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "Primary upstream electrical trigger defining the experimental therapeutic window.",
+            },
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "Duplicate target should be skipped rather than stacked onto the same text.",
+            },
+            {
+                "figure_id": "figure_001",
+                "comment": "Confirm whether error bars represent SD or SEM across independent donors.",
+            },
+            {
+                "quote": "Second column continuation: multivariate regression confirmed age independence",
+                "comment": "This 3rd created item exceeds max_items=2 and should be rejected cleanly.",
+            },
+        ],
+        lens="skeleton",
+        max_items=2,
+        batch_id="batch_test01",
+    )
+    assert res["created_count"] == 2
+    assert res["skipped_count"] == 1
+    assert res["rejected_count"] == 3
+    reasons = {r["reason"] for r in res["rejected"]}
+    assert reasons == {"comment_paraphrases_quote", "comment_too_short", "batch_limit_exceeded"}
+    assert all(c["batch_id"] == "batch_test01" for c in res["created"])
+    assert res["skipped"][0]["reason"] == "duplicate_target"
+
+    # 3. replace_lens=True clears old skeleton agent marks while keeping user highlights
+    buf = io.StringIO()
+    payload = json.dumps(
+        {
+            "lens": "skeleton",
+            "replace_lens": True,
+            "items": [
+                {
+                    "quote": "Second column continuation: multivariate regression confirmed age independence across all 64 rabbits.",
+                    "comment": "Cross-column regression evidence supporting model generalizability.",
+                }
+            ],
+        }
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO(payload))
+    from contextlib import redirect_stdout
+
+    with redirect_stdout(buf):
+        rc = cli.main(["--vault", str(vault), "annotations", "agent-apply", "APPLY001", "--input", "-", "--json"])
+    assert rc == 0, buf.getvalue()
+    cli_out = json.loads(buf.getvalue())
+    assert cli_out["ok"] is True
+    assert cli_out["data"]["replaced_count"] == 2
+    assert cli_out["data"]["created_count"] == 1
+    active = list_annotations(vault, "APPLY001")
+    assert {a["ann_id"] for a in active if a["author"] == "user"} == {user_ann["ann_id"]}
+    assert len([a for a in active if a["author"] == "agent"]) == 1
+
+    # 4. OCR-not-ready blocks AI annotation unless OCR status or fulltext exists
+    import shutil
+    shutil.rmtree(vault / ".paperforge" / "ocr" / "APPLY001")
+    with pytest.raises(ValueError, match="OCR is not ready"):
+        agent_apply_annotations(
+            vault,
+            "APPLY001",
+            [{"figure_id": "figure_001", "comment": "Should fail because OCR artifacts and status are not ready"}],
+        )
+
+
+def test_agent_apply_atomic_replace_and_vault_boundary(tmp_path: Path):
+    """PF-OCR-004 & PF-SEC-008: replace_lens=True never wipes prior marks if 0 items stage; rejects bad page_hint/color & path escape."""
+    import pytest
+    from paperforge.services.annotations_service import _resolve_paper_location, agent_apply_annotations, list_annotations
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+
+    vault, _ = _make_pdf_test_vault(tmp_path, key="ATOMIC1")
+    first = agent_apply_annotations(
+        vault,
+        "ATOMIC1",
+        [
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "Primary effect magnitude showing strong chondrogenic stimulation across groups.",
+                "tags": "efficacy",  # bare string normalized cleanly, not split into characters
+            }
+        ],
+        lens="skeleton",
+        replace_lens=True,
+    )
+    assert first["created_count"] == 1
+    assert first["created"][0]["tags"] == ["efficacy"]
+
+    # Malformed / ungrounded batch with replace_lens=True must NOT delete the prior annotation
+    bad = agent_apply_annotations(
+        vault,
+        "ATOMIC1",
+        [
+            {"quote": "PEMF", "comment": "Analytical insight cleanly formatted here.", "page_hint": "not-an-int"},
+            {"quote": "PEMF", "comment": "Analytical insight cleanly formatted here.", "color": "neon_pink"},
+            {"quote": "nonexistent text xyz", "comment": "Analytical insight cleanly formatted here."},
+        ],
+        lens="skeleton",
+        replace_lens=True,
+    )
+    assert bad["created_count"] == 0
+    assert bad["replaced_count"] == 0
+    assert bad["rejected_count"] == 3
+    reasons = {r["reason"] for r in bad["rejected"]}
+    assert reasons == {"invalid_page_hint", "invalid_color", "grounding_failed"}
+    remaining = [a for a in list_annotations(vault, "ATOMIC1") if a["author"] == "agent"]
+    assert len(remaining) == 1
+
+    # PF-SEC-008: paper_root traversal outside vault raises ValueError
+    atomic_write_index(
+        get_index_path(vault),
+        build_envelope([{"zotero_key": "EVIL01", "paper_root": "../../outside_vault"}]),
+    )
+    with pytest.raises(ValueError, match="escapes vault boundary"):
+        _resolve_paper_location(vault, "EVIL01")

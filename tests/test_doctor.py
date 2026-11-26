@@ -252,3 +252,55 @@ def test_doctor_never_suggests_inplace_or_global_pip(tmp_path, capsys, monkeypat
     payload = _json.loads(out)
     fixes = " ".join(c.get("fix", "") for c in payload["data"]["checks"])
     assert "setup" in fixes or "repair --runtime" in fixes
+
+
+def test_doctor_v2_sqlite_vault_no_false_legacy_failures(tmp_path, capsys, monkeypatch):
+    """PF-UX-006: fresh v2 sqlite vault passes Zotero/BBT/Base/pending-OCR checks, flags missing disk PDF, and reports runtime publish on missing pointer."""
+    import json as _json
+    from paperforge.worker import status as status_mod
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+    from paperforge.worker.base_views import build_base_views, merge_base_views
+    import paperforge.runtime_pointer as _rp
+
+    vault = _empty_vault(tmp_path)
+    zot_dir = tmp_path / "zot_data"
+    zot_dir.mkdir()
+    # Configure sqlite direct mode
+    cfg_path = vault / "paperforge.json"
+    cfg_obj = _json.loads(cfg_path.read_text(encoding="utf-8"))
+    cfg_obj["zotero_source_mode"] = "sqlite"
+    cfg_obj["zotero_data_dir"] = str(zot_dir)
+    cfg_path.write_text(_json.dumps(cfg_obj), encoding="utf-8")
+
+    # Modern v2 .base file
+    bases_dir = vault / "05_Bases"
+    bases_dir.mkdir(parents=True, exist_ok=True)
+    (bases_dir / "Ortho.base").write_text(merge_base_views(None, build_base_views("Ortho")), encoding="utf-8")
+
+    # Pre-OCR library with 1 missing PDF on disk
+    atomic_write_index(
+        get_index_path(vault),
+        build_envelope([
+            {
+                "zotero_key": "P1",
+                "title": "Ghost",
+                "domain": "Ortho",
+                "has_pdf": True,
+                "pdf_path": "ghost.pdf",
+                "ocr_status": "pending",
+                "health": {"pdf_health": "healthy", "ocr_health": "pending", "note_health": "healthy", "asset_health": "pending"},
+            }
+        ]),
+    )
+
+    monkeypatch.setattr(_rp, "read_pointer", lambda *a, **k: None)
+    code = status_mod.run_doctor(vault, json_output=True)
+    assert code == 1
+    payload = _json.loads(capsys.readouterr().out)["data"]
+    assert "upgrade Python" not in payload["next_action"]
+    checks = payload["checks"]
+    assert not any(c["category"] == "BBT 导出" and c["status"] == "fail" for c in checks)
+    assert not any(c["category"] == "Zotero 链接" and c["status"] == "fail" for c in checks)
+    assert not any("Base file(s)" in c["message"] for c in checks)
+    assert not any("OCR Health" in c["message"] and c["status"] == "fail" for c in checks)
+    assert any("PDF Health" in c["message"] and c["status"] == "fail" for c in checks)

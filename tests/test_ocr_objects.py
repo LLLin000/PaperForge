@@ -403,6 +403,83 @@ def test_failed_cross_page_materialization_becomes_hold(tmp_path: Path) -> None:
     ]
     assert inventory["completeness"]["details"][0]["status"] == "unmatched"
 
+
+def test_zero_edge_bbox_crops_successfully(tmp_path: Path) -> None:
+    """PF-OCR-011: figure/table/orphan cropping allows x0 == 0 or y0 == 0."""
+    import pymupdf
+    from paperforge.worker.ocr_objects import (
+        _write_figure_object_task,
+        _write_orphan_object_task,
+        _write_table_object_task,
+    )
+
+    pdf_path = tmp_path / "sample.pdf"
+    doc = pymupdf.open()
+    doc.new_page(width=600, height=800)
+    doc.save(str(pdf_path))
+    doc.close()
+
+    asset_dir = tmp_path / "assets"
+    render_dir = tmp_path / "render"
+    (asset_dir / "figures").mkdir(parents=True)
+    (render_dir / "figures").mkdir(parents=True)
+    (asset_dir / "tables").mkdir(parents=True)
+    (render_dir / "tables").mkdir(parents=True)
+    (asset_dir / "orphans").mkdir(parents=True)
+    (render_dir / "orphans").mkdir(parents=True)
+
+    fig_rec = _write_figure_object_task(
+        {
+            "fig_id": "fig_001",
+            "page": 1,
+            "page_width": 600.0,
+            "page_height": 800.0,
+            "crop_bbox": [0.0, 100.0, 300.0, 400.0],
+            "matched_assets": [],
+            "caption": "Figure 1",
+            "asset_path_rel": "assets/figures/fig_001.jpg",
+        },
+        pdf_path=pdf_path,
+        page_cache_dir=None,
+        asset_dir=asset_dir / "figures",
+        render_dir=render_dir / "figures",
+    )
+    assert fig_rec["status"] == "materialized"
+
+    tbl_rec = _write_table_object_task(
+        {
+            "tbl_id": "tbl_001",
+            "page": 1,
+            "page_width": 600.0,
+            "page_height": 800.0,
+            "crop_bbox": [20.0, 0.0, 400.0, 250.0],
+            "has_asset": True,
+            "caption": "Table 1",
+            "asset_path_rel": "assets/tables/tbl_001.jpg",
+        },
+        pdf_path=pdf_path,
+        page_cache_dir=None,
+        asset_dir=asset_dir / "tables",
+        render_dir=render_dir / "tables",
+    )
+    assert tbl_rec["status"] == "materialized"
+
+    orp_rec = _write_orphan_object_task(
+        {
+            "orphan_id": "orp_001",
+            "page": 1,
+            "page_width": 600.0,
+            "page_height": 800.0,
+            "bbox": [0.0, 0.0, 200.0, 200.0],
+            "asset_path_rel": "assets/orphans/orp_001.jpg",
+        },
+        pdf_path=pdf_path,
+        page_cache_dir=None,
+        asset_dir=asset_dir / "orphans",
+        render_dir=render_dir / "orphans",
+    )
+    assert orp_rec["status"] == "materialized"
+
 def test_held_tables_do_not_emit_object_notes(tmp_path: Path) -> None:
     from paperforge.worker.ocr_objects import extract_and_write_objects
 

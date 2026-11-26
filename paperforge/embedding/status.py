@@ -37,6 +37,7 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
     total_valid = 0
     if exists:
         conn = None
+        reader = None
         try:
             from paperforge.memory.db import open_live_reader
 
@@ -108,10 +109,11 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
                     conn.close()
                 except Exception:
                     pass
-            try:
-                reader.__exit__(None, None, None)
-            except Exception:
-                pass
+            if reader is not None:
+                try:
+                    reader.__exit__(None, None, None)
+                except Exception:
+                    pass
 
     model = get_api_model(vault)
     raw_total = body_chunk_count + object_chunk_count  # exclude legacy vec_fulltext_meta
@@ -131,7 +133,7 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
     except Exception:  # noqa: BLE001
         identity_mismatch = False
 
-    if identity_mismatch:
+    if (not healthy) or identity_mismatch:
         vector_state = "stale"
     elif total_valid > 0:
         vector_state = "ready"
@@ -155,6 +157,8 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
         else:
             vector_state = "not_built"
 
+    import importlib.util as _ilu
+
     return {
         "db_exists": exists,
         "chunk_count": chunk_count,
@@ -172,6 +176,9 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
         "valid_total_chunks": total_valid,
         "vector_state": vector_state,
         "identity_changed": identity_mismatch,
+        "vector_available": (
+            _ilu.find_spec("openai") is not None and _ilu.find_spec("sqlite_vec") is not None
+        ),
     }
 
 
@@ -198,3 +205,113 @@ def test_embedding_connection(vault: Path) -> dict[str, object]:
         "dimension": dim,
         "latency_ms": latency_ms,
     }
+
+
+_EMBEDDING_MODEL_RE = None
+
+
+def _is_embedding_model_id(model_id: str) -> bool:
+    import re
+
+    global _EMBEDDING_MODEL_RE
+    if _EMBEDDING_MODEL_RE is None:
+        _EMBEDDING_MODEL_RE = re.compile(
+            r"(embed|bge|bce|m3|nomic|mxbai|gte|e5|jina|snowflake)", re.IGNORECASE
+        )
+    return bool(_EMBEDDING_MODEL_RE.search(str(model_id or "")))
+
+
+def list_embedding_models(vault: Path, base_url: str | None = None) -> dict[str, object]:
+    """Probe local Ollama `/api/tags` or OpenAI-compatible `/models` for embedding candidates."""
+    import json as _json
+    import urllib.parse
+    import urllib.request
+
+    from paperforge.embedding._config import get_api_key, get_effective_api_base_url
+
+    raw = (base_url or get_effective_api_base_url(vault) or "").strip().rstrip("/")
+    if raw.lower().endswith("/embeddings"):
+        raw = raw[: -len("/embeddings")].rstrip("/")
+
+    parsed = urllib.parse.urlparse(raw)
+    is_ollama = parsed.hostname in {"127.0.0.1", "localhost"} and parsed.port == 11434
+
+    if is_ollama:
+        origin = f"{parsed.scheme or 'http'}://{parsed.netloc}"
+        tags_url = f"{origin}/api/tags"
+        try:
+            req = urllib.request.Request(tags_url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                payload = _json.loads(resp.read().decode("utf-8", errors="replace"))
+            items = payload.get("models") if isinstance(payload, dict) else []
+            names = [
+                str(it.get("name") or "").strip()
+                for it in (items or [])
+                if isinstance(it, dict) and str(it.get("name") or "").strip()
+            ]
+            emb_names = [n for n in names if _is_embedding_model_id(n)]
+            return {
+                "source": "ollama",
+                "base_url": raw,
+                "reachable": True,
+                "models": names,
+                "embedding_models": emb_names,
+            }
+        except Exception as exc:
+            return {
+                "source": "ollama",
+                "base_url": raw,
+                "reachable": False,
+                "models": [],
+                "embedding_models": [],
+                "error": f"ollama_offline: {str(exc)[:120]}",
+            }
+
+    if not raw:
+        return {
+            "source": "openai_compatible",
+            "base_url": raw,
+            "reachable": False,
+            "models": [],
+            "embedding_models": [],
+            "error": "missing_base_url",
+        }
+
+    models_url = f"{raw}/models"
+    headers = {"Accept": "application/json"}
+    try:
+        api_key = get_api_key(vault)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+    except Exception:
+        pass
+
+    try:
+        req = urllib.request.Request(models_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8.0) as resp:
+            payload = _json.loads(resp.read().decode("utf-8", errors="replace"))
+        data = payload.get("data") if isinstance(payload, dict) else []
+        names = sorted(
+            {
+                str(it.get("id") or "").strip()
+                for it in (data or [])
+                if isinstance(it, dict) and str(it.get("id") or "").strip()
+            }
+        )
+        emb_names = [n for n in names if _is_embedding_model_id(n)]
+        return {
+            "source": "openai_compatible",
+            "base_url": raw,
+            "reachable": True,
+            "models": names[:100],
+            "embedding_models": emb_names,
+        }
+    except Exception as exc:
+        return {
+            "source": "openai_compatible",
+            "base_url": raw,
+            "reachable": False,
+            "models": [],
+            "embedding_models": [],
+            "error": str(exc)[:160],
+        }

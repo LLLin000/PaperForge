@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import logging
+import os
+import re
 import shutil
+import stat
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
@@ -10,12 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def _collect_orphan_candidates(lit_dir: Path, fresh_keys: set[str]) -> list[dict]:
-    if not lit_dir.exists():
+    if not lit_dir.exists() or _is_reparse_or_symlink(lit_dir):
         return []
-
     candidates: list[dict] = []
     for domain_dir in sorted(lit_dir.iterdir()):
-        if not domain_dir.is_dir():
+        if not domain_dir.is_dir() or _is_reparse_or_symlink(domain_dir):
             continue
         try:
             entries = sorted(domain_dir.iterdir())
@@ -23,25 +25,17 @@ def _collect_orphan_candidates(lit_dir: Path, fresh_keys: set[str]) -> list[dict
             logger.warning("prune: cannot scan %s: %s", domain_dir, exc)
             continue
         for sub in entries:
-            if not sub.is_dir():
+            if not sub.is_dir() or _is_reparse_or_symlink(sub) or _SYNC_CONFLICT_RE.search(sub.name):
                 continue
             parts = sub.name.split(" - ", 1)
             if len(parts) < 2:
                 continue
-            key = parts[0]
-            if not key:
+            key = parts[0].strip()
+            if not key or not _KEY_TOKEN_RE.match(key) or not _has_workspace_provenance(sub, key):
                 continue
             if key in fresh_keys:
                 continue
-            candidates.append(
-                {
-                    "key": key,
-                    "domain": domain_dir.name,
-                    "workspace_dir": sub,
-                    "ocr_dir": None,
-                }
-            )
-
+            candidates.append({"key": key, "domain": domain_dir.name, "workspace_dir": sub, "ocr_dir": None})
     return candidates
 
 
@@ -103,6 +97,8 @@ def prune_orphan_papers(
     dry_run: bool = True,
     enrich: bool = True,
     _candidates: list[dict] | None = None,
+    source_ok: bool = True,
+    allow_empty_keys: bool = False,
 ) -> dict:
     """Orphan cleanup.  **Zotero is the authority** (2026-08-14): pass
     ``fresh_keys`` = the Zotero key set (from the live export at sync time)
@@ -114,18 +110,22 @@ def prune_orphan_papers(
     lit_dir = cfg.get("literature")
     if not lit_dir:
         return {"preview": [], "deleted": [], "counts": {}}
-
+    if _candidates is None and (
+        not source_ok or (fresh_keys is not None and not fresh_keys and not allow_empty_keys)
+    ):
+        logger.warning(
+            "prune: refusing orphan scan with incomplete/empty Zotero key set (source_ok=%s)", source_ok)
+        return {
+            "preview": [], "deleted": [], "counts": {"workspace": 0, "ocr": 0, "vectors": 0, "failed": 0},
+            "blocked_reason": "empty_or_incomplete_zotero_keys",
+        }
     if fresh_keys is None:
         fresh_keys = {
             item["zotero_key"]
             for item in (fresh_index or {}).get("items", [])
             if item.get("zotero_key")
         }
-
-    if _candidates is not None:
-        candidates = _candidates
-    else:
-        candidates = _collect_orphan_candidates(lit_dir, fresh_keys)
+    candidates = _candidates if _candidates is not None else _collect_orphan_candidates(lit_dir, fresh_keys)
     if not candidates:
         return {"preview": [], "deleted": [], "counts": {}}
 
@@ -312,3 +312,44 @@ def _prune_orphan_papers_locked(
         "carriers": carriers,
         "counts": counts,
     }
+
+
+_KEY_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+_SYNC_CONFLICT_RE = re.compile(
+    r"(?:\.sync-conflict-|conflicted copy|冲突副本|\bconflict\b.*\(\d+\))",
+    re.IGNORECASE,
+)
+
+
+def _is_reparse_or_symlink(path: Path) -> bool:
+    try:
+        st = os.lstat(path)
+        return stat.S_ISLNK(st.st_mode) or bool(getattr(st, "st_file_attributes", 0) & 0x0400)
+    except OSError:
+        return False
+
+
+def _has_workspace_provenance(sub: Path, key: str) -> bool:
+    """Return False if *sub* looks like a user-sovereign folder rather than a PaperForge workspace."""
+    if (sub / "paper-meta.json").is_file() or (sub / "ai").is_dir() or (sub / "fulltext.md").is_file():
+        return True
+    key_note = sub / f"{key}.md"
+    if key_note.is_file():
+        return True
+    try:
+        md_files = [p for p in sub.iterdir() if p.is_file() and p.suffix.lower() == ".md"]
+    except OSError:
+        return True
+    if not md_files:
+        return True
+    saw_frontmatter = False
+    for md in md_files:
+        try:
+            head = md.read_text(encoding="utf-8", errors="ignore")[:2048]
+        except OSError:
+            continue
+        if head.lstrip("\ufeff").startswith("---"):
+            saw_frontmatter = True
+            if re.search(r'^zotero_key:\s*\S+', head, re.MULTILINE):
+                return True
+    return not saw_frontmatter

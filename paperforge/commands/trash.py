@@ -37,7 +37,7 @@ def run(args: argparse.Namespace) -> int:
             return 2
         try:
             original = restore_trash(vault, trash_id)
-        except KeyError as exc:
+        except (KeyError, ValueError) as exc:
             print(f"trash: {exc}", file=sys.stderr)
             return 2
         except (FileExistsError, FileNotFoundError) as exc:
@@ -47,6 +47,19 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     if sub == "purge":
+        confirmed = bool(getattr(args, "yes", False) or getattr(args, "confirm", False))
+        if not confirmed and sys.stdin is not None and sys.stdin.isatty():
+            try:
+                ans = input("Permanently purge trashed items? This cannot be undone. [y/N]: ")
+                confirmed = ans.strip().lower() in ("y", "yes")
+            except (EOFError, KeyboardInterrupt):
+                confirmed = False
+        if not confirmed:
+            print(
+                "trash purge: confirmation required — pass --yes to permanently delete trashed items",
+                file=sys.stderr,
+            )
+            return 2
         older_than = getattr(args, "older_than", None)
         purged = purge_trash(vault, older_than_days=older_than)
         print(f"trash: purged {purged} item(s)")

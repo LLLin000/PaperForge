@@ -88,8 +88,14 @@ def test_embed_status_reports_ready_when_identity_matches(
     conn = get_connection(db_path)
     ensure_vec_extension(conn)
     ensure_schema(conn)
+    conn.execute("DELETE FROM vec_fulltext_meta")
+    ft_cur = conn.execute(
+        "INSERT INTO vec_fulltext(embedding) VALUES (?)",
+        [json.dumps([0.1] * 1536)],
+    )
     conn.execute(
-        "INSERT INTO vec_fulltext_meta(rowid, paper_id, chunk_index, text) VALUES (3, 'p3', 0, 'y')"
+        "INSERT INTO vec_fulltext_meta(rowid, paper_id, chunk_index, text) VALUES (?, 'p3', 0, 'y')",
+        (ft_cur.lastrowid,),
     )
     cur = conn.execute(
         "INSERT INTO vec_body(embedding) VALUES (?)",

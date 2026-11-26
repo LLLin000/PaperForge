@@ -190,3 +190,145 @@ def test_openalex_offline_seed_lookup_and_aliases_preservation(tmp_path: Path, m
     assert "Cartilage Paper" in rendered
     assert "Hydrogel Repair of Cartilage" in rendered
     assert "linCartilage2025" in rendered
+
+
+def test_sync_fails_closed_on_corrupt_locked_or_missing_zotero_sqlite(tmp_path: Path) -> None:
+    """PF-MIG-001: corrupt, OS-locked, or missing zotero.sqlite must fail closed with zero pruning."""
+    import ctypes
+    import os
+    from paperforge.core.errors import ErrorCode
+
+    zdir = _create_mock_zotero_dir(tmp_path)
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(
+        vault,
+        system_dir=".paperforge",
+        zotero_data_dir=str(zdir),
+        zotero_source_mode="sqlite",
+        domain_mode="per_collection",
+    )
+
+    # First run healthy sync so workspace + fastpath + exports exist
+    svc = SyncService(vault)
+    ok_res = svc.run(json_output=True)
+    assert ok_res.ok is True
+    ws_note = vault / "Resources" / "Literature" / "BoneRegen" / "ZOTKEY01 - Cartilage Hydrogel Scaffolds" / "ZOTKEY01.md"
+    assert ws_note.is_file()
+
+    # (a) Corrupt zotero.sqlite after prior valid exports -> must fail closed (never silently reuse stale exports)
+    db_path = zdir / "zotero.sqlite"
+    orig_bytes = db_path.read_bytes()
+    db_path.write_bytes(b"NOT_A_VALID_SQLITE_DATABASE_HEADER" * 20)
+    corrupt_res = svc.run(prune=True, prune_force=True, json_output=True)
+    assert corrupt_res.ok is False
+    assert corrupt_res.error is not None
+    assert corrupt_res.error.code == ErrorCode.SYNC_FAILED
+    assert ws_note.is_file()
+
+    # (b) OS-exclusively locked zotero.sqlite (Windows CreateFileW dwShareMode=0) -> fail closed
+    db_path.write_bytes(orig_bytes)
+    if os.name == "nt":
+        k32 = ctypes.windll.kernel32
+        handle = k32.CreateFileW(str(db_path), 0xC0000000, 0, None, 3, 0x80, None)
+        assert handle != -1
+        try:
+            locked_res = svc.run(json_output=True)
+            assert locked_res.ok is False
+            assert locked_res.error is not None
+            assert locked_res.error.code == ErrorCode.SYNC_FAILED
+            assert ws_note.is_file()
+        finally:
+            k32.CloseHandle(handle)
+
+    # (c) Missing zotero.sqlite when zotero_data_dir is configured -> fail closed
+    db_path.unlink()
+    missing_res = svc.run(prune=True, prune_force=True, json_output=True)
+    assert missing_res.ok is False
+    assert missing_res.error is not None
+    assert missing_res.error.code == ErrorCode.SYNC_FAILED
+    assert ws_note.is_file()
+
+
+def test_deleted_collections_excluded_and_missing_selection_fails_closed(tmp_path: Path) -> None:
+    """PF-MIG-008: deletedCollections are excluded and unmatched selected_collections fail closed."""
+    import pytest
+
+    zdir = _create_mock_zotero_dir(tmp_path)
+    conn = sqlite3.connect(str(zdir / "zotero.sqlite"))
+    conn.execute("INSERT INTO collections VALUES (102, 'DeletedOld', NULL, 'COL_DEL1')")
+    conn.execute("INSERT INTO deletedCollections VALUES (102)")
+    conn.execute("INSERT INTO collectionItems VALUES (102, 10)")
+    conn.commit()
+    conn.close()
+
+    docs = build_bbt_export_documents_from_sqlite(zdir, domain_mode="unified")
+    assert "COL_DEL1" not in docs["Literature"]["collections"]
+
+    with pytest.raises(ValueError, match="matched no active Zotero collections"):
+        build_bbt_export_documents_from_sqlite(
+            zdir, selected_collections=["NON_EXISTENT_COL"], domain_mode="per_collection"
+        )
+
+
+def test_zotero_detect_without_deleted_collections_and_per_collection_no_collapse(tmp_path: Path) -> None:
+    """PF-UX-010: missing deletedCollections table degrades gracefully; default per_collection splits top-level collections."""
+    zdir = tmp_path / "ZoteroMinimal"
+    zdir.mkdir()
+    conn = sqlite3.connect(str(zdir / "zotero.sqlite"))
+    conn.executescript(
+        """
+        CREATE TABLE itemTypes (itemTypeID INTEGER PRIMARY KEY, typeName TEXT);
+        CREATE TABLE items (itemID INTEGER PRIMARY KEY, itemTypeID INTEGER, key TEXT);
+        CREATE TABLE deletedItems (itemID INTEGER PRIMARY KEY);
+        CREATE TABLE fields (fieldID INTEGER PRIMARY KEY, fieldName TEXT);
+        CREATE TABLE itemDataValues (valueID INTEGER PRIMARY KEY, value TEXT);
+        CREATE TABLE itemData (itemID INTEGER, fieldID INTEGER, valueID INTEGER);
+        CREATE TABLE creators (creatorID INTEGER PRIMARY KEY, firstName TEXT, lastName TEXT, fieldMode INTEGER);
+        CREATE TABLE creatorTypes (creatorTypeID INTEGER PRIMARY KEY, creatorType TEXT);
+        CREATE TABLE itemCreators (itemID INTEGER, creatorID INTEGER, creatorTypeID INTEGER, orderIndex INTEGER);
+        CREATE TABLE collections (collectionID INTEGER PRIMARY KEY, collectionName TEXT, parentCollectionID INTEGER, key TEXT);
+        CREATE TABLE collectionItems (collectionID INTEGER, itemID INTEGER);
+        CREATE TABLE itemAttachments (itemID INTEGER PRIMARY KEY, parentItemID INTEGER, linkMode INTEGER, contentType TEXT, path TEXT);
+
+        INSERT INTO itemTypes VALUES (1, 'journalArticle');
+        INSERT INTO items VALUES (1, 1, 'P1KEY001'), (2, 1, 'P2KEY002');
+        INSERT INTO fields VALUES (1, 'title');
+        INSERT INTO itemDataValues VALUES (1, 'Ortho Paper'), (2, 'AI Paper');
+        INSERT INTO itemData VALUES (1, 1, 1), (2, 1, 1), (2, 1, 2);
+        INSERT INTO collections VALUES (10, 'Orthopedics', NULL, 'COL_ORTH'), (20, 'AI_Radiology', NULL, 'COL_AIRAD');
+        INSERT INTO collectionItems VALUES (10, 1), (20, 2);
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    listed = list_zotero_collections(zdir)
+    assert listed["found"] is True
+    assert listed["total_papers"] == 2
+    assert {c["name"] for c in listed["collections"]} == {"Orthopedics", "AI_Radiology"}
+
+    docs = build_bbt_export_documents_from_sqlite(zdir, selected_collections=[], domain_mode="per_collection")
+    assert set(docs.keys()) == {"Orthopedics", "AI_Radiology"}
+    assert "Literature" not in docs
+
+
+def test_cross_collection_item_resolves_no_raw_collection_keys(tmp_path: Path) -> None:
+    """PF-MIG-017: cross-domain items must never leak raw 8-char collection keys in per_collection slices."""
+    from paperforge.adapters.bbt import load_export_rows
+
+    zdir = _create_mock_zotero_dir(tmp_path)
+    conn = sqlite3.connect(str(zdir / "zotero.sqlite"))
+    conn.execute("INSERT INTO collections VALUES (200, 'Sports', NULL, 'COL_SPRT')")
+    conn.execute("INSERT INTO collectionItems VALUES (200, 10)")
+    conn.commit()
+    conn.close()
+
+    docs = build_bbt_export_documents_from_sqlite(
+        zdir, selected_collections=["COLTOP01", "COL_SPRT"], domain_mode="per_collection"
+    )
+    tmp_json = tmp_path / "BoneRegen.json"
+    tmp_json.write_text(json.dumps(docs["BoneRegen"]), encoding="utf-8")
+    rows = load_export_rows(tmp_json)
+    assert rows[0]["collections"] == ["BoneRegen/Hydrogels"]
+    assert "COL_SPRT" not in rows[0]["collections"]

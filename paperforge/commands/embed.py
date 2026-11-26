@@ -93,6 +93,24 @@ def run(args: argparse.Namespace) -> int:
                 print(f"Error: {exc}", file=sys.stderr)
             return 1
 
+    if sub == "list-models":
+        from paperforge.embedding.status import list_embedding_models
+
+        base_override = str(getattr(args, "base_url", "") or "").strip() or None
+        data = list_embedding_models(vault, base_url=base_override)
+        result = PFResult(
+            ok=True,
+            command="embed list-models",
+            version=PF_VERSION,
+            data=data,
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            models = data.get("embedding_models") or data.get("models") or []
+            print(f"{data.get('source')}: {len(models)} models")
+        return 0
+
     if sub == "status":
         status = get_embed_status(vault, probe=getattr(args, "probe", False))
         status["build_state"] = read_vector_build_state(vault)

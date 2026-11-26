@@ -467,24 +467,45 @@ const REDACT_PATTERNS: Array<{
   label: string;
   class_: string;
 }> = [
-  { pattern: /sk-[A-Za-z0-9]{16,}/g, label: "API key", class_: "credential" },
+  {
+    pattern: /\bsk-[A-Za-z0-9_-]{12,}/g,
+    label: "API key",
+    class_: "credential",
+  },
+  {
+    pattern: /\bgh[pousr]_[A-Za-z0-9_]{16,}/g,
+    label: "API key",
+    class_: "credential",
+  },
+  {
+    pattern: /\bAIza[A-Za-z0-9_-]{20,}/g,
+    label: "API key",
+    class_: "credential",
+  },
+  {
+    pattern:
+      /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_-]+)?/g,
+    label: "Credential token",
+    class_: "credential",
+  },
+  {
+    pattern: /\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/gi,
+    label: "Bearer token",
+    class_: "credential",
+  },
   {
     pattern: /[A-Za-z0-9+/]{20,}={0,2}/g,
     label: "Credential token",
     class_: "credential",
   },
   {
-    pattern: /api[_-]?key[=:]\s*['"]?\S+['"]?/gi,
-    label: "API key",
+    pattern:
+      /\b(?:api[_-]?key|token|secret|password|authorization)\s*[=:]\s*['"]?\S+['"]?/gi,
+    label: "Credential",
     class_: "credential",
   },
   {
-    pattern: /token[=:]\s*['"]?\S+['"]?/gi,
-    label: "Token",
-    class_: "credential",
-  },
-  {
-    pattern: /[A-Za-z]:\\[^"'\n,;]+/gi,
+    pattern: /(?<![A-Za-z])[A-Za-z]:(?:\\|\/(?!\/))[^"'\n,;]+/gi,
     label: "Absolute path",
     class_: "vault-path",
   },

@@ -1,8 +1,7 @@
-# Single tag-release workflow (issue #121, P0-5).
-# Previously release.yml and publish.yml both created the same tag's GitHub
-# Release — one deleting while the other created, assets flapping. This
-# workflow owns the whole chain: version/tag check → Python build → plugin
-# tests/typecheck/build → PyPI publish → ONE GitHub Release.
+# Single tag-release workflow (issue #121, P0-5; hardened per PF-SEC-003 / PF-SEC-010).
+# Owns the full release chain: version/tag + SHA identity gate → CI green wait →
+# plugin tests/typecheck/build → deterministic Python wheel/sdist → ONE GitHub
+# Release (fail-closed checksums, no --clobber) → optional PyPI OIDC mirror.
 
 name: Publish
 
@@ -14,11 +13,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag / SemVer version (e.g. 2.0.0; defaults to paperforge.__version__)"
+        description: "Release tag / SemVer version (e.g. 2.0.7; defaults to paperforge.__version__)"
         required: false
         type: string
       prerelease:
-        description: "GitHub Release channel mode (auto uses tag suffix; true publishes 2.0.0 as Pre-release)"
+        description: "GitHub Release channel mode (auto uses tag suffix; true publishes as Pre-release; false promotes to Stable)"
         required: false
         default: "auto"
         type: choice
@@ -27,13 +26,21 @@ on:
           - "true"
           - "false"
       publish_pypi:
-        description: "Also publish Python wheel/sdist to PyPI (optional; GitHub Release .whl is primary)"
+        description: "Also publish Python wheel/sdist to PyPI via OIDC (optional; GitHub Release .whl is primary)"
         required: false
         default: false
         type: boolean
 
+permissions: {}
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-native-daemon:
+    permissions:
+      contents: read
     strategy:
       fail-fast: true
       matrix:
@@ -64,10 +71,10 @@ jobs:
             bin: paperforge-daemon.exe
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install Rust target (${{ matrix.target }})
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           targets: ${{ matrix.target }}
 
@@ -75,7 +82,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
-            python3 -m pip install --quiet --break-system-packages ziglang cargo-zigbuild || python3 -m pip install --quiet ziglang cargo-zigbuild
+            python3 -m pip install --quiet --break-system-packages "ziglang==0.17.1" "cargo-zigbuild==0.24.1" || python3 -m pip install --quiet "ziglang==0.17.1" "cargo-zigbuild==0.24.1"
           else
             sudo apt-get update
             sudo apt-get install -y musl-tools
@@ -118,7 +125,7 @@ jobs:
           mkdir -p dist-daemon
           cp "crates/paperforge-daemon/target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist-daemon/${{ matrix.asset }}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: native-daemon-${{ matrix.target }}
           path: dist-daemon/${{ matrix.asset }}
@@ -128,22 +135,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      checks: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
           cache: pip
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
 
-      # ── Gate 1: canonical SemVer tag → PEP 440 Python version.
-      # Stable: 2.0.0. Prerelease: 2.0.0-alpha.1 / -beta.1 / -rc.1.
+      # ── Gate 1: canonical SemVer tag → PEP 440 Python version + manifest/Cargo parity.
+      # Stable: 2.0.7. Prerelease: 2.0.7-alpha.1 / -beta.1 / -rc.1.
       - name: Version/tag sync check
         id: version_sync
         env:
@@ -152,8 +161,9 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
         run: |
           set -euo pipefail
-          PY_VERSION="$(python -c 'import sys; sys.path.insert(0, "paperforge"); import __init__; print(__init__.__version__)' 2>/dev/null || python -c 'import re; print(re.search(r"__version__ = \"([^\"]+)\"", open("paperforge/__init__.py").read()).group(1))')"
+          PY_VERSION="$(python -c 'import re; print(re.search(r"__version__ = \"([^\"]+)\"", open("paperforge/__init__.py", encoding="utf-8").read()).group(1))')"
           PLUGIN_VERSION="$(python -c 'import json; print(json.load(open("paperforge/plugin/manifest.json", encoding="utf-8"))["version"])')"
+          ROOT_MANIFEST_VERSION="$(python -c 'import json; print(json.load(open("manifest.json", encoding="utf-8"))["version"])')"
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           elif [ "$REF_TYPE" = "tag" ]; then
@@ -161,12 +171,13 @@ jobs:
           else
             TAG="$PY_VERSION"
           fi
-          python - "$TAG" "$PY_VERSION" "$PLUGIN_VERSION" <<'PY'
+          python - "$TAG" "$PY_VERSION" "$PLUGIN_VERSION" "$ROOT_MANIFEST_VERSION" <<'PY'
           import os
           import re
           import sys
+          from pathlib import Path
 
-          tag, python_version, plugin_version = sys.argv[1:]
+          tag, python_version, plugin_version, root_manifest_version = sys.argv[1:]
           match = re.fullmatch(
               r"(?P<base>\d+\.\d+\.\d+)(?:-(?P<phase>alpha|beta|rc)\.(?P<serial>\d+))?",
               tag,
@@ -195,6 +206,20 @@ jobs:
                   f"plugin manifest '{plugin_version}' must be "
                   f"Python '{python_version}' or release tag '{tag}'"
               )
+          if root_manifest_version != plugin_version:
+              raise SystemExit(
+                  "::error::root manifest.json version "
+                  f"'{root_manifest_version}' disagrees with plugin manifest '{plugin_version}'"
+              )
+
+          cargo_toml = Path("crates/paperforge-daemon/Cargo.toml").read_text(encoding="utf-8")
+          cargo_match = re.search(r'^version\s*=\s*"([^"]+)"', cargo_toml, re.MULTILINE)
+          cargo_version = cargo_match.group(1) if cargo_match else ""
+          if cargo_version not in {python_version, tag}:
+              raise SystemExit(
+                  "::error::crates/paperforge-daemon/Cargo.toml version "
+                  f"'{cargo_version}' must match '{python_version}' or '{tag}'"
+              )
 
           release_kind = "stable" if phase is None else "prerelease"
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
@@ -202,23 +227,35 @@ jobs:
               output.write(f"release_kind={release_kind}\n")
           print(
               f"validated tag={tag} python={expected_python} "
-              f"plugin_source={plugin_version} kind={release_kind}"
+              f"plugin_source={plugin_version} cargo={cargo_version} kind={release_kind}"
           )
           PY
 
-      # ── Gate 1.5: wait for the SAME SHA's full CI (alls-green) before
-      # touching PyPI — a tag pushed alongside the bump commit must not
-      # publish while unit/protocol/OCR/plugin suites are still running
-      # (review P0-5).
+      # ── Gate 1.2: Release Identity Gate BEFORE any builds or irreversible publish.
+      - name: Release identity gate (Tag vs SHA)
+        env:
+          RELEASE_TAG: ${{ steps.version_sync.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          EXISTING_TAG_SHA=$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" | tail -n 1 | awk '{print $1}')
+          if [ -n "$EXISTING_TAG_SHA" ] && [ "$EXISTING_TAG_SHA" != "${{ github.sha }}" ]; then
+            echo "::error::Release Identity Gate failed: tag '${RELEASE_TAG}' already points to ${EXISTING_TAG_SHA}, not ${{ github.sha }}. Bump the version for a new release."
+            exit 1
+          fi
+          echo "Release Identity Gate passed (tag=${RELEASE_TAG}, sha=${{ github.sha }})."
+
+      # ── Gate 1.5: wait for the SAME SHA's latest full CI (All Checks Passed)
+      # before building/publishing — a tag pushed alongside the bump commit must
+      # not publish while unit/protocol/OCR/plugin suites are still running.
       - name: Wait for All Checks Passed on this SHA
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
+          set -euo pipefail
           SHA="${{ github.sha }}"
           for i in $(seq 1 60); do
             GREEN=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
-              --jq '[.check_runs[] | select(.name == "All Checks Passed")][0].conclusion' 2>/dev/null || echo "missing")
+              --jq '[.check_runs[] | select(.name == "All Checks Passed")] | sort_by(.id) | last | .conclusion // "missing"' 2>/dev/null || echo "missing")
             if [ "$GREEN" = "success" ]; then
               echo "All Checks Passed: success on $SHA"
               exit 0
@@ -233,32 +270,12 @@ jobs:
           echo "::error::All Checks Passed did not finish within 15 minutes on $SHA"
           exit 1
 
-      # ── Gate 2: Python package builds + imports with vector extras.
-      - name: Build Python package
-        run: |
-          python -m pip install --upgrade build
-          python -m build
-
-      - name: Verify wheel imports vector stack
-        run: |
-          # #120-fix (P0-3): --no-deps + bare import always fails on a
-          # clean runner — openai/sqlite_vec live in the vector extras
-          # (ChromaDB is opt-in via [legacy-vector]), not in base deps.
-          # Install the wheel WITH extras into
-          # an isolated venv so the smoke proves wheel installability,
-          # extras metadata, and the vector runtime all at once.
-          WHEEL="$(ls dist/*.whl | head -1)"
-          python -m venv /tmp/paperforge-release-smoke
-          /tmp/paperforge-release-smoke/bin/python -m pip install --quiet "${WHEEL}[vector]"
-          /tmp/paperforge-release-smoke/bin/python -I -c \
-            "import paperforge, openai, sqlite_vec; print('vector deps ok:', paperforge.__version__)"
-
-      # ── Gate 3: plugin tests + typecheck + bundle build.
+      # ── Gate 2: plugin tests + typecheck + bundle build + prerelease projection
+      # MUST run BEFORE building the Python wheel so the wheel embeds the exact
+      # built main.js and projected manifest/versions metadata.
       - name: Install package with plugin test deps
         run: python -m pip install -e ".[test]"
 
-      # The protocol suite must use the setup-python interpreter that has the
-      # package installed; PATH may otherwise resolve a different Python.
       - name: Point plugin protocol tests at the job interpreter
         run: echo "PF_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
 
@@ -278,8 +295,6 @@ jobs:
         working-directory: paperforge/plugin
         run: npm run build
 
-      # Project the plugin-only release metadata to SemVer for BRAT/GitHub.
-      # Python/PyPI stays canonical PEP 440; the source tree remains unchanged.
       - name: Project plugin prerelease metadata
         if: steps.version_sync.outputs.release_kind == 'prerelease'
         env:
@@ -312,15 +327,54 @@ jobs:
           print(f"projected plugin metadata version={tag}")
           PY
 
-      # ── Gate 4: Optional PyPI mirror (opt-in; GitHub Release .whl is primary).
-      - name: Publish to PyPI (optional)
-        if: github.event.inputs.publish_pypi == 'true' || vars.ENABLE_PYPI_PUBLISH == 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_TOKEN }}
-          skip-existing: true
+      # ── Gate 3: deterministic Python package build (SOURCE_DATE_EPOCH) + wheel verify.
+      - name: Build Python package (deterministic)
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade build
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          echo "Using SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
+          python -m build
 
-      # ── Gate 5: ONE GitHub Release with plugin + Python artifacts.
+      - name: Verify wheel hygiene and vector stack
+        run: |
+          set -euo pipefail
+          WHEEL="$(ls dist/*.whl | head -1)"
+          python - "$WHEEL" <<'PY'
+          import sys, zipfile
+          wheel = sys.argv[1]
+          forbidden = (
+              "package-lock.json",
+              "package.json",
+              "tsconfig.json",
+              "paperforge/plugin/test/",
+              "paperforge/plugin/tests/",
+              "paperforge/plugin/prototypes/",
+              "paperforge/skills/architecture-review/",
+          )
+          with zipfile.ZipFile(wheel) as zf:
+              names = zf.namelist()
+              leaked = [n for n in names if any(f in n for f in forbidden)]
+              if leaked:
+                  raise SystemExit(f"::error::Wheel leaked dev/test files: {leaked}")
+              required = (
+                  "paperforge/plugin/main.js",
+                  "paperforge/plugin/styles.css",
+                  "paperforge/plugin/manifest.json",
+                  "paperforge/plugin/versions.json",
+                  "paperforge/skills/paperforge/SKILL.md",
+              )
+              missing = [r for r in required if r not in names]
+              if missing:
+                  raise SystemExit(f"::error::Wheel missing required runtime assets: {missing}")
+          print(f"Wheel hygiene verified ({len(names)} entries): {wheel}")
+          PY
+          python -m venv /tmp/paperforge-release-smoke
+          /tmp/paperforge-release-smoke/bin/python -m pip install --quiet "${WHEEL}[vector]"
+          /tmp/paperforge-release-smoke/bin/python -I -c \
+            "import paperforge, openai, sqlite_vec; print('vector deps ok:', paperforge.__version__)"
+
+      # ── Gate 4: ONE GitHub Release with fail-closed checksums and idempotent retry.
       - name: Determine release type
         id: release_type
         env:
@@ -347,45 +401,64 @@ jobs:
           fi
 
       - name: Download native Rust daemon binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: native-daemon-*
           path: dist-daemon
           merge-multiple: true
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release (fail-closed checksums, no --clobber)
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version_sync.outputs.release_tag }}
+          PRERELEASE: ${{ steps.release_type.outputs.prerelease }}
         run: |
-          set -e
-          # Release Identity Gate: never silently overwrite assets on a Git tag
-          # pointing to an older commit SHA.
-          EXISTING_TAG_SHA=$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" | tail -n 1 | awk '{print $1}')
-          if [ -n "$EXISTING_TAG_SHA" ] && [ "$EXISTING_TAG_SHA" != "${{ github.sha }}" ]; then
-            echo "::error::Release Identity Gate failed: tag '${RELEASE_TAG}' already points to ${EXISTING_TAG_SHA}, not ${{ github.sha }}. Bump the version for a new release."
+          set -euo pipefail
+          # Compute deterministic checksums across all release assets.
+          shopt -s nullglob
+          ASSETS=(
+            paperforge/plugin/main.js
+            paperforge/plugin/styles.css
+            paperforge/plugin/manifest.json
+            versions.json
+            dist/*.whl
+            dist/*.tar.gz
+            dist-daemon/paperforge-daemon-*
+          )
+          if [ "${#ASSETS[@]}" -eq 0 ]; then
+            echo "::error::No release assets staged"
             exit 1
           fi
-          PRERELEASE="${{ steps.release_type.outputs.prerelease }}"
+          sha256sum "${ASSETS[@]}" | awk '{n=split($2,a,"/"); print $1 "  " a[n]}' > checksums.txt
+
           PRERELEASE_FLAG=""
           if [ "$PRERELEASE" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
-          # #120-fix (P1-4): idempotent rerun — a failure after release
-          # create must not deadlock the rerun on "release already exists".
+
           if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
             gh release create "$RELEASE_TAG" \
               --target "${{ github.sha }}" \
               --title "$RELEASE_TAG" \
               --generate-notes \
               $PRERELEASE_FLAG
+            # Upload checksums.txt FIRST so partial upload failures always leave a
+            # verifiable manifest on the release.
+            gh release upload "$RELEASE_TAG" checksums.txt
+            gh release upload "$RELEASE_TAG" "${ASSETS[@]}"
+            exit 0
           fi
-          # #120-fix (review) + Asset Immutability Gate: compute fresh checksums,
-          # allow idempotent backfill of missing assets on same-SHA retry, and
-          # fail closed if an already-published asset would be overwritten with
-          # different bytes.
-          sha256sum paperforge/plugin/main.js paperforge/plugin/styles.css \
-            paperforge/plugin/manifest.json versions.json \
-            dist/*.whl dist/*.tar.gz dist-daemon/paperforge-daemon-* > checksums.txt
-          if gh release download "$RELEASE_TAG" -p checksums.txt -O /tmp/existing-checksums.txt > /dev/null 2>&1; then
+
+          # Existing release: explicitly align prerelease/stable channel state.
+          gh release edit "$RELEASE_TAG" --prerelease="$PRERELEASE"
+
+          EXISTING_ASSETS_JSON=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+          EXISTING_COUNT=$(printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -c . || true)
+
+          if [ "$EXISTING_COUNT" -gt 0 ]; then
+            if ! printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx 'checksums.txt'; then
+              echo "::error::Fail-closed: existing release '$RELEASE_TAG' has $EXISTING_COUNT asset(s) but is missing checksums.txt. Refusing to overwrite or append unverified assets."
+              exit 1
+            fi
+            gh release download "$RELEASE_TAG" -p checksums.txt -O /tmp/existing-checksums.txt
             python - /tmp/existing-checksums.txt checksums.txt <<'PY'
           import os, sys
           def parse(p):
@@ -397,20 +470,45 @@ jobs:
               return out
           old_map = parse(sys.argv[1])
           new_map = parse(sys.argv[2])
+          if not old_map:
+              raise SystemExit("::error::Existing checksums.txt is empty — failing closed.")
           drift = [k for k, v in old_map.items() if k in new_map and new_map[k] != v]
           if drift:
               raise SystemExit(
                   f"::error::Release Asset Immutability Gate failed: existing release assets differ in SHA-256 ({', '.join(sorted(drift))}). Bump the version instead of mutating published assets."
               )
-          print("Release Asset Immutability Gate passed (idempotent retry verified).")
+          missing_manifest = [k for k in new_map if k not in old_map]
+          if missing_manifest:
+              raise SystemExit(
+                  f"::error::Existing checksums.txt does not cover new assets ({', '.join(sorted(missing_manifest))})."
+              )
+          print("Release Asset Immutability Gate passed (idempotent same-SHA retry verified).")
           PY
+          else
+            # Release existed with 0 assets: upload checksums.txt first.
+            gh release upload "$RELEASE_TAG" checksums.txt
+            EXISTING_ASSETS_JSON="checksums.txt"
           fi
-          gh release upload "$RELEASE_TAG" --clobber \
-            paperforge/plugin/main.js \
-            paperforge/plugin/styles.css \
-            paperforge/plugin/manifest.json \
-            versions.json \
-            dist/*.whl \
-            dist/*.tar.gz \
-            dist-daemon/paperforge-daemon-* \
-            checksums.txt
+
+          # Upload ONLY missing assets (never --clobber over published immutable assets).
+          MISSING_ASSETS=()
+          for asset in "${ASSETS[@]}"; do
+            base=$(basename "$asset")
+            if ! printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx "$base"; then
+              MISSING_ASSETS+=("$asset")
+            fi
+          done
+          if [ "${#MISSING_ASSETS[@]}" -gt 0 ]; then
+            echo "Uploading ${#MISSING_ASSETS[@]} missing release asset(s)..."
+            gh release upload "$RELEASE_TAG" "${MISSING_ASSETS[@]}"
+          else
+            echo "All release assets and checksums.txt already present and verified."
+          fi
+
+      # ── Gate 5: Optional PyPI mirror via OIDC Trusted Publishing (runs AFTER
+      # GitHub Release succeeds so PyPI never publishes ahead of GitHub).
+      - name: Publish to PyPI (optional, OIDC Trusted Publishing)
+        if: github.event.inputs.publish_pypi == 'true' || vars.ENABLE_PYPI_PUBLISH == 'true'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          skip-existing: true

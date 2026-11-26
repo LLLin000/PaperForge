@@ -238,30 +238,33 @@ def build_parser() -> argparse.ArgumentParser:
     p_ocr_versions = ocr_sub.add_parser(
         "pipeline-versions", help="Per-paper OCR pipeline versions (detail surface, #148)"
     )
-    p_ocr_versions.add_argument("--json", action="store_true")
+    p_ocr_versions.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     p_ocr_status = ocr_sub.add_parser("status", help="Live provider status of active OCR jobs (no OCR loop)")
-    p_ocr_status.add_argument("--json", action="store_true")
+    p_ocr_status.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     p_ocr_status.add_argument("--batch", default=None, metavar="ID", help="Only show this batch (filter)")
     p_ocr_resume = ocr_sub.add_parser("resume", help="Re-attach an existing OCR execution (settle done / poll / retry)")
     p_ocr_resume.add_argument("--batch", required=True, metavar="ID", help="Batch id to re-attach (from ocr run / status)")
-    p_ocr_resume.add_argument("--json", action="store_true")
+    p_ocr_resume.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     run_parser = ocr_sub.add_parser("run", help="Run OCR queue")
     run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
     run_parser.add_argument("--keys-file", default=None, metavar="PATH",
                             help="File of paper keys (CRLF/BOM tolerated, deduped — P0-4)")
     run_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
+    run_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output JSON")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
+    doctor_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output JSON")
     ocr_test_parser = ocr_sub.add_parser("test-connection", help="Quick connectivity check for OCR key & URL")
-    ocr_test_parser.add_argument("--json", action="store_true")
+    ocr_test_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
     redo_parser.add_argument("--dry-run", action="store_true", help="List papers that would be reset without making changes")
     redo_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
+    redo_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output JSON")
     redo_parser.add_argument("keys", nargs="*", metavar="KEY",
         help="Paper keys to redo (all redoable if empty)")
     redo_parser.set_defaults(ocr_action="redo")
     list_parser = ocr_sub.add_parser("list", help="List all papers with OCR maintenance status")
-    list_parser.add_argument("--json", action="store_true", help="Output as JSON")
+    list_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output as JSON")
     list_parser.add_argument("--output", metavar="PATH", help="Write JSON output to file")
     list_parser.add_argument("--manifest", action="store_true",
         help="Output key→sha256 manifest dict instead of full rows")
@@ -274,6 +277,7 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_parser.add_argument("--dry-run", action="store_true", help="List papers that would be rebuilt without executing")
     rebuild_parser.add_argument("--resume", action="store_true", help="Skip papers already in checkpoint")
     rebuild_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
+    rebuild_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output JSON")
     parallel_group = rebuild_parser.add_mutually_exclusive_group()
     parallel_group.add_argument("--parallel", type=int, nargs="?", const=4, default=4, metavar="N",
         help="Number of parallel workers (default: 4)")
@@ -333,6 +337,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_embed_migrate.add_argument("--json", action="store_true")
     p_embed_test = p_embed_sp.add_parser("test-connection", help="Test embedding provider connectivity and detect output dimension")
     p_embed_test.add_argument("--json", action="store_true")
+    p_embed_models = p_embed_sp.add_parser("list-models", help="List available embedding models from provider or local Ollama")
+    p_embed_models.add_argument("--base-url", help="Override endpoint base URL", default="")
+    p_embed_models.add_argument("--json", action="store_true")
 
 
     p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")
@@ -345,6 +352,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_retrieve.add_argument("--no-expand", dest="expand", action="store_false", help="Disable context expansion")
     p_retrieve.add_argument("--paper", help="Scope retrieval to a single paper by zotero key")
+    p_retrieve.add_argument("--domain", help="Scope retrieval to a single domain")
 
     # Render-layer consistency audit (read-only V1)
     p_render = sub.add_parser("render", help="Audit rendered paper artifacts")
@@ -396,6 +404,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_trash_purge = p_trash_sp.add_parser("purge", help="Physically purge the trash (only trash-root paths)")
     p_trash_purge.add_argument("--older-than", type=int, default=None, metavar="DAYS",
                                help="Only purge items trashed more than DAYS ago")
+    p_trash_purge.add_argument("--yes", action="store_true", help="Confirm permanent deletion of trashed items")
+    p_trash_purge.add_argument("--confirm", action="store_true", help="Confirm permanent deletion of trashed items")
 
     # Memory Layer commands
     p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
@@ -473,7 +483,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_search.add_argument("--domain", help="Filter by domain")
     p_search.add_argument("--year-from", type=int, help="Filter by year (inclusive)")
     p_search.add_argument("--year-to", type=int, help="Filter by year (inclusive)")
-    p_search.add_argument("--ocr", choices=["done","pending","failed","processing"], help="Filter by OCR status")
+    p_search.add_argument("--ocr", choices=["done","done_incomplete","pending","failed","processing"], help="Filter by OCR status")
     p_search.add_argument("--deep", choices=["done","pending"], help="Filter by deep reading status")
     p_search.add_argument("--lifecycle", choices=["indexed","pdf_ready","fulltext_ready","deep_read_done"], help="Filter by lifecycle")
     p_search.add_argument("--next-step", choices=["sync","ocr","/pf-deep","ready"], help="Filter by next step")
@@ -591,6 +601,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Vault-relative skill directory to sync (default: .agents/skills)",
     )
     p_skill_sync.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON",
+    )
+    p_skill_hub = p_skill_sp.add_parser(
+        "sync-hub",
+        help="Sync machine-wide Skill Hub (~/.paperforge/skills/paperforge) and auto-update registered Agent installs",
+    )
+    p_skill_hub.add_argument(
         "--json",
         action="store_true",
         help="Output as JSON",
@@ -946,6 +965,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_am.add_argument("--tags-json", default="[]", help="JSON list of tags")
     p_ann_am.add_argument("--json", action="store_true", help="Output JSON")
 
+    p_ann_aa = p_ann_sub.add_parser("agent-apply", help="Batch-ground and apply AI annotations with quality & dedup guardrails")
+    p_ann_aa.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_aa.add_argument("--items-json", default="", help="JSON array (or {items:[...]}) of annotation specs")
+    p_ann_aa.add_argument("--input", default="", help="JSON file path or '-' for stdin")
+    p_ann_aa.add_argument("--lens", default="skeleton", help="Default lens (skeleton|methods|critique|custom)")
+    p_ann_aa.add_argument("--replace-lens", action="store_true", help="Clear existing AI annotations for this lens before applying")
+    p_ann_aa.add_argument("--max-items", type=int, default=15, help="Max annotations to create in one batch (1..25)")
+    p_ann_aa.add_argument("--json", action="store_true", help="Output JSON")
+
     p_ann_adopt = p_ann_sub.add_parser("adopt", help="Adopt an agent annotation into user annotations")
     p_ann_adopt.add_argument("key", help="Canonical Zotero paper key")
     p_ann_adopt.add_argument("ann_id", help="Annotation ID")
@@ -995,11 +1023,68 @@ def build_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
     """Handle `paperforge ocr doctor` and `paperforge ocr doctor --live`."""
+    import os as _os
+
+    from paperforge import __version__ as _PF_VER
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError, PFResult
+    from paperforge.credentials import CredentialError
     from paperforge.ocr_diagnostics import ocr_doctor
 
-    result = ocr_doctor(config=None, live=args.live)
+    json_output = bool(getattr(args, "json", False))
+    try:
+        result = ocr_doctor(config=None, live=bool(getattr(args, "live", False)))
+    except CredentialError as exc:
+        _cred_code_map = {
+            "credential.missing": ErrorCode.CREDENTIAL_MISSING,
+            "credential.backend_unavailable": ErrorCode.CREDENTIAL_BACKEND_UNAVAILABLE,
+            "credential.backend_locked": ErrorCode.CREDENTIAL_BACKEND_LOCKED,
+            "credential.permission_denied": ErrorCode.CREDENTIAL_PERMISSION_DENIED,
+            "credential.backend_error": ErrorCode.CREDENTIAL_BACKEND_ERROR,
+        }
+        failed = PFResult(
+            ok=False,
+            command="ocr.doctor",
+            version=_PF_VER,
+            error=PFError(
+                code=_cred_code_map.get(exc.code, ErrorCode.CREDENTIAL_BACKEND_ERROR),
+                message=str(exc),
+                details=dict(exc.details),
+            ),
+        )
+        if json_output:
+            print(failed.to_json())
+        else:
+            print("OCR Doctor — Level 1 diagnostic")
+            print("-" * 40)
+            print(f"[FAIL] Level 1: {failed.error.message if failed.error else str(exc)}")
+            fix_msg = "Set PAPERFORGE_CREDENTIAL_OCR__DEFAULT or configure an OS keyring backend (`paperforge auth status ocr`)."
+            if _os.environ.get("PADDLEOCR_TOKEN") or _os.environ.get("PADDLEOCR_API_TOKEN"):
+                fix_msg = (
+                    "Canonical env var PAPERFORGE_CREDENTIAL_OCR__DEFAULT is used at runtime (not PADDLEOCR_TOKEN). "
+                    + fix_msg
+                )
+            print(f"[FIX]  {fix_msg}")
+        return 1
+
     level = result.get("level", 0)
-    passed = result.get("passed", False)
+    passed = bool(result.get("passed", False))
+
+    if json_output:
+        res = PFResult(
+            ok=passed,
+            command="ocr.doctor",
+            version=_PF_VER,
+            data=result,
+            error=None
+            if passed
+            else PFError(
+                code=ErrorCode.VALIDATION_ERROR,
+                message=str(result.get("error") or "OCR check failed"),
+            ),
+        )
+        print(res.to_json())
+        return 0 if passed else 1
 
     print(f"OCR Doctor — Level {level} diagnostic")
     print("-" * 40)
@@ -1143,7 +1228,8 @@ def _run_cli(argv: list[str] | None = None) -> int:
             if getattr(args, "json", False):
                 print(result.to_json())
             else:
-                print(message, file=sys.stderr)
+                text = f"{message} ({'; '.join(suggestions)})" if suggestions else message
+                print(text, file=sys.stderr)
             return 1
 
     # Configure logging before command dispatch
@@ -1519,9 +1605,21 @@ def _run_runtime_command(args: argparse.Namespace) -> int:
 # paths command
 # ---------------------------------------------------------------------------
 def _run_skill(args: argparse.Namespace) -> int:
-    """Handle `paperforge skill deploy|sync [--to DIR]`."""
+    """Handle `paperforge skill deploy|sync|sync-hub [--to DIR]`."""
     vault = args.vault_path
     skill_action = getattr(args, "skill_action", None)
+    if skill_action == "sync-hub":
+        from paperforge.services.skill_deploy import sync_machine_skill_hub
+
+        res = sync_machine_skill_hub()
+        if getattr(args, "json", False):
+            print(json.dumps(res, ensure_ascii=False))
+        else:
+            print(
+                f"skill sync-hub: hub_updated={res.get('hub_updated')} "
+                f"updated={res.get('updated', 0)} up_to_date={res.get('up_to_date', 0)}"
+            )
+        return 0 if res.get("ok") else 1
     if skill_action == "sync":
         from paperforge.services.skill_deploy import sync_skills_if_unmodified
 

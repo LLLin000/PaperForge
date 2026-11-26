@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -8,11 +9,15 @@ import {
   paperforgeEnrichedEnv,
 } from "../src/client/node-transport";
 import {
+  INSTALLER_FAILED_MARKER,
+  INSTALLER_FINISHED_MARKER,
+  assertSafeVersion,
   bootstrapPythonSource,
   installerRun,
   installerShellCommand,
   normalizePep440Version,
   posixInstallerScript,
+  quoteShellArg,
   runtimeInstallerShellCommand,
   runtimeInstallerSteps,
   windowsInstallerScript,
@@ -31,11 +36,23 @@ describe("external runtime installer launcher", () => {
       runtimeInstallerShellCommand(
         "C:\\Program Files\\Py\\python.exe",
         "update",
-        "2.0.0"
+        "2.0.0",
+        "win32"
       )
     ).toBe(
       '"C:\\Program Files\\Py\\python.exe" -m pip install --user --upgrade paperforge==2.0.0 && ' +
         '"C:\\Program Files\\Py\\python.exe" -m paperforge runtime update --expected-version 2.0.0'
+    );
+    expect(
+      runtimeInstallerShellCommand(
+        "/opt/My Python/bin/python3",
+        "update",
+        "2.0.0",
+        "linux"
+      )
+    ).toBe(
+      "'/opt/My Python/bin/python3' -m pip install --user --upgrade paperforge==2.0.0 && " +
+        "'/opt/My Python/bin/python3' -m paperforge runtime update --expected-version 2.0.0"
     );
   });
 
@@ -164,9 +181,19 @@ describe("external runtime installer launcher", () => {
         "C:\\Program Files\\Py\\python.exe",
         "update",
         "1.0.0",
-        "/tmp/b.py"
+        "/tmp/b.py",
+        "win32"
       )
     ).toContain('"C:\\Program Files\\Py\\python.exe" /tmp/b.py');
+    expect(
+      installerShellCommand(
+        "/opt/My Python/bin/python3",
+        "update",
+        "1.0.0",
+        "/tmp/my b.py",
+        "linux"
+      )
+    ).toContain("'/opt/My Python/bin/python3' '/tmp/my b.py'");
   });
 
   it("keeps a usable PATH for the installer child", () => {
@@ -234,4 +261,47 @@ describe("external runtime installer launcher", () => {
       );
     }
   );
+
+  it.runIf(process.platform === "win32")(
+    "PF-RT-002: real Windows cmd.exe returns non-zero and prints failed marker (never finished) when Step 2 fails",
+    () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cmd-step2-"));
+      try {
+        const scriptPath = path.join(tmpDir, "test-step2-fail.cmd");
+        const script = windowsInstallerScript("cmd /c exit 0 && cmd /c exit 1");
+        fs.writeFileSync(scriptPath, script, "utf-8");
+        const res = spawnSync(
+          process.env.ComSpec || "cmd.exe",
+          ["/c", scriptPath],
+          { encoding: "utf-8" }
+        );
+        expect(res.status).not.toBe(0);
+        expect(res.stdout).toContain(INSTALLER_FAILED_MARKER);
+        expect(res.stdout).not.toContain(INSTALLER_FINISHED_MARKER);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it("PF-SEC-005 / PF-SEC-002 / PF-RT-003: quotes shell metacharacters, validates version, removes --trusted-host, and verifies wheel SHA-256/ZIP", () => {
+    expect(quoteShellArg("C:\\Users\\A&B\\python.exe", "win32")).toBe(
+      '"C:\\Users\\A&B\\python.exe"'
+    );
+    expect(quoteShellArg("/tmp/$(whoami)`id`/python3", "linux")).toBe(
+      "'/tmp/$(whoami)`id`/python3'"
+    );
+    expect(() => assertSafeVersion('2.0.6"; import os #')).toThrow(
+      /Invalid PaperForge version/
+    );
+    expect(() => bootstrapPythonSource("2.0.6; rm -rf /")).toThrow(
+      /Invalid PaperForge version/
+    );
+
+    const source = bootstrapPythonSource("2.0.6");
+    expect(source).not.toContain("--trusted-host");
+    expect(source).toContain("hashlib.sha256");
+    expect(source).toContain("zipfile.is_zipfile");
+    expect(source).toContain("https://github.com/");
+  });
 });

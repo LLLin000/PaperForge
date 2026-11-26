@@ -450,6 +450,18 @@ def _materialization_record(
     }
 
 
+def _is_valid_bbox(bbox: list[float] | tuple[float, ...] | None) -> bool:
+    """Return True if *bbox* is a valid non-degenerate box inside non-negative page space (PF-OCR-011)."""
+    return (
+        bool(bbox)
+        and len(bbox) >= 4
+        and bbox[0] >= 0
+        and bbox[1] >= 0
+        and bbox[2] > bbox[0]
+        and bbox[3] > bbox[1]
+    )
+
+
 def _write_figure_object_task(
     data: dict[str, Any],
     *,
@@ -475,7 +487,7 @@ def _write_figure_object_task(
 
     def attempt(bbox: list[float]) -> bool:
         nonlocal was_cropped
-        if not bbox or not all(value > 0 for value in bbox):
+        if not _is_valid_bbox(bbox):
             return False
         result = _coerce_crop_result(
             _crop_asset_from_pdf(
@@ -545,7 +557,7 @@ def _write_table_object_task(
     attempts: list[CropResult] = []
     was_cropped = False
 
-    if data.get("has_asset") and crop_bbox and all(value > 0 for value in crop_bbox):
+    if data.get("has_asset") and _is_valid_bbox(crop_bbox):
         result = _coerce_crop_result(
             _crop_asset_from_pdf(
                 pdf_path,
@@ -610,7 +622,7 @@ def _write_orphan_object_task(
     asset_path_abs = asset_dir / f"{orphan_id}.jpg"
     attempts: list[CropResult] = []
 
-    if bbox and all(value > 0 for value in bbox):
+    if _is_valid_bbox(bbox):
         attempts.append(
             _coerce_crop_result(
                 _crop_asset_from_pdf(

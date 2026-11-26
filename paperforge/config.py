@@ -833,7 +833,7 @@ def resolve_paths(vault: Path, snapshot: ConfigSnapshot | None = None) -> dict[s
     zotero_dir_val = str(values["zotero_data_dir"]).strip() if values.get("zotero_data_dir") else ""
     if not zotero_dir_val:
         zotero_dir_val = str(system / "Zotero")
-    zotero_dir = Path(zotero_dir_val)
+    zotero_dir = Path(zotero_dir_val).expanduser()
     if not zotero_dir.is_absolute():
         zotero_dir = vault / zotero_dir
 

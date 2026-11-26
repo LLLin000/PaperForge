@@ -135,6 +135,13 @@ class OCRMaintenanceRow:
                         display_group="external_action", display_severity="external",
                         visible_in_maintenance=False, show_in_base=True)
         if status == "blocked":
+            if error_stage == "source":
+                return dict(display_action="add_pdf", display_label="补充 PDF",
+                            display_label_key="",
+                            display_reason="未找到可用的源 PDF 文件，请检查 Zotero 附件或重新同步",
+                            display_reason_key="",
+                            display_group="external_action", display_severity="external",
+                            visible_in_maintenance=True, show_in_base=True)
             return dict(display_action="configure_ocr", display_label="配置 OCR",
                         display_label_key="",
                         display_reason="请配置 PaddleOCR API Token",

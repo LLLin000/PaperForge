@@ -153,12 +153,21 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
     return enrichment
 
 
-def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True, paper_id: str | None = None) -> list[dict]:
+def merge_retrieve(
+    vault: Path,
+    query: str,
+    limit: int = 5,
+    expand: bool = True,
+    paper_id: str | None = None,
+    domain: str | None = None,
+) -> list[dict]:
     """Query vec0 tables, enrich with structural coordinates, dedup by unit_id.
     #159 §6: results pass the reader gate (vector lineage current only)."""
     provider = resolve_embedding_provider(vault, default_cls=OpenAICompatibleProvider)
     q_emb = provider.encode_single(query)
     n = limit * 2 if expand else limit
+    if domain and not paper_id:
+        n = max(n, limit * 5)
 
     db_path = get_memory_db_path(vault)
     with open_live_reader(vault, db_path) as conn:
@@ -180,6 +189,13 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True,
                         WHERE paper_id = ? AND unit_id <> ''
                     )"""
                     params.append(paper_id)
+                if domain:
+                    base_sql += f""" AND v.rowid IN (
+                        SELECT m2.rowid FROM {meta_table} m2
+                        JOIN papers p2 ON m2.paper_id = p2.zotero_key
+                        WHERE LOWER(p2.domain) = LOWER(?) AND m2.unit_id <> ''
+                    )"""
+                    params.append(domain)
                 base_sql += " ORDER BY v.distance"
                 rows = conn.execute(base_sql, params).fetchall()
             except Exception as exc:
@@ -219,8 +235,40 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True,
             merged.append(r)
             if len(merged) >= limit:
                 break
+        _hydrate_paper_metadata(conn, merged)
         return merged
-def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None = None) -> list[dict]:
+
+
+def _hydrate_paper_metadata(conn: sqlite3.Connection, hits: list[dict]) -> None:
+    """Hydrate paper metadata fields (title, first_author, year, journal, domain) in batch."""
+    missing_meta_pids = sorted({
+        str(r.get("paper_id") or "")
+        for r in hits
+        if r.get("paper_id") and not (r.get("title") and r.get("first_author") and r.get("domain"))
+    })
+    if not missing_meta_pids:
+        return
+    ph = ",".join("?" for _ in missing_meta_pids)
+    prows = conn.execute(
+        f"SELECT zotero_key, title, first_author, year, journal, domain FROM papers WHERE zotero_key IN ({ph})",
+        missing_meta_pids,
+    ).fetchall()
+    pmap = {row["zotero_key"]: row for row in prows}
+    for r in hits:
+        prow = pmap.get(r.get("paper_id", ""))
+        if prow is not None:
+            for fld in ("title", "first_author", "year", "journal", "domain"):
+                if not r.get(fld):
+                    r[fld] = prow[fld] or ""
+
+
+def hybrid_search(
+    vault: Path,
+    query: str,
+    limit: int = 10,
+    paper_id: str | None = None,
+    domain: str | None = None,
+) -> list[dict]:
     """Hybrid search: BM25 FTS5 + vec0 k-NN with query rewrite.
 
     Vector failures (no API key, stale embeddings) degrade gracefully
@@ -243,12 +291,15 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
     except Exception:
         query_embedding = None
     with open_live_reader(vault, db_path) as conn:
-        ensure_vec_extension(conn)
-        bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id)
+        try:
+            ensure_vec_extension(conn)
+        except Exception:
+            pass
+        bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id, domain=domain)
         try:
             vec_results: list[dict] = _vec_search(
                 conn, vault, query, limit * 2, paper_id=paper_id,
-                query_embedding=query_embedding,
+                domain=domain, query_embedding=query_embedding,
             )
         except Exception:
             vec_results = []
@@ -256,24 +307,7 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
         fused = _fuse_results(bm25_results, vec_results, limit)
 
         # Hydrate paper metadata & heading for vector-only hits in batch
-        missing_meta_pids = sorted({
-            str(r.get("paper_id") or "")
-            for r in fused
-            if r.get("paper_id") and not (r.get("title") and r.get("first_author"))
-        })
-        if missing_meta_pids:
-            ph = ",".join("?" for _ in missing_meta_pids)
-            prows = conn.execute(
-                f"SELECT zotero_key, title, first_author, year, journal, domain FROM papers WHERE zotero_key IN ({ph})",
-                missing_meta_pids,
-            ).fetchall()
-            pmap = {row["zotero_key"]: row for row in prows}
-            for r in fused:
-                prow = pmap.get(r.get("paper_id", ""))
-                if prow is not None:
-                    for fld in ("title", "first_author", "year", "journal", "domain"):
-                        if not r.get(fld):
-                            r[fld] = prow[fld] or ""
+        _hydrate_paper_metadata(conn, fused)
 
         body_uids = [
             str(r["unit_id"])
@@ -317,19 +351,29 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
                 r["title"] = str(r.get("paper_id") or "")
 
         return fused
+def _escape_like(term: str) -> str:
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _bm25_search(
-    conn: sqlite3.Connection, query_variants: list[str], limit: int, paper_id: str | None = None
+    conn: sqlite3.Connection,
+    query_variants: list[str],
+    limit: int,
+    paper_id: str | None = None,
+    domain: str | None = None,
 ) -> list[dict]:
     """Run BM25 (FTS5) search across body_units_fts for each query variant.
 
+    Falls back to SQL LIKE substring matching on ``body_units`` when FTS5
+    returns 0 hits (e.g., unbroken CJK/Chinese queries under ``unicode61``).
     Returns results with BM25 scores normalized to [0, 1].
     """
-    seen: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     results: list[dict] = []
 
     for qv in query_variants:
         try:
-            params = [qv]
+            params: list = [qv]
             sql = """SELECT
                     bu.unit_id,
                     bu.paper_id,
@@ -349,11 +393,13 @@ def _bm25_search(
             if paper_id:
                 sql += " AND bu.paper_id = ?"
                 params.append(paper_id)
+            if domain:
+                sql += " AND LOWER(p.domain) = LOWER(?)"
+                params.append(domain)
             sql += " ORDER BY rank LIMIT ?"
             params.append(limit)
             rows = conn.execute(sql, params).fetchall()
         except Exception as exc:
-            logger = logging.getLogger(__name__)
             logger.warning("BM25 query failed for %r: %s", qv, exc)
             continue
 
@@ -372,6 +418,7 @@ def _bm25_search(
                     "unit_id": row["unit_id"],
                     "paper_id": row["paper_id"],
                     "source": "body",
+                    "title": row["title"],
                     "first_author": row["first_author"],
                     "year": row["year"],
                     "journal": row["journal"],
@@ -383,13 +430,77 @@ def _bm25_search(
                 }
             )
 
+    if not results:
+        for qv in query_variants:
+            tokens = re.findall(r"[\w\u4e00-\u9fff]+", qv)
+            if not tokens:
+                raw = qv.strip()
+                tokens = [raw] if raw else []
+            if not tokens:
+                continue
+            like_clauses = []
+            params = []
+            for tok in tokens:
+                pat = f"%{_escape_like(tok)}%"
+                like_clauses.append("(bu.unit_text LIKE ? ESCAPE '\\' OR bu.section_path LIKE ? ESCAPE '\\')")
+                params.extend([pat, pat])
+            sql = f"""SELECT
+                    bu.unit_id,
+                    bu.paper_id,
+                    bu.section_path,
+                    bu.section_title,
+                    bu.unit_text,
+                    p.title,
+                    p.first_author,
+                    p.year,
+                    p.journal,
+                    p.domain
+                   FROM body_units bu
+                   JOIN papers p ON bu.paper_id = p.zotero_key
+                   WHERE bu.indexable = 1 AND ({" AND ".join(like_clauses)})"""
+            if paper_id:
+                sql += " AND bu.paper_id = ?"
+                params.append(paper_id)
+            if domain:
+                sql += " AND LOWER(p.domain) = LOWER(?)"
+                params.append(domain)
+            sql += " LIMIT ?"
+            params.append(limit)
+            try:
+                rows = conn.execute(sql, params).fetchall()
+            except Exception as exc:
+                logger.warning("BM25 LIKE fallback failed for %r: %s", qv, exc)
+                continue
+            like_score = round(min(0.85, 0.35 + 0.1 * len(tokens)), 4)
+            for row in rows:
+                key = (row["unit_id"], row["paper_id"])
+                if key in seen:
+                    continue
+                seen.add(key)
+                results.append(
+                    {
+                        "unit_id": row["unit_id"],
+                        "paper_id": row["paper_id"],
+                        "source": "body",
+                        "title": row["title"],
+                        "first_author": row["first_author"],
+                        "year": row["year"],
+                        "journal": row["journal"],
+                        "domain": row["domain"],
+                        "text": row["unit_text"],
+                        "heading": row["section_title"],
+                        "bm25_score": like_score,
+                        "vec_score": 0.0,
+                    }
+                )
+
     results.sort(key=lambda r: r["bm25_score"], reverse=True)
     return results[:limit]
 
 
 def _vec_search(
     conn: sqlite3.Connection, vault: Path, query: str, limit: int, paper_id: str | None = None,
-    *, query_embedding: list[float] | None = None,
+    *, domain: str | None = None, query_embedding: list[float] | None = None,
 ) -> list[dict]:
     """Run vec0 k-NN on vec_body and vec_objects with unit_id.
 
@@ -420,6 +531,13 @@ def _vec_search(
                     WHERE paper_id = ? AND unit_id <> ''
                 )"""
                 params.append(paper_id)
+            if domain:
+                base_sql += f""" AND v.rowid IN (
+                    SELECT m2.rowid FROM {meta_table} m2
+                    JOIN papers p2 ON m2.paper_id = p2.zotero_key
+                    WHERE LOWER(p2.domain) = LOWER(?) AND m2.unit_id <> ''
+                )"""
+                params.append(domain)
             base_sql += " ORDER BY v.distance"
             rows = conn.execute(base_sql, params).fetchall()
         except Exception as exc:

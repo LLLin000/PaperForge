@@ -452,3 +452,31 @@ def test_zotero_online_backup_snapshot_is_consistent_under_concurrent_wal_writes
         t.join(timeout=5.0)
 
     assert not writer_errors, f"Writer failed: {writer_errors}"
+
+
+def test_rollback_incomplete_migration_rejects_out_of_vault_paths(tmp_path: Path) -> None:
+    """PF-SEC-008: tampered .migration-journal.json paths outside vault_root must fail closed."""
+    from paperforge.services.storage_migration import rollback_incomplete_migration
+    from paperforge.worker.trash import DangerousPathError
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("sensitive", encoding="utf-8")
+
+    journal = vault / ".paperforge" / ".migration-journal.json"
+    journal.parent.mkdir(parents=True)
+    journal.write_text(
+        json.dumps(
+            {
+                "state": "in_progress",
+                "moved_pairs": [],
+                "rewritten_notes": [{"path": str(vault / ".." / "outside.txt"), "original_text": "pwned"}],
+                "created_assets": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(DangerousPathError):
+        rollback_incomplete_migration(vault)
+    assert outside.read_text(encoding="utf-8") == "sensitive"

@@ -388,3 +388,49 @@ class TestDeepFlag:
         args = parser.parse_args(["retrieve", "VTE prevention", "--deep", "--json"])
         assert args.deep is True
         assert args.command == "retrieve"
+
+    def test_retrieve_domain_flag_and_bm25_cjk(self, tmp_path, monkeypatch):
+        """PF-ARCH-001 & PF-OCR-001: retrieve accepts --domain and _bm25_search filters domain & CJK LIKE."""
+        from paperforge.cli import build_parser
+        from paperforge.commands import retrieve as retrieve_cmd
+
+        parser = build_parser()
+        args = parser.parse_args(["retrieve", "电磁场", "--deep", "--domain", "Ortho", "--json"])
+        assert args.domain == "Ortho"
+
+        db_path = get_memory_db_path(tmp_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = get_connection(db_path)
+        _create_tables(conn)
+        _seed_paper(conn, "p1", "Ortho CJK Study")
+        _seed_paper(conn, "p2", "Cardio CJK Study")
+        conn.execute("UPDATE papers SET domain='Ortho' WHERE zotero_key='p1'")
+        conn.execute("UPDATE papers SET domain='Cardio' WHERE zotero_key='p2'")
+        conn.commit()
+        _seed_body_unit(conn, "p1:u1", "p1", "脉冲电磁场显著促进成骨分化。")
+        _seed_body_unit(conn, "p2:u1", "p2", "脉冲电磁场在心肌研究中的应用。")
+        conn.close()
+
+        conn_ro = get_connection(db_path, read_only=True)
+        try:
+            hits_ortho = _bm25_search(conn_ro, ["电磁场"], limit=10, domain="Ortho")
+            assert [h["paper_id"] for h in hits_ortho] == ["p1"]
+        finally:
+            conn_ro.close()
+
+        captured = {}
+        monkeypatch.setattr(retrieve_cmd, "_paper_scope_check", lambda *a, **k: None)
+        monkeypatch.setattr("paperforge.reader_gate.filter_readable", lambda v, c, require_vector=False: c)
+
+        def fake_hybrid(vault, q, limit=5, paper_id=None, domain=None):
+            captured["domain"] = domain
+            return []
+
+        monkeypatch.setattr(retrieve_cmd, "hybrid_search", fake_hybrid)
+        args.vault_path = tmp_path
+        args.expand = True
+        args.limit = 5
+        args.paper = None
+        rc = retrieve_cmd.run(args)
+        assert rc == 0
+        assert captured["domain"] == "Ortho"

@@ -84,7 +84,7 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
             """SELECT zotero_key, citation_key, title, year, doi, journal,
                       first_author, domain, collection_path, has_pdf,
                       ocr_status, analyze, deep_reading_status, lifecycle,
-                      next_step, pdf_path, note_path, fulltext_path, paper_root
+                      next_step, pdf_path, note_path, main_note_path, fulltext_path, paper_root
                FROM papers WHERE zotero_key = ?""",
             (resolved_key,),
         ).fetchone()
@@ -93,6 +93,11 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
             return None
 
         paper = dict(row)
+        from paperforge.memory.paper_state import resolve_effective_note_relpath
+
+        effective_note = resolve_effective_note_relpath(vault, paper)
+        if effective_note:
+            paper["note_path"] = effective_note
 
         notes, related = load_record_authority(vault)
         prior_notes = [project_record(vault, n, related.get(n["id"], []))
@@ -112,11 +117,11 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
         ]
 
         try:
+            from paperforge.config import paperforge_paths
             from paperforge.core.io import read_json
-            from paperforge.worker._utils import pipeline_paths
             from paperforge.worker.ocr_evidence import build_paper_evidence_summary
 
-            ocr_root = pipeline_paths(vault)["ocr"]
+            ocr_root = paperforge_paths(vault)["ocr"]
             paper_ocr_dir = ocr_root / paper.get("zotero_key", key)
             role_index_path = paper_ocr_dir / "index" / "role-index.json"
             if role_index_path.exists():

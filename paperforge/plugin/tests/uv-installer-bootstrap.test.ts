@@ -205,4 +205,26 @@ describe("single-channel GitHub Release wheel bootstrap", () => {
     expect(posixUv).toContain("paperforge-2.0.0-py3-none-any.whl");
     expect(posixUv).toContain("--find-links");
   });
+
+  it("PF-SEC-002 / PF-RT-003 / PF-RT-010: uv scripts verify wheel SHA-256 + ZIP integrity against github.com checksums and honor CN mirror env", () => {
+    const winUv = windowsUvInstallerScript({
+      action: "install",
+      version: "2.0.6",
+    });
+    expect(winUv).toContain("PAPERFORGE_PREFER_CN_MIRROR");
+    expect(winUv).toContain("https://github.com/");
+    expect(winUv).toContain("System.IO.Compression.ZipFile");
+    expect(winUv).toContain("Wheel SHA-256 mismatch");
+
+    const posixUv = posixUvInstallerScript({
+      action: "install",
+      version: "2.0.6",
+      platform: "linux",
+      arch: "x64",
+    });
+    expect(posixUv).toContain("PAPERFORGE_PREFER_CN_MIRROR");
+    expect(posixUv).toContain("https://github.com/");
+    expect(posixUv).toContain("-m zipfile -t");
+    expect(posixUv).toContain('verify_sha256 "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_SHA"');
+  });
 });

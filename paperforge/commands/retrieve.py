@@ -1,12 +1,26 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import sys
 
 from paperforge import __version__ as PF_VERSION
 from pathlib import Path
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
+
+
+def _invoke_search_fn(fn, *pos, domain: str | None = None, **kwargs):
+    """Call *fn* while forwarding ``domain`` only when *fn* accepts it (keeps test mocks working)."""
+    try:
+        params = inspect.signature(fn).parameters
+        accepts_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        if domain and (accepts_kw or "domain" in params):
+            kwargs["domain"] = domain
+    except (TypeError, ValueError):
+        if domain:
+            kwargs["domain"] = domain
+    return fn(*pos, **kwargs)
 
 # Lazy-loaded by run(); declared here so callers/tests can patch either this
 # module attribute or paperforge.embedding.search.* directly.
@@ -96,10 +110,22 @@ def run(args: argparse.Namespace) -> int:
     limit = args.limit or 5
     deep = getattr(args, "deep", False)
     paper_key = getattr(args, "paper", None)
+    domain = getattr(args, "domain", None) or None
 
     # Paper-scoped availability check (applies to both deep and standard paths)
     if paper_key:
-        scope = _paper_scope_check(vault, paper_key, allow_bm25_only=deep)
+        try:
+            scope = _paper_scope_check(vault, paper_key, allow_bm25_only=deep)
+        except Exception as e:
+            result = PFResult(
+                ok=False,
+                command="retrieve",
+                version=PF_VERSION,
+                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
+                data={"scoped_paper": paper_key},
+            )
+            _output(args, result, query)
+            return 1
         if scope is not None:
             if "error" in scope:
                 result = PFResult(ok=False, command="retrieve", version=PF_VERSION,
@@ -132,7 +158,9 @@ def run(args: argparse.Namespace) -> int:
     if deep:
         try:
             hybrid_fn = hybrid_search if callable(hybrid_search) else _embedding_search.hybrid_search
-            raw_chunks = hybrid_fn(vault, query, limit=limit, paper_id=paper_key)
+            raw_chunks = _invoke_search_fn(
+                hybrid_fn, vault, query, limit=limit, paper_id=paper_key, domain=domain
+            )
             # #159 §6 reader gate: never serve a mismatched/unknown chain, while
             # permitting BM25-only hits when vectors are not built.
             from paperforge.reader_gate import filter_readable
@@ -174,6 +202,8 @@ def run(args: argparse.Namespace) -> int:
         }
         if paper_key:
             data["scoped_paper"] = paper_key
+        if domain:
+            data["domain"] = domain
         result = _build_result(query, data, matches, vault)
         _output(args, result, query)
         return 0
@@ -181,8 +211,11 @@ def run(args: argparse.Namespace) -> int:
     # ── Standard vector retrieve ──────────────────────────────────
     status = get_embed_status(vault)
     valid_total = status.get("valid_total_chunks", 0)
-    if valid_total == 0:
+    healthy = bool(status.get("healthy", True)) and not bool(status.get("corrupted", False))
+    if not healthy or valid_total == 0:
         state = status.get("vector_state", "not_built")
+        if not healthy and state == "ready":
+            state = "corrupted" if status.get("corrupted") else "unhealthy"
         result = PFResult(
             ok=False,
             command="retrieve",
@@ -205,7 +238,9 @@ def run(args: argparse.Namespace) -> int:
 
     try:
         merge_fn = merge_retrieve if callable(merge_retrieve) else _embedding_search.merge_retrieve
-        chunks = merge_fn(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
+        chunks = _invoke_search_fn(
+            merge_fn, vault, query, limit=limit, expand=args.expand, paper_id=paper_key, domain=domain
+        )
         # #159 §6 reader gate: never serve a mismatched/unknown chain.
         from paperforge.reader_gate import filter_readable
 
@@ -232,6 +267,8 @@ def run(args: argparse.Namespace) -> int:
     }
     if paper_key:
         data["scoped_paper"] = paper_key
+    if domain:
+        data["domain"] = domain
     result = _build_result(query, data, matches, vault)
     _output(args, result, query)
     return 0

@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import tarfile
+import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -68,8 +69,7 @@ def _candidate_release_tags(norm_ver: str) -> list[str]:
     return tags
 
 
-def release_wheel_urls(version: str) -> list[str]:
-    """Return ordered GitHub Release + mirror wheel URLs for *version*."""
+def _normalize_wheel_version(version: str) -> str:
     cleaned = (version or "").strip().lstrip("vV")
     m = re.fullmatch(
         r"(\d+(?:\.\d+)*)[-.]?(alpha|beta|rc|a|b)\.?(\d+)(?:\.post(\d+))?",
@@ -79,12 +79,33 @@ def release_wheel_urls(version: str) -> list[str]:
     if m:
         stage = {"alpha": "a", "a": "a", "beta": "b", "b": "b", "rc": "rc"}[m.group(2).lower()]
         post = f".post{int(m.group(4))}" if m.group(4) is not None else ""
-        norm_ver = f"{m.group(1)}{stage}{int(m.group(3))}{post}"
-    else:
-        norm_ver = cleaned
+        return f"{m.group(1)}{stage}{int(m.group(3))}{post}"
+    return cleaned
+
+
+def _safe_wheel_filename(name: str) -> str | None:
+    cleaned = (name or "").strip()
+    if (
+        not cleaned
+        or "/" in cleaned
+        or "\\" in cleaned
+        or ".." in cleaned
+        or not cleaned.endswith(".whl")
+    ):
+        return None
+    return cleaned
+
+
+def release_wheel_urls(version: str) -> list[str]:
+    """Return ordered GitHub Release + mirror wheel URLs for *version*."""
+    norm_ver = _normalize_wheel_version(version)
 
     override = os.environ.get("PAPERFORGE_RELEASE_WHEEL_URL", "").strip()
     if override:
+        parsed = urllib.parse.urlparse(override)
+        basename = parsed.path.rsplit("/", 1)[-1]
+        if parsed.scheme.lower() != "https" or not parsed.netloc or _safe_wheel_filename(basename) is None:
+            return []
         return [override]
 
     wheel_name = f"paperforge-{norm_ver}-py3-none-any.whl"
@@ -96,21 +117,90 @@ def release_wheel_urls(version: str) -> list[str]:
     return urls
 
 
+def _parse_checksum_for_asset(checksums_text: str, asset_name: str) -> str | None:
+    for raw_line in checksums_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split(maxsplit=1)
+        if len(parts) != 2:
+            continue
+        digest, fname = parts[0].strip().lower(), parts[1].strip().lstrip("*").lstrip("./")
+        if len(digest) == 64 and all(ch in "0123456789abcdef" for ch in digest):
+            if fname.rsplit("/", 1)[-1] == asset_name:
+                return digest
+    return None
+
+
+def _is_valid_wheel_bytes(raw_bytes: bytes) -> bool:
+    if not raw_bytes:
+        return False
+    buf = io.BytesIO(raw_bytes)
+    if not zipfile.is_zipfile(buf):
+        return False
+    buf.seek(0)
+    try:
+        with zipfile.ZipFile(buf) as zf:
+            return zf.testzip() is None
+    except (zipfile.BadZipFile, OSError):
+        return False
+
+
+def _is_valid_wheel_file(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size == 0 or not zipfile.is_zipfile(path):
+        return False
+    try:
+        with zipfile.ZipFile(path) as zf:
+            return zf.testzip() is None
+    except (zipfile.BadZipFile, OSError):
+        return False
+
+
+def _fetch_official_release_checksum(
+    norm_ver: str, wheel_name: str, *, timeout: int = 45
+) -> str | None:
+    """Fetch SHA-256 for *wheel_name* ONLY from authoritative GitHub Release ``checksums.txt``."""
+    for tag in _candidate_release_tags(norm_ver):
+        url = f"https://github.com/{PAPERFORGE_GITHUB_REPO}/releases/download/{tag}/checksums.txt"
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "PaperForge-Installer/2.1"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                text = resp.read().decode("utf-8", errors="replace")
+            digest = _parse_checksum_for_asset(text, wheel_name)
+            if digest:
+                return digest
+        except Exception:  # noqa: BLE001 — fail closed unless authoritative checksum found
+            continue
+    return None
+
+
 def download_release_wheel(version: str, wheel_dir: Path, *, timeout: int = 45) -> Path | None:
     """Fetch ``paperforge-<ver>-py3-none-any.whl`` directly from GitHub Release into *wheel_dir*.
 
-    Validates zip structure before publishing atomically so ``pip`` / ``uv pip``
-    can resolve PaperForge locally without requiring PyPI uploads.
+    Verifies authoritative GitHub Release ``checksums.txt`` SHA-256 and full
+    zip CRC structure before caching or returning so tampered/truncated wheels
+    never reach ``pip`` / ``uv pip``.
     """
     urls = release_wheel_urls(version)
     if not urls:
         return None
-    wheel_name = urls[0].rsplit("/", 1)[-1].split("?", 1)[0]
-    if not wheel_name.endswith(".whl"):
+    raw_name = urls[0].rsplit("/", 1)[-1].split("?", 1)[0]
+    wheel_name = _safe_wheel_filename(raw_name)
+    if wheel_name is None:
         return None
+
+    norm_ver = _normalize_wheel_version(version)
+    expected_sha256 = _fetch_official_release_checksum(norm_ver, wheel_name, timeout=timeout)
+    if not expected_sha256:
+        return None
+
     dest = wheel_dir / wheel_name
-    if dest.is_file() and dest.stat().st_size > 0 and zipfile.is_zipfile(dest):
-        return dest
+    if dest.exists():
+        if _is_valid_wheel_file(dest):
+            actual = hashlib.sha256(dest.read_bytes()).hexdigest().lower()
+            if hmac.compare_digest(actual, expected_sha256):
+                return dest
+        dest.unlink(missing_ok=True)
 
     wheel_dir.mkdir(parents=True, exist_ok=True)
     tmp_whl = dest.with_suffix(".whl.tmp")
@@ -119,7 +209,10 @@ def download_release_wheel(version: str, wheel_dir: Path, *, timeout: int = 45) 
             req = urllib.request.Request(url, headers={"User-Agent": "PaperForge-Installer/2.1"})
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw_bytes = resp.read()
-            if not raw_bytes or not zipfile.is_zipfile(io.BytesIO(raw_bytes)):
+            actual = hashlib.sha256(raw_bytes).hexdigest().lower()
+            if not hmac.compare_digest(actual, expected_sha256):
+                continue
+            if not _is_valid_wheel_bytes(raw_bytes):
                 continue
             tmp_whl.write_bytes(raw_bytes)
             os.replace(str(tmp_whl), str(dest))
@@ -180,9 +273,16 @@ def discover_uv(runtime_dir: Path) -> str | None:
     return on_path
 
 
+_SECRET_ENV_SUFFIXES = ("_API_KEY", "_SECRET", "_TOKEN", "_PASSWORD")
+
+
 def uv_env(runtime_dir: Path, *, extra: dict[str, str] | None = None) -> dict[str, str]:
     """Build sanitized subprocess env pinning uv cache & python dirs on the same volume."""
-    env = dict(os.environ)
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not any(k.upper().endswith(suffix) for suffix in _SECRET_ENV_SUFFIXES)
+    }
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
     env["UV_CACHE_DIR"] = str(uv_cache_dir(runtime_dir))

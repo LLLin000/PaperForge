@@ -50,10 +50,21 @@ export type PfIconName =
   | "filter"
   | "arrow-up-down"
   | "settings"
-  | "layout-grid";
+  | "layout-grid"
+  | "palette"
+  | "info"
+  | "check-circle"
+  | "alert-circle"
+  | "mouse-pointer-click"
+  | "sun"
+  | "moon"
+  | "terminal"
+  | "database"
+  | "keyboard"
+  | "eye";
 
 interface IconNodeSpec {
-  tag: "path" | "rect" | "circle" | "line" | "polyline" | "polygon";
+  tag: "path" | "rect" | "circle" | "ellipse" | "line" | "polyline" | "polygon";
   attrs: Record<string, string>;
 }
 
@@ -388,6 +399,105 @@ const ICON_PATHS: Record<PfIconName, IconNodeSpec[]> = {
       tag: "rect",
       attrs: { width: "7", height: "7", x: "3", y: "14", rx: "1" },
     },
+  ],
+  palette: [
+    {
+      tag: "circle",
+      attrs: { cx: "13.5", cy: "6.5", r: ".5", fill: "currentColor" },
+    },
+    {
+      tag: "circle",
+      attrs: { cx: "17.5", cy: "10.5", r: ".5", fill: "currentColor" },
+    },
+    {
+      tag: "circle",
+      attrs: { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor" },
+    },
+    {
+      tag: "circle",
+      attrs: { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor" },
+    },
+    {
+      tag: "path",
+      attrs: {
+        d: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z",
+      },
+    },
+  ],
+  info: [
+    { tag: "circle", attrs: { cx: "12", cy: "12", r: "10" } },
+    { tag: "path", attrs: { d: "M12 16v-4" } },
+    { tag: "path", attrs: { d: "M12 8h.01" } },
+  ],
+  "check-circle": [
+    { tag: "circle", attrs: { cx: "12", cy: "12", r: "10" } },
+    { tag: "path", attrs: { d: "m9 12 2 2 4-4" } },
+  ],
+  "alert-circle": [
+    { tag: "circle", attrs: { cx: "12", cy: "12", r: "10" } },
+    { tag: "line", attrs: { x1: "12", x2: "12", y1: "8", y2: "12" } },
+    { tag: "line", attrs: { x1: "12", x2: "12.01", y1: "16", y2: "16" } },
+  ],
+  "mouse-pointer-click": [
+    { tag: "path", attrs: { d: "M14 4.1 12 6" } },
+    { tag: "path", attrs: { d: "m5.1 8-2.9-.8" } },
+    { tag: "path", attrs: { d: "m6 12-1.9 2" } },
+    { tag: "path", attrs: { d: "M7.2 2.2 8 5.1" } },
+    {
+      tag: "path",
+      attrs: {
+        d: "M9.037 9.69a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z",
+      },
+    },
+  ],
+  sun: [
+    { tag: "circle", attrs: { cx: "12", cy: "12", r: "4" } },
+    { tag: "path", attrs: { d: "M12 2v2" } },
+    { tag: "path", attrs: { d: "M12 20v2" } },
+    { tag: "path", attrs: { d: "m4.93 4.93 1.41 1.41" } },
+    { tag: "path", attrs: { d: "m17.66 17.66 1.41 1.41" } },
+    { tag: "path", attrs: { d: "M2 12h2" } },
+    { tag: "path", attrs: { d: "M20 12h2" } },
+    { tag: "path", attrs: { d: "m6.34 17.66-1.41 1.41" } },
+    { tag: "path", attrs: { d: "m19.07 4.93-1.41 1.41" } },
+  ],
+  moon: [
+    {
+      tag: "path",
+      attrs: { d: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" },
+    },
+  ],
+  terminal: [
+    { tag: "polyline", attrs: { points: "4 17 10 11 4 5" } },
+    { tag: "line", attrs: { x1: "12", x2: "20", y1: "19", y2: "19" } },
+  ],
+  database: [
+    { tag: "ellipse", attrs: { cx: "12", cy: "5", rx: "9", ry: "3" } },
+    { tag: "path", attrs: { d: "M3 5v14a9 3 0 0 0 18 0V5" } },
+    { tag: "path", attrs: { d: "M3 12a9 3 0 0 0 18 0" } },
+  ],
+  keyboard: [
+    { tag: "path", attrs: { d: "M10 8h.01" } },
+    { tag: "path", attrs: { d: "M12 12h.01" } },
+    { tag: "path", attrs: { d: "M14 8h.01" } },
+    { tag: "path", attrs: { d: "M16 12h.01" } },
+    { tag: "path", attrs: { d: "M18 8h.01" } },
+    { tag: "path", attrs: { d: "M6 8h.01" } },
+    { tag: "path", attrs: { d: "M7 16h10" } },
+    { tag: "path", attrs: { d: "M8 12h.01" } },
+    {
+      tag: "rect",
+      attrs: { width: "20", height: "16", x: "2", y: "4", rx: "2" },
+    },
+  ],
+  eye: [
+    {
+      tag: "path",
+      attrs: {
+        d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      },
+    },
+    { tag: "circle", attrs: { cx: "12", cy: "12", r: "3" } },
   ],
 };
 

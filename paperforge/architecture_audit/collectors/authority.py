@@ -76,7 +76,7 @@ class UnitBinding:
 ROLE_BINDINGS: tuple[RoleBinding, ...] = (
     RoleBinding(
         "paperforge/worker/ocr.py",
-        "run_ocr",
+        "_run_ocr_impl",
         "ocr_run",
         "execution",
         ("backend.ocr.executor",),

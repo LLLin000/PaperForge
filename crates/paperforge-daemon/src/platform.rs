@@ -52,6 +52,17 @@ mod win_ffi {
     pub const ERROR_ACCESS_DENIED: u32 = 5;
     pub const JOB_OBJECT_EXTENDED_LIMIT_INFORMATION: u32 = 9;
     pub const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: u32 = 0x0000_2000;
+    pub const LOCKFILE_FAIL_IMMEDIATELY: u32 = 1;
+    pub const LOCKFILE_EXCLUSIVE_LOCK: u32 = 2;
+
+    #[repr(C)]
+    pub struct Overlapped {
+        pub internal: usize,
+        pub internal_high: usize,
+        pub offset: u32,
+        pub offset_high: u32,
+        pub h_event: *mut c_void,
+    }
 
     #[repr(C)]
     pub struct JobObjectBasicLimitInformation {
@@ -109,6 +120,21 @@ mod win_ffi {
             info_len: u32,
         ) -> i32;
         pub fn AssignProcessToJobObject(job: *mut c_void, process: *mut c_void) -> i32;
+        pub fn LockFileEx(
+            h_file: *mut c_void,
+            dw_flags: u32,
+            dw_reserved: u32,
+            n_number_of_bytes_to_lock_low: u32,
+            n_number_of_bytes_to_lock_high: u32,
+            lp_overlapped: *mut Overlapped,
+        ) -> i32;
+        pub fn UnlockFileEx(
+            h_file: *mut c_void,
+            dw_reserved: u32,
+            n_number_of_bytes_to_unlock_low: u32,
+            n_number_of_bytes_to_unlock_high: u32,
+            lp_overlapped: *mut Overlapped,
+        ) -> i32;
     }
 }
 
@@ -505,4 +531,90 @@ pub fn atomic_write_bytes(path: &Path, data: &[u8]) -> io::Result<()> {
     }
     let _ = fs::remove_file(&tmp_path);
     Err(last_err.unwrap_or_else(|| io::Error::other("atomic rename failed")))
+}
+
+/// Cross-platform advisory file lock compatible with Python `filelock.FileLock`.
+pub struct AdvisoryFileLock {
+    file: fs::File,
+}
+
+impl Drop for AdvisoryFileLock {
+    fn drop(&mut self) {
+        #[cfg(windows)]
+        unsafe {
+            use std::os::windows::io::AsRawHandle;
+            let mut ov: win_ffi::Overlapped = std::mem::zeroed();
+            let _ = win_ffi::UnlockFileEx(
+                self.file.as_raw_handle() as *mut std::ffi::c_void,
+                0,
+                1,
+                0,
+                &mut ov,
+            );
+        }
+        #[cfg(unix)]
+        unsafe {
+            use std::os::unix::io::AsRawFd;
+            extern "C" {
+                fn flock(fd: i32, operation: i32) -> i32;
+            }
+            const LOCK_UN: i32 = 8;
+            let _ = flock(self.file.as_raw_fd(), LOCK_UN);
+        }
+    }
+}
+
+pub fn acquire_advisory_lock(lock_path: &Path, timeout_ms: u64) -> io::Result<AdvisoryFileLock> {
+    if let Some(parent) = lock_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(lock_path)?;
+
+    let deadline = std::time::Instant::now() + Duration::from_millis(timeout_ms);
+    loop {
+        let locked = {
+            #[cfg(windows)]
+            unsafe {
+                use std::os::windows::io::AsRawHandle;
+                let mut ov: win_ffi::Overlapped = std::mem::zeroed();
+                win_ffi::LockFileEx(
+                    file.as_raw_handle() as *mut std::ffi::c_void,
+                    win_ffi::LOCKFILE_EXCLUSIVE_LOCK | win_ffi::LOCKFILE_FAIL_IMMEDIATELY,
+                    0,
+                    1,
+                    0,
+                    &mut ov,
+                ) != 0
+            }
+            #[cfg(unix)]
+            unsafe {
+                use std::os::unix::io::AsRawFd;
+                extern "C" {
+                    fn flock(fd: i32, operation: i32) -> i32;
+                }
+                const LOCK_EX: i32 = 2;
+                const LOCK_NB: i32 = 4;
+                flock(file.as_raw_fd(), LOCK_EX | LOCK_NB) == 0
+            }
+            #[cfg(not(any(windows, unix)))]
+            {
+                true
+            }
+        };
+        if locked {
+            return Ok(AdvisoryFileLock { file });
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                format!("Timed out waiting for lock {}", lock_path.display()),
+            ));
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
 }
