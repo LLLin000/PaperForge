@@ -8,8 +8,9 @@
 
 All surfaces consume semantic `--pf-*` CSS custom properties declared in `paperforge/plugin/styles.css`. Views support two user-selectable palette bindings (`ui_theme_mode` in Settings):
 
-1. **`asterlab`（默认 — AsterLab 暖白原色 / 暗黑暖灰）**: Exact calibration of the AsterLab MyGo palette for warm, quiet reading and data review.
-2. **`obsidian`（跟随当前 Obsidian 主题）**: Maps `--pf-*` tokens onto Obsidian's live workspace variables (`--background-primary`, `--background-secondary`, `--background-modifier-border`, `--interactive-accent`) so community themes merge seamlessly.
+1. **`obsidian`（默认 — 跟随当前 Obsidian 主题）**: Maps `--pf-*` tokens onto Obsidian's live workspace variables (`--background-primary`, `--background-secondary`, `--background-modifier-border`, `--interactive-accent`) so community themes merge seamlessly.
+2. **`asterlab`（AsterLab 纯净白纸 / 深空曜石）**: Exact calibration of the AsterLab palette for high-contrast reading and data review.
+3. **`warm`（经典暖灰纸质感）**: Classic warm paper surface (`#f7f6f3` / `#171614`, `#5b45c9`).
 
 | Semantic Token       | AsterLab Light (default)  | AsterLab Dark               | Obsidian Bridge Mode                                             | Role                                     |
 | -------------------- | ------------------------- | --------------------------- | ---------------------------------------------------------------- | ---------------------------------------- |
@@ -150,7 +151,30 @@ Never fail with a fleeting `Notice` alone when user recovery is possible (`Aster
 
 ## 11. Obsidian Native Radii Sync, Liquid Glass v2, & Four-Tier Micro-Motions (ADR-017)
 
-1. **Three Theme Presets (`ui_theme_mode`)**: Defaults to `"obsidian"` (live host colors + Obsidian native radii), with `"asterlab"` (AsterLab v2 Pure Obsidian `#ffffff / #111215`, `#6c5ce7 / #a596ff`) and `"warm"` (`#f7f6f3 / #171614`, `#5b45c9`) selectable in Control Center.
-2. **Native Radii Inheritance**: `--pf-radius-control`, `--pf-radius-btn`, `--pf-radius-panel`, and `--pf-radius-dialog` read `--input-radius`, `--button-radius`, `--radius-s/m/l`, and `--modal-radius` with `6 / 10 / 12px` fallbacks.
-3. **Liquid Glass Light vs Dark Clear (No Glass-on-Glass)**: Applied strictly to floating toolbars & popovers (`blur(22px) saturate(185%)` + top specular edge in Light; smoked dark clear `rgba(20, 22, 28, 0.86/0.92)` in Dark; toggleable via `ui_liquid_glass`). Sidebars, Base tables, and Modals remain solid surfaces (Anti-XP-Box).
-4. **Four-Tier Motion + `ReduceMotion`**: `MotionMicro` (`100ms` active `scale(0.97)`), `MotionSnappy` (`160ms` bar entrance & tab lift), `MotionFluid` (`220ms` spring popovers & chevron rotation), and `pf-nudge` (`±5px` validation shake), disabled cleanly via `reduce_motion` (`body.pf-reduce-motion`) or OS `prefers-reduced-motion`.
+1. **Four Theme Presets (`ui_theme_mode`)**: Defaults to `"obsidian"` (live host colors + Obsidian native radii), with `"asterlab"` (AsterLab v2 Pure Obsidian `#ffffff / #111215`, `#6c5ce7 / #a596ff`), `"zinc"` (clean high-contrast monospace neutral `#fafafa / #141416`, `#18181b / #e4e4e7`), and `"warm"` (`#f7f6f3 / #171614`, `#5b45c9`) selectable in Control Center.
+2. **Three-Tier Spacing Density (`ui_density`)**: Supports `"compact"` (`24px` control / `26px` row), `"default"` (`28px` / `32px`), and `"comfortable"` (`32px` / `38px`) via `pf-density-*` classes and UIKit token scales.
+3. **Native Radii Inheritance**: `--pf-radius-control`, `--pf-radius-btn`, `--pf-radius-panel`, and `--pf-radius-dialog` read `--input-radius`, `--button-radius`, `--radius-s/m/l`, and `--modal-radius` with `6 / 10 / 12px` fallbacks.
+4. **Liquid Glass Light vs Dark Clear (No Glass-on-Glass)**: Applied strictly to floating toolbars & popovers (`blur(22px) saturate(185%)` + top specular edge in Light; smoked dark clear `rgba(20, 22, 28, 0.86/0.92)` in Dark; toggleable via `ui_liquid_glass`). Sidebars, Base tables, and Modals remain solid surfaces (Anti-XP-Box).
+5. **Four-Tier Motion + `ReduceMotion`**: `MotionMicro` (`100ms` active `scale(0.97)`), `MotionSnappy` (`160ms` bar entrance & tab lift), `MotionFluid` (`220ms` spring popovers & chevron rotation), and `pf-nudge` (`±5px` validation shake), disabled cleanly via `reduce_motion` (`body.pf-reduce-motion`) or OS `prefers-reduced-motion`.
+
+---
+
+## 12. Unified UIKit Framework & Living Component Gallery (`src/uikit/`)
+
+- **UIKit Engines (`src/uikit/`)**: Provides shared `theme`, five-tier `elevation` (`canvas` → `surface` → `card` → `floating` → `modal`), LIFO Escape `LayerStack`, `CommandRegistry`, stacked undoable `ToastQueue`, right `SidePeekController` drawer, composable `FilterBar` with saved quick-views, `ContextMenu` with viewport clamping and keyboard navigation, horizontal drag `ScrubNumber` with `Shift`/`Ctrl` precision modifiers, and accessible primitives (`ListItem`, `Keycap`, `InlineBanner`, `EmptyState`, `HoldToConfirm`).
+- **Interactive UI Gallery (`PaperForgeGalleryView` + `npm run gallery`)**: Accessible inside Obsidian (`Open UI Gallery & Design System` or Settings → Appearance) and compiled as a zero-server standalone browser HTML prototype (`prototypes/ui-gallery.html`) displaying all real panels, Light/Dark modes, 4 theme presets, 3 densities, 520px narrow responsive mode, and edge-case stress previews.
+
+---
+
+## 13. P0–P2 Craft Polish, Virtualization & Unified Command Architecture
+
+1. **Enter/Exit Transitions, Focus Restore & Collision Flip**:
+   - `SidePeekController` and `ContextMenu` drive bidirectional `data-state="open" | "closed"` animations, restore focus to `previousActiveElement` on dismiss, and perform bottom/right viewport edge collision flipping (`.is-flipped-up`).
+   - `FilterBar` supports Backspace deletion of the trailing filter pill when search is empty and viewport collision upward-flipping on `.pf-kit-filterbar-popover`.
+   - All `.pf-kit-*` and `.pf-gallery-*` interactive buttons/inputs explicitly inherit `--font-interface`; narrow `<= 520px` PDF split containers keep zero horizontal overflow; motion tokens converge on high-damping exponential ease-out (`cubic-bezier(0.22, 1, 0.36, 1)`).
+2. **Sonner-Style Stacked Physics `ToastQueue`**: Keyed DOM reconciliation preserves sibling node animations during updates, renders compact depth-scaled stacking (`--pf-toast-depth` / `data-depth`), fans out smoothly on hover, and supports horizontal swipe-to-dismiss gestures (`>= 72px`).
+3. **Double-Buffered PDF Zoom & Instant Selection Mini-Bar**:
+   - `PaperForgePdfView` keeps previous page canvases CSS-scaled (`.is-stale-buffer`) while painting the new high-DPI zoom canvas off-screen, swapping atomically with zero white flicker.
+   - Non-empty text selections in normal `"select"` reading mode surface a compact `.pf-pdf-selection-bar` above the selection with 4 one-click highlight dots, a note action, and citation copy.
+4. **Large-Library Virtualization & Inline Frontmatter Editing**: `PaperForgeBasesView` activates viewport windowing (`> 500` slots when scrollable) with fixed overscan + top/bottom spacer rows, sticky scrolled header hairlines, and double-click inline cell editing backed by `app.fileManager.processFrontMatter`.
+5. **Full Obsidian Command Palette & Unified `Cmd+K` Switcher**: Registers core navigation, PDF/OCR single-paper contextual commands, embedding build, orphan check, Settings Control Center, and live Appearance cycling in Obsidian `addCommand`, mirrored into `plugin.commandRegistry` for `>` prefix command execution inside `PaperForgeQuickSwitcherModal` (with `<mark class="pf-qs-hl">` token highlighting).

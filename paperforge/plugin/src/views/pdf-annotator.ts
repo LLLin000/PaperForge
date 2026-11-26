@@ -1,3 +1,4 @@
+import * as obsidian from "obsidian";
 import {
   App,
   EventRef,
@@ -8,6 +9,18 @@ import {
   WorkspaceLeaf,
   loadPdfJs,
 } from "obsidian";
+
+function resolveMenuClass(): (new () => obsidian.Menu) | null {
+  try {
+    const mod = (obsidian as unknown as Record<string, unknown>)["Menu"];
+    if (typeof mod === "function") {
+      return mod as new () => obsidian.Menu;
+    }
+  } catch {
+    // Partial mock fallback in tests without Menu
+  }
+  return null;
+}
 import { VIEW_TYPE_PAPERFORGE_PDF } from "../constants";
 import { t } from "../i18n";
 import { formatHumanError } from "../services/feedback";
@@ -126,7 +139,147 @@ export function resolvePdfResourceUrl(
   return `${prefix}${encoded}`;
 }
 
+export interface SimpleRectLike {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+/** 6-element 2D affine matrix multiply matching PDF.js `Util.transform(m1, m2)`. */
+export function multiplyPdfTransform(m1: number[], m2: number[]): number[] {
+  return [
+    m1[0] * m2[0] + m1[2] * m2[1],
+    m1[1] * m2[0] + m1[3] * m2[1],
+    m1[0] * m2[2] + m1[2] * m2[3],
+    m1[1] * m2[2] + m1[3] * m2[3],
+    m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+    m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
+  ];
+}
+
+/**
+ * Clean raw browser `Range.getClientRects()` against page bounds:
+ * - Drops container-level / multi-paragraph jumbo boxes in two-column PDFs
+ * - Merges only adjacent same-line fragments (refusing to bridge column gutters)
+ * - Trims slight vertical overlap so adjacent highlight lines retain a subtle seam
+ */
+export function normalizeSelectionRects(
+  rawRects: SimpleRectLike[],
+  pageRect: { left: number; top: number; width: number; height: number }
+): number[][] {
+  if (pageRect.width <= 0 || pageRect.height <= 0) return [];
+  interface PxBox {
+    l: number;
+    t: number;
+    r: number;
+    b: number;
+    w: number;
+    h: number;
+  }
+  const clipped: PxBox[] = [];
+  for (const rc of rawRects) {
+    if (rc.width < 2 || rc.height < 2) continue;
+    const l = Math.max(0, rc.left - pageRect.left);
+    const t = Math.max(0, rc.top - pageRect.top);
+    const r = Math.min(pageRect.width, rc.right - pageRect.left);
+    const b = Math.min(pageRect.height, rc.bottom - pageRect.top);
+    const w = r - l;
+    const h = b - t;
+    if (w < 2 || h < 2) continue;
+    clipped.push({ l, t, r, b, w, h });
+  }
+  if (clipped.length === 0) return [];
+
+  const sortedHeights = clipped.map((x) => x.h).sort((a, b) => a - b);
+  const medH = sortedHeights[Math.floor(sortedHeights.length / 2)] || 12;
+
+  // Reject spurious container wrappers when normal line-height rects are present
+  const nonGiant = clipped.filter(
+    (x) =>
+      x.h <= Math.max(medH * 2.6, 40) &&
+      !(x.w > pageRect.width * 0.94 && x.h > pageRect.height * 0.12)
+  );
+  const pool = nonGiant.length > 0 ? nonGiant : clipped;
+
+  // Drop boxes strictly contained inside another valid box
+  const eps = 1.5;
+  const deduped = pool.filter(
+    (a, idx) =>
+      !pool.some(
+        (b, j) =>
+          j !== idx &&
+          b.l <= a.l + eps &&
+          b.t <= a.t + eps &&
+          b.r >= a.r - eps &&
+          b.b >= a.b - eps &&
+          b.w * b.h >= a.w * a.h
+      )
+  );
+
+  // Sort top-to-bottom by line center, then left-to-right
+  const band = Math.max(4, medH * 0.48);
+  deduped.sort((a, b) => {
+    const cyA = (a.t + a.b) / 2;
+    const cyB = (b.t + b.b) / 2;
+    if (Math.abs(cyA - cyB) > band) return cyA - cyB;
+    return a.l - b.l;
+  });
+
+  // Merge contiguous glyphs/spans on the same line, never bridging column gutters
+  const merged: PxBox[] = [];
+  for (const cur of deduped) {
+    const prev = merged[merged.length - 1];
+    if (prev) {
+      const prevCy = (prev.t + prev.b) / 2;
+      const curCy = (cur.t + cur.b) / 2;
+      const sameLine =
+        Math.abs(prevCy - curCy) <= Math.min(prev.h, cur.h) * 0.48;
+      const gutterLimit = Math.max(Math.min(prev.h, cur.h) * 1.8, 16);
+      const smallGap = cur.l - prev.r <= gutterLimit && cur.l >= prev.l - eps;
+      if (sameLine && smallGap) {
+        prev.l = Math.min(prev.l, cur.l);
+        prev.t = Math.min(prev.t, cur.t);
+        prev.r = Math.max(prev.r, cur.r);
+        prev.b = Math.max(prev.b, cur.b);
+        prev.w = prev.r - prev.l;
+        prev.h = prev.b - prev.t;
+        continue;
+      }
+    }
+    merged.push({ ...cur });
+  }
+
+  // Keep a crisp 1px breathing seam between stacked highlight lines (even with multi-column siblings)
+  for (let i = 1; i < merged.length; i++) {
+    const dn = merged[i];
+    for (let j = i - 1; j >= 0; j--) {
+      const up = merged[j];
+      if (dn.t - up.b >= medH) break;
+      const horizOverlap = dn.l < up.r && dn.r > up.l;
+      if (horizOverlap && up.b > dn.t - 0.5 && up.b - dn.t < medH) {
+        const mid = (up.b + dn.t) / 2;
+        up.b = Math.min(up.b, mid - 0.6);
+        dn.t = Math.max(dn.t, mid + 0.6);
+        if (dn.b - dn.t < 2) dn.b = dn.t + 2;
+      }
+    }
+  }
+
+  return merged.map((b) => [
+    Math.max(0, Math.min(1, b.l / pageRect.width)),
+    Math.max(0, Math.min(1, b.t / pageRect.height)),
+    Math.max(0, Math.min(1, b.r / pageRect.width)),
+    Math.max(0, Math.min(1, b.b / pageRect.height)),
+  ]);
+}
+
 export class PaperForgePdfView extends ItemView {
+  private static readonly MAX_RENDERED_CANVASES = 9;
+  private static readonly CANVAS_KEEP_RADIUS = 4;
+
   private plugin: PdfPluginHost;
   private _state: PdfAnnotatorOpenState = { paperKey: "" };
   private _ctx: PaperPdfContextDto | null = null;
@@ -136,6 +289,8 @@ export class PaperForgePdfView extends ItemView {
 
   private _scale = 1.25;
   private _fitWidth = false;
+  private _firstPageBaseWidth = 595;
+  private _lastViewportWidth = 0;
   private _currentPage = 1;
   private _sidebarOpen = true;
   private _sidebarTab: SidebarTab = "annotations";
@@ -156,10 +311,16 @@ export class PaperForgePdfView extends ItemView {
   private _searchQuery = "";
   private _searchMatches: Array<{ page: number; text: string }> = [];
   private _searchIndex = 0;
+  private _searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _searchGen = 0;
+  private _resizeFitTimer: ReturnType<typeof setTimeout> | null = null;
+  private _pendingScrollRestore: number | null = null;
+  private _keyHandler: ((ev: KeyboardEvent) => void) | null = null;
 
   private _renderedPages = new Set<number>();
   private _renderingPages = new Set<number>();
   private _pageTexts = new Map<number, string>();
+  private _pageTextsLower = new Map<number, string>();
   private _observer: IntersectionObserver | null = null;
   private _pageEls = new Map<number, HTMLElement>();
   private _thumbEls = new Map<number, HTMLElement>();
@@ -170,10 +331,23 @@ export class PaperForgePdfView extends ItemView {
   private _markupBarEl: HTMLElement | null = null;
   private _popoverEl: HTMLElement | null = null;
   private _highlightMenuEl: HTMLElement | null = null;
+  private _highlightOutsideCleanup: (() => void) | null = null;
   private _areaFloatEl: HTMLElement | null = null;
+  private _selectionBarEl: HTMLElement | null = null;
+  private _zoomGen = 0;
+  private _progressFillEl: HTMLElement | null = null;
   private _pageInputEl: HTMLInputElement | null = null;
   private _zoomLabelEl: HTMLElement | null = null;
+  private _searchInputEl: HTMLInputElement | null = null;
   private _searchCountEl: HTMLElement | null = null;
+
+  private _domDoc(): Document {
+    return this.contentEl?.ownerDocument || document;
+  }
+
+  private _domWin(): Window {
+    return this.contentEl?.ownerDocument?.defaultView || window;
+  }
 
   private _splitMainBtn: HTMLButtonElement | null = null;
   private _markupToggleBtn: HTMLButtonElement | null = null;
@@ -185,6 +359,18 @@ export class PaperForgePdfView extends ItemView {
   private _resizeObserver: ResizeObserver | null = null;
   private _stateRef: EventRef | null = null;
   private _loadVersion = 0;
+  private _measureCtx: CanvasRenderingContext2D | null = null;
+
+  private _getMeasureCtx(): CanvasRenderingContext2D | null {
+    if (this._measureCtx) return this._measureCtx;
+    try {
+      const c = this._domDoc().createElement("canvas");
+      this._measureCtx = c.getContext("2d");
+    } catch {
+      this._measureCtx = null;
+    }
+    return this._measureCtx;
+  }
 
   constructor(leaf: WorkspaceLeaf, plugin: PdfPluginHost) {
     super(leaf);
@@ -217,6 +403,42 @@ export class PaperForgePdfView extends ItemView {
     };
   }
 
+  getEphemeralState(): Record<string, unknown> {
+    return {
+      scroll: this._scrollEl?.scrollTop ?? 0,
+      page: this._currentPage,
+      scale: this._scale,
+      fitWidth: this._fitWidth,
+    };
+  }
+
+  setEphemeralState(state: unknown): void {
+    const raw = (state ?? {}) as {
+      scroll?: number;
+      page?: number;
+      scale?: number;
+      fitWidth?: boolean;
+    };
+    if (typeof raw.fitWidth === "boolean") {
+      this._fitWidth = raw.fitWidth;
+    }
+    if (
+      typeof raw.scale === "number" &&
+      Number.isFinite(raw.scale) &&
+      raw.scale >= 0.5 &&
+      raw.scale <= 3
+    ) {
+      this._scale = raw.scale;
+    }
+    if (typeof raw.scroll === "number" && Number.isFinite(raw.scroll)) {
+      if (this._scrollEl && this._pageEls.size > 0) {
+        this._scrollEl.scrollTop = raw.scroll;
+      } else {
+        this._pendingScrollRestore = raw.scroll;
+      }
+    }
+  }
+
   async setState(state: unknown, result: { history: boolean }): Promise<void> {
     const raw = (state ?? {}) as Partial<PdfAnnotatorOpenState>;
     const nextKey = String(raw.paperKey ?? "").trim();
@@ -237,7 +459,88 @@ export class PaperForgePdfView extends ItemView {
   async onOpen(): Promise<void> {
     this._subscribeStateChanges();
     this._bindNarrowObserver();
+    this._bindKeyboardShortcuts();
     await this._loadAndRender();
+  }
+
+  private _bindKeyboardShortcuts(): void {
+    if (!this.contentEl || this._keyHandler) return;
+    if (this.contentEl.tabIndex < 0) {
+      this.contentEl.tabIndex = -1;
+    }
+    this._keyHandler = (ev: KeyboardEvent) => {
+      const target = ev.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const inInput =
+        tag === "input" ||
+        tag === "textarea" ||
+        Boolean(target?.isContentEditable);
+
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "f") {
+        ev.preventDefault();
+        this._searchInputEl?.focus();
+        this._searchInputEl?.select?.();
+        return;
+      }
+      if (ev.key === "Escape") {
+        this._closeTransientPopups();
+        if (this._continuousHighlight || this._activeTool !== "select") {
+          this._continuousHighlight = false;
+          this._activeTool = "select";
+          this._syncChromeState();
+        }
+        return;
+      }
+      if (inInput) return;
+      if (ev.ctrlKey || ev.metaKey) {
+        if (ev.key === "=" || ev.key === "+") {
+          ev.preventDefault();
+          this._adjustZoom(0.15);
+          return;
+        }
+        if (ev.key === "-") {
+          ev.preventDefault();
+          this._adjustZoom(-0.15);
+          return;
+        }
+        if (ev.key === "0") {
+          ev.preventDefault();
+          this._fitWidth = false;
+          this._scale = 1.25;
+          this._syncZoomAndRerender();
+          return;
+        }
+      }
+      const total = this._doc?.numPages || this._ctx?.page_count || 1;
+      if (ev.key === "ArrowRight" || ev.key === "PageDown") {
+        if (this._currentPage < total) {
+          ev.preventDefault();
+          this.scrollToPage(this._currentPage + 1);
+        }
+      } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") {
+        if (this._currentPage > 1) {
+          ev.preventDefault();
+          this.scrollToPage(this._currentPage - 1);
+        }
+      }
+    };
+    this.contentEl.addEventListener("keydown", this._keyHandler);
+  }
+
+  private _adjustZoom(delta: number): void {
+    this._fitWidth = false;
+    this._scale = Math.max(
+      0.6,
+      Math.min(2.6, Math.round((this._scale + delta) * 100) / 100)
+    );
+    this._syncZoomAndRerender();
+  }
+
+  private _recomputeFitWidthScale(): number {
+    const w = Math.max(420, (this._scrollEl?.clientWidth || 720) - 48);
+    const baseW =
+      this._firstPageBaseWidth > 100 ? this._firstPageBaseWidth : 595;
+    return Math.max(0.6, Math.min(2.4, Math.round((w / baseW) * 100) / 100));
   }
 
   private _bindNarrowObserver(): void {
@@ -245,6 +548,21 @@ export class PaperForgePdfView extends ItemView {
       const w = this.contentEl?.clientWidth || 0;
       if (w > 0) {
         this.contentEl.classList.toggle("is-narrow", w <= 680);
+        if (this._fitWidth && Math.abs(w - this._lastViewportWidth) > 8) {
+          this._lastViewportWidth = w;
+          if (this._resizeFitTimer) clearTimeout(this._resizeFitTimer);
+          this._resizeFitTimer = setTimeout(() => {
+            this._resizeFitTimer = null;
+            if (!this._fitWidth || !this._doc) return;
+            const nextScale = this._recomputeFitWidthScale();
+            if (Math.abs(nextScale - this._scale) >= 0.03) {
+              this._scale = nextScale;
+              this._syncZoomAndRerender();
+            }
+          }, 150);
+        } else {
+          this._lastViewportWidth = w;
+        }
       }
     };
     updateNarrow();
@@ -256,6 +574,18 @@ export class PaperForgePdfView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    if (this._resizeFitTimer) {
+      clearTimeout(this._resizeFitTimer);
+      this._resizeFitTimer = null;
+    }
+    if (this._keyHandler && this.contentEl) {
+      this.contentEl.removeEventListener("keydown", this._keyHandler);
+      this._keyHandler = null;
+    }
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
       this._resizeObserver = null;
@@ -315,13 +645,28 @@ export class PaperForgePdfView extends ItemView {
 
   private _teardownDocument(): void {
     this._closeTransientPopups();
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    this._searchGen += 1;
     if (this._observer) {
       this._observer.disconnect();
       this._observer = null;
     }
+    for (const pageEl of this._pageEls.values()) {
+      const canvas = pageEl.querySelector(
+        ".pf-pdf-canvas"
+      ) as HTMLCanvasElement | null;
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+    }
     this._renderedPages.clear();
     this._renderingPages.clear();
     this._pageTexts.clear();
+    this._pageTextsLower.clear();
     this._pageEls.clear();
     this._thumbEls.clear();
     this._toolBtns.clear();
@@ -335,13 +680,21 @@ export class PaperForgePdfView extends ItemView {
     this._doc = null;
   }
 
+  private _dismissSelectionBar(): void {
+    this._selectionBarEl?.remove();
+    this._selectionBarEl = null;
+  }
+
   private _closeTransientPopups(): void {
     this._popoverEl?.remove();
     this._popoverEl = null;
+    this._highlightOutsideCleanup?.();
+    this._highlightOutsideCleanup = null;
     this._highlightMenuEl?.remove();
     this._highlightMenuEl = null;
     this._areaFloatEl?.remove();
     this._areaFloatEl = null;
+    this._dismissSelectionBar();
   }
 
   private _renderEmptyState(message: string): void {
@@ -534,23 +887,15 @@ export class PaperForgePdfView extends ItemView {
     });
 
     zoomOut.addEventListener("click", () => {
-      this._fitWidth = false;
-      this._scale = Math.max(0.6, Math.round((this._scale - 0.15) * 100) / 100);
-      this._syncZoomAndRerender();
+      this._adjustZoom(-0.15);
     });
     zoomIn.addEventListener("click", () => {
-      this._fitWidth = false;
-      this._scale = Math.min(2.6, Math.round((this._scale + 0.15) * 100) / 100);
-      this._syncZoomAndRerender();
+      this._adjustZoom(0.15);
     });
     this._fitWidthBtn.addEventListener("click", () => {
       this._fitWidth = !this._fitWidth;
       if (this._fitWidth && this._scrollEl) {
-        const w = Math.max(420, (this._scrollEl.clientWidth || 720) - 48);
-        this._scale = Math.max(
-          0.75,
-          Math.min(2.2, Math.round((w / 595) * 100) / 100)
-        );
+        this._scale = this._recomputeFitWidthScale();
       }
       this._syncZoomAndRerender();
     });
@@ -637,20 +982,46 @@ export class PaperForgePdfView extends ItemView {
       cls: "pf-pdf-search-input",
       type: "text",
       placeholder: t("pdf_search_placeholder") || "Search",
+      attr: { "data-pf-testid": "pdf-search-input" },
     });
+    this._searchInputEl = searchInput;
     this._searchCountEl = searchWrap.createEl("span", {
       cls: "pf-pdf-search-count pf-tnum",
     });
     searchInput.addEventListener("input", () => {
       this._searchQuery = searchInput.value.trim().toLowerCase();
-      void this._runSearch(false);
+      if (this._searchDebounceTimer) clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = setTimeout(() => {
+        this._searchDebounceTimer = null;
+        void this._runSearch(false);
+      }, 160);
     });
     searchInput.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
         ev.preventDefault();
+        if (this._searchDebounceTimer) {
+          clearTimeout(this._searchDebounceTimer);
+          this._searchDebounceTimer = null;
+        }
         void this._runSearch(true, ev.shiftKey ? -1 : 1);
       }
     });
+
+    // 2px hairline reading progress bar directly below the primary toolbar
+    const progressTrack = root.createDiv({
+      cls: "pf-pdf-progress-track",
+      attr: { "data-pf-testid": "pdf-progress-track" },
+    });
+    this._progressFillEl = progressTrack.createDiv({
+      cls: "pf-pdf-progress-fill",
+      attr: {
+        "data-pf-testid": "pdf-progress-fill",
+        role: "progressbar",
+        "aria-valuemin": "0",
+        "aria-valuemax": "100",
+      },
+    });
+    this._updateReadingProgress();
 
     // Tier 2: Collapsible 36px Apple Preview Markup Bar
     this._markupBarEl = root.createDiv({ cls: "pf-pdf-markup-bar" });
@@ -683,11 +1054,15 @@ export class PaperForgePdfView extends ItemView {
       const btn = seg.createEl("button", {
         cls: `pf-segmented-btn${this._sidebarTab === tab.id ? " is-active" : ""}`,
         type: "button",
-        attr: { "data-pf-testid": `pdf-tab-${tab.id}` },
+        attr: {
+          "data-pf-testid": `pdf-tab-${tab.id}`,
+          title: tab.label,
+          "aria-label": tab.label,
+        },
       });
       const ic = btn.createEl("span", { cls: "pf-pdf-tab-icon" });
       setPfIcon(ic, tab.icon, 13);
-      btn.createEl("span", { text: tab.label });
+      btn.createEl("span", { cls: "pf-pdf-tab-label", text: tab.label });
       btn.addEventListener("click", () => {
         this._sidebarTab = tab.id;
         seg.querySelectorAll(".pf-segmented-btn").forEach((el) => {
@@ -703,6 +1078,15 @@ export class PaperForgePdfView extends ItemView {
     });
 
     this._scrollEl = body.createDiv({ cls: "pf-pdf-scroll" });
+    this._scrollEl.addEventListener(
+      "wheel",
+      (ev: WheelEvent) => {
+        if (!ev.ctrlKey && !ev.metaKey) return;
+        ev.preventDefault();
+        this._adjustZoom(ev.deltaY < 0 ? 0.1 : -0.1);
+      },
+      { passive: false }
+    );
     this._syncChromeState();
     this._renderSidebarBody();
   }
@@ -803,9 +1187,16 @@ export class PaperForgePdfView extends ItemView {
       () => this._setTool(this._activeTool === "note" ? "select" : "note")
     );
 
-    const styleGroup = bar.createDiv({ cls: "pf-pdf-markup-styles" });
+    const styleGroup = bar.createDiv({
+      cls: "pf-pdf-markup-styles",
+      attr: { "data-pf-markup-group": "styles" },
+    });
+    const swatchGroup = styleGroup.createDiv({
+      cls: "pf-pdf-swatch-group",
+      attr: { "data-pf-markup-group": "color" },
+    });
     for (const sw of MARKUP_STROKE_SWATCHES) {
-      const btn = styleGroup.createEl("button", {
+      const btn = swatchGroup.createEl("button", {
         cls: `pf-pdf-mini-swatch${
           this._markupColor === sw.id ? " is-selected" : ""
         }`,
@@ -819,16 +1210,19 @@ export class PaperForgePdfView extends ItemView {
       btn.addEventListener("click", () => {
         this._markupColor = sw.id;
         this._markupStrokeHex = sw.hex;
-        styleGroup
+        swatchGroup
           .querySelectorAll(".pf-pdf-mini-swatch")
           .forEach((el) => el.classList.remove("is-selected"));
         btn.addClass("is-selected");
       });
     }
 
-    styleGroup.createDiv({ cls: "pf-pdf-bar-sep" });
-
-    const fillBtn = styleGroup.createEl("button", {
+    const fillWrap = styleGroup.createDiv({
+      cls: "pf-pdf-fill-group",
+      attr: { "data-pf-markup-group": "fill" },
+    });
+    fillWrap.createDiv({ cls: "pf-pdf-bar-sep" });
+    const fillBtn = fillWrap.createEl("button", {
       cls: `pf-btn pf-btn-ghost pf-pdf-pill-ctrl${
         !this._markupFillTransparent ? " is-active" : ""
       }`,
@@ -842,6 +1236,7 @@ export class PaperForgePdfView extends ItemView {
 
     const widthWrap = styleGroup.createDiv({
       cls: "pf-pdf-width-group pf-pdf-stroke-group",
+      attr: { "data-pf-markup-group": "stroke" },
     });
     for (const w of STROKE_WIDTHS) {
       const wb = widthWrap.createEl("button", {
@@ -867,6 +1262,7 @@ export class PaperForgePdfView extends ItemView {
 
     const fontWrap = styleGroup.createDiv({
       cls: "pf-pdf-width-group pf-pdf-font-group",
+      attr: { "data-pf-markup-group": "font" },
     });
     fontWrap.createEl("span", { cls: "pf-pdf-font-prefix", text: "Aa" });
     for (const fs of TEXTBOX_FONT_SIZES) {
@@ -891,6 +1287,17 @@ export class PaperForgePdfView extends ItemView {
     }
   }
 
+  private _updateReadingProgress(): void {
+    if (!this._progressFillEl) return;
+    const total = Math.max(
+      1,
+      this._doc?.numPages || this._ctx?.page_count || 1
+    );
+    const pct = Math.max(0, Math.min(100, (this._currentPage / total) * 100));
+    this._progressFillEl.style.width = `${pct.toFixed(2)}%`;
+    this._progressFillEl.setAttribute("aria-valuenow", String(Math.round(pct)));
+  }
+
   private _setTool(next: MarkupTool): void {
     this._activeTool = next;
     if (next !== "select") {
@@ -902,6 +1309,34 @@ export class PaperForgePdfView extends ItemView {
   private _syncChromeState(): void {
     if (this._markupBarEl) {
       this._markupBarEl.style.display = this._markupOpen ? "flex" : "none";
+      const styles = this._markupBarEl.querySelector<HTMLElement>(
+        '[data-pf-markup-group="styles"]'
+      );
+      const fillEl = this._markupBarEl.querySelector<HTMLElement>(
+        '[data-pf-markup-group="fill"]'
+      );
+      const strokeEl = this._markupBarEl.querySelector<HTMLElement>(
+        '[data-pf-markup-group="stroke"]'
+      );
+      const fontEl = this._markupBarEl.querySelector<HTMLElement>(
+        '[data-pf-markup-group="font"]'
+      );
+      const tool = this._activeTool;
+      const showStyles =
+        tool === "ink" ||
+        tool === "shape" ||
+        tool === "textbox" ||
+        tool === "note";
+      const showStroke = tool === "ink" || tool === "shape";
+      const showFill =
+        tool === "shape" &&
+        (this._shapeSubtype === "rect" || this._shapeSubtype === "ellipse");
+      const showFont = tool === "textbox" || tool === "note";
+      if (styles) styles.style.display = showStyles ? "inline-flex" : "none";
+      if (fillEl) fillEl.style.display = showFill ? "inline-flex" : "none";
+      if (strokeEl)
+        strokeEl.style.display = showStroke ? "inline-flex" : "none";
+      if (fontEl) fontEl.style.display = showFont ? "inline-flex" : "none";
     }
     if (this._sidebarEl) {
       this._sidebarEl.style.display = this._sidebarOpen ? "flex" : "none";
@@ -969,7 +1404,60 @@ export class PaperForgePdfView extends ItemView {
       this._zoomLabelEl.setText(`${Math.round(this._scale * 100)}%`);
     }
     this._syncChromeState();
-    void this._mountPages();
+    this._dismissSelectionBar();
+    const scrollEl = this._scrollEl;
+    const ratio =
+      scrollEl && scrollEl.scrollHeight > 0
+        ? scrollEl.scrollTop / scrollEl.scrollHeight
+        : 0;
+
+    // Double-buffered zoom swap when pages are already mounted:
+    // keep old canvases CSS-scaled in place until new high-DPI canvases paint.
+    if (
+      this._doc &&
+      scrollEl &&
+      this._pageEls.size > 0 &&
+      this._pageEls.size === this._doc.numPages
+    ) {
+      const zoomGen = ++this._zoomGen;
+      void (async () => {
+        const firstPage = await this._doc!.getPage(1);
+        if (zoomGen !== this._zoomGen) return;
+        const vp = firstPage.getViewport({ scale: this._scale });
+        const targetW = `${Math.max(300, Math.round(vp.width))}px`;
+        const targetH = `${Math.max(400, Math.round(vp.height))}px`;
+        for (const pageEl of this._pageEls.values()) {
+          pageEl.style.width = targetW;
+          pageEl.style.height = targetH;
+          const oldCanvas = pageEl.querySelector(
+            ".pf-pdf-canvas"
+          ) as HTMLCanvasElement | null;
+          if (oldCanvas) {
+            oldCanvas.style.width = targetW;
+            oldCanvas.style.height = targetH;
+            oldCanvas.classList.add("is-stale-buffer");
+          }
+        }
+        if (scrollEl && ratio > 0 && scrollEl.scrollHeight > 0) {
+          scrollEl.scrollTop = Math.round(ratio * scrollEl.scrollHeight);
+        }
+        this._renderedPages.clear();
+        this._renderingPages.clear();
+        const cur = Math.max(1, this._currentPage || 1);
+        const total = this._doc?.numPages || 1;
+        await this._ensurePageRendered(cur);
+        if (zoomGen !== this._zoomGen) return;
+        if (cur + 1 <= total) void this._ensurePageRendered(cur + 1);
+        if (cur - 1 >= 1) void this._ensurePageRendered(cur - 1);
+      })();
+      return;
+    }
+
+    void this._mountPages().then(() => {
+      if (scrollEl && ratio > 0 && scrollEl.scrollHeight > 0) {
+        scrollEl.scrollTop = Math.round(ratio * scrollEl.scrollHeight);
+      }
+    });
   }
 
   private _getSelectionData(): {
@@ -978,7 +1466,7 @@ export class PaperForgePdfView extends ItemView {
     rects: number[][];
     exactText: string;
   } | null {
-    const sel = window.getSelection();
+    const sel = this._domWin().getSelection();
     if (!sel || sel.isCollapsed) return null;
     const exactText = sel.toString().trim();
     if (!exactText) return null;
@@ -990,25 +1478,16 @@ export class PaperForgePdfView extends ItemView {
     if (!pageEl) return null;
     const pageNumber = Number(pageEl.getAttribute("data-page-number") || 1);
     const pr = pageEl.getBoundingClientRect();
-    const boxes: number[][] = [];
+    let boxes: number[][] = [];
     if (
       pr.width > 0 &&
       pr.height > 0 &&
       typeof range.getClientRects === "function"
     ) {
-      const clientRects = Array.from(range.getClientRects());
-      for (const r of clientRects) {
-        if (r.width < 2 || r.height < 2) continue;
-        boxes.push([
-          Math.max(0, (r.left - pr.left) / pr.width),
-          Math.max(0, (r.top - pr.top) / pr.height),
-          Math.min(1, (r.right - pr.left) / pr.width),
-          Math.min(1, (r.bottom - pr.top) / pr.height),
-        ]);
-      }
+      boxes = normalizeSelectionRects(Array.from(range.getClientRects()), pr);
     }
     if (boxes.length === 0) {
-      boxes.push([0.1, 0.15, 0.85, 0.2]);
+      boxes = [[0.1, 0.15, 0.85, 0.2]];
     }
     return { pageEl, pageNumber, rects: boxes, exactText };
   }
@@ -1018,7 +1497,7 @@ export class PaperForgePdfView extends ItemView {
     if (selData) {
       await this._commitQuickTextMarkup(selData);
       try {
-        window.getSelection()?.removeAllRanges();
+        this._domWin().getSelection()?.removeAllRanges();
       } catch {
         // JSDOM selection clearing fallback
       }
@@ -1029,11 +1508,14 @@ export class PaperForgePdfView extends ItemView {
     this._syncChromeState();
   }
 
-  private async _commitQuickTextMarkup(selData: {
-    pageNumber: number;
-    rects: number[][];
-    exactText: string;
-  }): Promise<void> {
+  private async _commitQuickTextMarkup(
+    selData: {
+      pageNumber: number;
+      rects: number[][];
+      exactText: string;
+    },
+    colorOverride?: AnnotationColor
+  ): Promise<void> {
     const key = this._state.paperKey;
     if (!key) return;
     try {
@@ -1041,13 +1523,13 @@ export class PaperForgePdfView extends ItemView {
         page: selData.pageNumber,
         rects: selData.rects,
         kind: this._highlightKind,
-        color: this._highlightColor,
+        color: colorOverride ?? this._highlightColor,
         intent: "general",
         exact_text: selData.exactText,
         comment: "",
       });
       this._annotations.push(saved);
-      this._refreshOverlays();
+      this._refreshOverlays(saved.page ?? selData.pageNumber);
       this._renderSidebarBody();
     } catch (err) {
       new Notice(formatHumanError(err));
@@ -1055,6 +1537,8 @@ export class PaperForgePdfView extends ItemView {
   }
 
   private _toggleHighlightDropdown(anchorEl: HTMLElement): void {
+    this._highlightOutsideCleanup?.();
+    this._highlightOutsideCleanup = null;
     if (this._highlightMenuEl) {
       this._highlightMenuEl.remove();
       this._highlightMenuEl = null;
@@ -1065,6 +1549,23 @@ export class PaperForgePdfView extends ItemView {
       attr: { "data-pf-testid": "pdf-highlight-dropdown" },
     });
     this._highlightMenuEl = menu;
+    const doc = this._domDoc();
+    const onOutsidePointerDown = (ev: Event) => {
+      const target = ev.target as Node | null;
+      if (target && (menu.contains(target) || anchorEl.contains(target))) {
+        return;
+      }
+      this._highlightOutsideCleanup?.();
+      this._highlightOutsideCleanup = null;
+      menu.remove();
+      if (this._highlightMenuEl === menu) {
+        this._highlightMenuEl = null;
+      }
+    };
+    doc.addEventListener("pointerdown", onOutsidePointerDown);
+    this._highlightOutsideCleanup = () => {
+      doc.removeEventListener("pointerdown", onOutsidePointerDown);
+    };
 
     const swatchRow = menu.createDiv({ cls: "pf-pdf-dropdown-swatches" });
     for (const sw of PREVIEW_HIGHLIGHT_SWATCHES) {
@@ -1167,7 +1668,7 @@ export class PaperForgePdfView extends ItemView {
     const rect = anchorEl.getBoundingClientRect();
     if (rect.width > 0) {
       menu.style.top = `${Math.round(rect.bottom + 6)}px`;
-      menu.style.right = `${Math.max(12, Math.round(window.innerWidth - rect.right))}px`;
+      menu.style.right = `${Math.max(12, Math.round(this._domWin().innerWidth - rect.right))}px`;
     }
   }
 
@@ -1199,6 +1700,16 @@ export class PaperForgePdfView extends ItemView {
 
     const totalPages = this._doc.numPages;
     const firstPage = await this._doc.getPage(1);
+    const unscaledVp = firstPage.getViewport({ scale: 1 });
+    if (unscaledVp?.width > 100) {
+      this._firstPageBaseWidth = unscaledVp.width;
+    }
+    if (this._fitWidth && this._scrollEl) {
+      this._scale = this._recomputeFitWidthScale();
+      if (this._zoomLabelEl) {
+        this._zoomLabelEl.setText(`${Math.round(this._scale * 100)}%`);
+      }
+    }
     const defaultVp = firstPage.getViewport({ scale: this._scale });
     const estW = Math.max(300, Math.round(defaultVp.width));
     const estH = Math.max(400, Math.round(defaultVp.height));
@@ -1229,9 +1740,11 @@ export class PaperForgePdfView extends ItemView {
               if (this._pageInputEl) {
                 this._pageInputEl.value = String(p);
               }
+              this._updateReadingProgress();
               this._highlightActiveThumb();
               void this._ensurePageRendered(p);
               if (p + 1 <= totalPages) void this._ensurePageRendered(p + 1);
+              this._evictDistantCanvases(p);
             }
           }
         },
@@ -1245,9 +1758,44 @@ export class PaperForgePdfView extends ItemView {
     if (startPage + 1 <= totalPages) {
       await this._ensurePageRendered(startPage + 1);
     }
+    if (
+      this._pendingScrollRestore !== null &&
+      this._scrollEl &&
+      this._pendingScrollRestore > 0
+    ) {
+      this._scrollEl.scrollTop = this._pendingScrollRestore;
+      this._pendingScrollRestore = null;
+    }
     this._refreshOverlays();
     if (this._sidebarTab === "thumbs") {
       this._renderSidebarBody();
+    }
+  }
+
+  private _evictDistantCanvases(centerPage: number): void {
+    if (this._renderedPages.size <= PaperForgePdfView.MAX_RENDERED_CANVASES) {
+      return;
+    }
+    for (const p of Array.from(this._renderedPages)) {
+      if (Math.abs(p - centerPage) <= PaperForgePdfView.CANVAS_KEEP_RADIUS) {
+        continue;
+      }
+      const pageEl = this._pageEls.get(p);
+      if (pageEl) {
+        const canvas = pageEl.querySelector(
+          ".pf-pdf-canvas"
+        ) as HTMLCanvasElement | null;
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+          canvas.remove();
+        }
+        const tl = pageEl.querySelector(
+          ".pf-pdf-text-layer"
+        ) as HTMLElement | null;
+        tl?.empty();
+      }
+      this._renderedPages.delete(p);
     }
   }
 
@@ -1269,19 +1817,23 @@ export class PaperForgePdfView extends ItemView {
       pageEl.style.height = `${Math.round(viewport.height)}px`;
 
       const overlayLayer = pageEl.querySelector(".pf-pdf-overlay-layer");
-      pageEl.querySelector(".pf-pdf-canvas")?.remove();
-      const canvas = document.createElement("canvas");
+      const oldCanvas = pageEl.querySelector(
+        ".pf-pdf-canvas"
+      ) as HTMLCanvasElement | null;
+      if (oldCanvas) {
+        oldCanvas.style.width = `${Math.round(viewport.width)}px`;
+        oldCanvas.style.height = `${Math.round(viewport.height)}px`;
+        oldCanvas.classList.add("is-stale-buffer");
+      }
+
+      const doc = this._domDoc();
+      const canvas = doc.createElement("canvas");
       canvas.className = "pf-pdf-canvas";
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = this._domWin().devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.round(viewport.width * dpr));
       canvas.height = Math.max(1, Math.round(viewport.height * dpr));
       canvas.style.width = `${Math.round(viewport.width)}px`;
       canvas.style.height = `${Math.round(viewport.height)}px`;
-      if (overlayLayer) {
-        pageEl.insertBefore(canvas, overlayLayer);
-      } else {
-        pageEl.appendChild(canvas);
-      }
 
       const ctx2d = canvas.getContext("2d");
       if (ctx2d) {
@@ -1291,6 +1843,32 @@ export class PaperForgePdfView extends ItemView {
         await page.render({ canvasContext: ctx2d, viewport }).promise;
       }
 
+      if (!this._doc || !this._pageEls.has(pageNumber)) {
+        canvas.width = 0;
+        canvas.height = 0;
+        return;
+      }
+      if (overlayLayer) {
+        pageEl.insertBefore(canvas, overlayLayer);
+      } else {
+        pageEl.appendChild(canvas);
+      }
+      if (oldCanvas && oldCanvas !== canvas) {
+        oldCanvas.width = 0;
+        oldCanvas.height = 0;
+        oldCanvas.remove();
+      }
+      if (canvas.classList.contains("is-entering")) {
+        const win = this._domWin();
+        if (typeof win.requestAnimationFrame === "function") {
+          win.requestAnimationFrame(() =>
+            canvas.classList.remove("is-entering")
+          );
+        } else {
+          canvas.classList.remove("is-entering");
+        }
+      }
+
       const textLayer = pageEl.querySelector(
         ".pf-pdf-text-layer"
       ) as HTMLElement | null;
@@ -1298,26 +1876,70 @@ export class PaperForgePdfView extends ItemView {
         textLayer.empty();
         const textContent = await page.getTextContent();
         const plainChunks: string[] = [];
+        const frag = doc.createDocumentFragment();
+        const measureCtx = this._getMeasureCtx();
         for (const item of textContent.items || []) {
           if (!item.str) continue;
           plainChunks.push(item.str);
-          const span = document.createElement("span");
+          const span = doc.createElement("span");
           span.textContent = item.str;
           const tx = item.transform;
-          if (tx && tx.length >= 6 && (viewport.transform?.length ?? 0) >= 6) {
-            const x = tx[4] * this._scale;
-            const y = viewport.height - tx[5] * this._scale;
-            const fontH = Math.max(8, Math.abs(tx[3] || 10) * this._scale);
-            span.style.left = `${x}px`;
-            span.style.top = `${Math.max(0, y - fontH)}px`;
-            span.style.fontSize = `${fontH}px`;
+          const vt = viewport.transform;
+          if (tx && tx.length >= 6 && vt && vt.length >= 6) {
+            let x: number;
+            let y: number;
+            let fontH: number;
+            let angle = 0;
+            if (vt[3] < 0) {
+              // Standard PDF.js Y-flipped viewport transform (supports CropBox & rotation)
+              const m = multiplyPdfTransform(vt, tx);
+              x = m[4];
+              y = m[5];
+              fontH = Math.max(
+                6,
+                Math.hypot(m[2], m[3]) || Math.hypot(m[0], m[1]) || 10
+              );
+              angle = Math.atan2(m[1], m[0]);
+            } else {
+              x = tx[4] * this._scale;
+              y = viewport.height - tx[5] * this._scale;
+              fontH = Math.max(6, Math.abs(tx[3] || 10) * this._scale);
+            }
+            span.style.left = `${x.toFixed(2)}px`;
+            span.style.top = `${Math.max(0, y - fontH * 0.84).toFixed(2)}px`;
+            span.style.fontSize = `${fontH.toFixed(2)}px`;
+
+            const transforms: string[] = [];
+            if (Math.abs(angle) > 0.005) {
+              transforms.push(`rotate(${angle.toFixed(4)}rad)`);
+            }
+            if (measureCtx && item.width && item.width > 0) {
+              measureCtx.font = `${fontH.toFixed(2)}px sans-serif`;
+              const measuredW = measureCtx.measureText(item.str).width;
+              const targetW = item.width * this._scale;
+              if (measuredW > 0.5 && targetW > 0.5) {
+                const scaleX = Math.max(
+                  0.55,
+                  Math.min(1.85, targetW / measuredW)
+                );
+                transforms.push(`scaleX(${scaleX.toFixed(4)})`);
+              }
+            }
+            if (transforms.length > 0) {
+              span.style.transformOrigin = "0% 0%";
+              span.style.transform = transforms.join(" ");
+            }
           }
-          textLayer.appendChild(span);
+          frag.appendChild(span);
         }
-        this._pageTexts.set(pageNumber, plainChunks.join(" "));
+        textLayer.appendChild(frag);
+        const joined = plainChunks.join(" ");
+        this._pageTexts.set(pageNumber, joined);
+        this._pageTextsLower.set(pageNumber, joined.toLowerCase());
       }
 
       this._renderedPages.add(pageNumber);
+      this._evictDistantCanvases(this._currentPage || pageNumber);
       this._renderPageOverlays(pageNumber, pageEl);
       if (this._sidebarTab === "thumbs") {
         this._updateThumbPreview(pageNumber, canvas);
@@ -1327,21 +1949,130 @@ export class PaperForgePdfView extends ItemView {
     }
   }
 
+  private _showSelectionMiniBar(
+    pageEl: HTMLElement,
+    selData: { pageNumber: number; rects: number[][]; exactText: string }
+  ): void {
+    this._dismissSelectionBar();
+    const firstRect = selData.rects[0] ?? [0.15, 0.2, 0.5, 0.24];
+    const bar = pageEl.createDiv({
+      cls: "pf-pdf-selection-bar pf-elev-floating",
+      attr: { "data-pf-testid": "pdf-selection-float-bar" },
+    });
+    bar.style.left = `${Math.max(4, Math.min(72, Math.round(firstRect[0] * 100)))}%`;
+    bar.style.top = `${Math.max(1, Math.round(firstRect[1] * 100) - 6)}%`;
+    this._selectionBarEl = bar;
+
+    const palette: Array<{ color: AnnotationColor; label: string }> = [
+      { color: "yellow", label: lbl("黄色高亮", "Yellow highlight") },
+      { color: "green", label: lbl("绿色高亮", "Green highlight") },
+      { color: "blue", label: lbl("蓝色高亮", "Blue highlight") },
+      { color: "purple", label: lbl("紫色高亮", "Purple highlight") },
+    ];
+    for (const item of palette) {
+      const dot = bar.createEl("button", {
+        cls: `pf-pdf-sel-dot pf-swatch-${item.color}`,
+        type: "button",
+        attr: {
+          "data-pf-testid": `pdf-sel-hl-${item.color}`,
+          "aria-label": item.label,
+          title: item.label,
+        },
+      });
+      dot.addEventListener("mousedown", (e) => e.stopPropagation());
+      dot.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._dismissSelectionBar();
+        void this._commitQuickTextMarkup(selData, item.color);
+        try {
+          this._domWin().getSelection()?.removeAllRanges();
+        } catch {
+          // Ignore selection clear failures
+        }
+      });
+    }
+
+    bar.createDiv({ cls: "pf-pdf-sel-sep" });
+
+    const noteBtn = createPfIconBtn(bar, {
+      icon: "sticky-note",
+      label: lbl("添加批注笔记", "Add note"),
+      cls: "pf-pdf-sel-action-btn",
+      testid: "pdf-sel-note",
+    });
+    noteBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+    noteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this._dismissSelectionBar();
+      this._openCreatePopover({
+        anchorEl: pageEl,
+        page: selData.pageNumber,
+        rects: selData.rects,
+        kind: this._highlightKind,
+        exactText: selData.exactText,
+      });
+    });
+
+    const citeBtn = createPfIconBtn(bar, {
+      icon: "quote",
+      label: lbl("复制引用格式", "Copy citation"),
+      cls: "pf-pdf-sel-action-btn",
+      testid: "pdf-sel-cite",
+    });
+    citeBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+    citeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const key = this._state.paperKey;
+      const noteRel = this._ctx?.note_rel_path || "";
+      const noteLink = noteRel
+        ? `[[${noteRel}|${key} p.${selData.pageNumber}]]`
+        : `[[${key} p.${selData.pageNumber}]]`;
+      const snippet = `> "${selData.exactText}" — ${noteLink}`;
+      void navigator.clipboard?.writeText?.(snippet).catch(() => {});
+      new Notice(t("pdf_citation_copied") || "Citation copied");
+      this._dismissSelectionBar();
+    });
+  }
+
   private _attachPageInteractions(
     pageEl: HTMLElement,
     pageNumber: number
   ): void {
-    // Selection-first continuous highlight ONLY when pen mode active; plain reading shows zero popup
-    pageEl.addEventListener("mouseup", () => {
-      if (this._activeTool !== "select" || !this._continuousHighlight) return;
+    // Selection-first highlight: instant commit if pen active, else non-intrusive floating dot bar for non-empty text selections
+    pageEl.addEventListener("mouseup", (ev: MouseEvent) => {
+      if (
+        (ev.target as HTMLElement | null)?.closest?.(".pf-pdf-selection-bar")
+      ) {
+        return;
+      }
+      if (this._activeTool !== "select") return;
+      const selData = this._getSelectionData();
+      if (
+        !selData ||
+        selData.pageNumber !== pageNumber ||
+        !selData.exactText.trim()
+      ) {
+        this._dismissSelectionBar();
+        return;
+      }
+      if (this._continuousHighlight) {
+        void this._commitQuickTextMarkup(selData);
+        try {
+          this._domWin().getSelection()?.removeAllRanges();
+        } catch {
+          // JSDOM selection clearing fallback
+        }
+        return;
+      }
+      this._showSelectionMiniBar(pageEl, selData);
+    });
+
+    // PDF++ style native context menu on selected PDF text (no distracting floating popup on idle selection)
+    pageEl.addEventListener("contextmenu", (ev: MouseEvent) => {
       const selData = this._getSelectionData();
       if (!selData || selData.pageNumber !== pageNumber) return;
-      void this._commitQuickTextMarkup(selData);
-      try {
-        window.getSelection()?.removeAllRanges();
-      } catch {
-        // Ignore JSDOM selection reset differences
-      }
+      ev.preventDefault();
+      this._openSelectionContextMenu(ev, pageEl, selData);
     });
 
     let dragStart: { x: number; y: number } | null = null;
@@ -1403,7 +2134,7 @@ export class PaperForgePdfView extends ItemView {
         ev.preventDefault();
         dragStart = { x: pt[0], y: pt[1] };
         inkPoints = [pt];
-        draftSvg = document.createElementNS(
+        draftSvg = this._domDoc().createElementNS(
           "http://www.w3.org/2000/svg",
           "svg"
         );
@@ -1433,8 +2164,8 @@ export class PaperForgePdfView extends ItemView {
 
       if (draftSvg && this._activeTool === "ink") {
         inkPoints.push(pt);
-        draftSvg.innerHTML = "";
-        const pl = document.createElementNS(
+        draftSvg.textContent = "";
+        const pl = this._domDoc().createElementNS(
           "http://www.w3.org/2000/svg",
           "polyline"
         );
@@ -1452,7 +2183,7 @@ export class PaperForgePdfView extends ItemView {
       }
 
       if (draftSvg && this._activeTool === "shape") {
-        draftSvg.innerHTML = "";
+        draftSvg.textContent = "";
         this._renderSvgShape(draftSvg, this._shapeSubtype, {
           rect: [
             Math.min(dragStart.x, pt[0]),
@@ -1571,7 +2302,7 @@ export class PaperForgePdfView extends ItemView {
         style,
       });
       this._annotations.push(saved);
-      this._refreshOverlays();
+      this._refreshOverlays(saved.page ?? page);
       this._renderSidebarBody();
     } catch (err) {
       new Notice(formatHumanError(err));
@@ -1660,7 +2391,7 @@ export class PaperForgePdfView extends ItemView {
           intent: "general",
         });
         this._annotations.push(saved);
-        this._refreshOverlays();
+        this._refreshOverlays(saved.page ?? pageNumber);
         this._renderSidebarBody();
         if (copyToClip) {
           const payload =
@@ -1723,6 +2454,45 @@ export class PaperForgePdfView extends ItemView {
     });
   }
 
+  /** Position edit/note popover anchored cleanly inside `.pf-pdf-view` without edge clipping. */
+  private _positionPopover(
+    pop: HTMLElement,
+    anchorEl: HTMLElement,
+    rects: number[][]
+  ): void {
+    const host = this.contentEl;
+    if (!host) return;
+    const hr = host.getBoundingClientRect();
+    const ar = anchorEl.getBoundingClientRect();
+    if (hr.width <= 0 || hr.height <= 0 || ar.width <= 0 || ar.height <= 0) {
+      return;
+    }
+    const first = rects?.[0] ?? [0.1, 0.2, 0.5, 0.24];
+    const targetLeft = ar.left - hr.left + first[0] * ar.width;
+    const targetTop = ar.top - hr.top + first[1] * ar.height;
+    const targetBottom = ar.top - hr.top + first[3] * ar.height;
+
+    const popW = Math.min(300, Math.max(220, hr.width - 24));
+    const popH = Math.min(250, Math.max(180, pop.offsetHeight || 228));
+    const toolbarBottom =
+      (this._markupOpen && this._markupBarEl
+        ? this._markupBarEl.getBoundingClientRect().bottom - hr.top
+        : 44) || 44;
+    const minTop = Math.max(46, toolbarBottom + 8);
+    const maxTop = Math.max(minTop, hr.height - popH - 12);
+    const maxLeft = Math.max(12, hr.width - popW - 12);
+
+    const placeBelow = targetBottom + 8 + popH <= hr.height - 12;
+    const rawTop = placeBelow ? targetBottom + 8 : targetTop - popH - 8;
+    const clampedTop = Math.max(minTop, Math.min(maxTop, Math.round(rawTop)));
+    const clampedLeft = Math.max(12, Math.min(maxLeft, Math.round(targetLeft)));
+
+    pop.style.left = `${clampedLeft}px`;
+    pop.style.top = `${clampedTop}px`;
+    pop.style.right = "auto";
+    pop.style.width = `${popW}px`;
+  }
+
   /** Open floating color + note popover and persist via backend authority. */
   public _openCreatePopover(params: {
     anchorEl: HTMLElement;
@@ -1738,6 +2508,7 @@ export class PaperForgePdfView extends ItemView {
       attr: { "data-pf-testid": "pdf-create-popover" },
     });
     this._popoverEl = pop;
+    this._positionPopover(pop, params.anchorEl, params.rects);
     this._popoverColor =
       (params.existingAnn?.color as AnnotationColor) || this._highlightColor;
 
@@ -1860,7 +2631,7 @@ export class PaperForgePdfView extends ItemView {
             }
           }
           closePop();
-          this._refreshOverlays();
+          this._refreshOverlays(params.existingAnn?.page ?? params.page);
           this._renderSidebarBody();
         } catch (err) {
           saveBtn.disabled = false;
@@ -1870,31 +2641,62 @@ export class PaperForgePdfView extends ItemView {
     });
   }
 
-  private _refreshOverlays(): void {
+  private _refreshOverlays(targetPage?: number): void {
+    if (targetPage !== undefined) {
+      const pageEl = this._pageEls.get(targetPage);
+      if (pageEl) {
+        this._renderPageOverlays(targetPage, pageEl);
+      }
+      return;
+    }
+    const byPage = new Map<number, PdfAnnotationDto[]>();
+    for (const ann of this._annotations) {
+      if (ann.author === "agent" && !this._showAgentLayer) continue;
+      let list = byPage.get(ann.page);
+      if (!list) {
+        list = [];
+        byPage.set(ann.page, list);
+      }
+      list.push(ann);
+    }
     this._pageEls.forEach((pageEl, pageNumber) => {
-      this._renderPageOverlays(pageNumber, pageEl);
+      const list = byPage.get(pageNumber);
+      if (!list) {
+        const layer = pageEl.querySelector(
+          ".pf-pdf-overlay-layer"
+        ) as HTMLElement | null;
+        if (!layer || layer.childNodes.length === 0) return;
+      }
+      this._renderPageOverlays(pageNumber, pageEl, list ?? []);
     });
   }
 
-  private _renderPageOverlays(pageNumber: number, pageEl: HTMLElement): void {
+  private _renderPageOverlays(
+    pageNumber: number,
+    pageEl: HTMLElement,
+    preFilteredAnns?: PdfAnnotationDto[]
+  ): void {
     const layer = pageEl.querySelector(
       ".pf-pdf-overlay-layer"
     ) as HTMLElement | null;
     if (!layer) return;
     layer.empty();
 
-    const pageAnns = this._annotations.filter((ann) => {
-      if (ann.page !== pageNumber) return false;
-      if (ann.author === "agent" && !this._showAgentLayer) return false;
-      return true;
-    });
+    const pageAnns =
+      preFilteredAnns ??
+      this._annotations.filter((ann) => {
+        if (ann.page !== pageNumber) return false;
+        if (ann.author === "agent" && !this._showAgentLayer) return false;
+        return true;
+      });
 
     const needsSvg = pageAnns.some(
       (a) => a.kind === "shape" || a.kind === "ink"
     );
+    const doc = this._domDoc();
     let svgEl: SVGSVGElement | null = null;
     if (needsSvg) {
-      svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svgEl = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
       svgEl.setAttribute("class", "pf-pdf-svg-layer");
       svgEl.setAttribute("viewBox", "0 0 1000 1000");
       svgEl.setAttribute("preserveAspectRatio", "none");
@@ -1905,7 +2707,7 @@ export class PaperForgePdfView extends ItemView {
       if (ann.kind === "ink" && svgEl) {
         const pts = ann.style?.points || [];
         if (pts.length >= 2) {
-          const pl = document.createElementNS(
+          const pl = doc.createElementNS(
             "http://www.w3.org/2000/svg",
             "polyline"
           );
@@ -1950,10 +2752,14 @@ export class PaperForgePdfView extends ItemView {
       if (ann.author === "agent") boxClasses.push("pf-pdf-hl-agent");
       if (ann.kind === "margin") boxClasses.push("pf-pdf-margin-bracket");
 
-      for (const rect of ann.rects || []) {
+      const lineRects = ann.rects || [];
+      lineRects.forEach((rect, lineIdx) => {
         const box = layer.createDiv({
           cls: boxClasses.join(" "),
-          attr: { "data-ann-id": ann.ann_id },
+          attr: {
+            "data-ann-id": ann.ann_id,
+            "data-ann-line-idx": String(lineIdx),
+          },
         });
         box.style.left = `${rect[0] * 100}%`;
         box.style.top = `${rect[1] * 100}%`;
@@ -1969,6 +2775,17 @@ export class PaperForgePdfView extends ItemView {
           box.title = ann.comment || lbl("便签批注", "Sticky Note");
         }
 
+        box.addEventListener("mouseenter", () => {
+          layer
+            .querySelectorAll(`[data-ann-id="${ann.ann_id}"]`)
+            .forEach((el) => el.classList.add("is-ann-hover"));
+        });
+        box.addEventListener("mouseleave", () => {
+          layer
+            .querySelectorAll(`[data-ann-id="${ann.ann_id}"]`)
+            .forEach((el) => el.classList.remove("is-ann-hover"));
+        });
+
         box.addEventListener("click", (ev) => {
           ev.stopPropagation();
           this._openCreatePopover({
@@ -1980,7 +2797,7 @@ export class PaperForgePdfView extends ItemView {
             existingAnn: ann,
           });
         });
-      }
+      });
     }
   }
 
@@ -1996,10 +2813,11 @@ export class PaperForgePdfView extends ItemView {
       idSeed: string;
     }
   ): void {
+    const doc = this._domDoc();
     const [x0, y0, x1, y1] = opts.rect;
     const sw = String(opts.strokeWidth * 2);
     if (shapeType === "rect") {
-      const el = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const el = doc.createElementNS("http://www.w3.org/2000/svg", "rect");
       el.setAttribute("x", String(x0 * 1000));
       el.setAttribute("y", String(y0 * 1000));
       el.setAttribute("width", String(Math.max(4, (x1 - x0) * 1000)));
@@ -2012,10 +2830,7 @@ export class PaperForgePdfView extends ItemView {
       return;
     }
     if (shapeType === "ellipse") {
-      const el = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "ellipse"
-      );
+      const el = doc.createElementNS("http://www.w3.org/2000/svg", "ellipse");
       el.setAttribute("cx", String(((x0 + x1) / 2) * 1000));
       el.setAttribute("cy", String(((y0 + y1) / 2) * 1000));
       el.setAttribute("rx", String(Math.max(4, ((x1 - x0) / 2) * 1000)));
@@ -2029,7 +2844,7 @@ export class PaperForgePdfView extends ItemView {
 
     const p0 = opts.points?.[0] ?? [x0, y0];
     const p1 = opts.points?.[1] ?? [x1, y1];
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const line = doc.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", String(p0[0] * 1000));
     line.setAttribute("y1", String(p0[1] * 1000));
     line.setAttribute("x2", String(p1[0] * 1000));
@@ -2039,11 +2854,8 @@ export class PaperForgePdfView extends ItemView {
     line.setAttribute("stroke-linecap", "round");
     if (shapeType === "arrow") {
       const markerId = `pf-arr-${opts.idSeed}`;
-      const defs = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "defs"
-      );
-      const marker = document.createElementNS(
+      const defs = doc.createElementNS("http://www.w3.org/2000/svg", "defs");
+      const marker = doc.createElementNS(
         "http://www.w3.org/2000/svg",
         "marker"
       );
@@ -2053,7 +2865,7 @@ export class PaperForgePdfView extends ItemView {
       marker.setAttribute("refX", "7");
       marker.setAttribute("refY", "3");
       marker.setAttribute("orient", "auto");
-      const arrowPath = document.createElementNS(
+      const arrowPath = doc.createElementNS(
         "http://www.w3.org/2000/svg",
         "path"
       );
@@ -2114,9 +2926,30 @@ export class PaperForgePdfView extends ItemView {
     previewEl: HTMLElement,
     srcCanvas: HTMLCanvasElement
   ): void {
-    if (typeof srcCanvas.toDataURL !== "function") return;
     try {
-      const dataUrl = srcCanvas.toDataURL();
+      let dataUrl = "";
+      if (srcCanvas.width > 0 && srcCanvas.height > 0) {
+        const thumbW = 144;
+        const thumbH = Math.max(
+          1,
+          Math.round((srcCanvas.height / srcCanvas.width) * thumbW)
+        );
+        const off = this._domDoc().createElement("canvas");
+        off.width = thumbW;
+        off.height = thumbH;
+        const ctx =
+          typeof off.getContext === "function" ? off.getContext("2d") : null;
+        if (ctx && typeof ctx.drawImage === "function") {
+          ctx.drawImage(srcCanvas, 0, 0, thumbW, thumbH);
+          dataUrl =
+            typeof off.toDataURL === "function"
+              ? off.toDataURL("image/jpeg", 0.72)
+              : "";
+        }
+      }
+      if (!dataUrl && typeof srcCanvas.toDataURL === "function") {
+        dataUrl = srcCanvas.toDataURL();
+      }
       if (!dataUrl || dataUrl === "data:,") return;
       previewEl.empty();
       const img = previewEl.createEl("img", { cls: "pf-pdf-thumb-img" });
@@ -2265,7 +3098,13 @@ export class PaperForgePdfView extends ItemView {
         cls: "pf-btn pf-btn-ghost pf-pdf-clear-ai-btn",
         type: "button",
         text: t("pdf_clear_ai_btn") || "Clear AI",
-        attr: { "data-pf-testid": "pdf-clear-ai-btn" },
+        attr: {
+          "data-pf-testid": "pdf-clear-ai-btn",
+          title: lbl(
+            "仅移除未采纳的 AI 辅助标注层，不会删除你的个人标注或研究记忆",
+            "Removes unaccepted AI Guide overlays only; keeps your own notes and adopted annotations"
+          ),
+        },
       });
       this._clearAiBtn.addEventListener("click", () => {
         void (async () => {
@@ -2420,7 +3259,7 @@ export class PaperForgePdfView extends ItemView {
               (a) => a.ann_id === ann.ann_id
             );
             if (idx >= 0) this._annotations[idx] = updated;
-            this._refreshOverlays();
+            this._refreshOverlays(updated.page ?? ann.page);
             this._renderSidebarBody();
             new Notice(
               t("pdf_adopted_notice") || "Adopted into your annotations"
@@ -2490,7 +3329,7 @@ export class PaperForgePdfView extends ItemView {
           this._annotations = this._annotations.filter(
             (x) => x.ann_id !== ann.ann_id
           );
-          this._refreshOverlays();
+          this._refreshOverlays(ann.page);
           this._renderSidebarBody();
         })();
       });
@@ -2513,27 +3352,35 @@ export class PaperForgePdfView extends ItemView {
 
   private async _runSearch(advance: boolean, step = 1): Promise<void> {
     if (!this._searchQuery) {
+      this._searchGen += 1;
       this._searchMatches = [];
       this._searchCountEl?.setText("");
       return;
     }
+    const gen = ++this._searchGen;
     if (!advance || this._searchMatches.length === 0) {
       const total = this._doc?.numPages || 0;
       const matches: Array<{ page: number; text: string }> = [];
       for (let p = 1; p <= total; p++) {
+        if (gen !== this._searchGen) return;
+        let txtLower = this._pageTextsLower.get(p);
         let txt = this._pageTexts.get(p);
-        if (txt === undefined && this._doc) {
+        if (txtLower === undefined && this._doc) {
           try {
             const page = await this._doc.getPage(p);
             const tc = await page.getTextContent();
             txt = (tc.items || []).map((i) => i.str || "").join(" ");
+            txtLower = txt.toLowerCase();
             this._pageTexts.set(p, txt);
+            this._pageTextsLower.set(p, txtLower);
           } catch {
             txt = "";
+            txtLower = "";
           }
         }
-        if (txt && txt.toLowerCase().includes(this._searchQuery)) {
-          matches.push({ page: p, text: txt });
+        if (gen !== this._searchGen) return;
+        if (txtLower && txtLower.includes(this._searchQuery)) {
+          matches.push({ page: p, text: txt || "" });
         }
       }
       this._searchMatches = matches;
@@ -2555,24 +3402,85 @@ export class PaperForgePdfView extends ItemView {
     this.scrollToPage(active.page);
   }
 
+  private _openSelectionContextMenu(
+    ev: MouseEvent,
+    pageEl: HTMLElement,
+    selData: { pageNumber: number; rects: number[][]; exactText: string }
+  ): void {
+    const MenuClass = resolveMenuClass();
+    if (!MenuClass) return;
+    const menu = new MenuClass();
+    const key = this._state.paperKey;
+    const noteRel = this._ctx?.note_rel_path || "";
+    const noteLink = noteRel
+      ? `[[${noteRel}|${key} p.${selData.pageNumber}]]`
+      : `[[${key} p.${selData.pageNumber}]]`;
+
+    menu.addItem((item) => {
+      item
+        .setTitle(t("pdf_ctx_highlight") || "Highlight selection")
+        .setIcon("highlighter")
+        .onClick(() => {
+          void this._commitQuickTextMarkup(selData);
+        });
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle(t("pdf_ctx_add_note") || "Add note on selection")
+        .setIcon("sticky-note")
+        .onClick(() => {
+          this._openCreatePopover({
+            anchorEl: pageEl,
+            page: selData.pageNumber,
+            rects: selData.rects,
+            kind: this._highlightKind,
+            exactText: selData.exactText,
+          });
+        });
+    });
+    menu.addSeparator();
+    menu.addItem((item) => {
+      item
+        .setTitle(t("pdf_ctx_copy_quote") || "Copy citation quote")
+        .setIcon("quote")
+        .onClick(() => {
+          const quote = `> "${selData.exactText}" — ${noteLink}`;
+          void navigator.clipboard?.writeText?.(quote);
+          new Notice(t("pdf_citation_copied") || "Citation copied");
+        });
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle(t("pdf_ctx_copy_text") || "Copy selected text")
+        .setIcon("copy")
+        .onClick(() => {
+          void navigator.clipboard?.writeText?.(selData.exactText);
+          new Notice(t("pdf_text_copied") || "Text copied to clipboard");
+        });
+    });
+    menu.showAtMouseEvent(ev);
+  }
+
   public scrollToPage(page: number, annId?: string): void {
     this._currentPage = page;
     if (this._pageInputEl) {
       this._pageInputEl.value = String(page);
     }
+    this._updateReadingProgress();
     this._highlightActiveThumb();
     const el = this._pageEls.get(page);
     if (el) {
       el.scrollIntoView?.({ behavior: "smooth", block: "start" });
       void this._ensurePageRendered(page);
     }
+    this._evictDistantCanvases(page);
     if (annId) {
       const box = this.contentEl.querySelector(
         `.pf-pdf-ann-box[data-ann-id="${annId}"]`
       );
       if (box) {
         box.addClass("is-flash");
-        window.setTimeout(() => box.removeClass("is-flash"), 1600);
+        this._domWin().setTimeout(() => box.removeClass("is-flash"), 1600);
       }
     }
   }

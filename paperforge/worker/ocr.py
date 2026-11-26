@@ -2891,6 +2891,40 @@ def run_ocr(
     G1 (Control Plane Closure): ``batch_id`` re-attaches an EXISTING
     logical execution (ocr resume --batch) — jobs submitted by this run
     join that batch instead of creating a new one."""
+    _held_controller_locks: list[Path] = []
+    try:
+        return _run_ocr_impl(
+            vault,
+            verbose=verbose,
+            no_progress=no_progress,
+            selected_keys=selected_keys,
+            stop_check=stop_check,
+            progress_callback=progress_callback,
+            result_sink=result_sink,
+            batch_id=batch_id,
+            allow_unselected_all=allow_unselected_all,
+            _held_controller_locks=_held_controller_locks,
+        )
+    finally:
+        for _lock_path in _held_controller_locks:
+            try:
+                _lock_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def _run_ocr_impl(
+    vault: Path,
+    verbose: bool = False,
+    no_progress: bool = False,
+    selected_keys: set[str] | None = None,
+    stop_check: Callable[[], bool] | None = None,
+    progress_callback: Callable[[str], None] | None = None,
+    result_sink: dict | None = None,
+    batch_id: str | None = None,
+    allow_unselected_all: bool = True,
+    _held_controller_locks: list[Path] | None = None,
+) -> int:
     _stopped = False
     from paperforge.pdf_resolver import resolve_pdf_path
 
@@ -2996,6 +3030,7 @@ def run_ocr(
             + ("..." if len(skipped_no_pdf) > 8 else ""),
             flush=True,
         )
+    _reported_progress_keys: set[str] = set()
     for row in target_rows:
         key = row["zotero_key"]
         meta = ensure_ocr_meta(vault, row)
@@ -3065,10 +3100,23 @@ def run_ocr(
         elif current == "fatal_error":
             pass
         elif current == "nopdf":
-            meta["ocr_status"] = "pending"
-            meta["error"] = ""
-            meta["retry_count"] = 0
-            write_json(paths["ocr"] / key / "meta.json", meta)
+            if row.get("has_pdf"):
+                meta["ocr_status"] = "pending"
+                meta["error"] = ""
+                meta["retry_count"] = 0
+                write_json(paths["ocr"] / key / "meta.json", meta)
+        if not row.get("has_pdf"):
+            if str(meta.get("ocr_status", "") or "").strip().lower() != "nopdf":
+                meta["ocr_status"] = "nopdf"
+                meta["error"] = ""
+                meta["retry_count"] = 0
+                write_json(paths["ocr"] / key / "meta.json", meta)
+            _emit_settlement_progress(
+                progress_callback,
+                _reported_progress_keys,
+                {"zotero_key": key, "queue_status": "nopdf"},
+            )
+            continue
         status, _error = validate_ocr_meta(paths, meta)
         if status == "done_incomplete":
             meta["ocr_status"] = "pending"
@@ -3116,7 +3164,6 @@ def run_ocr(
         resp = requests.get(f"{job_url}/{job_id}", headers={"Authorization": f"bearer {token_val}"}, timeout=60)
         resp.raise_for_status()
         return resp
-    _reported_progress_keys: set[str] = set()
 
     def _mark_ocr_result_unavailable(
         row_obj: dict,
@@ -3131,6 +3178,7 @@ def run_ocr(
         row_obj["queue_status"] = "queued"
         timed_out_keys.add(paper_key)
         result_unavailable_keys.add(paper_key)
+        active_submitted.discard(paper_key)
         write_json(meta_file, meta_obj)
 
     for queue_row in progress_bar(ocr_queue, desc="Processing OCR", disable=no_progress):
@@ -3159,6 +3207,7 @@ def run_ocr(
                 queue_row["queue_status"] = status
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 timed_out_keys.add(key)
+                active_submitted.discard(key)
                 changed += 1
                 continue
             try:
@@ -3241,6 +3290,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     active_submitted.discard(key)
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     continue
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
@@ -3248,6 +3298,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     active_submitted.discard(key)
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     continue
                 health_path_poll = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_poll = read_json(health_path_poll) if health_path_poll.exists() else {}
@@ -3346,6 +3397,8 @@ def run_ocr(
     if not _acquire_controller_lock(_controller_lock):
         print("OCR: another controller is running — re-run later", file=sys.stderr)
         return 1
+    if _held_controller_locks is not None:
+        _held_controller_locks.append(_controller_lock)
 
     # Combined upload + poll loop: process all items in batches up to max_items concurrency
     import time as _time
@@ -3368,6 +3421,7 @@ def run_ocr(
             break
         if all(str(row.get("zotero_key", "")) in (unconfirmed_keys | timed_out_keys) for row in remaining):
             break
+        _cycle_progressed = False
         available_slots = max(0, max_items - len(active_submitted))
         _sanitized_temp = None
         if available_slots > 0:
@@ -3376,6 +3430,8 @@ def run_ocr(
                 if r.get("queue_status", "") not in ("queued", "running")
                 and str(r.get("zotero_key", "")) not in unconfirmed_keys
             ][:available_slots]
+            if upload_items:
+                _cycle_progressed = True
             for queue_row in upload_items:
                 if stop_check is not None and stop_check():
                     _stopped = True
@@ -3410,12 +3466,14 @@ def run_ocr(
                         _diag(f"OCR: {key} skipped (no PDF attachment)")
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     continue
                 if not token:
                     meta["ocr_status"] = "blocked"
                     queue_row["queue_status"] = "blocked"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     if not _token_warned:
                         _diag("OCR: no API token configured — run `paperforge auth set ocr --stdin`")
                         _token_warned = True
@@ -3467,6 +3525,7 @@ def run_ocr(
                     queue_row["queue_status"] = "fatal_error"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     continue
                 _diag(f"OCR: {key} uploading to PaddleOCR...")
                 # M1.1 write-ahead (owner review): persist the SUBMISSION
@@ -3525,6 +3584,7 @@ def run_ocr(
                             queue_row["queue_status"] = "blocked"
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
+                            _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                             _diag(f"OCR: {key} blocked ({'invalid API token' if _status == 401 else 'access denied'})")
                             continue
                         if _status in (400, 429):
@@ -3544,6 +3604,7 @@ def run_ocr(
                                 rate_limited_keys.add(key)
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
+                            _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                             _diag(f"OCR: {key} upload rejected ({_status}): {_body[:120]}")
                             continue
                     if isinstance(e, FileNotFoundError):
@@ -3559,6 +3620,7 @@ def run_ocr(
                         queue_row["queue_status"] = "blocked"
                         write_json(paths["ocr"] / key / "meta.json", meta)
                         changed += 1
+                        _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                         continue
                     unconfirmed_keys.add(key)
                     meta["error_stage"] = "upload"
@@ -3585,6 +3647,8 @@ def run_ocr(
             break
         poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")
                       and str(r.get("zotero_key", "")) not in timed_out_keys]
+        if not poll_items and not _cycle_progressed:
+            break
         # F3 (Control Plane Closure): batch observer — ONE provider request
         # per cycle for the whole logical batch; per-paper settle below is
         # unchanged.  If the batch endpoint is unavailable, or a done job's
@@ -3659,6 +3723,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     active_submitted.discard(key)
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     continue
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
@@ -3666,6 +3731,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     active_submitted.discard(key)
+                    _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
                     continue
                 health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}
@@ -3738,7 +3804,11 @@ def run_ocr(
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
             _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
-        if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
+        if any(
+            r.get("queue_status") in ("queued", "running")
+            and str(r.get("zotero_key", "")) not in timed_out_keys
+            for r in ocr_queue
+        ):
             # Periodic live summary (owner: 'no status while waiting is
             # painful') — one compact line per poll interval showing the
             # batch's active/done counts instead of silence.

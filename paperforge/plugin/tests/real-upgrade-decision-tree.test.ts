@@ -84,9 +84,11 @@ describe("Real-World Veteran Upgrade & Daemon Hot-Swap Certification", () => {
         expect(plan.provenance.needs_upgrade).toBe(true);
         expect(JSON.stringify(plan)).toContain("00_System/PaperForge");
 
-        // Feed the real daemon output directly into the Setup Decision Tree
+        // Feed the real daemon output directly into the Setup Decision Tree:
+        // 1) When Python runtime is not yet installed, Setup Step 1 comes FIRST
+        // (with a calm hint that the veteran vault upgrade comes right after)
         setLanguage({} as never, "zh");
-        const decision = resolveSetupDecision({
+        const preInstallDecision = resolveSetupDecision({
           daemonUpdating: false,
           runtimeUpdating: false,
           canCancelInstall: false,
@@ -96,6 +98,36 @@ describe("Real-World Veteran Upgrade & Daemon Hot-Swap Certification", () => {
           runtimePointer: null,
           expectedVersion: "2.0.4",
           installationEnv: createUnknownEnvelope("installation"),
+          libraryEnv: createUnknownEnvelope("library"),
+          isProbing: false,
+          zoteroDataDir: "",
+          zoteroDetectedPapers: null,
+          lastAutoSyncError: null,
+          paperCount: null,
+        });
+        expect(preInstallDecision.id).toBe("engine_not_installed");
+        expect(preInstallDecision.primaryAction?.kind).toBe(
+          "start_setup_step1"
+        );
+
+        // 2) Once the Python runtime is installed & ready, legacy_vault_upgrade surfaces cleanly
+        const readyInst = createUnknownEnvelope("installation");
+        readyInst.user_state = "ready";
+        readyInst.capability_state = "ready";
+        const decision = resolveSetupDecision({
+          daemonUpdating: false,
+          runtimeUpdating: false,
+          canCancelInstall: false,
+          quarantinedBinDir: null,
+          upgradePlan: plan,
+          upgradeBannerDismissed: false,
+          runtimePointer: {
+            schemaVersion: 1,
+            pythonPath: "/opt/pf/python",
+            paperforgeVersion: "2.0.4",
+          },
+          expectedVersion: "2.0.4",
+          installationEnv: readyInst,
           libraryEnv: createUnknownEnvelope("library"),
           isProbing: false,
           zoteroDataDir: "",

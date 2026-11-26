@@ -20,7 +20,12 @@ _VISUAL_MD_EMBED_RE = re.compile(
 )
 
 
-def rewrite_visual_embeds_for_key(markdown: str, zotero_key: str) -> tuple[str, int]:
+def rewrite_visual_embeds_for_key(
+    markdown: str,
+    zotero_key: str,
+    *,
+    available_assets: set[str] | None = None,
+) -> tuple[str, int]:
     """Rewrite legacy object embeds to ``![[<KEY>_figure_001.jpg]]`` inside one note."""
     replacements = 0
 
@@ -30,7 +35,10 @@ def rewrite_visual_embeds_for_key(markdown: str, zotero_key: str) -> tuple[str, 
         alias = match.group(2) or ""
         prefix = f"{zotero_key}_"
         stem = obj_stem if obj_stem.startswith(prefix) else f"{prefix}{obj_stem}"
-        target = f"![[{stem}.jpg{alias}]]"
+        filename = f"{stem}.jpg"
+        if available_assets is not None and filename not in available_assets:
+            return match.group(0)
+        target = f"![[{filename}{alias}]]"
         if target != match.group(0):
             replacements += 1
         return target
@@ -113,6 +121,10 @@ def _move_tree_entries(
                 dest_dir = conflict_backup_dir / sub_dir
                 dest_dir.mkdir(parents=True, exist_ok=True)
                 dest = dest_dir / f"{child.parent.name}__{child.name}"
+                counter = 1
+                while dest.exists():
+                    dest = dest_dir / f"{child.parent.name}__{child.stem}__{counter}{child.suffix}"
+                    counter += 1
                 shutil.move(str(child), str(dest))
                 if moved_pairs is not None:
                     moved_pairs.append((child, dest))
@@ -305,30 +317,9 @@ def migrate_vault_storage(
         )
 
         old_zotero = old_sys / "Zotero"
-        target_zotero = target_pf / "Zotero"
-        if (
-            old_zotero.exists()
-            and not old_zotero.is_symlink()
-            and old_zotero.resolve() != target_zotero.resolve()
-            and not target_zotero.exists()
-        ):
-            points_to_old_zotero = (
-                configured_zotero_path is not None
-                and (
-                    configured_zotero_path == old_zotero.resolve()
-                    or old_zotero.resolve() in configured_zotero_path.parents
-                )
-            )
-            if points_to_old_zotero:
-                # Never bury an active user Zotero library inside hidden `.paperforge/`
-                zotero_preserved_in_place = True
-            else:
-                moved_zotero = True
-                if not dry_run:
-                    target_pf.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(old_zotero), str(target_zotero))
-                    moved_pairs.append((old_zotero, target_zotero))
-                    _flush_journal()
+        if old_zotero.exists() and not old_zotero.is_symlink():
+            # Never bury a user Zotero library inside hidden `.paperforge/`
+            zotero_preserved_in_place = True
 
         if lit_root.exists():
             from paperforge.services.identity_resolver import scan_vault_identities
@@ -389,6 +380,14 @@ def migrate_vault_storage(
                             ws_dir.parent / f"{key}.md",
                         ]
                     )
+                    ws_assets_dir = ws_dir / "assets"
+                    avail_assets: set[str] | None = None
+                    if not dry_run:
+                        if ws_assets_dir.is_dir():
+                            avail_assets = {p.name for p in ws_assets_dir.glob("*.jpg")}
+                        elif (paper_ocr_dir / "assets").is_dir():
+                            avail_assets = set()
+
                     seen_notes: set[Path] = set()
                     for candidate_note in note_candidates:
                         if candidate_note.exists() and candidate_note.is_file():
@@ -397,7 +396,9 @@ def migrate_vault_storage(
                                 continue
                             seen_notes.add(resolved_note)
                             original = candidate_note.read_text(encoding="utf-8")
-                            updated, count = rewrite_visual_embeds_for_key(original, key)
+                            updated, count = rewrite_visual_embeds_for_key(
+                                original, key, available_assets=avail_assets
+                            )
                             if count > 0:
                                 notes_rewritten += 1
                                 if not dry_run:

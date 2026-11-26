@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "gallery": "node scripts/build-gallery.mjs",
     "test": "vitest run",
+    "bench": "vitest run tests/perf-benchmark.test.ts --reporter=verbose",
     "test:watch": "vitest",
     "typecheck": "tsc -noEmit -skipLibCheck && esbuild test/specs/paperforge.e2e.ts --loader:.ts=ts --outfile=NUL",
     "prepare": "husky",

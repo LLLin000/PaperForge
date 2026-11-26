@@ -501,6 +501,24 @@ def install_runtime(
         )
 
 
+def _sync_skill_hub_from_candidate(candidate_root: Path, home: Path | None = None) -> bool:
+    """Best-effort sync of the machine-wide Skill Hub from the newly installed env."""
+    try:
+        from paperforge.services.skill_deploy import sync_machine_skill_hub
+
+        cand_skill = candidate_root / "Lib" / "site-packages" / "paperforge" / "skills" / "paperforge"
+        if not cand_skill.is_dir():
+            cand_skill = next(
+                candidate_root.glob("lib/python*/site-packages/paperforge/skills/paperforge"),
+                None,
+            )
+        src_arg = cand_skill if (cand_skill is not None and cand_skill.is_dir()) else None
+        res = sync_machine_skill_hub(home=home, source_skill_dir=src_arg)
+        return bool(res.get("ok") and (res.get("hub_updated") or res.get("updated", 0) > 0))
+    except Exception:  # noqa: BLE001 — runtime install must stay resilient
+        return False
+
+
 def _install_runtime_locked(
     *,
     expected_version: str = __version__,
@@ -567,6 +585,8 @@ def _install_runtime_locked(
         )
         if current["runtime_ready"]:
             pointer = current["pointer"]
+            hub_synced = _sync_skill_hub_from_candidate(Path(pointer["environment_root"]), home=home)
+            acts = ["already_ready"] + (["skill_hub_synced"] if hub_synced else [])
             return RuntimeInstallResult(
                 ok=True,
                 code="runtime.ready",
@@ -575,7 +595,7 @@ def _install_runtime_locked(
                 environment_root=str(pointer["environment_root"]),
                 paperforge_version=str(current["paperforge_version"]),
                 base_python=base_python_resolved,
-                actions_taken=["already_ready"],
+                actions_taken=acts,
             )
 
     target_deps_hash = compute_deps_lock_hash()
@@ -729,6 +749,8 @@ def _install_runtime_locked(
             runtime_abi=current_abi,
             home=home,
         )
+        if _sync_skill_hub_from_candidate(candidate, home=home):
+            actions.append("skill_hub_synced")
         installed = True
         pruned = _prune_environments(runtime_dir, candidate)
         if pruned:

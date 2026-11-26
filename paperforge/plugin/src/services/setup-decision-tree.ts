@@ -8,11 +8,11 @@
  * Strict priority order:
  *  0. engine_updating        — native daemon hot-swap or runtime install/update in progress
  *  1. engine_quarantined     — native binary vanished (antivirus quarantine)
- *  2. legacy_vault_upgrade   — veteran vault detected, 1-click lossless cutover available
- *  3. checking               — initial/active probe in flight
+ *  2. checking               — initial/active probe in flight
+ *  3. engine_version_mismatch— runtime exists but version != plugin version
  *  4. engine_not_installed   — no managed Python runtime pointer on disk
- *  5. engine_version_mismatch— runtime exists but version != plugin version
- *  6. engine_probe_failed    — runtime exists & version matches, yet probe failed/unresponsive
+ *  5. engine_probe_failed    — runtime exists & version matches, yet probe failed/unresponsive
+ *  6. legacy_vault_upgrade   — engine ready & veteran vault detected, 1-click lossless cutover available
  *  7. zotero_not_configured  — engine ready, Zotero directory not yet connected
  *  8. library_sync_error     — engine & Zotero configured, sync blocked/failed
  *  9. ready                  — core engine + Zotero library healthy and ready
@@ -132,32 +132,10 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 2. Veteran vault lossless directory upgrade (highest user priority after engine alive)
-  if (
-    input.upgradePlan?.provenance?.needs_upgrade === true &&
-    !input.upgradeBannerDismissed
-  ) {
-    return {
-      id: "legacy_vault_upgrade",
-      badgeCls: "attention",
-      badgeText: t("dt_badge_upgrade"),
-      title: t("upgrade_banner_title"),
-      body: t("upgrade_banner_desc"),
-      primaryAction: {
-        kind: "open_vault_upgrade",
-        label: t("upgrade_banner_open"),
-      },
-      secondaryAction: {
-        kind: "dismiss_vault_upgrade",
-        label: t("upgrade_btn_defer"),
-      },
-    };
-  }
-
   const instState = input.installationEnv.user_state;
   const libState = input.libraryEnv.user_state;
 
-  // 3. Active checking state
+  // 2. Active checking state
   if (
     instState === "checking" ||
     libState === "checking" ||
@@ -178,9 +156,14 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
   const versionMismatch =
     Boolean(ptr && expNorm && ptrNorm && ptrNorm !== expNorm) ||
     input.installationEnv.reason?.code === "version_mismatch";
+  const needsVaultUpgrade =
+    input.upgradePlan?.provenance?.needs_upgrade === true;
 
-  // 4. Engine version mismatch (existing user upgraded plugin, engine still on older version)
+  // 3. Engine version mismatch (ensure compute engine is aligned before any vault migration)
   if (versionMismatch && ptr) {
+    const body = needsVaultUpgrade
+      ? `${t("dt_version_mismatch_body")} ${t("dt_legacy_after_engine_hint")}`
+      : t("dt_version_mismatch_body");
     return {
       id: "engine_version_mismatch",
       badgeCls: "attention",
@@ -188,7 +171,7 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
       title: t("dt_version_mismatch_title")
         .replace("{expected}", input.expectedVersion || "?")
         .replace("{current}", ptr.paperforgeVersion || "?"),
-      body: t("dt_version_mismatch_body"),
+      body,
       primaryAction: {
         kind: "update_engine",
         label: t("dt_btn_update_engine"),
@@ -196,14 +179,17 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 5. Engine not installed at all (brand-new user)
+  // 4. Engine not installed at all (brand-new user or legacy user before new runtime install)
   if (instState !== "ready" && !ptr) {
+    const body = needsVaultUpgrade
+      ? `${t("dt_step1_body")} ${t("dt_legacy_after_engine_hint")}`
+      : t("dt_step1_body");
     return {
       id: "engine_not_installed",
       badgeCls: "attention",
       badgeText: t("dt_badge_step1"),
       title: t("dt_step1_title"),
-      body: t("dt_step1_body"),
+      body,
       primaryAction: {
         kind: "start_setup_step1",
         label: t("cc_start_setup"),
@@ -211,7 +197,7 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 6. Engine IS installed on disk, but probe failed / unresponsive — NEVER lie and say "install step 1"!
+  // 5. Engine IS installed on disk, but probe failed / unresponsive — NEVER lie and say "install step 1"!
   if (instState !== "ready" && ptr) {
     return {
       id: "engine_probe_failed",
@@ -229,6 +215,25 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
       secondaryAction: {
         kind: "repair_engine",
         label: t("dt_btn_repair_engine"),
+      },
+    };
+  }
+
+  // 6. Veteran vault lossless directory upgrade (compute engine is ready, cutover runs cleanly)
+  if (needsVaultUpgrade && !input.upgradeBannerDismissed) {
+    return {
+      id: "legacy_vault_upgrade",
+      badgeCls: "attention",
+      badgeText: t("dt_badge_upgrade"),
+      title: t("upgrade_banner_title"),
+      body: t("upgrade_banner_desc"),
+      primaryAction: {
+        kind: "open_vault_upgrade",
+        label: t("upgrade_banner_open"),
+      },
+      secondaryAction: {
+        kind: "dismiss_vault_upgrade",
+        label: t("upgrade_btn_defer"),
       },
     };
   }

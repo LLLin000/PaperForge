@@ -43,6 +43,11 @@ export interface PaperForgeBasesHost {
   requestOcrRun(scopeOrSkipConfirm?: ActionScope | boolean): Promise<void>;
   triggerManualSync(): void;
   openOcrDiagnostic(paperKey?: string): void;
+  updateNoteProperty?: (
+    file: obsidian.TFile,
+    propName: string,
+    value: string
+  ) => Promise<void>;
   _ocrProgress?: { current: number; total: number; key: string };
 }
 
@@ -132,6 +137,40 @@ function readValueString(val: unknown): string {
   }
   const s = String(val).trim();
   return s === "null" || s === "undefined" || s === "[object Object]" ? "" : s;
+}
+
+const SEARCH_HAY_CACHE = new WeakMap<BasePaperRowDto, string>();
+
+function getSearchHaystack(row: BasePaperRowDto): string {
+  let hay = SEARCH_HAY_CACHE.get(row);
+  if (hay === undefined) {
+    hay =
+      `${row.title} ${row.first_author} ${row.journal} ${row.domain} ${row.zotero_key}`.toLowerCase();
+    SEARCH_HAY_CACHE.set(row, hay);
+  }
+  return hay;
+}
+
+function resolveModEvent(
+  evt?: MouseEvent | KeyboardEvent
+): obsidian.PaneType | boolean {
+  if (!evt) return false;
+  try {
+    const km = (obsidian as Record<string, unknown>).Keymap as
+      | {
+          isModEvent?: (
+            e: MouseEvent | KeyboardEvent
+          ) => obsidian.PaneType | boolean;
+        }
+      | undefined;
+    if (typeof km?.isModEvent === "function") {
+      return km.isModEvent(evt);
+    }
+  } catch {
+    // Minimal Vitest mock proxy may throw when Keymap is omitted
+  }
+  if (evt.ctrlKey || evt.metaKey) return "tab";
+  return false;
 }
 
 /** O(1) main_note_path index cached per snapshot object (eliminates O(N²) render scan). */
@@ -282,13 +321,13 @@ const FIXED_COL_WIDTHS: Record<string, string> = {
   deep_reading_status: "78px",
 };
 
-/** Relative weights for flexible text columns (keeps Title snug next to Column 2). */
+/** Relative weights for flexible text columns (prioritize paper Title readability). */
 const FLEX_COL_WEIGHTS: Record<string, number> = {
-  title: 3.4,
-  "file.name": 3.4,
-  journal: 1.5,
-  first_author: 1.25,
-  domain: 1.05,
+  title: 4.8,
+  "file.name": 4.8,
+  journal: 1.4,
+  first_author: 1.15,
+  domain: 0.95,
 };
 
 function computeColumnWidths(columns: ColumnSpec[]): string[] {
@@ -321,6 +360,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _stateRef: obsidian.EventRef | null = null;
   private _selectedKeys = new Set<string>();
   private _lastSelectedIdx: number | null = null;
+  private _focusedRowIdx = -1;
   private _pendingShiftKey = false;
   private _localFilters: BaseFilterState | null = null;
   private _missingPdfHintDismissed = false;
@@ -329,21 +369,66 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private _rafRenderId: number | null = null;
   private _loadMoreObserver: IntersectionObserver | null = null;
+  private _shellMounted = false;
+  private _activitySlotEl: HTMLElement | null = null;
+  private _filterSlotEl: HTMLElement | null = null;
+  private _missingPdfSlotEl: HTMLElement | null = null;
   private _selectionSlotEl: HTMLElement | null = null;
+  private _emptySlotEl: HTMLElement | null = null;
+  private _tableWrapEl: HTMLElement | null = null;
+  private _tableEl: HTMLTableElement | null = null;
+  private _colgroupEl: HTMLElement | null = null;
+  private _theadEl: HTMLElement | null = null;
   private _tbodyEl: HTMLElement | null = null;
+  private _tfootEl: HTMLElement | null = null;
   private _selectAllCbEl: HTMLInputElement | null = null;
+  private _filterCountEl: HTMLElement | null = null;
+  private _filterResetBtnEl: HTMLButtonElement | null = null;
+  private _searchInputEl: HTMLInputElement | null = null;
+  private _domainSelectEl: HTMLSelectElement | null = null;
+  private _collectionSelectEl: HTMLSelectElement | null = null;
+  private _ifSelectEl: HTMLSelectElement | null = null;
+  private _statusPillBtns = new Map<string, HTMLButtonElement>();
+  private _filterOptionSig = "";
+  private _lastRawItems: RenderItem[] = [];
+  private _collapsedGroups = new Set<string>();
+  private _collapsedGroupsLoaded = false;
+  private _localSort: { key: string; dir: "ASC" | "DESC" } | null = null;
+  private _activeResizeCleanup: (() => void) | null = null;
   private _currentFlatItems: RenderItem[] = [];
   private _currentSlots: RenderSlot[] = [];
   private _currentColumns: ColumnSpec[] = [];
   private _renderedSlotCount = 0;
   private _renderedPaperCount = 0;
+  private _virtualActive = false;
+  private _virtualRange = { start: -1, end: -1 };
+  private _virtualRafId: number | null = null;
+  private _tableScrollHandler: (() => void) | null = null;
 
   private _filterKey(): string {
-    return (
-      (
-        (this as unknown as { file?: { path?: string } })?.file?.path || ""
-      ).trim() || "default"
-    );
+    const filePath = (
+      (this as unknown as { file?: { path?: string } })?.file?.path || ""
+    ).trim();
+    if (filePath) return filePath;
+    const viewName = String(this.config?.name || "").trim();
+    const ctrl = (
+      this as unknown as {
+        controller?: { file?: { path?: string }; viewName?: string };
+      }
+    )?.controller;
+    const ctrlPath = String(ctrl?.file?.path || "").trim();
+    if (ctrlPath) {
+      return viewName ? `${ctrlPath}#${viewName}` : ctrlPath;
+    }
+    const rawEntries = this.data?.data;
+    const firstDir =
+      Array.isArray(rawEntries) && rawEntries[0]?.file?.path
+        ? String(rawEntries[0].file.path).split("/").slice(0, -1).join("/")
+        : "";
+    if (viewName && firstDir) return `${firstDir}::${viewName}`;
+    if (viewName) return viewName;
+    if (firstDir) return firstDir;
+    return "default";
   }
 
   private _getFilters(): BaseFilterState {
@@ -366,25 +451,8 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     this._localFilters = next;
     this.plugin.setBaseFilters?.(this._filterKey(), next);
 
-    if (opts?.preserveSearchFocus) {
-      const active = this.containerEl?.ownerDocument
-        ?.activeElement as HTMLInputElement | null;
-      const selStart = active?.selectionStart ?? null;
-      const selEnd = active?.selectionEnd ?? null;
-      this.render();
-      const restored = this.containerEl?.querySelector<HTMLInputElement>(
-        '[data-pf-testid="base-filter-search"]'
-      );
-      if (restored) {
-        restored.focus();
-        if (selStart !== null && selEnd !== null) {
-          try {
-            restored.setSelectionRange(selStart, selEnd);
-          } catch {
-            // ignore
-          }
-        }
-      }
+    if (opts?.preserveSearchFocus && this._shellMounted && this._filterSlotEl) {
+      this._renderBodyOnly();
       return;
     }
     this.render();
@@ -415,7 +483,11 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     if (f.status && f.status !== "all") {
       if (f.status === "pending" && row.ocr_status !== "pending") return false;
       if (f.status === "done" && row.ocr_status !== "done") return false;
-      if (f.status === "deep_done" && row.deep_reading_status !== "done") {
+      if (
+        f.status === "deep_done" &&
+        row.deep_reading_status !== "done" &&
+        row.deep_reading_status !== "complete"
+      ) {
         return false;
       }
     }
@@ -425,9 +497,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     }
     if (f.query && f.query.trim()) {
       const q = f.query.trim().toLowerCase();
-      const hay =
-        `${row.title} ${row.first_author} ${row.journal} ${row.domain} ${row.zotero_key}`.toLowerCase();
-      if (!hay.includes(q)) return false;
+      if (!getSearchHaystack(row).includes(q)) return false;
     }
     return true;
   }
@@ -445,11 +515,14 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   onload(): void {
     const app = this.app ?? this.plugin.app;
     const ws = app?.workspace as unknown as {
-      on?: (name: string, cb: () => void) => obsidian.EventRef;
+      on?: (
+        name: string,
+        cb: (payload?: { changedKeys?: string[] }) => void
+      ) => obsidian.EventRef;
     };
     if (typeof ws?.on === "function") {
-      this._stateRef = ws.on("paperforge:state-changed", () => {
-        this.render();
+      this._stateRef = ws.on("paperforge:state-changed", (payload) => {
+        this._handleStateChanged(payload);
       });
     }
     if (!this.plugin.getBaseSnapshotCache() && !this._loadingSnapshot) {
@@ -459,10 +532,76 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         .catch(() => null)
         .finally(() => {
           this._loadingSnapshot = false;
-          this.render();
+          this._scheduleRender();
         });
     }
     this.render();
+  }
+
+  private _handleStateChanged(payload?: { changedKeys?: string[] }): void {
+    const changed = Array.isArray(payload?.changedKeys)
+      ? payload!.changedKeys.filter(Boolean)
+      : [];
+    if (
+      changed.length > 0 &&
+      this._shellMounted &&
+      this._tbodyEl &&
+      this._tbodyEl.isConnected
+    ) {
+      if (this._patchChangedRows(changed)) {
+        this._renderActivityStrip(this._lastRawItems);
+        return;
+      }
+    }
+    this._scheduleRender();
+  }
+
+  private _patchChangedRows(changedKeys: string[]): boolean {
+    const tbody = this._tbodyEl;
+    if (!tbody) return false;
+    const snapshot = this.plugin.getBaseSnapshotCache();
+    const rowsByKey = snapshot?.rows;
+    if (!rowsByKey) return false;
+    let patchedAny = false;
+    for (const key of changedKeys) {
+      const fresh = rowsByKey[key];
+      if (!fresh) continue;
+      const tr = tbody.querySelector<HTMLTableRowElement>(
+        `tr.pf-base-row[data-paper-key="${CSS?.escape ? CSS.escape(key) : key.replace(/"/g, '\\"')}"]`
+      );
+      if (!tr) continue;
+      const flatItem = this._currentFlatItems.find(
+        (it) => it.row.zotero_key === key
+      );
+      if (flatItem) flatItem.row = fresh;
+      const statusCell = tr.querySelector<HTMLElement>(
+        "td.pf-base-cell-ocr_status"
+      );
+      if (statusCell) {
+        statusCell.textContent = "";
+        this._renderStatusBadge(statusCell, fresh);
+        patchedAny = true;
+      }
+      const annCell = tr.querySelector<HTMLElement>(
+        "td.pf-base-cell-annotations"
+      );
+      if (annCell) {
+        const totalAnns =
+          (fresh.user_ann_count || 0) + (fresh.agent_ann_count || 0);
+        const memCount = fresh.memory_facet_count || 0;
+        const parts: string[] = [];
+        if (totalAnns > 0)
+          parts.push(
+            t("base_count_annotations").replace("{n}", String(totalAnns))
+          );
+        if (memCount > 0)
+          parts.push(t("base_count_memory").replace("{n}", String(memCount)));
+        annCell.textContent = parts.length > 0 ? parts.join(" · ") : "—";
+        annCell.classList.toggle("pf-base-muted", parts.length === 0);
+        patchedAny = true;
+      }
+    }
+    return patchedAny;
   }
 
   onunload(): void {
@@ -477,7 +616,21 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       cancelAnimationFrame(this._rafRenderId);
       this._rafRenderId = null;
     }
+    if (
+      this._virtualRafId !== null &&
+      typeof cancelAnimationFrame === "function"
+    ) {
+      cancelAnimationFrame(this._virtualRafId);
+      this._virtualRafId = null;
+    }
+    if (this._tableWrapEl && this._tableScrollHandler) {
+      this._tableWrapEl.removeEventListener("scroll", this._tableScrollHandler);
+    }
+    this._tableScrollHandler = null;
+    this._activeResizeCleanup?.();
+    this._activeResizeCleanup = null;
     this._disconnectLoadMoreObserver();
+    this._shellMounted = false;
     const app = this.app ?? this.plugin.app;
     const ws = app?.workspace as unknown as {
       offref?: (ref: obsidian.EventRef) => void;
@@ -582,6 +735,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
   private _resolveColumns(): ColumnSpec[] {
     const showAnnotations = this.config?.get?.("show_annotations") !== false;
     const rawOrder = this.config?.getOrder?.();
+    const hasUserOrder = Array.isArray(rawOrder) && rawOrder.length > 0;
     const fallbackOrder: obsidian.BasesPropertyId[] = [
       "note.title",
       "note.first_author",
@@ -594,20 +748,20 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         : []),
       "note.ocr_status",
     ];
-    const order =
-      Array.isArray(rawOrder) && rawOrder.length > 0
-        ? [...rawOrder]
-        : fallbackOrder;
+    const order = hasUserOrder ? [...rawOrder] : fallbackOrder;
 
-    const filtered = order.filter((propId) => {
-      const clean = String(propId).replace(/^(note|file|formula)\./, "");
-      return (
-        clean !== "do_ocr" &&
-        clean !== "analyze" &&
-        clean !== "zotero_key" &&
-        clean !== "pdf_path"
-      );
-    });
+    // Only strip legacy queue flags when using default fallback order; respect explicit user selection.
+    const filtered = hasUserOrder
+      ? order
+      : order.filter((propId) => {
+          const clean = String(propId).replace(/^(note|file|formula)\./, "");
+          return (
+            clean !== "do_ocr" &&
+            clean !== "analyze" &&
+            clean !== "zotero_key" &&
+            clean !== "pdf_path"
+          );
+        });
 
     if (
       showAnnotations &&
@@ -641,11 +795,15 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           : str.replace(/^(note|file|formula)\./, "");
       if (seenKey.has(clean)) continue;
       seenKey.add(clean);
-      let display = defaultColumnLabel(str) || defaultColumnLabel(clean);
-      if (!display) {
-        const cfgName = this.config?.getDisplayName?.(propId);
-        display = cfgName && cfgName.trim() ? cfgName.trim() : clean;
-      }
+      const cfgName = this.config?.getDisplayName?.(propId)?.trim() ?? "";
+      const hasExplicitAlias =
+        cfgName.length > 0 && cfgName !== clean && cfgName !== str;
+      const display = hasExplicitAlias
+        ? cfgName
+        : defaultColumnLabel(str) ||
+          defaultColumnLabel(clean) ||
+          cfgName ||
+          clean;
       specs.push({
         id: propId,
         key: clean,
@@ -719,17 +877,35 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     });
   }
 
+  private _updateFilterBarMeta(
+    rawCount: number,
+    matchedCount: number,
+    filters: BaseFilterState
+  ): void {
+    if (this._filterCountEl) {
+      this._filterCountEl.textContent = this._hasActiveFilters(filters)
+        ? t("base_count_filtered")
+            .replace("{shown}", String(matchedCount))
+            .replace("{total}", String(rawCount))
+        : t("base_count_total").replace("{n}", String(rawCount));
+    }
+    const activeStatus = filters.status || "all";
+    for (const [val, btn] of this._statusPillBtns.entries()) {
+      btn.classList.toggle("is-active", activeStatus === val);
+    }
+    if (this._filterResetBtnEl) {
+      this._filterResetBtnEl.style.display = this._hasActiveFilters(filters)
+        ? ""
+        : "none";
+    }
+  }
+
   private _renderFilterBar(
-    root: HTMLElement,
+    host: HTMLElement,
     rawItems: RenderItem[],
     matchedCount: number,
     filters: BaseFilterState
   ): void {
-    const bar = mkEl(root, "div", {
-      cls: "pf-base-filter-bar",
-      attr: { "data-pf-testid": "base-filter-bar" },
-    });
-
     const domains = Array.from(
       new Set(rawItems.map((it) => it.row.domain).filter(Boolean))
     ).sort();
@@ -743,7 +919,38 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       )
     ).sort();
 
-    // 1. Live keyword filter (debounced live filtering + immediate Enter/change)
+    const sig = `${domains.join("|")}::${collectionPool.join("|")}::${activeDomain}`;
+    if (
+      this._searchInputEl &&
+      this._searchInputEl.isConnected &&
+      sig === this._filterOptionSig
+    ) {
+      if (
+        this._searchInputEl.ownerDocument?.activeElement !== this._searchInputEl
+      ) {
+        this._searchInputEl.value = filters.query || "";
+      }
+      if (this._domainSelectEl) this._domainSelectEl.value = activeDomain;
+      if (this._collectionSelectEl) {
+        this._collectionSelectEl.value = filters.collection || "";
+      }
+      if (this._ifSelectEl) {
+        this._ifSelectEl.value = String(filters.minIf || 0);
+      }
+      this._updateFilterBarMeta(rawItems.length, matchedCount, filters);
+      return;
+    }
+
+    this._filterOptionSig = sig;
+    this._statusPillBtns.clear();
+    host.textContent = "";
+
+    const bar = mkEl(host, "div", {
+      cls: "pf-base-filter-bar",
+      attr: { "data-pf-testid": "base-filter-bar" },
+    });
+
+    // 1. Live keyword filter (persistent input element — zero focus loss on typing)
     const searchInput = mkEl(bar, "input", {
       cls: "pf-base-filter-search",
       attr: {
@@ -752,6 +959,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         "data-pf-testid": "base-filter-search",
       },
     }) as HTMLInputElement;
+    this._searchInputEl = searchInput;
     searchInput.value = filters.query || "";
     searchInput.addEventListener("input", () => {
       if (this._searchDebounceTimer) clearTimeout(this._searchDebounceTimer);
@@ -761,14 +969,17 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           { query: searchInput.value.trim() },
           { preserveSearchFocus: true }
         );
-      }, 150);
+      }, 120);
     });
     searchInput.addEventListener("change", () => {
       if (this._searchDebounceTimer) {
         clearTimeout(this._searchDebounceTimer);
         this._searchDebounceTimer = null;
       }
-      this._updateFilters({ query: searchInput.value.trim() });
+      this._updateFilters(
+        { query: searchInput.value.trim() },
+        { preserveSearchFocus: true }
+      );
     });
     searchInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -784,11 +995,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     });
 
     // 2. Topic / Domain dropdown
+    this._domainSelectEl = null;
     if (domains.length > 0) {
       const domSel = mkEl(bar, "select", {
         cls: "pf-base-filter-select",
         attr: { "data-pf-testid": "base-filter-domain" },
       }) as HTMLSelectElement;
+      this._domainSelectEl = domSel;
       const allOpt = mkEl(domSel, "option", {
         text: t("base_filter_all_domains"),
         attr: { value: "" },
@@ -807,11 +1020,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     }
 
     // 3. Cascading Zotero Collection dropdown
+    this._collectionSelectEl = null;
     if (collectionPool.length > 0) {
       const colSel = mkEl(bar, "select", {
         cls: "pf-base-filter-select",
         attr: { "data-pf-testid": "base-filter-collection" },
       }) as HTMLSelectElement;
+      this._collectionSelectEl = colSel;
       const allCol = mkEl(colSel, "option", {
         text: t("base_filter_all_collections"),
         attr: { value: "" },
@@ -844,8 +1059,9 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         text: label,
         attr: { type: "button", "data-pf-filter-status": val },
       });
+      this._statusPillBtns.set(val, btn);
       btn.addEventListener("click", () => {
-        this._updateFilters({ status: val });
+        this._updateFilters({ status: val }, { preserveSearchFocus: true });
       });
     }
 
@@ -854,6 +1070,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       cls: "pf-base-filter-select pf-tnum",
       attr: { "data-pf-testid": "base-filter-if" },
     }) as HTMLSelectElement;
+    this._ifSelectEl = ifSel;
     for (const [val, label] of [
       ["0", t("base_filter_if_any")],
       ["5", "IF ≥ 5"],
@@ -867,36 +1084,35 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       opt.selected = String(filters.minIf || 0) === val;
     }
     ifSel.addEventListener("change", () => {
-      this._updateFilters({ minIf: Number(ifSel.value) || 0 });
+      this._updateFilters(
+        { minIf: Number(ifSel.value) || 0 },
+        { preserveSearchFocus: true }
+      );
     });
 
-    if (this._hasActiveFilters(filters)) {
-      const reset = mkEl(bar, "button", {
-        cls: "pf-btn pf-btn-ghost pf-base-filter-reset",
-        text: t("base_filter_reset"),
-        attr: { type: "button", "data-pf-testid": "base-filter-reset" },
+    const reset = mkEl(bar, "button", {
+      cls: "pf-btn pf-btn-ghost pf-base-filter-reset",
+      text: t("base_filter_reset"),
+      attr: { type: "button", "data-pf-testid": "base-filter-reset" },
+    });
+    this._filterResetBtnEl = reset;
+    reset.style.display = this._hasActiveFilters(filters) ? "" : "none";
+    reset.addEventListener("click", () => {
+      this._updateFilters({
+        query: "",
+        domain: "",
+        collection: "",
+        status: "all",
+        minIf: 0,
       });
-      reset.addEventListener("click", () => {
-        this._updateFilters({
-          query: "",
-          domain: "",
-          collection: "",
-          status: "all",
-          minIf: 0,
-        });
-      });
-    }
+    });
 
     // Subtle right-aligned count indicator
-    const countLabel = this._hasActiveFilters(filters)
-      ? t("base_count_filtered")
-          .replace("{shown}", String(matchedCount))
-          .replace("{total}", String(rawItems.length))
-      : t("base_count_total").replace("{n}", String(rawItems.length));
-    mkEl(bar, "span", {
+    this._filterCountEl = mkEl(bar, "span", {
       cls: "pf-base-filter-count pf-tnum",
-      text: countLabel,
+      text: "",
     });
+    this._updateFilterBarMeta(rawItems.length, matchedCount, filters);
   }
 
   /** Surgical selection update: updates only selection bar + affected TR classes (<0.4ms). */
@@ -987,14 +1203,6 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         this.plugin.openOcrDiagnostic(diagTarget.row.zotero_key);
       });
     }
-    const syncBtn = mkEl(right, "button", {
-      cls: "pf-btn",
-      text: t("base_sync_library"),
-      attr: { type: "button", "data-pf-testid": "base-sync-library" },
-    });
-    syncBtn.addEventListener("click", () => {
-      this.plugin.triggerManualSync();
-    });
 
     const parseBtn = mkEl(right, "button", {
       cls: "pf-btn mod-cta",
@@ -1060,7 +1268,35 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         titleLink.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          this._openNote(row.main_note_path);
+          const clickAction = String(
+            this.config?.get?.("row_click_action") ?? "open_note"
+          );
+          const mod = resolveModEvent(e);
+          if (!mod && clickAction === "open_pdf" && row.has_pdf) {
+            void this.plugin.openPaperPdf(row.zotero_key);
+            return;
+          }
+          if (
+            !mod &&
+            clickAction === "open_split" &&
+            row.has_pdf &&
+            this.plugin.openPaperSplitReading
+          ) {
+            void this.plugin.openPaperSplitReading(
+              row.zotero_key,
+              row.main_note_path
+            );
+            return;
+          }
+          this._openNote(row.main_note_path, e);
+        });
+        titleLink.addEventListener("auxclick", (e) => {
+          if (e.button !== 1) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (!row.main_note_path) return;
+          const app = this.app ?? this.plugin.app;
+          void app.workspace?.openLinkText?.(row.main_note_path, "", "tab");
         });
         bindObsidianHoverPreview(
           this.app ?? this.plugin.app,
@@ -1068,6 +1304,38 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           "paperforge",
           row.main_note_path
         );
+        const rowActions = mkEl(titleWrap, "div", {
+          cls: "pf-base-row-actions",
+        });
+        if (row.has_pdf && this.plugin.openPaperSplitReading) {
+          const splitBtn = createPfIconBtn(rowActions, {
+            icon: "columns-2",
+            label: t("ctx_split_reading"),
+            size: 13,
+            cls: "pf-base-row-action-btn",
+            testid: "base-row-split",
+          });
+          splitBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void this.plugin.openPaperSplitReading?.(
+              row.zotero_key,
+              row.main_note_path
+            );
+          });
+        }
+        const moreBtn = createPfIconBtn(rowActions, {
+          icon: "more-horizontal",
+          label: t("base_row_more_actions"),
+          size: 13,
+          cls: "pf-base-row-action-btn",
+          testid: "base-row-more",
+        });
+        moreBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._openRowContextMenu(e, row);
+        });
         break;
       }
       case "first_author":
@@ -1163,68 +1431,184 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         });
         break;
       default: {
-        const val = readValueString(entry?.getValue?.(col.id));
-        mkEl(td, "span", {
+        const rawVal = entry?.getValue?.(col.id);
+        const renderCtx = (
+          this.app as unknown as { renderContext?: unknown } | undefined
+        )?.renderContext;
+        if (
+          rawVal &&
+          typeof (rawVal as { renderTo?: unknown }).renderTo === "function" &&
+          renderCtx
+        ) {
+          const valHost = mkEl(td, "div", { cls: "pf-base-native-val" });
+          try {
+            (
+              rawVal as {
+                renderTo: (el: HTMLElement, ctx: unknown) => void;
+              }
+            ).renderTo(valHost, renderCtx);
+            if (valHost.childNodes.length > 0 || valHost.textContent) {
+              break;
+            }
+          } catch {
+            valHost.remove();
+          }
+        }
+        const val = readValueString(rawVal);
+        const spanEl = mkEl(td, "span", {
           cls: val ? "pf-base-text-ellipsis" : "pf-base-muted",
           text: val || "—",
           attr: val ? { title: val } : undefined,
         });
+        if (col.id.startsWith("note.") && entry?.file) {
+          td.classList.add("pf-base-cell-editable");
+          td.title = t("base_inline_edit_hint") || "Double-click to edit";
+          const startInline = (ev: Event) => {
+            ev.stopPropagation();
+            this._beginInlineEdit(td, spanEl, col, item, val);
+          };
+          td.addEventListener("dblclick", startInline);
+          const editBtn = mkEl(td, "button", {
+            cls: "pf-base-inline-edit-btn",
+            text: "✎",
+            attr: {
+              type: "button",
+              "aria-label":
+                t("base_inline_edit_hint") || "Double-click to edit",
+              "data-pf-testid": "base-inline-edit-btn",
+            },
+          });
+          editBtn.addEventListener("click", startInline);
+        }
         break;
       }
     }
   }
 
-  /** Append the next chunk of rows in a single DocumentFragment for silky 60fps scrolling. */
-  private _appendNextChunk(chunkSize: number): void {
-    const tbody = this._tbodyEl;
-    if (!tbody) return;
-    this._disconnectLoadMoreObserver();
-    const existingSentinel = tbody.querySelector("tr.pf-base-load-more-row");
-    if (existingSentinel) existingSentinel.remove();
+  private _beginInlineEdit(
+    td: HTMLElement,
+    spanEl: HTMLElement,
+    col: ColumnSpec,
+    item: RenderItem,
+    initialVal: string
+  ): void {
+    if (td.querySelector(".pf-base-inline-input")) return;
+    const propName = col.id.startsWith("note.")
+      ? col.id.slice("note.".length)
+      : col.key;
+    const file = item.entry?.file;
+    if (!propName || !file) return;
 
-    const doc = tbody.ownerDocument || document;
-    const frag = doc.createDocumentFragment();
-    const columns = this._currentColumns;
-    const totalColSpan = columns.length + 1;
-    let papersAppended = 0;
+    spanEl.style.display = "none";
+    const editBtn = td.querySelector(
+      ".pf-base-inline-edit-btn"
+    ) as HTMLElement | null;
+    if (editBtn) editBtn.style.display = "none";
 
-    while (
-      this._renderedSlotCount < this._currentSlots.length &&
-      papersAppended < chunkSize
-    ) {
-      const slot = this._currentSlots[this._renderedSlotCount++];
-      if (slot.kind === "group") {
-        const gTr = mkEl(frag, "tr", { cls: "pf-base-group-row" });
-        const gTd = mkEl(gTr, "td", {
-          attr: { colspan: String(totalColSpan) },
-        });
-        const gWrap = mkEl(gTd, "div", { cls: "pf-base-group-head" });
-        const gDot = mkEl(gWrap, "span", { cls: "pf-base-dot" });
-        gDot.style.background = categoricalColor(slot.label);
-        mkEl(gWrap, "span", {
-          cls: "pf-base-group-name",
-          text: slot.label,
-        });
-        mkEl(gWrap, "span", {
-          cls: "pf-base-group-count pf-tnum",
-          text: t("base_group_count").replace("{n}", String(slot.count)),
-        });
-        continue;
+    const doc = td.ownerDocument || document;
+    const input = doc.createElement("input");
+    input.type = "text";
+    input.className = "pf-base-inline-input";
+    input.value = initialVal;
+    input.setAttribute("data-pf-testid", "base-inline-input");
+    td.appendChild(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const restore = (nextText: string) => {
+      if (done) return;
+      done = true;
+      input.remove();
+      spanEl.style.display = "";
+      spanEl.textContent = nextText || "—";
+      spanEl.className = nextText ? "pf-base-text-ellipsis" : "pf-base-muted";
+      if (editBtn) editBtn.style.display = "";
+    };
+
+    const commit = async () => {
+      if (done) return;
+      const nextVal = input.value.trim();
+      restore(nextVal);
+      if (nextVal === initialVal) return;
+      if (typeof this.plugin.updateNoteProperty === "function") {
+        await this.plugin.updateNoteProperty(file, propName, nextVal);
+        new Notice(t("base_inline_edit_saved") || "Property updated", 2000);
       }
+    };
 
-      papersAppended += 1;
-      this._renderedPaperCount += 1;
-      const { item, flatIndex } = slot;
-      const row = item.row;
-      const isSelected = this._selectedKeys.has(row.zotero_key);
-      const tr = mkEl(frag, "tr", {
-        cls: `pf-base-row${isSelected ? " is-selected" : ""}`,
-        attr: { "data-paper-key": row.zotero_key },
+    input.addEventListener("keydown", (ev) => {
+      ev.stopPropagation();
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        void commit();
+      } else if (ev.key === "Escape") {
+        ev.preventDefault();
+        restore(initialVal);
+      }
+    });
+    input.addEventListener("blur", () => {
+      void commit();
+    });
+  }
+
+  private _renderSlotIntoFragment(
+    frag: DocumentFragment,
+    slot: RenderSlot,
+    columns: ColumnSpec[],
+    showCheckboxes: boolean,
+    totalColSpan: number
+  ): void {
+    if (slot.kind === "group") {
+      const isCollapsed = this._collapsedGroups.has(slot.label);
+      const gTr = mkEl(frag, "tr", {
+        cls: `pf-base-group-row${isCollapsed ? " is-collapsed" : ""}`,
+        attr: {
+          "data-pf-group": slot.label,
+          "aria-expanded": String(!isCollapsed),
+          title: t("base_group_toggle_tip"),
+        },
       });
-      tr.addEventListener("contextmenu", (e) =>
-        this._openRowContextMenu(e, row)
-      );
+      gTr.addEventListener("click", () => {
+        this._toggleGroupCollapse(slot.label);
+      });
+      const gTd = mkEl(gTr, "td", {
+        attr: { colspan: String(totalColSpan) },
+      });
+      const gWrap = mkEl(gTd, "div", { cls: "pf-base-group-head" });
+      const chev = mkEl(gWrap, "span", { cls: "pf-base-group-chevron" });
+      setPfIcon(chev, isCollapsed ? "chevron-right" : "chevron-down", 12);
+      const gDot = mkEl(gWrap, "span", { cls: "pf-base-dot" });
+      gDot.style.background = categoricalColor(slot.label);
+      mkEl(gWrap, "span", {
+        cls: "pf-base-group-name",
+        text: slot.label,
+      });
+      mkEl(gWrap, "span", {
+        cls: "pf-base-group-count pf-tnum",
+        text: t("base_group_count").replace("{n}", String(slot.count)),
+      });
+      return;
+    }
 
+    const { item, flatIndex } = slot;
+    const row = item.row;
+    const isSelected = this._selectedKeys.has(row.zotero_key);
+    const isKbActive = this._focusedRowIdx === flatIndex;
+    const tr = mkEl(frag, "tr", {
+      cls: `pf-base-row${isSelected ? " is-selected" : ""}${isKbActive ? " is-kb-active" : ""}`,
+      attr: {
+        "data-paper-key": row.zotero_key,
+        "data-flat-idx": String(flatIndex),
+      },
+    });
+    tr.addEventListener("click", () => {
+      this._focusedRowIdx = flatIndex;
+      this._syncFocusedRowUi(false);
+    });
+    tr.addEventListener("contextmenu", (e) => this._openRowContextMenu(e, row));
+
+    if (showCheckboxes) {
       const checkTd = mkEl(tr, "td", { cls: "pf-base-cell-check" });
       const rowCb = mkEl(checkTd, "input", {
         attr: {
@@ -1256,10 +1640,113 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         this._lastSelectedIdx = flatIndex;
         this._syncSelectionUi();
       });
+    }
 
-      for (const col of columns) {
-        this._renderCell(tr, col, item);
+    for (const col of columns) {
+      this._renderCell(tr, col, item);
+    }
+  }
+
+  private _renderVirtualWindow(force = false): void {
+    const tbody = this._tbodyEl;
+    const wrap = this._tableWrapEl;
+    if (!tbody || !wrap || !this._virtualActive) return;
+
+    const VIRTUAL_EST_ROW_H = 34;
+    const VIRTUAL_OVERSCAN = 12;
+    const total = this._currentSlots.length;
+    if (total === 0) {
+      tbody.textContent = "";
+      return;
+    }
+
+    const viewportH = Math.max(320, wrap.clientHeight || 600);
+    const scrollTop = Math.max(0, wrap.scrollTop || 0);
+    const start = Math.max(
+      0,
+      Math.floor(scrollTop / VIRTUAL_EST_ROW_H) - VIRTUAL_OVERSCAN
+    );
+    const end = Math.min(
+      total,
+      Math.ceil((scrollTop + viewportH) / VIRTUAL_EST_ROW_H) + VIRTUAL_OVERSCAN
+    );
+
+    if (
+      !force &&
+      start === this._virtualRange.start &&
+      end === this._virtualRange.end
+    ) {
+      return;
+    }
+    this._virtualRange = { start, end };
+
+    const doc = tbody.ownerDocument || document;
+    const frag = doc.createDocumentFragment();
+    const columns = this._currentColumns;
+    const showCheckboxes = this.config?.get?.("show_checkboxes") !== false;
+    const totalColSpan = columns.length + (showCheckboxes ? 1 : 0);
+
+    if (start > 0) {
+      const topSpacer = mkEl(frag, "tr", { cls: "pf-base-virtual-spacer" });
+      const topTd = mkEl(topSpacer, "td", {
+        attr: { colspan: String(totalColSpan) },
+      });
+      topTd.style.height = `${start * VIRTUAL_EST_ROW_H}px`;
+    }
+
+    for (let idx = start; idx < end; idx += 1) {
+      this._renderSlotIntoFragment(
+        frag,
+        this._currentSlots[idx],
+        columns,
+        showCheckboxes,
+        totalColSpan
+      );
+    }
+
+    if (end < total) {
+      const botSpacer = mkEl(frag, "tr", { cls: "pf-base-virtual-spacer" });
+      const botTd = mkEl(botSpacer, "td", {
+        attr: { colspan: String(totalColSpan) },
+      });
+      botTd.style.height = `${(total - end) * VIRTUAL_EST_ROW_H}px`;
+    }
+
+    tbody.textContent = "";
+    tbody.appendChild(frag);
+  }
+
+  /** Append the next chunk of rows in a single DocumentFragment for silky 60fps scrolling. */
+  private _appendNextChunk(chunkSize: number): void {
+    const tbody = this._tbodyEl;
+    if (!tbody) return;
+    this._disconnectLoadMoreObserver();
+    const existingSentinel = tbody.querySelector("tr.pf-base-load-more-row");
+    if (existingSentinel) existingSentinel.remove();
+
+    const doc = tbody.ownerDocument || document;
+    const frag = doc.createDocumentFragment();
+    const columns = this._currentColumns;
+    const showCheckboxes = this.config?.get?.("show_checkboxes") !== false;
+    const totalColSpan = columns.length + (showCheckboxes ? 1 : 0);
+    let papersAppended = 0;
+
+    while (
+      this._renderedSlotCount < this._currentSlots.length &&
+      papersAppended < chunkSize
+    ) {
+      const slot = this._currentSlots[this._renderedSlotCount++];
+      if (slot.kind === "row") {
+        papersAppended += 1;
+        this._renderedPaperCount += 1;
       }
+      this._renderSlotIntoFragment(
+        frag,
+        slot,
+        columns,
+        showCheckboxes,
+        totalColSpan
+      );
     }
 
     const remainingPapers =
@@ -1298,12 +1785,17 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     }
   }
 
-  private _openNote(notePath: string): void {
+  private _openNote(notePath: string, evt?: MouseEvent | KeyboardEvent): void {
     if (!notePath) {
       new Notice(t("paper_note_missing") || "Note path unavailable.");
       return;
     }
     const app = this.app ?? this.plugin.app;
+    const mod = resolveModEvent(evt);
+    if (mod) {
+      void app.workspace?.openLinkText?.(notePath, "", mod);
+      return;
+    }
     void app.workspace?.openLinkText?.(notePath, "");
   }
 
@@ -1317,7 +1809,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         row.needs_diagnostic ||
         row.ocr_status === "failed" ||
         row.ocr_status === "done_incomplete",
-      onOpenNote: () => this._openNote(row.main_note_path),
+      onOpenNote: () => this._openNote(row.main_note_path, event),
       onOpenPdf: () => void this.plugin.openPaperPdf(row.zotero_key),
       onOpenSplit: this.plugin.openPaperSplitReading
         ? () =>
@@ -1335,202 +1827,664 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     });
   }
 
-  render(): void {
-    const root = this.containerEl;
-    if (!root) return;
-    this._disconnectLoadMoreObserver();
-    this._tbodyEl = null;
-    this._selectionSlotEl = null;
-    this._selectAllCbEl = null;
-    root.textContent = "";
-    root.classList.add("pf-base-view-root");
-    const compact = this.config?.get?.("compact_rows") === true;
-    root.classList.toggle("is-compact", compact);
-
-    const snapshot = this.plugin.getBaseSnapshotCache();
-    const rawGroups = this._collectGroups(snapshot);
-    const rawFlatItems = rawGroups.flatMap((g) => g.items);
-    const filters = this._getFilters();
-    const groups = rawGroups
-      .map((g) => ({
-        groupLabel: g.groupLabel,
-        items: g.items.filter((it) => this._matchesFilters(it.row, filters)),
-      }))
-      .filter((g) => g.items.length > 0);
-    const flatItems = groups.flatMap((g) => g.items);
-    const visibleKeySet = new Set(flatItems.map((it) => it.row.zotero_key));
-
-    // Prune stale selections not in current view slice
-    for (const k of Array.from(this._selectedKeys)) {
-      if (!visibleKeySet.has(k)) this._selectedKeys.delete(k);
+  private _ensureCollapsedGroupsLoaded(): void {
+    if (this._collapsedGroupsLoaded) return;
+    this._collapsedGroupsLoaded = true;
+    const raw = this.config?.get?.("collapsed_groups");
+    if (Array.isArray(raw)) {
+      for (const g of raw) {
+        if (typeof g === "string" && g) this._collapsedGroups.add(g);
+      }
     }
+  }
 
-    this._currentFlatItems = flatItems;
+  private _toggleGroupCollapse(label: string): void {
+    if (this._collapsedGroups.has(label)) {
+      this._collapsedGroups.delete(label);
+    } else {
+      this._collapsedGroups.add(label);
+    }
+    try {
+      this.config?.set?.("collapsed_groups", Array.from(this._collapsedGroups));
+    } catch {
+      // Optional in minimal mock configs
+    }
+    this._renderBodyOnly();
+  }
 
-    // Subtle runtime activity strip (only shown while an OCR batch is active)
+  private _getActiveSort(): { key: string; dir: "ASC" | "DESC" } | null {
+    if (this._localSort) return this._localSort;
+    try {
+      const cfgSort = this.config?.getSort?.();
+      if (
+        Array.isArray(cfgSort) &&
+        cfgSort.length > 0 &&
+        cfgSort[0]?.property
+      ) {
+        const clean = String(cfgSort[0].property).replace(
+          /^(note|file|formula)\./,
+          ""
+        );
+        return {
+          key: clean === "file.name" ? "title" : clean,
+          dir: cfgSort[0].direction === "DESC" ? "DESC" : "ASC",
+        };
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  private _toggleColumnSort(col: ColumnSpec): void {
+    const cur = this._getActiveSort();
+    let next: { key: string; dir: "ASC" | "DESC" } | null;
+    if (!cur || cur.key !== col.key) {
+      next = { key: col.key, dir: "ASC" };
+    } else if (cur.dir === "ASC") {
+      next = { key: col.key, dir: "DESC" };
+    } else {
+      next = null;
+    }
+    this._localSort = next;
+    try {
+      this.config?.set?.(
+        "sort",
+        next ? [{ property: col.id, direction: next.dir }] : []
+      );
+    } catch {
+      // Optional in minimal mock configs
+    }
+    this._renderBodyOnly();
+  }
+
+  private _sortItems(
+    items: RenderItem[],
+    sort: { key: string; dir: "ASC" | "DESC" } | null
+  ): RenderItem[] {
+    if (!sort) return items;
+    const { key, dir } = sort;
+    const mul = dir === "DESC" ? -1 : 1;
+    const readCellVal = (item: RenderItem): string | number => {
+      const r = item.row;
+      switch (key) {
+        case "title":
+        case "file.name":
+          return (r.title || r.zotero_key || "").toLowerCase();
+        case "first_author":
+          return (r.first_author || "").toLowerCase();
+        case "year": {
+          const n = Number.parseFloat(String(r.year || ""));
+          return Number.isFinite(n) ? n : -Infinity;
+        }
+        case "journal":
+          return (r.journal || "").toLowerCase();
+        case "impact_factor": {
+          const n = Number.parseFloat(String(r.impact_factor || ""));
+          return Number.isFinite(n) ? n : -Infinity;
+        }
+        case "domain":
+          return (r.domain || "").toLowerCase();
+        case "annotations":
+          return (
+            (r.user_ann_count || 0) +
+            (r.agent_ann_count || 0) +
+            (r.memory_facet_count || 0)
+          );
+        case "ocr_status":
+          return `${r.ocr_status || ""}_${r.deep_reading_status || ""}`;
+        default:
+          return readValueString(
+            item.entry?.getValue?.(key as obsidian.BasesPropertyId) ??
+              item.entry?.getValue?.(`note.${key}` as obsidian.BasesPropertyId)
+          ).toLowerCase();
+      }
+    };
+    return [...items].sort((a, b) => {
+      const va = readCellVal(a);
+      const vb = readCellVal(b);
+      if (typeof va === "number" && typeof vb === "number") {
+        return (va - vb) * mul;
+      }
+      return String(va).localeCompare(String(vb)) * mul;
+    });
+  }
+
+  private _readSavedColumnSizes(): Record<string, number> {
+    const raw =
+      (this.config?.get?.("columnSize") as
+        | Record<string, unknown>
+        | undefined) ??
+      (this.config?.get?.("widths") as Record<string, unknown> | undefined);
+    if (!raw || typeof raw !== "object") return {};
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 40) out[k] = Math.round(n);
+    }
+    return out;
+  }
+
+  private _bindColumnResize(
+    resizer: HTMLElement,
+    th: HTMLElement,
+    colEl: HTMLElement,
+    col: ColumnSpec
+  ): void {
+    resizer.addEventListener("click", (e) => e.stopPropagation());
+    resizer.addEventListener("pointerdown", (startEv: PointerEvent) => {
+      startEv.preventDefault();
+      startEv.stopPropagation();
+      const doc = resizer.ownerDocument || document;
+      const startX = startEv.clientX;
+      const startW = Math.max(48, th.getBoundingClientRect().width || 120);
+      let latestW = startW;
+      resizer.classList.add("is-dragging");
+
+      const onMove = (moveEv: PointerEvent) => {
+        latestW = Math.max(48, Math.round(startW + (moveEv.clientX - startX)));
+        colEl.style.width = `${latestW}px`;
+      };
+      const cleanup = () => {
+        doc.removeEventListener("pointermove", onMove);
+        doc.removeEventListener("pointerup", onUp);
+        doc.removeEventListener("pointercancel", onUp);
+        resizer.classList.remove("is-dragging");
+        this._activeResizeCleanup = null;
+      };
+      const onUp = () => {
+        cleanup();
+        const prev = this._readSavedColumnSizes();
+        const next: Record<string, number> = {
+          ...prev,
+          [String(col.id)]: latestW,
+        };
+        try {
+          this.config?.set?.("columnSize", next);
+        } catch {
+          // Optional in minimal mock configs
+        }
+      };
+      if (
+        this._virtualRafId !== null &&
+        typeof cancelAnimationFrame === "function"
+      ) {
+        cancelAnimationFrame(this._virtualRafId);
+        this._virtualRafId = null;
+      }
+      if (this._tableWrapEl && this._tableScrollHandler) {
+        this._tableWrapEl.removeEventListener(
+          "scroll",
+          this._tableScrollHandler
+        );
+      }
+      this._tableScrollHandler = null;
+      this._activeResizeCleanup?.();
+      this._activeResizeCleanup = cleanup;
+      doc.addEventListener("pointermove", onMove);
+      doc.addEventListener("pointerup", onUp);
+      doc.addEventListener("pointercancel", onUp);
+    });
+  }
+
+  private _renderSummaryFooter(
+    tfoot: HTMLElement,
+    columns: ColumnSpec[],
+    flatItems: RenderItem[],
+    showCheckboxes: boolean
+  ): void {
+    tfoot.textContent = "";
+    if (
+      this.config?.get?.("show_summary_footer") !== true ||
+      flatItems.length === 0
+    ) {
+      tfoot.style.display = "none";
+      return;
+    }
+    tfoot.style.display = "";
+    const tr = mkEl(tfoot, "tr", {
+      cls: "pf-base-summary-row",
+      attr: { "data-pf-testid": "base-summary-footer" },
+    });
+    if (showCheckboxes) {
+      mkEl(tr, "td", { cls: "pf-base-cell-check" });
+    }
+    for (const col of columns) {
+      const td = mkEl(tr, "td", {
+        cls: col.numeric ? "pf-tnum is-num" : "",
+      });
+      if (col.key === "title" || col.key === "file.name") {
+        td.textContent = t("base_summary_papers").replace(
+          "{n}",
+          String(flatItems.length)
+        );
+      } else if (col.key === "impact_factor") {
+        const vals = flatItems
+          .map((it) => Number.parseFloat(String(it.row.impact_factor || "")))
+          .filter((n) => Number.isFinite(n));
+        if (vals.length > 0) {
+          const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+          td.textContent = t("base_summary_if_avg").replace(
+            "{val}",
+            avg.toFixed(1)
+          );
+        }
+      } else if (col.key === "year") {
+        const yrs = flatItems
+          .map((it) => Number.parseInt(String(it.row.year || ""), 10))
+          .filter((n) => Number.isFinite(n));
+        if (yrs.length > 0) {
+          const minY = Math.min(...yrs);
+          const maxY = Math.max(...yrs);
+          td.textContent = minY === maxY ? String(minY) : `${minY}–${maxY}`;
+        }
+      }
+    }
+  }
+
+  private _renderActivityStrip(rawFlatItems: RenderItem[]): void {
+    if (!this._activitySlotEl) return;
+    this._activitySlotEl.textContent = "";
     const activeProg = this.plugin._ocrProgress;
     const isRunningAny =
       Boolean(activeProg && activeProg.key) ||
       rawFlatItems.some((it) =>
         this.plugin.isOcrRunningForKey(it.row.zotero_key)
       );
-    if (isRunningAny) {
-      const strip = mkEl(root, "div", {
-        cls: "pf-base-activity-strip pf-tnum",
-      });
-      const iconHost = mkEl(strip, "span", { cls: "pf-base-activity-icon" });
-      setPfIcon(iconHost, "refresh-cw", 13);
-      const countText =
-        activeProg && activeProg.total > 0
-          ? ` ${activeProg.current} / ${activeProg.total}`
-          : "";
-      mkEl(strip, "span", {
-        text: t("base_parsing_progress").replace("{progress}", countText),
-      });
-    }
+    if (!isRunningAny) return;
+    const strip = mkEl(this._activitySlotEl, "div", {
+      cls: "pf-base-activity-strip pf-tnum",
+    });
+    const iconHost = mkEl(strip, "span", { cls: "pf-base-activity-icon" });
+    setPfIcon(iconHost, "refresh-cw", 13);
+    const countText =
+      activeProg && activeProg.total > 0
+        ? ` ${activeProg.current} / ${activeProg.total}`
+        : "";
+    mkEl(strip, "span", {
+      text: t("base_parsing_progress").replace("{progress}", countText),
+    });
+  }
 
-    // Persistent multi-filter bar (survives Obsidian view switches & restarts)
-    if (rawFlatItems.length > 0 || this._hasActiveFilters(filters)) {
-      this._renderFilterBar(root, rawFlatItems, flatItems.length, filters);
-    }
-
-    // Calm diagnostic banner when >=50% of synced papers have no local PDF
+  private _ensureShell(): void {
+    const root = this.containerEl;
+    if (!root) return;
     if (
-      snapshot &&
-      !this._missingPdfHintDismissed &&
-      rawFlatItems.length >= 3
+      this._shellMounted &&
+      this._activitySlotEl?.parentElement === root &&
+      this._tableWrapEl?.parentElement === root
     ) {
-      const missingPdfCount = rawFlatItems.filter(
-        (it) => !it.row.has_pdf
-      ).length;
-      if (missingPdfCount > 0 && missingPdfCount / rawFlatItems.length >= 0.5) {
-        const hintBar = mkEl(root, "div", {
-          cls: "pf-base-missing-pdf-hint",
-          attr: { "data-pf-testid": "base-missing-pdf-hint" },
-        });
-        mkEl(hintBar, "span", {
-          text: t("base_missing_pdf_banner")
-            .replace("{missing}", String(missingPdfCount))
-            .replace("{total}", String(rawFlatItems.length)),
-        });
-        const closeHintBtn = mkEl(hintBar, "button", {
-          cls: "pf-btn pf-btn-ghost",
-          text: t("base_missing_pdf_dismiss"),
-          attr: {
-            type: "button",
-            "data-pf-testid": "base-missing-pdf-dismiss",
-          },
-        });
-        closeHintBtn.addEventListener("click", () => {
-          this._missingPdfHintDismissed = true;
-          this.render();
-        });
-      }
+      return;
     }
+    root.textContent = "";
+    root.classList.add("pf-base-view-root");
+    this._activitySlotEl = mkEl(root, "div", { cls: "pf-base-activity-slot" });
+    this._filterSlotEl = mkEl(root, "div", { cls: "pf-base-filter-slot" });
+    this._missingPdfSlotEl = mkEl(root, "div", {
+      cls: "pf-base-missing-pdf-slot",
+    });
+    this._emptySlotEl = mkEl(root, "div", { cls: "pf-base-empty-slot" });
+    this._selectionSlotEl = mkEl(root, "div", {
+      cls: "pf-base-selection-slot",
+    });
+    this._tableWrapEl = mkEl(root, "div", {
+      cls: "pf-base-table-wrap",
+      attr: { tabindex: "0" },
+    });
+    this._tableWrapEl.addEventListener("keydown", (e) =>
+      this._handleTableKeyDown(e)
+    );
+    this._tableScrollHandler = () => {
+      if (!this._tableWrapEl) return;
+      this._tableWrapEl.classList.toggle(
+        "is-scrolled",
+        this._tableWrapEl.scrollTop > 2
+      );
+      if (!this._virtualActive) return;
+      if (typeof requestAnimationFrame === "function") {
+        if (this._virtualRafId !== null) return;
+        this._virtualRafId = requestAnimationFrame(() => {
+          this._virtualRafId = null;
+          this._renderVirtualWindow();
+        });
+      } else {
+        this._renderVirtualWindow();
+      }
+    };
+    this._tableWrapEl.addEventListener("scroll", this._tableScrollHandler, {
+      passive: true,
+    });
+    this._tableEl = mkEl(this._tableWrapEl, "table", { cls: "pf-base-table" });
+    this._colgroupEl = mkEl(this._tableEl, "colgroup");
+    this._theadEl = mkEl(this._tableEl, "thead");
+    this._tbodyEl = mkEl(this._tableEl, "tbody");
+    this._tfootEl = mkEl(this._tableEl, "tfoot");
+    this._searchInputEl = null;
+    this._filterOptionSig = "";
+    this._shellMounted = true;
+  }
 
-    if (flatItems.length === 0) {
-      const empty = mkEl(root, "div", { cls: "pf-base-empty" });
-      mkEl(empty, "span", {
-        text: this._loadingSnapshot
-          ? t("pdf_loading")
-          : this._hasActiveFilters(filters)
-            ? t("base_empty_filtered")
-            : t("base_empty_hint"),
-      });
-      if (this._hasActiveFilters(filters)) {
-        const resetBtn = mkEl(empty, "button", {
-          cls: "pf-btn",
-          text: t("base_empty_reset_filters"),
-          attr: {
-            type: "button",
-            "data-pf-testid": "base-reset-filters-empty",
-          },
-        });
-        resetBtn.addEventListener("click", () => {
-          this._updateFilters({
-            query: "",
-            domain: "",
-            collection: "",
-            status: "all",
-            minIf: 0,
-          });
-        });
-      } else if (!this._loadingSnapshot) {
-        const syncEmptyBtn = mkEl(empty, "button", {
-          cls: "pf-btn",
-          text: t("base_sync_library"),
-          attr: { type: "button", "data-pf-testid": "base-sync-library" },
-        });
-        syncEmptyBtn.addEventListener("click", () => {
-          this.plugin.triggerManualSync();
-        });
+  private _syncFocusedRowUi(scrollIntoView: boolean): void {
+    if (this._currentFlatItems.length === 0) {
+      this._focusedRowIdx = -1;
+    } else if (this._focusedRowIdx >= this._currentFlatItems.length) {
+      this._focusedRowIdx = this._currentFlatItems.length - 1;
+    }
+    if (this._virtualActive && this._focusedRowIdx >= 0 && this._tableWrapEl) {
+      const slotIdx = this._currentSlots.findIndex(
+        (s) => s.kind === "row" && s.flatIndex === this._focusedRowIdx
+      );
+      if (
+        slotIdx >= 0 &&
+        (slotIdx < this._virtualRange.start ||
+          slotIdx >= this._virtualRange.end)
+      ) {
+        this._tableWrapEl.scrollTop = Math.max(0, slotIdx * 34);
+        this._renderVirtualWindow(true);
+      }
+    } else if (
+      this._focusedRowIdx >= this._renderedPaperCount &&
+      this._renderedSlotCount < this._currentSlots.length
+    ) {
+      this._appendNextChunk(
+        Math.max(
+          INITIAL_CHUNK_SIZE,
+          this._focusedRowIdx - this._renderedPaperCount + 1
+        )
+      );
+    }
+    if (!this._tbodyEl) return;
+    let activeTr: HTMLTableRowElement | null = null;
+    const rows =
+      this._tbodyEl.querySelectorAll<HTMLTableRowElement>("tr.pf-base-row");
+    for (const tr of Array.from(rows)) {
+      const idx = Number(tr.getAttribute("data-flat-idx") ?? "-1");
+      const active = this._focusedRowIdx >= 0 && idx === this._focusedRowIdx;
+      tr.classList.toggle("is-kb-active", active);
+      if (active) activeTr = tr;
+    }
+    if (scrollIntoView && activeTr) {
+      activeTr.scrollIntoView?.({ block: "nearest" });
+    }
+  }
+
+  private _handleTableKeyDown(e: KeyboardEvent): void {
+    const target = e.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (
+      tag === "input" ||
+      tag === "textarea" ||
+      tag === "select" ||
+      target?.isContentEditable
+    ) {
+      return;
+    }
+    if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      this._searchInputEl?.focus();
+      return;
+    }
+    if (this._currentFlatItems.length === 0) return;
+
+    if (e.key === "ArrowDown" || (e.key === "j" && !e.ctrlKey && !e.metaKey)) {
+      e.preventDefault();
+      this._focusedRowIdx =
+        this._focusedRowIdx < 0
+          ? 0
+          : Math.min(
+              this._currentFlatItems.length - 1,
+              this._focusedRowIdx + 1
+            );
+      this._syncFocusedRowUi(true);
+      return;
+    }
+    if (e.key === "ArrowUp" || (e.key === "k" && !e.ctrlKey && !e.metaKey)) {
+      e.preventDefault();
+      this._focusedRowIdx =
+        this._focusedRowIdx <= 0 ? 0 : this._focusedRowIdx - 1;
+      this._syncFocusedRowUi(true);
+      return;
+    }
+    if (e.key === "Escape") {
+      if (this._focusedRowIdx >= 0 || this._selectedKeys.size > 0) {
+        this._focusedRowIdx = -1;
+        this._selectedKeys.clear();
+        this._lastSelectedIdx = null;
+        this._syncFocusedRowUi(false);
+        this._syncSelectionUi();
       }
       return;
     }
 
-    // Contextual Multi-Select Header Bar slot (surgically updated on checkbox toggle)
-    this._selectionSlotEl = mkEl(root, "div", {
-      cls: "pf-base-selection-slot",
-    });
-    this._renderSelectionBar(this._selectionSlotEl, flatItems);
+    if (this._focusedRowIdx < 0) return;
+    const item = this._currentFlatItems[this._focusedRowIdx];
+    if (!item) return;
+    const row = item.row;
 
+    if (e.key === " " || (e.key === "x" && !e.ctrlKey && !e.metaKey)) {
+      e.preventDefault();
+      if (this._selectedKeys.has(row.zotero_key)) {
+        this._selectedKeys.delete(row.zotero_key);
+      } else {
+        this._selectedKeys.add(row.zotero_key);
+      }
+      this._lastSelectedIdx = this._focusedRowIdx;
+      this._syncSelectionUi();
+      return;
+    }
+    if (e.key === "p" && !e.ctrlKey && !e.metaKey) {
+      if (row.has_pdf) {
+        e.preventDefault();
+        void this.plugin.openPaperPdf(row.zotero_key);
+      }
+      return;
+    }
+    if (e.key === "s" && !e.ctrlKey && !e.metaKey) {
+      if (row.has_pdf && this.plugin.openPaperSplitReading) {
+        e.preventDefault();
+        void this.plugin.openPaperSplitReading(
+          row.zotero_key,
+          row.main_note_path
+        );
+      }
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (e.altKey && row.has_pdf && this.plugin.openPaperSplitReading) {
+        void this.plugin.openPaperSplitReading(
+          row.zotero_key,
+          row.main_note_path
+        );
+      } else if ((e.ctrlKey || e.metaKey) && row.has_pdf) {
+        void this.plugin.openPaperPdf(row.zotero_key);
+      } else if (row.main_note_path) {
+        this._openNote(row.main_note_path, e);
+      } else if (row.has_pdf) {
+        void this.plugin.openPaperPdf(row.zotero_key);
+      }
+    }
+  }
+
+  private _renderBodyOnly(): void {
+    const root = this.containerEl;
+    if (!root || !this._shellMounted) {
+      this.render();
+      return;
+    }
+    this._disconnectLoadMoreObserver();
+    this._ensureCollapsedGroupsLoaded();
+
+    const snapshot = this.plugin.getBaseSnapshotCache();
+    const rawGroups = this._collectGroups(snapshot);
+    const rawFlatItems = rawGroups.flatMap((g) => g.items);
+    this._lastRawItems = rawFlatItems;
+    const filters = this._getFilters();
+    const activeSort = this._getActiveSort();
+    const groups = rawGroups
+      .map((g) => ({
+        groupLabel: g.groupLabel,
+        items: this._sortItems(
+          g.items.filter((it) => this._matchesFilters(it.row, filters)),
+          activeSort
+        ),
+      }))
+      .filter((g) => g.items.length > 0);
+    const flatItems = groups.flatMap((g) => g.items);
+    const visibleKeySet = new Set(flatItems.map((it) => it.row.zotero_key));
+
+    for (const k of Array.from(this._selectedKeys)) {
+      if (!visibleKeySet.has(k)) this._selectedKeys.delete(k);
+    }
+    this._currentFlatItems = flatItems;
+
+    if (this._filterSlotEl && this._searchInputEl?.isConnected) {
+      this._updateFilterBarMeta(rawFlatItems.length, flatItems.length, filters);
+    }
+
+    if (this._emptySlotEl) this._emptySlotEl.textContent = "";
+    if (flatItems.length === 0) {
+      if (this._selectionSlotEl) this._selectionSlotEl.textContent = "";
+      if (this._tableWrapEl) this._tableWrapEl.style.display = "none";
+      if (this._emptySlotEl) {
+        const empty = mkEl(this._emptySlotEl, "div", { cls: "pf-base-empty" });
+        mkEl(empty, "span", {
+          text: this._loadingSnapshot
+            ? t("pdf_loading")
+            : this._hasActiveFilters(filters)
+              ? t("base_empty_filtered")
+              : t("base_empty_hint"),
+        });
+        if (this._hasActiveFilters(filters)) {
+          const resetBtn = mkEl(empty, "button", {
+            cls: "pf-btn",
+            text: t("base_empty_reset_filters"),
+            attr: {
+              type: "button",
+              "data-pf-testid": "base-reset-filters-empty",
+            },
+          });
+          resetBtn.addEventListener("click", () => {
+            this._updateFilters({
+              query: "",
+              domain: "",
+              collection: "",
+              status: "all",
+              minIf: 0,
+            });
+          });
+        } else if (!this._loadingSnapshot) {
+          const syncEmptyBtn = mkEl(empty, "button", {
+            cls: "pf-btn",
+            text: t("base_sync_library"),
+            attr: { type: "button", "data-pf-testid": "base-sync-library" },
+          });
+          syncEmptyBtn.addEventListener("click", () => {
+            this.plugin.triggerManualSync();
+          });
+        }
+      }
+      return;
+    }
+
+    if (this._tableWrapEl) this._tableWrapEl.style.display = "";
+    if (this._selectionSlotEl) {
+      this._renderSelectionBar(this._selectionSlotEl, flatItems);
+    }
+
+    const showCheckboxes = this.config?.get?.("show_checkboxes") !== false;
     const columns = this._resolveColumns();
     this._currentColumns = columns;
     const colWidths = computeColumnWidths(columns);
+    const savedSizes = this._readSavedColumnSizes();
 
-    const wrap = mkEl(root, "div", { cls: "pf-base-table-wrap" });
-    const table = mkEl(wrap, "table", { cls: "pf-base-table" });
-
-    // Proportional fixed column layout — prevents giant gap between Title and Column 2
-    const colgroup = mkEl(table, "colgroup");
-    const checkCol = mkEl(colgroup, "col", { cls: "pf-base-colgroup-check" });
-    checkCol.style.width = "34px";
-    columns.forEach((col, i) => {
-      const colEl = mkEl(colgroup, "col", {
-        cls: `pf-base-colgroup-${col.key.replace(/[^a-z0-9_-]/gi, "-")}`,
-      });
-      colEl.style.width = colWidths[i];
-    });
-
-    // Header Row: Checkbox column + Dynamic Base Columns
-    const thead = mkEl(table, "thead");
-    const headRow = mkEl(thead, "tr");
-    const checkTh = mkEl(headRow, "th", { cls: "pf-base-col-check" });
-    const selectAllCb = mkEl(checkTh, "input", {
-      attr: {
-        type: "checkbox",
-        "aria-label": t("base_select_all_aria"),
-        "data-pf-testid": "base-select-all",
-      },
-    }) as HTMLInputElement;
-    this._selectAllCbEl = selectAllCb;
-    selectAllCb.checked =
-      flatItems.length > 0 && this._selectedKeys.size === flatItems.length;
-    selectAllCb.indeterminate =
-      this._selectedKeys.size > 0 && this._selectedKeys.size < flatItems.length;
-    selectAllCb.addEventListener("change", () => {
-      if (selectAllCb.checked) {
-        for (const it of flatItems) this._selectedKeys.add(it.row.zotero_key);
-      } else {
-        this._selectedKeys.clear();
+    if (this._colgroupEl && this._theadEl) {
+      this._colgroupEl.textContent = "";
+      this._theadEl.textContent = "";
+      if (showCheckboxes) {
+        const checkCol = mkEl(this._colgroupEl, "col", {
+          cls: "pf-base-colgroup-check",
+        });
+        checkCol.style.width = "34px";
       }
-      this._lastSelectedIdx = null;
-      this._syncSelectionUi();
-    });
+      const colEls: HTMLElement[] = [];
+      columns.forEach((col, i) => {
+        const colEl = mkEl(this._colgroupEl!, "col", {
+          cls: `pf-base-colgroup-${col.key.replace(/[^a-z0-9_-]/gi, "-")}`,
+        });
+        const savedW = savedSizes[String(col.id)] ?? savedSizes[col.key];
+        colEl.style.width = savedW ? `${savedW}px` : colWidths[i];
+        colEls.push(colEl);
+      });
 
-    for (const col of columns) {
-      mkEl(headRow, "th", {
-        cls: [
-          `pf-base-th-${col.key.replace(/[^a-z0-9_-]/gi, "-")}`,
-          col.numeric ? "is-num" : "",
-        ]
-          .filter(Boolean)
-          .join(" "),
-        text: col.label,
+      const headRow = mkEl(this._theadEl, "tr");
+      this._selectAllCbEl = null;
+      if (showCheckboxes) {
+        const checkTh = mkEl(headRow, "th", { cls: "pf-base-col-check" });
+        const selectAllCb = mkEl(checkTh, "input", {
+          attr: {
+            type: "checkbox",
+            "aria-label": t("base_select_all_aria"),
+            "data-pf-testid": "base-select-all",
+          },
+        }) as HTMLInputElement;
+        this._selectAllCbEl = selectAllCb;
+        selectAllCb.checked =
+          flatItems.length > 0 && this._selectedKeys.size === flatItems.length;
+        selectAllCb.indeterminate =
+          this._selectedKeys.size > 0 &&
+          this._selectedKeys.size < flatItems.length;
+        selectAllCb.addEventListener("change", () => {
+          if (selectAllCb.checked) {
+            for (const it of flatItems)
+              this._selectedKeys.add(it.row.zotero_key);
+          } else {
+            this._selectedKeys.clear();
+          }
+          this._lastSelectedIdx = null;
+          this._syncSelectionUi();
+        });
+      }
+
+      columns.forEach((col, idx) => {
+        const isSorted = activeSort?.key === col.key;
+        const th = mkEl(headRow, "th", {
+          cls: [
+            `pf-base-th-${col.key.replace(/[^a-z0-9_-]/gi, "-")}`,
+            col.numeric ? "is-num" : "",
+            "is-sortable",
+            isSorted ? "is-sorted" : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          attr: {
+            "data-pf-col": col.key,
+            "aria-sort": isSorted
+              ? activeSort!.dir === "DESC"
+                ? "descending"
+                : "ascending"
+              : "none",
+          },
+        });
+        const inner = mkEl(th, "span", { cls: "pf-base-th-inner" });
+        mkEl(inner, "span", { cls: "pf-base-th-label", text: col.label });
+        if (isSorted) {
+          mkEl(inner, "span", {
+            cls: "pf-base-sort-ind",
+            text: activeSort!.dir === "DESC" ? "↓" : "↑",
+          });
+        }
+        th.addEventListener("click", () => {
+          this._toggleColumnSort(col);
+        });
+        const resizer = mkEl(th, "span", {
+          cls: "pf-base-col-resizer",
+          attr: { "aria-hidden": "true" },
+        });
+        this._bindColumnResize(resizer, th, colEls[idx], col);
       });
     }
 
-    // Flatten groups + items into render slots for chunked progressive DOM streaming
     const slots: RenderSlot[] = [];
     let flatIdx = 0;
     for (const grp of groups) {
@@ -1541,15 +2495,124 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           count: grp.items.length,
         });
       }
+      const isCollapsed =
+        grp.groupLabel !== null && this._collapsedGroups.has(grp.groupLabel);
       for (const item of grp.items) {
-        slots.push({ kind: "row", item, flatIndex: flatIdx++ });
+        if (!isCollapsed) {
+          slots.push({ kind: "row", item, flatIndex: flatIdx });
+        }
+        flatIdx += 1;
       }
     }
 
     this._currentSlots = slots;
     this._renderedSlotCount = 0;
     this._renderedPaperCount = 0;
-    this._tbodyEl = mkEl(table, "tbody");
-    this._appendNextChunk(INITIAL_CHUNK_SIZE);
+    const useVirtual =
+      slots.length > 500 &&
+      ((this._tableWrapEl?.clientHeight ?? 0) > 0 ||
+        this.config?.get?.("virtual_scroll") === true);
+    this._virtualActive = useVirtual;
+    this._virtualRange = { start: -1, end: -1 };
+    if (this._tbodyEl) {
+      this._tbodyEl.textContent = "";
+      if (useVirtual) {
+        this._renderVirtualWindow(true);
+      } else {
+        this._appendNextChunk(INITIAL_CHUNK_SIZE);
+      }
+    }
+    if (this._tfootEl) {
+      this._renderSummaryFooter(
+        this._tfootEl,
+        columns,
+        flatItems,
+        showCheckboxes
+      );
+    }
+  }
+
+  render(): void {
+    const root = this.containerEl;
+    if (!root) return;
+    this._ensureShell();
+    const density = String(
+      this.config?.get?.("row_density") ??
+        (this.config?.get?.("compact_rows") === true
+          ? "compact"
+          : "comfortable")
+    );
+    root.classList.toggle("is-compact", density === "compact");
+    root.classList.toggle("is-spacious", density === "spacious");
+
+    const snapshot = this.plugin.getBaseSnapshotCache();
+    const rawGroups = this._collectGroups(snapshot);
+    const rawFlatItems = rawGroups.flatMap((g) => g.items);
+    this._lastRawItems = rawFlatItems;
+    const filters = this._getFilters();
+    const matchedCount = rawFlatItems.filter((it) =>
+      this._matchesFilters(it.row, filters)
+    ).length;
+
+    this._renderActivityStrip(rawFlatItems);
+
+    if (this._filterSlotEl) {
+      const showFilterBar = this.config?.get?.("show_filter_bar") !== false;
+      if (
+        showFilterBar &&
+        (rawFlatItems.length > 0 || this._hasActiveFilters(filters))
+      ) {
+        this._filterSlotEl.style.display = "";
+        this._renderFilterBar(
+          this._filterSlotEl,
+          rawFlatItems,
+          matchedCount,
+          filters
+        );
+      } else {
+        this._filterSlotEl.style.display = "none";
+      }
+    }
+
+    if (this._missingPdfSlotEl) {
+      this._missingPdfSlotEl.textContent = "";
+      if (
+        snapshot &&
+        !this._missingPdfHintDismissed &&
+        rawFlatItems.length >= 3
+      ) {
+        const missingPdfCount = rawFlatItems.filter(
+          (it) => !it.row.has_pdf
+        ).length;
+        if (
+          missingPdfCount > 0 &&
+          missingPdfCount / rawFlatItems.length >= 0.5
+        ) {
+          const hintBar = mkEl(this._missingPdfSlotEl, "div", {
+            cls: "pf-base-missing-pdf-hint",
+            attr: { "data-pf-testid": "base-missing-pdf-hint" },
+          });
+          mkEl(hintBar, "span", {
+            text: t("base_missing_pdf_banner")
+              .replace("{missing}", String(missingPdfCount))
+              .replace("{total}", String(rawFlatItems.length)),
+          });
+          const closeHintBtn = mkEl(hintBar, "button", {
+            cls: "pf-btn pf-btn-ghost",
+            text: t("base_missing_pdf_dismiss"),
+            attr: {
+              type: "button",
+              "data-pf-testid": "base-missing-pdf-dismiss",
+            },
+          });
+          closeHintBtn.addEventListener("click", () => {
+            this._missingPdfHintDismissed = true;
+            this.render();
+          });
+        }
+      }
+    }
+
+    this._renderBodyOnly();
   }
 }

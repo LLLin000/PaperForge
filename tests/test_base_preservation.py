@@ -365,3 +365,38 @@ views:
         result = merge_base_views(existing, views)
 
         assert "widths:" not in result
+        assert "columnSize:" not in result
+
+    def test_merge_base_views_preserves_native_column_size_and_sort_property(self):
+        """Obsidian native columnSize: survives merge and sort uses property:."""
+        existing = """
+filters:
+  and:
+    - file.inFolder("骨科")
+views:
+# PAPERFORGE_VIEW: 文献库
+  - type: paperforge-table
+    name: "文献库"
+    columnSize:
+      note.title: 340
+      note.year: 64
+    order:
+      - title
+      - year
+"""
+        views = [
+            {
+                "type": "paperforge-table",
+                "name": "文献库",
+                "order": ["title", "year"],
+                "filter": None,
+                "sort": [{"property": "note.year", "direction": "DESC"}],
+            }
+        ]
+        result = merge_base_views(existing, views)
+
+        assert "columnSize:" in result
+        assert "note.title: 340" in result
+        assert "note.year: 64" in result
+        assert "property: note.year" in result
+        assert "field:" not in result

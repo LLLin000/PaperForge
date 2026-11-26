@@ -36,6 +36,7 @@ export const VIEW_TYPE_PAPERFORGE = "paperforge-status";
 export const VIEW_TYPE_OCR_WORKSPACE = "paperforge-ocr-workspace";
 export const VIEW_TYPE_PAPERFORGE_PDF = "paperforge-pdf-view";
 export const VIEW_TYPE_PF_BASE_TABLE = "paperforge-table";
+export const VIEW_TYPE_UI_GALLERY = "paperforge-ui-gallery";
 // Built-in Lucide id: a custom addIcon(<svg>) string renders a nested SVG
 // inside Obsidian's wrapper and collapses to a tiny box in the ribbon.
 export const PF_ICON_ID = "book-open";
@@ -166,8 +167,10 @@ export interface PaperForgeSettings {
   _vector_db_configured?: boolean;
   /** Diagnostic: log every client↔backend operation (metadata only). */
   debug_trace?: boolean;
-  /** UI color binding mode: "obsidian" (default native host theme & radii), "asterlab" (Obsidian Pure), or "warm" (classic warm paper). */
-  ui_theme_mode?: "obsidian" | "asterlab" | "warm";
+  /** UI color binding mode: "obsidian" (default native host theme & radii), "asterlab" (Obsidian Pure), "zinc" (Cool Zinc), or "warm" (classic warm paper). */
+  ui_theme_mode?: "obsidian" | "asterlab" | "zinc" | "warm";
+  /** UI spacing & control density: "compact" | "default" | "comfortable". */
+  ui_density?: "compact" | "default" | "comfortable";
   /** Enable macOS-inspired Liquid Glass translucency on toolbars & floating layers (uses smoked clear dark in dark mode). */
   ui_liquid_glass?: boolean;
   /** Disable 4-tier spring micro-motions (also honors prefers-reduced-motion). */
@@ -213,6 +216,7 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   _vector_db_configured: false,
   _setup_complete: false,
   ui_theme_mode: "obsidian",
+  ui_density: "default",
   ui_liquid_glass: false,
   reduce_motion: false,
 };

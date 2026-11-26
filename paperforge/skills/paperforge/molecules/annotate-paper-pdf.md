@@ -49,26 +49,35 @@
 
 ---
 
-## Step 3: 调用 3 级定位引擎写入 AI 批注层
+## Step 3: 批量原子提交 AI 批注（强制优先，零引号转义问题）
 
-对每条选定的关键原文或图表，执行：
+**严禁调用面向用户的 `annotations add` 写入 AI 批注**。AI 批注必须经过 3 级 PDF 定位与后端护栏（OCR 就绪拦截、去重、防同义复述、15 条上限与 `batch_id` 追踪）：
 
-```bash
-# 1. 文本句段定位（推荐传入 1~2 句逐字原文 substring；若已知章节页码可加 --page N 收敛范围）
-$PYTHON -m paperforge --vault "$VAULT" annotations agent-mark <KEY> \
-  --quote "<从 fulltext.md 原字复制的 1~2 句话>" \
-  --comment "<导师/审稿人级洞见：说明这段在论证链中的作用、假设边界或与后文图表/方法的关联>" \
-  --lens <skeleton|methods|critique|custom> \
-  --color <purple|blue|red|green|yellow> \
-  [--page <物理页码>] --json
+1. **首选（MCP 工具）**：直接调用 **`paperforge_annotate_batch`**，传入 `paper_key`、`lens`、`replace_lens`（重跑同一视角时建议设 `true` 清旧留新）与结构化 `items` 数组。
+2. **CLI 回退（一次事务提交整批，通过 stdin 传 JSON）**：
+   ```bash
+   cat << 'EOF' | $PYTHON -m paperforge --vault "$VAULT" annotations agent-apply <KEY> --input - --lens <skeleton|methods|critique|custom> --json
+   {
+     "lens": "skeleton",
+     "replace_lens": false,
+     "items": [
+       {
+         "quote": "<从 fulltext.md 原字复制的 1~2 句话>",
+         "comment": "<导师/审稿人级洞见：论证角色、假设边界或跨章节关联>",
+         "color": "purple"
+       },
+       {
+         "figure_id": "figure_001",
+         "comment": "<对这张图的核心机制读解或数据质疑>",
+         "color": "blue"
+       }
+     ]
+   }
+   EOF
+   ```
+   （单条微调时仍可使用 `annotations agent-mark <KEY> ... --json`。）
 
-# 2. 图表/表格区域直接标注
-$PYTHON -m paperforge --vault "$VAULT" annotations agent-mark <KEY> \
-  --figure-id <figure_001|table_001> \
-  --comment "<对这张图的核心机制读解或数据质疑>" \
-  --lens <lens> \
-  --color <blue|green|purple> --json
-```
+> 提交后必须检查返回 JSON 中的 `created_count`、`skipped`（重复锚点）和 `rejected`（例如 `comment_paraphrases_quote` / `grounding_failed`），如有必要按原因修正引文或评论。
 
 ### 配色与分层约定
 

@@ -32,7 +32,7 @@ from paperforge.embedding import (
     read_vector_build_state,
 )
 from paperforge.embedding.vectors import delete_paper_vectors_in_conn
-from paperforge.embedding.build_target import BuildTarget, ShadowBuild, verify_candidate
+from paperforge.embedding.build_target import BuildTarget, ShadowBuild, restore_db_from_backup, verify_candidate
 from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.substrate import VECTOR_IDENTITY_VERSION, assess_vector_substrate
 from paperforge.embedding.builder import (
@@ -44,6 +44,9 @@ from paperforge.embedding.builder import (
     write_encoded_payload,
     write_encoded_payload_to_conn,
 )
+
+_ORIG_DELETE_PAPER_VECTORS = delete_paper_vectors
+_ORIG_WRITE_ENCODED_PAYLOAD = write_encoded_payload
 from paperforge.memory.db import WriterLock, ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
 from paperforge.memory.schema import ensure_schema
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
@@ -126,17 +129,20 @@ def select_embedding_candidates(vault: Path, keys: list[str] | None = None) -> d
         papers = {}
     db = get_memory_db_path(vault)
 
-    def _units(key: str) -> int:
+    unit_counts: dict[str, int] = {}
+    if db.exists():
         try:
             with open_live_reader(vault, db) as conn:
-                row = conn.execute(
-                    "SELECT (SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1) "
-                    "+ (SELECT COUNT(*) FROM object_units WHERE paper_id=? AND indexable=1)",
-                    (key, key),
-                ).fetchone()
-                return int(row[0]) if row else 0
-        except Exception:  # noqa: BLE001 — no DB / no rows → no content
-            return 0
+                for table in ("body_units", "object_units"):
+                    try:
+                        for pid, cnt in conn.execute(
+                            f"SELECT paper_id, COUNT(*) FROM {table} WHERE indexable=1 GROUP BY paper_id"
+                        ).fetchall():
+                            unit_counts[str(pid)] = unit_counts.get(str(pid), 0) + int(cnt or 0)
+                    except Exception:  # noqa: BLE001 — table absent on partial schema
+                        pass
+        except Exception:  # noqa: BLE001 — no DB / unreadable → no content
+            unit_counts = {}
 
     eligible: list[str] = []
     no_content: list[str] = []
@@ -145,7 +151,7 @@ def select_embedding_candidates(vault: Path, keys: list[str] | None = None) -> d
         state = papers.get(key, {})
         if state.get("retrieval") != "current":
             not_ready.append(key)
-        elif _units(key) == 0:
+        elif unit_counts.get(key, 0) == 0:
             no_content.append(key)
         else:
             eligible.append(key)
@@ -271,6 +277,9 @@ def _scoped_global_progress(
 
 
 
+_restore_db_from_backup = restore_db_from_backup
+
+
 def _cancel_embed_build(json: bool, emit_events: bool, result_sink: dict[str, Any] | None) -> int:
     """The #137 `cancelled` terminal for an embed build and its exit code (130).
 
@@ -392,25 +401,24 @@ def run_embedding_build(
         requested_resume = resume
         # RC UX Seam: an interrupted shadow build leaves the candidate file
         # with real vector rows while the LIVE db is still empty (shadow
-        # publishes only on completion).  Detect that surviving candidate so
-        # the resume gates below can continue it instead of wiping it.
+        # publishes only on completion).  Detect that healthy surviving
+        # candidate so the resume gates below can continue it instead of
+        # wiping it; purge corrupt/unusable candidates cleanly.
         _candidate_path = _db_path.with_suffix(".db.build")
         _recover_candidate = False
         if resume and _candidate_path.exists():
-            try:
-                import sqlite3 as _rc_sqlite3
+            from paperforge.embedding.substrate import candidate_is_healthy_with_rows
 
-                _rc_conn = _rc_sqlite3.connect(
-                    f"file:{_candidate_path.as_posix()}?mode=ro", uri=True
+            if candidate_is_healthy_with_rows(_candidate_path):
+                _recover_candidate = True
+            else:
+                logger.warning(
+                    "Unusable or corrupt shadow candidate detected at %s; cleaning up before rebuild",
+                    _candidate_path,
                 )
-                try:
-                    from paperforge.embedding.substrate import _has_any_rows as _rc_has_rows
-
-                    _recover_candidate = _rc_has_rows(_rc_conn)
-                finally:
-                    _rc_conn.close()
-            except Exception:
-                _recover_candidate = False
+                ShadowBuild(
+                    BuildTarget(source_path=_db_path, vector_path=_candidate_path)
+                ).cleanup_stale()
         # Substrate observation (single source of truth, shared with
         # reconcile T5 + embed.resume preflight): desired embedding identity
         # (config) vs published substrate (build_state + vec0 layout).
@@ -604,7 +612,7 @@ def run_embedding_build(
         # instead of clearing it.  --force / embed.build explicitly OVERRIDES
         # the exception: the user asked for a full rebuild, so the surviving
         # candidate is wiped and rebuilt from scratch.
-        if force:
+        if force or _force_rebuild or _embedding_identity_changed or _vec_layout_incompatible or _legacy_identity:
             _recover_candidate = False
             resume = False
         elif requires_shadow and not _recover_candidate:
@@ -701,7 +709,7 @@ def run_embedding_build(
             except Exception:
                 _conn.close()
                 if _rebuild_backup_path and _rebuild_backup_path.exists():
-                    _os.replace(str(_rebuild_backup_path), str(_db_path))
+                    _restore_db_from_backup(_rebuild_backup_path, _db_path)
                 raise
             _conn.close()
 
@@ -771,6 +779,7 @@ def run_embedding_build(
             # run — resume-hash-skipped papers must NOT get lineage rewrites.
             regenerated_papers: set[str] = set()
             in_flight: dict = {}
+            first_worker_error: tuple[str, BaseException] | None = None
 
             def _submit_job(job: PaperEmbeddingJob, pool):
                 fut = pool.submit(encode_paper_job, vault, job)
@@ -787,8 +796,19 @@ def run_embedding_build(
                     emit_paper_settled("embed.build", paper_id, outcome)
                     emit_progress("embed.build", processed_count, total, item_id=paper_id)
 
+            def _cancel_pending_futures() -> None:
+                for pending_fut in list(in_flight.keys()):
+                    if pending_fut.cancel():
+                        in_flight.pop(pending_fut, None)
+                for running_fut in list(in_flight.keys()):
+                    in_flight.pop(running_fut, None)
+                    try:
+                        running_fut.result()
+                    except Exception:  # noqa: BLE001 — already aborting/stopping
+                        pass
+
             def _complete_one(pool, block: bool = True) -> bool:
-                nonlocal processed_count, papers_embedded, chunks_embedded, _expected_counts
+                nonlocal processed_count, papers_embedded, chunks_embedded, _expected_counts, first_worker_error
                 if not in_flight:
                     return True
                 done, _ = wait(in_flight.keys(), return_when=FIRST_COMPLETED)
@@ -797,6 +817,9 @@ def run_embedding_build(
                     try:
                         bundle = fut.result()
                     except Exception as exc:
+                        if first_worker_error is None:
+                            first_worker_error = (job.paper_id, exc)
+                        _emit_paper_event(job.paper_id, "failed")
                         _mark(
                             status="failed",
                             message=str(exc),
@@ -809,10 +832,29 @@ def run_embedding_build(
                         for payload in bundle.payloads:
                             write_encoded_payload_to_conn(_candidate_conn, payload)
                         _candidate_conn.commit()
-                    else:
+                    elif (
+                        delete_paper_vectors is not _ORIG_DELETE_PAPER_VECTORS
+                        or write_encoded_payload is not _ORIG_WRITE_ENCODED_PAYLOAD
+                    ):
                         delete_paper_vectors(vault, bundle.paper_id)
                         for payload in bundle.payloads:
                             write_encoded_payload(vault, payload)
+                    else:
+                        # Single atomic transaction per paper on the live incremental path
+                        _conn_paper = get_connection(_db_path)
+                        try:
+                            ensure_vec_extension(_conn_paper)
+                            ensure_vec_tables(_conn_paper, vault, allow_recreate=False)
+                            ensure_schema(_conn_paper)
+                            delete_paper_vectors_in_conn(_conn_paper, bundle.paper_id)
+                            for payload in bundle.payloads:
+                                write_encoded_payload_to_conn(_conn_paper, payload)
+                            _conn_paper.commit()
+                        except Exception:
+                            _conn_paper.rollback()
+                            raise
+                        finally:
+                            _conn_paper.close()
 
                     processed_count += 1
                     papers_embedded += 1
@@ -849,6 +891,7 @@ def run_embedding_build(
                     # status mid-build (it races the publish).
                     if _is_stopped():
                         logger.info("Build cancelled at paper %s", key)
+                        _cancel_pending_futures()
                         break
 
                     has_body = _has_body_units_in_db(vault, key)
@@ -992,14 +1035,29 @@ def run_embedding_build(
                     if len(in_flight) >= window_size:
                         ok = _complete_one(pool, block=True)
                         if not ok:
+                            _cancel_pending_futures()
                             # P0-5: raise so the unified except handler aborts the
                             # shadow, closes connections, and releases the lock —
                             # a bare `return 1` here would leak all three.
+                            if first_worker_error is not None:
+                                failed_pid, cause = first_worker_error
+                                raise RuntimeError(
+                                    f"Embed worker failed for {failed_pid}: {cause}"
+                                ) from cause
                             raise RuntimeError("Embed worker failed; build aborted")
 
                 while in_flight:
+                    if _is_stopped():
+                        _cancel_pending_futures()
+                        break
                     ok = _complete_one(pool, block=True)
                     if not ok:
+                        _cancel_pending_futures()
+                        if first_worker_error is not None:
+                            failed_pid, cause = first_worker_error
+                            raise RuntimeError(
+                                f"Embed worker failed for {failed_pid}: {cause}"
+                            ) from cause
                         raise RuntimeError("Embed worker failed; build aborted")
 
         except CredentialError as exc:
@@ -1028,7 +1086,13 @@ def run_embedding_build(
             if result_sink is not None:
                 result_sink["result"] = result
             if emit_events:
-                print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
+                if json:
+                    print(result.to_json(), file=sys.stdout)
+                else:
+                    from paperforge.core.ndjson import emit_terminal
+
+                    emit_terminal("error", "embed.build", result)
+                    print(result.error.message, file=sys.stderr)
             if _shadow is not None:
                 try:
                     _shadow.close_candidate_conn()
@@ -1037,8 +1101,6 @@ def run_embedding_build(
                 logger.info(
                     "Shadow build failed on credential fault; candidate retained for resume; live DB untouched"
                 )
-            if _write_lock:
-                _write_lock.__exit__(None, None, None)
             return 1
         except Exception as e:
             try:
@@ -1063,7 +1125,13 @@ def run_embedding_build(
             if result_sink is not None:
                 result_sink["result"] = result
             if emit_events:
-                print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
+                if json:
+                    print(result.to_json(), file=sys.stdout)
+                else:
+                    from paperforge.core.ndjson import emit_terminal
+
+                    emit_terminal("error", "embed.build", result)
+                    print(result.error.message, file=sys.stderr)
             # Shadow: keep the candidate so `--resume` can continue from the
             # surviving rows (RC UX Seam) — live stays untouched either way.
             # The candidate is a shadow file; the writer lock was held, no
@@ -1079,12 +1147,10 @@ def run_embedding_build(
                     "Shadow build failed; candidate retained for resume; live DB untouched"
                 )
             elif _rebuild_backup_path and _rebuild_backup_path.exists():
-                _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+                _restore_db_from_backup(_rebuild_backup_path, get_memory_db_path(vault))
                 logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
             elif _rebuild_backup_path:
                 _rebuild_backup_path.unlink(missing_ok=True)
-            if _write_lock:
-                _write_lock.__exit__(None, None, None)
             return 1
 
         def _settle_cancellation() -> int:
@@ -1146,10 +1212,8 @@ def run_embedding_build(
                     "partially updated" if _partial_published else "untouched",
                 )
             elif _rebuild_backup_path and _rebuild_backup_path.exists():
-                _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+                _restore_db_from_backup(_rebuild_backup_path, get_memory_db_path(vault))
                 logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
-            if _write_lock:
-                _write_lock.__exit__(None, None, None)
             return _cancel_embed_build(json, emit_events, result_sink)
 
         # Check if we stopped or were cancelled — exit cleanly without
@@ -1235,6 +1299,8 @@ def run_embedding_build(
             # verifying — verify_candidate must inspect exactly the file that
             # publish() will swap, not the WAL-backed logical view.
             _shadow.seal()
+            _candidate_conn = None
+            _mark_target = None
             # Scoped (papers) builds embed only the requested subset — the
             # candidate already holds other papers' rows, so a per-collection
             # count match against THIS run's accumulators is meaningless.
@@ -1253,8 +1319,6 @@ def run_embedding_build(
             if not report["ok"]:
                 _shadow.abort()
                 logger.error("Shadow verify failed: %s", report.get("reason"))
-                if _write_lock:
-                    _write_lock.__exit__(None, None, None)
                 result = PFResult(
                     ok=False,
                     command="embed build",
@@ -1267,8 +1331,13 @@ def run_embedding_build(
                 if result_sink is not None:
                     result_sink["result"] = result
                 if emit_events:
-                    print(result.to_json() if json else result.error.message,
-                          file=sys.stderr if not json else sys.stdout)
+                    if json:
+                        print(result.to_json())
+                    else:
+                        from paperforge.core.ndjson import emit_terminal
+
+                        emit_terminal("error", "embed.build", result)
+                        print(result.error.message, file=sys.stderr)
                 return 1
             # P1 safe point: verify succeeded; check cancellation before irreversible publish
             if _is_stopped():
@@ -1362,8 +1431,6 @@ def run_embedding_build(
         if _rebuild_backup_path and _rebuild_backup_path.exists():
             _rebuild_backup_path.unlink()
             logger.info("Deleted pre-rebuild backup after successful rebuild")
-        if _write_lock:
-            _write_lock.__exit__(None, None, None)
         _restore_stop()
         return 0
     except Exception as e:
@@ -1396,6 +1463,9 @@ def run_embedding_build(
                 if json:
                     print(result.to_json())
                 else:
+                    from paperforge.core.ndjson import emit_terminal
+
+                    emit_terminal("result", "embed.build", result)
                     print(
                         f"Embedded {papers_embedded} papers ({chunks_embedded} chunks). "
                         f"Warning: {_warning}",
@@ -1403,18 +1473,35 @@ def run_embedding_build(
                     )
             return 0
         # Only pre-commit failures may abort/restore/mark-failed.
+        # Keep an already SEALED/VERIFIED candidate on disk so a transient OS
+        # file lock or reader-barrier timeout during publish() never destroys
+        # paid embeddings (`publish_pending` remains True for immediate retry).
+        _preserved_verified_candidate = False
         if _shadow is not None:
-            _shadow.abort()
-            logger.info("Shadow build aborted; live DB untouched")
+            if _shadow.state in (ShadowBuild.SEALED, ShadowBuild.VERIFIED):
+                _preserved_verified_candidate = True
+                try:
+                    _shadow.close_candidate_conn()
+                except Exception:  # noqa: BLE001
+                    pass
+                logger.warning(
+                    "Publish failed after verification (%s); verified candidate preserved at %s for retry",
+                    e,
+                    _shadow.target.vector_path,
+                )
+            else:
+                _shadow.abort()
+                logger.info("Shadow build aborted; live DB untouched")
         elif _rebuild_backup_path and _rebuild_backup_path.exists():
-            _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+            _restore_db_from_backup(_rebuild_backup_path, get_memory_db_path(vault))
             logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
         elif _rebuild_backup_path:
             _rebuild_backup_path.unlink(missing_ok=True)
-        try:
-            _mark(status="failed", message=str(e), pid=0)
-        except Exception:
-            pass
+        if not _preserved_verified_candidate:
+            try:
+                _mark(status="failed", message=str(e), pid=0)
+            except Exception:
+                pass
         result = PFResult(
             ok=False,
             command="embed build",
@@ -1433,6 +1520,7 @@ def run_embedding_build(
                 print(result.error.message, file=sys.stderr)
         return 1
     finally:
-        if _write_lock:
+        if _write_lock is not None:
             _write_lock.__exit__(None, None, None)
+            _write_lock = None
         _restore_stop()

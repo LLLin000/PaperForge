@@ -333,6 +333,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_embed_migrate.add_argument("--json", action="store_true")
     p_embed_test = p_embed_sp.add_parser("test-connection", help="Test embedding provider connectivity and detect output dimension")
     p_embed_test.add_argument("--json", action="store_true")
+    p_embed_models = p_embed_sp.add_parser("list-models", help="List available embedding models from provider or local Ollama")
+    p_embed_models.add_argument("--base-url", help="Override endpoint base URL", default="")
+    p_embed_models.add_argument("--json", action="store_true")
 
 
     p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")
@@ -591,6 +594,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Vault-relative skill directory to sync (default: .agents/skills)",
     )
     p_skill_sync.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON",
+    )
+    p_skill_hub = p_skill_sp.add_parser(
+        "sync-hub",
+        help="Sync machine-wide Skill Hub (~/.paperforge/skills/paperforge) and auto-update registered Agent installs",
+    )
+    p_skill_hub.add_argument(
         "--json",
         action="store_true",
         help="Output as JSON",
@@ -945,6 +957,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_am.add_argument("--lens", default="skeleton", help="Annotation lens (skeleton|methods|critique|custom)")
     p_ann_am.add_argument("--tags-json", default="[]", help="JSON list of tags")
     p_ann_am.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_ann_aa = p_ann_sub.add_parser("agent-apply", help="Batch-ground and apply AI annotations with quality & dedup guardrails")
+    p_ann_aa.add_argument("key", help="Canonical Zotero paper key")
+    p_ann_aa.add_argument("--items-json", default="", help="JSON array (or {items:[...]}) of annotation specs")
+    p_ann_aa.add_argument("--input", default="", help="JSON file path or '-' for stdin")
+    p_ann_aa.add_argument("--lens", default="skeleton", help="Default lens (skeleton|methods|critique|custom)")
+    p_ann_aa.add_argument("--replace-lens", action="store_true", help="Clear existing AI annotations for this lens before applying")
+    p_ann_aa.add_argument("--max-items", type=int, default=15, help="Max annotations to create in one batch (1..25)")
+    p_ann_aa.add_argument("--json", action="store_true", help="Output JSON")
 
     p_ann_adopt = p_ann_sub.add_parser("adopt", help="Adopt an agent annotation into user annotations")
     p_ann_adopt.add_argument("key", help="Canonical Zotero paper key")
@@ -1519,9 +1540,21 @@ def _run_runtime_command(args: argparse.Namespace) -> int:
 # paths command
 # ---------------------------------------------------------------------------
 def _run_skill(args: argparse.Namespace) -> int:
-    """Handle `paperforge skill deploy|sync [--to DIR]`."""
+    """Handle `paperforge skill deploy|sync|sync-hub [--to DIR]`."""
     vault = args.vault_path
     skill_action = getattr(args, "skill_action", None)
+    if skill_action == "sync-hub":
+        from paperforge.services.skill_deploy import sync_machine_skill_hub
+
+        res = sync_machine_skill_hub()
+        if getattr(args, "json", False):
+            print(json.dumps(res, ensure_ascii=False))
+        else:
+            print(
+                f"skill sync-hub: hub_updated={res.get('hub_updated')} "
+                f"updated={res.get('updated', 0)} up_to_date={res.get('up_to_date', 0)}"
+            )
+        return 0 if res.get("ok") else 1
     if skill_action == "sync":
         from paperforge.services.skill_deploy import sync_skills_if_unmodified
 

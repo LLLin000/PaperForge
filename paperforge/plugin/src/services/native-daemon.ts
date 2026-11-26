@@ -174,6 +174,56 @@ export function ensureExecutableMode(
   }
 }
 
+/**
+ * Align the stable `~/.paperforge/bin/paperforge-daemon(.exe)` entry point with
+ * the active content-addressed binary so external Agent MCP configs can bind to
+ * one permanent path across upgrades without breaking on Windows `.exe` locks.
+ */
+export function syncStableDaemonEntry(
+  targetPath: string,
+  home: string = os.homedir(),
+  platform: NodeJS.Platform = process.platform
+): string {
+  const stablePath = managedNativeDaemonPath(home, platform);
+  try {
+    if (!targetPath || !fs.existsSync(targetPath)) return stablePath;
+    if (path.resolve(targetPath) === path.resolve(stablePath)) {
+      return stablePath;
+    }
+    fs.mkdirSync(path.dirname(stablePath), { recursive: true });
+    if (platform !== "win32") {
+      const tmpLink = `${stablePath}.${process.pid}.${Date.now()}.lnk`;
+      try {
+        fs.symlinkSync(targetPath, tmpLink);
+        fs.renameSync(tmpLink, stablePath);
+        ensureExecutableMode(stablePath, platform);
+      } catch {
+        try {
+          if (fs.existsSync(tmpLink)) fs.unlinkSync(tmpLink);
+        } catch {
+          // ignore
+        }
+      }
+      return stablePath;
+    }
+    const tmpCopy = `${stablePath}.${process.pid}.${Date.now()}.tmp`;
+    try {
+      fs.copyFileSync(targetPath, tmpCopy);
+      fs.renameSync(tmpCopy, stablePath);
+    } catch {
+      try {
+        if (fs.existsSync(tmpCopy)) fs.unlinkSync(tmpCopy);
+      } catch {
+        // Stable exe may be held open by an active Agent MCP session; the shim
+        // itself auto-forwards via `.daemon-meta.json` when launched next time.
+      }
+    }
+  } catch {
+    // Never fail daemon setup on best-effort stable shim sync
+  }
+  return stablePath;
+}
+
 export interface ResolveNativeDaemonOptions {
   vaultPath?: string;
   explicitPath?: string | null;
@@ -435,6 +485,9 @@ export async function ensureNativeDaemonDownloaded(
     typeof meta.checkedAt === "number" &&
     Date.now() - meta.checkedAt < REMOTE_CHECKSUM_TTL_MS
   ) {
+    if (!fs.existsSync(legacyDest)) {
+      syncStableDaemonEntry(existingPath, home, plat);
+    }
     return existingPath;
   }
 
@@ -548,6 +601,7 @@ export async function ensureNativeDaemonDownloaded(
           // Best-effort old daemon shutdown after atomic pointer flip
         }
       }
+      syncStableDaemonEntry(targetPath, home, plat);
       pruneObsoleteDaemonBinaries(binDir, targetPath);
       return targetPath;
     } catch {

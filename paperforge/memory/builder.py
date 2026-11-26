@@ -96,6 +96,9 @@ def _import_reading_log(conn, vault: Path, valid_keys: set[str] | None = None) -
     return {"imported": imported, "orphaned_skipped": skipped}
 
 
+import_reading_log = _import_reading_log
+
+
 def _import_project_log(conn, vault: Path) -> int:
     """Import project-log.jsonl into project_log table. Returns count."""
     from paperforge.memory.permanent import read_all_project_entries
@@ -122,6 +125,9 @@ def _import_project_log(conn, vault: Path) -> int:
         )
         count += 1
     return count
+
+
+import_project_log = _import_project_log
 
 
 def _import_paper_annotations(
@@ -181,6 +187,9 @@ def _import_paper_annotations(
             )
             imported += 1
     return imported
+
+
+import_paper_annotations = _import_paper_annotations
 
 
 def _import_paper_memory_cards(
@@ -268,6 +277,9 @@ def _import_paper_memory_cards(
                     )
     return imported
 
+
+import_paper_memory_cards = _import_paper_memory_cards
+
 def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: set[str] | None = None) -> dict:
     """Import correction-log.jsonl into paper_events for FTS search.
 
@@ -294,6 +306,9 @@ def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: se
         )
         imported += 1
     return {"imported": imported, "orphaned_skipped": skipped}
+
+
+import_reading_log = _import_reading_log
 
 
 def _hydrate_reading_log_for_keys(conn: sqlite3.Connection, vault: Path, keys: set[str]) -> int:

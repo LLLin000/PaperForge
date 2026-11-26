@@ -52,10 +52,38 @@ patchElement(dom.window.HTMLElement.prototype);
 
 const mockLoadPdfJs = vi.fn();
 const openedModals: Array<{ title: string; text: string }> = [];
+const contextMenuItems: string[] = [];
+const contextMenuShowSpy = vi.fn();
 
 vi.mock("obsidian", () => ({
   App: class {},
   Notice: class {},
+  Menu: class {
+    addItem(cb: (item: any) => void) {
+      const entry = {
+        title: "",
+        setTitle(t: string) {
+          entry.title = t;
+          return entry;
+        },
+        setIcon() {
+          return entry;
+        },
+        onClick() {
+          return entry;
+        },
+      };
+      cb(entry);
+      if (entry.title) contextMenuItems.push(entry.title);
+      return this;
+    }
+    addSeparator() {
+      return this;
+    }
+    showAtMouseEvent(ev: MouseEvent) {
+      contextMenuShowSpy(ev);
+    }
+  },
   Platform: { resourcePathPrefix: "app://local/" },
   TFile: class {},
   WorkspaceLeaf: class {},
@@ -93,6 +121,8 @@ vi.mock("obsidian", () => ({
 import {
   PaperForgePdfView,
   resolvePdfResourceUrl,
+  normalizeSelectionRects,
+  multiplyPdfTransform,
 } from "../src/views/pdf-annotator";
 import { OcrWorkspaceView } from "../src/views/ocr-workspace";
 
@@ -629,5 +659,249 @@ describe("PaperForgePdfView & hidden fulltext safety (Commit 2C)", () => {
     expect(readDiagnosticFulltext).toHaveBeenCalledWith("P1");
     expect(openedModals).toHaveLength(1);
     expect(openedModals[0].text).toContain("# OCR Diagnostic Line 1");
+  });
+
+  it("uses actual first-page width for Fit-to-Width, supports Escape/Ctrl+F shortcuts, ephemeral state, and canvas LRU eviction", async () => {
+    mockLoadPdfJs.mockResolvedValueOnce({
+      getDocument: () => ({
+        promise: Promise.resolve({
+          numPages: 12,
+          getPage: async () => ({
+            getViewport: ({ scale }: { scale: number }) => ({
+              width: 842 * scale,
+              height: 595 * scale,
+              transform: [scale, 0, 0, scale, 0, 0],
+            }),
+            render: () => ({ promise: Promise.resolve() }),
+            getTextContent: async () => ({
+              items: [
+                { str: "Landscape page", transform: [1, 0, 0, 12, 10, 500] },
+              ],
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const client: any = {
+      getPdfContext: vi.fn().mockResolvedValue({
+        paper_id: "P_WIDE",
+        title: "Landscape Supplement",
+        pdf_abs_path: "D:/Z/P_WIDE.pdf",
+        pdf_vault_rel: "Z/P_WIDE.pdf",
+        pdf_locator: "Z/P_WIDE.pdf",
+        is_vault_relative: true,
+        pdf_sha256: "shawide",
+        page_count: 12,
+        workspace_rel: "Literature/P_WIDE",
+        note_rel_path: "Literature/P_WIDE/P_WIDE.md",
+        annotations: [],
+      }),
+      listAnnotations: vi.fn().mockResolvedValue([]),
+    };
+
+    const view = new PaperForgePdfView({} as any, {
+      getClient: () => client,
+    }) as any;
+    view.app = {
+      vault: { adapter: { getResourcePath: (p: string) => p } },
+      workspace: { on: vi.fn().mockReturnValue({}), offref: vi.fn() },
+    };
+
+    await view.onOpen();
+    await view.setState({ paperKey: "P_WIDE", page: 1 }, { history: false });
+
+    // Dynamic page base width (842pt instead of hardcoded 595pt)
+    expect(view._firstPageBaseWidth).toBe(842);
+    Object.defineProperty(view._scrollEl, "clientWidth", {
+      value: 890,
+      configurable: true,
+    });
+    const fitBtn = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-fit-width-btn"]'
+    ) as HTMLButtonElement;
+    fitBtn.click();
+    expect(view._scale).toBe(1);
+
+    // Ephemeral state round-trip
+    view._scrollEl.scrollTop = 320;
+    const eph = view.getEphemeralState();
+    expect(eph.scroll).toBe(320);
+    expect(eph.fitWidth).toBe(true);
+    view.setEphemeralState({ scroll: 150, scale: 1.5, fitWidth: false });
+    expect(view._scale).toBe(1.5);
+
+    // Escape resets continuous highlight / tool state
+    view._continuousHighlight = true;
+    view._activeTool = "area";
+    view.contentEl.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+    );
+    expect(view._continuousHighlight).toBe(false);
+    expect(view._activeTool).toBe("select");
+
+    // Canvas LRU eviction drops far-away rendered canvases while preserving text cache
+    for (let p = 1; p <= 12; p += 1) {
+      await view._ensurePageRendered(p);
+    }
+    expect(view._renderedPages.size).toBeLessThanOrEqual(9);
+    expect(view._pageTexts.size).toBe(12);
+
+    // 2px reading progress hairline updates with scrollToPage
+    const progressFill = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-progress-fill"]'
+    ) as HTMLElement;
+    expect(progressFill).not.toBeNull();
+    view.scrollToPage(6);
+    expect(progressFill.style.width).toBe("50%");
+    expect(progressFill.getAttribute("aria-valuenow")).toBe("50");
+
+    // Highlight dropdown closes on outside pointerdown
+    const caret = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-highlight-menu-btn"]'
+    ) as HTMLButtonElement;
+    caret.click();
+    expect(
+      view.contentEl.querySelector('[data-pf-testid="pdf-highlight-dropdown"]')
+    ).not.toBeNull();
+    dom.window.document.body.dispatchEvent(
+      new dom.window.Event("pointerdown", { bubbles: true })
+    );
+    expect(
+      view.contentEl.querySelector('[data-pf-testid="pdf-highlight-dropdown"]')
+    ).toBeNull();
+
+    // PDF++ native contextmenu fires when text selection exists on page
+    contextMenuItems.length = 0;
+    contextMenuShowSpy.mockClear();
+    const firstPageEl = view._pageEls.get(1) as HTMLElement;
+    view._getSelectionData = () => ({
+      pageEl: firstPageEl,
+      pageNumber: 1,
+      rects: [[0.1, 0.2, 0.4, 0.24]],
+      exactText: "Key radiological finding",
+    });
+    firstPageEl.dispatchEvent(
+      new dom.window.MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(contextMenuShowSpy).toHaveBeenCalledTimes(1);
+    expect(contextMenuItems.length).toBe(4);
+
+    // Non-empty text selection in normal "select" mode shows floating mini-bar and saves highlight in 1 click
+    const addAnnotationSpy = vi.fn().mockResolvedValue({
+      ann_id: "ann_hl_float",
+      paper_id: "P_WIDE",
+      page: 1,
+      kind: "highlight",
+      color: "green",
+      intent: "general",
+      exact_text: "Key radiological finding",
+      comment: "",
+      tags: [],
+      rects: [[0.1, 0.2, 0.4, 0.24]],
+      section_path: "",
+      block_id: "",
+      figure_id: "",
+      crop_asset_rel: "",
+      embed_wikilink: "",
+      pdf_sha256: "shawide",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    client.addAnnotation = addAnnotationSpy;
+    firstPageEl.dispatchEvent(
+      new dom.window.MouseEvent("mouseup", { bubbles: true })
+    );
+    const floatBar = view.contentEl.querySelector(
+      '[data-pf-testid="pdf-selection-float-bar"]'
+    );
+    expect(floatBar).not.toBeNull();
+    expect(
+      view.contentEl.querySelector('[data-pf-testid="pdf-create-popover"]')
+    ).toBeNull();
+    (
+      view.contentEl.querySelector(
+        '[data-pf-testid="pdf-sel-hl-green"]'
+      ) as HTMLButtonElement
+    ).click();
+    await vi.waitFor(() => expect(addAnnotationSpy).toHaveBeenCalledOnce());
+    expect(addAnnotationSpy.mock.calls[0][1].color).toBe("green");
+
+    // Double-buffered zoom keeps existing canvas until replacement finishes painting
+    view._renderedPages.delete(1);
+    const oldCanvas = firstPageEl.querySelector(
+      ".pf-pdf-canvas"
+    ) as HTMLCanvasElement;
+    expect(oldCanvas).not.toBeNull();
+    await view._ensurePageRendered(1);
+    expect(firstPageEl.querySelectorAll(".pf-pdf-canvas")).toHaveLength(1);
+
+    await view.onClose();
+  });
+
+  it("normalizeSelectionRects merges same-line spans, refuses dual-column gutters, drops giant container rects, and trims line seams", () => {
+    const pageRect = { left: 100, top: 200, width: 600, height: 800 };
+    const cleaned = normalizeSelectionRects(
+      [
+        // Giant wrapper box spanning almost entire page should be dropped
+        {
+          left: 110,
+          top: 210,
+          right: 690,
+          bottom: 500,
+          width: 580,
+          height: 290,
+        },
+        // Contiguous same-line words on left column
+        { left: 130, top: 300, right: 200, bottom: 314, width: 70, height: 14 },
+        {
+          left: 204,
+          top: 300,
+          right: 310,
+          bottom: 314,
+          width: 106,
+          height: 14,
+        },
+        // Right column word on same Y separated by a wide central gutter (90px) must NOT merge!
+        {
+          left: 400,
+          top: 300,
+          right: 540,
+          bottom: 314,
+          width: 140,
+          height: 14,
+        },
+        // Second stacked line slightly overlapping line 1 vertically
+        {
+          left: 130,
+          top: 313,
+          right: 290,
+          bottom: 327,
+          width: 160,
+          height: 14,
+        },
+      ],
+      pageRect
+    );
+
+    expect(cleaned).toHaveLength(3);
+    // Line 1 left column merged cleanly (x0=30/600=0.05, x1=210/600=0.35)
+    expect(cleaned[0][0]).toBeCloseTo(0.05, 3);
+    expect(cleaned[0][2]).toBeCloseTo(0.35, 3);
+    // Line 1 right column kept separate (x0=300/600=0.50, x1=440/600=0.733)
+    expect(cleaned[1][0]).toBeCloseTo(0.5, 3);
+    expect(cleaned[1][2]).toBeCloseTo(440 / 600, 3);
+    // Line 2 seam trimmed cleanly so line 1 bottom <= line 2 top
+    expect(cleaned[0][3]).toBeLessThanOrEqual(cleaned[2][1]);
+
+    // Standard PDF.js viewport transform * text transform maps CropBox & Y-flip
+    const vp = [2, 0, 0, -2, -20, 1600];
+    const tx = [1, 0, 0, 10, 50, 700];
+    const m = multiplyPdfTransform(vp, tx);
+    expect(m[4]).toBe(80);
+    expect(m[5]).toBe(200);
   });
 });

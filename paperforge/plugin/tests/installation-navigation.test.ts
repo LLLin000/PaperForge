@@ -153,6 +153,7 @@ vi.mock("fs", () => ({
   readFileSync: () => "{}",
   writeFileSync: () => {},
   readdirSync: () => [],
+  opendirSync: () => ({ readSync: () => null, closeSync: () => {} }),
   statSync: () => ({}),
   accessSync: () => {},
   constants: { X_OK: 1 },
@@ -1910,13 +1911,15 @@ describe("Issue #356 recovery: openSetupJourney", () => {
     const statSpy = vi
       .spyOn(fsNode, "statSync")
       .mockImplementation(() => ({ isDirectory: () => true }) as any);
-    const readdirSpy = vi
-      .spyOn(fsNode, "readdirSync")
-      .mockImplementation((p: unknown) =>
-        String(p) === `${tmpVault}/Literature`
-          ? (["reading-notes.md"] as any)
-          : ([] as any)
-      );
+    const opendirSpy = vi
+      .spyOn(fsNode, "opendirSync")
+      .mockImplementation((p: unknown) => {
+        const hit = String(p) === `${tmpVault}/Literature`;
+        return {
+          readSync: () => (hit ? ({ name: "reading-notes.md" } as any) : null),
+          closeSync: () => {},
+        } as any;
+      });
     try {
       const tab = new PaperForgeSettingTab(
         { vault: { adapter: { basePath: tmpVault } } } as unknown as App,
@@ -1956,7 +1959,7 @@ describe("Issue #356 recovery: openSetupJourney", () => {
     } finally {
       existsSpy.mockRestore();
       statSpy.mockRestore();
-      readdirSpy.mockRestore();
+      opendirSpy.mockRestore();
     }
   });
 
@@ -2048,5 +2051,337 @@ describe("Issue #356 recovery: openSetupJourney", () => {
     expect(
       root.querySelector('[data-pf-testid="settings-theme-mode"]')
     ).toBeTruthy();
+
+    // VS Code Walkthrough-style dismissible exploration card renders when optional capabilities are unconfigured
+    (
+      root.querySelector(
+        '.pf-cc-topbar-tab[data-pf-tab="overview"]'
+      ) as HTMLElement
+    )?.click();
+    expect(
+      root.querySelector('[data-pf-testid="cc-explore-checklist"]')
+    ).toBeTruthy();
+    (
+      root.querySelector('[data-pf-testid="cc-explore-dismiss"]') as HTMLElement
+    )?.click();
+    expect(
+      root.querySelector('[data-pf-testid="cc-explore-checklist"]')
+    ).toBeNull();
+  });
+
+  it("Express Setup prioritizes Capability Map, collapses advanced defaults & AI keys, and still lets power users expand AI tabs", async () => {
+    const configSet = vi.fn().mockResolvedValue({});
+    const authSetSecret = vi.fn().mockResolvedValue(true);
+    const saveSettings = vi.fn().mockResolvedValue(undefined);
+    const embedListModels = vi.fn(async (baseUrl?: string) => ({
+      source: String(baseUrl || "").includes("11434")
+        ? "ollama"
+        : "openai_compatible",
+      base_url: baseUrl || "",
+      reachable: true,
+      models: ["Pro/BAAI/bge-m3", "gpt-4o"],
+      embedding_models: ["Pro/BAAI/bge-m3"],
+    }));
+    const tab = new PaperForgeSettingTab(
+      { vault: { adapter: { basePath: "/vault" } } } as unknown as App,
+      {
+        settings: {
+          _setup_complete: false,
+          zotero_data_dir: "/Zotero",
+          vector_db_api_base: "",
+          vector_db_api_model: "",
+        },
+        manifest: { version: "2.2.0" },
+        saveSettings,
+        readPaperforgeJson: () => ({}),
+        getClient: () => ({
+          configSet,
+          authSetSecret,
+          embedListModels,
+          zoteroDetect: async () => ({
+            found: true,
+            zotero_dir: "/Zotero",
+            total_papers: 48,
+            collections: [],
+          }),
+          ocrTestConnection: async () => ({ passed: true }),
+          embedTestConnection: async () => ({
+            model: "BAAI/bge-m3",
+            dimension: 1024,
+            latency_ms: 42,
+          }),
+        }),
+      } as any
+    );
+    (tab as any)._runtimeStatus = { runtime_ready: true };
+    (tab as any)._runtimeStatusVersion = "2.2.0";
+    (tab as any)._zoteroDetectRan = true;
+    (tab as any)._zoteroDetectData = {
+      found: true,
+      zotero_dir: "/Zotero",
+      total_papers: 48,
+      collections: [],
+    };
+    const root = document.createElement("div");
+    tab.containerEl = root;
+    tab.display();
+
+    // 10-Second Capability Map renders 4 clear cards (2 free immediate + 2 unlock later)
+    const capMap = root.querySelector(
+      '[data-pf-testid="setup-capability-map"]'
+    );
+    expect(capMap).toBeTruthy();
+    expect(capMap?.querySelectorAll(".pf-setup-cap-card")).toHaveLength(4);
+    expect(capMap?.querySelectorAll(".pf-setup-cap-pill.is-free")).toHaveLength(
+      2
+    );
+    expect(
+      capMap?.querySelectorAll(".pf-setup-cap-pill.is-later")
+    ).toHaveLength(2);
+
+    // Customization & optional AI details are cleanly collapsed by default when Zotero is auto-detected
+    const customizeDet = root.querySelector<HTMLDetailsElement>(
+      ".pf-express-customize-details"
+    );
+    expect(customizeDet).toBeTruthy();
+    expect(Boolean(customizeDet?.open)).toBe(false);
+    expect(root.querySelector('[data-pf-testid="express-ai-tabs"]')).toBeNull();
+
+    // Expanding optional AI card reveals Cherry-style 3 tabs, Eye toggle & presets
+    (
+      root.querySelector('[data-pf-testid="express-ai-toggle"]') as HTMLElement
+    )?.click();
+    expect(
+      root.querySelector('[data-pf-testid="express-ai-tabs"]')
+    ).toBeTruthy();
+
+    // Eye toggle reveals OCR API key input
+    const ocrIn = root.querySelector<HTMLInputElement>(
+      '[data-pf-testid="express-ocr-input"]'
+    );
+    const ocrEye = root.querySelector<HTMLButtonElement>(
+      '[data-pf-testid="express-ocr-eye"]'
+    );
+    expect(ocrIn?.type).toBe("password");
+    ocrEye?.click();
+    expect(ocrIn?.type).toBe("text");
+
+    // Embedding tab -> defaults to SiliconFlow (China-direct free), shows curated model selector
+    (
+      root.querySelector(
+        '[data-pf-testid="express-ai-tab-embed"]'
+      ) as HTMLElement
+    )?.click();
+    expect(
+      root
+        .querySelector('[data-pf-testid="express-embed-preset-siliconflow"]')
+        ?.classList.contains("is-active")
+    ).toBe(true);
+    const modelSel = root.querySelector<HTMLSelectElement>(
+      '[data-pf-testid="express-embed-model-select"]'
+    );
+    expect(modelSel?.value).toBe("BAAI/bge-m3");
+
+    // Click SiliconFlow chip persists base & model
+    (
+      root.querySelector(
+        '[data-pf-testid="express-embed-preset-siliconflow"]'
+      ) as HTMLElement
+    )?.click();
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_api_base",
+      "https://api.siliconflow.cn/v1"
+    );
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_api_model",
+      "BAAI/bge-m3"
+    );
+    expect((tab.plugin as any).settings.vector_db_api_model).toBe(
+      "BAAI/bge-m3"
+    );
+
+    // Local Ollama hides API key input and exposes local probe button
+    (
+      root.querySelector(
+        '[data-pf-testid="express-embed-preset-ollama"]'
+      ) as HTMLElement
+    )?.click();
+    expect(
+      root.querySelector('[data-pf-testid="express-embed-input"]')
+    ).toBeNull();
+    expect(
+      root.querySelector('[data-pf-testid="express-ollama-probe"]')
+    ).toBeTruthy();
+
+    // Custom endpoint shows inline base/model fields + fetch button
+    (
+      root.querySelector(
+        '[data-pf-testid="express-embed-preset-custom"]'
+      ) as HTMLElement
+    )?.click();
+    const customBase = root.querySelector<HTMLInputElement>(
+      '[data-pf-testid="express-embed-custom-base"]'
+    );
+    const customModel = root.querySelector<HTMLInputElement>(
+      '[data-pf-testid="express-embed-custom-model"]'
+    );
+    expect(customBase).toBeTruthy();
+    expect(customModel).toBeTruthy();
+    if (customBase) customBase.value = "https://gateway.example/v1";
+    (
+      root.querySelector(
+        '[data-pf-testid="express-embed-fetch-models"]'
+      ) as HTMLElement
+    )?.click();
+    expect(embedListModels).toHaveBeenCalledWith("https://gateway.example/v1");
+
+    // EasyScholar tab -> save secret
+    (
+      root.querySelector(
+        '[data-pf-testid="express-ai-tab-easyscholar"]'
+      ) as HTMLElement
+    )?.click();
+    const esIn = root.querySelector<HTMLInputElement>(
+      '[data-pf-testid="express-es-input"]'
+    );
+    expect(esIn).toBeTruthy();
+    if (esIn) esIn.value = "es-secret-123";
+    (
+      root.querySelector('[data-pf-testid="express-es-save"]') as HTMLElement
+    )?.click();
+    expect(authSetSecret).toHaveBeenCalledWith("easyscholar", "es-secret-123");
+  });
+
+  it("keeps Appearance clean without AsterLab branding, moves UI Gallery to Help, and preserves ready state during transient silent probe failures", async () => {
+    const probeAll = vi.fn().mockResolvedValue({
+      modules: {
+        library: {
+          ...createUnknownEnvelope("library"),
+          user_state: "detection_failed",
+        },
+      },
+    });
+    const probe = vi.fn().mockResolvedValue({
+      ...createUnknownEnvelope("installation"),
+      user_state: "ready",
+    });
+    const tab = new PaperForgeSettingTab(
+      { vault: { adapter: { basePath: "/vault" } } } as unknown as App,
+      {
+        settings: { _setup_complete: true, ui_theme_mode: "obsidian" },
+        manifest: { version: "2.2.0" },
+        saveSettings: vi.fn(),
+        readPaperforgeJson: () => ({}),
+        getClient: () => ({
+          probeAll,
+          probe,
+          invalidateCache: vi.fn(),
+          isOperationActive: () => false,
+        }),
+      } as any
+    );
+
+    const appHost = document.createElement("div");
+    (tab as any)._renderAppearanceTab(appHost);
+    // 2 visible main rows only; glass/motion collapsed; no developer UI Gallery inside Appearance
+    expect(
+      appHost.querySelector('[data-pf-testid="settings-theme-mode"]')
+    ).toBeTruthy();
+    expect(
+      appHost.querySelector('[data-pf-testid="settings-density-mode"]')
+    ).toBeTruthy();
+    expect(
+      appHost.querySelector('[data-pf-testid="settings-open-gallery"]')
+    ).toBeNull();
+    const moreDet = appHost.querySelector<HTMLDetailsElement>(
+      '[data-pf-testid="settings-appearance-more"]'
+    );
+    expect(moreDet).toBeTruthy();
+    expect(Boolean(moreDet?.open)).toBe(false);
+    // Zero "AsterLab" branding exposed in theme options
+    const themeOptionsText = Array.from(
+      appHost.querySelectorAll('[data-pf-testid="settings-theme-mode"] option')
+    )
+      .map((o) => o.textContent || "")
+      .join(" ");
+    expect(themeOptionsText.toLowerCase()).not.toContain("asterlab");
+
+    // Help tab houses UI Gallery inside collapsed Developer Tools section
+    const helpHost = document.createElement("div");
+    (tab as any)._renderHelpTab(helpHost);
+    const devDet = helpHost.querySelector<HTMLDetailsElement>(
+      '[data-pf-testid="help-developer-tools"]'
+    );
+    expect(devDet).toBeTruthy();
+    expect(Boolean(devDet?.open)).toBe(false);
+    expect(
+      helpHost.querySelector('[data-pf-testid="settings-open-gallery"]')
+    ).toBeTruthy();
+
+    // Silent revalidation never overwrites a healthy ready module with transient detection_failed
+    (tab as any)._resolveRuntimeCommand = () => ({ path: "python", args: [] });
+    (tab as any)._capabilityState = {
+      installation: {
+        ...createUnknownEnvelope("installation"),
+        user_state: "ready",
+      },
+      library: { ...createUnknownEnvelope("library"), user_state: "ready" },
+    };
+    (tab as any)._refreshAllReadModels({ silent: true });
+    await vi.waitFor(() => {
+      expect(probeAll).toHaveBeenCalledOnce();
+      expect((tab as any)._silentRevalidating).toBe(false);
+    });
+    expect((tab as any)._capabilityState.library.user_state).toBe("ready");
+  });
+
+  it("binds Quick Start summary, target input, and preview to single literature_dir and uses non-paywall capability badges", () => {
+    const tab = new PaperForgeSettingTab(
+      { vault: { adapter: { basePath: "/vault" } } } as unknown as App,
+      {
+        settings: {
+          _setup_complete: false,
+          literature_dir: "PaperForge/Literature",
+          domain_mode: "per_collection",
+          zotero_data_dir: "/mock-zotero",
+        },
+        manifest: { version: "2.2.0" },
+        saveSettings: vi.fn(),
+        readPaperforgeJson: () => ({}),
+        getClient: () => ({
+          probeAll: vi.fn(),
+          probe: vi.fn(),
+          invalidateCache: vi.fn(),
+          isOperationActive: () => false,
+        }),
+      } as any
+    );
+    (tab as any)._zoteroDetectRan = true;
+    (tab as any)._zoteroDetectData = {
+      found: true,
+      zotero_dir: "/mock-zotero",
+      total_papers: 42,
+      collections: [],
+    };
+    const root = document.createElement("div");
+    (tab as any)._renderSetupJourney(root);
+    expect(
+      root.querySelector(".pf-express-default-summary")?.textContent
+    ).toContain("PaperForge/Literature");
+    const dirIn = root.querySelector<HTMLInputElement>(
+      '[data-pf-testid="express-lit-dir-input"]'
+    )!;
+    expect(dirIn).toBeTruthy();
+    expect(dirIn.value).toBe("PaperForge/Literature");
+    dirIn.value = "Research/Papers";
+    dirIn.dispatchEvent(new Event("change"));
+    expect(
+      root.querySelector(".pf-express-default-summary")?.textContent
+    ).toContain("Research/Papers");
+    const badges = Array.from(root.querySelectorAll(".pf-setup-cap-pill"))
+      .map((el) => el.textContent || "")
+      .join(" ");
+    expect(badges).not.toContain("Included Free");
+    expect(badges).not.toContain("Unlock Anytime");
   });
 });

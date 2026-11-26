@@ -138,7 +138,12 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
 
     // Custom column order including a custom user property `note.topic`
     (view as any).config = {
-      get: (k: string) => (k === "show_annotations" ? true : false),
+      get: (k: string) =>
+        k === "show_annotations"
+          ? true
+          : k === "compact_rows"
+            ? false
+            : undefined,
       getOrder: () => [
         "note.title",
         "note.topic",
@@ -454,5 +459,422 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     expect(container.querySelector("table.pf-base-table")).toBe(tableBefore);
 
     view.onunload();
+  });
+
+  it("preserves filter input identity while typing, isolates filter keys by view, respects displayName & user columns, and renders Value.renderTo", () => {
+    const container = dom.window.document.createElement("div");
+    const viewA = new PaperForgeBasesView({} as any, container, host);
+    const renderContext = { app: host.app };
+    (viewA as any).app = { ...host.app, renderContext };
+    const customRenderTo = vi.fn((el: HTMLElement) => {
+      const tag = el.ownerDocument.createElement("span");
+      tag.textContent = "RenderedTag";
+      el.appendChild(tag);
+    });
+    (viewA as any).config = {
+      name: "Orthopedics View",
+      get: (k: string) =>
+        k === "show_summary_footer"
+          ? true
+          : k === "row_density"
+            ? "spacious"
+            : undefined,
+      getOrder: () => [
+        "note.title",
+        "note.zotero_key",
+        "note.tags",
+        "note.impact_factor",
+        "note.year",
+      ],
+      getDisplayName: (id: string) =>
+        id === "note.title" ? "论文题目" : id.replace(/^note\./, ""),
+      set: vi.fn(),
+    };
+    (viewA as any).data = {
+      data: [
+        {
+          file: {
+            basename: "K_DONE",
+            path: snapshot.rows.K_DONE.main_note_path,
+          },
+          getValue: (id: string) =>
+            id === "note.zotero_key"
+              ? { data: "K_DONE" }
+              : id === "note.tags"
+                ? { renderTo: customRenderTo }
+                : null,
+        },
+        {
+          file: {
+            basename: "K_WAIT",
+            path: snapshot.rows.K_WAIT.main_note_path,
+          },
+          getValue: (id: string) =>
+            id === "note.zotero_key" ? { data: "K_WAIT" } : null,
+        },
+      ],
+    };
+
+    viewA.render();
+    expect(container.classList.contains("is-spacious")).toBe(true);
+    expect(container.textContent).toContain("论文题目");
+    expect(container.textContent).toContain("zotero_key");
+    expect(customRenderTo).toHaveBeenCalled();
+    expect(container.textContent).toContain("RenderedTag");
+    expect(
+      container.querySelector('[data-pf-testid="base-summary-footer"]')
+        ?.textContent
+    ).toContain("11.1");
+
+    // Typing search query keeps the exact <input> DOM node intact (zero focus loss)
+    const searchBefore = container.querySelector<HTMLInputElement>(
+      '[data-pf-testid="base-filter-search"]'
+    )!;
+    (viewA as any)._updateFilters(
+      { query: "Hydrogel" },
+      { preserveSearchFocus: true }
+    );
+    const searchAfter = container.querySelector<HTMLInputElement>(
+      '[data-pf-testid="base-filter-search"]'
+    )!;
+    expect(searchAfter).toBe(searchBefore);
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(1);
+
+    // Header sort click orders rows & sets aria-sort
+    (viewA as any)._updateFilters({ query: "" }, { preserveSearchFocus: true });
+    const yearTh = container.querySelector<HTMLElement>(
+      'th[data-pf-col="year"]'
+    )!;
+    yearTh.click();
+    const sortedRows = Array.from(
+      container.querySelectorAll<HTMLElement>("tr.pf-base-row")
+    );
+    expect(sortedRows[0].getAttribute("data-paper-key")).toBe("K_WAIT");
+    expect(
+      container
+        .querySelector('th[data-pf-col="year"]')
+        ?.getAttribute("aria-sort")
+    ).toBe("ascending");
+
+    // Per-view filter key isolation
+    const containerB = dom.window.document.createElement("div");
+    const viewB = new PaperForgeBasesView({} as any, containerB, host);
+    (viewB as any).config = { name: "Sports View" };
+    expect((viewA as any)._filterKey()).not.toBe((viewB as any)._filterKey());
+
+    viewA.onunload();
+  });
+
+  it("collapses and expands groups on click and patches changed rows surgically", () => {
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    (view as any).data = {
+      groupedData: [
+        {
+          hasKey: () => true,
+          key: { data: "Ortho" },
+          entries: [
+            {
+              file: {
+                basename: "K_DONE",
+                path: snapshot.rows.K_DONE.main_note_path,
+              },
+              getValue: () => ({ data: "K_DONE" }),
+            },
+          ],
+        },
+        {
+          hasKey: () => true,
+          key: { data: "Sports" },
+          entries: [
+            {
+              file: {
+                basename: "K_WAIT",
+                path: snapshot.rows.K_WAIT.main_note_path,
+              },
+              getValue: () => ({ data: "K_WAIT" }),
+            },
+          ],
+        },
+      ],
+    };
+
+    view.onload();
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(2);
+
+    const orthoGroup = container.querySelector<HTMLElement>(
+      'tr.pf-base-group-row[data-pf-group="Ortho"]'
+    )!;
+    orthoGroup.click();
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(1);
+    expect(
+      container
+        .querySelector('tr.pf-base-group-row[data-pf-group="Ortho"]')
+        ?.getAttribute("aria-expanded")
+    ).toBe("false");
+
+    // Re-expand group
+    container
+      .querySelector<HTMLElement>(
+        'tr.pf-base-group-row[data-pf-group="Ortho"]'
+      )!
+      .click();
+    expect(container.querySelectorAll("tr.pf-base-row")).toHaveLength(2);
+
+    // Surgical state-changed patch updates status without rebuilding <table>
+    const tableBefore = container.querySelector("table.pf-base-table");
+    snapshot.rows.K_DONE.memory_facet_count = 9;
+    (view as any)._patchChangedRows(["K_DONE"]);
+    expect(container.querySelector("table.pf-base-table")).toBe(tableBefore);
+    expect(container.textContent).toContain("9 memory");
+
+    view.onunload();
+  });
+
+  it("supports modifier-key opening and hidden filter/checkbox options", () => {
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    (view as any).config = {
+      get: (k: string) =>
+        k === "show_filter_bar" || k === "show_checkboxes" ? false : undefined,
+    };
+    (view as any).data = {
+      data: [
+        {
+          file: {
+            basename: "K_DONE",
+            path: snapshot.rows.K_DONE.main_note_path,
+          },
+          getValue: () => ({ data: "K_DONE" }),
+        },
+      ],
+    };
+    view.render();
+
+    expect(
+      container.querySelector('[data-pf-testid="base-filter-bar"]')
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-pf-testid="base-select-all"]')
+    ).toBeNull();
+
+    const titleLink = container.querySelector<HTMLElement>(
+      '[data-pf-testid="base-open-note"]'
+    )!;
+    const ev = new dom.window.MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+    });
+    titleLink.dispatchEvent(ev);
+    expect(openLinkText).toHaveBeenCalledWith(
+      snapshot.rows.K_DONE.main_note_path,
+      "",
+      "tab"
+    );
+  });
+
+  it("supports keyboard row navigation (j/k/Space/p/s/Enter/Escape) and floating hover quick actions", () => {
+    const container = dom.window.document.createElement("div");
+    const openPaperSplitReading = vi.fn().mockResolvedValue(undefined);
+    const localHost = {
+      ...host,
+      openPaperSplitReading,
+    };
+    const view = new PaperForgeBasesView({} as any, container, localHost);
+    (view as any).data = {
+      data: [
+        {
+          file: {
+            basename: "K_DONE",
+            path: snapshot.rows.K_DONE.main_note_path,
+          },
+          getValue: () => ({ data: "K_DONE" }),
+        },
+        {
+          file: {
+            basename: "K_WAIT",
+            path: snapshot.rows.K_WAIT.main_note_path,
+          },
+          getValue: () => ({ data: "K_WAIT" }),
+        },
+      ],
+    };
+    view.render();
+
+    // Floating quick actions: split button triggers openPaperSplitReading
+    const splitBtn = container.querySelector<HTMLButtonElement>(
+      '[data-pf-testid="base-row-split"]'
+    );
+    expect(splitBtn).not.toBeNull();
+    splitBtn!.click();
+    expect(openPaperSplitReading).toHaveBeenCalledWith(
+      "K_DONE",
+      snapshot.rows.K_DONE.main_note_path
+    );
+
+    const wrap = container.querySelector<HTMLElement>(".pf-base-table-wrap")!;
+    wrap.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "j", bubbles: true })
+    );
+    expect(
+      container
+        .querySelector('tr.pf-base-row[data-paper-key="K_DONE"]')
+        ?.classList.contains("is-kb-active")
+    ).toBe(true);
+
+    // Space toggles checkbox selection
+    wrap.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: " ", bubbles: true })
+    );
+    expect(
+      container
+        .querySelector('tr.pf-base-row[data-paper-key="K_DONE"]')
+        ?.classList.contains("is-selected")
+    ).toBe(true);
+
+    // p opens PDF
+    wrap.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "p", bubbles: true })
+    );
+    expect(openPaperPdf).toHaveBeenCalledWith("K_DONE");
+
+    // Escape clears keyboard active and selection
+    wrap.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+    );
+    expect(
+      container
+        .querySelector('tr.pf-base-row[data-paper-key="K_DONE"]')
+        ?.classList.contains("is-kb-active")
+    ).toBe(false);
+    expect(
+      container
+        .querySelector('tr.pf-base-row[data-paper-key="K_DONE"]')
+        ?.classList.contains("is-selected")
+    ).toBe(false);
+
+    view.onunload();
+  });
+
+  it("supports viewport virtualization (> 500 papers) and inline frontmatter editing on custom note.* columns", async () => {
+    const bigRows: Record<string, BaseTableSnapshotDto["rows"][string]> = {};
+    for (let i = 0; i < 650; i += 1) {
+      const k = `V_${String(i).padStart(4, "0")}`;
+      bigRows[k] = {
+        zotero_key: k,
+        title: `Virtual Study #${i}`,
+        first_author: `Auth ${i}`,
+        year: "2025",
+        journal: "Radiology",
+        impact_factor: "9.1",
+        domain: "Ortho",
+        has_pdf: true,
+        do_ocr: false,
+        analyze: false,
+        ocr_status: "done",
+        deep_reading_status: "pending",
+        main_note_path: `Literature/Ortho/${k}.md`,
+        user_ann_count: 0,
+        agent_ann_count: 0,
+        memory_facet_count: 0,
+        memory_updated_at: "",
+        needs_diagnostic: false,
+      };
+    }
+    snapshot = { seq: 120, updated_at: "2026-11-25T00:00:00Z", rows: bigRows };
+
+    const updateNoteProperty = vi.fn(async () => undefined);
+    const vHost = {
+      ...host,
+      updateNoteProperty,
+    };
+
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, vHost);
+    (view as any).config = {
+      get: (k: string) => (k === "virtual_scroll" ? true : undefined),
+      getOrder: () => ["note.title", "note.topic", "note.ocr_status"],
+      getDisplayName: () => "",
+    };
+    (view as any).data = {
+      data: Object.keys(bigRows).map((k) => ({
+        file: { basename: k, path: bigRows[k].main_note_path },
+        getValue: (propId: string) =>
+          propId === "note.zotero_key"
+            ? { data: k, toString: () => k }
+            : propId === "note.topic"
+              ? { data: "Old Topic", toString: () => "Old Topic" }
+              : null,
+      })),
+    };
+    view.render();
+
+    // Virtual windowing mounts < 80 visible rows + bottom spacer
+    const renderedRows = container.querySelectorAll("tr.pf-base-row");
+    expect(renderedRows.length).toBeGreaterThan(0);
+    expect(renderedRows.length).toBeLessThan(80);
+    expect(container.querySelector(".pf-base-virtual-spacer")).not.toBeNull();
+
+    // Double-click editable custom cell -> Enter persists frontmatter
+    const editableTd = container.querySelector<HTMLElement>(
+      "td.pf-base-cell-editable"
+    )!;
+    expect(editableTd).not.toBeNull();
+    editableTd.dispatchEvent(
+      new dom.window.MouseEvent("dblclick", { bubbles: true })
+    );
+    const input = editableTd.querySelector<HTMLInputElement>(
+      '[data-pf-testid="base-inline-input"]'
+    )!;
+    expect(input).not.toBeNull();
+    input.value = "Revised Priority";
+    input.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+    );
+    expect(updateNoteProperty).toHaveBeenCalledWith(
+      expect.objectContaining({ basename: "V_0000" }),
+      "topic",
+      "Revised Priority"
+    );
+    expect(editableTd.textContent).toContain("Revised Priority");
+
+    view.onunload();
+  });
+
+  it("keeps global Sync Library out of row selection bar while retaining it in empty-library state", () => {
+    const cSel = dom.window.document.createElement("div");
+    const vSel = new PaperForgeBasesView({} as any, cSel, host);
+    (vSel as any).data = {
+      data: [
+        {
+          file: {
+            basename: "K_DONE",
+            path: snapshot.rows.K_DONE.main_note_path,
+          },
+          getValue: () => ({ data: "K_DONE" }),
+        },
+      ],
+    };
+    (vSel as any)._selectedKeys = new Set(["K_DONE"]);
+    vSel.render();
+    const selBar = cSel.querySelector('[data-pf-testid="base-selection-bar"]')!;
+    expect(selBar).not.toBeNull();
+    expect(
+      selBar.querySelector('[data-pf-testid="base-sync-library"]')
+    ).toBeNull();
+    expect(
+      selBar.querySelector('[data-pf-testid="base-run-selected-ocr"]')
+    ).not.toBeNull();
+    vSel.onunload();
+
+    const cEmpty = dom.window.document.createElement("div");
+    const vEmpty = new PaperForgeBasesView({} as any, cEmpty, host);
+    (vEmpty as any).data = { data: [] };
+    vEmpty.render();
+    expect(
+      cEmpty.querySelector('[data-pf-testid="base-sync-library"]')
+    ).not.toBeNull();
+    vEmpty.onunload();
   });
 });

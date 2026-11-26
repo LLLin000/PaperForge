@@ -27,7 +27,10 @@ vi.mock("obsidian", () => {
   return {
     PluginSettingTab,
     ItemView,
+    Plugin: class {},
+    TFile: class {},
     App: class {},
+    Scope: class {},
     Setting: class {
       setName() {
         return this;
@@ -52,9 +55,12 @@ vi.mock("obsidian", () => {
   };
 });
 
+import * as fs from "fs";
+import * as path from "path";
 import { DEFAULT_SETTINGS } from "../src/constants";
 import { PaperForgeSettingTab } from "../src/settings";
 import { PaperForgeStatusView } from "../src/views/dashboard";
+import PaperForgePlugin from "../src/main";
 
 describe("Performance hygiene & zero-lag runtime invariants", () => {
   it("disables GPU-heavy Liquid Glass blur by default for maximum FPS", () => {
@@ -121,5 +127,70 @@ describe("Performance hygiene & zero-lag runtime invariants", () => {
     expect(wsOffref).toHaveBeenCalledWith(leafRef);
     expect(wsOffref).toHaveBeenCalledWith(stateRef);
     expect(vaultOffref).toHaveBeenCalledWith(modifyRef);
+  });
+
+  it("clears pending timers on Settings.hide() and stores base filters in app.saveLocalStorage without dirtying data.json", () => {
+    const saveSettings = vi.fn().mockResolvedValue(undefined);
+    const saveLocalStorage = vi.fn();
+    const loadLocalStorage = vi.fn().mockReturnValue(null);
+    const app = {
+      vault: { adapter: { basePath: "/vault" } },
+      saveLocalStorage,
+      loadLocalStorage,
+    } as never;
+    const plugin = {
+      settings: { ...DEFAULT_SETTINGS, _setup_complete: true },
+      manifest: { version: "2.0.6" },
+      saveSettings,
+      loadSettings: vi.fn(),
+      getClient: () => ({ probeAll: vi.fn(), invalidateCache: vi.fn() }),
+    } as never;
+
+    const tab = new PaperForgeSettingTab(app, plugin);
+    (tab as unknown as { _saveTimeout: unknown })._saveTimeout = setTimeout(
+      () => {},
+      5000
+    );
+    (tab as unknown as { _runtimePollTimer: unknown })._runtimePollTimer =
+      setInterval(() => {}, 5000);
+    tab.hide();
+    expect(
+      (tab as unknown as { _saveTimeout: unknown })._saveTimeout
+    ).toBeNull();
+    expect(
+      (tab as unknown as { _runtimePollTimer: unknown })._runtimePollTimer
+    ).toBeNull();
+
+    const pf = Object.create(PaperForgePlugin.prototype) as PaperForgePlugin & {
+      app: unknown;
+      settings: Record<string, unknown>;
+      saveSettings: () => Promise<void>;
+    };
+    pf.app = app;
+    pf.settings = { ...DEFAULT_SETTINGS };
+    pf.saveSettings = saveSettings;
+    pf.setBaseFilters("Ortho::文献库", { query: "ACL" });
+    expect(saveLocalStorage).toHaveBeenCalledWith(
+      "paperforge:base-filters",
+      expect.objectContaining({ "Ortho::文献库": { query: "ACL" } })
+    );
+    expect(saveSettings).not.toHaveBeenCalled();
+  });
+
+  it("keeps ocr-workspace.ts / domain-preview.ts free of innerHTML and main.ts free of detachLeavesOfType", () => {
+    const srcRoot = path.resolve(__dirname, "../src");
+    const ocrSrc = fs.readFileSync(
+      path.join(srcRoot, "views/ocr-workspace.ts"),
+      "utf-8"
+    );
+    const domSrc = fs.readFileSync(
+      path.join(srcRoot, "views/domain-preview.ts"),
+      "utf-8"
+    );
+    const mainSrc = fs.readFileSync(path.join(srcRoot, "main.ts"), "utf-8");
+
+    expect(ocrSrc).not.toMatch(/\.innerHTML\s*=/);
+    expect(domSrc).not.toMatch(/\.innerHTML\s*=/);
+    expect(mainSrc).not.toMatch(/detachLeavesOfType/);
   });
 });

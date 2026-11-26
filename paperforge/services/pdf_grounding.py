@@ -136,15 +136,41 @@ def _cluster_chars_to_rects(
     import pymupdf
 
     lines: list[list[Any]] = []
-    for _fc, r, _raw in hit_chars:
+    for fc, r, _raw in hit_chars:
+        rw = float(r.width)
+        rh = float(r.height)
+        # Skip aberrant ultra-wide invisible whitespace chars that bloat highlight boxes
+        if not fc and rw > max(18.0, rh * 2.5):
+            continue
         cy = (float(r.y0) + float(r.y1)) / 2.0
-        if lines and abs(lines[-1][0] - cy) <= max(4.0, float(r.height) * 0.6):
-            lines[-1][1] |= r
-        else:
-            lines.append([cy, pymupdf.Rect(r)])
+        if lines:
+            prev_cy, prev_rect = lines[-1]
+            same_y = abs(prev_cy - cy) <= max(4.0, rh * 0.6)
+            # Refuse to bridge two-column gutters or large horizontal jumps
+            gap_limit = max(20.0, rh * 2.4)
+            contiguous_x = (
+                float(r.x0) - float(prev_rect.x1) <= gap_limit
+                and float(r.x0) >= float(prev_rect.x0) - rh
+            )
+            if same_y and contiguous_x:
+                lines[-1][1] |= r
+                continue
+        lines.append([cy, pymupdf.Rect(r)])
     rects = [_norm_rect_for_pdfjs(lr, page) for _, lr in lines]
     recovered = "".join(c[2] for c in hit_chars).strip()
     return rects, recovered
+
+
+def _rects_look_distorted(rects: list[list[float]], char_count: int) -> bool:
+    """Detect degenerate PDF text layers where a highlight stretches implausibly wide or tall."""
+    if not rects:
+        return True
+    for x0, y0, x1, y1 in rects:
+        w = x1 - x0
+        h = y1 - y0
+        if h > 0.14 or (w > 0.86 and char_count < 18):
+            return True
+    return False
 
 
 def _resolve_object_target(ocr_dir: Path, pdf_path: Path, figure_id: str) -> dict[str, Any]:
@@ -335,16 +361,17 @@ def ground_target_in_pdf(
         )
         if hit_chars:
             rects, recovered = _cluster_chars_to_rects(hit_chars, page)
-            return {
-                "page": page_no,
-                "rects": rects,
-                "kind": "highlight",
-                "grounding_tier": "exact_sentence",
-                "matched_text": clean_quote or recovered,
-                "section_path": sec_path,
-                "figure_id": figure_id.strip(),
-                "confidence": round(min(1.0, align_score), 3),
-            }
+            if not _rects_look_distorted(rects, len(q_norm)):
+                return {
+                    "page": page_no,
+                    "rects": rects,
+                    "kind": "highlight",
+                    "grounding_tier": "exact_sentence",
+                    "matched_text": clean_quote or recovered,
+                    "section_path": sec_path,
+                    "figure_id": figure_id.strip(),
+                    "confidence": round(min(1.0, align_score), 3),
+                }
 
         # Stage 2b: same-page unique cross-column rescue
         if len(q_norm) >= 35:
@@ -357,16 +384,17 @@ def ground_target_in_pdf(
             )
             if hit_page:
                 rects, recovered = _cluster_chars_to_rects(hit_page, page)
-                return {
-                    "page": page_no,
-                    "rects": rects,
-                    "kind": "highlight",
-                    "grounding_tier": "exact_cross_column",
-                    "matched_text": clean_quote or recovered,
-                    "section_path": sec_path,
-                    "figure_id": figure_id.strip(),
-                    "confidence": round(min(1.0, cross_score), 3),
-                }
+                if not _rects_look_distorted(rects, len(q_norm)):
+                    return {
+                        "page": page_no,
+                        "rects": rects,
+                        "kind": "highlight",
+                        "grounding_tier": "exact_cross_column",
+                        "matched_text": clean_quote or recovered,
+                        "section_path": sec_path,
+                        "figure_id": figure_id.strip(),
+                        "confidence": round(min(1.0, cross_score), 3),
+                    }
 
         # Stage 3: honest left-margin bracket fallback along the grounded block
         bx0 = _clamp01(float(bbox[0]) * sx / max(1e-6, float(pr.width)))

@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import stat
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,17 +39,18 @@ _SYNC_CONFLICT_RE = re.compile(
 _PF_SIGNATURE_KEYS = frozenset({"ocr_status", "deep_reading_status", "do_ocr"})
 
 
+def _norm_abs_path(path: Path) -> Path:
+    """Fast case/separator-normalized absolute Path without touching symlink targets."""
+    return Path(os.path.normcase(os.path.abspath(str(path))))
+
+
 def is_reparse_or_symlink(path: Path) -> bool:
-    """Return True if *path* is a symlink or Windows NTFS junction/reparse point."""
+    """Return True if *path* is a symlink or Windows NTFS junction/reparse point (1 lstat syscall)."""
     try:
-        if path.is_symlink():
-            return True
-        is_junc = getattr(path, "is_junction", None)
-        if callable(is_junc) and is_junc():
-            return True
         st = os.lstat(path)
-        reparse_attr = getattr(st, "st_file_attributes", 0)
-        if reparse_attr & 0x0400:  # FILE_ATTRIBUTE_REPARSE_POINT
+        if stat.S_ISLNK(st.st_mode):
+            return True
+        if getattr(st, "st_file_attributes", 0) & 0x0400:  # FILE_ATTRIBUTE_REPARSE_POINT
             return True
     except OSError:
         return False
@@ -139,10 +141,52 @@ def _domain_for_path(lit_root: Path, path: Path) -> str:
         return ""
 
 
-def _read_note_identity(note_path: Path) -> tuple[str, dict[str, Any], str]:
-    text, enc_status = read_text_tolerant(note_path)
+def _read_note_identity(
+    note_path: Path,
+    cache: dict[Path, tuple[str, dict[str, Any], str]] | None = None,
+) -> tuple[str, dict[str, Any], str]:
+    if cache is not None and note_path in cache:
+        return cache[note_path]
+
+    text: str | None = None
+    enc_status = "utf-8"
+    try:
+        with open(note_path, "rb") as fh:
+            head = fh.read(8192)
+    except OSError:
+        head = b""
+
+    if head:
+        decoded_head: str | None = None
+        if head.startswith(b"\xef\xbb\xbf"):
+            try:
+                decoded_head = head.decode("utf-8-sig")
+                enc_status = "utf-8-sig"
+            except UnicodeDecodeError:
+                decoded_head = None
+        else:
+            try:
+                decoded_head = head.decode("utf-8")
+                enc_status = "utf-8"
+            except UnicodeDecodeError:
+                decoded_head = None
+
+        if decoded_head is not None and decoded_head.lstrip("\ufeff").startswith("---"):
+            first_nl = decoded_head.find("\n")
+            if first_nl >= 0 and (
+                "\n---" in decoded_head[first_nl:] or "\r\n---" in decoded_head[first_nl:]
+            ):
+                text = decoded_head
+
     if text is None:
-        return "", {}, enc_status
+        text, enc_status = read_text_tolerant(note_path)
+
+    if text is None:
+        res: tuple[str, dict[str, Any], str] = ("", {}, enc_status)
+        if cache is not None:
+            cache[note_path] = res
+        return res
+
     fm = read_frontmatter_dict(text)
     key = str(fm.get("zotero_key") or "").strip()
     if not key:
@@ -150,7 +194,10 @@ def _read_note_identity(note_path: Path) -> tuple[str, dict[str, Any], str]:
         m = re.search(r'^zotero_key:\s*["\']?([A-Za-z0-9]{8})["\']?\s*$', text[:4000], re.MULTILINE)
         if m:
             key = m.group(1).strip()
-    return key, fm, enc_status
+    res = (key, fm, enc_status)
+    if cache is not None:
+        cache[note_path] = res
+    return res
 
 
 def _has_paperforge_note_signature(fm: dict[str, Any]) -> bool:
@@ -211,7 +258,12 @@ def is_verified_legacy_flat_note(
     return len(unique_to_flat) == 0
 
 
-def _is_workspace_candidate(directory: Path, lit_root: Path) -> bool:
+def _is_workspace_candidate(
+    directory: Path,
+    lit_root: Path,
+    *,
+    note_cache: dict[Path, tuple[str, dict[str, Any], str]] | None = None,
+) -> bool:
     """Return True if *directory* has explicit PaperForge workspace provenance.
 
     Note: ``(directory / 'assets').is_dir()`` is intentionally NOT sufficient on
@@ -232,7 +284,7 @@ def _is_workspace_candidate(directory: Path, lit_root: Path) -> bool:
                 if not child.is_file() or is_sync_conflict_artifact(child):
                     continue
                 if child.suffix.lower() == ".md" and child.name.lower() not in _NON_MAIN_FILENAMES:
-                    note_key, fm, _ = _read_note_identity(child)
+                    note_key, fm, _ = _read_note_identity(child, cache=note_cache)
                     c_stem = _nfc(child.stem)
                     d_name = _nfc(directory.name)
                     if note_key and (
@@ -246,7 +298,7 @@ def _is_workspace_candidate(directory: Path, lit_root: Path) -> bool:
 
 
 def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
-    """Scan *lit_root* safely without traversing junctions, touching sync conflicts, or misclassifying user copies."""
+    """Scan *lit_root* in a single bounded pass without junctions, sync conflicts, or O(N^2) loops."""
     if lit_root is None or not lit_root.exists():
         return VaultIdentityScan(lit_root=lit_root or Path("."))
 
@@ -256,8 +308,10 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
         scan.symlinks_skipped.append(root)
         return scan
 
+    note_cache: dict[Path, tuple[str, dict[str, Any], str]] = {}
     candidate_dirs: list[Path] = []
-    # Safe os.walk with followlinks=False + explicit junction guard
+    walked_md_dirs: list[tuple[Path, list[Path]]] = []
+    # Single safe os.walk with followlinks=False + explicit junction guard
     for dirpath_str, dirnames, filenames in os.walk(str(root), followlinks=False):
         cur_dir = Path(dirpath_str)
         kept_dirs: list[str] = []
@@ -272,21 +326,30 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
                 scan.sync_conflicts.append(sub_p)
                 continue
             kept_dirs.append(dname)
-            if dname not in ("ai", "assets") and _is_workspace_candidate(sub_p, root):
+            if dname not in ("ai", "assets") and _is_workspace_candidate(
+                sub_p, root, note_cache=note_cache
+            ):
                 candidate_dirs.append(sub_p)
         dirnames[:] = kept_dirs
+        md_files: list[Path] = []
         for fname in sorted(filenames):
             fp = cur_dir / fname
             if is_sync_conflict_artifact(fp):
                 scan.sync_conflicts.append(fp)
+                continue
+            if fname.lower().endswith(".md") and fname.lower() not in _NON_MAIN_FILENAMES:
+                md_files.append(fp)
+        if md_files:
+            walked_md_dirs.append((cur_dir, md_files))
 
-    candidate_set = {p.resolve() for p in candidate_dirs}
-    workspace_dirs: list[Path] = []
-    for d in sorted(candidate_dirs):
-        rd = d.resolve()
-        has_child_ws = any(other != rd and rd in other.parents for other in candidate_set)
-        if not has_child_ws:
-            workspace_dirs.append(d)
+    # O(N * depth) deepest-workspace selection (replaces O(N^2) nested pair scan)
+    norm_candidates = {d: _norm_abs_path(d) for d in candidate_dirs}
+    ancestor_set: set[Path] = set()
+    for norm_d in norm_candidates.values():
+        ancestor_set.update(norm_d.parents)
+    workspace_dirs = [
+        d for d in sorted(candidate_dirs) if norm_candidates[d] not in ancestor_set
+    ]
 
     seen_ws_files: set[Path] = set()
     for ws_dir in workspace_dirs:
@@ -298,10 +361,10 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
         for child in sorted(ws_dir.iterdir()):
             if not child.is_file() or child.suffix.lower() != ".md" or is_sync_conflict_artifact(child):
                 continue
-            seen_ws_files.add(child.resolve())
+            seen_ws_files.add(_norm_abs_path(child))
             if child.name.lower() in _NON_MAIN_FILENAMES:
                 continue
-            nkey, fm, _ = _read_note_identity(child)
+            nkey, fm, _ = _read_note_identity(child, cache=note_cache)
             note_records.append((child, nkey, fm))
 
         sources: list[str] = []
@@ -387,28 +450,22 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
         else:
             scan.workspaces[canonical_key] = ws_identity
 
-    # Inspect standalone markdown files outside workspaces without traversing junctions
-    ws_resolved_set = {w.workspace_dir.resolve() for w in scan.workspaces.values()} | {
-        p.resolve() for dups in scan.duplicate_workspaces.values() for p in dups
+    # Inspect standalone markdown files outside workspaces using the single-walk cache
+    ws_resolved_set = {_norm_abs_path(w.workspace_dir) for w in scan.workspaces.values()} | {
+        _norm_abs_path(p) for dups in scan.duplicate_workspaces.values() for p in dups
     }
-    for dirpath_str, dirnames, filenames in os.walk(str(root), followlinks=False):
-        cur_dir = Path(dirpath_str)
-        dirnames[:] = [
-            d
-            for d in sorted(dirnames)
-            if d not in (".obsidian", ".trash", ".git", "node_modules", "ai", "assets")
-            and not is_reparse_or_symlink(cur_dir / d)
-            and (cur_dir / d).resolve() not in ws_resolved_set
-        ]
-        if cur_dir.resolve() in ws_resolved_set:
+    for cur_dir, md_files in walked_md_dirs:
+        cur_norm = _norm_abs_path(cur_dir)
+        if cur_norm in ws_resolved_set or any(
+            anc in ws_resolved_set for anc in cur_norm.parents
+        ):
             continue
-        for fname in sorted(filenames):
-            if not fname.lower().endswith(".md") or fname.lower() in _NON_MAIN_FILENAMES:
+        if any(part in ("ai", "assets", ".obsidian", ".trash", ".git", "node_modules") for part in cur_norm.parts):
+            continue
+        for md_path in md_files:
+            if _norm_abs_path(md_path) in seen_ws_files:
                 continue
-            md_path = cur_dir / fname
-            if is_sync_conflict_artifact(md_path) or md_path.resolve() in seen_ws_files:
-                continue
-            nkey, fm, enc_status = _read_note_identity(md_path)
+            nkey, fm, enc_status = _read_note_identity(md_path, cache=note_cache)
             if not nkey:
                 continue
             flat_obj = FlatNoteIdentity(

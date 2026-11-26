@@ -135,10 +135,16 @@ def _lookup_exact_identifiers(conn, signals) -> list[dict]:
         val = getattr(signals, field, None)
         if not val:
             continue
+        # Fast indexed exact match (PK / B-tree index), fallback to LOWER() only if case differs
         row = conn.execute(
-            f"SELECT * FROM papers WHERE LOWER({field}) = LOWER(?)",
+            f"SELECT * FROM papers WHERE {field} = ?",
             (val,),
         ).fetchone()
+        if not row:
+            row = conn.execute(
+                f"SELECT * FROM papers WHERE LOWER({field}) = LOWER(?)",
+                (val,),
+            ).fetchone()
         if row:
             return [_coverage_entry(row, matched_by=field, matched_title_tokens=0, title_token_total=0, matched_author=False, matched_year=False)]
     return []

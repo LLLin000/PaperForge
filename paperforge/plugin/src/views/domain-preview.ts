@@ -10,10 +10,15 @@
 
 export interface EmbeddingProviderPreset {
   id: string;
+  shortLabelZh: string;
+  shortLabelEn: string;
   labelZh: string;
   labelEn: string;
+  traitZh: string;
+  traitEn: string;
   baseUrl: string;
   model: string;
+  models: readonly string[];
   dimensionsHint: string;
   signupUrl?: string;
 }
@@ -21,54 +26,88 @@ export interface EmbeddingProviderPreset {
 export const EMBEDDING_PRESETS: readonly EmbeddingProviderPreset[] = [
   {
     id: "siliconflow",
-    labelZh: "硅基流动 SiliconFlow（国内直连 · 含免费额度 · 推荐）",
+    shortLabelZh: "硅基流动 · 推荐",
+    shortLabelEn: "SiliconFlow · Recommended",
+    labelZh: "硅基流动 SiliconFlow（国内直连 · 永久免费额度 · 推荐）",
     labelEn: "SiliconFlow (China direct · BAAI/bge-m3 · Recommended)",
+    traitZh: "国内直连 · 含永久免费额度 · 中英双语文献首选",
+    traitEn: "China direct · Free tier · Best for bilingual papers",
     baseUrl: "https://api.siliconflow.cn/v1",
     model: "BAAI/bge-m3",
+    models: [
+      "BAAI/bge-m3",
+      "Qwen/Qwen3-Embedding-8B",
+      "BAAI/bge-large-zh-v1.5",
+    ],
     dimensionsHint: "1024",
-    signupUrl: "https://cloud.siliconflow.cn/",
+    signupUrl: "https://cloud.siliconflow.cn/account/ak",
   },
   {
     id: "dashscope",
-    labelZh: "阿里云百炼 DashScope（text-embedding-v3）",
-    labelEn: "Alibaba DashScope (text-embedding-v3)",
+    shortLabelZh: "阿里云百炼",
+    shortLabelEn: "DashScope",
+    labelZh: "阿里云百炼 DashScope（国内直连 · text-embedding-v4）",
+    labelEn: "Alibaba DashScope (text-embedding-v4)",
+    traitZh: "国内直连 · 新人试用额度 · 高校/企业网络稳定",
+    traitEn: "China direct · Trial credits · Reliable academic network",
     baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    model: "text-embedding-v3",
+    model: "text-embedding-v4",
+    models: ["text-embedding-v4", "text-embedding-v3"],
     dimensionsHint: "1024",
     signupUrl: "https://bailian.console.aliyun.com/",
   },
   {
     id: "zhipu",
-    labelZh: "智谱 AI（embedding-3 · 国内直连）",
+    shortLabelZh: "智谱 AI",
+    shortLabelEn: "Zhipu AI",
+    labelZh: "智谱 AI（国内直连 · embedding-3）",
     labelEn: "Zhipu AI (embedding-3)",
+    traitZh: "国内直连 · 中文科研术语表现友好",
+    traitEn: "China direct · Strong CJK terminology support",
     baseUrl: "https://open.bigmodel.cn/api/paas/v4",
     model: "embedding-3",
+    models: ["embedding-3", "embedding-2"],
     dimensionsHint: "2048",
     signupUrl: "https://open.bigmodel.cn/",
   },
   {
     id: "openai",
-    labelZh: "OpenAI 官方（text-embedding-3-small）",
+    shortLabelZh: "OpenAI 官方",
+    shortLabelEn: "OpenAI",
+    labelZh: "OpenAI 官方（需海外网络 · text-embedding-3-small）",
     labelEn: "OpenAI Official (text-embedding-3-small)",
+    traitZh: "需海外网络与预充余额 · 英文学术表现极稳",
+    traitEn: "Requires global network & prepaid billing · Gold standard",
     baseUrl: "https://api.openai.com/v1",
     model: "text-embedding-3-small",
+    models: ["text-embedding-3-small", "text-embedding-3-large"],
     dimensionsHint: "1536",
     signupUrl: "https://platform.openai.com/api-keys",
   },
   {
     id: "ollama",
-    labelZh: "本地 Ollama（零费用完全离线）",
-    labelEn: "Local Ollama (Offline · Zero API cost)",
+    shortLabelZh: "本地 Ollama",
+    shortLabelEn: "Local Ollama",
+    labelZh: "本地 Ollama（完全离线免费 · 无需密钥）",
+    labelEn: "Local Ollama (100% Offline · Zero API key)",
+    traitZh: "100% 离线免费 · 无需密钥 · 需本机运行 Ollama",
+    traitEn: "100% offline & free · Zero key · Local Ollama required",
     baseUrl: "http://127.0.0.1:11434/v1",
     model: "bge-m3",
+    models: ["bge-m3", "qwen3-embedding", "nomic-embed-text"],
     dimensionsHint: "1024",
   },
   {
     id: "custom",
-    labelZh: "自定义 OpenAI 兼容端点",
+    shortLabelZh: "自定义",
+    shortLabelEn: "Custom",
+    labelZh: "自定义 OpenAI 兼容端点（OneAPI / 中转 / 校内网关）",
     labelEn: "Custom OpenAI-compatible endpoint",
+    traitZh: "支持 OneAPI / 公益中转 / 校内镜像（支持按需拉取模型）",
+    traitEn: "OneAPI / proxy / institutional OpenAI-compatible gateway",
     baseUrl: "",
     model: "",
+    models: [],
     dimensionsHint: "",
   },
 ];
@@ -81,7 +120,16 @@ export function matchEmbeddingPresetId(baseUrl: string, model: string): string {
   const m = String(model || "")
     .trim()
     .toLowerCase();
-  if (!b && (m === "text-embedding-3-small" || !m)) return "openai";
+  if (!b && !m) return "siliconflow";
+  if (
+    !b &&
+    (m === "text-embedding-3-small" || m === "text-embedding-3-large")
+  ) {
+    return "openai";
+  }
+  if (b.includes("api.siliconflow.")) return "siliconflow";
+  if (b.includes("127.0.0.1:11434") || b.includes("localhost:11434"))
+    return "ollama";
   for (const p of EMBEDDING_PRESETS) {
     if (p.id === "custom") continue;
     if (b && b === p.baseUrl.toLowerCase()) return p.id;
@@ -106,7 +154,10 @@ export function renderDomainModePreview(
     isZh: boolean;
   }
 ): void {
-  host.innerHTML = "";
+  host.empty?.();
+  if (typeof host.empty !== "function") {
+    host.textContent = "";
+  }
   const wrap = host.createDiv({
     cls: "pf-domain-live-preview",
     attr: { "data-mode": opts.domainMode },

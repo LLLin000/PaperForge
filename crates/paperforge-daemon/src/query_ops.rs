@@ -91,6 +91,30 @@ fn table_columns(conn: &Connection, table: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn file_mtime_len(p: &Path) -> (u64, u64) {
+    let Ok(meta) = fs::metadata(p) else {
+        return (0, 0);
+    };
+    let mtime = meta
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0);
+    (mtime, meta.len())
+}
+
+/// WAL-aware metadata fingerprint used to invalidate the daemon's in-memory `base-snapshot` cache.
+pub fn base_snapshot_fingerprint(vault: &Path) -> (i64, u64, u64, u64, u64, u64, u64) {
+    let engine = resolve_engine_dir(vault);
+    let (seq, _) = read_state_seq(vault);
+    let idx = engine.join("indexes");
+    let (db_mtime, db_len) = file_mtime_len(&idx.join("paperforge.db"));
+    let (wal_mtime, wal_len) = file_mtime_len(&idx.join("paperforge.db-wal"));
+    let (json_mtime, json_len) = file_mtime_len(&idx.join("formal-library.json"));
+    (seq, db_mtime, db_len, wal_mtime, wal_len, json_mtime, json_len)
+}
+
 /// Native `< 2ms` implementation of `paperforge memory-card base-snapshot --json`.
 ///
 /// Authority contract (SQLite SSOT):
@@ -104,37 +128,38 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let engine = resolve_engine_dir(vault);
     let (seq, updated_at) = read_state_seq(vault);
     let index_path = engine.join("indexes").join("formal-library.json");
-    let json_items: Vec<Value> = if let Ok(raw) = fs::read_to_string(&index_path) {
-        match serde_json::from_str::<Value>(&raw) {
-            Ok(Value::Object(m)) => m
-                .get("items")
-                .and_then(|v| v.as_array())
-                .cloned()
-                .unwrap_or_default(),
-            Ok(Value::Array(arr)) => arr,
-            _ => Vec::new(),
-        }
+    let json_root: Value = if let Ok(raw) = fs::read_to_string(&index_path) {
+        serde_json::from_str::<Value>(&raw).unwrap_or(Value::Null)
     } else {
-        Vec::new()
+        Value::Null
+    };
+    let json_items: &[Value] = match &json_root {
+        Value::Object(m) => m
+            .get("items")
+            .and_then(|v| v.as_array())
+            .map(|v| v.as_slice())
+            .unwrap_or(&[]),
+        Value::Array(arr) => arr.as_slice(),
+        _ => &[],
     };
 
-    let mut json_by_key: HashMap<String, Map<String, Value>> = HashMap::new();
-    let mut json_order: Vec<String> = Vec::new();
+    let mut json_by_key: HashMap<&str, &Map<String, Value>> =
+        HashMap::with_capacity(json_items.len());
+    let mut json_order: Vec<&str> = Vec::with_capacity(json_items.len());
     for item in json_items {
         let Some(obj) = item.as_object() else { continue };
         let key = obj
             .get("zotero_key")
             .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .trim()
-            .to_string();
+            .map(str::trim)
+            .unwrap_or("");
         if key.is_empty() {
             continue;
         }
-        if !json_by_key.contains_key(&key) {
-            json_order.push(key.clone());
+        if !json_by_key.contains_key(key) {
+            json_order.push(key);
         }
-        json_by_key.insert(key, obj.clone());
+        json_by_key.insert(key, obj);
     }
 
     let mut db_papers: HashMap<String, DbPaperRow> = HashMap::new();
@@ -342,17 +367,25 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     // Strict SSOT key membership: when SQLite has authoritative paper records,
     // NEVER union stale JSON-only keys (prevents resurrecting deleted papers).
-    let source_order = if sqlite_authoritative { db_order } else { json_order };
-    for k in source_order {
-        if seen.insert(k.clone()) {
-            keys.push(k);
+    if sqlite_authoritative {
+        for k in db_order {
+            if seen.insert(k.clone()) {
+                keys.push(k);
+            }
+        }
+    } else {
+        for k in json_order {
+            let owned = k.to_string();
+            if seen.insert(owned.clone()) {
+                keys.push(owned);
+            }
         }
     }
 
-    let mut out_rows = Map::new();
+    let mut out_rows = Map::with_capacity(keys.len());
     for key in keys {
         let db_p = db_papers.get(&key);
-        let obj = json_by_key.get(&key);
+        let obj = json_by_key.get(key.as_str()).copied();
 
         let json_str = |field: &str| -> String {
             match obj.and_then(|m| m.get(field)) {
@@ -859,7 +892,17 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
         }));
     }
 
-    let rollback_available = dot_pf.join("backups").is_dir();
+    let backups_dir = dot_pf.join("backups");
+    let rollback_available = backups_dir.is_dir()
+        && fs::read_dir(&backups_dir)
+            .ok()
+            .into_iter()
+            .flatten()
+            .flatten()
+            .any(|ent| {
+                ent.file_name().to_string_lossy().starts_with("upgrade-")
+                    && ent.path().is_dir()
+            });
     let out = pf_ok(
         "upgrade",
         json!({

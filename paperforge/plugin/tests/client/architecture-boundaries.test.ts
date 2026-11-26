@@ -40,9 +40,8 @@ const CP_MODULE = /^(node:)?child_process$/;
 /** Permanent child-process authority — the transport stack, exact files. */
 const DIRECT_AUTHORITY_OWNERS: Record<string, number> = {
   // Ticket 07 step 6 items 4+5: ALL child-process authority lives at the
-  // transport root — execute + #137 structured-stream + hardKill escalation
-  // + the host git/PATH bootstrap probe (2 execFileSync).
-  "client/node-transport.ts": 4,
+  // transport root — execute + #137 structured-stream (git/PATH probe is pure JS).
+  "client/node-transport.ts": 2,
 };
 
 /** Host-layer seams, listed file-by-file with their exact current shape. */

@@ -315,6 +315,42 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
     expect(blocker?.classList.contains("pf-nudge")).toBe(true);
   });
 
+  it("renders non-blocking Category-B follow-up items (.env / ChromaDB rebuild / Skill Hub)", () => {
+    const planWithFollowups = sampleVeteranPlan({
+      category_b_reconfig: [
+        {
+          id: "vectors.rebuild_sqlite_vec",
+          area: "database",
+          impact: "minor",
+          title: "旧版 ChromaDB 向量索引需在新版中重新构建",
+          detail: "新版已切换为 sqlite-vec。",
+          remediation: "升级后点击构建向量索引。",
+        },
+        {
+          id: "auth.env_migration_needed",
+          area: "auth",
+          impact: "experience_critical",
+          title: ".env 中的接口密钥尚未导入系统安全凭据库",
+          detail: "检测到 OCR_API_KEY。",
+          remediation: "建议导入系统凭据库。",
+        },
+      ],
+    });
+    const modal = new PaperForgeUpgradeModal(
+      {} as never,
+      {} as never,
+      planWithFollowups
+    );
+    modal.open();
+
+    const list = modal.contentEl.querySelector(
+      '[data-pf-testid="upgrade-followup-list"]'
+    );
+    expect(list).toBeTruthy();
+    expect(list?.textContent).toContain("ChromaDB");
+    expect(list?.textContent).toContain("OCR_API_KEY");
+  });
+
   it("renders selective trash quarantine checkboxes and 1-click rollback in Settings maintenance", async () => {
     const vaultUpgradeApply = vi
       .fn()

@@ -20,6 +20,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 const MAX_CACHED_VAULTS: usize = 4;
+const MAX_SNAPSHOT_CACHE: usize = 2;
 const MAX_WORKSPACES_PER_VAULT: usize = 2048;
 const MAX_NOTICES: usize = 100;
 const MAX_RECENT_JOBS: usize = 25;
@@ -249,6 +250,14 @@ impl JobRecord {
 
 pub type PushSink = Arc<dyn Fn(Value) + Send + Sync>;
 
+#[derive(Clone)]
+struct CachedBaseSnapshot {
+    vault_key: String,
+    fingerprint: (i64, u64, u64, u64, u64, u64, u64),
+    payload: (i32, String, String),
+    last_access: Instant,
+}
+
 struct InnerState {
     started_at: f64,
     parent_pid: Option<u32>,
@@ -259,6 +268,7 @@ struct InnerState {
     notice_counter: u64,
     push_sink: Option<PushSink>,
     vault_lru: VecDeque<VaultCacheEntry>,
+    base_snapshot_cache: VecDeque<CachedBaseSnapshot>,
     notices: VecDeque<Value>,
     active_jobs: HashMap<String, Arc<Mutex<JobRecord>>>,
     delegated_pids: HashSet<u32>,
@@ -285,6 +295,7 @@ impl NativeControlDaemon {
                 notice_counter: 0,
                 push_sink,
                 vault_lru: VecDeque::new(),
+                base_snapshot_cache: VecDeque::new(),
                 notices: VecDeque::new(),
                 active_jobs: HashMap::new(),
                 delegated_pids: HashSet::new(),
@@ -467,10 +478,49 @@ impl NativeControlDaemon {
         (None, c.last_seq)
     }
 
+    pub fn get_or_build_base_snapshot(&self, vault: &Path) -> (i32, String, String) {
+        let vkey = Self::norm_vault(vault);
+        let fp = crate::query_ops::base_snapshot_fingerprint(vault);
+        {
+            let mut g = self.inner.lock().unwrap();
+            if let Some(pos) = g
+                .base_snapshot_cache
+                .iter()
+                .position(|c| c.vault_key == vkey && c.fingerprint == fp)
+            {
+                let mut entry = g.base_snapshot_cache.remove(pos).unwrap();
+                entry.last_access = Instant::now();
+                let res = entry.payload.clone();
+                g.base_snapshot_cache.push_back(entry);
+                return res;
+            }
+        }
+        let fresh = crate::query_ops::handle_base_snapshot(vault);
+        let mut g = self.inner.lock().unwrap();
+        if let Some(pos) = g
+            .base_snapshot_cache
+            .iter()
+            .position(|c| c.vault_key == vkey)
+        {
+            g.base_snapshot_cache.remove(pos);
+        }
+        while g.base_snapshot_cache.len() >= MAX_SNAPSHOT_CACHE {
+            g.base_snapshot_cache.pop_front();
+        }
+        g.base_snapshot_cache.push_back(CachedBaseSnapshot {
+            vault_key: vkey,
+            fingerprint: fp,
+            payload: fresh.clone(),
+            last_access: Instant::now(),
+        });
+        fresh
+    }
+
     pub fn invalidate_vault(&self, vault: Option<&Path>) -> usize {
         let mut g = self.inner.lock().unwrap();
         if let Some(v) = vault {
             let vkey = Self::norm_vault(v);
+            g.base_snapshot_cache.retain(|c| c.vault_key != vkey);
             if let Some(pos) = g.vault_lru.iter().position(|e| e.vault_key == vkey) {
                 g.vault_lru.remove(pos);
                 return 1;
@@ -479,6 +529,7 @@ impl NativeControlDaemon {
         } else {
             let n = g.vault_lru.len();
             g.vault_lru.clear();
+            g.base_snapshot_cache.clear();
             n
         }
     }
@@ -492,6 +543,8 @@ impl NativeControlDaemon {
                 g.vault_lru
                     .retain(|e| e.last_access.elapsed().as_secs_f64() < 120.0);
                 evicted = before.saturating_sub(g.vault_lru.len());
+                g.base_snapshot_cache
+                    .retain(|c| c.last_access.elapsed().as_secs_f64() < 120.0);
             }
         }
         json!({ "evicted_vaults": evicted, "gc_collected": 0 })
@@ -534,6 +587,9 @@ impl NativeControlDaemon {
             n
         };
         self.emit_push("notice.push", norm_v.as_deref(), notice.clone());
+        if let Some(v) = vault {
+            self.write_heartbeat(v);
+        }
         notice
     }
 
@@ -590,11 +646,13 @@ impl NativeControlDaemon {
         for jid in to_cancel {
             let _ = self.cancel_job(&jid, 1500, true);
         }
+        self.write_heartbeat(vault);
     }
 
     pub fn release_exclusive_barrier(&self, vault: &Path) {
         let vkey = Self::norm_vault(vault);
         self.inner.lock().unwrap().exclusive_barriers.remove(&vkey);
+        self.write_heartbeat(vault);
     }
 
     fn default_argv_for_kind(kind: &str, priority_key: Option<&str>, backfill_ocr: bool) -> Result<Vec<String>, String> {
@@ -1384,12 +1442,12 @@ impl NativeControlDaemon {
     }
 
     pub fn write_heartbeat(&self, vault: &Path) {
-        let indexes_dir = vault.join(".paperforge").join("indexes");
+        let indexes_dir = resolve_engine_dir(vault).join("indexes");
         if !indexes_dir.is_dir() {
             return;
         }
         let vkey = Self::norm_vault(vault);
-        let (parent_pid, active) = {
+        let (parent_pid, active, exclusive_barrier, recent_notices) = {
             let g = self.inner.lock().unwrap();
             let act: Vec<Value> = g
                 .active_jobs
@@ -1403,7 +1461,27 @@ impl NativeControlDaemon {
                     }
                 })
                 .collect();
-            (g.parent_pid, act)
+            let barrier = g.exclusive_barriers.get(&vkey).cloned();
+            let mut notices_vec: Vec<Value> = g
+                .notices
+                .iter()
+                .rev()
+                .filter(|n| {
+                    if n.get("acked").and_then(|v| v.as_bool()) == Some(true) {
+                        return false;
+                    }
+                    let lvl = n.get("level").and_then(|v| v.as_str()).unwrap_or("info");
+                    let same_vault = n
+                        .get("vault")
+                        .and_then(|v| v.as_str())
+                        .is_none_or(|nv| nv == vkey);
+                    same_vault && matches!(lvl, "warning" | "error")
+                })
+                .take(5)
+                .cloned()
+                .collect();
+            notices_vec.reverse();
+            (g.parent_pid, act, barrier, notices_vec)
         };
         let payload = json!({
             "schema_version": 1,
@@ -1412,6 +1490,8 @@ impl NativeControlDaemon {
             "parent_pid": parent_pid,
             "rss_bytes": process_rss_bytes(),
             "active_jobs": active,
+            "exclusive_barrier": exclusive_barrier,
+            "recent_notices": recent_notices,
             "updated_at": now_unix_secs(),
         });
         if let Ok(bytes) = serde_json::to_vec_pretty(&payload) {

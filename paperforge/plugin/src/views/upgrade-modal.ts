@@ -240,6 +240,49 @@ export class PaperForgeUpgradeModal extends Modal {
       });
     }
 
+    // ── Non-blocking Category-B Follow-up Items (e.g., .env migration, Chroma rebuild, Skill Hub) ──
+    const followups = this._plan.category_b_reconfig ?? [];
+    if (followups.length > 0) {
+      const fuWrap = contentEl.createDiv({
+        cls: "pf-upgrade-followup",
+        attr: { "data-pf-testid": "upgrade-followup-list" },
+      });
+      fuWrap.createDiv({
+        cls: "pf-upgrade-followup-heading",
+        text: t("upgrade_followup_heading").replace(
+          "{count}",
+          String(followups.length)
+        ),
+      });
+      for (const item of followups) {
+        const row = fuWrap.createDiv({ cls: "pf-upgrade-followup-row" });
+        const rowHead = row.createDiv({ cls: "pf-upgrade-item-head" });
+        rowHead.createSpan({
+          cls: "pf-upgrade-item-title",
+          text: item.title,
+        });
+        rowHead.createSpan({
+          cls:
+            item.impact === "experience_critical"
+              ? "pf-upgrade-item-tag is-critical"
+              : "pf-upgrade-item-tag",
+          text:
+            item.impact === "experience_critical"
+              ? t("upgrade_tag_critical")
+              : t("upgrade_tag_minor"),
+        });
+        const detailText = item.remediation
+          ? `${item.detail} ${item.remediation}`
+          : item.detail;
+        if (detailText) {
+          row.createDiv({
+            cls: "pf-upgrade-followup-detail",
+            text: detailText,
+          });
+        }
+      }
+    }
+
     // ── Status Feedback Slot ──
     const statusSlot = contentEl.createDiv({
       cls: "pf-upgrade-status-slot",

@@ -15,6 +15,7 @@ import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
 import { formatHumanError } from "../services/feedback";
 import { traceConsoleError } from "../client/trace";
+import { renderErrorAnatomy } from "../primitives";
 import { PaperForgeConfirmModal } from "./modals";
 import { PaperForgeStatusView } from "./dashboard";
 import {
@@ -306,11 +307,11 @@ export class OcrWorkspaceView extends ItemView {
     const filtered = this._filteredPapers();
 
     // Update count
-    const countEl = container.querySelector(".pf-ocr-ws-toolbar-count");
+    const countEl = container.querySelector<HTMLElement>(
+      ".pf-ocr-ws-toolbar-count"
+    );
     if (countEl) {
-      countEl.innerHTML = t("ocr_ws_showing")
-        .replace("{count}", String(filtered.length))
-        .replace("{total}", String(this.papers.length));
+      this._renderShowingCount(countEl, filtered.length, this.papers.length);
     }
 
     // DOM-reuse: keep table and thead, only replace tbody
@@ -390,6 +391,12 @@ export class OcrWorkspaceView extends ItemView {
       .then((descriptor) => {
         if (descriptor?.action_id === actionId) {
           this.actionDescriptors.set(actionId, descriptor);
+        } else {
+          // Record negative result so _render() does not trigger an infinite re-probe loop
+          this.actionDescriptors.set(actionId, {
+            action_id: actionId,
+            availability: "unavailable",
+          });
         }
       })
       .catch(() => {
@@ -400,7 +407,7 @@ export class OcrWorkspaceView extends ItemView {
       })
       .finally(() => {
         this.pendingActionDescriptors.delete(actionId);
-        if (this.containerEl?.children?.[1]) this._render();
+        if (!this._closed && this.containerEl?.children?.[1]) this._render();
       });
   }
 
@@ -418,9 +425,41 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private _renderActivity(container: HTMLElement): void {
+    const failedPapers = this.papers.filter((p) => p.status === "failed");
     const client = this._getClient();
     const showLocal = this.running && !!client?.isOperationActive();
     const history = this.historicalActivity;
+    if (!showLocal && !history?.unsettled && failedPapers.length === 0) return;
+
+    if (failedPapers.length > 0 && !this.selectedKey) {
+      const firstFailed = failedPapers[0];
+      const errBox = renderErrorAnatomy(container, {
+        whatHappened:
+          t("nav_close") === "关闭"
+            ? `${failedPapers.length} 篇文献需要处理异常（例如「${firstFailed.title}」OCR 解析失败）。`
+            : `${failedPapers.length} paper(s) need attention (e.g. "${firstFailed.title}" failed OCR).`,
+        impact:
+          t("nav_close") === "关闭"
+            ? "原始 PDF 与其余已解析文献不受影响；失败条目暂无法参与全文语义检索。"
+            : "Original PDFs and healthy papers are untouched; failed items are excluded from fulltext search.",
+        nextStep:
+          t("nav_close") === "关闭"
+            ? "点击下方检查第一篇失败文献并执行「重新提取」或查看诊断。"
+            : "Inspect the failed paper to re-extract or review diagnostics.",
+        impactLabel: t("problem_impact") || "影响：",
+        nextLabel: t("problem_next") || "建议：",
+      });
+      const inspectBtn = errBox.createEl("button", {
+        cls: "pf-btn pf-btn-primary",
+        text: t("nav_close") === "关闭" ? "检查异常详情" : "Inspect Failure",
+        attr: { type: "button", "data-pf-testid": "ocr-ws-inspect-failure" },
+      });
+      inspectBtn.addEventListener("click", () => {
+        this.selectedKey = firstFailed.key;
+        this._render();
+      });
+    }
+
     if (!showLocal && !history?.unsettled) return;
     const activity = showLocal
       ? this.progress
@@ -479,6 +518,30 @@ export class OcrWorkspaceView extends ItemView {
     }
   }
 
+  private _renderShowingCount(
+    el: HTMLElement,
+    shown: number,
+    total: number
+  ): void {
+    el.empty();
+    const raw = (t("ocr_ws_showing") || "{count} of {total} papers").replace(
+      /<\/?strong>/gi,
+      ""
+    );
+    const tpl = raw.replace("{total}", String(total));
+    const idx = tpl.indexOf("{count}");
+    if (idx < 0) {
+      el.textContent = tpl;
+      return;
+    }
+    const before = tpl.slice(0, idx);
+    const after = tpl.slice(idx + "{count}".length);
+    const doc = el.ownerDocument || document;
+    if (before) el.appendChild(doc.createTextNode(before));
+    el.createEl("strong", { cls: "pf-tnum", text: String(shown) });
+    if (after) el.appendChild(doc.createTextNode(after));
+  }
+
   private _renderToolbar(container: HTMLElement): void {
     const filtered = this._filteredPapers();
     const versions = [
@@ -489,9 +552,7 @@ export class OcrWorkspaceView extends ItemView {
 
     const tb = container.createDiv({ cls: "pf-ocr-ws-toolbar" });
     const count = tb.createDiv({ cls: "pf-ocr-ws-toolbar-count" });
-    count.innerHTML = t("ocr_ws_showing")
-      .replace("{count}", String(filtered.length))
-      .replace("{total}", String(this.papers.length));
+    this._renderShowingCount(count, filtered.length, this.papers.length);
 
     // Search input
     const searchField = tb.createDiv({ cls: "pf-ocr-ws-search" });
@@ -951,6 +1012,39 @@ export class OcrWorkspaceView extends ItemView {
       this.selectedKey = null;
       this._refreshTable();
     });
+
+    if (paper.status === "failed" || paper.status === "done_incomplete") {
+      const isZh = t("nav_close") === "关闭";
+      const isIncomplete = paper.status === "done_incomplete";
+      const reasonWhat = isIncomplete
+        ? isZh
+          ? `「${paper.title}」仅生成了部分结构化内容（可能存在缺页或图表块未对齐）。`
+          : `"${paper.title}" finished with incomplete structured blocks.`
+        : isZh
+          ? `「${paper.title}」在 OCR 解析流程中失败，未能生成可用的结构化正文。`
+          : `"${paper.title}" failed during OCR extraction before structured blocks were produced.`;
+      const detailErr = renderErrorAnatomy(card, {
+        whatHappened: reasonWhat,
+        impact: isZh
+          ? "原始 PDF 文件完好无损；该篇文献暂不参与全文混合检索，其余文献不受影响。"
+          : "The source PDF is untouched; only this paper is excluded from fulltext search.",
+        nextStep: isZh
+          ? "建议先点击下方「重新提取」重试；若持续超时请在设置 → OCR 引擎检查接口或密钥状态。"
+          : "Click Re-extract below to retry, or verify your OCR provider configuration in Settings.",
+        impactLabel: t("problem_impact") || "影响：",
+        nextLabel: t("problem_next") || "建议：",
+      });
+      if (this._isActionAvailable("ocr.run")) {
+        const retryBtn = detailErr.createEl("button", {
+          cls: "pf-btn pf-btn-primary",
+          text: isZh ? "重新提取" : "Re-extract",
+          attr: { type: "button", "data-pf-testid": "ocr-ws-error-reextract" },
+        });
+        retryBtn.addEventListener("click", () =>
+          this._requestOcrRun([paper.key], "redo")
+        );
+      }
+    }
 
     // Fact grid
     const grid = card.createDiv({ cls: "pf-ocr-ws-detail-grid" });
@@ -1452,7 +1546,8 @@ export class VersionRestoreModal extends Modal {
     currentPath: string,
     restore: (label: string) => ReturnType<PaperForgeClient["versionsRestore"]>,
     onRestored?: () => void,
-    resetLive?: () => ReturnType<PaperForgeClient["versionsResetLive"]>
+    resetLive?: () => ReturnType<PaperForgeClient["versionsResetLive"]>,
+    previewContentByLabel?: Record<string, string>
   ) {
     super(app);
     this.paperKey = paperKey;
@@ -1464,6 +1559,17 @@ export class VersionRestoreModal extends Modal {
     this.onRestored = onRestored ?? null;
     this.mdComponent = new Component();
     this.mdComponent.load();
+    if (previewContentByLabel) {
+      for (const [k, v] of Object.entries(previewContentByLabel)) {
+        this.contentCache.set(k, v);
+      }
+      if (currentLabel && previewContentByLabel[currentLabel]) {
+        this.contentCache.set(
+          "__current__",
+          previewContentByLabel[currentLabel]
+        );
+      }
+    }
   }
 
   /** Presentation only: read the Python-returned canonical artifact path. */
@@ -1561,28 +1667,26 @@ export class VersionRestoreModal extends Modal {
       ver.fulltext_size > 1024
         ? (ver.fulltext_size / 1024).toFixed(0) + "KB"
         : ver.fulltext_size + "B";
-    info.innerHTML =
-      "<strong>" +
-      ver.label +
-      "</strong>" +
-      (isCurrent
-        ? ' <span class="pf-vr-current-tag">' +
-          (t("ocr_ws_restore_current") || "current") +
-          "</span>"
-        : "") +
-      '<br><span class="pf-vr-info-meta">' +
-      date +
-      " · " +
-      ver.source +
-      " · " +
-      sizeStr +
-      (ver.renderer_version
-        ? " · renderer " +
-          (ver.renderer_version.startsWith("v")
-            ? ver.renderer_version
-            : "v" + ver.renderer_version)
-        : "") +
-      "</span>";
+    info.empty();
+    info.createEl("strong", { text: ver.label });
+    if (isCurrent) {
+      info.appendChild(document.createTextNode(" "));
+      info.createEl("span", {
+        cls: "pf-vr-current-tag",
+        text: t("ocr_ws_restore_current") || "current",
+      });
+    }
+    info.createEl("br");
+    const rendererPart = ver.renderer_version
+      ? " · renderer " +
+        (ver.renderer_version.startsWith("v")
+          ? ver.renderer_version
+          : "v" + ver.renderer_version)
+      : "";
+    info.createEl("span", {
+      cls: "pf-vr-info-meta",
+      text: `${date} · ${ver.source} · ${sizeStr}${rendererPart}`,
+    });
 
     const contentArea = preview.createDiv({ cls: "pf-vr-content" });
     const diffArea = preview.createDiv({ cls: "pf-vr-diff" });
