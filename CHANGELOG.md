@@ -4,88 +4,136 @@ All notable changes to PaperForge.
 
 ---
 
-## Unreleased
+## [Unreleased]
 
 ### Added
 
-- Add native Obsidian `BasesView` workbench (`type: paperforge-table`, `PaperForgeBasesView`), daemon-free live UI synchronization via atomic `<indexes_dir>/.state-seq.json` watcher + `paperforge memory-card base-snapshot --json`, and YAML no-op write guard in `asset_index.py`, while demoting `OCR Workspace` from the primary left ribbon (`library` opens `Literature Hub.base`) to Settings → OCR Advanced Workspace and row `[🔧 诊断]`.
-- Add faceted Evolving Living Paper Memory Cards (`paper_memory_cards` + `paper_memory_history`, `<workspace>/ai/memory-card.json`, `paperforge memory-card <get|refine|history|clear>`, surfaced in `paper-context living_memory` and `dashboard.ts`), and simplify human workflows by removing the 9-field manual record form button from Paper Mode and removing the 5-pill cognitive selector from human PDF highlighting.
-- Add 3-stage error-tolerant PDF sentence grounding engine (`paperforge/services/pdf_grounding.py`) and collaborative `[🤖 AI 批注层]` (`paperforge annotations <agent-mark|adopt|clear-agent>`, dashed AI highlights, honest left-margin brackets `margin_fallback`, `[✓ 采纳]` adoption, live updates in open PDFs, plus `atoms/update-paper-memory.md` and `molecules/annotate-paper-pdf.md` skills).
-- Support hidden `.paperforge/` engine layout (`resolve_paths`, fresh Setup default, and `pf_bootstrap.py`) so OCR intermediates, indexes, backups, and internal `fulltext.md` stay invisible to Obsidian's file indexer while materializing collision-free `<workspace>/assets/<KEY>_figure_*.jpg` and `<KEY>_table_*.jpg` assets natively rendered in formal notes, plus `paperforge migrate-storage [--dry-run] [--json]` to upgrade legacy `System/PaperForge` vaults in place.
-- Add non-destructive Zotero-style Sidecar PDF Annotator (`PaperForgePdfView` via Obsidian's built-in `loadPdfJs()`, `<workspace>/annotations.jsonl`, SQLite `paper_annotations` table, and `paperforge annotations <pdf-info|list|add|update|delete|promote|fulltext-preview>`) supporting multi-color text highlights, rectangular region crops (`<KEY>_ann_*.jpg`), SHA-256 provenance binding, automatic V3 OCR section/figure resolution, cognitive intent tags (`evidence`/`question`/`method`/`quote`), and one-click promotion to verified `reading-log` entries without modifying source PDF bytes.
-- Surface `user_annotations` (`total`, `questions`, `highlights`) directly in `paperforge paper-context`, wire user PDF questions into `/pf-deep` (`molecules/deep-analyze-paper.md`, plus mandatory `paperforge deep-finalize`), fix `extract-methodology-card.md` and `write-reading-log-jsonl.md` guidance, and add `molecules/synthesize-evidence-matrix.md` for multi-paper horizontal evidence synthesis.
-- Add all missing Settings UI controls (`vector_db_provider_type`, `paddleocr_job_url`, `paddleocr_model`, full 15-platform skill deployment mapping) with explicit Save / Stage 3 flush controls, and add O(1) `.sync-fastpath.json` short-circuiting and capped OCR version snapshots (`<= 3` kept).
+- Native Rust MCP server (`paperforge-daemon --mcp`) with 7 tools (`paperforge_brief`, `paperforge_search`, `paperforge_library_query`, `paperforge_paper_context`, `paperforge_retrieve`, `paperforge_annotate_batch`, `paperforge_memory_refine`), plus `agent-brief`, `agent-onboarding`, `mcp-config`, `mcp-install`, `mcp-check`, and `skill-sync-all` Skill Hub commands.
+- Obsidian UIKit foundation (`paperforge/plugin/src/uikit/`), Paper Quick Switcher (`paperforge-quick-switcher`), Unified Command Palette (`paperforge-command-palette`), Citation Inserter (`paperforge-insert-citation`), and Developer UI Gallery (`open-ui-gallery`).
+- New CLI endpoints: `paperforge embed list-models`, `paperforge annotations agent-apply`.
+
+### Security & Packaging
+
+- Hardened `.github/workflows/publish.yml` and CI workflows: added top-level `concurrency:` guard, least-privilege `permissions:`, pinned third-party GitHub Action commit SHAs and cross-build tool versions, moved Release Identity Gate (`Tag vs SHA`) and plugin build/prerelease projection before Python wheel build and optional PyPI OIDC publish, enforced `SOURCE_DATE_EPOCH` deterministic wheel/sdist builds, made missing `checksums.txt` fail closed on existing releases, removed unsafe `--clobber` overwrites, and fixed Stable promotion (`gh release edit --prerelease=false`).
+- Tightened `pyproject.toml` `packages.find` excludes and `package-data` globs so `package-lock.json`, `tsconfig.json`, `test/fixtures/`, `prototypes/`, and internal `architecture-review` harness scripts do not leak into built wheels; aligned license metadata to `CC-BY-NC-SA-4.0`.
+- Fixed Linux `NUL` file creation bug in `paperforge/plugin/package.json` `typecheck` script and synchronized `package.json` version metadata.
+- Reconciled `docs/COMMANDS.md`, `README.md`, `README.en.md`, `README.zh.md`, `INSTALLATION.md`, `docs/getting-started.md`, `docs/user-manual.md`, `docs/INSTALL-AND-UPDATE-ARCHITECTURE.md`, and Handbook Chapter 13 (`docs/handbook/13-obsidian-plugin-and-views.md`) with shipped 2.0.x architecture.
+
+---
+
+## [2.0.6] - 2026-11-24
+
+### Performance & Reliability
+
+- Deferred startup `configList` and background probes out of `onload()` onto `onLayoutReady()` idle (`deferred.ts`), reducing Obsidian startup overhead to milliseconds and avoiding concurrent Python process bursts.
+- Added async `stat()` fingerprint gating on `zotero.sqlite` / `-wal` prior to background auto-sync (`0%` idle CPU and zero Python spawns when Zotero has not changed).
+- Switched native daemon SHA-256 integrity checks to async streaming with a 12-hour healthy local cache.
+- Fixed Settings tab re-probing and DOM rebuilds while closed (now marks dirty and refreshes on open).
+- Fixed Companion sidebar listener leaks by calling `offref()` properly on `active-leaf-change` and `vault.modify` during close.
+- Disabled high-GPU Liquid Glass blur by default (zero-blur solid high-performance mode, toggleable in Appearance), and removed global `.modal:has(...)` selectors and redundant Base re-renders.
+
+---
+
+## [2.0.5] - 2026-11-24
+
+### Changed
+
+- Rebuilt Settings into 4 focused pages (`Overview`, `Modules`, `Appearance`, `Help`): Overview shows a single Decision-Tree Hero Card plus 5 compact status rows; Appearance holds theme/density/motion controls; storage maintenance/rollback moved under `Modules → Installation`.
+- Optimized Base Literature Workbench (`PaperForgeBasesView`): O(1) path index, SVG icon template cache, 80-row chunked streaming render, local checkbox refresh without full table rebuilds, CSS `content-visibility` isolation, fixed `<colgroup>` proportions, and frameless semantic `<a>` title links.
+
+---
+
+## [2.0.4] - 2026-11-24
+
+### Added
+
+- Deterministic 10-state Setup, Upgrade & Readiness Decision Tree (`setup-decision-tree.ts`), surfacing one clear primary card and next action across `engine_updating`, `engine_quarantined`, `checking`, `engine_version_mismatch`, `engine_not_installed`, `engine_probe_failed`, `legacy_vault_upgrade`, `zotero_not_configured`, `library_sync_error`, and `ready`.
+- Collapsed release notes banner into a compact header pill next to the version badge.
+- Zero-Python upgrade detection supporting custom `system_dir` paths in `paperforge.json`.
 
 ### Fixed
 
-- Harden Windows & CN novice onboarding in Setup Wizard and Python runtime discovery (`%LOCALAPPDATA%\Programs\Python`, `py -3.x` filtering Store stubs, UTF-8 `@chcp 65001` `.cmd` installers, PyPI mirror fallback, install Cancel action, Zotero `CSL JSON` structure detection, inline offline SVG guide, external Zotero PDF resolution without required symlinks, and preventing unintended whole-library OCR runs when zero papers have `do_ocr: true`).
-- Protect user-authored Obsidian data across sync/prune: write `reading-log --render` to `reading-log.index.md` instead of overwriting user narrative `reading-log.md`, preserve custom YAML frontmatter keys via line-anchored `split_frontmatter_block`, automatically migrate cross-domain workspaces during index builds and deduplicate keys, fix `paperforge prune` workspace resolution, and tighten orphan cleanup matching with `trash_remove`.
-- Hide internal machine `fulltext.md` from normal plugin user surfaces (removing "打开全文" / "Fulltext Path" from Dashboard and routing PDF opens to `PaperForgePdfView`, while preserving read-only `OCR Workspace` diagnostics via `annotations fulltext-preview`).
-- Fix hybrid retrieval (`paperforge/embedding/search.py` and `commands/retrieve.py`) to compute the full RRF union across BM25, `vec_body`, and `vec_objects` with batch metadata hydration instead of dropping semantic hits whenever BM25 matches, allow `retrieve --deep` to run via FTS5 BM25 before vectors are built, and fix `pf_deep.py` scaffold heading validation + `<KEY>_*.jpg` embed resolution and `_build_collection_tree` `/` sub-path splitting.
-- Add strictly read-only `paperforge inspect <query> [--json]` per-paper 6-stage diagnostic command (`source`, `lineage`, `ocr`, `objects_and_render`, `memory`, `vectors`) using SQLite `?mode=ro` URI without creating lock or WAL files, plus `scripts/dev/ocr_rebuild_paper.py --dump-stages` / `--dump-stages-only` for offline OCR V3 stage transition inspection.
-- Formalize pluggable OCR inbound schema protocol (`paperforge/providers/base.py`, `paperforge/providers/__init__.py`) and route PaddleOCR normalization and job submission through `resolve_ocr_provider`.
-- Add `check_module_graph.py --check` (R1-R4) to the L0 `static` GitHub Actions job and fold standalone cross-OS `unit-tests` into `j-matrix` while tightening CI caching and PR concurrency cancellation.
-- Fail the static CI job when the research evidence corpus (`docs/evidence/`) is tracked, and — for a pull request — when any of its commits added it. The gate walks commits rather than diffing endpoints, so an add-then-delete inside a branch still fails; `.gitignore` cannot stop `git add -f`.
-- Save research records from the paper panel, search specific quotes/use text separately from paper metadata, and inspect stable record IDs and append-only correction history (#353).
-- Search JSONL immediately without rebuilding Memory or using embeddings; source checks distinguish recorded, user-confirmed, exact-text matched, stale and unavailable positions.
-- Recheck hash-bound, canonical in-vault PDF sources before opening a validated physical page. External paths and junctions resolving outside the vault are refused; printed-page labels are separate and do not establish verification.
-- Restrict OCR Support Diagnostic and issue-draft egress to validated public fields: no probe text, setup detail/stage logs or raw paths; home paths collapse to a location label. Clipboard and issue modal accept sanitized payloads, and drafts include only known OCR reason codes, bounded paper counts and static labels.
+- Resolved race condition during cross-version Rust daemon hot-swap vs initial auto-sync / upgrade checks (startup waits for hot-swap and transport retries once transparently).
+- Fixed installed legacy engines being misclassified as "Step 1 not installed" when a probe fails, and improved legacy API key migration error guidance.
+
+---
+
+## [2.0.3] - 2026-11-23
+
+### Changed
+
+- Unified 3-layer interaction feedback contract (`feedback.ts`): transient notices for quick confirmations, inline actionable cards for persistent issues (Windows Defender exclusion path copy, background sync retry, orphan cleanup, release notes), and plain-language translation of Python tracebacks, HTTP 401/429/404, Zotero locks, and timeouts.
+- Achieved 100% EN/ZH bilingual dictionary coverage (`1386/1386` keys) across plugin UI and Rust daemon notifications.
+- Eliminated duplicate failure/completion notices on streaming tasks, aligned `queued` task tracking, and unified `nopdf` handling across Dashboard and funnels.
+
+---
+
+## [2.0.2] - 2026-11-22
+
+### Added
+
+- True 1-click Express Onboarding (`_renderExpressSetup` + `domain-preview.ts`): automatically chains engine deployment, configuration, and initial Zotero sync in one action, with live A/B `domain_mode` folder preview.
+- Multi-mirror resilience for university/hospital networks (10s connect timeout, GitHub mirror fallback, CN PyPI/Python mirrors, and inline 1-line proxy retry).
+- Base Workbench missing-local-PDF diagnostic bar, free OCR/embedding API key links, and native Rust daemon SHA-256 self-healing + antivirus quarantine warning.
 
 ### Fixed
 
-- Route embedding preflight and runtime clients (`preflight.py`, `builder.py`, `dim_detect.py`, `search.py`) through `resolve_embedding_provider` and `check_embedding_provider_prereqs`, enabling `vector_db_provider_type=requests` without requiring the `openai` SDK.
-- Eliminate the remaining `worker -> commands` layer violation (`worker/ocr_health.py:collect_ocr_health_summary`), expose public read-only APIs on `promote_r` and `render_audit`, and defer top-level `pymupdf` / `PIL` imports inside OCR worker modules (verified by `tests/test_import_weight.py`).
-- Build memory retrieval units from the configured OCR directory rather than a hardcoded system directory (#356).
-- Distinguish a published runtime or completed library setup from a subsequent path refresh failure (#356).
-- Classify explicit OCR HTTP 401/403 refusals as blocked; keep ambiguous submissions without a confirmed job ID for reconciliation, with no automatic resubmission or record deletion. On a per-paper poll timeout, release that paper's local concurrency slot while retaining the remote job ID; report provider rate-limit rejection separately (#356).
-- Check installation compatibility with the Python versioned probe even when an older runtime ignores the version in its aggregate response (#356).
-- Classify Setup failures from the complete child result while keeping command paths and raw stderr out of the user-facing message and Support Diagnostic; report unresolved package-source artifacts neutrally rather than assuming a Python/platform mismatch (#356).
-- Keep an explicit Setup reinstall request across a ready installation probe, so the action remains available until the user retries or the reinstall completes (#356).
-- Show blocked and failed paper keys from the actual OCR action result data in workspace error notices (#356).
-- Refresh the existing Python-authoritative vault paths after successful setup and library configuration, so the first-use export location and subsequent path changes do not require a plugin reload (#356).
-- Reuse the resolved source PDF throughout initial OCR postprocessing, including page rendering, span backfill and object extraction; vault-relative and wikilink locators no longer replace the resolved file mid-pipeline. Missing table source geometry can still require separate repair (#356).
+- Fixed valid empty SQLite `papers` tables (0 rows) mistakenly falling back to stale `formal-library.json`.
+- Fixed macOS `kqueue` orphan reaper child exit status collection.
+- Added `checksums.txt` asset verification gate to the release workflow.
 
-- Count overlapping exact-text occurrences when checking research-record PDF sources; repeated overlapping quotes remain ambiguous and cannot pass source navigation as a unique match, including previously saved records (#356).
-- Preserve partial version-restore results at all UI consumers: inline provenance warnings survive preview/paper reselection, current-version markers follow the confirmed restored content, and absent legacy metadata flags remain unconfirmed rather than definite write failures. Only explicit provenance persistence failure adds a single safe substep diagnostic (#356).
-- Invalidate view-owned search timers, replies and focused shortcuts when switching or refreshing dashboard content, including version mode; obsolete requests cannot update the next paper's results (#356).
-- Keep Setup Stage2 startup rejections client-owned while retaining local settings-save diagnostics; expected missing-runtime states do not acquire a duplicate generic error (#356).
-- Preserve valid negative render-authority reports while diagnosing process/JSON failures once. Failed transport cannot claim success from stdout even when its exit code is unknown (#356).
+---
 
-- Treat long-task error/cancelled terminals and `result.ok:false` as failures even at exit 0; retain startup error codes and reject pending event readers rather than silently ending them. Cancel during runtime resolution prevents spawning, and plugin unload reaps streamed as well as result-mode children (#356).
-- Preserve structured sync, OCR-list and probe failures instead of reporting success or an empty library. OCR Workspace distinguishes loading, setup required, load failure and a genuine empty result, offers Retry, and drops late replies and removed paper selections (#356).
-- Stop search debounce and ignore in-flight replies after the panel closes. Setup cancellation cannot start publication after an awaited settings save; navigation cannot disguise running setup as idle. Memory backup restore reports failure and successful retry (#356).
-- Open the OCR Workspace fulltext preview in the active Obsidian leaf using the backend-provided vault-relative path; report missing and open failures without guessing a replacement file.
-- Label the OCR support-report action as an issue report in English and Chinese; restore focus to the OCR detail heading when a status refresh replaces the action while its draft is open (#356).
-- Keep setup stdin open so Stop can deliver the cooperative `PAPERFORGE_STOP` token before kill escalation.
-- Use the same prerelease-aware version comparison for interactive updates as the action path, so newer RC releases are not mistaken for the installed version (#356).
-- Convert unexpected sync service exceptions into structured `SYNC_FAILED` results so JSON clients do not receive empty stdout on phase-two failures.
-- Return exit status 1 when `sync --json` emits `ok:false`, while preserving its structured error payload (#356).
-- Parse Trash timestamp directories as UTC before age comparison, so `paperforge trash purge --older-than` applies its age gate instead of raising a naive/aware datetime `TypeError` (#356).
+## [2.0.1] - 2026-11-22
 
-- Metadata search without a local Memory index now shows a dedicated missing-memory recovery card (deep-retrieve PATH_NOT_FOUND stays distinct); the card navigates to the actual Memory module detail through the Plugin-owned openModuleSettings seam without dispatching builds/embeddings (#356).
-- Route the Memory missing-vector-dependencies action into the managed-runtime reinstall flow; keep the active environment immutable (#356).
-- Console ownership sweep: the shared client owns typed PFResult, probe and stream failures; local bootstrap/handshake, probe-schema validation, discussion read, external-note refresh and clipboard failures retain one redacted op/stage/code/exit diagnostic via traceConsoleError. NO_PYTHON/cancelled/empty remain quiet (#356).
-- Doctor reports the plugin execution interpreter from the published managed-runtime pointer only: missing/invalid/missing-file/stale pointers report setup/repair/update and skip target-environment probing; no python_path or ambient-Python fallback, no in-place or global pip advice (#356).
-- Search mode labels follow the dispatched request: `@`/leading-`@`/Ctrl+Enter deep retrieves render deep loading/results, and the transient input mode no longer leaks into rendered state (#356).
-- Legacy OCR run/redo/rebuild cancelled terminals carry the existing `action.cancelled` machine code via `cancelled_result`; envelope event and exit 130 unchanged (#356).
-- `core/next_actions.py` is wire DTOs plus schema version only; the shadow registry/validators are removed and the single authority stays `actions.registry` (#356).
-- Preserve exact OCR paper scope from CLI, dashboard paper/collection context and workspace confirmation through provider upload (#349). Reject empty or unknown explicit scopes without partial execution.
-- Confine OCR cleanup and stale-job resets to the selected scope. Stop prevents new uploads, including transport retries; submitted provider jobs remain separately reported as running remotely.
-- Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.
-- Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
-- Preserve uppercase alphabetic figure suffixes in caption identities, so same-page figures such as Figure 1A and Figure 1B retain separate captions and assets; parenthesized panel labels remain part of the base figure.
-- Keep cross-page figure reservations non-deliverable until page-qualified assets and crop evidence resolve; split shared same-page groups only when caption-band ownership uniquely covers every asset.
-- Extend matched figure crops to include owned inner-text blocks outside asset bounds without absorbing unowned nearby text.
+### Added
 
-- Discover freshly indexed papers in OCR Workspace before any OCR directory exists; retain historical OCR records and report PDF readiness without writing artifacts (#351). Switching back from an empty filter replaces the empty state with the matching rows.
-- Read existing notes through the Obsidian adapter when its file cache is cold. Refresh externally written notes without deleting/recreating them.
-- Compare the published runtime pointer through the release spelling so an RC4 pointer stays a stale actionable mismatch under an rc5 bundle; `probe all` and read-model refresh carry the plugin version, and Setup renders reinstall on stale/mismatch instead of dead-ending (#356).
-- Classify terminal OCR batches by settlement truth: blocked credential/source rejections surface `OCR_UPLOAD_FAILED` with failed/blocked keys and no re-upload, failures surface `OCR_RESULT_INVALID`, and only genuinely pending work keeps the poll-timeout resume instruction (#356). The Workspace shows the backend machine message first with actionable blocked/failed guidance naming the bounded keys, and drops the mutation snapshot before readback so resume refresh cannot resurrect stale statuses.
-- Keep table caption/text/notes visible when no crop geometry exists: table object markdown emits no dangling image reference for unmaterialized crops, preserves provider HTML/text content with an explicit inability marker, and audit stays strict (#356). The single HTML flattener keeps header (`th`) and data (`td`) cells with matching-tag pairs.
-- Route missing managed-runtime executables to an actionable Setup Wizard reinstall state during individual and aggregate status refreshes, without spawning the missing interpreter or changing the published pointer (#356).
-- Route the memory probe liveness check through the owning service API: the old `paperforge.commands.embed._pid_alive` target does not exist, so live builds were misclassified as interrupted; live activity now reports ready/running correctly with the DTO schema unchanged.
+- Content-addressed versioned Rust daemon binary deployment (`.daemon-meta.json` + SHA-256) preventing Windows in-use binary replacement races.
+- macOS kernel-level `kqueue` (`EVFILT_PROC` / `NOTE_EXIT`) zero-polling orphan reaper matching Windows Job Objects and Linux `PR_SET_PDEATHSIG`.
+- Direct Zotero SQLite read-only Online Backup API snapshots (`zotero.sqlite` without tearing during Zotero writes).
 
-## 1.5.8 (2026-05-19)
+### Fixed
+
+- Consolidated `memory-card base-snapshot` onto SQLite SSOT (`has_pdf`, `do_ocr`, `analyze`, `collections_json`, no resurrection from stale JSON).
+- Added SQLite single-key fallback in `engine.resolve_key` beyond the 2048-entry in-memory cache.
+- Distinguished `completed` / `partial_success` / `failed` in directory migration and cleanup, and hid unwired bulk restore buttons in version history.
+
+---
+
+## [2.0.0] - 2026-11-18
+
+### Breaking / Migration
+
+- Consolidated Base workbench views into a single `"Literature Hub"` table (`paperforge-table` `BasesView`), removing preset multi-panel workflow splits (`控制面板` / `待 OCR` / `待深度阅读` / `Redo OCR`).
+- Extended sidecar PDF annotation SQLite schema (`style_json`) to support freehand ink, geometric shapes, and page textboxes.
+- Migrated default internal storage to hidden `.paperforge/` layout (`paperforge migrate-storage` & `paperforge upgrade --apply --fast-cutover` O(1) `<3s` cutover from `System/PaperForge/`), and moved vector search from ChromaDB to SQLite `sqlite-vec` (`vec0`).
+
+### Added
+
+- **AsterLab Visual System & Thin-Client UI**: warm neutral AsterLab palette (`pf-theme-asterlab`) and Obsidian theme bridge (`pf-theme-obsidian`), checkbox + `Shift` range selection in Base view with contextual bulk action bar, and removal of emoji clutter / redundant status pills.
+- **Non-Destructive Sidecar PDF Annotator (`PaperForgePdfView`)**: built on Obsidian `loadPdfJs()`, `<workspace>/annotations.jsonl` + SQLite `paper_annotations`, Apple Preview dual-layer markup bar (highlights, underlines, strikethroughs, rectangular crop screenshots `<KEY>_ann_*.jpg`, ink, shapes, textboxes, sticky notes), Human vs Agent dual-layer filtering, 3-stage PDF grounding (`pdf_grounding.py`), `provenance_status` SHA-256 verification, and 1-click promotion to verified `reading-log` entries without modifying source PDF bytes.
+- **Living Paper Memory Cards**: 5-facet evolving cognitive cards (`paper_memory_cards` + `paper_memory_history`, `<workspace>/ai/memory-card.json`, `paperforge memory-card <get|refine|history|clear>`) surfaced in Companion and `paper-context`.
+- **Hybrid Retrieval & Diagnostics**: full RRF union across FTS5 BM25, `vec_body`, and `vec_objects` (`retrieve --deep` falls back cleanly to BM25 without vectors), strictly read-only `paperforge inspect <query> --json` (`?mode=ro` 6-stage pipeline diagnosis), pluggable OCR inbound provider protocol (`resolve_ocr_provider`), and `.state-seq.json` live Obsidian sync.
+- **Security & Robustness**: OS Keyring secret authority (`paperforge auth`), Research Record exact-text source verification, sanitized OCR diagnostic issue drafts, and CI static/module-graph/architecture gates.
+
+### Fixed
+
+- Hardened Windows/CN onboarding, protected user-authored `reading-log.md` and custom YAML frontmatter, hid internal machine `fulltext.md` from normal user surfaces (available read-only via `annotations fulltext-preview`), pinned `pymupdf<2`, improved OCR V3 figure suffix/reservation/inner-text merge invariants, and resolved numerous streaming/transport/probe edge cases.
+
+---
+
+## [1.5.9] - 2026-06-17
+
+### OCR Tail Rendering Fixes
+
+- `_reorder_tail_run`: Added `skip_section_grouping` parameter for tail pages with reference items but no explicit "References" heading. These pages now emit blocks in column-sorted order with refs grouped at end, preserving natural reading order.
+- `_order_tail_blocks`: Per-page detection of ref heading presence to activate the new path.
+- `_normalize_backmatter_roles_after_boundary`: Removed forced `body_paragraph → backmatter_body` conversion inside backmatter region (body paragraphs attach naturally via geometric ownership).
+- Synthetic ref section (Phase 2.5): Creates synthetic `ref_section` when ref_items exist but no ref_heading, preventing ref scattering as orphans.
+
+---
+
+## [1.5.8] - 2026-05-19
 
 - SQLite + FTS5 database (`paperforge.db`) for fast paper metadata lookup
 - `paperforge memory build` / `memory status` / `search`
@@ -97,8 +145,8 @@ All notable changes to PaperForge.
 
 ### Vector Embedding (New)
 
-- ChromaDB-backed vector storage for OCR fulltext
-- `paperforge embed build` / `embed status` / `embed stop`
+- Legacy ChromaDB-backed vector storage for OCR fulltext (replaced by `sqlite-vec` in 2.0)
+- `paperforge embed build` / `embed status`
 - `paperforge retrieve` — semantic search across OCR chunks
 - API-only embedding (OpenAI-compatible), no local models
 - Configurable API key/base/model via env, plugin settings, or `.env`
@@ -154,30 +202,12 @@ All notable changes to PaperForge.
 
 ---
 
-## 1.5.7 (2026-05-19)
+## [1.5.7] - 2026-05-19
 
 > Recovery release after 1.5.6 PyPI name conflict. All features listed under 1.5.8.
 
 - Model change auto-detection in embed resume mode
 - Orphan modal i18n completed (Chinese/English)
 - CHANGELOG.md added
-
----
-
-## 1.5.9 (2026-06-17)
-
-### OCR Tail Rendering Fixes
-
-- `_reorder_tail_run`: Added `skip_section_grouping` parameter for tail pages
-  with reference items but no explicit "References" heading. These pages now
-  emit blocks in column-sorted order with refs grouped at end, preserving
-  natural reading order.
-- `_order_tail_blocks`: Per-page detection of ref heading presence to activate
-  the new path.
-- `_normalize_backmatter_roles_after_boundary`: Removed forced
-  `body_paragraph → backmatter_body` conversion inside backmatter region
-  (body paragraphs attach naturally via geometric ownership).
-- Synthetic ref section (Phase 2.5): Creates synthetic `ref_section` when
-  ref_items exist but no ref_heading, preventing ref scattering as orphans.
 
 For upgrade: `pip install --upgrade paperforge`

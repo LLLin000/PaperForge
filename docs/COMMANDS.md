@@ -1,14 +1,74 @@
 # PaperForge 命令参考
 
-> 所有 CLI 命令和 Agent 命令速查。Agent 技能中的检索路由协议的权威定义见 `paperforge/skills/paperforge/atoms/retrieval-routing.md`。
+> 所有 Python CLI（`paperforge`）、原生 Rust 守护进程（`paperforge-daemon`）与 MCP 工具速查。Agent 技能中的检索路由协议权威定义见 `paperforge/skills/paperforge/atoms/retrieval-routing.md`。
 
 ---
 
-## 检索命令体系
+## 命令矩阵（Agent / CLI / Rust Daemon）
+
+| 场景 / 意图 | 推荐入口 | 说明 |
+| :--- | :--- | :--- |
+| Agent 会话冷启动 | `paperforge-daemon agent-brief --vault <DIR>` | 零 Python 极速返回库统计、配置、可用工具与阻塞提示 |
+| Agent MCP 接入与自检 | `paperforge-daemon mcp-install` / `mcp-check --probe-mcp` | 自动写入主流 Agent MCP 配置并验证连通与 Skill 链接 |
+| 一键同步所有已注册 Skill | `paperforge-daemon skill-sync-all` | 从 `~/.paperforge/skills/paperforge` 同步至各 Agent 工作区 |
+| 检索意图规划 | `paperforge query-plan "<query>" --intent locate\|discover\|content --json` | 按意图路由至 `paper-context` / `search` / `retrieve` |
+| 单篇论文完整上下文 | `paperforge paper-context <KEY> [--structure] --json` | 含元数据、章节树、`user_annotations` 与 `living_memory` |
+| 元数据全文搜索（FTS5） | `paperforge search "<query>" --json` | 跨标题、摘要、作者、期刊检索（不要求 OCR） |
+| 正文混合语义检索 | `paperforge retrieve "<query>" [--deep] [--paper <KEY>] --json` | BM25 + `sqlite-vec`（`vec0`）全并集 RRF（无向量时回退 BM25） |
+| Zotero 同步与索引重建 | `paperforge sync [--dry-run] [--prune] --json` | 直连 `zotero.sqlite`（或 BBT 导出）生成笔记与 Base |
+| 单篇 6 阶段只读诊断 | `paperforge inspect <KEY\|DOI\|title> --json` | SQLite `?mode=ro` 只读排查全链路瓶颈 |
+| 运维体检与修复 | `paperforge doctor --json` / `paperforge repair --fix --json` | 检查并修复路径、索引与状态不一致 |
+| OCR 解析与离线重建 | `paperforge ocr` / `paperforge ocr rebuild` | 云端版面解析与零成本本地 Stage V3 重建 |
+| 无损 PDF 批注与记忆卡片 | `paperforge annotations ...` / `paperforge memory-card ...` | 侧车 `annotations.jsonl` 与 5 维 Living Memory Card |
+| 旧版 Vault 平滑升级 | `paperforge upgrade --plan\|--apply --fast-cutover\|--heal --json` | O(1) `<3s` 收拢至 `.paperforge/` 架构 |
+
+---
+
+## 原生 Rust 守护进程与 MCP 服务（`paperforge-daemon`）
+
+`paperforge-daemon` 位于 `~/.paperforge/bin/`，负责 Obsidian 零卡顿快路径、Zotero SQLite 直连快照、MCP 服务器与零 Python 运行时引导。
+
+### 运行模式与基础参数
+
+```bash
+paperforge-daemon --version                                  # 输出守护进程版本号
+paperforge-daemon --stdio [--idle-timeout 300] [--parent-pid PID]  # Obsidian JSON-RPC + NDJSON 双工模式
+paperforge-daemon --mcp [--vault <VAULT_DIR>]                # 启动 MCP stdio 服务器（锁定指定 Vault）
+paperforge-daemon install-runtime [--action install|update|repair] [--expected-version <VER>]
+```
+
+### MCP Server 工具清单（`paperforge-daemon --mcp`）
+
+`--mcp` 模式向 Claude Code、Cursor、Codex、OpenCode 等客户端暴露 7 个原生工具：
+
+| MCP 工具名 | 用途 | 关键参数 |
+| :--- | :--- | :--- |
+| `paperforge_brief` | 获取当前 Vault 全景概览与可用性检查 | `paper?` |
+| `paperforge_search` | 元数据 FTS5 搜索 | `query`, `domain?`, `ocr?`, `year_from?`, `year_to?`, `limit?` |
+| `paperforge_library_query` | 按条件列举或筛选文献库条目 | `domain?`, `ocr?`, `has_pdf?`, `limit?` |
+| `paperforge_paper_context` | 读取单篇论文完整上下文、批注与记忆卡片 | `key`, `structure?` |
+| `paperforge_retrieve` | 正文混合语义/BM25 检索 | `query`, `paper?`, `deep?`, `limit?` |
+| `paperforge_annotate_batch` | 批量写入/更新 Agent PDF 批注层 | `key`, `items`, `lens?`, `replace_lens?` |
+| `paperforge_memory_refine` | 更新论文 Living Memory Card 指定认知维度 | `key`, `facet`, `content` |
+
+### Agent 引导、MCP 配置与 Skill Hub 命令
+
+```bash
+paperforge-daemon agent-brief [--vault <DIR>] [--paper <KEY>] [--json]
+paperforge-daemon agent-onboarding [--vault <DIR>] [--lang zh|en] [--binary <PATH>]
+paperforge-daemon mcp-config [--vault <DIR>] [--platform <PLATFORM>] [--binary <PATH>]
+paperforge-daemon mcp-install [--vault <DIR>] [--platform <PLATFORM>] [--binary <PATH>]
+paperforge-daemon mcp-check [--vault <DIR>] [--platform <PLATFORM>] [--skill-dir <DIR>] [--mcp-config <PATH>] [--probe-mcp] [--register]
+paperforge-daemon skill-sync-all
+```
+
+---
+
+## 检索命令体系（Python CLI）
 
 检索系统分三个意图，一个规划器，三个执行命令：
 
-```
+```text
 query-plan (规划器) — 决定使用哪条路径
 ├── intent=locate    → paper-context（定位论文）
 ├── intent=discover  → search（发现论文）
@@ -22,500 +82,354 @@ paperforge query-plan "<query>" --intent locate|discover|content --json
 ```
 
 返回 JSON：
-
 - `data.intent` — 回显检索意图
 - `data.query` — 规范化后的检索 query
 - `data.scope` — `paper`（单篇）| `library`（全库）
 - `data.paper_key` — scope=paper 时的 identifier
 - `data.primary` — 推荐命令 + 参数（`command` / `args`）
-- `data.fallback` — 触发声明条件时的备选（or null）；trigger 包括 zero_results、no_direct_answer
+- `data.fallback` — 触发声明条件时的备选（或 `null`）；trigger 包括 `zero_results`、`no_direct_answer`
 
 ### `paperforge paper-context`
-
-定位已有论文或获取论文完整上下文。
 
 ```bash
 paperforge paper-context <KEY|DOI|citation_key> --json
 paperforge paper-context <KEY> --structure --json   # 附加 StructureTree
 ```
 
-`--structure` 返回章节导航地图（node_id、parent_id、path、depth、page_span）。
-StructureTree 用于确定 evidence 所在章节，不是全文替代品。
+`--structure` 返回章节导航地图（`node_id`、`parent_id`、`path`、`depth`、`page_span`），用于确定 evidence 所在章节。
 
 ### `paperforge search`
 
-元数据全文搜索。跨论文标题、摘要、作者、期刊。
+元数据 FTS5 全文搜索。跨论文标题、摘要、作者、期刊：
 
 ```bash
 paperforge search "<query>" --json
 paperforge search "<query>" --domain <domain> --json
 paperforge search "<query>" --year-from <Y> --year-to <Y> --json
-paperforge search "<query>" --ocr done|pending --json
-paperforge search "<query>" --limit <N> --json
+paperforge search "<query>" --ocr done|pending|failed|processing --json
+paperforge search "<query>" --deep --lifecycle <STAGE> --next-step <STEP> --limit <N> --json
+paperforge search "<query>" --evidence --json      # 返回 data.metadata_candidates[]
 ```
-
-返回 `data.matches[]`，每项包含：
-`zotero_key`, `title`, `first_author`, `year`, `journal`, `domain`,
-`fulltext_available`, `body_units_count`, `ocr_status`
-
-`fulltext_available=false` 时结果为 metadata candidate，不是正文证据。
-
-`search "<query>" --evidence --json` 返回 `data.metadata_candidates[]`（evidence 模式）。
-用于 fallback.mode=evidence 的场景。
 
 ### `paperforge retrieve`
 
 ```bash
 paperforge retrieve "<query>" --json
 paperforge retrieve "<query>" --limit <N> --json
-paperforge retrieve "<query>" --paper <KEY> --json          # 限定单篇论文
-paperforge retrieve "<query>" --deep --json          # 全并集混合检索（BM25 + 向量；无向量时回退 BM25）
-paperforge retrieve "<query>" --paper <KEY> --deep --json   # 单篇混合检索
+paperforge retrieve "<query>" --paper <KEY> --json
+paperforge retrieve "<query>" --deep --json                # 全并集混合检索（BM25 + sqlite-vec；无向量时回退 BM25）
+paperforge retrieve "<query>" --paper <KEY> --deep --json  # 单篇混合检索
+paperforge retrieve "<query>" --expand --json              # 扩展邻接上下文单元（默认开启，可用 --no-expand 关闭）
 ```
-
-返回 `data.matches[]`，每项包含：
-`zotero_key`, `unit_id`, `source_kind`(body|object), `structure_resolved`,
-`node_id`, `structure_path`, `section_title`, `section_level`, `part_ordinal`,
-`text`, `score`, `object_kind`（仅 object）
 
 ---
 
-## 命令矩阵（Agent / CLI）
+## Python CLI 全量命令参考（50 个顶层子命令）
 
----
+> 全局参数：`paperforge [--vault <VAULT_DIR>] <subcommand> ...`
 
-## CLI 命令
+### 1. 运行时、安装与配置
 
-### `paperforge runtime` (machine-wide; no Vault required)
-
-The runtime CLI installs and verifies the machine-wide PaperForge Core independently of Obsidian and Vault configuration. Bootstrap the matching CLI package outside Obsidian, then run:
+#### `paperforge runtime`（机器级运行时管理，无需 Vault）
 
 ```bash
-python -m pip install --user --upgrade "paperforge==<VERSION>"
-python -m paperforge runtime status --expected-version <VERSION> [--min-engine-version <MIN_ENGINE>] --json
-python -m paperforge runtime install --expected-version <VERSION>
-python -m paperforge runtime update --expected-version <VERSION>
-python -m paperforge runtime repair --expected-version <VERSION>
+python -m paperforge runtime status --expected-version <VERSION> [--min-engine-version <MIN_ENGINE>] [--base-python <PY>] --json
+python -m paperforge runtime install --expected-version <VERSION> [--min-engine-version <MIN_ENGINE>] [--base-python <PY>] [--wheel <WHL>] --json
+python -m paperforge runtime update --expected-version <VERSION> [--min-engine-version <MIN_ENGINE>] [--base-python <PY>] [--wheel <WHL>] --json
+python -m paperforge runtime repair --expected-version <VERSION> [--min-engine-version <MIN_ENGINE>] [--base-python <PY>] [--wheel <WHL>] --json
 ```
 
-`install` leaves an already-ready runtime untouched. `update` publishes only a verified candidate (using `--no-deps` fast-patch when `deps_lock_hash` matches, or full rebuild / portable `uv` fallback); `repair` forces a fresh candidate. Failed candidates do not replace the active pointer. Python alone publishes the pointer.
+`install` 保留已就绪环境；`update` 仅在候选环境自检通过后原子发布 `~/.paperforge/runtime/pointer.json`；`repair` 强制重建候选环境。
 
-### `paperforge skill`
+#### `paperforge setup`
 
 ```bash
-paperforge skill deploy [--to DIR] [--overwrite] [--json]
-paperforge skill sync [--to DIR] [--json]
+paperforge setup                                  # 交互式初始化
+paperforge setup --modular [--headless] --json    # 模块化/非交互初始化（Express & AI Agent 使用）
+paperforge setup --agent opencode --zotero-data <DIR> --skip-checks --stream
 ```
 
-`deploy` copies packaged Vault skills into `<vault>/<DIR>/paperforge` and records file hashes in `skill-deploy-state.json`. `sync` automatically updates unmodified Vault skills on engine upgrades while preserving user-customized skills.
+支持路径覆盖参数：`--system-dir`、`--resources-dir`、`--literature-dir`、`--base-dir`、`--zotero-data`。**严禁在命令行参数中传递任何 API Key**，请使用 `paperforge auth set`。
 
-### `paperforge paths`
+#### `paperforge auth`
+
+安全凭据权威（OS Keyring 存储，禁止命令行明文传参）：
 
 ```bash
-paperforge paths                    # 打印 vault 路径清单
-paperforge paths --json             # JSON 格式输出
+paperforge auth status [--profile default] --json
+paperforge auth set ocr|embed [--profile default] [--stdin] [--replace] --json
+paperforge auth migrate [--from <ENV_PATH>] [--kind ocr|embed] [--profile default] [--dry-run] [--replace] --json
+paperforge auth delete ocr|embed [--profile default] --yes --json
 ```
 
-### `paperforge status`
+#### `paperforge config`
 
 ```bash
-paperforge status                   # 完整状态检查
-paperforge status --json            # JSON 输出
+paperforge config init [--json]
+paperforge config list [--json]
+paperforge config get <KEY> [--json]
+paperforge config set <KEY> <VALUE> [--json]
+paperforge config unset <KEY> [--json]
+paperforge config validate [--json]
+paperforge config paths [--json]
+paperforge config migrate [--dry-run] [--json]
 ```
 
-### `paperforge sync`
+#### `paperforge paths` & `paperforge probe`
 
 ```bash
-paperforge sync                     # 完整同步
-paperforge sync --dry-run           # 预览
-paperforge sync --selection         # 仅 selection-sync
-paperforge sync --index             # 仅 index-refresh
-paperforge sync --rebuild-index     # 强制重建索引
-paperforge sync --prune             # 预览清理孤儿笔记 (dry-run)
-paperforge sync --prune-force       # 执行清理
-paperforge sync --json              # JSON 输出
+paperforge paths [--json]
+paperforge probe all|installation|library|ocr|memory|maintenance|help [--last-operation-exit-code N] [--expected-version VER] [--min-engine-version VER] --json
 ```
 
-### `paperforge selection-sync`
+#### `paperforge daemon`
 
 ```bash
-paperforge selection-sync           # 同步 Zotero 选择到文献记录 (向后兼容)
+paperforge daemon [--stdio] [--idle-timeout 300] [--parent-pid <PID>]
 ```
 
-### `paperforge index-refresh`
+#### `paperforge engine`
 
 ```bash
-paperforge index-refresh            # 刷新正式文献笔记 (向后兼容)
+paperforge engine status [--json]
+paperforge engine rebuild-db [--json]             # 重建 SQLite/registry 一致性状态
+paperforge engine sync-registry [--json]
 ```
 
-### `paperforge deep-reading`
+#### `paperforge zotero`
 
 ```bash
-paperforge deep-reading             # 查精读队列状态
-paperforge deep-reading --json      # JSON 输出
+paperforge zotero detect [--path <ZOTERO_DATA_DIR>] --json
 ```
 
-### `paperforge deep-finalize`
+### 2. 同步、工作区与迁移
+
+#### `paperforge sync`
 
 ```bash
-paperforge deep-finalize <KEY>      # 标记精读完成并通知 Dashboard
-paperforge deep-finalize <KEY> --json
+paperforge sync [--dry-run] [--domain <DOMAIN>] [--json]
+paperforge sync [--selection] [--index] [--rebuild-index] [--prune] [--prune-force] [--json]
 ```
 
-### `paperforge repair`
+兼容别名（保留向后兼容，日常推荐使用 `paperforge sync`）：
 
 ```bash
-paperforge repair                   # 扫描分歧 (dry-run)
-paperforge repair --fix             # 修复
-paperforge repair --fix-paths       # 修复 PDF 路径
-paperforge repair --json            # JSON 输出
+paperforge selection-sync
+paperforge index-refresh
 ```
 
-### `paperforge ocr`
+#### `paperforge upgrade`
 
 ```bash
-paperforge ocr                      # 处理队列 (旧式)
-paperforge ocr --key <KEY>          # 处理指定文献
-paperforge ocr --diagnose           # 诊断模式
-paperforge ocr --json               # JSON 输出
-paperforge ocr run                  # 运行 OCR 队列 (新式)
-paperforge ocr run <KEY> [KEY...]   # 仅运行指定论文集合
-paperforge ocr run --keys-file keys.txt # 从文件读取精确论文集合
-paperforge ocr doctor               # 诊断 OCR 配置和连接
-paperforge ocr doctor --live        # 运行真实 PDF 测试 (L4)
-paperforge ocr redo                 # 重新运行所有标记 ocr_redo 的文献
-paperforge ocr redo <KEY> [KEY...]  # 重新运行指定文献
-paperforge ocr redo --dry-run       # 预览待重做的文献
-paperforge ocr list                 # 列出所有 OCR 维护状态
-paperforge ocr list --json          # JSON 输出
-paperforge ocr list --manifest      # 输出 key→sha256 清单
-paperforge ocr list --keys <KEY>... # 仅指定 key 的信息
-paperforge ocr rebuild              # 从已有 raw blocks 重建 OCR 产物
-paperforge ocr rebuild <KEY>...     # 重建指定文献
-paperforge ocr rebuild --all        # 重建全部
-paperforge ocr rebuild --status done # 按状态过滤
-paperforge ocr rebuild --dry-run    # 预览
-paperforge ocr rebuild --resume     # 跳过已有检查点的文献
+paperforge upgrade --plan [--json]                                   # 检测旧版 Vault 并生成升级计划
+paperforge upgrade --apply --fast-cutover [--dry-run] [--json]       # O(1) <3s 切入 .paperforge/ 架构
+paperforge upgrade --heal [--priority-key <KEY>] [--limit N] [--backfill-ocr] [--quarantine-residuals] [--quarantine-ids ...] [--no-rebuild-db] [--json]
+paperforge upgrade --rollback [--json]                               # 回滚最近一次升级快照
 ```
 
-显式范围不会回退到全库：未知 key、混合有效/未知 key、空白 key、空文件或不可读文件会拒绝执行，不提交任何远程任务。未提供范围的 `ocr` / `ocr run` 保留原有队列规则：有 `do_ocr` 标记时只处理标记集合，否则处理所有符合条件的论文。
-
-插件的论文/集合入口在确认前冻结论文 key 集合；空集合不能启动。全库入口明确显示“整个文献库”和影响数量，并要求确认。停止只阻止新提交、停止本地监看；已提交的服务端 OCR 任务仍会继续，可用 `paperforge ocr status` 查看。
-
-OCR listing is read-only: canonical indexed papers appear even before an OCR directory exists (`pending` when the PDF resolves, `nopdf` otherwise). Existing OCR records remain visible. OCR Workspace labels saved progress separately from a current local operation; only an operation owned by the current window offers Stop. A saved queued/running record does not prove a live local worker or remote completion/termination. Consent-required follow-ups remain unstarted until reviewed; their notice is not a vector-ready claim.
-
-### `paperforge render`
-
-Render consistency and figure reconciliation commands. The audit never changes rendered artifacts, but it does write its own report, `ocr/<KEY>/render/render.consistency.json`, which `probe lineage` reads as the render-consistency authority; reconciliation stages into an isolated temporary directory.
+#### `paperforge migrate-storage`
 
 ```bash
-paperforge render audit [KEY...] --json
-paperforge render reconcile [KEY...] --json
-paperforge render reconcile [KEY...] --include-pdf-media --json
+paperforge migrate-storage [--dry-run] [--json]
 ```
 
-`render reconcile` never writes production artifacts. `--apply-r` is retained as a compatibility flag but remains staging-only while the rollout gate is closed.
-
-Verified R plans can be promoted only with an explicit scope:
+#### `paperforge base-refresh`
 
 ```bash
-paperforge render promote-r KEY OBJECT_ID [OBJECT_ID...] --json
-paperforge render promote-r KEY --all --json
+paperforge base-refresh [--force|-f]
 ```
 
-An empty scope is rejected. `promote-r` consumes the verified `r-manifest.json`, does not re-materialize or rewrite canonical inventory, and remains blocked for production batch rollout until the owner-authorized canary gate passes.
-
-P proposals require human authority. `render reconcile --json` returns each staged
-proposal's `p_details[].final_plan_hash`; pass the exact hash for the plan the
-user reviewed:
+#### `paperforge prune` & `paperforge trash`
 
 ```bash
-paperforge render accept-proposal KEY LABEL --plan-hash <SHA256_FINAL_PLAN> --json
+paperforge prune [KEY...] [--force] [--json]
+paperforge trash list
+paperforge trash restore <ITEM_ID>
+paperforge trash purge [--older-than <DAYS>]
 ```
 
-`accept-proposal` rejects a missing, malformed, or unstaged plan hash. It is not
-an automatic consequence of a P dry-run.
-
-### `paperforge context`
+#### `paperforge note`
 
 ```bash
-paperforge context <KEY>            # 单篇文献的 AI context 包 (JSON)
-paperforge context --domain 骨科    # 按 domain 过滤 (JSON 数组)
-paperforge context --collection "path/to/coll" # 按 collection 过滤
-paperforge context --all            # 输出全部 canonical index
+paperforge note set-flag --key <KEY> --field <FIELD> --value <VALUE> [--json]
 ```
 
-### `paperforge dashboard`
+#### `paperforge action` & `paperforge reconcile`
 
 ```bash
-paperforge dashboard                # 聚合统计和 Dashboard 权限
-paperforge dashboard --json         # JSON 输出
+paperforge action list [--json]
+paperforge action describe <ACTION_ID> [--json]
+paperforge action preflight <ACTION_ID> [--scope all|paper|papers|collection] [--key <KEY>...] [--keys-file <FILE>] [--json]
+paperforge action run <ACTION_ID> [--scope ...] [--key <KEY>...] [--keys-file <FILE>] [--confirm] [--follow] [--stream] [--json]
+
+paperforge reconcile [--scope <SCOPE>] [--key <KEY>] [--json]
 ```
 
-### `paperforge embed`
+### 3. OCR 解析、版本与渲染审计
+
+#### `paperforge ocr`
 
 ```bash
-paperforge embed build              # 构建向量索引
-paperforge embed build --resume     # 续建
-paperforge embed build --force      # 强制重建
-paperforge embed build --json       # JSON 输出
-paperforge embed status             # 查看向量 DB 状态
-paperforge embed status --json      # JSON 输出
-paperforge embed stop               # 停止构建
-paperforge embed stop --json        # JSON 输出
+paperforge ocr [--key <KEY>] [--diagnose] [--stream] [--json]
+paperforge ocr run [KEY...] [--keys-file <FILE>] [--stream]
+paperforge ocr status [--batch <BATCH_ID>] [--json]
+paperforge ocr resume [--batch <BATCH_ID>] [--json]
+paperforge ocr redo [KEY...] [--dry-run] [--stream]
+paperforge ocr list [--json] [--output <PATH>] [--manifest] [--keys <KEY>...]
+paperforge ocr rebuild [KEY...] [--all] [--status <STATUS>] [--dry-run] [--resume] [--parallel|--no-parallel] [--stream]
+paperforge ocr doctor [--live]
+paperforge ocr test-connection [--json]
+paperforge ocr pipeline-versions [--json]
 ```
 
-### `paperforge retrieve`
+显式范围不会回退到全库：未知 key、混合有效/未知 key、空白 key 或空文件会拒绝执行，不提交远程任务。
+
+#### `paperforge versions`
 
 ```bash
-paperforge retrieve "<query>"            # 正文内容检索（完整语法见上方检索命令体系）
-paperforge retrieve "<query>" --json
-paperforge retrieve "<query>" --limit 10
-paperforge retrieve "<query>" --paper KEY
-paperforge retrieve "<query>" --deep       # 混合全并集检索 (BM25 + 向量；无向量时回退 BM25)
+paperforge versions list [--json]
+paperforge versions show --key <KEY> [--json]
+paperforge versions paths --key <KEY> [--label <LABEL>] [--json]
+paperforge versions backups --key <KEY> [--json]
+paperforge versions restore --key <KEY> --label <LABEL> [--json]
+paperforge versions reset-live --key <KEY> [--json]
 ```
 
-### `paperforge query-plan`
+#### `paperforge render`
 
 ```bash
-paperforge query-plan "<query>" --intent locate    # 定位已知论文
-paperforge query-plan "<query>" --intent discover  # 发现论文
-paperforge query-plan "<query>" --intent content    # 正文内容检索
-paperforge query-plan "<query>" --intent locate --json
+paperforge render audit [KEY...] [--json]
+paperforge render reconcile [KEY...] [--include-pdf-media] [--apply-r] [--json]
+paperforge render promote-r <KEY> [OBJECT_ID...] [--all] [--json]
+paperforge render accept-proposal <KEY> <LABEL> --plan-hash <SHA256_FINAL_PLAN> [--json]
 ```
 
-### `paperforge paper-context`
+### 4. 记忆层、向量检出与状态诊断
+
+#### `paperforge memory`
 
 ```bash
-paperforge paper-context <KEY>          # 论文完整上下文 (含 user_annotations 批注摘要)
-paperforge paper-context <KEY> --json
-paperforge paper-context <KEY> --structure --json  # 附加 StructureTree
+paperforge memory build [--key <KEY>] [--json]
+paperforge memory status [--json]
+paperforge memory restore-backup [--json]
 ```
 
-### `paperforge search`
+#### `paperforge embed`
+
+基于 SQLite + `sqlite-vec`（`vec0`）的 API-only 向量索引（无 ChromaDB 依赖）：
 
 ```bash
-paperforge search "<query>"          # 元数据全文搜索
-paperforge search "<query>" --json
-paperforge search "<query>" --evidence --json
-paperforge search "PEMF" --domain 骨科 --ocr done --year-from 2020
-paperforge search "PEMF" --limit 10
+paperforge embed build [--resume] [--force] [--stream] [--json]
+paperforge embed status [--probe] [--json]
+paperforge embed list-models [--base-url <URL>] [--json]
+paperforge embed test-connection [--json]
+paperforge embed migrate [--json]
 ```
 
-### `paperforge paper-status`
+#### `paperforge memory-card`
+
+维护 5 维动态认知记忆（`idea_logic` / `methods_params` / `research_craft` / `critique_limits` / `my_connection`）与 Obsidian Base 快照：
 
 ```bash
-paperforge paper-status <query>      # 查找文献状态 (key/DOI/title/alias)
-paperforge paper-status "XGT9Z257" --json
+paperforge memory-card get <KEY> [--json]
+paperforge memory-card refine <KEY> --facet <FACET> --content "..." [--json]
+paperforge memory-card history <KEY> [--facet <FACET>] [--json]
+paperforge memory-card clear <KEY> [--facet <FACET>] [--json]
+paperforge memory-card base-snapshot [--json]
 ```
 
-### `paperforge inspect`
-
-只读检查单篇文献从 Zotero 索引到向量检出的六阶段全链路状态与瓶颈定位：
+#### `paperforge status`、`paperforge doctor`、`paperforge repair`、`paperforge runtime-health`、`paperforge dashboard`
 
 ```bash
-paperforge inspect <KEY|DOI|citation_key|title>
-paperforge inspect XGT9Z257 --json
+paperforge status [--json]
+paperforge doctor [--json]
+paperforge repair [--fix] [--fix-paths] [--json]
+paperforge runtime-health [--json]
+paperforge dashboard [--json]
 ```
 
-检查阶段（按流水线顺序）：`source`（索引与 PDF 解析）→ `lineage`（文献笔记与状态）→ `ocr`（`blocks.raw.jsonl`、管线版本陈旧度、离线可重建性与健康度）→ `objects_and_render`（图表清单、`render/fulltext.md` 与一致性审计）→ `memory`（`paperforge.db` schema、units 计数与 freshness）→ `vectors`（`vec_body_meta` / `vec_objects_meta` 与配置模型）。
-
-特点：
-
-- **严格只读**：不写任何文件，不获取 Barrier/Writer 锁；若 `paperforge.db` 存在，仅以 SQLite `?mode=ro` 只读方式查询。
-- 返回 `diagnosis.overall`（`healthy` | `degraded` | `action_needed`）、`diagnosis.bottleneck_stage`、`diagnosis.findings` 以及可执行建议命令（如离线 `ocr.rebuild_derived` 或 `paperforge memory build`）；多候选模糊匹配时返回 `resolved: false` 与候选列表，未找到时退出码为 `1`（`PATH_NOT_FOUND`）。
-
-调试 OCR V3 分阶段角色/归属跃迁（开发者离线脚本，不修改 Vault）：
+#### `paperforge inspect` & `paperforge paper-status`
 
 ```bash
-python scripts/dev/ocr_rebuild_paper.py --dump-stages-only --ocr-dir <vault/System/PaperForge/ocr> <KEY>
+paperforge inspect <KEY|DOI|citation_key|title> [--json]   # 严格只读 6 阶段全链路诊断 (?mode=ro)
+paperforge paper-status <QUERY> [--json]
 ```
 
-### `paperforge probe`
+开发者离线调试 OCR V3 分阶段跃迁（不修改 Vault）：
 
 ```bash
-paperforge probe all --json          # 汇总 installation/library/ocr/memory/help/maintenance 探测
-paperforge probe ocr --json          # 探测单一模块状态
+python scripts/dev/ocr_rebuild_paper.py --dump-stages-only --ocr-dir <vault/.paperforge/ocr> <KEY>
 ```
 
-### `paperforge reading-log`
+### 5. 阅读、批注、精读与网关命令
+
+#### `paperforge annotations`
+
+无损旁路 PDF 批注子系统（读写 `<workspace>/annotations.jsonl` 并同步至 `paperforge.db` `paper_annotations` 表；严格不改写源 PDF）：
 
 ```bash
-paperforge reading-log --write <KEY> --section "Discussion P12" --excerpt "..." --usage "..." # 写阅读笔记
-paperforge reading-log --render      # 渲染 reading-log.index.md（不覆盖用户手工 reading-log.md）
-paperforge reading-log --lookup <KEY> # 查某文献的阅读笔记
-paperforge reading-log --since 2026-01-01 --limit 100 --output notes.md # 导出
+paperforge annotations pdf-info <KEY> [--json]
+paperforge annotations list <KEY> [--json]
+paperforge annotations add <KEY> --page <N> --rects-json '[[0.1,0.2,0.8,0.24]]' [--kind highlight] [--color yellow] [--intent evidence] [--exact-text "..."] [--comment "..."] [--tags-json '[]'] [--style-json '{}'] [--json]
+paperforge annotations update <KEY> <ANN_ID> [--color ...] [--intent ...] [--comment "..."] [--tags-json ...] [--style-json ...] [--rects-json ...] [--json]
+paperforge annotations delete <KEY> <ANN_ID> [--json]
+paperforge annotations promote <KEY> <ANN_ID> [--usage ...] [--project "..."] [--json]
+paperforge annotations fulltext-preview <KEY> [--max-chars 80000] [--json]
+paperforge annotations agent-mark <KEY> --quote "<原文>" [--figure-id figure_001] [--page-hint N] [--section-hint "..."] [--comment "<洞见>"] [--color purple] [--lens skeleton|methods|critique|custom] [--tags-json '[]'] [--json]
+paperforge annotations agent-apply <KEY> [--items-json '<JSON>' | --input <FILE>] [--lens <LENS>] [--replace-lens] [--max-items N] [--json]
+paperforge annotations adopt <KEY> <ANN_ID> [--json]
+paperforge annotations clear-agent <KEY> [--lens <LENS>] [--json]
+```
+
+#### `paperforge reading-log` & `paperforge read`
+
+```bash
+paperforge reading-log --write <KEY> --section "Discussion P12" --excerpt "..." --usage "..." [--source-json '{...}'] [--json]
+paperforge reading-log --search "<keywords>" [--paper <KEY>] [--include-history] [--limit 20] [--json]
+paperforge reading-log --source-check <RECORD_ID> --paper <KEY> [--json]
+paperforge reading-log --correct <ID> --correction "..." --reason "..." [--json]
+paperforge reading-log --lookup <KEY> [--json]
+paperforge reading-log --render
+paperforge reading-log --since <YYYY-MM-DD> --limit 100 --output notes.md
 paperforge reading-log --validate reading-log.md
 paperforge reading-log --import reading-log.md
-paperforge reading-log --correct <ID> --correction "..." --reason "..." # 修正笔记
-paperforge reading-log --json
+
+paperforge read <KEY> [--find "<TEXT>"] [--source] [--json]
 ```
 
-研究记录内容检索与论文元数据检索分开；`search --evidence` 仍为 metadata-only，不搜索阅读记录。
+#### `paperforge project-log`
 
 ```bash
-paperforge reading-log --search "用途关键词" --json
-paperforge reading-log --search "词语 引文片段" --paper <KEY> --limit 20 --json
-paperforge reading-log --search "旧引文" --include-history --json
-paperforge reading-log --source-check <RECORD_ID> --paper <KEY> --json
-paperforge reading-log --write <KEY> --excerpt "原文" --usage "用途" --source-json '{"path":"Sources/paper.pdf","physical_page":2,"printed_page":"249","basis":"exact_text","anchor":"原文"}' --json
-```
-
-查询按 Unicode 空白分词并进行大小写无关的字面匹配；所有词必须命中同一记录，可跨 `excerpt`、`usage`、`note`、`context`、`section` 字段。无空白中文作为一个子串；不解析正则、FTS、同义词或语义改写。空查询拒绝；limit 默认 20、范围 1–100。结果按时间点降序、ID 升序，返回记录 ID、引文、用途、来源状态、命中字段和修正历史。
-
-JSONL 是权威来源，每次查询重新读取；成功保存或修正后立即可搜，无需 `memory build`。有修正历史的旧引文默认不作为有效记录返回，`--include-history` 可查看。修正是追加的说明，不是替换引文；原记录与 ID 不改写。损坏或不完整的权威记录明确报错，不伪装成零结果。
-
-`--source-json` 可省略；无来源记录保持 unknown。`recorded` 仅记录位置，`user_confirmed` 表示用户核对过该 PDF，`exact_text` 要求引文经 NFC/空白归一化后在当前 PDF 唯一出现且位于指定物理页。PDF 内容 SHA256 与引文/页码绑定；来源改变或无法核对时必须重查。`physical_page` 从 1 开始，印刷页只作独立标签，不能把页链接可打开当作引文已匹配。
-
-来源必须是当前论文规范 PDF 的 Vault 内相对路径。绝对路径、协议、穿越和解析到 Vault 外的 junction/symlink 拒绝；原 Zotero 外部存储路径不在本项来源跳转支持范围。请在授权副本 Vault 中使用本地 PDF，不自动复制或修改原件。
-
-插件单篇论文面板提供“保存研究记录”和论文／研究记录两个搜索分区。保存显示持久 ID，详情支持重新核验后打开 PDF 物理页及追加修正。无需 Embedding，不代表任意语义问句检索或 OCR 内容质量验收。
-
-### `paperforge annotations`
-
-无损旁路 PDF 批注子系统（读写 `<workspace>/annotations.jsonl` 并同步至 `paperforge.db` 的 `paper_annotations` 表；严格只读原 PDF，不改写原始文件字节）：
-
-```bash
-paperforge annotations pdf-info <KEY> --json       # 查询规范 PDF 路径、SHA-256 与批注列表
-paperforge annotations list <KEY> --json           # 列出活跃高亮/框选批注与 provenance 状态
-paperforge annotations add <KEY> --page 3 --rects-json '[[0.1,0.2,0.8,0.24]]' --kind highlight --color yellow --intent evidence --exact-text "..." --json
-paperforge annotations update <KEY> <ANN_ID> --intent question --comment "核实统计方法" --json
-paperforge annotations delete <KEY> <ANN_ID> --json
-paperforge annotations promote <KEY> <ANN_ID> --usage evidence --project "ProjectX" --json  # 晋升为带物理页码与 SHA-256 的 reading-log 记录
-paperforge annotations fulltext-preview <KEY> --max-chars 80000 --json                     # OCR Workspace 只读排错预览
-```
-
-### `paperforge migrate-storage`
-
-将旧版 `<system_dir>/PaperForge/` 引擎产物平滑迁移至对 Obsidian 隐藏的 `.paperforge/` 目录，并将各篇裁切图表以 `<KEY>_figure_*.jpg` / `<KEY>_table_*.jpg` 独立命名物化到对应文献工作区 `assets/` 目录、清理工作区冗余 `fulltext.md` 与重写笔记图链：
-
-```bash
-paperforge migrate-storage --dry-run --json   # 预览待迁移项与受影响文件数（零写入）
-paperforge migrate-storage --json             # 执行存储迁移与 paperforge.json system_dir 更新
-```
-
-### `paperforge prune`
-
-```bash
-paperforge prune                     # 预览删除孤儿产物 (dry-run)
-paperforge prune --force             # 实际删除
-paperforge prune <KEY> [KEY...]      # 仅处理指定 key
-paperforge prune --json              # JSON 输出
-```
-
-### `paperforge memory`
-
-```bash
-paperforge memory build              # 构建 memory DB
-paperforge memory build --json       # JSON 输出
-paperforge memory status             # 查看 memory DB 状态
-paperforge memory status --json      # JSON 输出
-```
-
-### `paperforge project-log`
-
-```bash
-paperforge project-log --write --project "ProjectX" --payload '{"hours":2,"status":"progress"}' # 写工作日志
+paperforge project-log --write --project "ProjectX" --payload '{"hours":2,"status":"progress"}'
 paperforge project-log --list --project "ProjectX"
 paperforge project-log --render --project "ProjectX"
 paperforge project-log --project "ProjectX" --json
 ```
 
-### `paperforge agent-context`
+#### `paperforge deep-reading` & `paperforge deep-finalize`
 
 ```bash
-paperforge agent-context             # 生成 Agent 引导上下文
-paperforge agent-context --json      # JSON 输出
+paperforge deep-reading [--json]
+paperforge deep-finalize <KEY> [--json]
 ```
 
-### `paperforge runtime-health`
+#### `paperforge context`、`paperforge agent-context` & L4 检索网关
 
 ```bash
-paperforge runtime-health            # 检查 memory layer 运行时健康
-paperforge runtime-health --json     # JSON 输出
+paperforge context <KEY> | --domain <DOMAIN> | --collection <COLL> | --all
+paperforge agent-context [--json]
+paperforge paper-lookup "<query>" [--from-path <PATH>] [--limit 10] [--json]
+paperforge content-discovery "<query>" [--limit 10] [--json]
+paperforge paper-navigation "<query>" [--json]
+paperforge scoped-fetch "<query>" [--limit 10] [--json]
 ```
 
-### `paperforge base-refresh`
+#### `paperforge skill`
 
 ```bash
-paperforge base-refresh              # 刷新 Obsidian Base 视图
-paperforge base-refresh --force      # 强制全量重建
-```
-
-### `paperforge doctor`
-
-```bash
-paperforge doctor                    # 验证安装配置
-paperforge doctor --json             # JSON 输出
-```
-
-### `paperforge update`
-
-```bash
-paperforge update                    # 更新到最新版本
-```
-
-### `paperforge setup`
-
-```bash
-paperforge setup                     # 交互式设置
-paperforge setup --headless          # 非交互式 (AI 代理)
-paperforge setup --agent opencode    # 指定 AI Agent 平台
-paperforge setup --paddleocr-key "KEY" --paddleocr-url "URL"
-paperforge setup --skip-checks       # 跳过环境检查
-paperforge setup --modular           # 使用模块化设置 (v2.1+)
-```
-
-### `paperforge paper-lookup`
-
-```bash
-paperforge paper-lookup "<query>"    # L4 网关: 定位文献
-paperforge paper-lookup "PEMF" --json --limit 10
-```
-
-### `paperforge content-discovery`
-
-```bash
-paperforge content-discovery "<query>" # L4 网关: 内容发现
-paperforge content-discovery "骨科 生物力学" --json --limit 10
-```
-
-### `paperforge paper-navigation`
-
-```bash
-paperforge paper-navigation "<query>"  # L4 网关: 文献结构导航
-paperforge paper-navigation "XGT9Z257" --json
-```
-
-### `paperforge scoped-fetch`
-
-```bash
-paperforge scoped-fetch "<query>"      # L4 网关: 范围受限获取
-paperforge scoped-fetch "PEMF 75 Hz treatment protocol" --json --limit 10
-```
-
-### `paperforge memory-card`
-
-维护单篇论文的动态分面认知记忆（`idea_logic` / `methods_params` / `research_craft` / `critique_limits` / `my_connection`）与 Obsidian Base 工作台只读快照：
-
-```bash
-paperforge memory-card get <KEY> --json
-paperforge memory-card refine <KEY> --facet critique_limits --content "..." --json
-paperforge memory-card history <KEY> [--facet <FACET>] --json
-paperforge memory-card clear <KEY> [--facet <FACET>] --json
-paperforge memory-card base-snapshot --json
-```
-
-### `paperforge annotations`
-
-读写内置 PDF 阅读器侧车批注层（用户批注 + AI 批注层）：
-
-```bash
-paperforge annotations pdf-info <KEY> --json
-paperforge annotations list <KEY> --json
-paperforge annotations agent-mark <KEY> --quote "<原文>" --comment "<洞见>" [--lens skeleton|methods|critique|custom] [--color purple|blue|red|green|yellow] [--page N] [--figure-id figure_001] --json
-paperforge annotations adopt <KEY> <ANN_ID> --json
-paperforge annotations clear-agent <KEY> [--lens <LENS>] --json
+paperforge skill deploy [--to <DIR>] [--overwrite] [--json]
+paperforge skill sync [--to <DIR>] [--json]
+paperforge skill sync-hub [--json]
 ```
 
 ---
@@ -523,6 +437,7 @@ paperforge annotations clear-agent <KEY> [--lens <LENS>] --json
 ## 相关文档
 
 - [使用教程](getting-started.md)
+- [完整使用手册](user-manual.md)
 - [故障排除](troubleshooting.md)
 - [更新指南](update-upgrade.md)
 
@@ -538,18 +453,6 @@ python -m pytest tests/test_ocr_synthetic_fixtures.py -q --tb=short
 
 ### 真实文献 OCR 回归测试（可选集成测试）
 
-需要设置环境变量指定 vault 路径和要测试的文献 key：
-
-**Unix/macOS:**
-
-```bash
-PAPERFORGE_REAL_OCR_VAULT="/path/to/Literature-hub" PAPERFORGE_REAL_OCR_KEYS="SAN9AYVR,2GN9LMCW" python -m pytest tests/test_ocr_real_paper_regressions.py -q
-```
-
-**PowerShell:**
-
 ```powershell
 $env:PAPERFORGE_REAL_OCR_VAULT="D:\path\to\Literature-hub"; $env:PAPERFORGE_REAL_OCR_KEYS="SAN9AYVR,2GN9LMCW"; python -m pytest tests/test_ocr_real_paper_regressions.py -q
 ```
-
-不设置环境变量时，真实文献测试自动 SKIP。

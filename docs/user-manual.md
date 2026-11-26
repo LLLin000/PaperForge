@@ -1,398 +1,175 @@
 # PaperForge 使用手册
 
-> 版本：1.5.15+
+> 适用版本：`2.0.6+`（Obsidian Thin-Client + 原生 Rust 守护侧车 + 托管 Python 引擎）
 
 ---
 
 ## 一、PaperForge 是什么
 
-PaperForge 是一个 Obsidian 插件，把你 Vault 变成文献研究中心。它可以：
+PaperForge 将 Zotero 文献库与 Obsidian 工作区深度整合，采用**三层协同架构**，兼顾极速交互与可复现科研工作流：
 
-1. 从 Zotero 自动同步文献目录，为每篇论文生成规范的 Obsidian 笔记
-2. 把 PDF 上传到 PaddleOCR，提取全文 Markdown 和图片
-3. 在 Dashboard 中查看全文、跟踪论文处理状态、重做 OCR
-4. 与 AI Agent（OpenCode / Claude Code / Cursor 等）协作，进行深度阅读、文献搜索、方法论提取
-5. 基于全文建立记忆层（FTS 全文搜索 + 向量语义搜索 + 结构化索引）
+1. **Obsidian 插件（Thin-Client）**：提供单一 `.base` 文献工作台、伴读 Companion 面板、内置无损 PDF 批注器、OCR 排错工作台、Quick Switcher 与四页极简设置中心。
+2. **原生 Rust 守护进程（`paperforge-daemon`）**：驻留 `~/.paperforge/bin/`（`< 6–15 MB` 内存），承担零 Python 快路径（Base 快照、FTS5 搜索、Zotero 检测、配置校验）、`--mcp` 服务器（7 个原生工具）以及零前置运行时引导。
+3. **托管 Python 核心（`paperforge`）**：通过 `uv` 自动部署到完全隔离的 `~/.paperforge/runtime/`，负责 Zotero 同步、云端/离线 V3 OCR 版面解析与图表裁切、SQLite + `sqlite-vec` 向量检索与 Living Memory Card 持久化。
 
 ---
 
-## 二、安装与初始化
+## 二、安装与初始化（零 Python 前置、免 Better BibTeX）
 
 ### 2.1 前置条件
 
-- **Obsidian 桌面版**
-- **Python 3.11+**（供独立的 PaperForge Core 安装器使用）
-- **Zotero 7** 和 **Better BibTeX**（使用文献同步功能时）
-- **PaddleOCR API Token**（使用云端 OCR 时配置；不是安装 Core 的条件）
+- **Obsidian 桌面版**（`minAppVersion: 1.11.4`）
+- **Zotero 7 / 8**（直接只读读取 `zotero.sqlite`，**不再强制安装 Better BibTeX**）
+- **无需预装 Python**：插件与 `paperforge-daemon` 自动拉取便携 `uv` 与托管 Python 3.12（如有本机 Python 3.11+ 亦可作为命令行宿主）
+- **PaddleOCR API Token / Embedding API Key（可选）**：仅在开启云端 OCR 或语义检索时需要，所有密钥写入操作系统 Keyring（不存明文 `.env`）
 
-### 2.2 安装与初始化
+### 2.2 一屏极速开启（Express Onboarding）
 
-1. 安装并启用 PaperForge Obsidian 插件。
-2. 在系统终端安装与插件版本匹配的 bootstrap CLI 和 Core Runtime。将 `<PLUGIN_VERSION>` 替换为插件 `manifest.json` 中的版本；两条命令使用同一个 Python 3.11+ 解释器：
+1. 在 Obsidian 社区插件市场、BRAT（`LLLin000/PaperForge`）或 [GitHub Releases](https://github.com/LLLin000/PaperForge/releases) 安装并启用 PaperForge。
+2. 打开 **设置 → PaperForge**，即进入 **「一屏极速开启」**：
+   - **第 1 步（一键启用引擎）**：自动下载校验 `paperforge-daemon` 与托管运行时（`~/.paperforge/runtime/`）。
+   - **第 2 步（直连 Zotero 与目录组织预览）**：自动探测 `zotero.sqlite` 与文献集合；若检测到库根目录已有非空个人 `Literature` / `Resources` / `Bases` 文件夹，自动隔离到 `PaperForge/` 前缀下。支持实时预览 **选项 A（按 Zotero 顶级分类建子文件夹，推荐）** 与 **选项 B（全库平铺，依靠 Base 筛选条定位）**。
+   - **第 3 步（可选 AI / 期刊指标配置）**：折叠区提供 PaddleOCR 与向量模型（硅基流动、百炼、智谱、OpenAI、Ollama 一键预设与实时测通）配置，留空即可先完成同步与批注。
+3. 点击 **「保存配置并立即同步文献库」**，完成首次同步。
 
-   ```bash
-   python -m pip install --user --upgrade "paperforge==<PLUGIN_VERSION>"
-   python -m paperforge runtime install --expected-version <PLUGIN_VERSION>
-   ```
+> 若需要纯终端/无头初始化，可执行：
+> ```bash
+> pip install "paperforge[vector]"
+> paperforge setup --modular
+> paperforge auth set ocr
+> ```
 
-   Windows 可将 `python` 替换为 `py -3.11`；macOS/Linux 可使用 `python3.11`。这些命令必须在 Obsidian 外运行。Core 安装器创建机器级受管环境并验证后发布 runtime pointer；插件不会创建 venv、运行 pip 或升级后端。
-3. 返回 Obsidian，打开 PaperForge 设置。Runtime 状态只表示 Core 是否已安装且与插件版本匹配；随后在当前 Vault 中完成目录、Zotero 与 Agent 配置。
+### 2.3 设置中心四页架构与 10 态决策树
 
-安装向导负责当前 Vault 的业务配置：
-
-- 在 Vault 中创建 PaperForge 目录结构（`System/PaperForge/`、`Resources/Literature/`、`Bases/` 等）
-- 检测 Zotero 和 Better BibTeX
-- 配置 Zotero 数据目录
-- 选择 AI Agent 平台（OpenCode / Claude Code / Cursor 等）
-- **部署 Agent Skill 文件**：向导按所选平台部署到对应 Vault 目录
-
-Core Runtime 是机器级环境，可供多个 Vault 使用；每个 Vault 的 `paperforge.json`、文献目录和同步设置仍独立。
-
-#### 步骤 2：Skills 查看
-
-在「功能」标签页的 Skills 区域，可以查看并管理已部署到当前 Vault 的 Skill。每个 Skill 对应一个 `SKILL.md` 文件。
-
-### 2.3 配置 Better BibTeX 自动导出
-
-在 Zotero 中安装 Better BibTeX 后，你需要为每个领域配置一个自动导出。
-
-**核心概念**：一个 Zotero Collection（子分类文件夹）对应一个 Base 视图文件。比如你在 Zotero 中有一个名为"骨科"的子分类文件夹，导出这个 Collection 后，Obsidian 中会自动生成 `骨科.base`。这个 Base 文件包含的就是该 Collection 下所有子文件夹里的论文，并且会随 Zotero 的修改实时同步。
-
-**具体操作**：
-
-1. 在 Zotero 左侧面板，右键点击你想导出的 Collection（如"骨科"）
-2. 选择 `导出 Collection...`（Export Collection...）
-3. 格式选择：**Better BibTeX JSON**（这是唯一支持的格式）
-4. 勾选 `保持自动更新`（Keep updated）
-5. 导出路径：选择 Vault 中的 `System/PaperForge/exports/`
-
-**实际效果**：
-- 导出的 JSON 文件名自动使用 Collection 名称
-- Obsidian 的 `Bases/` 目录下会自动生成同名的 `.base` 文件
-- Base 文件中的论文列表是该 Collection 下所有子文件夹中的文献
-- 一次配置，永久自动同步：每次 Zotero 中新增/删除/修改文献，JSON 和 Base 都会刷新
-
-**不需要每加一篇论文就导一次**：自动导出会持续保持同步。
-
-### 2.4 第一次 Sync
-
-打开 Dashboard，点击左侧的 `Sync Library` 按钮。
-
-Sync 做了什么：
-
-1. 读取 `System/PaperForge/exports/` 下的 JSON 导出文件
-2. 为每篇论文生成 Obsidian 笔记（`Resources/Literature/<domain>/<key> - Title/<key>.md`）
-3. 建立文献索引（`System/PaperForge/indexes/formal-library.json`）
-4. 重建 FTS 记忆数据库
+- **概览（Overview）**：顶部由 **10 态确定性决策树（Control Center）** 驱动，任何时刻仅呈现 1 张主卡片与 1 个最优先动作（如引擎热更新中、安全软件隔离提示、旧版 Vault `<3s` Fast Cutover 升级、连接 Zotero、同步受阻重试、一切就绪），下方为 5 行精简模块状态入口。
+- **模块配置（Modules）**：分模块（基础环境、文献库、OCR、智能检索、Agent 集成）管理参数、运行探针与存储维护/回滚。
+- **外观（Appearance）**：切换 **AsterLab 原色（默认）** 与 **跟随 Obsidian 主题**、排版密度，并按需开关液态玻璃模糊（默认关闭以零 GPU 占用运行）或减弱动画。
+- **帮助（Help）**：查看版本更新说明、使用手册链接与 UI Gallery。
 
 ---
 
-## 三、Dashboard 完全指南
+## 三、单一 `.base` 工作台与伴读 Companion
 
-Dashboard 是 PaperForge 的核心界面。它有 **三种模式**，根据你当前在 Obsidian 中打开的文件自动切换。
+### 3.1 单一「文献库」Base 工作台（`Literature Hub.base`）
 
-### 3.1 全局模式（Global Mode）
+2.0.x 将旧版多面板 Base 收敛为 `Bases/` 下的单一 **「文献库」总表**：
 
-当你没有打开任何特定论文时，Dashboard 显示全局面板。
+- **持久化多维筛选条**：支持标题/作者/期刊即时过滤、专题与子分类级联筛选、处理状态胶囊与影响因子筛选。
+- **高性能分块渲染与批量操作**：固定比例 `<colgroup>` 列宽 + 80 行分块流式渲染 + `content-visibility` 隔离；勾选左侧复选框（支持 `Shift` 连选）会在表头浮现上下文操作栏（批量解析全文、打开 PDF、诊断跳转）。
+- **用户可编辑 frontmatter 字段**：`do_ocr`、`analyze`、`ocr_redo`、`tags`（`tags` 与用户自定义 YAML 键在 sync 时永久保留）。
 
-**Library Snapshot**：显示你的文献库总览
+### 3.2 伴读 Companion 面板（三态上下文）
 
-- `papers`：总论文数
-- `PDFs ready`：有 PDF 的论文数
-- `OCR done`：已完成 OCR 的论文数
-- `deep-read done`：已完成深度阅读的论文数
+通过左侧栏按钮或命令面板打开 **Companion 面板**，根据当前活动标签页自动切换：
 
-**System Status**：系统健康状态指示灯
-
-| 组件 | 含义 |
-|------|------|
-| Runtime | 插件版本和 Python CLI 版本是否匹配 |
-| Index | 文献索引是否存在且有效 |
-| Zotero Export | 是否有 Zotero 导出文件 |
-| OCR Token | PaddleOCR API Key 是否已配置 |
-| Memory Layer | 记忆层（FTS + 索引）是否健康 |
-
-**需要处理**：如果有任何状态异常，Dashboard 会列出问题并提供 `Run Doctor` 和 `Repair Issues` 按钮。
-
-**Start Working**：提供快捷操作按钮
-
-- `Sync Library`：同步 Zotero → PaperForge
-- `Run OCR`：开始 OCR 队列处理
-- `Redo OCR`：执行一次重做 OCR
-- `Run Doctor`：运行诊断
-- `Repair Issues`：修复状态不一致
-
-### 3.2 论文模式（Paper Mode）
-
-当你打开一篇论文的工作区笔记（`<key>.md`）或 PDF 时，Dashboard 自动切换到此模式。
-
-**论文元数据**：标题、作者、年份
-
-**状态条**：三个圆形指示器
-
-| 指示器 | 含义 | 状态 |
-|--------|------|------|
-| PDF | 论文是否有 PDF | ✓（有） / ○（无） |
-| OCR | OCR 处理状态 | ✓ done / ○ pending / ✗ failed |
-| 精读 | 深度阅读是否完成 | ✓ done / ○ pending |
-
-**快捷按钮**
-
-| 按钮 | 功能 |
-|------|------|
-| 打开 PDF | 在 Obsidian 中打开 PDF |
-| 打开全文 | 打开 OCR 提取的全文 Markdown |
-
-**文章概览（Paper Overview）**：从笔记的 `## 精读` 区域中自动提取摘要。如果还没有精读，显示提示信息。
-
-**下一步推荐（Next Step）**：根据当前论文的处理状态，智能推荐下一步操作：
-
-- `Sync Needed`：论文尚未同步 → 点击 Sync
-- `OCR Needed`：PDF 已就绪，全文未提取 → 点击 OCR
-- `Ready for Deep Reading`：全文就绪 → 复制 `/pf-deep <key>` 命令到 Agent
-- `All Set`：所有流程完成
-
-**最近讨论**：显示 `ai/discussion.md` 中最新的问答记录。
-
-**技术详情**（折叠区）：显示更多内部状态和两个重要的勾选框：
-
-- `do_ocr`：将此论文加入 OCR 队列
-- `analyze`：标记此论文需要深度阅读
-- `Fulltext Path`：OCR 全文本的完整 Vault 路径
-
-### 3.3 领域模式（Collection Mode）
-
-当你打开某个领域的 `.base` 文件时，Dashboard 切换到此模式。
-
-**Workflow Overview**：该领域的漏斗图，显示 Total → PDF Ready → OCR Done → Deep Read 的数量。
-
-**OCR Pipeline**：彩色进度条，一眼看清该领域 OCR 的 `Pending / Processing / Done / Attention` 分布。
-
-**快捷操作**：`Run OCR`、`Sync Library`、`Redo OCR`（仅影响该领域的论文）。
+- **Global 模式**：全库漏斗统计、系统健康状态与快捷入口（同步、体检、修复）；Companion 仅在真正打开时挂载事件监听并在关闭时完整清理。
+- **Collection 模式**：展示当前专题的进度分布并限定范围操作。
+- **Paper 模式**：
+  - 展示 PDF / OCR / 精读状态指示器与快捷打开 PDF 按钮（内部机器 `fulltext.md` 已移出用户面板，仅在 OCR 排错工作台以只读脱敏预览方式查看）；
+  - **Living Paper Memory Card**：展示并直接编辑 5 维认知卡片（`idea_logic`、`methods_params`、`research_craft`、`critique_limits`、`my_connection`）及查看/恢复修订历史；
+  - **研究记录（Research Record）**：支持保存带引用原文、用途与 PDF 物理页码锚点的 JSONL 证据记录，支持精确字面检索与追加修正。
 
 ---
 
-## 四、Base 视图完全指南
+## 四、无损 PDF 批注阅读器（PaperForge PDF Annotator）
 
-每个领域都有对应的 Base 文件（`Bases/<domain>.base`）。Base 是 Obsidian 的数据库视图，可以像表格一样浏览、排序、筛选文献。
+在 Base 表格或 Companion 点击 **打开 PDF**，即在 Obsidian 内打开原生 `loadPdfJs()` 渲染的阅读器：
 
-### 4.1 四个标准面板
-
-| 面板 | 筛选条件 | 用途 |
-|------|---------|------|
-| **控制面板** | 无筛选 | 显示该领域全部论文的完整信息。包括 `has_pdf`、`do_ocr`、`analyze`、`ocr_status`、`deep_reading_status` 等所有 workflow 列 |
-| **待 OCR** | `do_ocr == true && ocr_status == "pending"` | 列出需要 OCR 处理的论文。勾选这里的 `do_ocr`，下次 Run OCR 就会处理 |
-| **待深度阅读** | `analyze == true && ocr_status == "done" && deep_reading_status == "pending"` | 列出 OCR 已完成但未精读的论文 |
-| **Redo OCR** | `ocr_status == "done"` | 列出所有 OCR 已完成的论文。勾选 `ocr_redo`，点 Redo 按钮即可重新提取全文 |
-
-### 4.2 各列的含义
-
-| 列名 | 含义 | 谁控制 |
-|------|------|--------|
-| `title` | 论文标题 | Zotero 自动 |
-| `year` | 发表年份 | Zotero 自动 |
-| `first_author` | 第一作者 | Zotero 自动 |
-| `journal` | 期刊名 | Zotero 自动 |
-| `impact_factor` | 影响因子 | 自动推算 |
-| `has_pdf` | 是否有 PDF | 自动检测 Zotero 附件 |
-| `do_ocr` | 是否提交 OCR | **用户可修改**（勾选 = 下次 Run OCR 时会处理这篇） |
-| `analyze` | 是否标记精读 | **用户可修改**（勾选 = 准备好让 Agent 精读这篇） |
-| `ocr_status` | OCR 处理状态 | 系统自动：`pending` → `processing` → `done` / `failed` |
-| `deep_reading_status` | 深度阅读状态 | 系统自动：`pending` → `done` |
-| `ocr_redo` | 是否标记重做 | **用户可修改**（勾选 = 下次 Redo OCR 时处理这篇） |
-| `ocr_time` | OCR 完成时间 | 系统自动 |
-| `pdf_path` | PDF 链接 | 系统自动 |
-| `fulltext_md_path` | 全文路径 | 系统自动 |
-| `collection_path` | Zotero 中的 Collection 路径 | Zotero 自动 |
-| `collection_tags` | Collection 标签 | Zotero 自动 |
-
-### 4.3 用户可手动修改的字段
-
-在整个 frontmatter 中，**以下字段是用户可以手动修改的**，其余全部由系统自动维护：
-
-- `do_ocr`：勾选后，论文进入 OCR 队列
-- `analyze`：勾选后，论文标记为"待深度阅读"
-- `ocr_redo`：勾选后，论文标记为"需要重做 OCR"
-- `tags`：标签列表，系统默认写入 `文献阅读` 和领域名，你可以随意增删，系统不会覆盖你的修改
-
-> **警告**：不要手动改 `ocr_status`、`deep_reading_status`、`fulltext_md_path`、`pdf_path` 等系统字段。这些会被 sync 覆盖。
-
-### 4.4 `tags` 和 `collection_path` 的来源
-
-- `tags`：从 Zotero 的标签同步，同时系统默认写入 `文献阅读` 和领域名。**你可以在 Obsidian 中增删 tags，系统不会覆盖你加的 tag**
-- `collection_path`：来自 Zotero 的 Collection 层级。例如 Zotero 中 `骨科 → 软骨修复 → 生物反应器` 的文章，其 `collection_path` 就是 `骨科|软骨修复|生物反应器`
-- `collection_tags`：Collection 路径中每一级作为标签存入
+- **双层 Apple Preview 风格工具条**：支持划词高亮 / 下划线 / 删除线、科研意图标签（`evidence`、`question`、`method`、`quote`）、区域框选截图（保存为工作区 `assets/<KEY>_ann_<id>.jpg`）、自由画笔、几何形状、文本框与便签。
+- **零侵入侧车存储**：全部批注保存在 `<workspace>/annotations.jsonl` 并同步至 SQLite `paper_annotations` 表，**严格不修改原始 PDF 文件字节**，并记录 `pdf_sha256` 溯源校验（源文件变动时顶部提示 `Source PDF modified`）。
+- **人机双层协作**：支持切换 `all / user / agent` 图层视图；AI 生成的批注支持一键 **采纳（Adopt）** 或 **晋升（Promote）** 为 `reading-log` 证据卡，并在执行 `/pf-deep` 时自动喂给 Agent 优先解答你的疑问。
 
 ---
 
-## 五、完整工作流
+## 五、OCR 解析与离线重建
 
-### 5.1 新增论文的标准流程
+1. 在 `.base` 工作台勾选论文点击 **解析全文**（或在笔记 frontmatter 设置 `do_ocr: true` 后运行 `paperforge ocr`）。
+2. **输出位置**：
+   - OCR 原始块与渲染产物保存在隐藏引擎目录 `.paperforge/ocr/<KEY>/`；
+   - 裁切并合并好内嵌文字坐标的图表资产以 `<KEY>_figure_*.jpg` / `<KEY>_table_*.jpg` 独立命名写入论文工作区 `assets/`，由正式笔记原生嵌入渲染。
+3. **零成本离线重建**：OCR 渲染/分块规则升级后，运行 `paperforge ocr rebuild`（或在 OCR 排错工作台触发）即可基于本地 `blocks.raw.jsonl` 零 API 费用重建图表与全文，并通过 `paperforge versions` 支持历史版本预览与安全切回。
 
-```
-Zotero 添加文献 → 自动导出 JSON → Sync → 勾选 do_ocr → Run OCR → 打开全文 → Agent 精读
+---
+
+## 六、记忆层与混合检索（SQLite + FTS5 + `sqlite-vec`）
+
+PaperForge 2.0.x 已全面移除 ChromaDB 与本地 `sentence-transformers` 依赖，所有结构化索引、全文搜索与向量检索均统一收敛于单文件 `.paperforge/indexes/paperforge.db`：
+
+### 6.1 结构化记忆与 FTS5（默认内置）
+
+- 存储 `papers`、`assets`、`aliases`、`paper_annotations`、`paper_memory_cards`、`units` 与 FTS5 全文索引；
+- 在 Zotero 未变动时，插件自动同步门禁通过 `stat()` 零开销跳过重复重建。
+
+### 6.2 向量语义检索（可选，`sqlite-vec` `vec0`）
+
+- 安装向量扩展依赖（插件托管环境默认包含，CLI 安装可使用 `pip install "paperforge[vector]"`）；
+- 在设置「模块配置 → 智能检索」配置 API Key 与嵌入模型后点击构建，或运行：
+  ```bash
+  paperforge embed test-connection --json
+  paperforge embed list-models --json
+  paperforge embed build --resume --json
+  ```
+- 检索入口 `paperforge retrieve "<query>" --deep --json` 执行 BM25 + `vec_body` + `vec_objects` 全并集 RRF 融合排序；未构建向量时自动平滑回退到 FTS5 BM25。
+
+---
+
+## 七、与 AI Agent 协作（MCP Server + Skill Hub）
+
+### 7.1 MCP 原生接入（推荐）
+
+`paperforge-daemon --mcp --vault <VAULT_DIR>` 直接为 Claude Code、Cursor、Codex、OpenCode 等客户端提供 7 个受控工具（`paperforge_brief`、`paperforge_search`、`paperforge_library_query`、`paperforge_paper_context`、`paperforge_retrieve`、`paperforge_annotate_batch`、`paperforge_memory_refine`）：
+
+```bash
+paperforge-daemon agent-onboarding --vault <VAULT_DIR> --lang zh
+paperforge-daemon mcp-install --vault <VAULT_DIR> --platform claude
+paperforge-daemon mcp-check --vault <VAULT_DIR> --platform claude --probe-mcp
 ```
 
-1. **在 Zotero 中添加文献**：通过 DOI、PMID 或网页抓取
-2. **Better BibTeX 自动导出**：JSON 文件自动更新（因为你已经配置了自动导出）
-3. **Dashboard → Sync**：读取最新的 JSON 导出，生成/更新 Obsidian 笔记
-4. **勾选 do_ocr**：在 Base 的「待 OCR」面板中勾选 `do_ocr`，或者直接在论文笔记的 frontmatter 中手动设为 `true`
-5. **Dashboard → Run OCR**：提交 OCR 任务，等待完成
-6. **打开全文**：OCR 完成后，Dashboard 显示 `打开全文` 按钮
-7. **Agent 精读**：在 Agent 中调用 PaperForge Skill，让 Agent 读取全文
+### 7.2 Skill 触发工作流与 Skill Hub
 
-### 5.2 重建全文（Redo OCR）的标准流程
+| 触发词 | 做什么 | 说明 |
+| :--- | :--- | :--- |
+| `/pf-deep <key>` | Keshav 三阶段组会式精读 | 结合 OCR 结构树与用户 PDF 疑问批注写入 `## 🔍 精读` 并执行 `paperforge deep-finalize <key>` |
+| `/pf-paper <key>` | 交互式论文问答 | 不强制要求 OCR；结论可沉淀至 Living Memory Card |
+| `/pf-status` / `/pf-sync` / `/pf-ocr` | 机械运维命令 | 走标准 JSON 契约，不人工 `grep` 猜测路径 |
 
-当你需要重新提取某篇论文的全文时：
-
-1. 在 Base 的「Redo OCR」面板中找到目标论文
-2. 勾选 `ocr_redo`
-3. 在 Dashboard 或 Ribbon 点击 `Redo OCR`
-4. 系统自动：
-   - 删除旧的 OCR 产物
-   - 删除工作区旧 `fulltext.md`
-   - 强制 `do_ocr: true`
-   - 立即重跑 OCR
-   - 成功后写回 `ocr_redo: false`
-
-**注意**：如果 OCR 失败，`ocr_redo` 会保持 `true`，方便你再次尝试。
-
-### 5.3 搜索与查找论文
-
-有三种搜索方式，覆盖面不同：
-
-| 方式 | 搜索范围 | 在哪里用 |
-|------|---------|---------|
-| Base 面板的搜索框 | 标题、作者 | Obsidian 中直接搜 |
-| 调用 PaperForge Skill | 标题、摘要、作者、全文 | Agent 中调用 |
-| `paperforge search` CLI | 标题、摘要、作者、期刊 | 命令行 |
+运行 `paperforge-daemon skill-sync-all` 可将 `~/.paperforge/skills/paperforge/` 同步至所有已注册 Vault 与 Agent 工作区。
 
 ---
 
-## 六、记忆层（Memory Layer）
+## 八、目录结构参考（`.paperforge/` 隐藏引擎布局）
 
-记忆层是 PaperForge 的"大脑"，由两部分组成：
-
-### 6.1 结构化记忆（Memory DB）
-
-- 基于 **SQLite + FTS5**（全文搜索引擎）
-- 存储每篇论文的元数据（标题、作者、摘要、期刊、领域、Collection 等）
-- 支持精确的字段查询（按作者、年份、领域、OCR 状态等）
-- 每次 `Sync` 后自动重建
-
-### 6.2 向量语义搜索（Vector DB）【可选功能】
-
-> 向量数据库是**可选择性开启**的。即使没有开启，Agent 仍然可以使用 FTS 元数据搜索来查找论文。
-
-- 基于 **ChromaDB**（向量数据库）
-- 将所有已完成 OCR 的论文全文切分成段落，生成向量
-- 支持**语义搜索**：即使用自然语言描述一个概念（如 "75 Hz 电刺激对软骨细胞的分化影�"），ChromaDB 也能在正文中找到匹配的段落
-- 这是检索论文最强大的方式——它搜索的不只是标题和摘要，而是正文的所有内容
-
-**开启方式**：
-
-1. 在插件设置页的「功能」标签页中，找到"向量数据库"区域
-2. 勾选开启，可选配置 embedding 模型（如 OpenAI embedding API、本地 sentence-transformers 等）
-3. 点击"构建向量数据库"
-4. 构建完成后，Agent 就可以使用语义搜索在正文 Methods/Results 中匹配概念
-
----
-
-## 七、与 Agent 协作
-
-### 7.1 PaperForge Skill 是什么
-
-PaperForge Skill 是部署到 Vault 中的 Agent 技能文件（`SKILL.md`）。它做的事情是：
-
-1. **让 Agent 知道你的文献库存在**：Agent 会通过 bootstrap 脚本获取 Vault 路径、Python 位置、文献目录
-2. **给 Agent 提供搜索工具**：Agent 会使用 `paperforge search`（元数据搜索）和 `paperforge retrieve`（语义搜索）来查找论文
-3. **规范 Agent 的文献操作行为**：Agent 不会用 `grep` 乱搜文件、不会自己拼路径、不会只看摘要就回答事实性问题
-4. **定义 Agent 的研究工作流**：精读论文、搜索文献、文献问答、记录问答、提取方法论等
-
-### 7.2 Agent 读了这个 Skill 会做什么
-
-当 Agent 加载 PaperForge Skill 后，它会：
-
-1. 执行 `pf_bootstrap.py` 获取路径和配置
-2. 执行 `agent-context` 获取文献库概览
-3. 检查 `runtime-health` 确认系统健康
-4. 根据你的输入判断意图（搜文献、读论文、找证据、保存笔记、提取方法论）
-5. 路由到对应的 workflow 执行
-
-### 7.3 所有 Agent 能力详解
-
-当你安装了 PaperForge Skill 后，Agent 可以直接响应如下自然语言意图：
-
-| 你说什么 | Agent 会做什么 |
-|---------|---------------|
-| "找文献"、"搜文献"、"找一下"、"搜一下" | 搜索论文目录，返回候选列表 |
-| "库里有什么"、"collection 里" | 列举领域/Collection 中的论文 |
-| "读一下这篇"、"看看这篇"、"这篇论文" | 打开指定论文进行阅读 |
-| "找证据"、"找支持"、"找依据"、"找参数" | 检索全文中的具体证据和方法 |
-| "精读"、"/pf-deep" | 三阶段深度阅读 |
-| "记一下"、"保存这次"、"记录一下" | 保存当前会话的阅读笔记 |
-| "提取方法论" | 从论文中提取可复用的研究方法卡片 |
-| "/pf-paper <key/DOI>" | 快速定位并阅读已知论文 |
-
-### 7.4 如果 Agent 没有自动读取 Skill 怎么办
-
-- **通用方法**：在对话中直接写 `调用 paperforge skill`，或告诉 Agent "读取 vault 中 .opencode/skills/paperforge/SKILL.md"（路径根据你的平台调整）
-- 如果 Agent 仍然无法加载，检查 Vault 的对应 skills 文件夹（如 `.opencode/skills/`）下是否存在 `paperforge/` 目录
-- 如果不存在，在插件设置页重新运行一次安装向导，或者手动将 Skill 文件复制进去
-- 重启你的 CLI / Agent 客户端后重试
-
-**确认 Agent 已加载 Skill 的标志**：Agent 会先运行 `pf_bootstrap.py` 并输出路径变量，而不是直接用 `grep` 搜文件。
-
-### 7.5 Agent 使用的搜索工具
-
-Agent 有三种搜索武器，不会只用一种：
-
-| 工具 | 命令 | 搜索范围 |
-|------|------|---------|
-| 元数据搜索 | `paperforge search "query"` | 标题、摘要、作者、期刊、领域、Collection 路径 |
-| 语义全文搜索 | `paperforge retrieve "query"` | OCR 正文全部内容（需开启向量 DB） |
-| Collection/领域列举 | `paperforge context --collection/--domain` | 指定 Collection 下的完整论文列表 |
-
-**Agent 禁止手动 `grep` / `rg` / `glob` 搜文件**。这是 Skill 的硬性规则。如果 Agent 试图这样做，说明它没有正确加载 Skill，你需要提醒它。
-
-### 7.6 Agent 的意图路由顺序
-
-Agent 按以下优先级判断你要做什么：
-
-1. 机械命令（`/pf-sync`、`/pf-ocr`、`/pf-status`） → 直接执行
-2. 命令别名（`/pf-deep` → 深度分析，`/pf-paper` → 快速阅读）
-3. 你要保存/归档 → 执行 capture
-4. 你给定了明确论文 → 执行阅读
-5. 你要找论文列表 → 执行检索
-6. 你要找具体证据 → 执行证据查找
-7. 意图不清 → Agent 会问你两个问题澄清
-
----
-
-## 八、目录结构参考
-
-```
+```text
 Vault/
-├── System/
-│   └── PaperForge/
-│       ├── ocr/<ZoteroKey>/        ← OCR 产物
-│       │   ├── fulltext.md         ← 唯一的正文真相源
-│       │   ├── json/result.json    ← OCR 原始结果
-│       │   ├── images/             ← 提取的图片
-│       │   ├── pages/              ← 页缓存
-│       │   └── meta.json           ← OCR 进度
-│       ├── exports/                ← Better BibTeX JSON 导出文件
-│       └── indexes/                ← 文献索引
-│           └── formal-library.json
+├── .paperforge/                    ← 对 Obsidian 隐藏的引擎与派生索引目录
+│   ├── ocr/<ZoteroKey>/            ← blocks.raw.jsonl、render/fulltext.md、图表裁剪源文件
+│   ├── indexes/
+│   │   ├── paperforge.db           ← SQLite SSOT（FTS5 + sqlite-vec vec0 + 批注 + 记忆）
+│   │   ├── formal-library.json     ← 规范文献索引快照
+│   │   └── .state-seq.json         ← 原子变更序号（驱动 Obsidian 实时刷新）
+│   ├── backups/                    ← 升级/维护备份
+│   └── exports/                    ← 可选：传统 Better BibTeX 导出目录
 ├── Resources/
-│   └── Literature/                 ← 论文工作区
+│   └── Literature/                 ← 正式文献工作区（或按 domain 组织）
 │       └── <domain>/<ZoteroKey> - <Title>/
-│           ├── <ZoteroKey>.md      ← 主笔记（frontmatter + 精读内容）
-│           └── ai/                 ← AI 产物
-│               └── discussion.md   ← Agent 对话记录
-├── Bases/                          ← Obsidian Base 视图
-│   └── <domain>.base
-├── <平台相关>skills/paperforge/    ← Agent Skill 文件
-│   └── SKILL.md
-└── .obsidian/plugins/paperforge/   ← 插件本体
+│           ├── <ZoteroKey>.md      ← 主笔记（frontmatter + 精读内容 + 图表嵌入）
+│           ├── annotations.jsonl   ← 无损 PDF 侧车批注
+│           ├── assets/             ← <KEY>_figure_*.jpg / <KEY>_table_*.jpg / <KEY>_ann_*.jpg
+│           └── ai/
+│               ├── memory-card.json
+│               └── discussion.md
+├── Bases/
+│   └── Literature Hub.base         ← 单一文献库总表视图
+├── <平台相关>skills/paperforge/    ← Agent Skill 文件（由 Skill Hub 管理）
+├── paperforge.json                 ← Vault 配置
+└── .obsidian/plugins/paperforge/   ← Obsidian Thin-Client 插件
 ```
+
+> 老版本 `System/PaperForge/` Vault 可在设置页决策树主卡一键升级，或执行 `paperforge upgrade --apply --fast-cutover --json` 在 3 秒内无损迁移至 `.paperforge/`。
+
+---
+
+## 协议与致谢
+
+- 协议：[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)（仅限非商业使用）。
+- 致谢：基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)、[Obsidian](https://obsidian.md)、[Zotero](https://www.zotero.org/) 与 [sqlite-vec](https://github.com/asg017/sqlite-vec) 等开源项目构建。

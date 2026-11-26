@@ -6,28 +6,27 @@
 
 [![Version](https://img.shields.io/github/v/release/LLLin000/PaperForge?style=for-the-badge&label=version)](https://github.com/LLLin000/PaperForge/releases)
 [![Python](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
-[![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgreen?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/license-CC--BY--NC--SA--4.0-lightgreen?style=for-the-badge)](LICENSE)
 
 [简体中文](README.zh.md) · **English**
 
 > **铸知识为器，启洞见之明。 — Forge Knowledge, Empower Insight.**
 
-PaperForge brings your Zotero library into Obsidian. Sync papers, run OCR, extract figures, and do AI-assisted deep reading — all inside a single vault.
+PaperForge brings your Zotero library into Obsidian. Sync papers directly from `zotero.sqlite` (no Better BibTeX required), annotate PDFs non-destructively, run V3 OCR with figure extraction, search with SQLite FTS5 + `sqlite-vec`, and collaborate with AI Agents via native MCP — all inside a single vault.
 
 ---
 
-## 0. What PaperForge Is
+## 0. How PaperForge Works (v2.0.x Architecture)
 
-PaperForge is **not just an Obsidian plugin**. It has two parts:
+PaperForge uses a **three-part decoupled desktop architecture** with zero Python prerequisites for Obsidian users:
 
-| Part | What | Does | Where |
-|------|------|------|-------|
-| Obsidian Plugin | `main.js` + `manifest.json` + `styles.css` | Dashboard, buttons, settings UI | `.obsidian/plugins/paperforge/` in your vault |
-| Python Package | `paperforge` | Sync, OCR, Doctor, repair | Your system Python (`pip install`) |
+| Component | What | Role | Location |
+| :--- | :--- | :--- | :--- |
+| **Obsidian Plugin** | `main.js` + `manifest.json` + `styles.css` | Thin-Client UI: single `.base` workbench, PDF Annotator, Companion, 4-tab Settings | `<vault>/.obsidian/plugins/paperforge/` |
+| **Native Rust Daemon** | `paperforge-daemon` (6-platform native binary) | Zero-Python fast-path (`base-snapshot`, `search`, `config`), `--mcp` server (7 tools), `install-runtime` bootstrapper | `~/.paperforge/bin/` |
+| **Managed Python Core** | `paperforge` (auto-installed via portable `uv` + Python 3.12) | Zotero SQLite sync, V3 OCR & figure extraction, SQLite FTS5 + `sqlite-vec` hybrid retrieval, Living Memory Cards | `~/.paperforge/runtime/` |
 
-The plugin is the **interface**. The Python package is the **engine**. Every button you click in the plugin actually runs a Python command behind the scenes.
-
-**After installing the plugin, you MUST verify that the Python package is also installed and version-matched.**
+All hidden indexes, OCR intermediates, and `paperforge.db` live inside `<vault>/.paperforge/`, keeping Obsidian's file indexer fast and uncluttered.
 
 ---
 
@@ -35,98 +34,72 @@ The plugin is the **interface**. The Python package is the **engine**. Every but
 
 ### Option A: Community Plugin Browser (Recommended)
 
-1. Open Obsidian → `Settings` → `Community plugins` → `Browse`
+1. Open Obsidian → **Settings** → **Community plugins** → **Browse**
 2. Search for **PaperForge**
-3. Click `Install`, then `Enable`
+3. Click **Install**, then **Enable**
 
-> Community plugins auto-update through Obsidian. No extra steps needed.
+### Option B: BRAT (Pre-releases & Early Builds)
 
-### Option B: BRAT
-
-If you need beta versions or the plugin hasn't appeared in search yet:
-
-1. Install **BRAT** from the Obsidian community plugin browser
-2. Open BRAT settings → `Add Beta Plugin`
-3. Enter: `https://github.com/LLLin000/PaperForge`
-4. Enable PaperForge in Settings → Community Plugins
+1. Install **BRAT** from Obsidian Community Plugins
+2. Open BRAT settings → **Add Beta Plugin**
+3. Enter `https://github.com/LLLin000/PaperForge`
+4. Enable **PaperForge** in Community Plugins
 
 ### Option C: Manual Download
 
-1. Go to [Releases](https://github.com/LLLin000/PaperForge/releases)
-2. Download the three files: `main.js`, `manifest.json`, `styles.css`
-3. Create `.obsidian/plugins/paperforge/` in your vault
-4. Put the three files there
-5. Restart Obsidian → Settings → Community Plugins → enable PaperForge
-
-> Manual install does not auto-update. You'll need to re-download for each new version.
+1. Download `main.js`, `manifest.json`, and `styles.css` from [GitHub Releases](https://github.com/LLLin000/PaperForge/releases)
+2. Place them in `<vault>/.obsidian/plugins/paperforge/`
+3. Restart Obsidian and enable **PaperForge**
 
 ---
 
-## 2. Install PaperForge Core (outside Obsidian)
+## 2. Express Onboarding (Zero Terminal Setup)
 
-The Obsidian plugin does not install Python or manage packages. Install the
-matching bootstrap CLI from a terminal, then use it to create and verify the
-managed Core runtime:
+Once the plugin is enabled, open **Settings → PaperForge**:
 
-```bash
-python -m pip install --user --upgrade "paperforge==<PLUGIN_VERSION>"
-python -m paperforge runtime install --expected-version <PLUGIN_VERSION>
-```
+1. **One-Screen Express Setup**: Click **Enable Engine & Sync Library**. The native `paperforge-daemon` automatically downloads portable `uv`, provisions an isolated Python 3.12 runtime in `~/.paperforge/runtime/`, and verifies integrity via SHA-256 — no system Python or manual `pip` required.
+2. **Direct Zotero Connection**: PaperForge reads `zotero.sqlite` directly via read-only SQLite Online Backup snapshots (Better BibTeX JSON remains supported as an optional mode). Choose between **per-collection subfolders** or a **flat library** with live preview.
+3. **4-Tab Control Center & 10-State Decision Tree**: Settings are organized into **Overview**, **Modules**, **Appearance**, and **Help**, backed by a deterministic 10-state decision tree and `<3s` lossless upgrade for legacy `System/PaperForge/` vaults.
+4. **Optional AI & Vector Search**: Configure PaddleOCR keys (stored securely in the OS Keyring, never plaintext `.env`) and OpenAI-compatible embedding providers (`sqlite-vec` `vec0` — no ChromaDB required) whenever you are ready.
 
-Replace `<PLUGIN_VERSION>` with the version in the installed plugin's
-`manifest.json`. Use the same Python 3.11+ executable for both commands
-(`py -3.11 -m ...` on Windows or `python3.11 -m ...` on macOS/Linux).
-The installer creates a separate runtime under `~/.paperforge/runtime/` and
-publishes its pointer only after verification.
+---
 
-Then open PaperForge in Obsidian. The plugin reads the runtime pointer and
-configures the current Vault; it never runs `pip` or creates the Python
-environment. One installed Core can serve multiple Vaults.
+## 3. Standalone / Headless CLI & AI Agent MCP Setup
 
-If the plugin version changes, install the matching bootstrap CLI and update
-the managed runtime from a terminal:
+For terminal workflows, CI automation, or headless servers:
 
 ```bash
-python -m pip install --user --upgrade "paperforge==<NEW_PLUGIN_VERSION>"
-python -m paperforge runtime update --expected-version <NEW_PLUGIN_VERSION>
-```
-
-For a broken runtime, run this from the same terminal:
-
-```bash
-python -m paperforge runtime repair --expected-version <PLUGIN_VERSION>
-```
-
-Do not run these lifecycle commands from an Obsidian plugin action.
-
-## 3. Quickstart
-
-```bash
-# 1. Export from Zotero (Better BibTeX JSON, Keep updated) to exports/
-# 2. Sync
+pip install "paperforge[vector]"
+paperforge setup --modular
+paperforge auth set ocr          # prompts securely for PaddleOCR token (writes to OS Keyring)
 paperforge sync
-
-# 3. Mark a paper for OCR in its frontmatter: do_ocr: true
-# 4. Run OCR
 paperforge ocr
-
-# 5. Mark for deep reading: analyze: true
-# 6. In your Agent chat:
-/pf-deep <zotero_key>
+paperforge status --json
 ```
+
+To connect AI Agents (Claude Code, Cursor, Codex, OpenCode, Windsurf, Copilot, Cline) via native MCP + Skill Hub:
+
+```bash
+paperforge-daemon mcp-install --vault <VAULT_DIR> --platform claude
+paperforge-daemon mcp-check --vault <VAULT_DIR> --platform claude --probe-mcp
+paperforge-daemon skill-sync-all
+```
+
+In your AI Agent chat, trigger `/pf-deep <zotero_key>` for Keshav 3-pass deep reading or `/pf-paper <zotero_key>` for interactive Q&A.
 
 ---
 
-## 文档导航
+## Documentation
 
-| 你想做什么                                 | 去看                           |
-| ------------------------------------------ | ------------------------------ |
-| 完整教程，从安装到精读                     | [使用教程](docs/getting-started.md)    |
-| 遇到问题了                                 | [故障排除](docs/troubleshooting.md)    |
-| 查某个命令                                 | [命令参考](docs/COMMANDS.md)           |
-| 如何升级                                   | [更新指南](docs/update-upgrade.md)     |
-| 架构 / 维护 / 发布                         | [架构文档](docs/ARCHITECTURE.md)       |
-| AI Agent 协作                               | [AGENTS.md](AGENTS.md)                |
+| If you want to | Read |
+| :--- | :--- |
+| Quickstart tutorial (CN) | [Getting Started](docs/getting-started.md) |
+| Full user manual (CN) | [User Manual](docs/user-manual.md) |
+| CLI, Rust Daemon & MCP command reference | [Commands](docs/COMMANDS.md) |
+| Standalone / headless installation details | [Installation Guide](INSTALLATION.md) |
+| Troubleshooting | [Troubleshooting](docs/troubleshooting.md) |
+| Update & architecture blueprint | [Install & Update Architecture](docs/INSTALL-AND-UPDATE-ARCHITECTURE.md) |
+| AI Agent collaboration rules | [AGENTS.md](AGENTS.md) |
 
 ---
 
@@ -136,4 +109,4 @@ paperforge ocr
 
 ## Acknowledgments
 
-Built on [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR), [Obsidian](https://obsidian.md), [Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/), and other great open-source projects.
+Built on [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR), [Obsidian](https://obsidian.md), [Zotero](https://www.zotero.org/), and [sqlite-vec](https://github.com/asg017/sqlite-vec).
