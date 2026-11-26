@@ -761,12 +761,12 @@ def _run_ocr_rebuild(
             # #137: stream chosen → exactly-one terminal (error), then EOF.
             from paperforge.core.ndjson import emit_terminal
             from paperforge import __version__ as _PFV
-            from paperforge.core.result import PFResult
+            from paperforge.core.result import PFError, PFResult
 
             emit_terminal("error", "ocr.rebuild", PFResult(
                 ok=False, command="ocr rebuild", version=_PFV,
-                error=__import__("paperforge").core.errors.PFError(
-                    __import__("paperforge").core.errors.ErrorCode.ACTION_UNAVAILABLE,
+                error=PFError(
+                    ErrorCode.ACTION_UNAVAILABLE,
                     "No papers matched for rebuild",
                 ),
             ))
@@ -1037,6 +1037,9 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
     # the #137 NDJSON stream.  Without this stream the controller's
     # fail-closed parser reports "EOF without terminal event" even on a
     # successful run (contract break).  json mode keeps the single PFResult.
+    from paperforge.credentials import CredentialError as _CredentialError
+    from paperforge.worker.ocr import set_stream_diagnostics
+
     force_stream = bool(getattr(args, "stream", False))
     _stream = (force_stream or not json_output) and ocr_action in (None, "run") and not diagnose_only
     if _stream:
@@ -1065,9 +1068,23 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
             emit_terminal(
                 "result" if exit_code == 0 else "error",
                 "ocr.run",
-                PFResult(ok=exit_code == 0, command="ocr run", version=__version__),
+                PFResult(
+                    ok=exit_code == 0,
+                    command="ocr run",
+                    version=__version__,
+                    error=None
+                    if exit_code == 0
+                    else PFError(
+                        code=ErrorCode.VALIDATION_ERROR,
+                        message="OCR run finished with pending or failed items",
+                    ),
+                ),
             )
 
+    _prev_diag_stream = False
+    if json_output:
+        # Keep machine JSON stdout pure; route _diag() lines to stderr (PF-OCR-008).
+        _prev_diag_stream = set_stream_diagnostics(True)
     try:
         exit_code = run_ocr(
             vault,
@@ -1077,6 +1094,14 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
             stop_check=_is_stopped,
             progress_callback=_progress,
         )
+    except _CredentialError as exc:
+        if _stream:
+            _restore()
+            from paperforge.commands.auth import _error_result as _cred_error_result
+
+            emit_terminal("error", "ocr.run", _cred_error_result("ocr.run", exc))
+            return 1
+        raise
     except Exception as exc:  # noqa: BLE001 — exactly-one error terminal
         if _stream:
             _restore()
@@ -1090,16 +1115,36 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
                     error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
                 ),
             )
+        elif json_output:
+            pf = PFResult(
+                ok=False,
+                command="ocr",
+                version=__version__,
+                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+            )
+            print(pf.to_json())
+        else:
+            print(f"Error: {exc}", file=sys.stderr)
         return 1
+    finally:
+        if json_output:
+            set_stream_diagnostics(_prev_diag_stream)
     _finish_stream(exit_code)
 
     if json_output:
         queue_data = _collect_ocr_queue_data(vault)
+        pf_err = None
+        if exit_code != 0:
+            pf_err = PFError(
+                code=ErrorCode.VALIDATION_ERROR,
+                message=f"OCR failed (exit_code={exit_code}, failed={queue_data.get('failed', 0)}, pending={queue_data.get('pending', 0)})",
+            )
         pf = PFResult(
             ok=exit_code == 0,
             command="ocr",
             version=__version__,
             data=queue_data,
+            error=pf_err,
         )
         print(pf.to_json())
         return 0 if pf.ok else 1

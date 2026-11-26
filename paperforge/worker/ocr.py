@@ -188,10 +188,10 @@ OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked", "nopd
 _STREAM_DIAGNOSTICS = False
 
 
-def set_stream_diagnostics(enabled: bool) -> None:
-    """Stream mode routes human diagnostics to stderr; stdout stays NDJSON."""
+def set_stream_diagnostics(enabled: bool) -> bool:
+    """Stream mode routes human diagnostics to stderr; return prior setting."""
     global _STREAM_DIAGNOSTICS
-    _STREAM_DIAGNOSTICS = enabled
+    prev, _STREAM_DIAGNOSTICS = _STREAM_DIAGNOSTICS, enabled; return prev
 
 
 def _diag(message: str = "", **kwargs: object) -> None:
@@ -3275,10 +3275,26 @@ def _run_ocr_impl(
                         )
                         continue
                     lines = [line.strip() for line in result_response.text.splitlines() if line.strip()]
-                    all_results = []
-                    for line in lines:
-                        page_payload = json.loads(line)["result"]
-                        all_results.append(page_payload)
+                    try:
+                        if not lines:
+                            raise json.JSONDecodeError("Empty OCR result payload", "", 0)
+                        parsed_lines = [json.loads(line) for line in lines]
+                    except json.JSONDecodeError as exc:
+                        # Truncated or malformed HTTP NDJSON body is recoverable; classify as
+                        # OCRAPISchemaError (retryable_error, stage='result') preserving ocr_job_id (PF-OCR-009).
+                        from paperforge.worker.ocr_errors import OCRAPISchemaError
+
+                        error_state = classify_ocr_error(
+                            OCRAPISchemaError(f"Incomplete OCR result payload: {exc}"),
+                            stage="result",
+                        )
+                        apply_ocr_error_state(queue_row, meta, error_state)
+                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        changed += 1
+                        active_submitted.discard(key)
+                        _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
+                        continue
+                    all_results = [p["result"] for p in parsed_lines]
                     page_num, markdown_path, json_path, fulltext_md_path, meta = postprocess_ocr_result(
                         vault, key, all_results, meta=meta
                     )
@@ -3711,7 +3727,25 @@ def _run_ocr_impl(
                         )
                         continue
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
-                    results = [json.loads(l)["result"] for l in lines]
+                    try:
+                        if not lines:
+                            raise json.JSONDecodeError("Empty OCR result payload", "", 0)
+                        parsed_lines = [json.loads(l) for l in lines]
+                    except json.JSONDecodeError as exc:
+                        # Truncated/malformed HTTP NDJSON body is retryable; preserve ocr_job_id (PF-OCR-009).
+                        from paperforge.worker.ocr_errors import OCRAPISchemaError
+
+                        error_state = classify_ocr_error(
+                            OCRAPISchemaError(f"Incomplete OCR result payload: {exc}"),
+                            stage="result",
+                        )
+                        apply_ocr_error_state(queue_row, meta, error_state)
+                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        changed += 1
+                        active_submitted.discard(key)
+                        _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
+                        continue
+                    results = [p["result"] for p in parsed_lines]
                     page_num, md_path, json_path, fulltext_md_path, meta = postprocess_ocr_result(
                         vault, key, results, meta=meta
                     )
