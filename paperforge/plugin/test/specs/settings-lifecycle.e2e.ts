@@ -96,6 +96,17 @@ async function closeSettingsModal(): Promise<void> {
   await dismissModals();
 }
 
+async function openVaultFile(filePath: string): Promise<void> {
+  await browser.executeObsidian(async ({ app }, fp: string) => {
+    const file = app.vault.getAbstractFileByPath(fp);
+    if (!file) throw new Error(`Vault file not found: ${fp}`);
+    if (!("extension" in file)) throw new Error(`Not a file: ${fp}`);
+    const leaf = app.workspace.getLeaf("tab");
+    await leaf.openFile(file as Parameters<typeof leaf.openFile>[0]);
+    app.workspace.setActiveLeaf(leaf, { focus: true });
+  }, filePath);
+}
+
 async function sandboxBasePath(): Promise<string> {
   return await browser.executeObsidian(async ({ app }) => {
     const adapter = app.vault.adapter as unknown as { basePath?: string };
@@ -908,6 +919,37 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
         timeoutMsg: "Companion panel did not open post-install",
       }
     );
+    const globalPanelState = await browser.executeObsidian(async () => {
+      const doc =
+        typeof activeDocument !== "undefined" ? activeDocument : document;
+      const root =
+        doc.querySelector(".paperforge-status-panel") ??
+        document.querySelector(".paperforge-status-panel");
+      return {
+        hasSetupCta: Boolean(root?.querySelector(".paperforge-setup-cta")),
+      };
+    });
+    expect(globalPanelState.hasSetupCta).toBe(false);
+
+    // Opening the generated domain Base switches Companion to collection mode
+    // and mounts the live search box.
+    await openVaultFile("Bases/BoneRegen.base");
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async () => {
+          const doc =
+            typeof activeDocument !== "undefined" ? activeDocument : document;
+          return Boolean(
+            doc.querySelector(".paperforge-search-input") ??
+            document.querySelector(".paperforge-search-input")
+          );
+        }),
+      {
+        timeout: 20000,
+        timeoutMsg:
+          "Collection-mode search input never mounted for BoneRegen.base",
+      }
+    );
     const panelState = await browser.executeObsidian(async () => {
       const doc =
         typeof activeDocument !== "undefined" ? activeDocument : document;
@@ -960,11 +1002,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       String(zot1Rel).replace(/\\/g, "/")
     );
     const zot1DiskPath = path.join(boneRegenDir, String(zot1Rel));
-    await browser.executeObsidian(async ({ app }, linkPath: string) => {
-      const leaf = app.workspace.getLeaf(false);
-      await app.workspace.openLinkText(linkPath, "", false);
-      app.workspace.setActiveLeaf(leaf, { focus: true });
-    }, zot1ObsPath);
+    await openVaultFile(zot1ObsPath);
 
     await browser.waitUntil(
       async () =>
@@ -1012,8 +1050,11 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     const reSyncResult = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         getClient(): { sync(): Promise<{ ok?: boolean }> };
+        refreshBaseSnapshot?(): Promise<unknown>;
       };
-      return await plugin.getClient().sync();
+      const res = await plugin.getClient().sync();
+      await plugin.refreshBaseSnapshot?.();
+      return res;
     });
     expect(reSyncResult?.ok).not.toBe(false);
     expect(existsSync(zot1DiskPath)).toBe(true);
@@ -1046,7 +1087,9 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
 
   // ── S5 & S6: Version mismatch, probe failure, updating & quarantine states ──
   it("S5 & S6: renders engine_version_mismatch, engine_probe_failed, engine_updating, and engine_quarantined cleanly", async function () {
-    // Boot with valid pointer so startup settles cleanly before mutating pointer
+    // Boot with valid pointer so startup settles cleanly before mutating pointer.
+    // Keep _setup_complete = false on unconfigured FRESH_VAULT so data.json
+    // does not trigger tier-1 veteran_legacy detection when pointer restores.
     await browser.reloadObsidian({ vault: FRESH_VAULT });
     await dismissModals();
     await browser.executeObsidian(async ({ app }) => {
@@ -1055,11 +1098,17 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
         saveSettings(): Promise<void>;
       };
       plugin.settings.language = "en";
-      plugin.settings._setup_complete = true;
+      plugin.settings._setup_complete = false;
       await plugin.saveSettings();
     });
     await openPaperForgeSettings();
-    await waitForSettledDecision();
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { _goHome(): void };
+      };
+      plugin._settingTab._goHome();
+    });
+    await waitForSettledDecision("zotero_not_configured");
 
     // S5a: version mismatch in pointer.json -> engine_version_mismatch
     const parsedPtr = JSON.parse(savedPointerRaw!) as Record<string, unknown>;
