@@ -908,3 +908,74 @@ class TestSetupManifestStamp:
         prov = detect_vault_provenance(tmp_path)
         assert prov["state"] == "veteran_legacy"
         assert prov["needs_upgrade"] is True
+
+    def test_manifest_write_failure_emits_warning_log(self, tmp_path: Path, monkeypatch) -> None:
+        import paperforge.setup.plan as plan_mod
+
+        def _fail_manifest(_vault):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(
+            "paperforge.services.vault_engine.ensure_current_vault_manifest",
+            _fail_manifest,
+        )
+        logs: list[str] = []
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={
+                "system_dir": ".paperforge",
+                "resources_dir": "Resources",
+                "literature_dir": "Literature",
+                "base_dir": "Bases",
+            },
+            skip_checks=True,
+            progress_callback=logs.append,
+        )
+        rc = plan.execute(json_output=True)
+        assert rc == 0
+        assert any("vault-manifest.json" in msg and "disk full" in msg for msg in logs)
+
+    def test_probe_library_surfaces_missing_manifest_notice(self, tmp_path: Path) -> None:
+        import paperforge.setup.plan as plan_mod
+        from paperforge.config import paperforge_paths
+        from paperforge.probes.library import probe_library
+        from paperforge.worker import asset_index
+
+        zotero_dir = tmp_path / "zotero_data"
+        zotero_dir.mkdir(parents=True, exist_ok=True)
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={
+                "system_dir": ".paperforge",
+                "resources_dir": "Resources",
+                "literature_dir": "Literature",
+                "base_dir": "Bases",
+                "zotero_data_dir": str(zotero_dir),
+            },
+            zotero_path=str(zotero_dir),
+            skip_checks=True,
+        )
+        assert plan.execute(json_output=True) == 0
+
+        paths = paperforge_paths(tmp_path)
+        idx_path = Path(paths["index"])
+        idx_path.parent.mkdir(parents=True, exist_ok=True)
+        idx_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "export_hash": asset_index.compute_export_hash(paths),
+                    "paper_count": 0,
+                    "items": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        manifest_file = tmp_path / ".paperforge" / "vault-manifest.json"
+        if manifest_file.exists():
+            manifest_file.unlink()
+
+        env = probe_library(tmp_path)
+        assert env["reason"]["code"] == "library.ready"
+        notice_codes = [n.get("code") for n in env.get("notices", [])]
+        assert "vault.manifest_missing" in notice_codes

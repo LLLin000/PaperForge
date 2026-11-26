@@ -41,6 +41,11 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 const PLUGIN_DIR = process.cwd();
+const PLUGIN_MANIFEST = JSON.parse(
+  readFileSync(path.join(PLUGIN_DIR, "manifest.json"), "utf8")
+) as { version?: string };
+const PLUGIN_VERSION = PLUGIN_MANIFEST.version ?? "2.0.8";
+const PLUGIN_VERSION_RE = new RegExp(PLUGIN_VERSION.replace(/\./g, "\\."));
 const VAULTS_DIR = path.resolve(PLUGIN_DIR, "test", "vaults");
 const FRESH_VAULT = "./test/vaults/settings-fresh";
 const LEGACY_VAULT = "./test/vaults/settings-legacy";
@@ -1212,7 +1217,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     await assertDecisionCard({
       id: "engine_version_mismatch",
       badgeCls: "attention",
-      titleRe: /2\.0\.7/,
+      titleRe: PLUGIN_VERSION_RE,
       primaryLabelRe: /update/i,
       noSecondary: true,
     });
@@ -1239,7 +1244,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     await assertDecisionCard({
       id: "engine_probe_failed",
       badgeCls: "attention",
-      titleRe: /2\.0\.7/,
+      titleRe: PLUGIN_VERSION_RE,
       primaryLabelRe: /refresh|check/i,
       secondaryLabelRe: /repair/i,
     });

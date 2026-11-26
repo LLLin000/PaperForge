@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as os from "node:os";
 import { execFileSync } from "node:child_process";
-import { copyFileSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 
 // Isolation: use a disposable file backend rather than the machine keyring.
 // The real-provider W03 E2E test seeds this file with a fake key; every run
@@ -29,8 +29,13 @@ const ALLOW_REAL_HOME =
   process.env.PF_E2E_ALLOW_REAL_HOME === "1" || process.env.CI === "true";
 const RUNTIME_HOME = ALLOW_REAL_HOME ? os.homedir() : E2E_ISOLATED_HOME;
 if (!ALLOW_REAL_HOME) {
+  mkdirSync(RUNTIME_HOME, { recursive: true });
   process.env.PAPERFORGE_HOME = path.join(RUNTIME_HOME, ".paperforge");
   process.env.PF_E2E_RUNTIME_HOME = RUNTIME_HOME;
+  process.env.HOME = RUNTIME_HOME;
+  if (process.platform === "win32") {
+    process.env.USERPROFILE = RUNTIME_HOME;
+  }
 }
 
 try {

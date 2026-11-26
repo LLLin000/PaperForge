@@ -35,7 +35,7 @@ export function mergeNoProxy(
 
 function normalizeProxyUrl(
   raw: string,
-  defaultScheme: "http" | "https" | "socks5" = "http"
+  defaultScheme: "http" | "https" | "socks5" | "socks4" = "http"
 ): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
@@ -48,6 +48,7 @@ function normalizeProxyUrl(
       parsed.protocol !== "http:" &&
       parsed.protocol !== "https:" &&
       parsed.protocol !== "socks5:" &&
+      parsed.protocol !== "socks4:" &&
       parsed.protocol !== "socks:"
     ) {
       return null;
@@ -64,11 +65,14 @@ function normalizeProxyUrl(
  *   "PROXY 127.0.0.1:7897; DIRECT"
  *   "HTTPS proxy.corp:8443"
  *   "SOCKS5 127.0.0.1:7897"
+ *   "SOCKS4 127.0.0.1:1080"
  */
 export function parseElectronProxyString(raw: string): string | null {
   for (const segment of String(raw || "").split(";")) {
     const entry = segment.trim();
-    if (!entry || /^DIRECT$/i.test(entry)) continue;
+    if (!entry) continue;
+    // Honor a primary DIRECT rule instead of falling through to a secondary proxy.
+    if (/^DIRECT$/i.test(entry)) return null;
     const parts = entry.split(/\s+/);
     if (parts.length < 2) continue;
     const keyword = parts[0].toUpperCase();
@@ -79,11 +83,10 @@ export function parseElectronProxyString(raw: string): string | null {
     } else if (keyword === "HTTPS") {
       const normalized = normalizeProxyUrl(hostPort, "https");
       if (normalized) return normalized;
-    } else if (
-      keyword === "SOCKS5" ||
-      keyword === "SOCKS" ||
-      keyword === "SOCKS4"
-    ) {
+    } else if (keyword === "SOCKS4") {
+      const normalized = normalizeProxyUrl(hostPort, "socks4");
+      if (normalized) return normalized;
+    } else if (keyword === "SOCKS5" || keyword === "SOCKS") {
       const normalized = normalizeProxyUrl(hostPort, "socks5");
       if (normalized) return normalized;
     }

@@ -20,9 +20,10 @@ describe("system-proxy & Obsidian requestUrl proxy inheritance", () => {
     expect(parseElectronProxyString("SOCKS5 127.0.0.1:7898")).toBe(
       "socks5://127.0.0.1:7898"
     );
-    expect(parseElectronProxyString("DIRECT; PROXY 127.0.0.1:7890")).toBe(
-      "http://127.0.0.1:7890"
+    expect(parseElectronProxyString("SOCKS4 127.0.0.1:1080")).toBe(
+      "socks4://127.0.0.1:1080"
     );
+    expect(parseElectronProxyString("DIRECT; PROXY 127.0.0.1:7890")).toBeNull();
   });
 
   it("parses Windows HKCU Internet Settings reg output safely", () => {
@@ -94,6 +95,11 @@ describe("system-proxy & Obsidian requestUrl proxy inheritance", () => {
     expect(
       buildProxyEnvOverlay("http://127.0.0.1:7897", {
         HTTPS_PROXY: "http://10.0.0.1:3128",
+      })
+    ).toEqual({});
+    expect(
+      buildProxyEnvOverlay("http://127.0.0.1:7897", {
+        PAPERFORGE_PROXY: "http://10.0.0.2:7890",
       })
     ).toEqual({});
 

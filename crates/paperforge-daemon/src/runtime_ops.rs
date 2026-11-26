@@ -249,6 +249,75 @@ where
     None
 }
 
+fn extract_url_host(url: &str) -> Option<String> {
+    let trimmed = url.trim();
+    let after_scheme = trimmed.split_once("://").map(|(_, r)| r).unwrap_or(trimmed);
+    let authority = after_scheme.split('/').next()?.split('?').next()?.split('#').next()?;
+    let host_port = authority.rsplit('@').next()?;
+    if host_port.is_empty() {
+        return None;
+    }
+    if let Some(rest) = host_port.strip_prefix('[') {
+        let end = rest.find(']')?;
+        return Some(rest[..end].to_ascii_lowercase());
+    }
+    let host = match host_port.rsplit_once(':') {
+        Some((h, p)) if !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()) => h,
+        _ => host_port,
+    };
+    let lower = host.trim().to_ascii_lowercase();
+    if lower.is_empty() { None } else { Some(lower) }
+}
+
+pub(crate) fn matches_no_proxy(url: &str, no_proxy: &str) -> bool {
+    let Some(host) = extract_url_host(url) else {
+        return false;
+    };
+    for raw_rule in no_proxy.split([',', ';']) {
+        let rule = raw_rule.trim().to_ascii_lowercase();
+        if rule.is_empty() {
+            continue;
+        }
+        if rule == "*" {
+            return true;
+        }
+        if let Some(prefix) = rule.strip_suffix('*') {
+            if !prefix.is_empty() && host.starts_with(prefix) {
+                return true;
+            }
+        }
+        let clean_rule = if let Some(rest) = rule.strip_prefix('[') {
+            rest.split(']').next().unwrap_or(rest)
+        } else if let Some((h, p)) = rule.rsplit_once(':') {
+            if !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()) { h } else { rule.as_str() }
+        } else {
+            rule.as_str()
+        };
+        let suffix = clean_rule.trim_start_matches("*.").trim_start_matches('.');
+        if suffix.is_empty() {
+            continue;
+        }
+        if host == suffix || host.ends_with(&format!(".{suffix}")) {
+            return true;
+        }
+    }
+    false
+}
+
+fn resolve_proxy_for_url_with_lookup<F>(url: &str, lookup: F) -> Option<String>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    for np_key in ["NO_PROXY", "no_proxy"] {
+        if let Some(np) = lookup(np_key) {
+            if matches_no_proxy(url, &np) {
+                return None;
+            }
+        }
+    }
+    resolve_proxy_from_lookup(lookup)
+}
+
 fn resolve_proxy_from_env() -> Option<String> {
     resolve_proxy_from_lookup(|k| env::var(k).ok())
 }
@@ -407,6 +476,17 @@ fn resolve_effective_proxy() -> Option<String> {
     resolve_proxy_from_env().or_else(detect_os_system_proxy)
 }
 
+fn resolve_effective_proxy_for_url(url: &str) -> Option<String> {
+    for np_key in ["NO_PROXY", "no_proxy"] {
+        if let Ok(np) = env::var(np_key) {
+            if matches_no_proxy(url, &np) {
+                return None;
+            }
+        }
+    }
+    resolve_effective_proxy()
+}
+
 fn http_get_bytes_cancellable(
     url: &str,
     timeout_secs: u64,
@@ -423,7 +503,7 @@ fn http_get_bytes_cancellable(
             .timeout_connect(Duration::from_secs(10))
             .timeout_read(Duration::from_secs(timeout_secs))
             .timeout(Duration::from_secs(timeout_secs));
-        if let Some(trimmed) = resolve_effective_proxy() {
+        if let Some(trimmed) = resolve_effective_proxy_for_url(&url_owned) {
             if let Ok(proxy) = ureq::Proxy::new(&trimmed) {
                 builder = builder.proxy(proxy);
             }
@@ -1100,7 +1180,8 @@ pub fn verify_sha256_bytes(bytes: &[u8], expected_hex: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_mac_scutil_proxy_output, parse_windows_reg_proxy_output, resolve_proxy_from_lookup,
+        matches_no_proxy, parse_mac_scutil_proxy_output, parse_windows_reg_proxy_output,
+        resolve_proxy_for_url_with_lookup, resolve_proxy_from_lookup,
     };
 
     #[test]
@@ -1141,5 +1222,28 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settin
             parse_mac_scutil_proxy_output(mac_out).as_deref(),
             Some("http://127.0.0.1:7897")
         );
+    }
+
+    #[test]
+    fn no_proxy_bypasses_matching_urls_consistently() {
+        assert!(matches_no_proxy("https://github.com/a/b", "*"));
+        assert!(matches_no_proxy("https://github.com/a/b", "github.com"));
+        assert!(matches_no_proxy("https://api.github.com/a/b", ".github.com:443"));
+        assert!(matches_no_proxy("http://127.0.0.1:8080/x", "localhost,127.*"));
+        assert!(!matches_no_proxy("https://github.com/a/b", "localhost,*.internal"));
+
+        let bypassed = resolve_proxy_for_url_with_lookup("https://api.github.com/x", |k| match k {
+            "NO_PROXY" => Some("localhost,.github.com".into()),
+            "HTTPS_PROXY" => Some("http://127.0.0.1:7897".into()),
+            _ => None,
+        });
+        assert_eq!(bypassed, None);
+
+        let proxied = resolve_proxy_for_url_with_lookup("https://pypi.org/simple", |k| match k {
+            "NO_PROXY" => Some("localhost,.github.com".into()),
+            "HTTPS_PROXY" => Some("http://127.0.0.1:7897".into()),
+            _ => None,
+        });
+        assert_eq!(proxied.as_deref(), Some("http://127.0.0.1:7897"));
     }
 }
