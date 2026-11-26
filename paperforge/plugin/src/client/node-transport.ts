@@ -35,6 +35,11 @@ import {
 } from "../services/managed-runtime";
 import { resolveNativeDaemonBinary } from "../services/native-daemon";
 import {
+  buildProxyEnvOverlay,
+  getCachedSystemProxy,
+  hasExplicitProxyEnv,
+} from "../services/system-proxy";
+import {
   bootstrapPythonSource,
   installerLogPath,
   installerRun,
@@ -362,6 +367,13 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
   delete env.PYTHONPATH;
   delete env.PYTHONHOME;
+  if (!hasExplicitProxyEnv(env)) {
+    const cachedProxy = getCachedSystemProxy();
+    Object.assign(
+      env,
+      buildProxyEnvOverlay(cachedProxy.proxyUrl, env, cachedProxy.noProxy)
+    );
+  }
   const plat = process.platform;
   const home = os.homedir();
   const extras: string[] = [];

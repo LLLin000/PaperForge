@@ -228,6 +228,185 @@ fn is_cancelled(cancel_flag: Option<&AtomicBool>) -> bool {
         .unwrap_or(false)
 }
 
+fn resolve_proxy_from_lookup<F>(lookup: F) -> Option<String>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    for key in [
+        "PAPERFORGE_PROXY",
+        "HTTPS_PROXY",
+        "https_proxy",
+        "HTTP_PROXY",
+        "http_proxy",
+    ] {
+        if let Some(raw) = lookup(key) {
+            let trimmed = raw.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn resolve_proxy_from_env() -> Option<String> {
+    resolve_proxy_from_lookup(|k| env::var(k).ok())
+}
+
+fn normalize_proxy_url(raw: &str, default_scheme: &str) -> Option<String> {
+    let trimmed = raw.trim().trim_end_matches('/');
+    if trimmed.is_empty() || trimmed.chars().any(|c| c.is_whitespace()) {
+        return None;
+    }
+    if trimmed.contains("://") {
+        let lower = trimmed.to_ascii_lowercase();
+        if lower.starts_with("http://")
+            || lower.starts_with("https://")
+            || lower.starts_with("socks5://")
+            || lower.starts_with("socks://")
+        {
+            return Some(trimmed.to_string());
+        }
+        return None;
+    }
+    Some(format!("{default_scheme}://{trimmed}"))
+}
+
+pub(crate) fn parse_windows_reg_proxy_output(stdout: &str) -> Option<String> {
+    let mut enabled = false;
+    let mut server = String::new();
+    for line in stdout.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("ProxyEnable") {
+            let val = rest.split_whitespace().last().unwrap_or("");
+            enabled = val == "0x1" || val == "1";
+        } else if trimmed.starts_with("ProxyServer") {
+            let tokens: Vec<&str> = trimmed.split_whitespace().collect();
+            if tokens.len() >= 3 {
+                server = tokens[2..].join(" ");
+            }
+        }
+    }
+    if !enabled || server.trim().is_empty() {
+        return None;
+    }
+    if server.contains('=') {
+        let mut https_val: Option<String> = None;
+        let mut http_val: Option<String> = None;
+        let mut socks_val: Option<String> = None;
+        for part in server.split(';') {
+            if let Some((k, v)) = part.split_once('=') {
+                match k.trim().to_ascii_lowercase().as_str() {
+                    "https" => https_val = normalize_proxy_url(v, "http"),
+                    "http" => http_val = normalize_proxy_url(v, "http"),
+                    "socks" => socks_val = normalize_proxy_url(v, "socks5"),
+                    _ => {}
+                }
+            }
+        }
+        https_val.or(http_val).or(socks_val)
+    } else {
+        normalize_proxy_url(&server, "http")
+    }
+}
+
+pub(crate) fn parse_mac_scutil_proxy_output(stdout: &str) -> Option<String> {
+    let mut https_enable = false;
+    let mut http_enable = false;
+    let mut socks_enable = false;
+    let mut https_host = String::new();
+    let mut https_port = String::new();
+    let mut http_host = String::new();
+    let mut http_port = String::new();
+    let mut socks_host = String::new();
+    let mut socks_port = String::new();
+    for line in stdout.lines() {
+        let trimmed = line.trim();
+        if let Some((k, v)) = trimmed.split_once(':') {
+            let key = k.trim();
+            let val = v.trim();
+            match key {
+                "HTTPSEnable" => https_enable = val == "1",
+                "HTTPEnable" => http_enable = val == "1",
+                "SOCKSEnable" => socks_enable = val == "1",
+                "HTTPSProxy" => https_host = val.to_string(),
+                "HTTPSPort" => https_port = val.to_string(),
+                "HTTPProxy" => http_host = val.to_string(),
+                "HTTPPort" => http_port = val.to_string(),
+                "SOCKSProxy" => socks_host = val.to_string(),
+                "SOCKSPort" => socks_port = val.to_string(),
+                _ => {}
+            }
+        }
+    }
+    if https_enable && !https_host.is_empty() {
+        let hp = if https_port.is_empty() {
+            https_host
+        } else {
+            format!("{https_host}:{https_port}")
+        };
+        return normalize_proxy_url(&hp, "http");
+    }
+    if http_enable && !http_host.is_empty() {
+        let hp = if http_port.is_empty() {
+            http_host
+        } else {
+            format!("{http_host}:{http_port}")
+        };
+        return normalize_proxy_url(&hp, "http");
+    }
+    if socks_enable && !socks_host.is_empty() {
+        let hp = if socks_port.is_empty() {
+            socks_host
+        } else {
+            format!("{socks_host}:{socks_port}")
+        };
+        return normalize_proxy_url(&hp, "socks5");
+    }
+    None
+}
+
+fn detect_os_system_proxy() -> Option<String> {
+    if cfg!(test) {
+        return None;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let mut cmd = Command::new("reg");
+        cmd.args([
+            "query",
+            r"HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings",
+        ]);
+        configure_worker_command(&mut cmd);
+        if let Ok(out) = cmd.output() {
+            if out.status.success() {
+                return parse_windows_reg_proxy_output(&String::from_utf8_lossy(&out.stdout));
+            }
+        }
+        return None;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let mut cmd = Command::new("scutil");
+        cmd.arg("--proxy");
+        configure_worker_command(&mut cmd);
+        if let Ok(out) = cmd.output() {
+            if out.status.success() {
+                return parse_mac_scutil_proxy_output(&String::from_utf8_lossy(&out.stdout));
+            }
+        }
+        return None;
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        None
+    }
+}
+
+fn resolve_effective_proxy() -> Option<String> {
+    resolve_proxy_from_env().or_else(detect_os_system_proxy)
+}
+
 fn http_get_bytes_cancellable(
     url: &str,
     timeout_secs: u64,
@@ -244,15 +423,9 @@ fn http_get_bytes_cancellable(
             .timeout_connect(Duration::from_secs(10))
             .timeout_read(Duration::from_secs(timeout_secs))
             .timeout(Duration::from_secs(timeout_secs));
-        if let Ok(proxy_raw) = env::var("PAPERFORGE_PROXY")
-            .or_else(|_| env::var("HTTPS_PROXY"))
-            .or_else(|_| env::var("HTTP_PROXY"))
-        {
-            let trimmed = proxy_raw.trim();
-            if !trimmed.is_empty() {
-                if let Ok(proxy) = ureq::Proxy::new(trimmed) {
-                    builder = builder.proxy(proxy);
-                }
+        if let Some(trimmed) = resolve_effective_proxy() {
+            if let Ok(proxy) = ureq::Proxy::new(&trimmed) {
+                builder = builder.proxy(proxy);
             }
         }
         let agent = builder.build();
@@ -674,12 +847,25 @@ where
 
         let cache_str = cache_dir.to_string_lossy().into_owned();
         let py_dir_str = py_dir.to_string_lossy().into_owned();
-        let base_envs = [
+        let os_proxy_fallback = if resolve_proxy_from_env().is_none() {
+            detect_os_system_proxy()
+        } else {
+            None
+        };
+        let mut base_envs: Vec<(&str, &str)> = vec![
             ("UV_CACHE_DIR", cache_str.as_str()),
             ("UV_PYTHON_INSTALL_DIR", py_dir_str.as_str()),
             ("UV_LINK_MODE", "hardlink"),
             ("UV_PYTHON_DOWNLOADS", "automatic"),
         ];
+        if let Some(ref px) = os_proxy_fallback {
+            base_envs.push(("HTTPS_PROXY", px.as_str()));
+            base_envs.push(("HTTP_PROXY", px.as_str()));
+            base_envs.push(("https_proxy", px.as_str()));
+            base_envs.push(("http_proxy", px.as_str()));
+            base_envs.push(("NO_PROXY", "localhost,127.0.0.1,::1"));
+            base_envs.push(("no_proxy", "localhost,127.0.0.1,::1"));
+        }
 
         on_phase("installing_python", 2, 5);
         append_log(&log_path, "[PaperForge] Installing managed Python 3.12 via uv ...");
@@ -880,17 +1066,10 @@ where
             rt_args.push("--expected-version");
             rt_args.push(expected_ver);
         }
-        let step5_envs: Vec<(&str, &str)> = if has_wheels {
-            vec![
-                ("UV_CACHE_DIR", cache_str.as_str()),
-                ("UV_PYTHON_INSTALL_DIR", py_dir_str.as_str()),
-                ("UV_LINK_MODE", "hardlink"),
-                ("UV_PYTHON_DOWNLOADS", "automatic"),
-                ("PAPERFORGE_NO_GITHUB_WHEEL", "1"),
-            ]
-        } else {
-            base_envs.to_vec()
-        };
+        let mut step5_envs = base_envs.clone();
+        if has_wheels {
+            step5_envs.push(("PAPERFORGE_NO_GITHUB_WHEEL", "1"));
+        }
         run_logged_command_cancellable(
             &boot_py,
             &rt_args,
@@ -916,4 +1095,51 @@ where
 #[cfg(test)]
 pub fn verify_sha256_bytes(bytes: &[u8], expected_hex: &str) -> bool {
     sha256_lower(bytes) == expected_hex.to_ascii_lowercase()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        parse_mac_scutil_proxy_output, parse_windows_reg_proxy_output, resolve_proxy_from_lookup,
+    };
+
+    #[test]
+    fn resolve_proxy_honors_priority_and_lowercase() {
+        let p = resolve_proxy_from_lookup(|k| match k {
+            "https_proxy" => Some(" http://127.0.0.1:7897 ".into()),
+            "HTTP_PROXY" => Some("http://127.0.0.1:8080".into()),
+            _ => None,
+        });
+        assert_eq!(p.as_deref(), Some("http://127.0.0.1:7897"));
+
+        let override_p = resolve_proxy_from_lookup(|k| match k {
+            "PAPERFORGE_PROXY" => Some("http://127.0.0.1:9000".into()),
+            "HTTPS_PROXY" => Some("http://127.0.0.1:7897".into()),
+            _ => None,
+        });
+        assert_eq!(override_p.as_deref(), Some("http://127.0.0.1:9000"));
+    }
+
+    #[test]
+    fn parses_windows_and_macos_system_proxy_outputs() {
+        let reg_out = "\
+HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\r\n\
+    ProxyEnable    REG_DWORD    0x1\r\n\
+    ProxyServer    REG_SZ    127.0.0.1:7897\r\n";
+        assert_eq!(
+            parse_windows_reg_proxy_output(reg_out).as_deref(),
+            Some("http://127.0.0.1:7897")
+        );
+
+        let reg_disabled = "\
+    ProxyEnable    REG_DWORD    0x0\r\n\
+    ProxyServer    REG_SZ    127.0.0.1:7897\r\n";
+        assert_eq!(parse_windows_reg_proxy_output(reg_disabled), None);
+
+        let mac_out = "<dictionary> {\n  HTTPSEnable : 1\n  HTTPSProxy : 127.0.0.1\n  HTTPSPort : 7897\n}\n";
+        assert_eq!(
+            parse_mac_scutil_proxy_output(mac_out).as_deref(),
+            Some("http://127.0.0.1:7897")
+        );
+    }
 }

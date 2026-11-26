@@ -934,3 +934,61 @@ export async function ensureNativeDaemonDownloaded(
   }
   return existingCorrupted ? null : existingPath;
 }
+
+export interface ObsidianRequestUrlOptions {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  throw?: boolean;
+}
+
+export interface ObsidianRequestUrlResponse {
+  status: number;
+  arrayBuffer?: ArrayBuffer;
+  text?: string;
+}
+
+export type ObsidianRequestUrlFn = (
+  request: ObsidianRequestUrlOptions
+) => Promise<ObsidianRequestUrlResponse>;
+
+/**
+ * Wrap Obsidian's `requestUrl` so plugin-initiated downloads automatically
+ * inherit Electron/Chromium's system proxy & PAC rules while preserving our
+ * fail-closed HTTPS-only and byte-limit invariants.
+ */
+export function createObsidianRequestFetcher(
+  requestUrlFn: ObsidianRequestUrlFn,
+  maxBytes: number = MAX_DAEMON_BINARY_BYTES
+): (url: string) => Promise<Buffer> {
+  return async (url: string): Promise<Buffer> => {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      throw new Error(`Invalid URL: ${url}`);
+    }
+    if (parsedUrl.protocol !== "https:") {
+      throw new Error(`Refusing non-HTTPS URL: ${parsedUrl.protocol}`);
+    }
+    const res = await requestUrlFn({
+      url: parsedUrl.toString(),
+      method: "GET",
+      headers: { "User-Agent": "PaperForge-Obsidian-Plugin/2.0" },
+      throw: false,
+    });
+    if (res.status !== 200) {
+      throw new Error(`HTTP ${res.status} for ${parsedUrl.toString()}`);
+    }
+    const buf =
+      res.arrayBuffer != null
+        ? Buffer.from(res.arrayBuffer)
+        : Buffer.from(String(res.text ?? ""), "utf-8");
+    if (buf.length > maxBytes) {
+      throw new Error(
+        `Response size ${buf.length} exceeds maximum allowed ${maxBytes} bytes`
+      );
+    }
+    return buf;
+  };
+}

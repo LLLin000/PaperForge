@@ -825,8 +825,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupFeedback = null;
     this._setupFailureDetail = null;
     const settings = this.plugin.settings;
+    const effectiveZoteroDir =
+      settings.zotero_data_dir?.trim() ||
+      (this._zoteroDetectData?.found
+        ? this._zoteroDetectData.zotero_dir?.trim()
+        : "") ||
+      "";
+    if (effectiveZoteroDir && !settings.zotero_data_dir?.trim()) {
+      settings.zotero_data_dir = effectiveZoteroDir;
+    }
     const paths: Record<string, string | undefined> = {
-      zotero_data_dir: settings.zotero_data_dir,
+      zotero_data_dir: effectiveZoteroDir || settings.zotero_data_dir,
       system_dir: settings.system_dir,
       resources_dir: settings.resources_dir,
       literature_dir: settings.literature_dir,
@@ -855,7 +864,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             resourcesDir: settings.resources_dir?.trim() || "Resources",
             literatureDir: settings.literature_dir?.trim() || "Literature",
             baseDir: settings.base_dir?.trim() || "Bases",
-            zoteroData: settings.zotero_data_dir?.trim() || undefined,
+            zoteroData: effectiveZoteroDir || undefined,
             agent: settings.agent_platform || "opencode",
             modular: true,
           },
@@ -981,11 +990,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.display();
 
         // Configuration alone cannot make the library ready: `sync` builds the
-        // canonical index from the BBT exports. Always run it — deciding from a
+        // canonical index from Zotero. Always run it — deciding from a
         // just-requested probe races the async envelope update.
         this._setupOperation = "running";
-        this._setupFeedback = t("setup_library_syncing");
+        const syncStartedAt = Date.now();
+        this._setupFeedback = `${t("setup_library_syncing")} (0s)`;
         this.display();
+        const syncTicker = setInterval(() => {
+          if (this._setupOperation !== "running") return;
+          const elapsedSec = Math.max(
+            1,
+            Math.floor((Date.now() - syncStartedAt) / 1000)
+          );
+          this._setupFeedback = `${t("setup_library_syncing")} (${elapsedSec}s)`;
+          if (this._isOpen && elapsedSec % 2 === 0) {
+            this.display();
+          }
+        }, 1000);
         try {
           await this.getClient().sync();
         } catch (error) {
@@ -996,6 +1017,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (msg) this._setupFailureDetail = msg;
           this.display();
           return;
+        } finally {
+          clearInterval(syncTicker);
         }
         this._attemptedProbes.add("library");
         this._probeModule("library");
@@ -3980,7 +4003,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         t("help_support_desc") ||
         "Copies module state and versions only; excludes keys, notes, and paths.",
     });
-    const supportActions = supportBody.createDiv({ cls: "pf-help-support-actions" });
+    const supportActions = supportBody.createDiv({
+      cls: "pf-help-support-actions",
+    });
     supportActions
       .createEl("button", {
         cls: "pf-btn pf-btn-primary pf-help-diagnostic-btn",
@@ -3990,7 +4015,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       .addEventListener("click", () => this._buildAndCopyDiagnostic());
     const manualBtn = supportActions.createEl("a", {
       cls: "pf-btn pf-btn-secondary pf-help-manual-link",
-      text: t("settings_manual_link") || t("help_open_documentation") || "Open Documentation",
+      text:
+        t("settings_manual_link") ||
+        t("help_open_documentation") ||
+        "Open Documentation",
       href: "https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md",
     });
     manualBtn.setAttr("target", "_blank");
@@ -6195,7 +6223,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         "data-pf-testid": "express-zotero-input",
       },
     }) as HTMLInputElement;
-    zotInput.value = settings.zotero_data_dir || "";
+    zotInput.value =
+      settings.zotero_data_dir ||
+      (this._zoteroDetectData?.found
+        ? this._zoteroDetectData.zotero_dir || ""
+        : "");
     const applyZot = (dir: string) => {
       settings.zotero_data_dir = dir.trim();
       settings.zotero_source_mode = "sqlite";
@@ -7218,15 +7250,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     void client
       .zoteroDetect(hint || undefined)
       .then((res) => {
+        // Keep auto-detected Zotero path in memory only until the user
+        // confirms setup/save so unconfigured vaults never leak a configured path.
         this._zoteroDetectData = res;
-        if (
-          res.found &&
-          res.zotero_dir &&
-          !this.plugin.settings.zotero_data_dir?.trim()
-        ) {
-          this.plugin.settings.zotero_data_dir = res.zotero_dir;
-          void this.plugin.saveSettings();
-        }
       })
       .catch(() => undefined)
       .finally(() => {
@@ -7424,7 +7450,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             placeholder: t("setup_step_zotero_placeholder"),
           },
         }) as HTMLInputElement;
-        input.value = settings.zotero_data_dir || "";
+        input.value =
+          settings.zotero_data_dir ||
+          (this._zoteroDetectData?.found
+            ? this._zoteroDetectData.zotero_dir || ""
+            : "");
         const applyZoteroDir = (dir: string) => {
           settings.zotero_data_dir = dir.trim();
           input.value = settings.zotero_data_dir;

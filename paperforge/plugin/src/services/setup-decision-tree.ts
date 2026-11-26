@@ -108,8 +108,7 @@ export function parseReleaseTuple(
 ): [number, number, number, number, number, number] | null {
   const norm = normalizeSemverForCompare(version);
   if (!norm) return null;
-  const preMatch =
-    /^(\d+(?:\.\d+)*)(a|b|rc)(\d+)(?:\.post(\d+))?$/.exec(norm);
+  const preMatch = /^(\d+(?:\.\d+)*)(a|b|rc)(\d+)(?:\.post(\d+))?$/.exec(norm);
   let nums: number[];
   let stage = 0;
   let stageNum = 0;
@@ -314,9 +313,13 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 7. Engine ready, Zotero not configured yet
+  // 7. Engine ready, Zotero not configured yet (trust backend authority over stale settings)
   const hasZoteroDir = Boolean(input.zoteroDataDir.trim());
-  if (libState !== "ready" && !hasZoteroDir) {
+  const backendReportsZoteroMissing =
+    input.libraryEnv.reason?.code === "library.zotero_missing" ||
+    input.libraryEnv.capability_state === "missing_input" ||
+    libState === "setup_required";
+  if (libState !== "ready" && (!hasZoteroDir || backendReportsZoteroMissing)) {
     const body =
       typeof input.zoteroDetectedPapers === "number" &&
       input.zoteroDetectedPapers > 0

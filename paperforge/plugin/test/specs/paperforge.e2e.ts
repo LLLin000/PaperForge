@@ -275,7 +275,10 @@ async function waitForOutcome(
 
 describe("PaperForge real-host gate", function () {
   beforeEach(async function () {
-    await browser.reloadObsidian({ vault: "./test/vaults/e2e" });
+    // A01 immediately reloads into ./test/vaults/empty, so skip reloading e2e twice.
+    if (!this.currentTest?.title?.includes("first-use journey")) {
+      await browser.reloadObsidian({ vault: "./test/vaults/e2e" });
+    }
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"];
       if (!plugin) throw new Error("paperforge plugin not loaded");
