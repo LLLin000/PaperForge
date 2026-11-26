@@ -358,7 +358,7 @@ def rebuild_db_from_truth(vault: Path, *, backup_existing: bool = True) -> dict[
     living memory cards, and permanent logs.
     """
     from paperforge.memory.builder import build_for_keys
-    from paperforge.memory.db import get_memory_db_path
+    from paperforge.memory.db import get_memory_db_path, quarantine_corrupt_db
 
     vault_root = Path(vault).expanduser().resolve()
     db_path = get_memory_db_path(vault_root)
@@ -370,6 +370,8 @@ def rebuild_db_from_truth(vault: Path, *, backup_existing: bool = True) -> dict[
         shutil.copy2(str(db_path), str(dst))
         backup_path_str = str(dst)
 
+    quarantined_path = quarantine_corrupt_db(db_path)
+
     ws_res = sync_workspace_registry(vault_root)
     ocr_res = sync_ocr_catalog(vault_root)
     build_counts: dict[str, Any] = {}
@@ -378,7 +380,7 @@ def rebuild_db_from_truth(vault: Path, *, backup_existing: bool = True) -> dict[
     except Exception as exc:  # noqa: BLE001 — partial truth vaults still retain registry & catalog
         build_counts = {"warning": str(exc)}
 
-    return {
+    out: dict[str, Any] = {
         "db_path": str(db_path),
         "backup_path": backup_path_str,
         "workspace_registry": {
@@ -391,3 +393,6 @@ def rebuild_db_from_truth(vault: Path, *, backup_existing: bool = True) -> dict[
         },
         "memory_build": build_counts,
     }
+    if quarantined_path is not None:
+        out["quarantined_corrupt_db"] = str(quarantined_path)
+    return out

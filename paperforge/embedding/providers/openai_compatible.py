@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import openai
-
 from paperforge.embedding._config import (
     get_api_dimensions,
     get_api_key,
@@ -37,6 +35,14 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         from paperforge.embedding._config import get_effective_api_base_url
 
         base_url = get_effective_api_base_url(vault)
+        try:
+            import openai
+        except ImportError as exc:
+            raise ImportError(
+                "Optional dependency 'openai' is not installed. "
+                'Install vector extras via `pip install "paperforge[vector]"` '
+                "or switch vector_db_provider_type to 'requests'."
+            ) from exc
         self._client = openai.OpenAI(
             api_key=api_key,
             base_url=base_url,

@@ -402,22 +402,55 @@ def get_base_table_snapshot(vault: Path) -> dict[str, Any]:
     seq_info = read_state_seq(vault_root)
     idx = read_index(vault_root)
     items = idx.get("items", []) if isinstance(idx, dict) else (idx or [])
+    items_by_key: dict[str, dict[str, Any]] = {
+        str(it.get("zotero_key") or "").strip(): it
+        for it in items
+        if isinstance(it, dict) and str(it.get("zotero_key") or "").strip()
+    }
 
     ann_counts: dict[str, tuple[int, int]] = {}
     mem_counts: dict[str, tuple[int, str]] = {}
     db_papers: dict[str, dict[str, Any]] = {}
+    db_has_papers_table = False
 
     with contextlib.suppress(Exception):
         db_path = get_memory_db_path(vault_root)
         if db_path.exists():
             with open_live_reader(vault_root, db_path) as conn:
-                for r in conn.execute(
-                    "SELECT zotero_key, ocr_status, deep_reading_status FROM papers"
-                ).fetchall():
-                    db_papers[str(r["zotero_key"])] = {
-                        "ocr_status": str(r["ocr_status"] or "pending"),
-                        "deep_reading_status": str(r["deep_reading_status"] or "pending"),
-                    }
+                has_papers = conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='papers'"
+                ).fetchone()
+                if has_papers is not None:
+                    db_has_papers_table = True
+                    for r in conn.execute(
+                        """SELECT zotero_key, title, first_author, year, journal,
+                                  impact_factor, domain, collections_json, has_pdf,
+                                  do_ocr, analyze, ocr_status, deep_reading_status,
+                                  main_note_path, note_path
+                           FROM papers"""
+                    ).fetchall():
+                        cols_val: list[str] = []
+                        raw_cols_json = r["collections_json"]
+                        if raw_cols_json:
+                            with contextlib.suppress(Exception):
+                                parsed_cols = json.loads(raw_cols_json)
+                                if isinstance(parsed_cols, list):
+                                    cols_val = [str(c) for c in parsed_cols if str(c).strip()]
+                        db_papers[str(r["zotero_key"])] = {
+                            "title": str(r["title"] or ""),
+                            "first_author": str(r["first_author"] or ""),
+                            "year": str(r["year"] or ""),
+                            "journal": str(r["journal"] or ""),
+                            "impact_factor": str(r["impact_factor"] or ""),
+                            "domain": str(r["domain"] or ""),
+                            "collections": cols_val,
+                            "has_pdf": bool(r["has_pdf"]),
+                            "do_ocr": bool(r["do_ocr"]),
+                            "analyze": bool(r["analyze"]),
+                            "ocr_status": str(r["ocr_status"] or "pending"),
+                            "deep_reading_status": str(r["deep_reading_status"] or "pending"),
+                            "main_note_path": str(r["main_note_path"] or r["note_path"] or ""),
+                        }
                 has_ann = conn.execute(
                     "SELECT 1 FROM sqlite_master WHERE type='table' AND name='paper_annotations'"
                 ).fetchone()
@@ -448,62 +481,98 @@ def get_base_table_snapshot(vault: Path) -> dict[str, Any]:
                         mem_counts[str(r["zotero_key"])] = (int(r["f_cnt"] or 0), str(r["last_upd"] or ""))
 
     rows: dict[str, dict[str, Any]] = {}
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-        key = str(item.get("zotero_key") or "").strip()
-        if not key:
-            continue
-        db_p = db_papers.get(key, {})
-        ocr_status = str(item.get("ocr_status") or db_p.get("ocr_status") or "pending")
-        dr_status = str(item.get("deep_reading_status") or db_p.get("deep_reading_status") or "pending")
-        health = item.get("health") if isinstance(item.get("health"), dict) else {}
-        ocr_health = str(health.get("ocr_health") or "")
-        u_cnt, a_cnt = ann_counts.get(key, (0, 0))
-        m_cnt, m_upd = mem_counts.get(key, (0, ""))
+    state_authority = "sqlite" if db_has_papers_table else "index_json"
 
-        # Workspace file fallback ONLY for papers not yet materialized in SQLite
-        if key not in db_papers and item.get("paper_root"):
-            ws_dir = vault_root / str(item["paper_root"]).rstrip("/")
-            c_map = _read_card_file(_card_file_for_workspace(ws_dir))
-            if c_map:
-                sorted_f = _sort_facets(c_map)
-                m_cnt = len(sorted_f)
-                m_upd = max((f["updated_at"] for f in sorted_f if f.get("updated_at")), default="")
-            if (ws_dir / "annotations.jsonl").is_file():
-                from paperforge.services.annotations_service import read_active_annotations_for_workspace
+    if db_has_papers_table:
+        # SQLite `papers` is SSOT: never resurrect deleted keys or empty tables from formal-library.json.
+        for key, db_p in db_papers.items():
+            item = items_by_key.get(key, {})
+            ocr_status = str(db_p.get("ocr_status") or "pending")
+            dr_status = str(db_p.get("deep_reading_status") or "pending")
+            health = item.get("health") if isinstance(item.get("health"), dict) else {}
+            ocr_health = str(health.get("ocr_health") or "")
+            u_cnt, a_cnt = ann_counts.get(key, (0, 0))
+            m_cnt, m_upd = mem_counts.get(key, (0, ""))
 
-                anns = read_active_annotations_for_workspace(ws_dir)
-                u_cnt = sum(1 for a in anns if str(a.get("author") or "user") != "agent")
-                a_cnt = sum(1 for a in anns if str(a.get("author") or "user") == "agent")
+            rows[key] = {
+                "zotero_key": key,
+                "title": str(db_p.get("title") or item.get("title") or key),
+                "first_author": str(db_p.get("first_author") or item.get("first_author") or ""),
+                "year": str(db_p.get("year") or item.get("year") or ""),
+                "journal": str(db_p.get("journal") or item.get("journal") or ""),
+                "impact_factor": str(db_p.get("impact_factor") or item.get("impact_factor") or ""),
+                "impact_factor_source": str(item.get("impact_factor_source") or ""),
+                "journal_partition": str(item.get("journal_partition") or ""),
+                "domain": str(db_p.get("domain") or item.get("domain") or ""),
+                "collections": db_p.get("collections") or [
+                    str(c) for c in (item.get("collections") or []) if str(c).strip()
+                ],
+                "has_pdf": bool(db_p.get("has_pdf")),
+                "do_ocr": bool(item["do_ocr"]) if "do_ocr" in item else bool(db_p.get("do_ocr")),
+                "analyze": bool(item["analyze"]) if "analyze" in item else bool(db_p.get("analyze")),
+                "ocr_status": ocr_status,
+                "deep_reading_status": dr_status,
+                "main_note_path": str(
+                    db_p.get("main_note_path") or item.get("main_note_path") or item.get("note_path") or ""
+                ),
+                "user_ann_count": u_cnt,
+                "agent_ann_count": a_cnt,
+                "memory_facet_count": m_cnt,
+                "memory_updated_at": m_upd,
+                "needs_diagnostic": ocr_status in ("failed", "done_incomplete", "unknown")
+                or (ocr_status == "done" and ocr_health not in ("", "healthy")),
+            }
+    else:
+        for key, item in items_by_key.items():
+            ocr_status = str(item.get("ocr_status") or "pending")
+            dr_status = str(item.get("deep_reading_status") or "pending")
+            health = item.get("health") if isinstance(item.get("health"), dict) else {}
+            ocr_health = str(health.get("ocr_health") or "")
+            u_cnt, a_cnt = ann_counts.get(key, (0, 0))
+            m_cnt, m_upd = mem_counts.get(key, (0, ""))
 
-        rows[key] = {
-            "zotero_key": key,
-            "title": str(item.get("title") or key),
-            "first_author": str(item.get("first_author") or ""),
-            "year": str(item.get("year") or ""),
-            "journal": str(item.get("journal") or ""),
-            "impact_factor": str(item.get("impact_factor") or ""),
-            "impact_factor_source": str(item.get("impact_factor_source") or ""),
-            "journal_partition": str(item.get("journal_partition") or ""),
-            "domain": str(item.get("domain") or ""),
-            "collections": [str(c) for c in (item.get("collections") or []) if str(c).strip()],
-            "has_pdf": bool(item.get("has_pdf")),
-            "do_ocr": bool(item.get("do_ocr")),
-            "analyze": bool(item.get("analyze")),
-            "ocr_status": ocr_status,
-            "deep_reading_status": dr_status,
-            "main_note_path": str(item.get("main_note_path") or item.get("note_path") or ""),
-            "user_ann_count": u_cnt,
-            "agent_ann_count": a_cnt,
-            "memory_facet_count": m_cnt,
-            "memory_updated_at": m_upd,
-            "needs_diagnostic": ocr_status in ("failed", "done_incomplete", "unknown")
-            or (ocr_status == "done" and ocr_health not in ("", "healthy")),
-        }
+            if item.get("paper_root"):
+                ws_dir = vault_root / str(item["paper_root"]).rstrip("/")
+                c_map = _read_card_file(_card_file_for_workspace(ws_dir))
+                if c_map:
+                    sorted_f = _sort_facets(c_map)
+                    m_cnt = len(sorted_f)
+                    m_upd = max((f["updated_at"] for f in sorted_f if f.get("updated_at")), default="")
+                if (ws_dir / "annotations.jsonl").is_file():
+                    from paperforge.services.annotations_service import read_active_annotations_for_workspace
+
+                    anns = read_active_annotations_for_workspace(ws_dir)
+                    u_cnt = sum(1 for a in anns if str(a.get("author") or "user") != "agent")
+                    a_cnt = sum(1 for a in anns if str(a.get("author") or "user") == "agent")
+
+            rows[key] = {
+                "zotero_key": key,
+                "title": str(item.get("title") or key),
+                "first_author": str(item.get("first_author") or ""),
+                "year": str(item.get("year") or ""),
+                "journal": str(item.get("journal") or ""),
+                "impact_factor": str(item.get("impact_factor") or ""),
+                "impact_factor_source": str(item.get("impact_factor_source") or ""),
+                "journal_partition": str(item.get("journal_partition") or ""),
+                "domain": str(item.get("domain") or ""),
+                "collections": [str(c) for c in (item.get("collections") or []) if str(c).strip()],
+                "has_pdf": bool(item.get("has_pdf")),
+                "do_ocr": bool(item.get("do_ocr")),
+                "analyze": bool(item.get("analyze")),
+                "ocr_status": ocr_status,
+                "deep_reading_status": dr_status,
+                "main_note_path": str(item.get("main_note_path") or item.get("note_path") or ""),
+                "user_ann_count": u_cnt,
+                "agent_ann_count": a_cnt,
+                "memory_facet_count": m_cnt,
+                "memory_updated_at": m_upd,
+                "needs_diagnostic": ocr_status in ("failed", "done_incomplete", "unknown")
+                or (ocr_status == "done" and ocr_health not in ("", "healthy")),
+            }
 
     return {
         "seq": seq_info["seq"],
         "updated_at": seq_info["updated_at"],
+        "state_authority": state_authority,
         "rows": rows,
     }

@@ -192,6 +192,53 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
 # ---------------------------------------------------------------------------
 
 
+def _escape_like(term: str) -> str:
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _like_body_unit_discovery(conn, query: str, limit: int) -> list[dict]:
+    """SQL LIKE fallback on body_units when FTS5 returns 0 hits (e.g., CJK substrings)."""
+    tokens = re.findall(r"[\w\u4e00-\u9fff]+", query)
+    if not tokens:
+        raw = query.strip()
+        tokens = [raw] if raw else []
+    if not tokens:
+        return []
+
+    seen: set[str] = set()
+    results: list[dict] = []
+
+    def _collect(joiner: str) -> None:
+        clauses = []
+        params: list[Any] = []
+        for t in tokens:
+            pat = f"%{_escape_like(t)}%"
+            clauses.append("(unit_text LIKE ? ESCAPE '\\' OR section_path LIKE ? ESCAPE '\\')")
+            params.extend([pat, pat])
+        where = f" {joiner} ".join(clauses)
+        params.append(limit)
+        rows = conn.execute(
+            f"""SELECT unit_id, paper_id, section_path, unit_text, 0.0 AS rank
+                FROM body_units
+                WHERE indexable = 1 AND ({where})
+                LIMIT ?""",
+            params,
+        ).fetchall()
+        for r in rows:
+            d = dict(r)
+            uid = str(d.get("unit_id") or "")
+            if uid and uid in seen:
+                continue
+            if uid:
+                seen.add(uid)
+            results.append(d)
+
+    _collect("AND")
+    if not results and len(tokens) > 1:
+        _collect("OR")
+    return results[:limit]
+
+
 def _run_body_unit_discovery(
     vault: Path, query: str, *, limit: int = 5
 ) -> PFResult:
@@ -233,6 +280,8 @@ def _run_body_unit_discovery(
                     (fts_query, limit),
                 ).fetchall()
                 results = [dict(r) for r in rows]
+                if not results:
+                    results = _like_body_unit_discovery(conn, query, limit)
                 # #159 §6 / #168 T7 P0-3: body_units_fts is RETRIEVAL
                 # materialization — gate on the retrieval lineage (no vector
                 # requirement for this arm).
@@ -361,11 +410,15 @@ def _run_compat_content_discovery(
         )
     else:
         try:
-            from paperforge.embedding import get_embed_status, retrieve_chunks
+            from paperforge.embedding import get_embed_status, merge_retrieve, retrieve_chunks
 
             status = get_embed_status(vault)
-            if status.get("healthy") and status.get("chunk_count", 0) > 0:
-                chunks = retrieve_chunks(vault, query, limit=limit)
+            if status.get("healthy") and not status.get("identity_changed"):
+                chunks: list[dict] = []
+                if status.get("valid_total_chunks", 0) > 0:
+                    chunks = merge_retrieve(vault, query, limit=limit)
+                elif status.get("chunk_count", 0) > 0:
+                    chunks = retrieve_chunks(vault, query, limit=limit)
                 if chunks:
                     secondary_arm = "vector_retrieve"
                     vector_results = chunks

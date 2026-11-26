@@ -47,7 +47,9 @@ def search_papers(conn: sqlite3.Connection, query: str, limit: int = 20,
 
     # Level 1: Raw FTS
     try:
-        return _fts_query(conn, query, filter_clause, filter_params, limit)
+        hits = _fts_query(conn, query, filter_clause, filter_params, limit)
+        if hits:
+            return hits
     except sqlite3.OperationalError:
         pass
 
@@ -55,11 +57,13 @@ def search_papers(conn: sqlite3.Connection, query: str, limit: int = 20,
     token_query = tokenize_for_fts(query)
     if token_query != query:
         try:
-            return _fts_query(conn, token_query, filter_clause, filter_params, limit)
+            hits = _fts_query(conn, token_query, filter_clause, filter_params, limit)
+            if hits:
+                return hits
         except sqlite3.OperationalError:
             pass
 
-    # Level 3: LIKE fallback
+    # Level 3: LIKE fallback (handles CJK substrings and FTS 0-hit queries)
     return _like_query(conn, query, filter_clause, filter_params, limit)
 
 
@@ -82,6 +86,10 @@ def _fts_query(conn, query, filter_clause, filter_params, limit):
     return [dict(r) for r in rows]
 
 
+def _escape_like(term: str) -> str:
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _like_query(conn, query, filter_clause, filter_params, limit):
     tokens = re.findall(r"[\w\u4e00-\u9fff]+", query)
     if not tokens:
@@ -89,9 +97,21 @@ def _like_query(conn, query, filter_clause, filter_params, limit):
 
     field_clauses = []
     params = []
-    for field in ["p.title", "p.abstract", "p.doi", "p.citation_key"]:
-        token_clauses = [f"{field} LIKE ?" for _ in tokens]
-        params.extend(f"%{t}%" for t in tokens)
+    for field in [
+        "p.title",
+        "p.abstract",
+        "p.doi",
+        "p.citation_key",
+        "p.first_author",
+        "p.authors_json",
+        "p.journal",
+        "p.domain",
+        "p.collection_path",
+        "p.collections_json",
+        "p.zotero_key",
+    ]:
+        token_clauses = [f"{field} LIKE ? ESCAPE '\\'" for _ in tokens]
+        params.extend(f"%{_escape_like(t)}%" for t in tokens)
         field_clauses.append("(" + " AND ".join(token_clauses) + ")")
 
     where_clause = "(" + " OR ".join(field_clauses) + ")"

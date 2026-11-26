@@ -75,12 +75,13 @@ def delete_paper_vectors_in_conn(conn: sqlite3.Connection, key: str) -> int:
     Safe to call from within an outer transaction — the caller owns the
     transaction boundary.  Returns count of vector rows deleted.
     """
+    ensure_vec_extension(conn)
     total = 0
     for vec_table, meta_table in _VEC_TABLE_MAP.values():
         rows = conn.execute(
             f"SELECT rowid FROM {meta_table} WHERE paper_id = ?", (key,)
         ).fetchall()
-        rowids = [r["rowid"] for r in rows]
+        rowids = [r[0] for r in rows]
         if rowids:
             placeholders = ",".join("?" for _ in rowids)
             conn.execute(
@@ -146,7 +147,7 @@ def _delete_paper_vectors_locked(vault: Path, zotero_key: str) -> int:
             rows = conn.execute(
                 f"SELECT rowid FROM {meta_table} WHERE paper_id = ?", (zotero_key,)
             ).fetchall()
-            rowids = [r["rowid"] for r in rows]
+            rowids = [r[0] for r in rows]
             if not rowids:
                 continue
             # Verification 2: every rowid must still be owned by this paper.

@@ -315,3 +315,96 @@ def test_malformed_live_db_handled_gracefully(tmp_path: Path) -> None:
     assert status["healthy"] is False
     assert status["corrupted"] is True
     assert status["vector_state"] != "ready"
+
+
+def test_delete_paper_vectors_in_conn_loads_vec0(tmp_path: Path) -> None:
+    """PF-OCR-002: delete_paper_vectors_in_conn loads vec0 without caller pre-loading it."""
+    from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+    from paperforge.embedding.vectors import delete_paper_vectors_in_conn as delete_v2
+    from paperforge.memory.db import ensure_vec_extension
+    from paperforge.memory.schema import ensure_schema
+
+    db_path = tmp_path / "vec_del.db"
+    conn = sqlite3.connect(str(db_path))
+    ensure_vec_extension(conn)
+    ensure_schema(conn)
+    conn.execute("INSERT INTO papers(zotero_key, title) VALUES ('DEL1', 'Paper 1')")
+    conn.execute("INSERT INTO papers(zotero_key, title) VALUES ('DEL2', 'Paper 2')")
+    dim_zero = json.dumps([0.0] * 1536)
+    conn.execute("INSERT INTO vec_body(rowid, embedding) VALUES (1, ?)", (dim_zero,))
+    conn.execute(
+        "INSERT INTO vec_body_meta(rowid, paper_id, unit_id, chunk_index, text) VALUES (1, 'DEL1', 'u1', 0, 'txt')"
+    )
+    conn.execute("INSERT INTO vec_body(rowid, embedding) VALUES (2, ?)", (dim_zero,))
+    conn.execute(
+        "INSERT INTO vec_body_meta(rowid, paper_id, unit_id, chunk_index, text) VALUES (2, 'DEL2', 'u2', 0, 'txt2')"
+    )
+    conn.commit()
+    conn.close()
+
+    # Open raw sqlite3 connection without vec0 loaded
+    raw_conn = sqlite3.connect(str(db_path))
+    try:
+        assert delete_paper_vectors_in_conn(raw_conn, "DEL1") >= 1
+        assert delete_v2(raw_conn, "DEL2") >= 1
+        raw_conn.commit()
+        assert raw_conn.execute("SELECT COUNT(*) FROM vec_body_meta").fetchone()[0] == 0
+    finally:
+        raw_conn.close()
+
+
+def test_openai_lazy_import_and_optional_runtime_check(tmp_path: Path, monkeypatch) -> None:
+    """PF-UX-001: missing openai must not crash non-embedding imports or setup checks."""
+    import sys as _sys
+    import types
+    from paperforge.commands import retrieve as retrieve_cmd
+    from paperforge.setup.runtime import check_runtime_dependencies
+
+    monkeypatch.setitem(_sys.modules, "openai", None)
+    # Re-importing openai_compatible must not import openai at module import time
+    mod_name = "paperforge.embedding.providers.openai_compatible"
+    monkeypatch.delitem(_sys.modules, mod_name, raising=False)
+    mod = __import__(mod_name, fromlist=["OpenAICompatibleProvider"])
+    assert hasattr(mod, "OpenAICompatibleProvider")
+
+    # Missing optional extras keeps check_runtime_dependencies ok=True
+    monkeypatch.setattr("paperforge.setup.runtime.vector_extras_missing", lambda: ["openai", "sqlite_vec"])
+    res = check_runtime_dependencies()
+    assert res.ok is True
+    assert "openai" in res.details["optional_missing"]
+
+    # Standard vector retrieve rejects unhealthy/corrupted index even if valid_total > 0 (PF-OCR-007)
+    monkeypatch.setattr(
+        "paperforge.embedding.get_embed_status",
+        lambda _v: {"healthy": False, "corrupted": True, "valid_total_chunks": 5, "vector_state": "stale"},
+    )
+    ns = types.SimpleNamespace(vault_path=tmp_path, query="q", limit=5, deep=False, expand=True, paper=None, domain=None, json=True)
+    assert retrieve_cmd.run(ns) == 1
+
+
+def test_corrupt_db_auto_quarantine_on_rebuild(tmp_path: Path) -> None:
+    """PF-UX-002: memory build & engine rebuild-db quarantine corrupt DB and recover."""
+    from paperforge.memory.builder import build_for_keys
+    from paperforge.services.vault_engine import rebuild_db_from_truth
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+    idx = get_index_path(vault)
+    idx.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_index(idx, build_envelope([{"zotero_key": "K1", "title": "Recovered Paper", "domain": "Ortho"}]))
+
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path.write_bytes(b"corrupt garbage bytes" * 10)
+
+    res = build_for_keys(vault)
+    assert res["papers_indexed"] == 1
+    assert res.get("quarantined_corrupt_db")
+
+    # Corrupt again and verify rebuild_db_from_truth recovers cleanly
+    db_path.write_bytes(b"corrupt garbage bytes again" * 10)
+    eng = rebuild_db_from_truth(vault, backup_existing=True)
+    assert eng["memory_build"]["papers_indexed"] == 1
+    assert eng.get("quarantined_corrupt_db")

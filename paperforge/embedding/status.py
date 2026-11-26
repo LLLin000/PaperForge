@@ -37,6 +37,7 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
     total_valid = 0
     if exists:
         conn = None
+        reader = None
         try:
             from paperforge.memory.db import open_live_reader
 
@@ -108,10 +109,11 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
                     conn.close()
                 except Exception:
                     pass
-            try:
-                reader.__exit__(None, None, None)
-            except Exception:
-                pass
+            if reader is not None:
+                try:
+                    reader.__exit__(None, None, None)
+                except Exception:
+                    pass
 
     model = get_api_model(vault)
     raw_total = body_chunk_count + object_chunk_count  # exclude legacy vec_fulltext_meta
@@ -131,7 +133,7 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
     except Exception:  # noqa: BLE001
         identity_mismatch = False
 
-    if (not healthy and total_valid == 0) or identity_mismatch:
+    if (not healthy) or identity_mismatch:
         vector_state = "stale"
     elif total_valid > 0:
         vector_state = "ready"
@@ -155,6 +157,8 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
         else:
             vector_state = "not_built"
 
+    import importlib.util as _ilu
+
     return {
         "db_exists": exists,
         "chunk_count": chunk_count,
@@ -172,6 +176,9 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
         "valid_total_chunks": total_valid,
         "vector_state": vector_state,
         "identity_changed": identity_mismatch,
+        "vector_available": (
+            _ilu.find_spec("openai") is not None and _ilu.find_spec("sqlite_vec") is not None
+        ),
     }
 
 

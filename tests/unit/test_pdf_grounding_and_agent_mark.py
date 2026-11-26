@@ -333,3 +333,55 @@ def test_agent_apply_enforces_ocr_dedup_paraphrase_cap_and_replace_lens(tmp_path
             "APPLY001",
             [{"figure_id": "figure_001", "comment": "Should fail because OCR artifacts and status are not ready"}],
         )
+
+
+def test_agent_apply_atomic_replace_and_vault_boundary(tmp_path: Path):
+    """PF-OCR-004 & PF-SEC-008: replace_lens=True never wipes prior marks if 0 items stage; rejects bad page_hint/color & path escape."""
+    import pytest
+    from paperforge.services.annotations_service import _resolve_paper_location, agent_apply_annotations, list_annotations
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+
+    vault, _ = _make_pdf_test_vault(tmp_path, key="ATOMIC1")
+    first = agent_apply_annotations(
+        vault,
+        "ATOMIC1",
+        [
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "Primary effect magnitude showing strong chondrogenic stimulation across groups.",
+                "tags": "efficacy",  # bare string normalized cleanly, not split into characters
+            }
+        ],
+        lens="skeleton",
+        replace_lens=True,
+    )
+    assert first["created_count"] == 1
+    assert first["created"][0]["tags"] == ["efficacy"]
+
+    # Malformed / ungrounded batch with replace_lens=True must NOT delete the prior annotation
+    bad = agent_apply_annotations(
+        vault,
+        "ATOMIC1",
+        [
+            {"quote": "PEMF", "comment": "Analytical insight cleanly formatted here.", "page_hint": "not-an-int"},
+            {"quote": "PEMF", "comment": "Analytical insight cleanly formatted here.", "color": "neon_pink"},
+            {"quote": "nonexistent text xyz", "comment": "Analytical insight cleanly formatted here."},
+        ],
+        lens="skeleton",
+        replace_lens=True,
+    )
+    assert bad["created_count"] == 0
+    assert bad["replaced_count"] == 0
+    assert bad["rejected_count"] == 3
+    reasons = {r["reason"] for r in bad["rejected"]}
+    assert reasons == {"invalid_page_hint", "invalid_color", "grounding_failed"}
+    remaining = [a for a in list_annotations(vault, "ATOMIC1") if a["author"] == "agent"]
+    assert len(remaining) == 1
+
+    # PF-SEC-008: paper_root traversal outside vault raises ValueError
+    atomic_write_index(
+        get_index_path(vault),
+        build_envelope([{"zotero_key": "EVIL01", "paper_root": "../../outside_vault"}]),
+    )
+    with pytest.raises(ValueError, match="escapes vault boundary"):
+        _resolve_paper_location(vault, "EVIL01")

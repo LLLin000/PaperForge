@@ -211,7 +211,12 @@ def _resolve_paper_location(
 
     ws_dir: Path | None = None
     if item.get("paper_root"):
-        ws_dir = (vault_root / str(item["paper_root"]).rstrip("/")).resolve()
+        candidate = (vault_root / str(item["paper_root"]).strip().rstrip("/")).resolve()
+        try:
+            candidate.relative_to(vault_root)
+        except ValueError as exc:
+            raise ValueError(f"paper_root escapes vault boundary: {item['paper_root']!r}") from exc
+        ws_dir = candidate
     else:
         ws_dir = workspace_dir_for_key(vault_root, paper_key)
 
@@ -889,16 +894,22 @@ def agent_apply_annotations(
     effective_max = max(1, min(int(max_items or 15), 25))
     resolved_batch_id = str(batch_id or f"batch_{secrets.token_hex(4)}")
 
-    replaced_count = 0
-    if replace_lens:
-        clr = clear_agent_annotations(vault_root, paper_key, lens=default_lens)
-        replaced_count = int(clr.get("deleted_count") or 0)
-
-    active = read_active_annotations_for_workspace(ws_dir)
+    active_raw = read_active_annotations_for_workspace(ws_dir)
+    # Phase 1 validates and grounds against the post-replacement active view
+    # so existing lens annotations are never wiped if 0 items survive staging.
+    active = [
+        ex
+        for ex in active_raw
+        if not (
+            replace_lens
+            and ex.get("author") == "agent"
+            and (not default_lens or str(ex.get("lens") or "") == default_lens)
+        )
+    ]
 
     from paperforge.services.pdf_grounding import ground_target_in_pdf
 
-    created: list[dict[str, Any]] = []
+    staged: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
     grounding_summary: dict[str, int] = {}
@@ -907,7 +918,7 @@ def agent_apply_annotations(
         if not isinstance(entry, dict):
             rejected.append({"index": idx, "reason": "invalid_item", "detail": "item must be an object"})
             continue
-        if len(created) >= effective_max:
+        if len(staged) >= effective_max:
             rejected.append(
                 {
                     "index": idx,
@@ -923,11 +934,66 @@ def agent_apply_annotations(
         item_lens = str(entry.get("lens") or default_lens).strip().lower() or default_lens
         default_color = lens_default_colors.get(item_lens, "purple")
         color = str(entry.get("color") or default_color).strip().lower() or default_color
-        page_hint = entry.get("page_hint")
-        if page_hint is not None:
-            page_hint = int(page_hint)
+        if color not in VALID_COLORS:
+            rejected.append(
+                {
+                    "index": idx,
+                    "reason": "invalid_color",
+                    "detail": f"Unsupported color {color!r}; expected one of {sorted(VALID_COLORS)}",
+                }
+            )
+            continue
+
+        raw_page_hint = entry.get("page_hint")
+        page_hint: int | None = None
+        if raw_page_hint is not None and raw_page_hint != "":
+            if isinstance(raw_page_hint, bool):
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "invalid_page_hint",
+                        "detail": "page_hint must be an integer >= 1",
+                    }
+                )
+                continue
+            try:
+                page_hint = int(raw_page_hint)
+            except (TypeError, ValueError):
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "invalid_page_hint",
+                        "detail": f"page_hint must be an integer >= 1 (got {raw_page_hint!r})",
+                    }
+                )
+                continue
+            if page_hint < 1:
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "invalid_page_hint",
+                        "detail": f"page_hint must be >= 1 (got {page_hint})",
+                    }
+                )
+                continue
+
         section_hint = str(entry.get("section_hint") or "").strip()
-        tags = list(entry.get("tags") or [])
+        raw_tags = entry.get("tags")
+        if raw_tags is None:
+            tags: list[str] = []
+        elif isinstance(raw_tags, str):
+            tags = [raw_tags.strip()] if raw_tags.strip() else []
+        elif isinstance(raw_tags, list):
+            tags = [str(t).strip() for t in raw_tags if str(t).strip()]
+        else:
+            rejected.append(
+                {
+                    "index": idx,
+                    "reason": "invalid_tags",
+                    "detail": "tags must be a list of strings or a string",
+                }
+            )
+            continue
 
         if not quote and not figure_id:
             rejected.append({"index": idx, "reason": "missing_target", "detail": "Provide quote or figure_id"})
@@ -973,8 +1039,18 @@ def agent_apply_annotations(
 
         g_page = int(grounded["page"])
         g_rects = grounded["rects"]
+        g_kind = str(grounded["kind"])
         g_fig = str(grounded.get("figure_id") or figure_id or "").strip()
         g_text = str(grounded.get("matched_text") or "").strip()
+        if g_kind not in VALID_KINDS or not _normalize_rects(g_rects):
+            rejected.append(
+                {
+                    "index": idx,
+                    "reason": "grounding_failed",
+                    "detail": "Grounded target produced invalid kind or empty rects",
+                }
+            )
+            continue
         norm_g_text = _norm_for_dedup(g_text)
 
         dup_match: dict[str, Any] | None = None
@@ -1018,26 +1094,49 @@ def agent_apply_annotations(
             continue
 
         tier = str(grounded["grounding_tier"])
+        item_spec = {
+            "page": g_page,
+            "rects": g_rects,
+            "kind": g_kind,
+            "color": color,
+            "intent": lens_to_intent.get(item_lens, "general"),
+            "author": "agent",
+            "lens": item_lens,
+            "grounding_tier": tier,
+            "exact_text": g_text,
+            "comment": comment,
+            "tags": tags,
+            "section_hint": str(grounded.get("section_path") or section_hint),
+            "figure_hint": g_fig,
+            "batch_id": resolved_batch_id,
+        }
+        staged.append(item_spec)
+        active.append(
+            {
+                "ann_id": f"_staged_{idx}",
+                "page": g_page,
+                "rects": g_rects,
+                "author": "agent",
+                "figure_id": g_fig,
+                "exact_text": g_text,
+            }
+        )
+
+    # Phase 2: commit atomically — never clear prior lens annotations when 0 items staged.
+    replaced_count = 0
+    if replace_lens and staged:
+        clr = clear_agent_annotations(vault_root, paper_key, lens=default_lens)
+        replaced_count = int(clr.get("deleted_count") or 0)
+
+    created: list[dict[str, Any]] = []
+    for item_spec in staged:
         rec = add_annotation(
             vault_root,
             paper_key,
-            page=g_page,
-            rects=g_rects,
-            kind=str(grounded["kind"]),
-            color=color,
-            intent=lens_to_intent.get(item_lens, "general"),
-            author="agent",
-            lens=item_lens,
-            grounding_tier=tier,
-            exact_text=g_text,
-            comment=comment,
-            tags=tags,
-            section_hint=str(grounded.get("section_path") or section_hint),
-            figure_hint=g_fig,
-            batch_id=resolved_batch_id,
+            **item_spec,
         )
-        active.append(rec)
         created.append(rec)
+        tier = str(item_spec["grounding_tier"])
         grounding_summary[tier] = grounding_summary.get(tier, 0) + 1
 
     return {
