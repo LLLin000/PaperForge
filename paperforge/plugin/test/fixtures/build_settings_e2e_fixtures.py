@@ -200,10 +200,29 @@ def _build_legacy_vault(vault: Path) -> None:
     )
 
 
+def _build_collision_vault(vault: Path) -> None:
+    """Fresh vault already containing user-owned Resources/ and Bases/ folders."""
+    _reset_dir(vault)
+    (vault / ".obsidian").mkdir(parents=True, exist_ok=True)
+    resources = vault / "Resources"
+    resources.mkdir(parents=True, exist_ok=True)
+    (resources / "PersonalReading.md").write_text(
+        "# My Existing Notes\n\nMust stay untouched.\n",
+        encoding="utf-8",
+    )
+    bases = vault / "Bases"
+    bases.mkdir(parents=True, exist_ok=True)
+    (bases / "MyTasks.base").write_text(
+        "views:\n  - type: table\n    name: Personal Tasks\n",
+        encoding="utf-8",
+    )
+
+
 def build() -> None:
     _build_fresh_vault(VAULTS_DIR / "settings-fresh")
     _build_zotero_fixture(VAULTS_DIR / "settings-zotero")
     _build_legacy_vault(VAULTS_DIR / "settings-legacy")
+    _build_collision_vault(VAULTS_DIR / "settings-collision")
     print(f"Settings E2E fixtures ready under {VAULTS_DIR}")
 
 

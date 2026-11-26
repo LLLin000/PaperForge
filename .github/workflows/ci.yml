@@ -102,16 +102,11 @@ jobs:
           "$PF_PYTHON_BIN/python" -c "import sqlite3; assert hasattr(sqlite3.connect(':memory:'), 'enable_load_extension')"
       - name: Install package with test deps
         run: pip install -e ".[test,vector]"
-      - name: J0 — unit tests
-        shell: bash
-        run: |
-          python -m pytest tests/unit/ \
-            -q --tb=short --timeout=60 \
-            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-unit.xml"
-      - name: J1 — machine contract fixtures
+      - name: Run J-Matrix tests (J0 unit + J1 contracts + J1b boundaries + J2 sync + J3 OCR)
         shell: bash
         run: |
           python -m pytest \
+            tests/unit/ \
             tests/test_probe.py \
             tests/test_read_model_cutover.py \
             tests/test_lineage.py \
@@ -120,34 +115,13 @@ jobs:
             tests/cli/test_json_contracts.py \
             tests/cli/test_text_contracts.py \
             tests/cli/test_ocr_progress_contracts.py \
-            -q --tb=short --timeout=120 \
-            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j1.xml"
-      # #224: the backend import-boundary check and the CI coverage contract are
-      # what keep the other gates honest — a job that cannot fail, or a test file
-      # no job collects, is invisible in a green run. Both must run on every push.
-      - name: J1b — CI coverage + backend boundary contracts (#224)
-        shell: bash
-        run: |
-          python -m pytest \
             tests/test_ci_coverage_contract.py \
             tests/test_architecture_boundaries.py \
             tests/test_note_set_flag.py \
-            -q --tb=short --timeout=120 \
-            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j1b.xml"
-      - name: J2 — headless sync + vault preservation
-        shell: bash
-        run: |
-          python -m pytest \
             tests/journey/test_headless_sync_preservation.py \
-            -q --tb=short --timeout=120 \
-            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j2.xml"
-      - name: J3 — deterministic OCR
-        shell: bash
-        run: |
-          python -m pytest \
             tests/test_ocr_state_machine.py \
             -q --tb=short --timeout=120 \
-            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j3.xml"
+            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix.xml"
       - name: Preserve first-failure J-matrix evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -170,6 +144,18 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - name: Cache Cargo registry & target
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            crates/paperforge-daemon/target/
+          key: cargo-${{ runner.os }}-${{ hashFiles('crates/paperforge-daemon/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
@@ -284,17 +270,17 @@ jobs:
   # because they have dedicated jobs (L4) or a dedicated workflow
   # (ci-chaos.yml) and running them twice buys nothing.
   python-suite:
-    name: L1b — Python Suite (shard ${{ matrix.shard }}/2)
+    name: L1b — Python Suite (shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     # The suite is throughput-bound (~3.8k tests, no dominant case), so it is
     # split by a committed map instead of running longer on one runner:
     # tests/ci-shards.json assigns each file a shard, balanced on collected
-    # test counts. `python scripts/ci_shard.py --write` regenerates it and
+    # test counts. `python scripts/ci_shard.py --write --of 4` regenerates it and
     # tests/test_ci_shard_map.py fails when a new file is missing.
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1]
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -321,7 +307,7 @@ jobs:
         run: |
           # 120 paths must not travel through command substitution: hand pytest
           # a single @argfile token instead.
-          SHARD_ARGS=$(python scripts/ci_shard.py --shard ${{ matrix.shard }} --of 2 \
+          SHARD_ARGS=$(python scripts/ci_shard.py --shard ${{ matrix.shard }} --of 4 \
             --args-file "$RUNNER_TEMP/shard-${{ matrix.shard }}.txt")
           python -m pytest "$SHARD_ARGS" \
             --ignore=tests/e2e \
@@ -742,7 +728,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install package with test deps
-        run: python -m pip install -e ".[test,vector,legacy-vector]"
+        run: python -m pip install -e ".[test,vector]"
       - name: Run the slow CLI-host acceptance cases
         shell: bash
         run: |
