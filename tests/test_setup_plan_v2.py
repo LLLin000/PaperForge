@@ -979,3 +979,63 @@ class TestSetupManifestStamp:
         assert env["reason"]["code"] == "library.ready"
         notice_codes = [n.get("code") for n in env.get("notices", [])]
         assert "vault.manifest_missing" in notice_codes
+
+
+class TestPythonDaemonFallback:
+    """Python stdio daemon fallback serves probe/upgrade on unconfigured & veteran v1 vaults."""
+
+    def test_probe_all_succeeds_on_fresh_unconfigured_vault(self, tmp_path: Path) -> None:
+        import io
+        from paperforge.commands.daemon import _execute_request
+
+        fresh = tmp_path / "fresh"
+        fresh.mkdir()
+        resp = _execute_request(
+            {
+                "id": 1,
+                "vault": str(fresh),
+                "argv": ["probe", "all", "--json"],
+                "stdin": None,
+            },
+            real_stdout=io.StringIO(),
+            real_stderr=io.StringIO(),
+        )
+        assert resp["id"] == 1
+        assert resp["exit_code"] == 0
+        payload = json.loads(resp["stdout"])
+        assert payload["modules"]["library"]["reason"]["code"] == "library.config_missing"
+
+    def test_upgrade_plan_succeeds_on_veteran_v1_vault(self, tmp_path: Path) -> None:
+        import io
+        from paperforge.commands.daemon import _execute_request
+
+        legacy = tmp_path / "legacy"
+        (legacy / "System" / "PaperForge" / "indexes").mkdir(parents=True)
+        (legacy / "paperforge.json").write_text(
+            json.dumps(
+                {
+                    "vault_config": {
+                        "system_dir": "System",
+                        "resources_dir": "Resources",
+                        "literature_dir": "Literature",
+                        "base_dir": "Bases",
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        resp = _execute_request(
+            {
+                "id": 2,
+                "vault": str(legacy),
+                "argv": ["upgrade", "--plan", "--json"],
+                "stdin": None,
+            },
+            real_stdout=io.StringIO(),
+            real_stderr=io.StringIO(),
+        )
+        assert resp["id"] == 2
+        assert resp["exit_code"] == 0
+        payload = json.loads(resp["stdout"])
+        assert payload["ok"] is True
+        assert payload["data"]["provenance"]["needs_upgrade"] is True
