@@ -269,7 +269,9 @@ def inspect_paper(vault: Path, query: str) -> dict[str, Any] | None:
         }
 
         # Stage 2: lineage
-        note_relpath = entry.get("note_path") or entry.get("main_note_path")
+        from paperforge.memory.paper_state import resolve_effective_note_relpath
+
+        note_relpath = resolve_effective_note_relpath(vault, entry)
         note_relpath_str = str(note_relpath).strip() if note_relpath else None
         note_exists = bool(
             note_relpath_str and (vault / note_relpath_str).is_file()
@@ -456,19 +458,23 @@ def inspect_paper(vault: Path, query: str) -> dict[str, Any] | None:
         findings.append("Literature note is missing on disk.")
         _append_unique(recommended_commands, "paperforge sync")
 
+    has_pdf = bool(source_stage["pdf_exists"])
+
     if not ocr_stage["ocr_dir_exists"]:
         hard_stages.append("ocr")
         findings.append("OCR artifact directory does not exist.")
-        _append_unique(recommended_commands, f"paperforge ocr --key {zotero_key}")
+        if has_pdf:
+            _append_unique(recommended_commands, f"paperforge ocr --key {zotero_key}")
     else:
         if not ocr_stage["has_raw_blocks"]:
             hard_stages.append("ocr")
             findings.append(
                 "canonical/blocks.raw.jsonl is missing or empty; offline rebuild is unavailable."
             )
-            _append_unique(
-                recommended_commands, f"paperforge ocr --key {zotero_key}"
-            )
+            if has_pdf:
+                _append_unique(
+                    recommended_commands, f"paperforge ocr --key {zotero_key}"
+                )
         if ocr_stage["derived_stale"]:
             hard_stages.append("ocr")
             findings.append(
@@ -485,7 +491,7 @@ def inspect_paper(vault: Path, query: str) -> dict[str, Any] | None:
                     recommended_commands,
                     f"python scripts/dev/ocr_rebuild_paper.py {zotero_key}",
                 )
-            else:
+            elif has_pdf:
                 _append_unique(
                     recommended_commands, f"paperforge ocr --key {zotero_key}"
                 )
@@ -513,7 +519,7 @@ def inspect_paper(vault: Path, query: str) -> dict[str, Any] | None:
                 recommended_commands,
                 f"python scripts/dev/ocr_rebuild_paper.py {zotero_key}",
             )
-        else:
+        elif has_pdf:
             _append_unique(
                 recommended_commands, f"paperforge ocr --key {zotero_key}"
             )

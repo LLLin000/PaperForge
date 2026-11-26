@@ -89,9 +89,9 @@ def probe_installation(
             reason_code="installation.runtime_pointer_missing",
             reason_text="PaperForge is installed, but no valid runtime pointer is published",
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
-            user_impact="Run setup to publish the executable PaperForge runtime",
+            user_impact="Run `paperforge setup` or `paperforge runtime install` to publish the executable PaperForge runtime",
             action_primary=build_action_primary(
-                action_id="foundation.setup", verb="setup", label="Complete Setup",
+                action_id="foundation.setup", verb="setup", label="Install / Setup Runtime",
             ),
             ttl_seconds=TTL_INSTALLATION,
         )

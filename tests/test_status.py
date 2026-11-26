@@ -374,3 +374,38 @@ def test_status_text_legacy_backfilled(tmp_path: Path, capsys) -> None:
     assert code == 0
     captured = capsys.readouterr().out
     assert "legacy_backfilled" in captured
+
+
+def test_dashboard_db_status_counts_all_ocr_states_accurately(tmp_path: Path) -> None:
+    """PF-OCR-010: dashboard counts done_degraded as done, error/fatal_error/done_incomplete as failed, and decouples pdf_health."""
+    from paperforge.commands.dashboard import _dashboard_from_db
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.memory.schema import ensure_schema
+
+    vault = _minimal_vault(tmp_path)
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = get_connection(db_path)
+    ensure_schema(conn)
+    rows = [
+        ("K1", 1, "done"),
+        ("K2", 1, "done_degraded"),
+        ("K3", 1, "fatal_error"),
+        ("K4", 1, "blocked"),
+        ("K5", 1, "done_incomplete"),
+        ("K6", 1, "pending"),
+        ("K7", 0, "nopdf"),
+    ]
+    for k, hp, ost in rows:
+        conn.execute(
+            "INSERT INTO papers(zotero_key, title, domain, has_pdf, ocr_status) VALUES (?, ?, 'Ortho', ?, ?)",
+            (k, k, hp, ost),
+        )
+    conn.commit()
+    conn.close()
+
+    res = _dashboard_from_db(vault)
+    assert res is not None
+    stats = res["stats"]
+    assert stats["ocr_health"] == {"done": 2, "failed": 3, "pending": 1}
+    assert stats["pdf_health"] == {"healthy": 6, "missing": 1, "broken": 0}

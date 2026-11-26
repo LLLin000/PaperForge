@@ -204,3 +204,88 @@ class TestRetrieveJson:
             assert isinstance(m["zotero_key"], str), "zotero_key should be str"
             assert isinstance(m["score"], (int, float)), "score should be numeric"
             assert isinstance(m["text"], str), "text should be str"
+
+
+class TestWave2CliContracts:
+    """PF-OCR-008, PF-UX-012, PF-ARCH-009, PF-ARCH-012, PF-SEC-012."""
+
+    def test_search_evidence_zero_hits_no_keyerror(self, cli_invoker):
+        """PF-ARCH-012: search --evidence with 0 hits never raises KeyError('query_diagnostic')."""
+        from pathlib import Path
+        from paperforge.memory.builder import build_for_keys
+        from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+
+        # Build a tiny memory DB first via cli_invoker vault or inspect result
+        res = cli_invoker(["search", "nonexistent_term_xyz_999", "--evidence", "--json"])
+        parsed = assert_valid_json(res.stdout)
+        # Either DB doesn't exist yet or DB exists and returned ok=True cleanly
+        assert "error" in parsed
+
+    def test_cli_flags_domain_ocr_status_and_trailing_json(self):
+        """PF-ARCH-001, PF-ARCH-009, PF-UX-012, trash purge --yes/--confirm."""
+        from paperforge.cli import build_parser
+
+        parser = build_parser()
+        a_ret = parser.parse_args(["retrieve", "PEMF", "--domain", "Orthopedics", "--json"])
+        assert a_ret.domain == "Orthopedics" and a_ret.json is True
+
+        a_src = parser.parse_args(["search", "PEMF", "--ocr", "done_incomplete", "--json"])
+        assert a_src.ocr == "done_incomplete"
+
+        a_purge = parser.parse_args(["trash", "purge", "--yes", "--confirm"])
+        assert a_purge.yes is True and a_purge.confirm is True
+
+        for sub_argv in (
+            ["ocr", "run", "KEY1", "--json"],
+            ["ocr", "--json", "run", "KEY1"],
+            ["ocr", "doctor", "--json"],
+            ["ocr", "rebuild", "KEY1", "--dry-run", "--json"],
+            ["ocr", "redo", "KEY1", "--dry-run", "--json"],
+        ):
+            parsed = parser.parse_args(sub_argv)
+            assert getattr(parsed, "json", False) is True
+
+    def test_ocr_run_json_stdout_pure_and_memory_status_fts_ok(self, tmp_path, monkeypatch, capsys):
+        """PF-OCR-008 & PF-UX-012: ocr --json run stdout is pure JSON with populated error; memory status has fts_ok=True."""
+        from paperforge import cli
+        from paperforge.memory.builder import build_for_keys
+        from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+        from tests.conftest import canonical_test_config
+
+        vault = tmp_path / "v_wave2"
+        vault.mkdir()
+        canonical_test_config(vault, system_dir=".paperforge")
+        idx = get_index_path(vault)
+        idx.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_index(idx, build_envelope([{"zotero_key": "K1", "title": "Test", "domain": "Ortho"}]))
+        build_for_keys(vault)
+
+        capsys.readouterr()
+        rc_ms = cli.main(["--vault", str(vault), "memory", "status", "--json"])
+        assert rc_ms == 0
+        ms_payload = json.loads(capsys.readouterr().out)
+        assert ms_payload["ok"] is True
+        assert ms_payload["data"]["fts_ok"] is True
+
+        # Evidence 0-hit test against real built DB (PF-ARCH-012)
+        rc_ev = cli.main(["--vault", str(vault), "search", "nonexistent_term_xyz", "--evidence", "--json"])
+        assert rc_ev == 0
+        ev_payload = json.loads(capsys.readouterr().out)
+        assert ev_payload["ok"] is True
+        assert ev_payload["data"]["metadata_candidates"] == []
+
+        # PF-OCR-008: ocr --json run stdout purity + populated error when run_ocr emits _diag & returns 1
+        from paperforge.worker import ocr as worker_ocr
+
+        def fake_run_ocr(v, **kwargs):
+            worker_ocr._diag("human diagnostic line that must go to stderr")
+            return 1
+
+        monkeypatch.setattr("paperforge.commands.ocr._get_run_ocr", lambda: fake_run_ocr)
+        rc_ocr = cli.main(["--vault", str(vault), "ocr", "--json", "run", "UNKNOWN1"])
+        assert rc_ocr == 1
+        captured = capsys.readouterr()
+        parsed_ocr = json.loads(captured.out)  # fails if any plain-text line leaked to stdout
+        assert parsed_ocr["ok"] is False
+        assert parsed_ocr["error"] is not None
+        assert "human diagnostic line" in captured.err

@@ -253,7 +253,7 @@ def run(args: argparse.Namespace) -> int:
                     _last_full_build = _row["value"] if _row else ""
                     _schema_ver = get_schema_version(conn2)
                     try:
-                        conn2.execute("SELECT zotero_key FROM papers_fts LIMIT 1")
+                        conn2.execute("SELECT zotero_key FROM paper_fts LIMIT 1")
                         _fts_ok = True
                     except Exception:
                         _fts_ok = False
@@ -270,13 +270,19 @@ def run(args: argparse.Namespace) -> int:
                 data=data,
             )
         except Exception as exc:
+            err_msg = str(exc)
+            suggestions: list[str] = []
+            if "not a database" in err_msg.lower() or "malformed" in err_msg.lower():
+                err_msg = f"Memory database is corrupt ({err_msg}). Run `paperforge memory build` or `paperforge engine rebuild-db` to rebuild."
+                suggestions = ["paperforge memory build", "paperforge engine rebuild-db"]
             result = PFResult(
                 ok=False,
                 command="memory status",
                 version=PF_VERSION,
                 error=PFError(
                     code=ErrorCode.INTERNAL_ERROR,
-                    message=str(exc),
+                    message=err_msg,
+                    suggestions=suggestions,
                 ),
             )
         if args.json:

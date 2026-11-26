@@ -1240,3 +1240,9 @@ class TestProbeActionVocabulary223:
                     f"declaration says {match.group(1)!r}"
                 )
         assert not problems, "\n".join(problems)
+
+
+def test_library_prune_impact_is_destructive() -> None:
+    """PF-SEC-012: library.prune deletes vault/DB artifacts and must carry destructive impact."""
+    spec = ACTION_REGISTRY["library.prune"]
+    assert spec.impact == "destructive"

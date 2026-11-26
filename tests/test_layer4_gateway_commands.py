@@ -531,3 +531,92 @@ def test_compat_content_discovery_surfaces_route_explanation_with_vector_seconda
         # vector_results is None when vector is unavailable — clean fallback
         assert result.data.get("vector_results") is None
     assert len(result.data["results"]) > 0
+
+
+def test_cjk_content_discovery_falls_back_to_like(tmp_path, monkeypatch):
+    """PF-OCR-001: CJK substring query returns body_units match via SQL LIKE fallback."""
+    _mock_current_lineage(monkeypatch)
+    db_path = _make_populated_db(tmp_path)
+    conn = sqlite3.connect(str(db_path))
+    conn.execute(
+        """INSERT INTO body_units(
+               unit_id, paper_id, section_path, unit_text,
+               page_span_json, block_span_json, token_estimate,
+               indexable, veto_reason, quality_hints_json
+           ) VALUES ('u_cjk', 'TST001', '方法',
+                     '本研究使用经颅脉冲电磁场治疗骨关节炎患者。', '[1, 1]', '[[1, "b9"]]', 30, 1, '', '[]')"""
+    )
+    conn.commit()
+    conn.close()
+
+    res = route_gateway(tmp_path, "content-discovery", "脉冲电磁场", json_mode=True, limit=5)
+    assert res.ok
+    assert any(r["paper_id"] == "TST001" for r in res.data["results"])
+
+
+def test_compat_content_discovery_uses_valid_total_chunks_v2(tmp_path, monkeypatch):
+    """PF-OCR-012: compat content-discovery queries v2 merge_retrieve when valid_total_chunks > 0."""
+    _make_paper_only_db(tmp_path)
+    called: list[dict] = []
+
+    monkeypatch.setattr(
+        "paperforge.embedding.get_embed_status",
+        lambda _v: {"healthy": True, "chunk_count": 0, "valid_total_chunks": 4},
+    )
+    monkeypatch.setattr(
+        "paperforge.embedding.merge_retrieve",
+        lambda v, q, limit=5, expand=True: (called.append({"q": q, "limit": limit}) or [{"paper_id": "TST002", "unit_id": "u1", "chunk_text": "hit", "score": 0.9}]),
+    )
+    res = route_gateway(tmp_path, "content-discovery", "Johnson", json_mode=True, limit=5)
+    assert res.ok
+    assert called == [{"q": "Johnson", "limit": 5}]
+    assert res.data["route_explanation"].get("secondary_arm") == "vector_retrieve"
+    assert len(res.data["vector_results"]) == 1
+
+
+def test_inspect_and_paper_context_resolve_workspace_main_note(tmp_path):
+    """PF-UX-005: inspect, paper-context, and memory build prefer existing workspace main_note_path over stale note_path, and omit `paperforge ocr` when pdf_exists=false."""
+    from paperforge.commands.inspect_paper import inspect_paper
+    from paperforge.commands.paper_context import _build_paper_context
+    from paperforge.memory.builder import build_for_keys
+    from paperforge.worker.asset_index import atomic_write_index, build_envelope, get_index_path
+    from tests.conftest import canonical_test_config
+
+    vault = tmp_path / "vault_ux005"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+
+    ws_rel = "Resources/Literature/Ortho/P1 - Study Slug"
+    ws_dir = vault / ws_rel
+    ws_dir.mkdir(parents=True)
+    main_note_rel = f"{ws_rel}/P1.md"
+    (vault / main_note_rel).write_text("---\nzotero_key: P1\n---\n# Study\n", encoding="utf-8")
+
+    atomic_write_index(
+        get_index_path(vault),
+        build_envelope([
+            {
+                "zotero_key": "P1",
+                "title": "Study Slug",
+                "domain": "Ortho",
+                "paper_root": ws_rel,
+                "note_path": "Resources/Literature/Ortho/P1.md",  # stale flat path (does not exist)
+                "main_note_path": main_note_rel,  # canonical workspace note (exists)
+                "pdf_path": "",
+                "has_pdf": False,
+                "ocr_status": "nopdf",
+            }
+        ]),
+    )
+    build_for_keys(vault)
+
+    insp = inspect_paper(vault, "P1")
+    assert insp["stages"]["lineage"]["note_relpath"] == main_note_rel
+    assert insp["stages"]["lineage"]["note_exists"] is True
+    assert insp["stages"]["source"]["pdf_exists"] is False
+    assert not any("paperforge ocr" in cmd for cmd in insp["diagnosis"]["recommended_commands"])
+
+    ctx = _build_paper_context(vault, "P1")
+    assert ctx is not None
+    assert ctx["paper"]["note_path"] == main_note_rel
+    assert ctx["paper"]["main_note_path"] == main_note_rel

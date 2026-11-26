@@ -57,9 +57,10 @@ def _detect_zotero_data_dir() -> str | None:
 
 
 def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
-    """Detect if Zotero data directory is inside vault or linked via junction."""
+    """Detect if Zotero data directory is inside vault, configured for sqlite direct mode, or linked via junction."""
     system_dir = vault / cfg["system_dir"]
     zotero_link = system_dir / "Zotero"
+    source_mode = str(cfg.get("zotero_source_mode") or "sqlite").strip().lower()
     if zotero_link.exists():
         if zotero_link.is_symlink() or _is_junction(zotero_link):
             try:
@@ -96,6 +97,32 @@ def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
                     "warn",
                     "Zotero directory exists but missing storage/ subdirectory",
                     "Verify this is a valid Zotero data directory",
+                )
+    elif source_mode != "bbt":
+        cfg_zdir = str(cfg.get("zotero_data_dir") or "").strip()
+        z_candidate = Path(cfg_zdir).expanduser() if cfg_zdir else None
+        if z_candidate is not None and not z_candidate.is_absolute():
+            z_candidate = (vault / z_candidate).resolve()
+        if z_candidate is not None and z_candidate.exists():
+            add_check(
+                "Path Resolution",
+                "pass",
+                f"Zotero SQLite direct mode -> {z_candidate}",
+            )
+        else:
+            detected = _detect_zotero_data_dir()
+            if detected:
+                add_check(
+                    "Path Resolution",
+                    "pass",
+                    f"Zotero SQLite direct mode (auto-detected) -> {detected}",
+                )
+            else:
+                add_check(
+                    "Path Resolution",
+                    "info",
+                    "Zotero SQLite direct mode configured; Zotero data directory not set",
+                    "Set `zotero_data_dir` via `paperforge config set zotero_data_dir <path>`",
                 )
     else:
         zotero_data_dir = _detect_zotero_data_dir()
@@ -485,50 +512,63 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     # control_dir 已完全淘汰 (v2.1+ workspace 架构不再需要 LiteratureControl)
 
-    zotero_link = system_dir / "Zotero"
-    if zotero_link.exists():
-        if zotero_link.is_symlink() or _is_junction(zotero_link):
-            add_check("Zotero 链接", "pass", "Zotero 目录是 junction/symlink")
-        else:
-            add_check("Zotero 链接", "warn", "Zotero 目录存在但不是 junction，建议使用 junction")
-    else:
-        add_check(
-            "Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>"
-        )
-
     from paperforge.config import paperforge_paths
 
     resolved = paperforge_paths(vault, cfg)
-    exports_dir = resolved["exports"]
-    if exports_dir.exists():
-        add_check("BBT 导出", "pass", "exports 目录存在")
-    else:
-        add_check("BBT 导出", "fail", "exports 目录不存在", "在 Better BibTeX 设置中配置导出路径")
+    source_mode = str(cfg.get("zotero_source_mode") or "sqlite").strip().lower()
+    zotero_link = system_dir / "Zotero"
+    if source_mode == "bbt":
+        if zotero_link.exists():
+            if zotero_link.is_symlink() or _is_junction(zotero_link):
+                add_check("Zotero 链接", "pass", "Zotero 目录是 junction/symlink")
+            else:
+                add_check("Zotero 链接", "warn", "Zotero 目录存在但不是 junction，建议使用 junction")
+        else:
+            add_check(
+                "Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>"
+            )
 
-    # Check for any valid JSON export (per-domain or library.json)
-    json_files = sorted(exports_dir.glob("*.json")) if exports_dir.exists() else []
-    valid_exports = []
-    for jf in json_files:
-        try:
-            data = json.loads(jf.read_text(encoding="utf-8"))
-            if isinstance(data, list) and len(data) > 0:
-                has_key = any("key" in item or "citation-key" in item for item in data[:5])
-                if has_key:
-                    valid_exports.append((jf.name, len(data)))
-            elif isinstance(data, dict) and isinstance(data.get("items"), list) and len(data["items"]) > 0:
-                has_key = any("key" in item or "citation-key" in item for item in data["items"][:5])
-                if has_key:
-                    valid_exports.append((jf.name, len(data["items"])))
-        except (JSONDecodeError, Exception):
-            pass
+        exports_dir = resolved["exports"]
+        if exports_dir.exists():
+            add_check("BBT 导出", "pass", "exports 目录存在")
+        else:
+            add_check("BBT 导出", "fail", "exports 目录不存在", "在 Better BibTeX 设置中配置导出路径")
 
-    if valid_exports:
-        for name, count in valid_exports:
-            add_check("BBT 导出", "pass", f"{name} 正常 ({count} 条)")
-    elif json_files:
-        add_check("BBT 导出", "warn", "导出文件存在但无有效 citation key")
+        # Check for any valid JSON export (per-domain or library.json)
+        json_files = sorted(exports_dir.glob("*.json")) if exports_dir.exists() else []
+        valid_exports = []
+        for jf in json_files:
+            try:
+                data = json.loads(jf.read_text(encoding="utf-8"))
+                if isinstance(data, list) and len(data) > 0:
+                    has_key = any("key" in item or "citation-key" in item for item in data[:5])
+                    if has_key:
+                        valid_exports.append((jf.name, len(data)))
+                elif isinstance(data, dict) and isinstance(data.get("items"), list) and len(data["items"]) > 0:
+                    has_key = any("key" in item or "citation-key" in item for item in data["items"][:5])
+                    if has_key:
+                        valid_exports.append((jf.name, len(data["items"])))
+            except (JSONDecodeError, Exception):
+                pass
+
+        if valid_exports:
+            for name, count in valid_exports:
+                add_check("BBT 导出", "pass", f"{name} 正常 ({count} 条)")
+        elif json_files:
+            add_check("BBT 导出", "warn", "导出文件存在但无有效 citation key")
+        else:
+            add_check("BBT 导出", "fail", "未找到 JSON 导出文件", "在 Zotero Better BibTeX 设置中配置导出路径")
     else:
-        add_check("BBT 导出", "fail", "未找到 JSON 导出文件", "在 Zotero Better BibTeX 设置中配置导出路径")
+        z_dir = resolved.get("zotero_dir")
+        if zotero_link.exists() or (z_dir and Path(z_dir).exists()):
+            add_check("Zotero 链接", "pass", f"Zotero SQLite 直连模式 ({z_dir or zotero_link})")
+        else:
+            detected = _detect_zotero_data_dir()
+            if detected:
+                add_check("Zotero 链接", "pass", f"Zotero SQLite 直连模式 (自动发现 {detected})")
+            else:
+                add_check("Zotero 链接", "info", "当前为 Zotero SQLite 直连模式 (无需 junction)")
+        add_check("BBT 导出", "info", "当前为 Zotero SQLite 直连模式，无需 BBT JSON 导出")
 
     # Config state check (#142 seam; migration is explicit, sync no longer
     # auto-migrates).
@@ -667,8 +707,10 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     if _summary and _summary.get("paper_count", 0) > 0:
         _health = _summary.get("health_aggregate", {})
+        _idx_data = _read_idx(vault)
+        _idx_items = _idx_data.get("items", []) if isinstance(_idx_data, dict) else []
 
-        def _health_status(dim: dict) -> tuple[str, str]:
+        def _health_status(dim: dict, *, dim_key: str = "") -> tuple[str, str]:
             healthy = dim.get("healthy", 0)
             unhealthy = dim.get("unhealthy", 0)
             total = healthy + unhealthy
@@ -677,6 +719,14 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             if unhealthy == 0:
                 return ("pass", f"{healthy}/{total} healthy")
             if healthy == 0:
+                if dim_key in ("ocr_health", "asset_health") and _idx_items:
+                    has_hard_failure = any(
+                        str(_it.get("ocr_status") or "").strip().lower()
+                        in ("failed", "fatal_error", "done_incomplete", "blocked", "error")
+                        for _it in _idx_items
+                    )
+                    if not has_hard_failure:
+                        return ("info", f"0/{total} ready (pending OCR)")
                 return ("fail", f"0/{total} healthy -- run doctor/repair")
             return ("warn", f"{healthy}/{total} healthy, {unhealthy} issues")
 
@@ -689,11 +739,26 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             _dim = _health.get(_dim_key, {})
             if not isinstance(_dim, dict):
                 _dim = {"healthy": 0, "unhealthy": 0}
-            _st, _msg = _health_status(_dim)
+            if _dim_key == "pdf_health" and _idx_items:
+                from paperforge.pdf_resolver import resolve_source_pdf
+
+                _disk_ok = 0
+                _disk_bad = 0
+                for _it in _idx_items:
+                    _pdf_loc = str(_it.get("pdf_path") or "").strip()
+                    _has_pdf_flag = bool(_it.get("has_pdf"))
+                    if not _pdf_loc and not _has_pdf_flag:
+                        _disk_bad += 1
+                        continue
+                    if _pdf_loc and resolve_source_pdf(vault, _pdf_loc) is not None:
+                        _disk_ok += 1
+                    else:
+                        _disk_bad += 1
+                _dim = {"healthy": _disk_ok, "unhealthy": _disk_bad}
+            _st, _msg = _health_status(_dim, dim_key=_dim_key)
             add_check("Index Health", _st, f"{_dim_name}: {_msg}")
 
         # Brownfield migration detection (MIG-01, MIG-03)
-        _idx_data = _read_idx(vault)
         if isinstance(_idx_data, dict):
             _sv = _idx_data.get("schema_version", "0")
             try:
@@ -707,14 +772,16 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             except (ValueError, TypeError):
                 pass
 
-        # Legacy Base templates (pre-lifecycle format)
+        # Legacy Base templates (pre-v2 format)
         _bases_dir = paths.get("bases")
         if _bases_dir and _bases_dir.exists():
             _legacy = 0
             for _bp in _bases_dir.glob("*.base"):
                 try:
                     _content = _bp.read_text(encoding="utf-8")
-                    if "has_pdf" in _content and "lifecycle" not in _content:
+                    if "# PaperForge" in _content or "ocr_status" in _content or "lifecycle" in _content:
+                        continue
+                    if "has_pdf" in _content:
                         _legacy += 1
                 except Exception:
                     continue
@@ -722,7 +789,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 add_check(
                     "Index Health",
                     "warn",
-                    f"{_legacy} Base file(s) use legacy columns (has_pdf, do_ocr) instead of lifecycle",
+                    f"{_legacy} Base file(s) use legacy columns (has_pdf, do_ocr) instead of v2 schema",
                     "Run `paperforge sync` to regenerate Base views",
                 )
 
@@ -848,10 +915,16 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
         for cat, status, _, fx in checks:
             if status == "fail" and fx:
                 _fail_categories.add(cat)
+        _has_py_version_fail = any(
+            st == "fail" and cat.startswith("Python") and "3.11+" in msg
+            for cat, st, msg, _ in checks
+        )
         if "PaperForge 包" in _fail_categories and not bool(_fail_categories - {"PaperForge 包"}):
-            _next_action = "Recommended: publish the runtime (`paperforge setup` / `paperforge repair --runtime` / `paperforge update`)"
-        elif "Python 环境" in _fail_categories or "Python 环境 (插件)" in _fail_categories:
+            _next_action = "Recommended: publish the runtime (`paperforge setup` / `paperforge runtime install` / `paperforge repair --runtime`)"
+        elif _has_py_version_fail:
             _next_action = "Recommended: install/upgrade Python to 3.11+"
+        elif "Python 环境 (插件)" in _fail_categories or "PaperForge 包" in _fail_categories or "Python 环境" in _fail_categories:
+            _next_action = "Recommended: publish the runtime (`paperforge setup` / `paperforge runtime install` / `paperforge repair --runtime`)"
         elif "Vault 结构" in _fail_categories or "Config Migration" in _fail_categories:
             _next_action = "Recommended: run `paperforge sync`"
         elif "OCR 配置" in _fail_categories:
@@ -926,10 +999,16 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
         if status == "fail" and fix:
             fail_categories.add(cat)
 
+    has_py_version_fail = any(
+        st == "fail" and cat.startswith("Python") and "3.11+" in msg
+        for cat, st, msg, _ in checks
+    )
     if "PaperForge 包" in fail_categories and not bool(fail_categories - {"PaperForge 包"}):
-        next_action = "Recommended: publish the runtime (`paperforge setup` / `paperforge repair --runtime` / `paperforge update`)"
-    elif "Python 环境" in fail_categories or "Python 环境 (插件)" in fail_categories:
+        next_action = "Recommended: publish the runtime (`paperforge setup` / `paperforge runtime install` / `paperforge repair --runtime`)"
+    elif has_py_version_fail:
         next_action = "Recommended: install/upgrade Python to 3.11+"
+    elif "Python 环境 (插件)" in fail_categories or "PaperForge 包" in fail_categories or "Python 环境" in fail_categories:
+        next_action = "Recommended: publish the runtime (`paperforge setup` / `paperforge runtime install` / `paperforge repair --runtime`)"
     elif "Vault 结构" in fail_categories or "Config Migration" in fail_categories:
         next_action = "Recommended: run `paperforge sync`"
     elif "OCR 配置" in fail_categories:

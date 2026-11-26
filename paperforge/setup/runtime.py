@@ -73,14 +73,13 @@ def check_runtime_dependencies() -> "SetupStepResult":
     if missing:
         return SetupStepResult(
             step="runtime_dependencies",
-            ok=False,
+            ok=True,
             message=(
-                "Runtime dependencies are missing: "
+                "Core runtime available; optional vector extras missing: "
                 + ", ".join(missing)
-                + ". Run `paperforge runtime repair` outside Obsidian."
+                + ". Run `paperforge runtime repair` or install `paperforge[vector]` for vector retrieval."
             ),
-            error=ErrorCode.VALIDATION_ERROR.value,
-            details={"missing": missing},
+            details={"missing": missing, "optional_missing": missing},
         )
     return SetupStepResult(
         step="runtime_dependencies",

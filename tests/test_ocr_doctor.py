@@ -283,3 +283,32 @@ def test_doctor_mentions_version_state(tmp_path: Path, capsys) -> None:
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "raw_upgradable" in captured.out or "version" in captured.out or "stale" in captured.out
+
+
+def test_cmd_ocr_doctor_handles_missing_keyring_without_traceback(tmp_path: Path, monkeypatch, capsys) -> None:
+    """PF-UX-004: _cmd_ocr_doctor handles CredentialError(backend_unavailable) cleanly in text and JSON modes."""
+    from paperforge import cli
+    from paperforge.credentials import BACKEND_UNAVAILABLE, CredentialError
+    from tests.conftest import canonical_test_config
+
+    vault = tmp_path / "vault_cred"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+
+    def boom_doctor(config=None, live=False):
+        raise CredentialError(BACKEND_UNAVAILABLE, "no secure keyring backend (get)")
+
+    monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor", boom_doctor)
+    monkeypatch.setenv("PADDLEOCR_TOKEN", "legacy-user-token")
+
+    rc_text = cli.main(["--vault", str(vault), "ocr", "doctor"])
+    assert rc_text == 1
+    out_text = capsys.readouterr().out
+    assert "OCR Doctor" in out_text
+    assert "PAPERFORGE_CREDENTIAL_OCR__DEFAULT" in out_text
+
+    rc_json = cli.main(["--vault", str(vault), "ocr", "doctor", "--json"])
+    assert rc_json == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is False
+    assert payload["error"]["code"] == "credential.backend_unavailable"
