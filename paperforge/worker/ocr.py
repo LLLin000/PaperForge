@@ -2105,7 +2105,12 @@ def render_page_blocks(
 
 
 def postprocess_ocr_result(
-    vault: Path, key: str, all_results: list[dict], meta: dict | None = None
+    vault: Path,
+    key: str,
+    all_results: list[dict],
+    meta: dict | None = None,
+    *,
+    preserve_raw_result: bool = False,
 ) -> tuple[int, str, str, str, dict]:
     """Post-process OCR results into derived artifacts + version payloads.
 
@@ -2156,7 +2161,9 @@ def postprocess_ocr_result(
     finally:
         if pdf_doc is not None:
             pdf_doc.close()
-    write_json(json_dir / "result.json", all_results)
+    raw_result_path = json_dir / "result.json"
+    if not (preserve_raw_result and raw_result_path.exists()):
+        write_json(raw_result_path, all_results)
 
     # --- Phase 1: raw metadata and source metadata ---
     artifacts = artifact_paths_for_key(vault, key)

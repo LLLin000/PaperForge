@@ -89,6 +89,9 @@ paperforge = [
     "schema/*.yaml",
 ]
 
+[tool.setuptools.exclude-package-data]
+paperforge = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]
+
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/sandbox/00_TestVault/ --strict-markers"
 markers = [

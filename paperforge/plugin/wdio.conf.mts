@@ -24,9 +24,17 @@ process.env.PYTHONPATH = process.env.PYTHONPATH
 // published runtime's site-packages. Without this, credential-gated actions
 // (ocr.run, embed.*) report `unavailable` in-plugin even though the seed
 // file is in place.
+const E2E_ISOLATED_HOME = path.resolve(".obsidian-cache", "e2e-home");
+const ALLOW_REAL_HOME = process.env.PF_E2E_ALLOW_REAL_HOME === "1";
+const RUNTIME_HOME = ALLOW_REAL_HOME ? os.homedir() : E2E_ISOLATED_HOME;
+if (!ALLOW_REAL_HOME) {
+  process.env.PAPERFORGE_HOME = path.join(RUNTIME_HOME, ".paperforge");
+  process.env.PF_E2E_RUNTIME_HOME = RUNTIME_HOME;
+}
+
 try {
   const pointerPath = path.resolve(
-    os.homedir(),
+    RUNTIME_HOME,
     ".paperforge",
     "runtime",
     "pointer.json"

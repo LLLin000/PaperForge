@@ -408,3 +408,69 @@ def test_corrupt_db_auto_quarantine_on_rebuild(tmp_path: Path) -> None:
     eng = rebuild_db_from_truth(vault, backup_existing=True)
     assert eng["memory_build"]["papers_indexed"] == 1
     assert eng.get("quarantined_corrupt_db")
+
+
+def test_meta_only_candidate_resumable_but_never_promotable_or_ready(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Meta-only interrupted candidate offers embed.resume, yet fails verify_candidate/publish and is never ready."""
+    from paperforge import probes as probe_mod
+    from paperforge.embedding.build_target import BuildTargetError, verify_candidate
+    from paperforge.embedding.status import get_embed_status_for_path
+    from paperforge.embedding.substrate import candidate_is_healthy_with_rows
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+    live = get_memory_db_path(vault)
+    live.parent.mkdir(parents=True, exist_ok=True)
+    live_conn = get_connection(live)
+    ensure_vec_extension(live_conn)
+    ensure_schema(live_conn)
+    live_conn.commit()
+    live_conn.close()
+
+    cand = live.with_suffix(".db.build")
+    conn = get_connection(cand)
+    ensure_vec_extension(conn)
+    ensure_schema(conn)
+    conn.execute("INSERT INTO vec_body_meta(rowid, paper_id, chunk_index, unit_id, text) VALUES (1, 'KEY1', 0, 'KEY1:b1', 'txt')")
+    conn.execute("INSERT OR REPLACE INTO build_state (key, value) VALUES ('model', '\"text-embedding-3-small\"')")
+    conn.execute(
+        "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_provider_endpoint', '\"https://api.openai.com/v1\"')"
+    )
+    conn.execute("INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_dimension', '1536')")
+    conn.execute("INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')")
+    conn.commit()
+    conn.close()
+
+    assert candidate_is_healthy_with_rows(cand) is True
+    assert effective_vector_db(vault) == cand
+
+    monkeypatch.setattr(
+        "paperforge.memory.query.get_memory_status",
+        lambda _v: {
+            "db_exists": True, "schema_ok": True, "fresh": True,
+            "hash_match": True, "count_match": True,
+            "paper_count_db": 1, "paper_count_index": 1,
+            "needs_rebuild": False, "schema_version": 7,
+        },
+    )
+    monkeypatch.setattr(
+        "paperforge.embedding.build_state.read_vector_build_state",
+        lambda _v: {"status": "interrupted", "current": 1, "total": 2, "pid": 0, "message": "Interrupted"},
+    )
+    probe_data = probe_mod.probe_memory(vault)
+    assert probe_data["action"]["primary"]["action_id"] == "embed.resume"
+
+    # Must NEVER verify or promote to live, nor report healthy/ready
+    verdict = verify_candidate(cand, dimension=1536, expected_count=1)
+    assert verdict["ok"] is False
+
+    st = get_embed_status_for_path(vault, cand)
+    assert st["healthy"] is False
+    assert st["vector_state"] != "ready"
+
+    sb = ShadowBuild(BuildTarget(source_path=live, vector_path=cand))
+    with pytest.raises(BuildTargetError):
+        sb.publish()
