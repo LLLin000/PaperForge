@@ -353,7 +353,7 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
           text: "Zotero data directory not configured",
         },
       },
-      zoteroDataDir: "D:\\L\\Med\\Research\\99_System\\Zotero",
+      zoteroDataDir: "X:\\Mock\\Zotero",
       lastAutoSyncError: "Zotero data directory not configured",
     });
     expect(zoteroMissingOverride.id).toBe("zotero_not_configured");

@@ -8,11 +8,11 @@
  *   S1  Brand-new host & fresh vault keeps _setup_complete=false across reloads
  *   S2  Existing runtime + fresh vault routes cleanly to zotero_not_configured
  *   S3  Auto-detect never pollutes data.json; backend missing_input overrides cache
- *   S4  Real Zotero SQLite connect & sync (zero stale "BBT" copy, notes + Base built)
+ *   S4  Real Zotero SQLite connect & sync (zero stale "BBT" copy, notes + Bases built)
  *   S5  Version mismatch pointer surfaces engine_version_mismatch
  *   S6  Engine updating & antivirus quarantine hero-card states
  *   S7  Veteran legacy vault upgrade modal + dry-run + cutover + user note safety
- *   S8  Real sync failure (library_sync_error) & recovery back to ready
+ *   S8  Real sync failure (library_sync_error) & recovery via Retry CTA back to ready
  *   S9  4-tab Control Center + EN/ZH language switch with zero runtime errors
  */
 
@@ -80,6 +80,80 @@ async function sandboxBasePath(): Promise<string> {
   });
 }
 
+/**
+ * Wait until async Settings probes + runtime status + sync settle cleanly and
+ * the Control Center Hero Card renders a settled decision (never `"checking"`).
+ */
+async function waitForSettledDecision(
+  expected?: string,
+  timeout = 30000
+): Promise<string> {
+  let lastSnapshot: {
+    decision: string | null;
+    probing: string[];
+    runtimeLoading: boolean;
+    libraryRunning: boolean;
+    autoSyncRunning: boolean;
+    instState?: unknown;
+    libState?: unknown;
+  } = {
+    decision: null,
+    probing: [],
+    runtimeLoading: false,
+    libraryRunning: false,
+    autoSyncRunning: false,
+  };
+
+  await browser.waitUntil(
+    async () => {
+      const snap = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          _autoSyncRunning?: boolean;
+          _settingTab: {
+            containerEl: HTMLElement;
+            _probing?: Set<string>;
+            _runtimeStatusLoading?: boolean;
+            _libraryRunning?: boolean;
+            _capabilityState?: Record<string, unknown>;
+          };
+        };
+        const tab = plugin._settingTab;
+        const card = tab.containerEl.querySelector("[data-pf-decision]");
+        const probing = Array.from(tab._probing ?? []);
+        const runtimeLoading = Boolean(tab._runtimeStatusLoading);
+        const libraryRunning = Boolean(tab._libraryRunning);
+        const autoSyncRunning = Boolean(plugin._autoSyncRunning);
+        const decision = card?.getAttribute("data-pf-decision") ?? null;
+        return {
+          decision,
+          probing,
+          runtimeLoading,
+          libraryRunning,
+          autoSyncRunning,
+          instState: tab._capabilityState?.["installation"],
+          libState: tab._capabilityState?.["library"],
+        };
+      });
+      lastSnapshot = snap;
+      const settled =
+        snap.probing.length === 0 &&
+        !snap.runtimeLoading &&
+        !snap.libraryRunning &&
+        !snap.autoSyncRunning &&
+        snap.decision !== null &&
+        snap.decision !== "checking";
+      if (!settled) return false;
+      return expected ? snap.decision === expected : true;
+    },
+    {
+      timeout,
+      interval: 200,
+      timeoutMsg: `Hero decision did not settle${expected ? ` to "${expected}"` : ""}: last=${JSON.stringify(lastSnapshot)}`,
+    }
+  );
+  return lastSnapshot.decision ?? "";
+}
+
 describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
   let savedPointerRaw: string | null = null;
 
@@ -114,34 +188,37 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
     await browser.reloadObsidian({ vault: FRESH_VAULT });
     await dismissModals();
 
-    const firstRender = await browser.executeObsidian(async ({ app }) => {
-      const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        settings: Record<string, unknown>;
-        saveSettings(): Promise<void>;
-        _settingTab: { containerEl: HTMLElement; display(): void };
-      };
-      plugin.settings.language = "en";
-      plugin.settings._setup_complete = false;
-      plugin.settings._setup_journey_started = false;
-      plugin.settings.vault_path = "/tmp/fake-sandbox";
-      plugin.settings.last_seen_version = "";
-      plugin.settings.capabilityState = {
-        library: {
-          schema_version: 2,
-          module: "library",
-          capability_state: "missing_input",
-          user_state: "setup_required",
-          reason: {
-            code: "library.zotero_missing",
-            text: "Zotero data directory not configured",
+    const vaultPath = await sandboxBasePath();
+    const firstRender = await browser.executeObsidian(
+      async ({ app }, vp: string) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          settings: Record<string, unknown>;
+          saveSettings(): Promise<void>;
+        };
+        plugin.settings.language = "en";
+        plugin.settings._setup_complete = false;
+        plugin.settings._setup_journey_started = false;
+        plugin.settings.vault_path = vp;
+        plugin.settings.last_seen_version = "";
+        plugin.settings.capabilityState = {
+          library: {
+            schema_version: 2,
+            module: "library",
+            capability_state: "missing_input",
+            user_state: "setup_required",
+            reason: {
+              code: "library.zotero_missing",
+              text: "Zotero data directory not configured",
+            },
           },
-        },
-      };
-      await plugin.saveSettings();
-      return {
-        setupComplete: plugin.settings._setup_complete,
-      };
-    });
+        };
+        await plugin.saveSettings();
+        return {
+          setupComplete: plugin.settings._setup_complete,
+        };
+      },
+      vaultPath
+    );
     expect(firstRender.setupComplete).toBe(false);
 
     // Reload the SAME copied vault directory without wiping data.json
@@ -187,74 +264,78 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
 
     await openPaperForgeSettings();
 
-    const s2 = await browser.executeObsidian(async ({ app }) => {
+    // S2: Click real Express footer "Later" button to inspect Overview Hero Card
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { containerEl: HTMLElement; _goHome(): void };
+      };
+      const laterBtn = plugin._settingTab.containerEl.querySelector(
+        ".pf-express-footer-actions button.pf-action-btn"
+      ) as HTMLButtonElement | null;
+      if (laterBtn) {
+        laterBtn.click();
+      } else {
+        plugin._settingTab._goHome();
+      }
+    });
+    const s2Decision = await waitForSettledDecision("zotero_not_configured");
+    expect(s2Decision).toBe("zotero_not_configured");
+
+    const s2Err = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _lastAutoSyncError: unknown;
-        _settingTab: {
-          containerEl: HTMLElement;
-          _goHome(): void;
-          display(): void;
-        };
       };
-      plugin._settingTab._goHome();
-      const card =
-        plugin._settingTab.containerEl.querySelector("[data-pf-decision]");
-      return {
-        decision: card?.getAttribute("data-pf-decision") ?? null,
-        lastAutoSyncError: plugin._lastAutoSyncError,
-      };
+      return plugin._lastAutoSyncError;
     });
-    expect(s2.decision).toBe("zotero_not_configured");
-    expect(s2.lastAutoSyncError).toBeNull();
+    expect(s2Err).toBeNull();
 
-    // S3: Auto-detect keeps data.json clean; stale zotero_data_dir + autoSyncError
-    // STILL must show zotero_not_configured when backend reports library.zotero_missing.
-    const s3 = await browser.executeObsidian(async ({ app }, zDir: string) => {
+    // S3: Auto-detect returns Zotero stats without touching data.json; even if
+    // data.json caches a Zotero path, real backend probe missing_input wins.
+    const detected = await browser.executeObsidian(
+      async ({ app }, zDir: string) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): {
+            zoteroDetect(dir?: string): Promise<{
+              found: boolean;
+              total_papers: number;
+            }>;
+          };
+        };
+        return await plugin.getClient().zoteroDetect(zDir);
+      },
+      ZOTERO_FIXTURE
+    );
+    expect(detected.found).toBe(true);
+    expect(detected.total_papers).toBe(2);
+
+    const vaultPath = await sandboxBasePath();
+    const dataJsonPath = path.join(
+      vaultPath,
+      ".obsidian",
+      "plugins",
+      "paperforge",
+      "data.json"
+    );
+    if (existsSync(dataJsonPath)) {
+      const persisted = JSON.parse(readFileSync(dataJsonPath, "utf8")) as {
+        zotero_data_dir?: string;
+      };
+      expect(Boolean(persisted.zotero_data_dir)).toBe(false);
+    }
+
+    await browser.executeObsidian(async ({ app }, zDir: string) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         settings: Record<string, unknown>;
-        _lastAutoSyncError: { message: string; at: number } | null;
-        getClient(): {
-          zoteroDetect(dir?: string): Promise<{
-            found: boolean;
-            total_papers: number;
-          }>;
-        };
-        _settingTab: {
-          containerEl: HTMLElement;
-          _capabilityState: Record<string, unknown>;
-          display(): void;
-        };
+        saveSettings(): Promise<void>;
+        _settingTab: { _refreshAllModules(): void };
       };
-      const detected = await plugin.getClient().zoteroDetect(zDir);
       plugin.settings.zotero_data_dir = zDir;
-      plugin._lastAutoSyncError = {
-        message: "Zotero data directory not configured",
-        at: Date.now(),
-      };
-      plugin._settingTab._capabilityState.library = {
-        schema_version: 2,
-        module: "library",
-        capability_state: "missing_input",
-        user_state: "setup_required",
-        reason: {
-          code: "library.zotero_missing",
-          text: "Zotero data directory not configured",
-        },
-        notices: [],
-        action: { primary: null },
-      };
-      plugin._settingTab.display();
-      const card =
-        plugin._settingTab.containerEl.querySelector("[data-pf-decision]");
-      return {
-        detectedFound: detected.found,
-        detectedPapers: detected.total_papers,
-        decision: card?.getAttribute("data-pf-decision") ?? null,
-      };
+      await plugin.saveSettings();
+      plugin._settingTab._refreshAllModules();
     }, ZOTERO_FIXTURE);
-    expect(s3.detectedFound).toBe(true);
-    expect(s3.detectedPapers).toBe(2);
-    expect(s3.decision).toBe("zotero_not_configured");
+
+    const s3Decision = await waitForSettledDecision("zotero_not_configured");
+    expect(s3Decision).toBe("zotero_not_configured");
   });
 
   // ── S4: Real Zotero SQLite setup & sync through UI (zero stale BBT text) ──
@@ -275,20 +356,40 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
 
     await openPaperForgeSettings();
 
+    // Wait for real runtime status probe to finish rather than mocking _runtimeStatus
+    await browser.waitUntil(
+      async () => {
+        return await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: {
+              containerEl: HTMLElement;
+              _runtimeStatusLoading?: boolean;
+              _runtimeStatus?: { runtime_ready?: boolean } | null;
+            };
+          };
+          const tab = plugin._settingTab;
+          return (
+            !tab._runtimeStatusLoading &&
+            tab._runtimeStatus?.runtime_ready === true &&
+            Boolean(
+              tab.containerEl.querySelector(
+                '[data-pf-testid="express-zotero-input"]'
+              )
+            )
+          );
+        });
+      },
+      {
+        timeout: 20000,
+        interval: 200,
+        timeoutMsg: "S4 real runtime status check did not become ready",
+      }
+    );
+
     await browser.executeObsidian(async ({ app }, zDir: string) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        _settingTab: {
-          containerEl: HTMLElement;
-          _runtimeStatus: { runtime_ready: boolean } | null;
-          _runtimeStatusVersion: string | null;
-          display(): void;
-        };
-        manifest: { version: string };
+        _settingTab: { containerEl: HTMLElement };
       };
-      plugin._settingTab._runtimeStatus = { runtime_ready: true };
-      plugin._settingTab._runtimeStatusVersion = plugin.manifest.version;
-      plugin._settingTab.display();
-
       const zInput = plugin._settingTab.containerEl.querySelector(
         '[data-pf-testid="express-zotero-input"]'
       ) as HTMLInputElement | null;
@@ -354,33 +455,37 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
     const pfJson = JSON.parse(
       readFileSync(path.join(vaultPath, "paperforge.json"), "utf8")
     ) as Record<string, unknown>;
+    expect(pfJson.schema_version).toBe(2);
     expect(pfJson.zotero_source_mode).toBe("sqlite");
     expect(String(pfJson.zotero_data_dir || "")).toBe(ZOTERO_FIXTURE);
-    expect(existsSync(path.join(vaultPath, "Bases", "Literature.base"))).toBe(
+    expect(
+      existsSync(path.join(vaultPath, "Bases", "Literature Hub.base"))
+    ).toBe(true);
+    expect(existsSync(path.join(vaultPath, "Bases", "BoneRegen.base"))).toBe(
       true
     );
-    const litFiles = readdirSync(path.join(vaultPath, "Literature"), {
-      recursive: true,
-    }) as string[];
-    expect(litFiles.some((f) => f.endsWith(".md"))).toBe(true);
+    const boneRegenDir = path.join(
+      vaultPath,
+      "Resources",
+      "Literature",
+      "BoneRegen"
+    );
+    expect(existsSync(boneRegenDir)).toBe(true);
+    const litFiles = (
+      readdirSync(boneRegenDir, { recursive: true }) as string[]
+    ).filter((f) => f.endsWith(".md"));
+    expect(litFiles.length).toBeGreaterThanOrEqual(2);
+    expect(litFiles.some((f) => f.includes("ZOTKEY01"))).toBe(true);
+    expect(litFiles.some((f) => f.includes("ZOTKEY02"))).toBe(true);
 
-    // Also probe Overview Hero Card == ready
+    // Navigate back to Control Center Overview and verify real settled Hero Card
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _settingTab: { _goHome(): void };
       };
       plugin._settingTab._goHome();
     });
-    const heroDecision = await browser.executeObsidian(async ({ app }) => {
-      const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        _settingTab: { containerEl: HTMLElement };
-      };
-      return (
-        plugin._settingTab.containerEl
-          .querySelector("[data-pf-decision]")
-          ?.getAttribute("data-pf-decision") ?? null
-      );
-    });
+    const heroDecision = await waitForSettledDecision("ready");
     expect(heroDecision).toBe("ready");
   });
 
@@ -404,20 +509,22 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
     });
     await openPaperForgeSettings();
 
-    const s5Decision = await browser.executeObsidian(async ({ app }) => {
-      const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        _settingTab: { containerEl: HTMLElement };
-      };
-      return (
-        plugin._settingTab.containerEl
-          .querySelector("[data-pf-decision]")
-          ?.getAttribute("data-pf-decision") ?? null
-      );
-    });
+    const s5Decision = await waitForSettledDecision("engine_version_mismatch");
     expect(s5Decision).toBe("engine_version_mismatch");
 
-    // Restore pointer cleanly before S6
+    // Restore pointer cleanly before S6 and settle probes
     writeFileSync(POINTER_PATH, savedPointerRaw!, "utf8");
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: {
+          _refreshRuntimeStatus?(force?: boolean): void;
+          _refreshAllModules(): void;
+        };
+      };
+      plugin._settingTab._refreshRuntimeStatus?.(true);
+      plugin._settingTab._refreshAllModules();
+    });
+    await waitForSettledDecision();
 
     const s6 = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -477,38 +584,23 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
     });
 
     await openPaperForgeSettings();
-
-    const heroDecisionBefore = await browser.executeObsidian(
-      async ({ app }) => {
-        const plugin = app.plugins.plugins["paperforge"] as unknown as {
-          _settingTab: {
-            containerEl: HTMLElement;
-            _capabilityState: Record<string, unknown>;
-            display(): void;
-          };
-        };
-        // Ensure installation capability env is ready so step 6 legacy_vault_upgrade fires cleanly
-        plugin._settingTab._capabilityState.installation = {
-          schema_version: 2,
-          module: "installation",
-          capability_state: "ready",
-          user_state: "ready",
-          reason: { code: "installation.ready", text: "Ready" },
-          notices: [],
-          action: { primary: null },
-        };
-        plugin._settingTab.display();
-        const card =
-          plugin._settingTab.containerEl.querySelector("[data-pf-decision]");
-        const btn = card?.querySelector(
-          ".pf-cc-summary-actions button.pf-action-btn"
-        ) as HTMLButtonElement | null;
-        const decision = card?.getAttribute("data-pf-decision") ?? null;
-        btn?.click();
-        return decision;
-      }
+    const heroDecisionBefore = await waitForSettledDecision(
+      "legacy_vault_upgrade"
     );
     expect(heroDecisionBefore).toBe("legacy_vault_upgrade");
+
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { containerEl: HTMLElement };
+      };
+      const btn = plugin._settingTab.containerEl.querySelector(
+        "[data-pf-decision] .pf-cc-summary-actions button.pf-action-btn"
+      ) as HTMLButtonElement | null;
+      if (!btn) {
+        throw new Error("legacy_vault_upgrade Hero CTA button missing");
+      }
+      btn.click();
+    });
 
     // Wait for Upgrade Modal and click Apply
     const applyBtn = await browser.$('[data-pf-testid="upgrade-apply-btn"]');
@@ -531,31 +623,29 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
     expect(pfJsonAfter.vault_config?.system_dir).toBe(".paperforge");
     expect(readFileSync(personalNotePath, "utf8")).toBe(personalBefore);
 
-    const heroAfter = await browser.executeObsidian(async ({ app }) => {
+    await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         refreshUpgradePlan(): Promise<unknown>;
-        _settingTab: { containerEl: HTMLElement; display(): void };
+        _settingTab: { _refreshAllModules(): void };
       };
       await plugin.refreshUpgradePlan();
-      plugin._settingTab.display();
-      return (
-        plugin._settingTab.containerEl
-          .querySelector("[data-pf-decision]")
-          ?.getAttribute("data-pf-decision") ?? null
-      );
+      plugin._settingTab._refreshAllModules();
     });
+    const heroAfter = await waitForSettledDecision();
     expect(heroAfter).not.toBe("legacy_vault_upgrade");
   });
 
-  // ── S8: Sync failure state & recovery ────────────────────────────────────
-  it("S8: surfaces library_sync_error on invalid Zotero dir and recovers to ready after correction", async function () {
+  // ── S8: Real sync failure state & recovery via Hero Retry CTA ───────────
+  it("S8: surfaces library_sync_error on failed sync and recovers to ready after correction", async function () {
     await browser.reloadObsidian({ vault: FRESH_VAULT });
     await dismissModals();
+
+    const vaultPath = await sandboxBasePath();
     await browser.executeObsidian(async ({ app }, zDir: string) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         settings: Record<string, unknown>;
-        _lastAutoSyncError: { message: string; at: number } | null;
         saveSettings(): Promise<void>;
+        clearLastAutoSyncError?(): void;
         getClient(): {
           setup(opts: Record<string, unknown>): { outcome: Promise<unknown> };
           configSet(k: string, v: string): Promise<unknown>;
@@ -574,57 +664,65 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
         zoteroData: zDir,
         modular: true,
       }).outcome;
+      await plugin.getClient().configSet("zotero_source_mode", "sqlite");
       await plugin.getClient().sync();
-      plugin._lastAutoSyncError = {
-        message: "zotero.sqlite is locked by another process",
-        at: Date.now(),
-      };
+      plugin.clearLastAutoSyncError?.();
     }, ZOTERO_FIXTURE);
 
     await openPaperForgeSettings();
-    const s8 = await browser.executeObsidian(async ({ app }) => {
-      const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        _lastAutoSyncError: { message: string; at: number } | null;
-        _settingTab: {
-          containerEl: HTMLElement;
-          _capabilityState: Record<string, unknown>;
-          display(): void;
-        };
-      };
-      plugin._settingTab._capabilityState.installation = {
-        schema_version: 2,
-        module: "installation",
-        capability_state: "ready",
-        user_state: "ready",
-        reason: { code: "installation.ready", text: "Ready" },
-        notices: [],
-        action: { primary: null },
-      };
-      plugin._settingTab._capabilityState.library = {
-        schema_version: 2,
-        module: "library",
-        capability_state: "ready",
-        user_state: "ready",
-        reason: { code: "library.ready", text: "Ready" },
-        notices: [],
-        action: { primary: null },
-      };
-      plugin._settingTab.display();
-      const errDecision =
-        plugin._settingTab.containerEl
-          .querySelector("[data-pf-decision]")
-          ?.getAttribute("data-pf-decision") ?? null;
+    const initialDecision = await waitForSettledDecision("ready");
+    expect(initialDecision).toBe("ready");
 
-      plugin._lastAutoSyncError = null;
-      plugin._settingTab.display();
-      const recoveredDecision =
-        plugin._settingTab.containerEl
-          .querySelector("[data-pf-decision]")
-          ?.getAttribute("data-pf-decision") ?? null;
-      return { errDecision, recoveredDecision };
-    });
-    expect(s8.errDecision).toBe("library_sync_error");
-    expect(s8.recoveredDecision).toBe("ready");
+    // Break Zotero DB inside an existing directory so probe sees configured path
+    // while real sync() fails with non-zero exit code -> library.sync_failed
+    const brokenZoteroDir = path.join(vaultPath, "broken-zotero");
+    mkdirSync(brokenZoteroDir, { recursive: true });
+    writeFileSync(
+      path.join(brokenZoteroDir, "zotero.sqlite"),
+      "corrupt-sqlite-header",
+      "utf8"
+    );
+
+    await browser.executeObsidian(async ({ app }, badDir: string) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: Record<string, unknown>;
+        saveSettings(): Promise<void>;
+        getClient(): { configSet(k: string, v: string): Promise<unknown> };
+        _settingTab: { _runManualSync(): void };
+      };
+      plugin.settings.zotero_data_dir = badDir;
+      await plugin.saveSettings();
+      await plugin.getClient().configSet("zotero_data_dir", badDir);
+      plugin._settingTab._runManualSync();
+    }, brokenZoteroDir);
+
+    const errDecision = await waitForSettledDecision("library_sync_error");
+    expect(errDecision).toBe("library_sync_error");
+
+    // Restore valid Zotero dir and click Hero Card's primary Retry CTA
+    await browser.executeObsidian(async ({ app }, goodDir: string) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: Record<string, unknown>;
+        saveSettings(): Promise<void>;
+        clearLastAutoSyncError?(): void;
+        getClient(): { configSet(k: string, v: string): Promise<unknown> };
+        _settingTab: { containerEl: HTMLElement };
+      };
+      plugin.settings.zotero_data_dir = goodDir;
+      await plugin.saveSettings();
+      await plugin.getClient().configSet("zotero_data_dir", goodDir);
+      plugin.clearLastAutoSyncError?.();
+      const retryBtn = plugin._settingTab.containerEl.querySelector(
+        "[data-pf-decision] .pf-cc-summary-actions button.pf-action-btn"
+      ) as HTMLButtonElement | null;
+      if (!retryBtn) {
+        throw new Error("library_sync_error Retry CTA button missing");
+      }
+      retryBtn.click();
+    }, ZOTERO_FIXTURE);
+
+    const recoveredDecision = await waitForSettledDecision("ready");
+    expect(recoveredDecision).toBe("ready");
   });
 
   // ── S9: 4-tab Settings navigation & EN/ZH sweep with zero runtime errors ─

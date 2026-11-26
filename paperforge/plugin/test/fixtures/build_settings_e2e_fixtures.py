@@ -12,9 +12,15 @@ from __future__ import annotations
 import json
 import shutil
 import sqlite3
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from paperforge.config import paperforge_paths  # noqa: E402
+
 PLUGIN_DIR = Path(__file__).resolve().parents[2]
 VAULTS_DIR = PLUGIN_DIR / "test" / "vaults"
 
@@ -63,10 +69,21 @@ def _build_zotero_fixture(zdir: Path) -> None:
         CREATE TABLE creators (creatorID INTEGER PRIMARY KEY, firstName TEXT, lastName TEXT, fieldMode INTEGER);
         CREATE TABLE creatorTypes (creatorTypeID INTEGER PRIMARY KEY, creatorType TEXT);
         CREATE TABLE itemCreators (itemID INTEGER, creatorID INTEGER, creatorTypeID INTEGER, orderIndex INTEGER);
-        CREATE TABLE collections (collectionID INTEGER PRIMARY KEY, collectionName TEXT, parentCollectionID INTEGER, key TEXT);
+        CREATE TABLE collections (
+            collectionID INTEGER PRIMARY KEY,
+            collectionName TEXT,
+            parentCollectionID INTEGER,
+            key TEXT
+        );
         CREATE TABLE deletedCollections (collectionID INTEGER PRIMARY KEY);
         CREATE TABLE collectionItems (collectionID INTEGER, itemID INTEGER);
-        CREATE TABLE itemAttachments (itemID INTEGER PRIMARY KEY, parentItemID INTEGER, linkMode INTEGER, contentType TEXT, path TEXT);
+        CREATE TABLE itemAttachments (
+            itemID INTEGER PRIMARY KEY,
+            parentItemID INTEGER,
+            linkMode INTEGER,
+            contentType TEXT,
+            path TEXT
+        );
 
         INSERT INTO itemTypes VALUES (1, 'journalArticle'), (2, 'attachment');
         INSERT INTO items VALUES
@@ -132,7 +149,16 @@ def _build_legacy_vault(vault: Path) -> None:
         encoding="utf-8",
     )
 
-    idx_dir = vault / "System" / "PaperForge" / "indexes"
+    paths = paperforge_paths(
+        vault,
+        {
+            "system_dir": "System",
+            "resources_dir": "Resources",
+            "literature_dir": "Literature",
+            "base_dir": "Bases",
+        },
+    )
+    idx_dir = paths["paperforge"] / "indexes"
     idx_dir.mkdir(parents=True, exist_ok=True)
     (idx_dir / "formal-library.json").write_text(
         json.dumps(
@@ -157,11 +183,11 @@ def _build_legacy_vault(vault: Path) -> None:
     if OCR_FIXTURE.exists():
         shutil.copytree(
             OCR_FIXTURE,
-            vault / "System" / "PaperForge" / "ocr" / "TSTONE001",
+            paths["ocr"] / "TSTONE001",
             dirs_exist_ok=True,
         )
     if PDF_FIXTURE.exists():
-        pdf_dst = vault / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
+        pdf_dst = paths["zotero_dir"] / "storage" / "TSTONE001" / "TSTONE001.pdf"
         pdf_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(PDF_FIXTURE, pdf_dst)
 
