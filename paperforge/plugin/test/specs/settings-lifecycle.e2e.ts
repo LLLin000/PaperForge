@@ -966,7 +966,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     expect(panelState.hasSetupCta).toBe(false);
     expect(panelState.hasSearchInput).toBe(true);
 
-    // Live search across the freshly synced library
+    // Live search before building Memory index shows the honest recovery card
     await browser.executeObsidian(async () => {
       const doc =
         typeof activeDocument !== "undefined" ? activeDocument : document;
@@ -977,6 +977,57 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       if (!input) throw new Error("paperforge-search-input missing");
       input.value = "Hydrogel";
       input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      );
+    });
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async () => {
+          const doc =
+            typeof activeDocument !== "undefined" ? activeDocument : document;
+          const card =
+            doc.querySelector(".paperforge-search-state-card.warning-soft") ??
+            document.querySelector(
+              ".paperforge-search-state-card.warning-soft"
+            );
+          return Boolean(card && card.querySelector("button"));
+        }),
+      {
+        timeout: 15000,
+        timeoutMsg:
+          "Pre-build search did not render missing-memory-index recovery card",
+      }
+    );
+
+    // Build local Memory FTS index via real plugin action, then search hits real note
+    const memBuildRes = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getClient(): {
+          runAction(req: {
+            action_id: string;
+            scope: { kind: string };
+            confirm: string;
+          }): Promise<{ ok?: boolean; error?: string }>;
+        };
+      };
+      return await plugin.getClient().runAction({
+        action_id: "memory.build",
+        scope: { kind: "all" },
+        confirm: "memory.build",
+      });
+    });
+    expect(memBuildRes?.ok).toBe(true);
+
+    await browser.executeObsidian(async () => {
+      const doc =
+        typeof activeDocument !== "undefined" ? activeDocument : document;
+      const input = (doc.querySelector(".paperforge-search-input") ??
+        document.querySelector(
+          ".paperforge-search-input"
+        )) as HTMLInputElement | null;
+      if (!input) throw new Error("paperforge-search-input missing");
+      input.value = "Hydrogel";
       input.dispatchEvent(
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
       );
@@ -1203,7 +1254,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       badgeCls: "attention",
       expectCodeBlock: true,
       primaryLabelRe: /copy/i,
-      secondaryLabelRe: /dismiss/i,
+      secondaryLabelRe: /got it|dismiss/i,
     });
 
     const afterDismiss = await browser.executeObsidian(async ({ app }) => {
