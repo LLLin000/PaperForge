@@ -52,7 +52,9 @@ def resolve_source_pdf(vault_root: Path, locator: str | None) -> Path | None:
     if candidate is None:
         raw = str(locator).strip()
         if raw.startswith("[[") and raw.endswith("]]"):
-            raw = raw[2:-2]
+            raw = raw[2:-2].strip()
+        if raw.startswith("absolute:"):
+            raw = raw[len("absolute:") :].strip()
         direct = Path(raw)
         if direct.exists():
             candidate = direct
@@ -97,7 +99,11 @@ def resolve_pdf_path(
     # 2026-08-16: formal-library pdf_path may be a [[wikilink]] locator —
     # strip it so the vault-relative / storage branches below can resolve.
     if raw.startswith("[[") and raw.endswith("]]"):
-        raw = raw[2:-2]
+        raw = raw[2:-2].strip()
+    if raw.startswith("absolute:"):
+        raw = raw[len("absolute:") :].strip()
+    if not raw:
+        return ""
 
     # Try absolute first
     candidate = Path(raw)

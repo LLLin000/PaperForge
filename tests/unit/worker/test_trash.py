@@ -152,3 +152,57 @@ class TestRestoreAndPurge:
         assert not Path(rec["trash_path"]).exists()
         # non-trash content untouched
         assert root.exists()
+
+    def test_restore_removes_item_from_list_trash(self, tmp_path: Path) -> None:
+        """PF-MIG-016: restore_trash cleans up manifest.json so list_trash shows no ghost entries."""
+        vault = _vault(tmp_path)
+        root = vault / "99_System" / "PaperForge" / "ocr"
+        target = root / "KEY_GHOST"
+        target.mkdir(parents=True)
+        (target / "f.md").write_text("x", encoding="utf-8")
+        rec = trash_remove(target, vault=vault, allowed_root=root, operation="library.prune", paper_key="KEY_GHOST")
+        assert rec is not None
+        assert len(list_trash(vault)) == 1
+
+        restore_trash(vault, rec["trash_id"])
+        assert list_trash(vault) == []
+
+    def test_restore_rejects_external_original_or_trash_path(self, tmp_path: Path) -> None:
+        """PF-SEC-008: tampered trash manifest escaping vault or trash root must raise DangerousPathError."""
+        vault = _vault(tmp_path)
+        outside_target = tmp_path / "outside_secret.txt"
+        trash_root = vault / ".paperforge" / "trash" / "20260101T000000Z" / "evil01"
+        trash_root.mkdir(parents=True)
+        payload = trash_root / "payload.txt"
+        payload.write_text("evil", encoding="utf-8")
+        (trash_root / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "trash_id": "evil01",
+                    "operation": "test",
+                    "original_path": str(vault / ".." / "outside_secret.txt"),
+                    "trash_path": str(payload),
+                }
+            ),
+            encoding="utf-8",
+        )
+        with pytest.raises(DangerousPathError):
+            restore_trash(vault, "evil01")
+        assert not outside_target.exists()
+
+        outside_src = tmp_path / "external_dir"
+        outside_src.mkdir()
+        (trash_root / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "trash_id": "evil01",
+                    "operation": "test",
+                    "original_path": str(vault / "99_System" / "restored"),
+                    "trash_path": str(outside_src),
+                }
+            ),
+            encoding="utf-8",
+        )
+        with pytest.raises(DangerousPathError):
+            restore_trash(vault, "evil01")
+        assert outside_src.exists()

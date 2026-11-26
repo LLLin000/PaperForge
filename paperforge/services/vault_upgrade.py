@@ -114,13 +114,50 @@ def _capture_pre_upgrade_counts(
     vault_root: Path,
     engine_root: Path,
     lit_root: Path | None,
+    *,
+    fast_mode: bool = False,
 ) -> dict[str, int]:
     """Capture non-zero lossless data invariants before any upgrade mutation."""
+    if fast_mode:
+        tier0_valid = 0
+        seen_ocr_keys: set[str] = set()
+        for ocr_parent in (engine_root / "ocr", vault_root / ".paperforge" / "ocr"):
+            if not ocr_parent.is_dir():
+                continue
+            with contextlib.suppress(OSError):
+                with os.scandir(ocr_parent) as it:
+                    for entry in it:
+                        if not entry.is_dir() or entry.name in seen_ocr_keys:
+                            continue
+                        rj = Path(entry.path) / "json" / "result.json"
+                        if rj.is_file():
+                            with contextlib.suppress(OSError):
+                                if rj.stat().st_size > 2:
+                                    tier0_valid += 1
+                                    seen_ocr_keys.add(entry.name)
+        ws_count = 0
+        if lit_root and lit_root.is_dir():
+            with contextlib.suppress(OSError):
+                with os.scandir(lit_root) as d_it:
+                    for dom in d_it:
+                        if not dom.is_dir() or dom.name.startswith("."):
+                            continue
+                        with os.scandir(dom.path) as w_it:
+                            for ws in w_it:
+                                if ws.is_dir() and ws.name not in ("ai", "assets"):
+                                    ws_count += 1
+        return {
+            "tier0_ocr_valid": tier0_valid,
+            "workspaces": ws_count,
+            "annotations_files": 0,
+            "memory_card_files": 0,
+        }
+
     from paperforge.materialization.ocr import validate_result_json
     from paperforge.services.identity_resolver import scan_vault_identities
 
     tier0_valid = 0
-    seen_ocr_keys: set[str] = set()
+    seen_ocr_keys = set()
     for ocr_parent in (engine_root / "ocr", vault_root / ".paperforge" / "ocr"):
         if not ocr_parent.is_dir():
             continue
@@ -339,6 +376,8 @@ def _check_disk_headroom(vault_root: Path, required_bytes: int) -> tuple[bool, i
 
 def _inject_backlink_alias(note_path: Path, old_stem: str) -> None:
     """Preserve `<KEY> - <Title>` inside YAML `aliases` so existing Obsidian `[[wikilinks]]` never break."""
+    from paperforge.adapters.obsidian_frontmatter import read_frontmatter_dict
+
     with contextlib.suppress(OSError, UnicodeDecodeError):
         text = note_path.read_text(encoding="utf-8")
         if not text.startswith("---"):
@@ -347,13 +386,50 @@ def _inject_backlink_alias(note_path: Path, old_stem: str) -> None:
         if end_idx == -1:
             return
         fm_part = text[:end_idx]
-        if old_stem in fm_part:
+        existing_fm = read_frontmatter_dict(text)
+        existing_aliases = existing_fm.get("aliases")
+        if isinstance(existing_aliases, list):
+            if any(str(a).strip() == old_stem for a in existing_aliases):
+                return
+        elif isinstance(existing_aliases, str) and existing_aliases.strip() == old_stem:
             return
+
         escaped = old_stem.replace('"', '\\"')
         if re.search(r"^aliases:\s*\[", fm_part, re.MULTILINE):
             new_fm = re.sub(
                 r"^(aliases:\s*\[)(.*?)(\]\s*)$",
-                lambda m: f'{m.group(1)}{m.group(2)}, "{escaped}"{m.group(3)}' if m.group(2).strip() else f'{m.group(1)}"{escaped}"{m.group(3)}',
+                lambda m: (
+                    f'{m.group(1)}{m.group(2)}, "{escaped}"{m.group(3)}'
+                    if m.group(2).strip()
+                    else f'{m.group(1)}"{escaped}"{m.group(3)}'
+                ),
+                fm_part,
+                count=1,
+                flags=re.MULTILINE,
+            )
+        elif re.search(r"^aliases:\s*$", fm_part, re.MULTILINE):
+            lines = fm_part.splitlines()
+            out_lines: list[str] = []
+            inserted = False
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                out_lines.append(line)
+                if not inserted and re.match(r"^aliases:\s*$", line):
+                    j = i + 1
+                    while j < len(lines) and re.match(r"^\s+-\s+", lines[j]):
+                        out_lines.append(lines[j])
+                        j += 1
+                    out_lines.append(f'  - "{escaped}"')
+                    inserted = True
+                    i = j
+                    continue
+                i += 1
+            new_fm = "\n".join(out_lines)
+        elif re.search(r"^aliases:\s+\S+", fm_part, re.MULTILINE):
+            new_fm = re.sub(
+                r"^aliases:\s+(.+?)\s*$",
+                lambda m: f'aliases:\n  - "{m.group(1).strip().strip(chr(34)).strip(chr(39))}"\n  - "{escaped}"',
                 fm_part,
                 count=1,
                 flags=re.MULTILINE,
@@ -366,13 +442,20 @@ def _inject_backlink_alias(note_path: Path, old_stem: str) -> None:
             write_text_atomic(note_path, new_fm + text[end_idx:])
 
 
-def _snapshot_preflight_backups(vault_root: Path, engine_root: Path, configured_sys_dir: str) -> Path:
-    """Create immutable pre-flight copies of small high-value files before any mutation."""
+def _snapshot_preflight_backups(
+    vault_root: Path,
+    engine_root: Path,
+    configured_sys_dir: str,
+    configured_base_dir: str = "",
+) -> Path:
+    """Create immutable pre-flight copies of small high-value files before any mutation.
+
+    Never copies plaintext secret files (``.env``) into the backup directory.
+    """
     snap_dir = vault_root / ".paperforge" / "backups" / f"upgrade-{_utcnow_compact()}"
     snap_dir.mkdir(parents=True, exist_ok=True)
     for rel in (
         "paperforge.json",
-        ".env",
         ".obsidian/plugins/paperforge/data.json",
         ".obsidian/plugins/paperforge/manifest.json",
     ):
@@ -381,21 +464,45 @@ def _snapshot_preflight_backups(vault_root: Path, engine_root: Path, configured_
             dst = snap_dir / rel
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(src), str(dst))
-    for base_dir in (vault_root / "Bases", vault_root / "05_Bases"):
-        if base_dir.is_dir():
-            for bf in base_dir.glob("*.base"):
-                dst = snap_dir / bf.relative_to(vault_root)
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(str(bf), str(dst))
+
+    base_dir_cands: list[str] = ["Bases", "05_Bases"]
+    cfg_base_norm = configured_base_dir.replace("\\", "/").strip().strip("/")
+    if cfg_base_norm and cfg_base_norm not in (".", "..") and cfg_base_norm not in base_dir_cands:
+        base_dir_cands.append(cfg_base_norm)
+
+    snapshotted_base_dirs: list[str] = []
+    seen_base_dirs: set[Path] = set()
+    for rel_b in base_dir_cands:
+        base_dir = (vault_root / rel_b).resolve()
+        if not base_dir.is_relative_to(vault_root) or base_dir == vault_root:
+            continue
+        if base_dir in seen_base_dirs or not base_dir.is_dir():
+            continue
+        seen_base_dirs.add(base_dir)
+        copied_any = False
+        for bf in base_dir.glob("*.base"):
+            dst = snap_dir / bf.relative_to(vault_root)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(bf), str(dst))
+            copied_any = True
+        if copied_any:
+            snapshotted_base_dirs.append(base_dir.relative_to(vault_root).as_posix())
+
     idx_file = engine_root / "indexes" / "formal-library.json"
     if idx_file.is_file():
         shutil.copy2(str(idx_file), str(snap_dir / "formal-library.json"))
+
+    dotenv_keys = _inspect_env_keys(vault_root / ".env")
     write_json_atomic(
         snap_dir / "cutover-meta.json",
         {
             "created_at": _utcnow_iso(),
             "previous_system_dir": configured_sys_dir,
+            "previous_base_dir": cfg_base_norm or "Bases",
+            "snapshotted_base_dirs": snapshotted_base_dirs,
             "legacy_engine_root": str(engine_root),
+            "dotenv_present": bool(dotenv_keys),
+            "dotenv_keys": dotenv_keys,
         },
     )
     return snap_dir
@@ -429,10 +536,50 @@ def _detect_legacy_engine_root(vault_root: Path, configured_sys_dir: str) -> Pat
     return None
 
 
-def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
+def _resolve_layout_from_raw(vault_root: Path, cfg_raw: dict[str, Any]) -> dict[str, Any]:
+    """Resolve layout roots from raw/legacy paperforge.json or filesystem probes when load_config raises ConfigError."""
+    vc = cfg_raw.get("vault_config") if isinstance(cfg_raw.get("vault_config"), dict) else {}
+    sys_dir = str(vc.get("system_dir") or cfg_raw.get("system_dir") or "System")
+    skill_dir = str(vc.get("skill_dir") or cfg_raw.get("skill_dir") or ".opencode/skills")
+    zotero_dir_val = str(cfg_raw.get("zotero_data_dir") or "")
+
+    res_dir = str(vc.get("resources_dir") or cfg_raw.get("resources_dir") or "").strip()
+    lit_sub = str(vc.get("literature_dir") or cfg_raw.get("literature_dir") or "Literature").strip() or "Literature"
+    ctrl_sub = str(vc.get("control_dir") or cfg_raw.get("control_dir") or "LiteratureControl").strip() or "LiteratureControl"
+    base_sub = str(vc.get("base_dir") or cfg_raw.get("base_dir") or "").strip()
+
+    if res_dir:
+        lit_root = vault_root / res_dir / lit_sub
+        control_root = vault_root / res_dir / ctrl_sub
+    elif not (vault_root / "Resources" / "Literature").is_dir() and (vault_root / "03_Resources" / "Literature").is_dir():
+        lit_root = vault_root / "03_Resources" / "Literature"
+        control_root = vault_root / "03_Resources" / "LiteratureControl"
+    else:
+        lit_root = vault_root / "Resources" / "Literature"
+        control_root = vault_root / "Resources" / "LiteratureControl"
+
+    if base_sub:
+        base_root = vault_root / base_sub
+    elif not (vault_root / "Bases").is_dir() and (vault_root / "05_Bases").is_dir():
+        base_root = vault_root / "05_Bases"
+    else:
+        base_root = vault_root / "Bases"
+
+    return {
+        "system_dir": sys_dir,
+        "skill_dir": skill_dir,
+        "base_dir": base_sub or base_root.relative_to(vault_root).as_posix(),
+        "zotero_data_dir": zotero_dir_val,
+        "literature": lit_root,
+        "control": control_root,
+        "bases": base_root,
+    }
+
+
+def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[str, Any]:
     """Read-only Full-Vault Census & A/B/C Upgrade Plan with Five-Bucket Ownership classification."""
     from paperforge import __version__ as PF_VERSION
-    from paperforge.config import load_config, paperforge_paths, validate_config
+    from paperforge.config import ConfigError, load_config, resolve_paths, validate_config
     from paperforge.core.versioning import is_version_compatible
     from paperforge.credentials import CredentialKey, status as cred_status
     from paperforge.materialization.ocr import assess_ocr_bundle_atoms
@@ -520,17 +667,18 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
         configured_sys_dir = str(snap.values["system_dir"].value or "System")
         configured_skill_dir = str(snap.values["skill_dir"].value or ".agents/skills")
         zotero_dir_val = str(snap.values["zotero_data_dir"].value or "")
-        paths = paperforge_paths(vault_root, snap)
+        paths = resolve_paths(vault_root, snap)
         lit_root = paths["literature"]
         control_root = paths.get("control") or control_root
         base_root = paths["bases"]
-    except Exception:  # noqa: BLE001
-        vc = cfg_raw.get("vault_config") if isinstance(cfg_raw.get("vault_config"), dict) else {}
-        configured_sys_dir = str(vc.get("system_dir") or cfg_raw.get("system_dir") or "System")
-        configured_skill_dir = str(vc.get("skill_dir") or cfg_raw.get("skill_dir") or ".opencode/skills")
-        zotero_dir_val = str(cfg_raw.get("zotero_data_dir") or "")
-        if not control_root.is_dir() and (vault_root / "03_Resources" / "LiteratureControl").is_dir():
-            control_root = vault_root / "03_Resources" / "LiteratureControl"
+    except ConfigError:
+        raw_layout = _resolve_layout_from_raw(vault_root, cfg_raw)
+        configured_sys_dir = raw_layout["system_dir"]
+        configured_skill_dir = raw_layout["skill_dir"]
+        zotero_dir_val = raw_layout["zotero_data_dir"]
+        lit_root = raw_layout["literature"]
+        control_root = raw_layout["control"]
+        base_root = raw_layout["bases"]
     stale_prefixes = _stale_path_prefixes_for_vault(vault_root, configured_sys_dir)
 
     dot_pf = vault_root / ".paperforge"
@@ -700,30 +848,50 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
         )
 
     # Workspaces & Five-Bucket Census
-    scan = scan_vault_identities(lit_root)
     stale_meta_paths: list[Path] = []
     legacy_named_note_count = 0
     ws_fulltext_count = 0
     user_aux_notes_count = 0
-    for ws in scan.workspaces.values():
-        canonical_ws_note = ws.workspace_dir / f"{ws.zotero_key}.md"
-        if (
-            not canonical_ws_note.exists()
-            and ws.main_note_path is not None
-            and ws.main_note_path.stem.startswith(f"{ws.zotero_key} - ")
-        ):
-            legacy_named_note_count += 1
-        else:
-            legacy_named_note_count += len(ws.legacy_named_notes)
-        user_aux_notes_count += len(ws.auxiliary_notes)
-        if ws.has_workspace_fulltext:
-            ws_fulltext_count += 1
-        meta_json = ws.paper_meta or {}
-        for field_name in ("ocr_md_path", "ocr_json_path", "fulltext_path"):
-            val = str(meta_json.get(field_name) or "")
-            if any(prefix in val for prefix in stale_prefixes) and ws.paper_meta_path is not None:
-                stale_meta_paths.append(ws.paper_meta_path)
-                break
+    if fast_summary:
+        from paperforge.services.identity_resolver import VaultIdentityScan
+
+        scan = VaultIdentityScan(lit_root=lit_root)
+        fast_ws_count = 0
+        fast_domains: set[str] = set()
+        if lit_root.is_dir():
+            with contextlib.suppress(OSError):
+                with os.scandir(lit_root) as d_it:
+                    for dom in d_it:
+                        if not dom.is_dir() or dom.name.startswith("."):
+                            continue
+                        fast_domains.add(dom.name)
+                        with os.scandir(dom.path) as w_it:
+                            for ws_e in w_it:
+                                if ws_e.is_dir() and ws_e.name not in ("ai", "assets"):
+                                    fast_ws_count += 1
+    else:
+        scan = scan_vault_identities(lit_root)
+        fast_ws_count = len(scan.workspaces)
+        fast_domains = {ws.domain for ws in scan.workspaces.values() if ws.domain}
+        for ws in scan.workspaces.values():
+            canonical_ws_note = ws.workspace_dir / f"{ws.zotero_key}.md"
+            if (
+                not canonical_ws_note.exists()
+                and ws.main_note_path is not None
+                and ws.main_note_path.stem.startswith(f"{ws.zotero_key} - ")
+            ):
+                legacy_named_note_count += 1
+            else:
+                legacy_named_note_count += len(ws.legacy_named_notes)
+            user_aux_notes_count += len(ws.auxiliary_notes)
+            if ws.has_workspace_fulltext:
+                ws_fulltext_count += 1
+            meta_json = ws.paper_meta or {}
+            for field_name in ("ocr_md_path", "ocr_json_path", "fulltext_path"):
+                val = str(meta_json.get(field_name) or "")
+                if any(prefix in val for prefix in stale_prefixes) and ws.paper_meta_path is not None:
+                    stale_meta_paths.append(ws.paper_meta_path)
+                    break
 
     verified_flat = [f for f in scan.flat_notes if f.classification == "verified_legacy_flat"]
     if verified_flat or legacy_named_note_count or stale_meta_paths or ws_fulltext_count:
@@ -768,15 +936,22 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
     backfill_keys: list[str] = []
     reocr_keys: list[str] = []
     if ocr_dir.is_dir():
-        for pdir in sorted(d for d in ocr_dir.iterdir() if d.is_dir()):
-            atom = assess_ocr_bundle_atoms(pdir)
-            ocr_counts["total"] += 1
-            act = atom["salvage_action"]
-            ocr_counts[act] = ocr_counts.get(act, 0) + 1
-            if act in ("backfill_from_result_json", "rebuild_derived_local"):
-                backfill_keys.append(atom["zotero_key"])
-            elif act == "re_ocr_needed":
-                reocr_keys.append(atom["zotero_key"])
+        if fast_summary:
+            with contextlib.suppress(OSError):
+                with os.scandir(ocr_dir) as o_it:
+                    for oe in o_it:
+                        if oe.is_dir():
+                            ocr_counts["total"] += 1
+        else:
+            for pdir in sorted(d for d in ocr_dir.iterdir() if d.is_dir()):
+                atom = assess_ocr_bundle_atoms(pdir)
+                ocr_counts["total"] += 1
+                act = atom["salvage_action"]
+                ocr_counts[act] = ocr_counts.get(act, 0) + 1
+                if act in ("backfill_from_result_json", "rebuild_derived_local"):
+                    backfill_keys.append(atom["zotero_key"])
+                elif act == "re_ocr_needed":
+                    reocr_keys.append(atom["zotero_key"])
 
     if backfill_keys:
         auto_items.append(
@@ -805,7 +980,7 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
         )
 
     # Base views (strictly guarding user-created native Obsidian `.base` files!)
-    known_domains = {ws.domain for ws in scan.workspaces.values() if ws.domain}
+    known_domains = set(fast_domains)
     exports_dir = engine_root / "exports"
     if exports_dir.is_dir():
         known_domains.update(p.stem for p in exports_dir.glob("*.json"))
@@ -820,7 +995,7 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
                 continue
             has_legacy_type = bool(re.search(r"^\s*-\s*type:\s*table\s*$", txt, re.MULTILINE))
             has_retired = any(rv in txt for rv in RETIRED_PF_VIEWS)
-            unquoted_bang = bool(re.search(r"^\s*!zotero_key\.isEmpty\(\)\s*$", txt, re.MULTILINE))
+            unquoted_bang = bool(re.search(r"^\s*(?:-\s+)?!(?!\!)[^\n\"']+?\s*$", txt, re.MULTILINE))
             if has_legacy_type or has_retired or unquoted_bang:
                 legacy_bases.append(
                     {
@@ -938,13 +1113,13 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
                     )
                 else:
                     reg_cnt = int(con.execute("SELECT COUNT(*) FROM workspace_registry").fetchone()[0])
-                    if scan.workspaces and reg_cnt == 0:
+                    if fast_ws_count and reg_cnt == 0:
                         auto_items.append(
                             {
                                 "id": "db.populate_workspace_registry",
                                 "area": "database",
                                 "title": "填充文献身份高速路由表",
-                                "count": len(scan.workspaces),
+                                "count": fast_ws_count,
                                 "fast_cutover": False,
                                 "detail": "将工作区身份映射写入 SQLite 索引。",
                             }
@@ -961,7 +1136,7 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
                     "remediation": "备份原文件后从单篇真相源无损重建。",
                 }
             )
-    elif scan.workspaces or ocr_counts["total"] > 0:
+    elif fast_ws_count or ocr_counts["total"] > 0:
         auto_items.append(
             {
                 "id": "db.create_from_truth",
@@ -1042,12 +1217,12 @@ def inspect_vault_upgrade(vault: Path) -> dict[str, Any]:
 
     census = {
         "pf_machine_pure": ocr_counts["total"] + ws_fulltext_count + len(verified_flat),
-        "pf_user_enriched": len(scan.workspaces) + len(legacy_bases),
+        "pf_user_enriched": fast_ws_count + len(legacy_bases),
         "pf_confirmed_residual": len(dedup_cleanup),
         "user_sovereign_untouched": user_sovereign_bases + user_aux_notes_count,
         "ambiguous_or_clone_frozen": len(scan.ambiguous_clones) + len(scan.duplicate_workspaces) + len(scan.sync_conflicts),
         "pf_canonical": {
-            "workspaces": len(scan.workspaces),
+            "workspaces": fast_ws_count,
         },
     }
 
@@ -1304,9 +1479,10 @@ def verify_vault_upgrade(
     pre_counts: dict[str, int] | None = None,
     stale_prefixes: tuple[str, ...] = (),
     check_healed_paths: bool = False,
+    fast_mode: bool = False,
 ) -> dict[str, Any]:
     """Post-upgrade & post-heal hard reconciliation checks (Zero Silent Data Loss gate)."""
-    from paperforge.config import paperforge_paths, validate_config
+    from paperforge.config import ConfigError, resolve_paths, validate_config
     from paperforge.materialization.ocr import validate_result_json
     from paperforge.services.identity_resolver import scan_vault_identities
     from paperforge.services.vault_engine import read_vault_manifest
@@ -1327,33 +1503,53 @@ def verify_vault_upgrade(
         failures.append(".paperforge/vault-manifest.json missing or layout_version < 2")
 
     try:
-        paths = paperforge_paths(vault_root)
-    except Exception:  # noqa: BLE001
-        paths = {
-            "literature": vault_root / "Resources" / "Literature",
-            "bases": vault_root / "Bases",
-            "ocr": vault_root / ".paperforge" / "ocr",
-        }
+        paths = resolve_paths(vault_root)
+    except ConfigError:
+        raw_cfg: dict[str, Any] = {}
+        cfg_p = vault_root / "paperforge.json"
+        if cfg_p.is_file():
+            with contextlib.suppress(OSError, json.JSONDecodeError, UnicodeDecodeError):
+                parsed = json.loads(cfg_p.read_text(encoding="utf-8"))
+                if isinstance(parsed, dict):
+                    raw_cfg = parsed
+        paths = _resolve_layout_from_raw(vault_root, raw_cfg)
 
     lit_root = paths.get("literature")
     ocr_root = vault_root / ".paperforge" / "ocr"
     base_root = paths.get("bases")
 
-    tier0_valid = 0
-    if ocr_root.is_dir():
-        for pdir in ocr_root.iterdir():
-            if pdir.is_dir():
-                ok, _r, _p = validate_result_json(pdir)
-                if ok:
-                    tier0_valid += 1
+    if fast_mode:
+        fast_post = _capture_pre_upgrade_counts(vault_root, vault_root / ".paperforge", lit_root, fast_mode=True)
+        tier0_valid = fast_post["tier0_ocr_valid"]
+        ws_count = fast_post["workspaces"]
+        ann_files = 0
+        card_files = 0
+        from paperforge.services.identity_resolver import VaultIdentityScan
 
-    scan = scan_vault_identities(lit_root)
-    ann_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "annotations.jsonl").is_file())
-    card_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "ai" / "memory-card.json").is_file())
+        scan = VaultIdentityScan(lit_root=lit_root or (vault_root / "Resources" / "Literature"))
+        known_domains: set[str] = set()
+        if lit_root and lit_root.is_dir():
+            with contextlib.suppress(OSError):
+                with os.scandir(lit_root) as d_it:
+                    known_domains = {d.name for d in d_it if d.is_dir() and not d.name.startswith(".")}
+    else:
+        tier0_valid = 0
+        if ocr_root.is_dir():
+            for pdir in ocr_root.iterdir():
+                if pdir.is_dir():
+                    ok, _r, _p = validate_result_json(pdir)
+                    if ok:
+                        tier0_valid += 1
+
+        scan = scan_vault_identities(lit_root)
+        ws_count = len(scan.workspaces)
+        ann_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "annotations.jsonl").is_file())
+        card_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "ai" / "memory-card.json").is_file())
+        known_domains = {ws.domain for ws in scan.workspaces.values() if ws.domain}
 
     post_counts = {
         "tier0_ocr_valid": tier0_valid,
-        "workspaces": len(scan.workspaces),
+        "workspaces": ws_count,
         "annotations_files": ann_files,
         "memory_card_files": card_files,
     }
@@ -1363,17 +1559,18 @@ def verify_vault_upgrade(
         checks["tier0_ocr_preserved"] = ocr_ok
         if not ocr_ok:
             failures.append(f"tier0_ocr_valid dropped: {pre_counts.get('tier0_ocr_valid')} -> {tier0_valid}")
-        ws_ok = len(scan.workspaces) >= int(pre_counts.get("workspaces", 0))
+        ws_ok = ws_count >= int(pre_counts.get("workspaces", 0))
         checks["workspaces_preserved"] = ws_ok
         if not ws_ok:
-            failures.append(f"workspaces dropped: {pre_counts.get('workspaces')} -> {len(scan.workspaces)}")
-        sidecar_ok = (
-            ann_files >= int(pre_counts.get("annotations_files", 0))
-            and card_files >= int(pre_counts.get("memory_card_files", 0))
-        )
-        checks["sidecars_preserved"] = sidecar_ok
-        if not sidecar_ok:
-            failures.append("workspace annotation or memory-card files missing after upgrade")
+            failures.append(f"workspaces dropped: {pre_counts.get('workspaces')} -> {ws_count}")
+        if not fast_mode:
+            sidecar_ok = (
+                ann_files >= int(pre_counts.get("annotations_files", 0))
+                and card_files >= int(pre_counts.get("memory_card_files", 0))
+            )
+            checks["sidecars_preserved"] = sidecar_ok
+            if not sidecar_ok:
+                failures.append("workspace annotation or memory-card files missing after upgrade")
 
     db_path = vault_root / ".paperforge" / "indexes" / "paperforge.db"
     sqlite_ok = True
@@ -1408,7 +1605,6 @@ def verify_vault_upgrade(
 
     bases_ok = True
     if base_root and base_root.is_dir():
-        known_domains = {ws.domain for ws in scan.workspaces.values() if ws.domain}
         try:
             import yaml  # type: ignore[import-untyped]
         except ImportError:
@@ -1469,7 +1665,7 @@ def heal_vault_progressive(
     preserves backlink aliases on note renames, reconciles DB/index paths, and
     verifies zero stale engine paths remain.
     """
-    from paperforge.config import load_config, paperforge_paths
+    from paperforge.config import ConfigError, load_config, resolve_paths
     from paperforge.materialization.ocr import assess_ocr_bundle_atoms
     from paperforge.services.identity_resolver import scan_vault_identities
     from paperforge.services.storage_migration import rewrite_visual_embeds_for_key
@@ -1484,11 +1680,20 @@ def heal_vault_progressive(
     try:
         snap = load_config(vault_root)
         configured_sys = str(snap.values["system_dir"].value or "")
-        paths = paperforge_paths(vault_root, snap)
-    except Exception:  # noqa: BLE001
+        paths = resolve_paths(vault_root, snap)
+    except ConfigError:
+        raw_cfg: dict[str, Any] = {}
+        cfg_p = vault_root / "paperforge.json"
+        if cfg_p.is_file():
+            with contextlib.suppress(OSError, json.JSONDecodeError, UnicodeDecodeError):
+                parsed = json.loads(cfg_p.read_text(encoding="utf-8"))
+                if isinstance(parsed, dict):
+                    raw_cfg = parsed
+        raw_layout = _resolve_layout_from_raw(vault_root, raw_cfg)
+        configured_sys = raw_layout["system_dir"]
         paths = {
             "vault": vault_root,
-            "literature": vault_root / "Resources" / "Literature",
+            "literature": raw_layout["literature"],
             "paperforge": vault_root / ".paperforge",
             "ocr": vault_root / ".paperforge" / "ocr",
         }
@@ -1656,14 +1861,14 @@ def execute_vault_upgrade(
     rebuild_db: bool = True,
 ) -> dict[str, Any]:
     """Execute safe vault upgrade (`fast_cutover=True` for <3s UI cutover, or full pass)."""
-    from paperforge.config import load_config, migrate_config, paperforge_paths, set_config, validate_config
+    from paperforge.config import ConfigError, load_config, migrate_config, resolve_paths, set_config, validate_config
     from paperforge.services.storage_migration import _move_tree_entries, migrate_vault_storage
     from paperforge.services.vault_engine import quarantine_move, write_vault_manifest
     from paperforge.worker import load_domain_config
     from paperforge.worker.base_views import ensure_base_views
 
     vault_root = Path(vault).expanduser().resolve()
-    plan = inspect_vault_upgrade(vault_root)
+    plan = inspect_vault_upgrade(vault_root, fast_summary=fast_cutover and not dry_run)
     if dry_run:
         return {
             "dry_run": True,
@@ -1685,17 +1890,26 @@ def execute_vault_upgrade(
             "errors": [{"step": "preflight_blocker", "error": b["title"]} for b in blockers],
         }
 
-    # Resolve configured system_dir accurately (including 99_System!)
+    # Resolve configured system_dir & base_dir accurately (including 99_System & custom base_dir!)
     cfg_sys = "System"
+    cfg_base = "Bases"
+    pre_lit_root: Path | None = None
     try:
         snap = load_config(vault_root)
         cfg_sys = str(snap.values["system_dir"].value or "System")
-    except Exception:  # noqa: BLE001
+        cfg_base = str(snap.values["base_dir"].value or "Bases")
+        pre_lit_root = resolve_paths(vault_root, snap)["literature"]
+    except ConfigError:
+        raw_c: dict[str, Any] = {}
         if (vault_root / "paperforge.json").is_file():
             with contextlib.suppress(OSError, json.JSONDecodeError):
-                raw_c = json.loads((vault_root / "paperforge.json").read_text(encoding="utf-8"))
-                vc = raw_c.get("vault_config") if isinstance(raw_c.get("vault_config"), dict) else {}
-                cfg_sys = str(vc.get("system_dir") or raw_c.get("system_dir") or "System")
+                parsed_c = json.loads((vault_root / "paperforge.json").read_text(encoding="utf-8"))
+                if isinstance(parsed_c, dict):
+                    raw_c = parsed_c
+        raw_layout = _resolve_layout_from_raw(vault_root, raw_c)
+        cfg_sys = raw_layout["system_dir"]
+        cfg_base = raw_layout["base_dir"]
+        pre_lit_root = raw_layout["literature"]
 
     legacy_pf = _detect_legacy_engine_root(vault_root, cfg_sys)
     engine_root = (
@@ -1715,18 +1929,11 @@ def execute_vault_upgrade(
             "errors": [{"step": "disk_space", "error": f"Insufficient disk space ({free_bytes} bytes free)"}],
         }
 
-    backup_dir = _snapshot_preflight_backups(vault_root, engine_root, cfg_sys)
+    backup_dir = _snapshot_preflight_backups(vault_root, engine_root, cfg_sys, configured_base_dir=cfg_base)
     stale_prefixes = _stale_path_prefixes_for_vault(vault_root, cfg_sys)
-    try:
-        pre_lit_root = paperforge_paths(vault_root)["literature"]
-    except Exception:  # noqa: BLE001
-        pre_lit_root = (
-            vault_root / "03_Resources" / "Literature"
-            if (vault_root / "03_Resources" / "Literature").is_dir()
-            and not (vault_root / "Resources" / "Literature").is_dir()
-            else vault_root / "Resources" / "Literature"
-        )
-    pre_counts = _capture_pre_upgrade_counts(vault_root, engine_root, pre_lit_root)
+    pre_counts = _capture_pre_upgrade_counts(
+        vault_root, engine_root, pre_lit_root, fast_mode=fast_cutover
+    )
     executed_steps: list[dict[str, Any]] = [{"step": "preflight_backup", "backup_dir": str(backup_dir)}]
     errors: list[dict[str, str]] = []
 
@@ -1799,7 +2006,12 @@ def execute_vault_upgrade(
                         legacy_pf.parent.rmdir()
                 executed_steps.append({"step": "fast_storage_cutover", "result": t_counts})
             else:
-                sres = migrate_vault_storage(vault_root, dry_run=False, isolate_paper_errors=True)
+                sres = migrate_vault_storage(
+                    vault_root,
+                    dry_run=False,
+                    isolate_paper_errors=True,
+                    backup_dir=backup_dir,
+                )
                 executed_steps.append({"step": "storage_migration", "result": sres})
                 for pe in sres.get("paper_errors") or []:
                     errors.append(
@@ -1816,12 +2028,12 @@ def execute_vault_upgrade(
 
     # 3. Resolve post-cutover paths & upgrade ONLY PaperForge-owned Base views
     try:
-        paths = paperforge_paths(vault_root)
-    except Exception:  # noqa: BLE001
+        paths = resolve_paths(vault_root)
+    except ConfigError:
         paths = {
             "vault": vault_root,
-            "literature": vault_root / "Resources" / "Literature",
-            "bases": vault_root / "Bases",
+            "literature": pre_lit_root or (vault_root / "Resources" / "Literature"),
+            "bases": vault_root / cfg_base,
             "paperforge": vault_root / ".paperforge",
             "exports": vault_root / ".paperforge" / "exports",
             "config": vault_root / ".paperforge" / "config" / "domain-collections.json",
@@ -1886,10 +2098,18 @@ def execute_vault_upgrade(
 
     if selected_ids:
         quarantined_count = 0
+        legacy_pf_abs = Path(os.path.abspath(str(legacy_pf))) if legacy_pf is not None else None
+        dot_pf_root = vault_root / ".paperforge"
         for cand in plan["cleanup_candidates"]:
             if cand["id"] not in selected_ids:
                 continue
             target_p = Path(cand["path"])
+            if not target_p.exists() and legacy_pf_abs is not None:
+                cand_abs = Path(os.path.abspath(str(target_p)))
+                if cand_abs.is_relative_to(legacy_pf_abs):
+                    remapped = dot_pf_root / cand_abs.relative_to(legacy_pf_abs)
+                    if remapped.exists():
+                        target_p = remapped
             if not target_p.exists():
                 continue
             try:
@@ -1940,6 +2160,7 @@ def execute_vault_upgrade(
         pre_counts=pre_counts,
         stale_prefixes=stale_prefixes,
         check_healed_paths=not fast_cutover,
+        fast_mode=fast_cutover,
     )
 
     return {
@@ -1952,13 +2173,18 @@ def execute_vault_upgrade(
         "executed_steps": executed_steps,
         "errors": errors,
         "verification": verification,
-        "post_check": inspect_vault_upgrade(vault_root),
+        "post_check": inspect_vault_upgrade(vault_root, fast_summary=fast_cutover),
     }
 
 
 def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> dict[str, Any]:
     """One-Click Time-Machine rollback restoring directory structure, `paperforge.json`, and `.base` files."""
-    from paperforge.services.storage_migration import rollback_incomplete_migration
+    from paperforge.services.storage_migration import (
+        _move_tree_entries,
+        _rollback_mutations,
+        _validate_vault_contained_path,
+        rollback_incomplete_migration,
+    )
     from paperforge.services.vault_engine import vault_manifest_path
 
     vault_root = Path(vault).expanduser().resolve()
@@ -1976,31 +2202,95 @@ def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> di
     restored_files = 0
     restored_moves = 0
 
-    # Reverse fast_cutover moved_pairs or storage_migration journal
+    cutover_meta: dict[str, Any] = {}
+    meta_file = target_snap / "cutover-meta.json"
+    if meta_file.is_file():
+        with contextlib.suppress(OSError, json.JSONDecodeError, UnicodeDecodeError):
+            parsed_meta = json.loads(meta_file.read_text(encoding="utf-8"))
+            if isinstance(parsed_meta, dict):
+                cutover_meta = parsed_meta
+
+    # Reverse fast_cutover moved_pairs or full storage_migration moved_pairs
+    raw_pairs: list[dict[str, Any]] = []
     moved_pairs_file = target_snap / "moved-pairs.json"
+    journal_file = vault_root / ".paperforge" / ".migration-journal.json"
     if moved_pairs_file.is_file():
-        pairs = json.loads(moved_pairs_file.read_text(encoding="utf-8"))
-        for item in reversed(pairs):
-            src_p = Path(item["src"])
-            dst_p = Path(item["dst"])
-            if dst_p.exists() and not src_p.exists():
+        raw_pairs = json.loads(moved_pairs_file.read_text(encoding="utf-8"))
+    elif journal_file.is_file():
+        with contextlib.suppress(OSError, json.JSONDecodeError):
+            jdata = json.loads(journal_file.read_text(encoding="utf-8"))
+            raw_pairs = list(jdata.get("moved_pairs") or [])
+
+    validated_pairs: list[tuple[Path, Path]] = []
+    for item in raw_pairs:
+        if not isinstance(item, dict) or not item.get("src") or not item.get("dst"):
+            continue
+        src_p = _validate_vault_contained_path(item["src"], allowed_root=vault_root, label="rollback.src")
+        dst_p = _validate_vault_contained_path(item["dst"], allowed_root=vault_root, label="rollback.dst")
+        validated_pairs.append((src_p, dst_p))
+
+    try:
+        for src_p, dst_p in reversed(validated_pairs):
+            if not dst_p.exists():
+                continue
+            if not src_p.exists():
                 src_p.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(dst_p), str(src_p))
                 restored_moves += 1
-    else:
-        journal_file = vault_root / ".paperforge" / ".migration-journal.json"
-        if journal_file.is_file():
-            with contextlib.suppress(OSError, json.JSONDecodeError):
-                jdata = json.loads(journal_file.read_text(encoding="utf-8"))
-                for item in reversed(jdata.get("moved_pairs") or []):
-                    src_p = Path(item["src"])
-                    dst_p = Path(item["dst"])
-                    if dst_p.exists() and not src_p.exists():
-                        src_p.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.move(str(dst_p), str(src_p))
-                        restored_moves += 1
+            elif dst_p.is_dir() and src_p.is_dir():
+                sub_res = _move_tree_entries(dst_p, src_p, dry_run=False)
+                restored_moves += int(sub_res.get("moved", 0))
+            else:
+                raise OSError(f"cannot restore {dst_p} -> {src_p}: destination already exists")
+    except OSError as exc:
+        # Fail closed BEFORE reverting paperforge.json or archiving vault-manifest.json
+        return {
+            "rolled_back": False,
+            "backup_dir": str(target_snap),
+            "restored_moves": restored_moves,
+            "restored_files": 0,
+            "error": str(exc),
+        }
 
-    # Restore snapshotted configs and `.base` files
+    # Reverse full-migration note/asset/fulltext mutations if recorded
+    mut_file = target_snap / "migration-mutations.json"
+    if mut_file.is_file():
+        with contextlib.suppress(OSError, json.JSONDecodeError, UnicodeDecodeError):
+            mut_data = json.loads(mut_file.read_text(encoding="utf-8"))
+            if isinstance(mut_data, dict):
+                dot_pf_root = (vault_root / ".paperforge").resolve()
+                rev_notes = [
+                    (
+                        _validate_vault_contained_path(it["path"], allowed_root=vault_root, label="rollback.note"),
+                        str(it["original_text"]),
+                    )
+                    for it in (mut_data.get("rewritten_notes") or [])
+                    if isinstance(it, dict) and it.get("path") and "original_text" in it
+                ]
+                rev_assets = [
+                    _validate_vault_contained_path(p, allowed_root=vault_root, label="rollback.asset")
+                    for p in (mut_data.get("created_assets") or [])
+                ]
+                rev_fulltexts: list[tuple[Path, bytes]] = []
+                for ft_it in (mut_data.get("preserved_fulltexts") or []):
+                    if isinstance(ft_it, dict) and ft_it.get("orig") and ft_it.get("backup"):
+                        orig_p = _validate_vault_contained_path(
+                            ft_it["orig"], allowed_root=vault_root, label="rollback.fulltext.orig"
+                        )
+                        bak_p = _validate_vault_contained_path(
+                            ft_it["backup"], allowed_root=dot_pf_root, label="rollback.fulltext.backup"
+                        )
+                        if bak_p.is_file():
+                            rev_fulltexts.append((orig_p, bak_p.read_bytes()))
+                _rollback_mutations(
+                    rewritten_notes=rev_notes,
+                    restorable_fulltexts=rev_fulltexts,
+                    created_assets=rev_assets,
+                    moved_pairs=[],
+                    config_restorer=None,
+                )
+
+    # Restore snapshotted configs and `.base` files (including custom base_dir)
     for rel in ("paperforge.json", ".obsidian/plugins/paperforge/data.json"):
         snap_f = target_snap / rel
         if snap_f.is_file():
@@ -2009,11 +2299,27 @@ def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> di
             shutil.copy2(str(snap_f), str(dst_f))
             restored_files += 1
 
-    for base_sub in ("Bases", "05_Bases"):
+    base_subs: list[str] = ["Bases", "05_Bases"]
+    for cand_b in list(cutover_meta.get("snapshotted_base_dirs") or []) + [
+        str(cutover_meta.get("previous_base_dir") or "").strip()
+    ]:
+        norm_b = str(cand_b or "").replace("\\", "/").strip().strip("/")
+        if norm_b and norm_b not in (".", "..") and norm_b not in base_subs:
+            base_subs.append(norm_b)
+
+    seen_base_subs: set[str] = set()
+    for base_sub in base_subs:
+        if base_sub in seen_base_subs:
+            continue
+        seen_base_subs.add(base_sub)
         s_bdir = target_snap / base_sub
         if s_bdir.is_dir():
             for bf in s_bdir.glob("*.base"):
-                dst_bf = vault_root / base_sub / bf.name
+                dst_bf = _validate_vault_contained_path(
+                    vault_root / base_sub / bf.name,
+                    allowed_root=vault_root,
+                    label="rollback.base_file",
+                )
                 dst_bf.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(str(bf), str(dst_bf))
                 restored_files += 1
@@ -2023,7 +2329,6 @@ def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> di
         archived = target_snap / "rolled-back-vault-manifest.json"
         shutil.move(str(mf), str(archived))
 
-    journal_file = vault_root / ".paperforge" / ".migration-journal.json"
     if journal_file.is_file():
         write_json_atomic(
             journal_file,

@@ -170,12 +170,38 @@ def _rollback_mutations(
                 shutil.move(str(dst_p), str(src_p))
 
 
+def _validate_vault_contained_path(
+    raw: str | Path,
+    *,
+    allowed_root: Path,
+    allow_root: bool = False,
+    label: str = "path",
+) -> Path:
+    """Fail-closed containment check: reject empty, ``..``, symlinks, or paths escaping *allowed_root*."""
+    from paperforge.worker.trash import DangerousPathError
+
+    text = str(raw or "").strip()
+    if not text or text in (".", ".."):
+        raise DangerousPathError(f"forbidden {label}: {text!r}")
+    p = Path(text)
+    if p.is_symlink():
+        raise DangerousPathError(f"refusing symlink {label}: {p}")
+    root_resolved = allowed_root.resolve()
+    resolved = p.resolve()
+    if not allow_root and resolved == root_resolved:
+        raise DangerousPathError(f"{label} points to forbidden root {root_resolved}")
+    if not resolved.is_relative_to(root_resolved):
+        raise DangerousPathError(f"{label} escapes allowed root {root_resolved}: {resolved}")
+    return resolved
+
+
 def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
     """Roll back an interrupted ``in_progress`` migration using ``.migration-journal.json``."""
     import json
 
     vault_root = Path(vault).expanduser().resolve()
-    journal_path = vault_root / ".paperforge" / ".migration-journal.json"
+    dot_pf_root = (vault_root / ".paperforge").resolve()
+    journal_path = dot_pf_root / ".migration-journal.json"
     if not journal_path.is_file():
         return {"recovered": False, "state": "no_journal"}
     data = json.loads(journal_path.read_text(encoding="utf-8"))
@@ -183,23 +209,37 @@ def rollback_incomplete_migration(vault: Path) -> dict[str, Any]:
         return {"recovered": False, "state": str(data.get("state") or "unknown")}
 
     moved_pairs = [
-        (Path(item["src"]), Path(item["dst"]))
+        (
+            _validate_vault_contained_path(item["src"], allowed_root=vault_root, label="moved_pairs.src"),
+            _validate_vault_contained_path(item["dst"], allowed_root=vault_root, label="moved_pairs.dst"),
+        )
         for item in (data.get("moved_pairs") or [])
         if isinstance(item, dict) and item.get("src") and item.get("dst")
     ]
     rewritten_notes = [
-        (Path(item["path"]), str(item["original_text"]))
+        (
+            _validate_vault_contained_path(item["path"], allowed_root=vault_root, label="rewritten_notes.path"),
+            str(item["original_text"]),
+        )
         for item in (data.get("rewritten_notes") or [])
         if isinstance(item, dict) and item.get("path") and "original_text" in item
     ]
-    created_assets = [Path(p) for p in (data.get("created_assets") or [])]
+    created_assets = [
+        _validate_vault_contained_path(p, allowed_root=vault_root, label="created_assets")
+        for p in (data.get("created_assets") or [])
+    ]
     restorable_fulltexts: list[tuple[Path, bytes]] = []
     for pf_item in (data.get("preserved_fulltexts") or []):
         if isinstance(pf_item, dict) and pf_item.get("orig") and pf_item.get("backup"):
-            bp = Path(str(pf_item["backup"]))
+            orig_p = _validate_vault_contained_path(
+                pf_item["orig"], allowed_root=vault_root, label="preserved_fulltexts.orig"
+            )
+            bp = _validate_vault_contained_path(
+                pf_item["backup"], allowed_root=dot_pf_root, label="preserved_fulltexts.backup"
+            )
             if bp.is_file():
                 with contextlib.suppress(OSError):
-                    restorable_fulltexts.append((Path(str(pf_item["orig"])), bp.read_bytes()))
+                    restorable_fulltexts.append((orig_p, bp.read_bytes()))
 
     prev_sys = data.get("previous_system_dir")
 
@@ -236,6 +276,7 @@ def migrate_vault_storage(
     *,
     dry_run: bool = False,
     isolate_paper_errors: bool = False,
+    backup_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Transactionally migrate an existing vault to `.paperforge/` with rollback."""
     vault_root = Path(vault).expanduser().resolve()
@@ -467,10 +508,34 @@ def migrate_vault_storage(
                     ):
                         leftover.rmdir()
 
+            serialized_pairs = [{"src": str(s), "dst": str(d)} for s, d in moved_pairs]
+            serialized_notes = [
+                {"path": str(p), "original_text": txt} for p, txt in rewritten_notes
+            ]
+            serialized_assets = [str(p) for p in created_assets]
+            if backup_dir is not None:
+                backup_dir.mkdir(parents=True, exist_ok=True)
+                write_json_atomic(backup_dir / "moved-pairs.json", serialized_pairs)
+                write_json_atomic(
+                    backup_dir / "migration-mutations.json",
+                    {
+                        "rewritten_notes": serialized_notes,
+                        "created_assets": serialized_assets,
+                        "preserved_fulltexts": journal_fulltexts,
+                    },
+                )
             write_json_atomic(
                 journal_path,
                 {
                     "state": final_state,
+                    "mode": "full",
+                    "source_engine_dir": str(old_pf),
+                    "target_engine_dir": str(target_pf),
+                    "previous_system_dir": previous_system_dir,
+                    "moved_pairs": serialized_pairs,
+                    "rewritten_notes": serialized_notes,
+                    "created_assets": serialized_assets,
+                    "preserved_fulltexts": journal_fulltexts,
                     "entries_moved": tree_counts["moved"],
                     "conflicts_quarantined": tree_counts["conflicts_quarantined"],
                     "notes_rewritten": notes_rewritten,

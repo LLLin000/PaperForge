@@ -413,6 +413,17 @@ views:
 {views_yaml}"""
 
 
+_UNQUOTED_BANG_FILTER_RE = re.compile(
+    r"^(\s*(?:-\s+)?)(!(?!\!)[^\n\"']+?)\s*$",
+    re.MULTILINE,
+)
+
+
+def _quote_unquoted_bang_filters(text: str) -> str:
+    """Quote unquoted `!`-prefixed filter expressions so YAML never reads them as tags."""
+    return _UNQUOTED_BANG_FILTER_RE.sub(lambda m: f'{m.group(1)}"{m.group(2)}"', text)
+
+
 def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> str:
     """Minimally sanitize a .base file: deduplicate views, fix syntax, ensure standard views exist.
 
@@ -536,15 +547,8 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             deduped[vname] = block
 
     # --- Phase 5: fix properties section ---
-    header_text = "\n".join(header_lines)
+    header_text = _quote_unquoted_bang_filters("\n".join(header_lines))
     header_lines_fixed = header_text.split("\n")
-
-    # 5a: Ensure !zotero_key.isEmpty() is properly quoted (YAML treats ! as tag prefix)
-    for j in range(len(header_lines_fixed)):
-        stripped = header_lines_fixed[j].strip()
-        if stripped == "!zotero_key.isEmpty()":
-            indent = header_lines_fixed[j][: len(header_lines_fixed[j]) - len(header_lines_fixed[j].lstrip())]
-            header_lines_fixed[j] = f'{indent}"!zotero_key.isEmpty()"'
 
     # 5b: Remove legacy ocr_redo blocks (no longer used)
     cleaned = []
@@ -586,7 +590,7 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             seen.add(view_name)
 
     for view_name in view_order:
-        rebuilt += deduped[view_name] + "\n"
+        rebuilt += _quote_unquoted_bang_filters(deduped[view_name]) + "\n"
 
     return rebuilt
 

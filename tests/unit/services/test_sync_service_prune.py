@@ -130,3 +130,23 @@ class TestSyncServiceRunPrune:
         # prune always runs once (dry-run) to collect orphan data for the result
         mock_prune.assert_called_once()
         assert mock_prune.call_args[1]["dry_run"] is True
+
+    def test_prune_refuses_empty_zotero_keys_on_source_error(self, tmp_path: Path) -> None:
+        """PF-MIG-001: prune_orphan_papers must refuse to prune when Zotero key set is empty or source failed."""
+        from paperforge.worker.prune import prune_orphan_papers
+
+        ws = tmp_path / "Resources" / "Literature" / "Ortho" / "ZOT00001 - Keep Me"
+        ws.mkdir(parents=True)
+        (ws / "ZOT00001.md").write_text("---\nzotero_key: ZOT00001\n---\n", encoding="utf-8")
+
+        res_empty = prune_orphan_papers(tmp_path, fresh_keys=set(), dry_run=False)
+        assert res_empty["preview"] == []
+        assert res_empty["deleted"] == []
+        assert res_empty.get("blocked_reason") == "empty_or_incomplete_zotero_keys"
+        assert ws.exists()
+
+        res_err = prune_orphan_papers(
+            tmp_path, fresh_index={"items": []}, dry_run=False, source_ok=False
+        )
+        assert res_err["deleted"] == []
+        assert ws.exists()

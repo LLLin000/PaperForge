@@ -312,3 +312,188 @@ def test_inspect_detects_chroma_vectors_vault_local_skills_and_veteran_rescue(tm
     assert manifest is not None and manifest["layout_version"] == 2
     ver = verify_vault_upgrade(tmp_path)
     assert ver["ok"] is True
+
+
+def test_rollback_after_full_upgrade_restores_legacy_engine_tree(tmp_path: Path) -> None:
+    """PF-MIG-002: full (non-fast-cutover) upgrade --apply + --rollback restores all engine data with zero split-brain."""
+    canonical_test_config(tmp_path, system_dir="99_System")
+    old_pf = tmp_path / "99_System" / "PaperForge"
+    ocr_res = old_pf / "ocr" / "NIN00001" / "json" / "result.json"
+    ocr_res.parent.mkdir(parents=True)
+    ocr_res.write_text('{"pages": [{"p": 1}]}', encoding="utf-8")
+    idx_file = old_pf / "indexes" / "formal-library.json"
+    idx_file.parent.mkdir(parents=True)
+    idx_file.write_text('{"items": []}', encoding="utf-8")
+    exp_file = old_pf / "exports" / "Ortho.json"
+    exp_file.parent.mkdir(parents=True)
+    exp_file.write_text('{"items": []}', encoding="utf-8")
+
+    applied = execute_vault_upgrade(tmp_path, dry_run=False, fast_cutover=False, rebuild_db=False)
+    assert applied["applied"] is True
+    assert not ocr_res.exists()
+    assert (tmp_path / ".paperforge" / "ocr" / "NIN00001" / "json" / "result.json").is_file()
+
+    rb = rollback_vault_upgrade(tmp_path)
+    assert rb["rolled_back"] is True
+    assert rb["restored_moves"] >= 3
+    assert ocr_res.is_file()
+    assert idx_file.is_file()
+    assert exp_file.is_file()
+    assert not (tmp_path / ".paperforge" / "ocr" / "NIN00001" / "json" / "result.json").exists()
+    assert load_config(tmp_path).values["system_dir"].value == "99_System"
+
+
+def test_inspect_and_heal_respect_03_resources_and_custom_base_dir(tmp_path: Path) -> None:
+    """PF-MIG-003: inspect_vault_upgrade and heal_vault_progressive resolve 03_Resources/Literature & 05_Bases."""
+    canonical_test_config(
+        tmp_path,
+        system_dir=".paperforge",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        base_dir="05_Bases",
+    )
+    (tmp_path / ".paperforge" / "indexes").mkdir(parents=True)
+    ws = tmp_path / "03_Resources" / "Literature" / "Ortho" / "RSC00001 - Rescue Study"
+    ws.mkdir(parents=True)
+    (ws / "paper-meta.json").write_text('{"zotero_key": "RSC00001"}', encoding="utf-8")
+    _write_note(ws / "RSC00001.md", "RSC00001", "Rescue Study")
+    base_f = tmp_path / "05_Bases" / "Ortho.base"
+    base_f.parent.mkdir(parents=True)
+    base_f.write_text("views:\n  - type: table\n    name: 控制面板\n", encoding="utf-8")
+
+    plan = inspect_vault_upgrade(tmp_path)
+    assert plan["census"]["pf_canonical"]["workspaces"] == 1
+    assert any(a["id"] == "bases.upgrade_views" for a in plan["category_a_auto"])
+
+    healed = heal_vault_progressive(tmp_path)
+    assert healed["processed_workspaces"] == 1
+    assert healed["workspace_registry_upserted"] == 1
+    assert healed["verification"]["counts"]["workspaces"] == 1
+
+
+def test_upgrade_backup_never_copies_plaintext_dotenv(tmp_path: Path) -> None:
+    """PF-SEC-006: pre-flight backups must never persist plaintext .env secrets."""
+    canonical_test_config(tmp_path, system_dir="System")
+    (tmp_path / "System" / "PaperForge" / "indexes").mkdir(parents=True)
+    secret_val = "sk-super-secret-ocr-token-12345"
+    (tmp_path / ".env").write_text(f"PADDLEOCR_API_KEY={secret_val}\n", encoding="utf-8")
+
+    res = execute_vault_upgrade(tmp_path, dry_run=False, fast_cutover=True)
+    assert res["applied"] is True
+    backup_dir = Path(res["backup_dir"])
+    assert not (backup_dir / ".env").exists()
+    for f in backup_dir.rglob("*"):
+        if f.is_file():
+            assert secret_val not in f.read_text(encoding="utf-8", errors="ignore")
+
+
+def test_quarantine_residuals_moves_legacy_engine_leftovers_after_cutover(tmp_path: Path) -> None:
+    """PF-MIG-006: --quarantine-residuals moves cli.py and legacy Chroma vectors even after cutover into .paperforge/."""
+    canonical_test_config(tmp_path, system_dir="System")
+    old_pf = tmp_path / "System" / "PaperForge"
+    (old_pf / "indexes" / "vectors").mkdir(parents=True)
+    (old_pf / "indexes" / "vectors" / "chroma.sqlite3").write_bytes(b"chroma-old")
+    (old_pf / "cli.py").write_text("# legacy cli\n", encoding="utf-8")
+
+    res = execute_vault_upgrade(tmp_path, dry_run=False, fast_cutover=True, quarantine_residuals=True)
+    assert res["applied"] is True
+    assert not (tmp_path / ".paperforge" / "cli.py").exists()
+    assert not (tmp_path / ".paperforge" / "indexes" / "vectors").exists()
+    ops = {t.get("operation") for t in list_trash(tmp_path)}
+    assert "upgrade_quarantine:cleanup.legacy_engine.cli.py" in ops
+    assert "upgrade_quarantine:cleanup.legacy_chroma_vectors" in ops
+
+
+def test_fast_cutover_does_not_repeat_full_scans_and_meets_3s_slo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """PF-MIG-010: fast_cutover avoids full O(N) workspace/JSON scans and completes 300-paper cutover <3s."""
+    import time
+    from paperforge.services import identity_resolver
+
+    canonical_test_config(tmp_path, system_dir="System")
+    old_pf = tmp_path / "System" / "PaperForge"
+    (old_pf / "indexes").mkdir(parents=True)
+    (old_pf / "indexes" / "state.json").write_text("{}", encoding="utf-8")
+    lit = tmp_path / "Resources" / "Literature" / "Ortho"
+    lit.mkdir(parents=True)
+    for i in range(300):
+        k = f"KEY{i:05d}"
+        ws = lit / f"{k} - Paper {i}"
+        ws.mkdir()
+        (ws / f"{k}.md").write_text(f"---\nzotero_key: {k}\n---\n", encoding="utf-8")
+        if i < 50:
+            rj = old_pf / "ocr" / k / "json" / "result.json"
+            rj.parent.mkdir(parents=True)
+            rj.write_text('{"pages": [{"p": 1}]}', encoding="utf-8")
+
+    def _forbid_full_scan(*_a, **_kw):
+        raise AssertionError("fast_cutover must not run full scan_vault_identities")
+
+    monkeypatch.setattr(identity_resolver, "scan_vault_identities", _forbid_full_scan)
+    t0 = time.perf_counter()
+    res = execute_vault_upgrade(tmp_path, dry_run=False, fast_cutover=True)
+    elapsed = time.perf_counter() - t0
+    assert res["applied"] is True
+    assert res["verification"]["ok"] is True
+    assert elapsed < 3.0, f"fast_cutover took {elapsed:.2f}s (> 3.0s SLO)"
+
+
+def test_inject_backlink_alias_supports_yaml_block_list(tmp_path: Path) -> None:
+    """PF-MIG-013: _inject_backlink_alias appends old stem into YAML block-list aliases."""
+    from paperforge.services.vault_upgrade import _inject_backlink_alias
+
+    note = tmp_path / "LEG00002.md"
+    note.write_text(
+        '---\nzotero_key: "LEG00002"\ntitle: "Meniscus Repair"\naliases:\n  - "MeniscusBlockAlias"\n---\n\nBody\n',
+        encoding="utf-8",
+    )
+    _inject_backlink_alias(note, "LEG00002 - Meniscus Repair")
+    txt = note.read_text(encoding="utf-8")
+    assert '"MeniscusBlockAlias"' in txt
+    assert '"LEG00002 - Meniscus Repair"' in txt
+
+
+def test_rollback_restores_custom_base_dir(tmp_path: Path) -> None:
+    """PF-MIG-014: preflight backup and rollback restore custom base_dir .base files."""
+    canonical_test_config(tmp_path, system_dir="System", base_dir="MyCustomBases")
+    (tmp_path / "System" / "PaperForge" / "indexes").mkdir(parents=True)
+    custom_base = tmp_path / "MyCustomBases" / "Literature Hub.base"
+    custom_base.parent.mkdir(parents=True)
+    orig_base = "views:\n  - type: table\n    name: 控制面板\n"
+    custom_base.write_text(orig_base, encoding="utf-8")
+
+    cut = execute_vault_upgrade(tmp_path, dry_run=False, fast_cutover=True)
+    assert cut["applied"] is True
+    assert "paperforge-table" in custom_base.read_text(encoding="utf-8")
+
+    rb = rollback_vault_upgrade(tmp_path)
+    assert rb["rolled_back"] is True
+    assert custom_base.read_text(encoding="utf-8") == orig_base
+
+
+def test_upgrade_fast_cutover_without_apply_rejects_cleanly(tmp_path: Path, capsys) -> None:
+    """PF-UX-009: `upgrade --fast-cutover` without `--apply` returns exit 2 and does not pretend apply."""
+    import argparse
+    from paperforge.commands.upgrade import run as upgrade_run
+
+    canonical_test_config(tmp_path, system_dir="System")
+    args = argparse.Namespace(
+        vault_path=str(tmp_path),
+        json=True,
+        rollback=False,
+        heal=False,
+        apply=False,
+        dry_run=False,
+        plan=False,
+        fast_cutover=True,
+        backfill_ocr=False,
+        quarantine_residuals=False,
+        quarantine_ids="",
+        no_rebuild_db=False,
+        priority_key="",
+        limit=None,
+    )
+    rc = upgrade_run(args)
+    out = json.loads(capsys.readouterr().out)
+    assert rc == 2
+    assert out["ok"] is False
+    assert "--apply" in out["error"]["message"]

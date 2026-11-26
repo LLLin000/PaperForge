@@ -15,7 +15,10 @@ def run(args: argparse.Namespace) -> int:
     json_output = bool(getattr(args, "json", False))
     do_rollback = bool(getattr(args, "rollback", False))
     do_heal = bool(getattr(args, "heal", False))
-    apply_changes = bool(getattr(args, "apply", False)) and not bool(getattr(args, "dry_run", False))
+    raw_apply = bool(getattr(args, "apply", False))
+    raw_dry_run = bool(getattr(args, "dry_run", False))
+    raw_plan = bool(getattr(args, "plan", False))
+    apply_changes = raw_apply and not raw_dry_run
     fast_cutover = bool(getattr(args, "fast_cutover", False))
     backfill_ocr = bool(getattr(args, "backfill_ocr", False))
     quarantine_residuals = bool(getattr(args, "quarantine_residuals", False))
@@ -24,6 +27,17 @@ def run(args: argparse.Namespace) -> int:
     rebuild_db = not bool(getattr(args, "no_rebuild_db", False))
     priority_key = str(getattr(args, "priority_key", "") or "").strip() or None
     heal_limit = getattr(args, "limit", None)
+
+    if fast_cutover and not raw_apply and not raw_dry_run and not raw_plan and not do_rollback and not do_heal:
+        msg = "--fast-cutover requires --apply. Use --apply --fast-cutover to execute cutover."
+        err_result = PFResult(
+            ok=False,
+            command="upgrade",
+            version=__version__,
+            error=PFError(code=ErrorCode.VALIDATION_ERROR, message=msg),
+        )
+        print(err_result.to_json() if json_output else f"upgrade error: {msg}")
+        return 2
 
     from paperforge.services.vault_upgrade import (
         execute_vault_upgrade,

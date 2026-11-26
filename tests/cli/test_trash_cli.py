@@ -45,7 +45,9 @@ def test_purge_older_than_only_removes_expired_entries(tmp_path: Path) -> None:
     outside = vault / "keep.md"
     _ = outside.write_text("preserve", encoding="utf-8")
     repo_root = Path(__file__).resolve().parents[2]
-    result = subprocess.run(
+
+    # PF-SEC-012: purge without confirmation must exit 2 and delete nothing
+    unconfirmed = subprocess.run(
         [
             sys.executable,
             "-m",
@@ -63,9 +65,24 @@ def test_purge_older_than_only_removes_expired_entries(tmp_path: Path) -> None:
         encoding="utf-8",
         timeout=60,
     )
+    assert unconfirmed.returncode == 2
+    assert "confirmation required" in unconfirmed.stderr
+    assert entries["OLD001"].exists()
+    assert entries["NEW001"].exists()
 
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "trash: purged 1 item(s)"
+    # Confirmed purge removes only expired entries
+    import argparse
+    from paperforge.commands.trash import run as trash_run
+
+    rc = trash_run(
+        argparse.Namespace(
+            vault_path=vault,
+            trash_subcommand="purge",
+            older_than=7,
+            yes=True,
+        )
+    )
+    assert rc == 0
     assert not entries["OLD001"].exists()
     assert (entries["NEW001"] / "fulltext.md").read_text(encoding="utf-8") == "NEW001"
     assert outside.read_text(encoding="utf-8") == "preserve"
