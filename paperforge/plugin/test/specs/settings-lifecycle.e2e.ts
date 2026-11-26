@@ -96,15 +96,22 @@ async function closeSettingsModal(): Promise<void> {
   await dismissModals();
 }
 
-async function openVaultFile(filePath: string): Promise<void> {
-  await browser.executeObsidian(async ({ app }, fp: string) => {
-    const file = app.vault.getAbstractFileByPath(fp);
-    if (!file) throw new Error(`Vault file not found: ${fp}`);
-    if (!("extension" in file)) throw new Error(`Not a file: ${fp}`);
-    const leaf = app.workspace.getLeaf("tab");
-    await leaf.openFile(file as Parameters<typeof leaf.openFile>[0]);
-    app.workspace.setActiveLeaf(leaf, { focus: true });
-  }, filePath);
+async function openVaultFile(
+  filePath: string,
+  leafMode: "tab" | "split" = "tab"
+): Promise<void> {
+  await browser.executeObsidian(
+    async ({ app }, fp: string, mode: "tab" | "split") => {
+      const file = app.vault.getAbstractFileByPath(fp);
+      if (!file) throw new Error(`Vault file not found: ${fp}`);
+      if (!("extension" in file)) throw new Error(`Not a file: ${fp}`);
+      const leaf = app.workspace.getLeaf(mode);
+      await leaf.openFile(file as Parameters<typeof leaf.openFile>[0]);
+      app.workspace.setActiveLeaf(leaf, { focus: true });
+    },
+    filePath,
+    leafMode
+  );
 }
 
 async function sandboxBasePath(): Promise<string> {
@@ -1053,11 +1060,11 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       String(zot1Rel).replace(/\\/g, "/")
     );
     const zot1DiskPath = path.join(boneRegenDir, String(zot1Rel));
-    // Reveal Companion tab first so _isPanelVisible() is true when active-leaf-change
-    // fires for ZOTKEY01 (matching paperforge.e2e.ts openPanel() -> openVaultFile()).
+    // Reveal Companion tab first, then open ZOTKEY01 in a split pane so
+    // _isPanelVisible() stays true while active-leaf-change switches to paper mode.
     await browser.executeObsidianCommand("paperforge:paperforge-status-panel");
     await browser.pause(200);
-    await openVaultFile(zot1ObsPath);
+    await openVaultFile(zot1ObsPath, "split");
 
     let lastToggleDiag: Record<string, unknown> | null = null;
     try {
