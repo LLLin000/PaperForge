@@ -155,6 +155,32 @@ def write_vault_manifest(
     return target
 
 
+def ensure_current_vault_manifest(vault: Path) -> Path | None:
+    """Stamp ``.paperforge/vault-manifest.json`` on clean ``.paperforge`` setups without masking legacy layouts."""
+    from paperforge.config import paperforge_paths
+    from paperforge.services.vault_upgrade import detect_vault_provenance
+
+    vault_root = Path(vault).expanduser().resolve()
+    existing = read_vault_manifest(vault_root)
+    if existing is not None and int(existing.get("layout_version") or 0) >= CURRENT_LAYOUT_VERSION:
+        return vault_manifest_path(vault_root)
+
+    paths = paperforge_paths(vault_root)
+    if Path(paths["system"]).name != ".paperforge":
+        return None
+
+    prov = detect_vault_provenance(vault_root)
+    tier1 = prov.get("tier1_evidence") or []
+    if any(
+        isinstance(ev, str)
+        and (ev.startswith("legacy_engine_dir:") or ev.startswith("configured_legacy_engine:"))
+        for ev in tier1
+    ):
+        return None
+
+    return write_vault_manifest(vault_root)
+
+
 def _safe_rel(path: Path, root: Path) -> str:
     try:
         return str(path.resolve().relative_to(root.resolve())).replace("\\", "/")

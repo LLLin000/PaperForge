@@ -768,7 +768,8 @@ const LANG: Record<string, Record<string, string>> = {
     folder_help_base: "The paper table (Obsidian Bases).",
     setup_library_continue_hint: "Finish steps 1-3 to continue.",
     setup_bbt_section_title: "Import a Better BibTeX JSON export (required)",
-    setup_library_syncing: "Syncing the library from your BBT export…",
+    setup_library_syncing:
+      "Syncing your Zotero library (first import may take a moment)…",
     setup_library_sync_failed:
       "Configuration saved, but the library sync failed. Check the export and try again.",
     setup_library_loading: "Reading the vault configuration…",
@@ -1504,6 +1505,8 @@ const LANG: Record<string, Record<string, string>> = {
     main_defender_path_copied: "Exclusion folder path copied to clipboard.",
     main_first_open_ready:
       "PaperForge is ready: open Settings → PaperForge to finish quick setup, or browse existing papers in the sidebar.",
+    main_new_vault_connect_zotero:
+      "PaperForge engine is ready — open Settings → PaperForge to connect this vault's Zotero library.",
     main_activity_heal: "Organizing legacy library structure in background",
     main_syncing_library: "PaperForge: syncing library…",
     main_autosync_failed_title: "Background Zotero sync paused due to an error",
@@ -2574,7 +2577,7 @@ const LANG: Record<string, Record<string, string>> = {
     folder_help_base: "文献表格（Obsidian Bases 视图）。",
     setup_library_continue_hint: "完成第 1-3 步后即可继续。",
     setup_bbt_section_title: "导入 Better BibTeX JSON 导出（必需）",
-    setup_library_syncing: "正在用 BBT 导出同步文献库…",
+    setup_library_syncing: "正在从 Zotero 同步文献库（首次导入可能需要片刻）…",
     setup_library_sync_failed:
       "配置已保存，但文献库同步失败。请检查导出文件后重试。",
     setup_library_loading: "正在读取库配置…",
@@ -3228,6 +3231,8 @@ const LANG: Record<string, Record<string, string>> = {
     main_defender_path_copied: "已复制排除目录路径到剪贴板。",
     main_first_open_ready:
       "PaperForge 已就绪：请前往「设置 → PaperForge」完成初始引导，或在侧边栏浏览已有文献。",
+    main_new_vault_connect_zotero:
+      "PaperForge 引擎已就绪 — 打开「设置 → PaperForge」即可连接当前库的 Zotero 文献库。",
     main_activity_heal: "正在后台整理历史文献结构",
     main_syncing_library: "PaperForge：正在同步文献库…",
     main_autosync_failed_title: "后台自动同步 Zotero 暂时受阻",

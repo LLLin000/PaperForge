@@ -179,6 +179,25 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                             notices.append({"level": "warning", "message": "DB canonical_index_hash is out of sync with index"})
             except Exception:
                 pass
+            # Surface diagnostic notice if a .paperforge v2 vault lost its manifest
+            try:
+                if Path(paths["system"]).name == ".paperforge":
+                    from paperforge.services.vault_engine import CURRENT_LAYOUT_VERSION, read_vault_manifest
+
+                    mf = read_vault_manifest(vault)
+                    if mf is None or int(mf.get("layout_version") or 0) < CURRENT_LAYOUT_VERSION:
+                        notices.append(
+                            {
+                                "level": "warning",
+                                "code": "vault.manifest_missing",
+                                "message": (
+                                    ".paperforge/vault-manifest.json is missing or outdated; "
+                                    "re-run setup or vault upgrade to repair layout metadata"
+                                ),
+                            }
+                        )
+            except Exception:
+                pass
             # Export hash valid and index healthy → ready
             env = build_envelope(
                 module="library", capability_state="ready", severity="ok",

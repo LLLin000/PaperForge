@@ -2,7 +2,15 @@ import type { ActionRequest, ActionScope } from "./client/action-contract";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { Plugin, Notice, Modal, Setting, App, TFile } from "obsidian";
+import {
+  Plugin,
+  Notice,
+  Modal,
+  Setting,
+  App,
+  TFile,
+  requestUrl,
+} from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
 class ConfirmMigrationModal extends Modal {
@@ -52,6 +60,7 @@ import {
   type PointerInfo,
 } from "./services/managed-runtime";
 import {
+  createObsidianRequestFetcher,
   ensureNativeDaemonDownloaded,
   readNativeDaemonMeta,
   resolveNativeDaemonBinary,
@@ -60,6 +69,10 @@ import {
   isEngineVersionCompatible,
   normalizeSemverForCompare,
 } from "./services/setup-decision-tree";
+import {
+  resolveElectronSessionProxy,
+  setCachedSystemProxy,
+} from "./services/system-proxy";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -132,6 +145,7 @@ export default class PaperForgePlugin extends Plugin {
   private _lastAutoSyncError: { message: string; at: number } | null = null;
   private _pendingReleaseNotesVersion: string | null = null;
   private _daemonUpdating = false;
+  private _startupDaemonCheckPending = false;
   private _unloaded = false;
   private _startupDeferTimer: ReturnType<typeof setTimeout> | null = null;
   private _lastSyncedZoteroSig: string | null = null;
@@ -165,6 +179,10 @@ export default class PaperForgePlugin extends Plugin {
 
   isDaemonUpdating(): boolean {
     return this._daemonUpdating;
+  }
+
+  isStartupDaemonCheckPending(): boolean {
+    return this._startupDaemonCheckPending;
   }
 
   isRuntimeUpdating(): boolean {
@@ -960,10 +978,13 @@ export default class PaperForgePlugin extends Plugin {
           if (
             this.settings._setup_complete === false &&
             this.settings._setup_journey_started !== true &&
-            !readRuntimePointer() &&
             !plan?.provenance?.needs_upgrade
           ) {
-            new Notice(t("main_first_open_ready"), 8000);
+            if (!readRuntimePointer()) {
+              new Notice(t("main_first_open_ready"), 8000);
+            } else {
+              new Notice(t("main_new_vault_connect_zotero"), 10000);
+            }
           }
         })
         .catch(() => undefined);
@@ -1004,8 +1025,22 @@ export default class PaperForgePlugin extends Plugin {
           runStartupHydration();
         }
 
+        void resolveElectronSessionProxy("https://github.com")
+          .then((proxyUrl) => {
+            if (proxyUrl && !this._unloaded) {
+              setCachedSystemProxy(proxyUrl);
+            }
+          })
+          .catch(() => undefined);
+
+        this._startupDaemonCheckPending = true;
         void ensureNativeDaemonDownloaded(pluginVersion, {
           checkVersionUpdate: true,
+          useRemoteTtl: true,
+          fetchBuffer:
+            typeof requestUrl === "function"
+              ? createObsidianRequestFetcher(requestUrl)
+              : undefined,
           onBeforeReplace: () => this._client?.shutdownTransportAsync(),
           onReplace: (swapFn) =>
             this._client
@@ -1088,6 +1123,9 @@ export default class PaperForgePlugin extends Plugin {
               runStartupHydration();
               this._refreshSettingTabIfOpen();
             }
+          })
+          .finally(() => {
+            this._startupDaemonCheckPending = false;
           });
       }, 1500);
     };
@@ -1205,6 +1243,15 @@ export default class PaperForgePlugin extends Plugin {
   /** Periodic convergence check: skips Python sync completely if Zotero DB hasn't changed. */
   private _maybeAutoSync(vaultPath: string): void {
     if (this._autoSyncRunning) return;
+    if (this.settings?._setup_complete === false) return;
+    const libCap = this.settings?.capabilityState?.library;
+    if (
+      libCap?.reason?.code === "library.zotero_missing" ||
+      libCap?.capability_state === "missing_input" ||
+      libCap?.user_state === "setup_required"
+    ) {
+      return;
+    }
     if (!readRuntimePointer()) return;
     void (async () => {
       const sig = await this._readZoteroFingerprint();
@@ -1243,6 +1290,7 @@ export default class PaperForgePlugin extends Plugin {
 
   private _autoSync(vaultPath: string, expectedZoteroSig?: string) {
     if (this._autoSyncRunning) return;
+    if (this.settings?._setup_complete === false) return;
     if (this._upgradePlanCache?.provenance?.needs_upgrade === true) {
       return;
     }
@@ -1273,17 +1321,30 @@ export default class PaperForgePlugin extends Plugin {
             void this.refreshBaseSnapshot().catch(() => undefined);
           }
         } else {
-          const errObj = (result as { error?: { message?: string } })?.error;
-          this._lastAutoSyncError = {
-            message: formatHumanError(errObj?.message || "sync_failed"),
-            at: Date.now(),
-          };
+          const errObj = (
+            result as { error?: { code?: string; message?: string } }
+          )?.error;
+          const isZoteroUnconfigured =
+            errObj?.code === "library.zotero_missing" ||
+            /zotero data directory not configured/i.test(errObj?.message || "");
+          this._lastAutoSyncError = isZoteroUnconfigured
+            ? null
+            : {
+                message: formatHumanError(errObj?.message || "sync_failed"),
+                at: Date.now(),
+              };
         }
       } catch (err: unknown) {
         ok = false;
         const rawMsg = err instanceof Error ? err.message : String(err ?? "");
-        // Never surface transient internal daemon hot-swap restarts as sync errors
-        if (
+        const isZoteroUnconfigured =
+          /library\.zotero_missing|zotero data directory not configured/i.test(
+            rawMsg
+          );
+        if (isZoteroUnconfigured) {
+          this._lastAutoSyncError = null;
+        } else if (
+          // Never surface transient internal daemon hot-swap restarts as sync errors
           !this._daemonUpdating &&
           !rawMsg.toLowerCase().includes("daemon shut down")
         ) {
@@ -2094,7 +2155,9 @@ export default class PaperForgePlugin extends Plugin {
   async triggerBuildEmbeddings(skipConfirm = false): Promise<void> {
     const client = this.getClient();
     if (client.isOperationActive?.()) {
-      new Notice(t("embed_already_running") || "Vector build is already in progress.");
+      new Notice(
+        t("embed_already_running") || "Vector build is already in progress."
+      );
       return;
     }
 
@@ -2149,20 +2212,21 @@ export default class PaperForgePlugin extends Plugin {
                 : `exit code ${result.exitCode}`;
           const formatted = formatHumanError(reason) || reason;
           new Notice(
-            (t("sr_build_failed_notice") || "Vector index build failed: {detail}").replace(
-              "{detail}",
-              formatted
-            ),
+            (
+              t("sr_build_failed_notice") ||
+              "Vector index build failed: {detail}"
+            ).replace("{detail}", formatted),
             8000
           );
         }
       } catch (err) {
-        const msg = formatHumanError(err) || (err instanceof Error ? err.message : String(err));
+        const msg =
+          formatHumanError(err) ||
+          (err instanceof Error ? err.message : String(err));
         new Notice(
-          (t("sr_build_failed_notice") || "Vector index build failed: {detail}").replace(
-            "{detail}",
-            msg
-          ),
+          (
+            t("sr_build_failed_notice") || "Vector index build failed: {detail}"
+          ).replace("{detail}", msg),
           8000
         );
       }
@@ -2176,7 +2240,10 @@ export default class PaperForgePlugin extends Plugin {
     new PaperForgeConfirmModal(
       this.app,
       {
-        title: t("embed_confirm_title") || t("cmd_build_embeddings") || "Build vector retrieval index",
+        title:
+          t("embed_confirm_title") ||
+          t("cmd_build_embeddings") ||
+          "Build vector retrieval index",
         effectLabel:
           t("embed_confirm_body") ||
           "Generate or update vector embeddings for all OCR-completed papers in the library.",
@@ -2575,11 +2642,17 @@ export default class PaperForgePlugin extends Plugin {
 
     // Existing installations predate the Setup Journey. The previous rollout
     // wrote the new default false into their data, so migrate only profiles
-    // that already carried durable pre-redesign state and never started the journey.
+    // that genuinely finished library setup (`last_seen_version` + ready library)
+    // and never started the journey — never fresh vaults with `vault_path` or
+    // `setup_required` / `library.zotero_missing` capability caches.
+    const savedCap = saved.capabilityState as
+      | Record<string, { user_state?: string; capability_state?: string }>
+      | undefined;
+    const savedLibReady =
+      savedCap?.library?.user_state === "ready" ||
+      savedCap?.library?.capability_state === "ready";
     const establishedInstall =
-      !!saved.capabilityState ||
-      !!saved.last_seen_version ||
-      !!saved.vault_path;
+      Boolean(saved.last_seen_version) && savedLibReady;
     if (
       saved._setup_complete === false &&
       establishedInstall &&

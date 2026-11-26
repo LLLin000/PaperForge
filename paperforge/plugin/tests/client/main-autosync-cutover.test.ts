@@ -218,4 +218,90 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
     expect(plugin._lastSyncTime).toBeNull();
     expect(orchestrateFromSync).not.toHaveBeenCalled();
   });
+
+  it("skips auto-sync when setup is incomplete and suppresses unconfigured Zotero errors", async () => {
+    const plugin = makePlugin(client) as ReturnType<typeof makePlugin> & {
+      settings: {
+        _setup_complete?: boolean;
+        capabilityState?: Record<string, unknown>;
+      };
+      _lastAutoSyncError: { message: string; at: number } | null;
+      _maybeAutoSync: (vaultPath: string) => void;
+    };
+    plugin._lastAutoSyncError = null;
+    plugin.settings = {
+      _setup_complete: false,
+      capabilityState: {
+        library: {
+          user_state: "setup_required",
+          capability_state: "missing_input",
+          reason: { code: "library.zotero_missing", text: "missing" },
+        },
+      },
+    };
+    plugin._maybeAutoSync("/vault");
+    plugin._autoSync("/vault");
+    await Promise.resolve();
+    expect(transport.calls.filter((c) => c.argv[0] === "sync")).toHaveLength(0);
+
+    // Even if sync runs when _setup_complete is true, missing Zotero is not an outage
+    plugin.settings._setup_complete = true;
+    transport.executeHandler = (argv) => {
+      if (argv[0] === "sync") {
+        return JSON.stringify({
+          ok: false,
+          error: {
+            code: "library.zotero_missing",
+            message: "Zotero data directory not configured",
+          },
+        });
+      }
+      return "{}";
+    };
+    plugin._autoSync("/vault");
+    await vi.waitFor(() => {
+      expect(plugin._autoSyncRunning).toBe(false);
+    });
+    expect(plugin._lastAutoSyncError).toBeNull();
+  });
+
+  it("loadSettings preserves _setup_complete: false for fresh vaults with vault_path and zotero_missing", async () => {
+    const plugin = Object.create(
+      PaperForgePlugin.prototype
+    ) as PaperForgePlugin & {
+      loadData: () => Promise<Record<string, unknown>>;
+      saveSettings: () => Promise<void>;
+    };
+    plugin.saveSettings = vi.fn(async () => {});
+    plugin.loadData = async () => ({
+      _setup_complete: false,
+      vault_path: "/sandbox-vault",
+      last_seen_version: "",
+      capabilityState: {
+        library: {
+          capability_state: "missing_input",
+          user_state: "setup_required",
+          reason: { code: "library.zotero_missing", text: "missing" },
+        },
+      },
+    });
+    await plugin.loadSettings();
+    expect(plugin.settings._setup_complete).toBe(false);
+    expect(plugin.saveSettings).not.toHaveBeenCalled();
+
+    // Legacy pre-wizard profiles with last_seen_version + ready library still migrate
+    plugin.loadData = async () => ({
+      _setup_complete: false,
+      last_seen_version: "1.9.0",
+      capabilityState: {
+        library: {
+          capability_state: "ready",
+          user_state: "ready",
+        },
+      },
+    });
+    await plugin.loadSettings();
+    expect(plugin.settings._setup_complete).toBe(true);
+    expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+  });
 });

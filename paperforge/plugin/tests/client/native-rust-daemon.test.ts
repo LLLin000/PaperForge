@@ -123,6 +123,7 @@ function writeMockWorkerPackage(vaultDir: string): void {
 }
 
 import {
+  createObsidianRequestFetcher,
   ensureNativeDaemonDownloaded,
   httpsGetBuffer,
   isManagedDaemonBinaryPath,
@@ -857,6 +858,60 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       }
     } finally {
       rmTempSafe(tmpRoot);
+    }
+  });
+
+  it("createObsidianRequestFetcher bounds slow requestUrlFn calls with timeoutMs", async () => {
+    const fetcher = createObsidianRequestFetcher(
+      () => new Promise(() => undefined),
+      undefined,
+      50
+    );
+    await expect(
+      fetcher(
+        "https://github.com/LLLin000/PaperForge/releases/download/v2.0.7/checksums.txt"
+      )
+    ).rejects.toThrow(/timed out after 50ms/i);
+  });
+
+  it("ensureNativeDaemonDownloaded honors 12h zero-network fast path when useRemoteTtl is enabled alongside fetchBuffer", async () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-ttl-"));
+    try {
+      const asset = nativeDaemonAssetName(process.platform, process.arch)!;
+      const bin = Buffer.from("ttl-daemon-bytes");
+      const sha = crypto.createHash("sha256").update(bin).digest("hex");
+      let fetchCount = 0;
+      const fetchBuffer = async (url: string) => {
+        fetchCount++;
+        return url.endsWith("/checksums.txt")
+          ? Buffer.from(`${sha}  ${asset}\n`, "utf-8")
+          : bin;
+      };
+
+      const first = await ensureNativeDaemonDownloaded("2.0.7", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        useRemoteTtl: true,
+        fetchBuffer,
+      });
+      expect(first).toBeTruthy();
+      expect(fetchCount).toBe(2);
+
+      // Second call within 12h TTL MUST execute zero network calls even with fetchBuffer injected.
+      const second = await ensureNativeDaemonDownloaded("2.0.7", {
+        home: tmpHome,
+        platform: process.platform,
+        arch: process.arch,
+        checkVersionUpdate: true,
+        useRemoteTtl: true,
+        fetchBuffer,
+      });
+      expect(second).toBe(first);
+      expect(fetchCount).toBe(2);
+    } finally {
+      rmTempSafe(tmpHome);
     }
   });
 });

@@ -149,6 +149,12 @@ class SetupPlan:
         _gate = self._step_outcome(v_result, results, ndjson=ndjson, json_output=json_output)
         if _gate is not None:
             return _gate
+        try:
+            from paperforge.services.vault_engine import ensure_current_vault_manifest
+
+            ensure_current_vault_manifest(self.vault)
+        except Exception as exc:  # noqa: BLE001 — manifest stamp is non-fatal during setup, but surface warning
+            self._log(f"Warning: could not write .paperforge/vault-manifest.json: {exc}")
         z_result = _run_step(
             "vault_initializer.zotero_junction",
             lambda: vault_init.create_zotero_junction(self.zotero_path),

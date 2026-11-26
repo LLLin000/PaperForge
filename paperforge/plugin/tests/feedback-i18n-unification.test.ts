@@ -340,6 +340,25 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
     expect(step2.primaryAction?.kind).toBe("connect_zotero");
     expect(step2.body).toContain("42");
 
+    // 7b. Backend reports library.zotero_missing -> MUST show Step 2 even when
+    // settings cached a Zotero path and a stale auto-sync error string.
+    const zoteroMissingOverride = resolveSetupDecision({
+      ...base,
+      libraryEnv: {
+        ...actionLib,
+        user_state: "setup_required",
+        capability_state: "missing_input",
+        reason: {
+          code: "library.zotero_missing",
+          text: "Zotero data directory not configured",
+        },
+      },
+      zoteroDataDir: "X:\\Mock\\Zotero",
+      lastAutoSyncError: "Zotero data directory not configured",
+    });
+    expect(zoteroMissingOverride.id).toBe("zotero_not_configured");
+    expect(zoteroMissingOverride.primaryAction?.kind).toBe("connect_zotero");
+
     // 8. Sync error -> Retry Sync
     const syncErr = resolveSetupDecision({
       ...base,

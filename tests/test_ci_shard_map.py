@@ -62,16 +62,21 @@ def test_map_names_no_stale_file() -> None:
 
 
 def test_shard_indices_are_in_range() -> None:
-    indices = set(_map().values())
-    assert indices <= {0, 1}, f"unexpected shard indices: {sorted(indices)}"
-    assert indices == {0, 1}, "one shard is empty; rebalance the map"
+    data = json.loads(MAP_PATH.read_text(encoding="utf-8"))
+    shard_count = int(data["shards"])
+    expected = set(range(shard_count))
+    indices = set(data["files"].values())
+    assert indices <= expected, f"unexpected shard indices: {sorted(indices)}"
+    assert indices == expected, "one or more shards are empty; rebalance the map"
 
 
 def test_shards_are_balanced_by_file_count() -> None:
-    counts = {0: 0, 1: 0}
-    for shard in _map().values():
+    data = json.loads(MAP_PATH.read_text(encoding="utf-8"))
+    shard_count = int(data["shards"])
+    counts = {i: 0 for i in range(shard_count)}
+    for shard in data["files"].values():
         counts[shard] += 1
-    small, large = sorted(counts.values())
+    small, large = min(counts.values()), max(counts.values())
     assert large - small <= max(10, large * 0.1), (
-        f"shards are lopsided: {counts}; regenerate with `--write`"
+        f"shards are lopsided: {counts}; regenerate with `--write --of {shard_count}`"
     )

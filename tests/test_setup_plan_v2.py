@@ -869,3 +869,173 @@ class TestSetupAgentPhaseCancellation:
         )
         rc = plan.execute(ndjson=True)
         assert rc == 130, f"agent-phase cancellation must exit 130, got {rc}"
+
+
+class TestSetupManifestStamp:
+    """Fresh .paperforge setups stamp vault-manifest.json without masking veteran layouts."""
+
+    def test_fresh_dot_paperforge_setup_is_standard_current(self, tmp_path: Path) -> None:
+        import paperforge.setup.plan as plan_mod
+        from paperforge.services.vault_upgrade import detect_vault_provenance
+
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={
+                "system_dir": ".paperforge",
+                "resources_dir": "Resources",
+                "literature_dir": "Literature",
+                "base_dir": "Bases",
+            },
+            skip_checks=True,
+        )
+        rc = plan.execute(json_output=True)
+        assert rc == 0
+        manifest_file = tmp_path / ".paperforge" / "vault-manifest.json"
+        assert manifest_file.is_file()
+        prov = detect_vault_provenance(tmp_path)
+        assert prov["state"] == "standard_current"
+        assert prov["needs_upgrade"] is False
+
+    def test_legacy_engine_dir_not_masked_by_setup(self, tmp_path: Path) -> None:
+        from paperforge.config import bootstrap_config, set_config
+        from paperforge.services.vault_engine import ensure_current_vault_manifest
+        from paperforge.services.vault_upgrade import detect_vault_provenance
+
+        bootstrap_config(tmp_path)
+        set_config(tmp_path, "system_dir", ".paperforge")
+        (tmp_path / "System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)
+        assert ensure_current_vault_manifest(tmp_path) is None
+        prov = detect_vault_provenance(tmp_path)
+        assert prov["state"] == "veteran_legacy"
+        assert prov["needs_upgrade"] is True
+
+    def test_manifest_write_failure_emits_warning_log(self, tmp_path: Path, monkeypatch) -> None:
+        import paperforge.setup.plan as plan_mod
+
+        def _fail_manifest(_vault):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(
+            "paperforge.services.vault_engine.ensure_current_vault_manifest",
+            _fail_manifest,
+        )
+        logs: list[str] = []
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={
+                "system_dir": ".paperforge",
+                "resources_dir": "Resources",
+                "literature_dir": "Literature",
+                "base_dir": "Bases",
+            },
+            skip_checks=True,
+            progress_callback=logs.append,
+        )
+        rc = plan.execute(json_output=True)
+        assert rc == 0
+        assert any("vault-manifest.json" in msg and "disk full" in msg for msg in logs)
+
+    def test_probe_library_surfaces_missing_manifest_notice(self, tmp_path: Path) -> None:
+        import paperforge.setup.plan as plan_mod
+        from paperforge.config import paperforge_paths
+        from paperforge.probes.library import probe_library
+        from paperforge.worker import asset_index
+
+        zotero_dir = tmp_path / "zotero_data"
+        zotero_dir.mkdir(parents=True, exist_ok=True)
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={
+                "system_dir": ".paperforge",
+                "resources_dir": "Resources",
+                "literature_dir": "Literature",
+                "base_dir": "Bases",
+                "zotero_data_dir": str(zotero_dir),
+            },
+            zotero_path=str(zotero_dir),
+            skip_checks=True,
+        )
+        assert plan.execute(json_output=True) == 0
+
+        paths = paperforge_paths(tmp_path)
+        idx_path = Path(paths["index"])
+        idx_path.parent.mkdir(parents=True, exist_ok=True)
+        idx_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "export_hash": asset_index.compute_export_hash(paths),
+                    "paper_count": 0,
+                    "items": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        manifest_file = tmp_path / ".paperforge" / "vault-manifest.json"
+        if manifest_file.exists():
+            manifest_file.unlink()
+
+        env = probe_library(tmp_path)
+        assert env["reason"]["code"] == "library.ready"
+        notice_codes = [n.get("code") for n in env.get("notices", [])]
+        assert "vault.manifest_missing" in notice_codes
+
+
+class TestPythonDaemonFallback:
+    """Python stdio daemon fallback serves probe/upgrade on unconfigured & veteran v1 vaults."""
+
+    def test_probe_all_succeeds_on_fresh_unconfigured_vault(self, tmp_path: Path) -> None:
+        import io
+        from paperforge.commands.daemon import _execute_request
+
+        fresh = tmp_path / "fresh"
+        fresh.mkdir()
+        resp = _execute_request(
+            {
+                "id": 1,
+                "vault": str(fresh),
+                "argv": ["probe", "all", "--json"],
+                "stdin": None,
+            },
+            real_stdout=io.StringIO(),
+            real_stderr=io.StringIO(),
+        )
+        assert resp["id"] == 1
+        assert resp["exit_code"] == 0
+        payload = json.loads(resp["stdout"])
+        assert payload["modules"]["library"]["reason"]["code"] == "library.config_missing"
+
+    def test_upgrade_plan_succeeds_on_veteran_v1_vault(self, tmp_path: Path) -> None:
+        import io
+        from paperforge.commands.daemon import _execute_request
+
+        legacy = tmp_path / "legacy"
+        (legacy / "System" / "PaperForge" / "indexes").mkdir(parents=True)
+        (legacy / "paperforge.json").write_text(
+            json.dumps(
+                {
+                    "vault_config": {
+                        "system_dir": "System",
+                        "resources_dir": "Resources",
+                        "literature_dir": "Literature",
+                        "base_dir": "Bases",
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        resp = _execute_request(
+            {
+                "id": 2,
+                "vault": str(legacy),
+                "argv": ["upgrade", "--plan", "--json"],
+                "stdin": None,
+            },
+            real_stdout=io.StringIO(),
+            real_stderr=io.StringIO(),
+        )
+        assert resp["id"] == 2
+        assert resp["exit_code"] == 0
+        payload = json.loads(resp["stdout"])
+        assert payload["ok"] is True
+        assert payload["data"]["provenance"]["needs_upgrade"] is True

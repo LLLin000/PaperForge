@@ -3,7 +3,7 @@
 
 # PaperForge 全量技术参考手册（Compiled Technical Reference）
 
-> **版本**：`2.0.7` | **章节数**：`15` | **分册指纹**：`sha256:cab299ef50a5e96d`
+> **版本**：`2.0.8` | **章节数**：`15` | **分册指纹**：`sha256:cab299ef50a5e96d`
 >
 > 本文档由 `scripts/build_technical_reference.py` 从 `docs/handbook/01`–`14` 自动汇编而成，供维护者与 AI Agent 作为单文件全景检索底本使用。所有结构、字段、CLI、Probe、Action 与 SQLite Schema 均有自动化同步门禁 `tests/test_technical_docs_sync.py` 与源码双向锁定。
 

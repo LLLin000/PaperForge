@@ -252,7 +252,10 @@ def _execute_request(
     if isinstance(vault, str) and vault.strip():
         if is_exclusive_upgrade:
             ctrl.acquire_exclusive_barrier(vault, "upgrade_cutover_or_rollback")
-        eng.get_or_refresh(vault)
+        try:
+            eng.get_or_refresh(vault)
+        except Exception:  # noqa: BLE001 — unconfigured/legacy vaults must still serve probe/setup/upgrade
+            pass
 
     req_stdin = req.get("stdin")
     stdin_text = req_stdin if isinstance(req_stdin, str) else ""
@@ -294,7 +297,10 @@ def _execute_request(
             ctrl.release_exclusive_barrier(vault)
 
     if isinstance(vault, str) and vault.strip():
-        eng.get_or_refresh(vault)
+        try:
+            eng.get_or_refresh(vault)
+        except Exception:  # noqa: BLE001 — unconfigured/legacy vaults may have no v2 paperforge.json yet
+            pass
 
     return {
         "id": req_id,
@@ -369,14 +375,16 @@ def serve_stdio(
                 state["last_activity"] = time.monotonic()
                 state["busy"] = True
             try:
+                req_id: Any = None
                 try:
                     req = json.loads(line)
                     if not isinstance(req, dict):
                         raise ValueError("request must be a JSON object")
+                    req_id = req.get("id")
                     resp = _execute_request(req, real_stdout=real_stdout, real_stderr=real_stderr)
                 except Exception as exc:  # noqa: BLE001
                     resp = {
-                        "id": None,
+                        "id": req_id,
                         "exit_code": 2,
                         "stdout": "",
                         "stderr": f"Invalid daemon request: {exc}",
