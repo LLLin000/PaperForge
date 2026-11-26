@@ -230,10 +230,27 @@ const MAX_CHECKSUMS_BYTES = 256 * 1024;
 const MAX_DAEMON_BINARY_BYTES = 32 * 1024 * 1024;
 
 function realpathSafe(p: string): string {
+  const resolved = path.resolve(p);
   try {
-    return fs.realpathSync(p);
+    return fs.realpathSync(resolved);
   } catch {
-    return path.resolve(p);
+    // Walk up to the nearest existing ancestor so symlinked system prefixes
+    // (e.g. `/var` -> `/private/var` on macOS) still resolve when the leaf
+    // binary does not exist or was quarantined.
+    const pending: string[] = [];
+    let current = resolved;
+    while (true) {
+      const parent = path.dirname(current);
+      if (parent === current) return resolved;
+      pending.unshift(path.basename(current));
+      current = parent;
+      try {
+        const realAncestor = fs.realpathSync(current);
+        return path.join(realAncestor, ...pending);
+      } catch {
+        // Keep walking toward root until an ancestor exists.
+      }
+    }
   }
 }
 
@@ -242,6 +259,13 @@ export function isManagedDaemonBinaryPath(
   candidatePath: string
 ): boolean {
   if (!binDir || !candidatePath) return false;
+  try {
+    if (fs.lstatSync(candidatePath).isSymbolicLink()) {
+      return false;
+    }
+  } catch {
+    // Non-existent file (e.g. quarantined/deleted): check canonical parent below.
+  }
   const baseDir = realpathSafe(binDir);
   const resolved = realpathSafe(candidatePath);
   const rel = path.relative(baseDir, resolved);
@@ -344,7 +368,10 @@ export function resolveNativeDaemonBinary(
   return null;
 }
 
-function matchesNoProxy(hostname: string, noProxyRaw: string | undefined): boolean {
+function matchesNoProxy(
+  hostname: string,
+  noProxyRaw: string | undefined
+): boolean {
   if (!noProxyRaw) return false;
   const host = hostname.toLowerCase();
   for (const rawEntry of noProxyRaw.split(",")) {
@@ -416,7 +443,8 @@ function openProxyTunnel(
       ).toString("base64");
       headers["Proxy-Authorization"] = `Basic ${creds}`;
     }
-    const requester = proxyUrl.protocol === "https:" ? https.request : http.request;
+    const requester =
+      proxyUrl.protocol === "https:" ? https.request : http.request;
     const req = requester({
       host: proxyUrl.hostname,
       port: proxyPort,
@@ -550,9 +578,7 @@ export async function httpsGetBuffer(
           res.destroy();
           tunnelSocket?.destroy();
           reject(
-            new Error(
-              `Response exceeded maximum allowed ${maxBytes} bytes`
-            )
+            new Error(`Response exceeded maximum allowed ${maxBytes} bytes`)
           );
           return;
         }
@@ -713,12 +739,12 @@ export async function ensureNativeDaemonDownloaded(
 
   const existingCorrupted = Boolean(
     meta &&
-      metaPathValid &&
-      existingPath &&
-      path.resolve(existingPath) === path.resolve(meta.binaryPath) &&
-      (!isValidSha256Hex(meta.sha256) ||
-        !installedSha ||
-        installedSha !== meta.sha256.toLowerCase())
+    metaPathValid &&
+    existingPath &&
+    path.resolve(existingPath) === path.resolve(meta.binaryPath) &&
+    (!isValidSha256Hex(meta.sha256) ||
+      !installedSha ||
+      installedSha !== meta.sha256.toLowerCase())
   );
 
   if (suspectedQuarantine) {
@@ -729,7 +755,11 @@ export async function ensureNativeDaemonDownloaded(
     }
   }
 
-  if (existingPath && !existingCorrupted && (!opts.checkVersionUpdate || !wantTag)) {
+  if (
+    existingPath &&
+    !existingCorrupted &&
+    (!opts.checkVersionUpdate || !wantTag)
+  ) {
     return existingPath;
   }
 
@@ -843,7 +873,10 @@ export async function ensureNativeDaemonDownloaded(
           fs.renameSync(tmpPath!, targetPath);
         } catch {
           // Target already exists with identical content-addressed hash
-          if (fs.existsSync(targetPath) && sha256File(targetPath) === actualSha) {
+          if (
+            fs.existsSync(targetPath) &&
+            sha256File(targetPath) === actualSha
+          ) {
             unlinkQuiet(tmpPath);
           } else {
             throw new Error(`Failed to stage daemon binary at ${targetPath}`);

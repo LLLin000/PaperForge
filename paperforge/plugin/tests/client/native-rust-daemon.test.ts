@@ -125,6 +125,7 @@ function writeMockWorkerPackage(vaultDir: string): void {
 import {
   ensureNativeDaemonDownloaded,
   httpsGetBuffer,
+  isManagedDaemonBinaryPath,
   managedNativeDaemonPath,
   nativeDaemonAssetName,
   nativeDaemonMetaFile,
@@ -660,7 +661,10 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
         checkVersionUpdate: true,
         fetchBuffer: async (url: string) => {
           fetchedUrls.push(url);
-          if (url.startsWith("https://github.com/") && url.endsWith("/checksums.txt")) {
+          if (
+            url.startsWith("https://github.com/") &&
+            url.endsWith("/checksums.txt")
+          ) {
             throw new Error("github offline");
           }
           if (url.endsWith("/checksums.txt")) {
@@ -673,7 +677,8 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       expect(res).toBeNull();
       expect(
         fetchedUrls.some(
-          (u) => !u.startsWith("https://github.com/") && u.endsWith("/checksums.txt")
+          (u) =>
+            !u.startsWith("https://github.com/") && u.endsWith("/checksums.txt")
         )
       ).toBe(false);
     } finally {
@@ -686,7 +691,10 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
     try {
       const asset = nativeDaemonAssetName(process.platform, process.arch)!;
       const validBin = Buffer.from("valid-native-daemon-bytes");
-      const validSha = crypto.createHash("sha256").update(validBin).digest("hex");
+      const validSha = crypto
+        .createHash("sha256")
+        .update(validBin)
+        .digest("hex");
 
       const installed = await ensureNativeDaemonDownloaded("2.0.7", {
         home: tmpHome,
@@ -728,7 +736,9 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
             ? Buffer.from(`${validSha}  ${asset}\n`, "utf-8")
             : validBin,
       });
-      const binDir = path.dirname(managedNativeDaemonPath(tmpHome, process.platform));
+      const binDir = path.dirname(
+        managedNativeDaemonPath(tmpHome, process.platform)
+      );
       const leftoverTmp = fs
         .readdirSync(binDir)
         .filter((f) => f.endsWith(".tmp"));
@@ -758,7 +768,9 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
     const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pf-sec007-"));
     const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-outside-"));
     try {
-      const binDir = path.dirname(managedNativeDaemonPath(tmpHome, process.platform));
+      const binDir = path.dirname(
+        managedNativeDaemonPath(tmpHome, process.platform)
+      );
       fs.mkdirSync(binDir, { recursive: true });
       const evilExe = path.join(outsideDir, "paperforge-daemon-evil.exe");
       const evilBuf = Buffer.from("outside-binary");
@@ -783,7 +795,10 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
       ).toBeNull();
 
       // Inside binDir, but mismatched SHA-256 -> still rejected!
-      const insideExe = path.join(binDir, "paperforge-daemon-2.0.7-deadbeef00.exe");
+      const insideExe = path.join(
+        binDir,
+        "paperforge-daemon-2.0.7-deadbeef00.exe"
+      );
       fs.writeFileSync(insideExe, evilBuf);
       fs.writeFileSync(
         nativeDaemonMetaFile(tmpHome, process.platform),
@@ -804,6 +819,44 @@ describe("Native Rust Sidecar (`paperforge-daemon`)", () => {
     } finally {
       rmTempSafe(tmpHome);
       rmTempSafe(outsideDir);
+    }
+  });
+
+  it("isManagedDaemonBinaryPath handles deleted files and symlinked parent directories", () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pf-managed-bin-"));
+    try {
+      const binDir = path.join(tmpRoot, "real", ".paperforge", "bin");
+      fs.mkdirSync(binDir, { recursive: true });
+
+      const missingManaged = path.join(binDir, "paperforge-daemon-2.0.1.exe");
+      expect(isManagedDaemonBinaryPath(binDir, missingManaged)).toBe(true);
+
+      const missingOutside = path.join(
+        binDir,
+        "..",
+        "paperforge-daemon-2.0.1.exe"
+      );
+      expect(isManagedDaemonBinaryPath(binDir, missingOutside)).toBe(false);
+
+      const symParent = path.join(tmpRoot, "alias");
+      let symlinkCreated = false;
+      try {
+        fs.symlinkSync(path.join(tmpRoot, "real"), symParent, "dir");
+        symlinkCreated = true;
+      } catch {
+        // Windows without Developer Mode may forbid directory symlinks (EPERM).
+      }
+      if (symlinkCreated) {
+        const deletedViaAlias = path.join(
+          symParent,
+          ".paperforge",
+          "bin",
+          "paperforge-daemon-2.0.1"
+        );
+        expect(isManagedDaemonBinaryPath(binDir, deletedViaAlias)).toBe(true);
+      }
+    } finally {
+      rmTempSafe(tmpRoot);
     }
   });
 });

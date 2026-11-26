@@ -36,11 +36,23 @@ describe("external runtime installer launcher", () => {
       runtimeInstallerShellCommand(
         "C:\\Program Files\\Py\\python.exe",
         "update",
-        "2.0.0"
+        "2.0.0",
+        "win32"
       )
     ).toBe(
       '"C:\\Program Files\\Py\\python.exe" -m pip install --user --upgrade paperforge==2.0.0 && ' +
         '"C:\\Program Files\\Py\\python.exe" -m paperforge runtime update --expected-version 2.0.0'
+    );
+    expect(
+      runtimeInstallerShellCommand(
+        "/opt/My Python/bin/python3",
+        "update",
+        "2.0.0",
+        "linux"
+      )
+    ).toBe(
+      "'/opt/My Python/bin/python3' -m pip install --user --upgrade paperforge==2.0.0 && " +
+        "'/opt/My Python/bin/python3' -m paperforge runtime update --expected-version 2.0.0"
     );
   });
 
@@ -169,9 +181,19 @@ describe("external runtime installer launcher", () => {
         "C:\\Program Files\\Py\\python.exe",
         "update",
         "1.0.0",
-        "/tmp/b.py"
+        "/tmp/b.py",
+        "win32"
       )
     ).toContain('"C:\\Program Files\\Py\\python.exe" /tmp/b.py');
+    expect(
+      installerShellCommand(
+        "/opt/My Python/bin/python3",
+        "update",
+        "1.0.0",
+        "/tmp/my b.py",
+        "linux"
+      )
+    ).toContain("'/opt/My Python/bin/python3' '/tmp/my b.py'");
   });
 
   it("keeps a usable PATH for the installer child", () => {
@@ -263,12 +285,12 @@ describe("external runtime installer launcher", () => {
   );
 
   it("PF-SEC-005 / PF-SEC-002 / PF-RT-003: quotes shell metacharacters, validates version, removes --trusted-host, and verifies wheel SHA-256/ZIP", () => {
-    expect(
-      quoteShellArg("C:\\Users\\A&B\\python.exe", "win32")
-    ).toBe('"C:\\Users\\A&B\\python.exe"');
-    expect(
-      quoteShellArg("/tmp/$(whoami)`id`/python3", "linux")
-    ).toBe("'/tmp/$(whoami)`id`/python3'");
+    expect(quoteShellArg("C:\\Users\\A&B\\python.exe", "win32")).toBe(
+      '"C:\\Users\\A&B\\python.exe"'
+    );
+    expect(quoteShellArg("/tmp/$(whoami)`id`/python3", "linux")).toBe(
+      "'/tmp/$(whoami)`id`/python3'"
+    );
     expect(() => assertSafeVersion('2.0.6"; import os #')).toThrow(
       /Invalid PaperForge version/
     );

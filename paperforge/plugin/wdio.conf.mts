@@ -25,7 +25,8 @@ process.env.PYTHONPATH = process.env.PYTHONPATH
 // (ocr.run, embed.*) report `unavailable` in-plugin even though the seed
 // file is in place.
 const E2E_ISOLATED_HOME = path.resolve(".obsidian-cache", "e2e-home");
-const ALLOW_REAL_HOME = process.env.PF_E2E_ALLOW_REAL_HOME === "1";
+const ALLOW_REAL_HOME =
+  process.env.PF_E2E_ALLOW_REAL_HOME === "1" || process.env.CI === "true";
 const RUNTIME_HOME = ALLOW_REAL_HOME ? os.homedir() : E2E_ISOLATED_HOME;
 if (!ALLOW_REAL_HOME) {
   process.env.PAPERFORGE_HOME = path.join(RUNTIME_HOME, ".paperforge");
