@@ -1028,6 +1028,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.plugin.settings._setup_complete = true;
           await this.plugin.saveSettings();
         }
+        await (
+          this.plugin as unknown as {
+            refreshUpgradePlan?: () => Promise<unknown>;
+          }
+        )
+          .refreshUpgradePlan?.()
+          .catch(() => undefined);
         this.display();
       } catch (error) {
         if (!setupClientOwnsFailure) {

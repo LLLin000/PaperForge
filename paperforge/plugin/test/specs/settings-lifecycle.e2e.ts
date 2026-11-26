@@ -97,6 +97,7 @@ async function waitForSettledDecision(
     daemonUpdating: boolean;
     runtimeUpdating: boolean;
     startupDeferPending: boolean;
+    startupDaemonCheckPending: boolean;
     activeTab: string;
     setupComplete: unknown;
     setupDismissed: boolean;
@@ -111,6 +112,7 @@ async function waitForSettledDecision(
     daemonUpdating: false,
     runtimeUpdating: false,
     startupDeferPending: false,
+    startupDaemonCheckPending: false,
     activeTab: "",
     setupComplete: undefined,
     setupDismissed: false,
@@ -124,8 +126,10 @@ async function waitForSettledDecision(
             settings?: Record<string, unknown>;
             _autoSyncRunning?: boolean;
             _daemonUpdating?: boolean;
+            _startupDaemonCheckPending?: boolean;
             _startupDeferTimer?: unknown;
             isRuntimeUpdating?: () => boolean;
+            isStartupDaemonCheckPending?: () => boolean;
             _settingTab: {
               containerEl: HTMLElement;
               activeTab?: string;
@@ -145,6 +149,10 @@ async function waitForSettledDecision(
           const daemonUpdating = Boolean(plugin._daemonUpdating);
           const runtimeUpdating = Boolean(plugin.isRuntimeUpdating?.());
           const startupDeferPending = Boolean(plugin._startupDeferTimer);
+          const startupDaemonCheckPending = Boolean(
+            plugin._startupDaemonCheckPending ||
+            plugin.isStartupDaemonCheckPending?.()
+          );
           const decision = card?.getAttribute("data-pf-decision") ?? null;
           return {
             decision,
@@ -155,6 +163,7 @@ async function waitForSettledDecision(
             daemonUpdating,
             runtimeUpdating,
             startupDeferPending,
+            startupDaemonCheckPending,
             activeTab: String(tab.activeTab ?? ""),
             setupComplete: plugin.settings?._setup_complete,
             setupDismissed: Boolean(tab._setupJourneyDismissedForSession),
@@ -170,6 +179,7 @@ async function waitForSettledDecision(
           !snap.autoSyncRunning &&
           !snap.daemonUpdating &&
           !snap.startupDeferPending &&
+          !snap.startupDaemonCheckPending &&
           snap.decision !== null &&
           snap.decision !== "checking";
         if (!settled) return false;
@@ -651,8 +661,9 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
     );
     expect(heroDecisionBefore).toBe("legacy_vault_upgrade");
 
-    await browser.executeObsidian(async ({ app }) => {
+    const clickDiag = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        openUpgradeModal?: () => Promise<void>;
         _settingTab: { containerEl: HTMLElement };
       };
       const btn = plugin._settingTab.containerEl.querySelector(
@@ -661,10 +672,29 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
       if (!btn) {
         throw new Error("legacy_vault_upgrade Hero CTA button missing");
       }
+      const win = window as unknown as {
+        __pfOpenUpgradeModalErr?: string | null;
+      };
+      win.__pfOpenUpgradeModalErr = null;
+      if (typeof plugin.openUpgradeModal === "function") {
+        const origOpen = plugin.openUpgradeModal.bind(plugin);
+        plugin.openUpgradeModal = async () => {
+          try {
+            await origOpen();
+          } catch (e) {
+            win.__pfOpenUpgradeModalErr =
+              e instanceof Error ? e.message : String(e);
+            throw e;
+          }
+        };
+      }
+      const disabled = btn.disabled || btn.hasAttribute("disabled");
+      const label = btn.textContent ?? "";
       btn.click();
+      return { disabled, label };
     });
 
-    // Wait for Upgrade Modal and click Apply
+    // Wait for Upgrade Modal across all active documents (main + popout/ownerDocument) and click Apply
     let lastModalDiag: unknown = null;
     try {
       await browser.waitUntil(
@@ -672,26 +702,60 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
           const diag = await browser.executeObsidian(async ({ app }) => {
             const plugin = app.plugins.plugins["paperforge"] as unknown as {
               _daemonUpdating?: boolean;
+              _popoutWindows?: Set<Window>;
               getUpgradePlanCache?: () => unknown;
               _settingTab: { containerEl: HTMLElement };
             };
-            const apply = document.querySelector(
-              '[data-pf-testid="upgrade-apply-btn"]'
+            const ownerDoc = plugin._settingTab.containerEl.ownerDocument;
+            const actDoc =
+              typeof activeDocument !== "undefined" ? activeDocument : null;
+            const candidateDocs = Array.from(
+              new Set(
+                [
+                  ownerDoc,
+                  actDoc,
+                  document,
+                  ...Array.from(plugin._popoutWindows ?? []).map(
+                    (w) => w.document
+                  ),
+                ].filter((d): d is Document => Boolean(d))
+              )
             );
+            let clicked = false;
+            for (const doc of candidateDocs) {
+              const apply = doc.querySelector(
+                '[data-pf-testid="upgrade-apply-btn"]'
+              ) as HTMLButtonElement | null;
+              if (apply) {
+                apply.click();
+                clicked = true;
+                break;
+              }
+            }
             const card =
               plugin._settingTab.containerEl.querySelector(
                 "[data-pf-decision]"
               );
+            const win = window as unknown as {
+              __pfOpenUpgradeModalErr?: string | null;
+            };
             return {
-              hasApplyBtn: Boolean(apply),
-              modalCount: document.querySelectorAll(".modal-container").length,
+              clicked,
+              sameDoc: ownerDoc === document,
+              ownerModalCount:
+                ownerDoc.querySelectorAll(".modal-container").length,
+              mainModalCount:
+                document.querySelectorAll(".modal-container").length,
               decision: card?.getAttribute("data-pf-decision") ?? null,
               daemonUpdating: Boolean(plugin._daemonUpdating),
               hasUpgradePlan: Boolean(plugin.getUpgradePlanCache?.()),
+              openUpgradeModalErr: win.__pfOpenUpgradeModalErr ?? null,
+              clickDiagHint: undefined as unknown,
             };
           });
+          diag.clickDiagHint = clickDiag;
           lastModalDiag = diag;
-          return diag.hasApplyBtn;
+          return diag.clicked;
         },
         {
           timeout: 15000,
@@ -703,8 +767,6 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
         `Upgrade modal apply button did not appear: diag=${JSON.stringify(lastModalDiag)} (${err instanceof Error ? err.message : String(err)})`
       );
     }
-    const applyBtn = await browser.$('[data-pf-testid="upgrade-apply-btn"]');
-    await applyBtn.click();
 
     await browser.waitUntil(
       () =>
@@ -747,6 +809,7 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
         settings: Record<string, unknown>;
         saveSettings(): Promise<void>;
         clearLastAutoSyncError?(): void;
+        refreshUpgradePlan?(): Promise<unknown>;
         getClient(): {
           setup(opts: Record<string, unknown>): { outcome: Promise<unknown> };
           configSet(k: string, v: string): Promise<unknown>;
@@ -763,6 +826,7 @@ describe("PaperForge real-host Settings & Migration Matrix (H2)", function () {
       }).outcome;
       await plugin.getClient().configSet("zotero_source_mode", "sqlite");
       await plugin.getClient().sync();
+      await plugin.refreshUpgradePlan?.();
       plugin.settings.language = "en";
       plugin.settings._setup_complete = true;
       plugin.settings.zotero_data_dir = zDir;

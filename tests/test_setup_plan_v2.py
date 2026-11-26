@@ -869,3 +869,42 @@ class TestSetupAgentPhaseCancellation:
         )
         rc = plan.execute(ndjson=True)
         assert rc == 130, f"agent-phase cancellation must exit 130, got {rc}"
+
+
+class TestSetupManifestStamp:
+    """Fresh .paperforge setups stamp vault-manifest.json without masking veteran layouts."""
+
+    def test_fresh_dot_paperforge_setup_is_standard_current(self, tmp_path: Path) -> None:
+        import paperforge.setup.plan as plan_mod
+        from paperforge.services.vault_upgrade import detect_vault_provenance
+
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={
+                "system_dir": ".paperforge",
+                "resources_dir": "Resources",
+                "literature_dir": "Literature",
+                "base_dir": "Bases",
+            },
+            skip_checks=True,
+        )
+        rc = plan.execute(json_output=True)
+        assert rc == 0
+        manifest_file = tmp_path / ".paperforge" / "vault-manifest.json"
+        assert manifest_file.is_file()
+        prov = detect_vault_provenance(tmp_path)
+        assert prov["state"] == "standard_current"
+        assert prov["needs_upgrade"] is False
+
+    def test_legacy_engine_dir_not_masked_by_setup(self, tmp_path: Path) -> None:
+        from paperforge.config import bootstrap_config, set_config
+        from paperforge.services.vault_engine import ensure_current_vault_manifest
+        from paperforge.services.vault_upgrade import detect_vault_provenance
+
+        bootstrap_config(tmp_path)
+        set_config(tmp_path, "system_dir", ".paperforge")
+        (tmp_path / "System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)
+        assert ensure_current_vault_manifest(tmp_path) is None
+        prov = detect_vault_provenance(tmp_path)
+        assert prov["state"] == "veteran_legacy"
+        assert prov["needs_upgrade"] is True

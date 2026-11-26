@@ -145,6 +145,7 @@ export default class PaperForgePlugin extends Plugin {
   private _lastAutoSyncError: { message: string; at: number } | null = null;
   private _pendingReleaseNotesVersion: string | null = null;
   private _daemonUpdating = false;
+  private _startupDaemonCheckPending = false;
   private _unloaded = false;
   private _startupDeferTimer: ReturnType<typeof setTimeout> | null = null;
   private _lastSyncedZoteroSig: string | null = null;
@@ -178,6 +179,10 @@ export default class PaperForgePlugin extends Plugin {
 
   isDaemonUpdating(): boolean {
     return this._daemonUpdating;
+  }
+
+  isStartupDaemonCheckPending(): boolean {
+    return this._startupDaemonCheckPending;
   }
 
   isRuntimeUpdating(): boolean {
@@ -1028,6 +1033,7 @@ export default class PaperForgePlugin extends Plugin {
           })
           .catch(() => undefined);
 
+        this._startupDaemonCheckPending = true;
         void ensureNativeDaemonDownloaded(pluginVersion, {
           checkVersionUpdate: true,
           fetchBuffer:
@@ -1116,6 +1122,9 @@ export default class PaperForgePlugin extends Plugin {
               runStartupHydration();
               this._refreshSettingTabIfOpen();
             }
+          })
+          .finally(() => {
+            this._startupDaemonCheckPending = false;
           });
       }, 1500);
     };
