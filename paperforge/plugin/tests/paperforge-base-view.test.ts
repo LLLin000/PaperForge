@@ -877,4 +877,201 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     ).not.toBeNull();
     vEmpty.onunload();
   });
+
+  it("PF-UI-001: keeps virtual scroll handler attached and updates virtual range after column resize", async () => {
+    const bigRows: Record<string, BaseTableSnapshotDto["rows"][string]> = {};
+    for (let i = 0; i < 600; i += 1) {
+      const k = `R_${String(i).padStart(4, "0")}`;
+      bigRows[k] = {
+        zotero_key: k,
+        title: `Resize Virtual #${i}`,
+        first_author: `Auth ${i}`,
+        year: "2025",
+        journal: "Radiology",
+        impact_factor: "8.5",
+        domain: "Ortho",
+        has_pdf: true,
+        do_ocr: false,
+        analyze: false,
+        ocr_status: "done",
+        deep_reading_status: "pending",
+        main_note_path: `Literature/Ortho/${k}.md`,
+        user_ann_count: 0,
+        agent_ann_count: 0,
+        memory_facet_count: 0,
+        memory_updated_at: "",
+        needs_diagnostic: false,
+      };
+    }
+    snapshot = { seq: 121, updated_at: "2026-11-26T00:00:00Z", rows: bigRows };
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    (view as any).config = {
+      get: (k: string) => (k === "virtual_scroll" ? true : undefined),
+      set: vi.fn(),
+    };
+    (view as any).data = {
+      data: Object.keys(bigRows).map((k) => ({
+        file: { basename: k, path: bigRows[k].main_note_path },
+        getValue: (propId: string) =>
+          propId === "note.zotero_key" ? { data: k, toString: () => k } : null,
+      })),
+    };
+    view.render();
+
+    const wrap = container.querySelector<HTMLElement>(".pf-base-table-wrap")!;
+    expect((view as any)._tableScrollHandler).toBeTypeOf("function");
+    expect((view as any)._virtualRange.start).toBe(0);
+
+    // Scroll down to row ~300
+    wrap.scrollTop = 300 * 34;
+    wrap.dispatchEvent(new dom.window.Event("scroll"));
+    await vi.waitFor(() => {
+      expect((view as any)._virtualRange.start).toBeGreaterThan(200);
+    });
+
+    // Drag a column resizer
+    const resizer = container.querySelector<HTMLElement>(".pf-base-col-resizer")!;
+    const PtrEvt = (dom.window as any).PointerEvent || dom.window.MouseEvent;
+    resizer.dispatchEvent(
+      new PtrEvt("pointerdown", { bubbles: true, cancelable: true, clientX: 100 })
+    );
+    dom.window.document.dispatchEvent(
+      new PtrEvt("pointerup", { bubbles: true, cancelable: true, clientX: 160 })
+    );
+
+    // Handler must remain attached and subsequent scroll back to top must update virtual range
+    expect((view as any)._tableScrollHandler).toBeTypeOf("function");
+    wrap.scrollTop = 0;
+    wrap.dispatchEvent(new dom.window.Event("scroll"));
+    await vi.waitFor(() => {
+      expect((view as any)._virtualRange.start).toBe(0);
+    });
+
+    view.onunload();
+  });
+
+  it("PF-UI-005: excludes collapsed-group hidden papers from Shift+Click range selection", () => {
+    const grpRows: Record<string, BaseTableSnapshotDto["rows"][string]> = {};
+    const groupsSpec = [
+      { label: "GroupA", keys: ["KEY0000", "KEY0001", "KEY0002"] },
+      { label: "GroupB", keys: ["KEY0003", "KEY0004", "KEY0005"] },
+      { label: "GroupC", keys: ["KEY0006", "KEY0007", "KEY0008"] },
+    ];
+    for (const g of groupsSpec) {
+      for (const k of g.keys) {
+        grpRows[k] = {
+          zotero_key: k,
+          title: `Paper ${k}`,
+          first_author: "Author",
+          year: "2025",
+          journal: "J",
+          impact_factor: "5.0",
+          domain: g.label,
+          has_pdf: true,
+          do_ocr: false,
+          analyze: false,
+          ocr_status: "pending",
+          deep_reading_status: "pending",
+          main_note_path: `Literature/${g.label}/${k}.md`,
+          user_ann_count: 0,
+          agent_ann_count: 0,
+          memory_facet_count: 0,
+          memory_updated_at: "",
+          needs_diagnostic: false,
+        };
+      }
+    }
+    snapshot = { seq: 122, updated_at: "2026-11-26T00:00:00Z", rows: grpRows };
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, host);
+    (view as any).data = {
+      groupedData: groupsSpec.map((g) => ({
+        hasKey: () => true,
+        key: { data: g.label },
+        entries: g.keys.map((k) => ({
+          file: { basename: k, path: grpRows[k].main_note_path },
+          getValue: () => ({ data: k }),
+        })),
+      })),
+    };
+
+    view.onload();
+    // Collapse middle group GroupB
+    container
+      .querySelector<HTMLElement>('tr.pf-base-group-row[data-pf-group="GroupB"]')!
+      .click();
+
+    const cbStart = container.querySelector<HTMLInputElement>(
+      'input[data-pf-select-key="KEY0002"]'
+    )!;
+    cbStart.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    cbStart.checked = true;
+    cbStart.dispatchEvent(new dom.window.Event("change"));
+
+    const cbEnd = container.querySelector<HTMLInputElement>(
+      'input[data-pf-select-key="KEY0006"]'
+    )!;
+    cbEnd.dispatchEvent(
+      new dom.window.MouseEvent("click", { bubbles: true, shiftKey: true })
+    );
+    cbEnd.checked = true;
+    cbEnd.dispatchEvent(new dom.window.Event("change"));
+
+    const selected = Array.from((view as any)._selectedKeys as Set<string>);
+    expect(selected).toContain("KEY0002");
+    expect(selected).toContain("KEY0006");
+    expect(selected).not.toContain("KEY0003");
+    expect(selected).not.toContain("KEY0004");
+    expect(selected).not.toContain("KEY0005");
+    view.onunload();
+  });
+
+  it("PF-UI-010: rolls back inline property edit cell text when updateNoteProperty rejects", async () => {
+    const updateNoteProperty = vi.fn(async () => {
+      throw new Error("Disk read-only");
+    });
+    const vHost = { ...host, updateNoteProperty };
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, vHost);
+    (view as any).config = {
+      getOrder: () => ["note.title", "note.topic"],
+      getDisplayName: () => "",
+    };
+    (view as any).data = {
+      data: [
+        {
+          file: { basename: "K_DONE", path: snapshot.rows.K_DONE.main_note_path },
+          getValue: (propId: string) =>
+            propId === "note.zotero_key"
+              ? { data: "K_DONE", toString: () => "K_DONE" }
+              : propId === "note.topic"
+                ? { data: "Original Topic", toString: () => "Original Topic" }
+                : null,
+        },
+      ],
+    };
+    view.render();
+
+    const editableTd = container.querySelector<HTMLElement>(
+      "td.pf-base-cell-editable"
+    )!;
+    editableTd.dispatchEvent(
+      new dom.window.MouseEvent("dblclick", { bubbles: true })
+    );
+    const input = editableTd.querySelector<HTMLInputElement>(
+      '[data-pf-testid="base-inline-input"]'
+    )!;
+    input.value = "Failed Edit";
+    input.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+    );
+
+    await vi.waitFor(() => {
+      expect(updateNoteProperty).toHaveBeenCalledTimes(1);
+      expect(editableTd.textContent).toContain("Original Topic");
+      expect(editableTd.textContent).not.toContain("Failed Edit");
+    });
+    view.onunload();
+  });
 });

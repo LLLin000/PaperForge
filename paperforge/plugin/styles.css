@@ -4290,17 +4290,17 @@ body.pf-theme-obsidian,
   max-width: 100%;
 }
 
-.tag-pdf {
+.paperforge-tag.tag-pdf {
   background: color-mix(in srgb, var(--text-success) 15%, transparent);
   color: var(--text-success);
 }
 
-.tag-nopdf {
+.paperforge-tag.tag-nopdf {
   background: var(--background-modifier-border);
   color: var(--text-muted);
 }
 
-.tag-collection {
+.paperforge-tag.tag-collection {
   background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
   color: var(--interactive-accent);
 }
@@ -6731,6 +6731,9 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 .pf-ocr-ws-table tr:hover td {
   background: var(--background-secondary);
+}
+.pf-ocr-ws-table tr.is-selected td {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
 }
 .pf-ocr-ws-col-check {
   width: 36px;
@@ -13347,9 +13350,20 @@ body.pf-no-glass
 }
 
 .pf-preview-node {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.pf-preview-node-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pf-text-muted);
+  flex-shrink: 0;
 }
 
 .pf-preview-count {
@@ -17545,17 +17559,25 @@ body.theme-dark.pf-theme-obsidian,
 
 .pf-base-cell-editable .pf-base-text-ellipsis {
   display: inline-block;
-  max-width: calc(100% - 22px);
+  max-width: 100%;
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.pf-base-cell-editable:hover .pf-base-text-ellipsis {
+  max-width: calc(100% - 22px);
+}
+
 .pf-base-inline-edit-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
   opacity: 0;
-  margin-left: 4px;
+  pointer-events: none;
   border: none;
-  background: transparent;
+  background: var(--pf-surface-raised, var(--background-primary));
   color: var(--pf-text-faint);
   font-size: 11px;
   padding: 0 4px;
@@ -17566,6 +17588,7 @@ body.theme-dark.pf-theme-obsidian,
 .pf-base-cell-editable:hover .pf-base-inline-edit-btn,
 .pf-base-inline-edit-btn:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .pf-base-inline-input {

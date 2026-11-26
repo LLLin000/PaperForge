@@ -129,6 +129,7 @@ export class OcrWorkspaceView extends ItemView {
     "loading";
   /** #126 PR D: pagination — selection is per visible page. */
   private _page = 1;
+  private _pendingFocusKey: string | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -137,19 +138,79 @@ export class OcrWorkspaceView extends ItemView {
     super(leaf);
   }
 
-  static async open(plugin: any): Promise<void> {
+  static async open(plugin: any, paperKey?: string): Promise<void> {
     const leaves = plugin.app.workspace.getLeavesOfType(
       VIEW_TYPE_OCR_WORKSPACE
     );
     if (leaves.length > 0) {
       plugin.app.workspace.revealLeaf(leaves[0]);
+      const view = leaves[0]?.view as
+        | { focusPaper?: (key: string) => void }
+        | undefined;
+      if (paperKey && typeof view?.focusPaper === "function") {
+        view.focusPaper(paperKey);
+      }
       return;
     }
     const leaf = plugin.app.workspace.getLeaf("tab");
     if (leaf) {
       await leaf.setViewState({ type: VIEW_TYPE_OCR_WORKSPACE, active: true });
       plugin.app.workspace.revealLeaf(leaf);
+      const view = leaf.view as
+        | { focusPaper?: (key: string) => void }
+        | undefined;
+      if (paperKey && typeof view?.focusPaper === "function") {
+        view.focusPaper(paperKey);
+      }
     }
+  }
+
+  focusPaper(paperKey: string): void {
+    const key = String(paperKey || "").trim();
+    if (!key) return;
+    this._pendingFocusKey = key;
+    this.selectedKey = key;
+    if (this._loadState !== "ready") return;
+    if (this._applyFocusSelection(key) && !this._closed) {
+      this._render();
+      this._scrollSelectedRowIntoView(key);
+    }
+  }
+
+  private _applyFocusSelection(paperKey: string): boolean {
+    if (!this.papers.some((p) => p.key === paperKey)) {
+      this._pendingFocusKey = null;
+      return false;
+    }
+    let filtered = this._filteredPapers();
+    let idx = filtered.findIndex((p) => p.key === paperKey);
+    if (idx < 0) {
+      // Clear active filters so a deep-linked paper is always reachable
+      this.filter = "all";
+      this.versionFilter = null;
+      this._searchQuery = "";
+      filtered = this._filteredPapers();
+      idx = filtered.findIndex((p) => p.key === paperKey);
+    }
+    if (idx >= 0) {
+      this._page = Math.floor(idx / PAGE_SIZE) + 1;
+    }
+    this.selectedKey = paperKey;
+    this._pendingFocusKey = null;
+    return true;
+  }
+
+  private _scrollSelectedRowIntoView(paperKey: string): void {
+    const container = this.containerEl?.children?.[1] as HTMLElement | undefined;
+    if (!container) return;
+    const escaped =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(paperKey)
+        : paperKey.replace(/"/g, '\\"');
+    const row = container.querySelector<HTMLElement>(
+      `tr[data-paper-key="${escaped}"]`
+    );
+    row?.scrollIntoView?.({ block: "nearest" });
   }
 
   getViewType(): string {
@@ -263,8 +324,13 @@ export class OcrWorkspaceView extends ItemView {
       for (const key of this.checkedKeys) {
         if (!availableKeys.has(key)) this.checkedKeys.delete(key);
       }
-      if (this.selectedKey && !availableKeys.has(this.selectedKey))
+      if (this._pendingFocusKey) {
+        if (!this._applyFocusSelection(this._pendingFocusKey)) {
+          this.selectedKey = null;
+        }
+      } else if (this.selectedKey && !availableKeys.has(this.selectedKey)) {
         this.selectedKey = null;
+      }
       this._loadState = "ready";
     } catch (error) {
       if (this._closed || generation !== this._loadGeneration) return;
@@ -810,8 +876,15 @@ export class OcrWorkspaceView extends ItemView {
       const versionBehind = Boolean(
         paper.pipelineVersion && maxVersion > paper.pipelineVersion
       );
+      const rowCls = [
+        versionBehind ? "pf-update" : "",
+        paper.key === this.selectedKey ? "is-selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
       const tr = tbody.createEl("tr", {
-        cls: versionBehind ? "pf-update" : "",
+        cls: rowCls,
+        attr: { "data-paper-key": paper.key },
       });
       tr.addEventListener("click", (e) => {
         if ((e.target as HTMLElement).tagName === "INPUT") return;

@@ -8,6 +8,8 @@
  *    Option B (single unified library + Base toolbar pills) using their actual checked folders.
  */
 
+import { setPfIcon } from "./icons";
+
 export interface EmbeddingProviderPreset {
   id: string;
   shortLabelZh: string;
@@ -189,17 +191,22 @@ export function renderDomainModePreview(
     text: opts.isZh ? "Obsidian 目录实时预览" : "Vault Folder Preview",
   });
   const tree = leftCard.createDiv({ cls: "pf-preview-tree" });
-  tree.createDiv({
-    cls: "pf-preview-node is-root",
-    text: `📁 ${litName}/`,
-  });
+  const rootNode = tree.createDiv({ cls: "pf-preview-node is-root" });
+  const rootIcon = rootNode.createEl("span", { cls: "pf-preview-node-icon" });
+  setPfIcon(rootIcon, "folder", 13);
+  rootNode.createEl("span", { text: ` ${litName}/` });
 
   if (opts.domainMode === "per_collection") {
     for (const col of topFolders.slice(0, 4)) {
       const folderLine = tree.createDiv({
         cls: "pf-preview-node is-branch pf-fade-item",
       });
-      folderLine.createEl("span", { text: `├── 📂 ${col.name}/ ` });
+      folderLine.createEl("span", { text: "├── " });
+      const folderIcon = folderLine.createEl("span", {
+        cls: "pf-preview-node-icon",
+      });
+      setPfIcon(folderIcon, "folder", 13);
+      folderLine.createEl("span", { text: ` ${col.name}/ ` });
       folderLine.createEl("span", {
         cls: "pf-preview-count",
         text: opts.isZh ? `(${col.item_count} 篇)` : `(${col.item_count})`,
@@ -221,10 +228,15 @@ export function renderDomainModePreview(
     const flatLine = tree.createDiv({
       cls: "pf-preview-node is-branch pf-fade-item",
     });
+    flatLine.createEl("span", { text: "├── " });
+    const fileIcon = flatLine.createEl("span", {
+      cls: "pf-preview-node-icon",
+    });
+    setPfIcon(fileIcon, "file-text", 13);
     flatLine.createEl("span", {
       text: opts.isZh
-        ? "├── 📄 所有文献统一平铺此目录 "
-        : "├── 📄 All papers unified here ",
+        ? " 所有文献统一平铺此目录 "
+        : " All papers unified here ",
     });
     flatLine.createEl("span", {
       cls: "pf-preview-count",

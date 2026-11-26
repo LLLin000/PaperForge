@@ -239,11 +239,15 @@ export class PaperForgeStatusView extends ItemView {
         if (sub.event === "active-leaf-change") {
           if (typeof ws?.offref === "function") ws.offref(sub.ref);
           else ws?.off?.("active-leaf-change", sub.ref);
+        } else if (sub.event === "layout-change") {
+          if (typeof ws?.offref === "function") ws.offref(sub.ref);
+          else ws?.off?.("layout-change", sub.ref);
         } else if (sub.event === "modify") {
           if (typeof vault?.offref === "function") vault.offref(sub.ref);
           else vault?.off?.("modify", sub.ref);
         } else if (sub.event === "paperforge:state-changed") {
-          ws?.offref?.(sub.ref);
+          if (typeof ws?.offref === "function") ws.offref(sub.ref);
+          else ws?.off?.("paperforge:state-changed", sub.ref);
         }
       }
       this._modeSubscribers = [];
@@ -1666,6 +1670,11 @@ export class PaperForgeStatusView extends ItemView {
               show.current_path,
               (label) => client.versionsRestore(k, label)
             ).open();
+          } else {
+            new Notice(
+              t("ocr_ws_restore_unavailable") ||
+                "No backup versions available"
+            );
           }
         } catch (err: any) {
           this._setRecoveryError(
@@ -2951,14 +2960,14 @@ export class PaperForgeStatusView extends ItemView {
       });
       labelEl.setText(t("run_in_agent").replace("{0}", platformName));
     } else if (nextStep === "ready") {
-      const trigger = card.createEl("button", {
-        cls: "paperforge-next-step-trigger",
+      const completeRow = card.createEl("div", {
+        cls: "paperforge-complete-row",
       });
-      const iconSpan = trigger.createEl("span", {
-        cls: "paperforge-contextual-btn-icon",
+      const iconSpan = completeRow.createEl("span", {
+        cls: "pf-complete-icon",
       });
       setPfIcon(iconSpan, "check", 14);
-      trigger.createEl("span", { text: info.label });
+      completeRow.createEl("span", { text: info.label });
     }
   }
 

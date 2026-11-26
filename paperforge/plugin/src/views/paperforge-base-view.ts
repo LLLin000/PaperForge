@@ -1465,7 +1465,10 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           td.title = t("base_inline_edit_hint") || "Double-click to edit";
           const startInline = (ev: Event) => {
             ev.stopPropagation();
-            this._beginInlineEdit(td, spanEl, col, item, val);
+            const curVal = spanEl.classList.contains("pf-base-muted")
+              ? ""
+              : spanEl.textContent || "";
+            this._beginInlineEdit(td, spanEl, col, item, curVal);
           };
           td.addEventListener("dblclick", startInline);
           const editBtn = mkEl(td, "button", {
@@ -1523,6 +1526,8 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       spanEl.style.display = "";
       spanEl.textContent = nextText || "—";
       spanEl.className = nextText ? "pf-base-text-ellipsis" : "pf-base-muted";
+      if (nextText) spanEl.setAttribute("title", nextText);
+      else spanEl.removeAttribute("title");
       if (editBtn) editBtn.style.display = "";
     };
 
@@ -1532,8 +1537,23 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       restore(nextVal);
       if (nextVal === initialVal) return;
       if (typeof this.plugin.updateNoteProperty === "function") {
-        await this.plugin.updateNoteProperty(file, propName, nextVal);
-        new Notice(t("base_inline_edit_saved") || "Property updated", 2000);
+        try {
+          await this.plugin.updateNoteProperty(file, propName, nextVal);
+          new Notice(t("base_inline_edit_saved") || "Property updated", 2000);
+        } catch (err) {
+          spanEl.textContent = initialVal || "—";
+          spanEl.className = initialVal
+            ? "pf-base-text-ellipsis"
+            : "pf-base-muted";
+          if (initialVal) spanEl.setAttribute("title", initialVal);
+          else spanEl.removeAttribute("title");
+          const detail =
+            err instanceof Error ? err.message : String(err || "Unknown error");
+          new Notice(
+            `${t("settings_save_failed") || "Save failed"}: ${detail}`,
+            4000
+          );
+        }
       }
     };
 
@@ -1626,8 +1646,11 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         if (this._pendingShiftKey && this._lastSelectedIdx !== null) {
           const start = Math.min(this._lastSelectedIdx, flatIndex);
           const end = Math.max(this._lastSelectedIdx, flatIndex);
-          for (let idx = start; idx <= end; idx += 1) {
-            const targetKey = this._currentFlatItems[idx]?.row.zotero_key;
+          // Iterate visible row slots only so collapsed-group hidden papers are never selected
+          for (const s of this._currentSlots) {
+            if (s.kind !== "row") continue;
+            if (s.flatIndex < start || s.flatIndex > end) continue;
+            const targetKey = s.item.row.zotero_key;
             if (!targetKey) continue;
             if (checked) this._selectedKeys.add(targetKey);
             else this._selectedKeys.delete(targetKey);
@@ -2005,20 +2028,6 @@ export class PaperForgeBasesView extends RuntimeBasesView {
           // Optional in minimal mock configs
         }
       };
-      if (
-        this._virtualRafId !== null &&
-        typeof cancelAnimationFrame === "function"
-      ) {
-        cancelAnimationFrame(this._virtualRafId);
-        this._virtualRafId = null;
-      }
-      if (this._tableWrapEl && this._tableScrollHandler) {
-        this._tableWrapEl.removeEventListener(
-          "scroll",
-          this._tableScrollHandler
-        );
-      }
-      this._tableScrollHandler = null;
       this._activeResizeCleanup?.();
       this._activeResizeCleanup = cleanup;
       doc.addEventListener("pointermove", onMove);
