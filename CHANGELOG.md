@@ -4,6 +4,17 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.8] - 2026-11-27
+
+### Onboarding, System Proxy & Host Lifecycle Hardening
+
+- **System Proxy Inheritance & Cross-Language Parity**: Added Electron `session.resolveProxy()` + Windows Registry + macOS `scutil --proxy` detection (`system-proxy.ts`) inherited into managed runtime, daemon, and Python child environments with explicit override priority and Obsidian `requestUrl` adapter support; unified `NO_PROXY`, primary `DIRECT`, and `SOCKS4` semantics across TypeScript and Rust (`runtime_ops.rs`).
+- **Zero-Network Daemon Startup & Bounded Fetches**: Restored the 12-hour SHA-256 checksum TTL fast path when Obsidian's `requestUrl` fetcher is enabled (`useRemoteTtl: true`) and bounded `createObsidianRequestFetcher` requests with 15s (10s `checksums.txt`) timeouts (`native-daemon.ts`).
+- **Fresh Vault Manifest & Companion Tab Reveal**: Stamped `.paperforge/vault-manifest.json` (`layout_version: 2`) on clean `.paperforge` setups without masking legacy vaults (`vault_engine.py`, `setup/plan.py`), surfaced setup manifest write warnings and a `vault.manifest_missing` probe diagnostic notice (`probes/library.py`), and preserved pending paper leaf resolution when revealing a hidden Companion tab (`dashboard.ts`).
+- **Real-Obsidian H2 Lifecycle Matrix & CI Speedup**: Added real-Obsidian Settings, Migration & Post-Install Operational Closed-Loop E2E coverage (`S1–S10` in `settings-lifecycle.e2e.ts`), isolated local `HOME`/`USERPROFILE` alongside `PAPERFORGE_HOME` (`wdio.conf.mts`), sharded `L1b` into 4 parallel workers, and added Rust Cargo caching.
+
+---
+
 ## [2.0.7] - 2026-11-26
 
 ### Release Qualification & Hardening
