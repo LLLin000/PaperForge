@@ -66,6 +66,7 @@ vi.mock("obsidian", () => {
 });
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
+import { VIEW_TYPE_PAPERFORGE } from "../src/constants";
 import { OcrWorkspaceView } from "../src/views/ocr-workspace";
 import { renderDomainModePreview } from "../src/views/domain-preview";
 import { PaperForgeClient } from "../src/client";
@@ -144,8 +145,13 @@ describe("Plugin views qualification regressions", () => {
     const view = new PaperForgeStatusView({} as any);
     (view as any).app = {
       workspace: { openLinkText: vi.fn() },
-      vault: { getAbstractFileByPath: () => null, adapter: { exists: async () => false } },
-      plugins: { plugins: { paperforge: { getClient: () => client, settings: {} } } },
+      vault: {
+        getAbstractFileByPath: () => null,
+        adapter: { exists: async () => false },
+      },
+      plugins: {
+        plugins: { paperforge: { getClient: () => client, settings: {} } },
+      },
     };
     setLanguage((view as any).app, "en");
     view._contentEl = document.createElement("div");
@@ -233,7 +239,9 @@ describe("Plugin views qualification regressions", () => {
       "2 / 3"
     );
     expect(
-      host.querySelector('tr[data-paper-key="KEY0150"]')?.classList.contains("is-selected")
+      host
+        .querySelector('tr[data-paper-key="KEY0150"]')
+        ?.classList.contains("is-selected")
     ).toBe(true);
     expect(host.querySelector(".pf-ocr-ws-detail")?.textContent).toContain(
       "Paper 150"
@@ -246,7 +254,9 @@ describe("Plugin views qualification regressions", () => {
       "3 / 3"
     );
     expect(
-      host.querySelector('tr[data-paper-key="KEY0210"]')?.classList.contains("is-selected")
+      host
+        .querySelector('tr[data-paper-key="KEY0210"]')
+        ?.classList.contains("is-selected")
     ).toBe(true);
     expect(host.querySelector(".pf-ocr-ws-detail")?.textContent).toContain(
       "Paper 210"
@@ -265,7 +275,9 @@ describe("Plugin views qualification regressions", () => {
       litDir: "Literature",
       isZh: false,
     });
-    expect(host.querySelectorAll("svg.pf-svg-icon").length).toBeGreaterThanOrEqual(2);
+    expect(
+      host.querySelectorAll("svg.pf-svg-icon").length
+    ).toBeGreaterThanOrEqual(2);
     expect(host.textContent).not.toMatch(/[📁📂📄]/u);
 
     renderDomainModePreview(host, {
@@ -276,7 +288,9 @@ describe("Plugin views qualification regressions", () => {
       litDir: "Literature",
       isZh: true,
     });
-    expect(host.querySelectorAll("svg.pf-svg-icon").length).toBeGreaterThanOrEqual(2);
+    expect(
+      host.querySelectorAll("svg.pf-svg-icon").length
+    ).toBeGreaterThanOrEqual(2);
     expect(host.textContent).not.toMatch(/[📁📂📄]/u);
 
     const cssPath = path.resolve(__dirname, "../styles.css");
@@ -285,5 +299,88 @@ describe("Plugin views qualification regressions", () => {
     expect(css).toContain(".paperforge-tag.tag-pdf");
     expect(css).toContain(".paperforge-tag.tag-nopdf");
     expect(css).toContain(".paperforge-tag.tag-collection");
+  });
+
+  it("PF-UI-012: preserves pending paper leaf and resolves its file when revealing a hidden Companion tab", async () => {
+    const workspaceListeners: Record<string, Array<(arg?: any) => void>> = {};
+    const workspace = {
+      on: vi.fn((ev: string, cb: (arg?: any) => void) => {
+        workspaceListeners[ev] = workspaceListeners[ev] ?? [];
+        workspaceListeners[ev].push(cb);
+        return { ev, cb };
+      }),
+      offref: vi.fn(),
+      getActiveFile: () => null,
+      getActiveViewOfType: () => null,
+    };
+    const leafEl = document.createElement("div");
+    leafEl.className = "workspace-leaf";
+    document.body.appendChild(leafEl);
+
+    const view = new PaperForgeStatusView({} as any);
+    leafEl.appendChild(view.containerEl);
+    const contentEl = view.containerEl.children[1] as HTMLElement;
+    const resolvePaperContext = vi.fn(async () => ({
+      kind: "paper",
+      zotero_key: "ZOTKEY01",
+    }));
+
+    Object.assign(view as any, {
+      app: {
+        workspace,
+        vault: {
+          on: vi.fn(),
+          offref: vi.fn(),
+          adapter: { basePath: "" },
+        },
+        plugins: { plugins: {} },
+      },
+      _contentEl: contentEl,
+      _currentMode: "collection",
+      _getClient: () => ({ resolvePaperContext }),
+      _getCachedIndex: () => [
+        { zotero_key: "ZOTKEY01", title: "Cartilage Hydrogel Scaffolds" },
+      ],
+    });
+    (view as any)._renderModeHeader = vi.fn();
+    (view as any)._renderBackendBanner = vi.fn();
+    (view as any)._renderPaperMode = vi.fn();
+
+    (view as any)._setupEventSubscriptions();
+
+    // 1. Companion tab is hidden behind another tab when the user opens a paper note.
+    leafEl.style.display = "none";
+    const paperLeaf = {
+      view: {
+        getViewType: () => "markdown",
+        file: {
+          path: "Resources/Literature/BoneRegen/ZOTKEY01.md",
+          extension: "md",
+        },
+      },
+    };
+    for (const cb of workspaceListeners["active-leaf-change"] ?? []) {
+      cb(paperLeaf);
+    }
+
+    // 2. User switches back to the Companion tab (getActiveFile() is now null).
+    leafEl.style.display = "";
+    const companionLeaf = {
+      view: {
+        getViewType: () => VIEW_TYPE_PAPERFORGE,
+      },
+    };
+    for (const cb of workspaceListeners["active-leaf-change"] ?? []) {
+      cb(companionLeaf);
+    }
+
+    await new Promise((r) => setTimeout(r, 220));
+    expect(resolvePaperContext).toHaveBeenCalledWith(
+      "Resources/Literature/BoneRegen/ZOTKEY01.md"
+    );
+    expect((view as any)._currentMode).toBe("paper");
+    expect((view as any)._currentPaperKey).toBe("ZOTKEY01");
+
+    await view.onClose();
   });
 });

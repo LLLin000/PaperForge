@@ -976,7 +976,15 @@ export class PaperForgeStatusView extends ItemView {
         };
       }
     }
-    return this._resolveModeForFile(this.app.workspace.getActiveFile());
+    const leafFile =
+      (
+        leaf?.view as
+          | { file?: { path: string; extension?: string } | null }
+          | undefined
+      )?.file ?? null;
+    return this._resolveModeForFile(
+      leafFile ?? this.app.workspace.getActiveFile()
+    );
   }
 
   /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
@@ -1672,8 +1680,7 @@ export class PaperForgeStatusView extends ItemView {
             ).open();
           } else {
             new Notice(
-              t("ocr_ws_restore_unavailable") ||
-                "No backup versions available"
+              t("ocr_ws_restore_unavailable") || "No backup versions available"
             );
           }
         } catch (err: any) {
@@ -5068,11 +5075,19 @@ export class PaperForgeStatusView extends ItemView {
           this._pendingRevealLeaf = leaf ?? null;
           return;
         }
+        const leafViewType = leaf?.view?.getViewType?.() ?? "";
+        const isSelfOrCompanion =
+          leafViewType === VIEW_TYPE_PAPERFORGE ||
+          leafViewType === VIEW_TYPE_OCR_WORKSPACE;
+        const targetLeaf =
+          this._dirtyOnReveal && isSelfOrCompanion && this._pendingRevealLeaf
+            ? this._pendingRevealLeaf
+            : leaf;
         this._dirtyOnReveal = false;
         this._pendingRevealLeaf = null;
         if (this._leafChangeTimer) clearTimeout(this._leafChangeTimer);
         this._leafChangeTimer = setTimeout(() => {
-          void this._syncFromLeaf(leaf);
+          void this._syncFromLeaf(targetLeaf);
         }, 140);
       }
     );
