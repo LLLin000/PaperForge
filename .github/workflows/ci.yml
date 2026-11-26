@@ -649,7 +649,7 @@ jobs:
           restore-keys: |
             obsidian-${{ runner.os }}-
       - name: Install Python package
-        run: python -m pip install -e ".[test]"
+        run: python -m pip install -e ".[test,vector]"
       - name: Publish isolated runtime pointer for Settings E2E
         run: python -c "from paperforge.runtime_pointer import publish_pointer; print(publish_pointer())"
       - name: Install plugin dependencies
