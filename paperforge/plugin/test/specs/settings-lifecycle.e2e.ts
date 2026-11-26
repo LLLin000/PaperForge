@@ -1053,24 +1053,51 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       String(zot1Rel).replace(/\\/g, "/")
     );
     const zot1DiskPath = path.join(boneRegenDir, String(zot1Rel));
+    // Reveal Companion tab first so _isPanelVisible() is true when active-leaf-change
+    // fires for ZOTKEY01 (matching paperforge.e2e.ts openPanel() -> openVaultFile()).
+    await browser.executeObsidianCommand("paperforge:paperforge-status-panel");
+    await browser.pause(200);
     await openVaultFile(zot1ObsPath);
 
-    await browser.waitUntil(
-      async () =>
-        await browser.executeObsidian(async () => {
-          const doc =
-            typeof activeDocument !== "undefined" ? activeDocument : document;
-          return Boolean(
-            doc.querySelector(".paperforge-technical-details-toggle") ??
-            document.querySelector(".paperforge-technical-details-toggle")
-          );
-        }),
-      {
-        timeout: 15000,
-        timeoutMsg:
-          "Paper detail toggles did not mount when opening ZOTKEY01 note",
-      }
-    );
+    let lastToggleDiag: Record<string, unknown> | null = null;
+    try {
+      await browser.waitUntil(
+        async () => {
+          const snap = await browser.executeObsidian(async () => {
+            const doc =
+              typeof activeDocument !== "undefined" ? activeDocument : document;
+            const root =
+              doc.querySelector(".paperforge-status-panel") ??
+              document.querySelector(".paperforge-status-panel");
+            return {
+              hasToggle: Boolean(
+                doc.querySelector(".paperforge-technical-details-toggle") ??
+                document.querySelector(".paperforge-technical-details-toggle")
+              ),
+              panelDisplay: (
+                root?.closest(".workspace-leaf") as HTMLElement | null
+              )?.style?.display,
+              placeholder:
+                root
+                  ?.querySelector(".paperforge-content-placeholder")
+                  ?.textContent?.trim() ?? null,
+              hasPaperView: Boolean(
+                root?.querySelector(".paperforge-paper-view")
+              ),
+            };
+          });
+          lastToggleDiag = snap;
+          return snap.hasToggle;
+        },
+        {
+          timeout: 20000,
+        }
+      );
+    } catch (err) {
+      throw new Error(
+        `Paper detail toggles did not mount when opening ZOTKEY01 note: last=${JSON.stringify(lastToggleDiag)} (${err instanceof Error ? err.message : String(err)})`
+      );
+    }
     await browser.executeObsidian(async () => {
       const doc =
         typeof activeDocument !== "undefined" ? activeDocument : document;
