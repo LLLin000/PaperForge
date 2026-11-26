@@ -165,3 +165,50 @@ def test_atomic_skill_replace_preserves_prior_skill_on_stage_failure(
     assert failed["errors"]
     assert (dst_skill / "SKILL.md").read_text(encoding="utf-8") == "# working prior skill"
     assert not any(p.name.startswith(".paperforge-skill-") for p in dst_skill.parent.iterdir())
+
+
+def test_sync_registered_agent_skills_containment_and_symlink_safety(tmp_path: Path, monkeypatch) -> None:
+    from paperforge.services import skill_deploy
+
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    hub_dir = tmp_path / ".paperforge" / "skills" / "paperforge"
+    hub_dir.mkdir(parents=True)
+    (hub_dir / "SKILL.md").write_text("# hub v1\n", encoding="utf-8")
+
+    # Outside known skill locations / wrong leaf name -> pruned & untouched
+    unsafe_dir = tmp_path / "important_user_data"
+    unsafe_dir.mkdir()
+    keep_file = unsafe_dir / "notes.txt"
+    keep_file.write_text("do not delete", encoding="utf-8")
+
+    # Traversal attempt -> pruned & untouched
+    traversal_dir = tmp_path / "agent" / "skills" / ".." / "other" / "paperforge"
+
+    # Valid agent skill copy
+    valid_copy = tmp_path / ".codex" / "skills" / "paperforge"
+    valid_copy.mkdir(parents=True)
+    (valid_copy / "SKILL.md").write_text("# old\n", encoding="utf-8")
+    old_digest = skill_deploy._skill_tree_digest(valid_copy)
+
+    reg_path = tmp_path / ".paperforge" / "agent-installs.json"
+    reg_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "installs": [
+                    {"skill_dir": str(unsafe_dir), "link_mode": "copy", "last_synced_digest": "abc"},
+                    {"skill_dir": str(traversal_dir), "link_mode": "copy", "last_synced_digest": "abc"},
+                    {"skill_dir": str(valid_copy), "link_mode": "copy", "last_synced_digest": old_digest},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    res = skill_deploy.sync_registered_agent_skills()
+    assert res["updated"] == 1
+    assert res["pruned"] == 2
+    assert keep_file.read_text(encoding="utf-8") == "do not delete"
+    assert (valid_copy / "SKILL.md").read_text(encoding="utf-8") == "# hub v1\n"

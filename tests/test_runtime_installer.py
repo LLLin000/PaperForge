@@ -460,3 +460,18 @@ def test_install_runtime_bootstraps_via_uv_when_no_system_python(tmp_path: Path,
     assert ptr.get("installer_backend") == "uv"
     assert ptr.get("python_source") == "uv_managed"
 
+
+def test_pip_mirror_fallback_enforces_tls_no_trusted_host(tmp_path: Path, monkeypatch) -> None:
+    recorded_cmds: list[list[str]] = []
+
+    def _fake_run(cmd, *, cwd, timeout):
+        recorded_cmds.append(list(cmd))
+        return subprocess.CompletedProcess(list(cmd), 1, "", "err")
+
+    monkeypatch.setattr(runtime_installer, "_run", _fake_run)
+    monkeypatch.delenv("PIP_INDEX_URL", raising=False)
+    monkeypatch.delenv("PIP_FIND_LINKS", raising=False)
+    runtime_installer._pip_install_command(tmp_path / "python", "paperforge==2.0.7", cwd=tmp_path)
+    assert len(recorded_cmds) >= 2
+    assert all("--trusted-host" not in cmd for cmd in recorded_cmds)
+

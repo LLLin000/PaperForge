@@ -75,6 +75,9 @@ def _atomic_replace_skill_tree(src_skill: Path, dst_skill: Path) -> None:
     import uuid
 
     dst_skill.parent.mkdir(parents=True, exist_ok=True)
+    for item in src_skill.rglob("*"):
+        if item.is_symlink():
+            raise OSError(f"Refusing to deploy symlink inside skill bundle: {item}")
     stage_dir = dst_skill.parent / f".paperforge-skill-stage-{uuid.uuid4().hex[:8]}"
     backup_dir: Path | None = None
     try:
@@ -293,7 +296,8 @@ def _skill_tree_digest(root: Path) -> str:
     files = [
         p
         for p in root.rglob("*")
-        if p.is_file()
+        if not p.is_symlink()
+        and p.is_file()
         and "__pycache__" not in p.relative_to(root).parts
         and p.suffix.lower() != ".pyc"
     ]
@@ -327,12 +331,38 @@ def _atomic_write_json(path: Path, data: dict) -> None:
 
 
 def _is_link_to_hub(dst: Path, hub_dir: Path) -> bool:
-    if dst.is_symlink():
-        return True
     try:
-        return dst.exists() and hub_dir.exists() and dst.resolve() == hub_dir.resolve()
+        return (
+            dst.exists()
+            and hub_dir.exists()
+            and dst.resolve() == hub_dir.resolve()
+            and dst != hub_dir
+        )
     except OSError:
         return False
+
+
+def _is_safe_registered_skill_dir(dst: Path, *, home: Path | None = None) -> bool:
+    """Allow skill sync only inside known agent skill folders named ``paperforge``."""
+    if not dst.is_absolute() or ".." in dst.parts or dst.name != "paperforge":
+        return False
+    parent = dst.parent
+    if parent == dst:
+        return False
+    actual_home = (home or Path.home()).resolve()
+    try:
+        if dst.resolve() == actual_home or parent.resolve() == actual_home:
+            return False
+    except OSError:
+        return False
+    parent_name = parent.name.lower()
+    if (
+        parent_name in {"skills", ".skills"}
+        or parent_name.endswith(("_skills", "-skills"))
+        or (not dst.is_symlink() and (dst / "SKILL.md").is_file())
+    ):
+        return True
+    return False
 
 
 def sync_registered_agent_skills(*, home: Path | None = None) -> dict:
@@ -377,12 +407,18 @@ def sync_registered_agent_skills(*, home: Path | None = None) -> dict:
             pruned += 1
             continue
         dst = Path(raw_dir)
+        if not _is_safe_registered_skill_dir(dst):
+            pruned += 1
+            continue
         if not dst.exists() and not dst.is_symlink():
+            pruned += 1
+            continue
+        if dst.is_symlink() and not _is_link_to_hub(dst, hub_dir):
             pruned += 1
             continue
 
         item = dict(entry)
-        if _is_link_to_hub(dst, hub_dir) or item.get("link_mode") == "link":
+        if _is_link_to_hub(dst, hub_dir):
             item["link_mode"] = "link"
             item["last_synced_digest"] = hub_digest
             up_to_date += 1

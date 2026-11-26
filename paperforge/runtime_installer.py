@@ -190,9 +190,9 @@ def _pip_install_command(
         and not spec.lower().endswith(".whl")
     ):
         last_mirror: subprocess.CompletedProcess[str] = result
-        for index_url, trusted_host in _MIRROR_FALLBACKS:
+        for index_url, _trusted_host in _MIRROR_FALLBACKS:
             mirror_result = _run(
-                [*base, "-i", index_url, "--trusted-host", trusted_host, spec],
+                [*base, "-i", index_url, spec],
                 cwd=cwd,
                 timeout=1800,
             )

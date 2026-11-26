@@ -3,7 +3,7 @@ name = "paperforge-daemon"
 version = "2.0.6"
 edition = "2021"
 description = "Cross-platform ultra-low-memory native control & SQLite FTS5 query sidecar for PaperForge"
-license = "MIT"
+license = "CC-BY-NC-SA-4.0"
 
 [[bin]]
 name = "paperforge-daemon"

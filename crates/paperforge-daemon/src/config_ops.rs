@@ -4,7 +4,7 @@
 //! contracts byte-for-byte so `config list|get|set|unset|validate|paths|init`
 //! and `paths --json` execute in `< 0.5ms` with zero Python runtime dependency.
 
-use crate::platform::atomic_write_bytes;
+use crate::platform::{acquire_advisory_lock, atomic_write_bytes};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use std::env;
@@ -346,6 +346,27 @@ pub fn pf_ok(command: &str, data: Value) -> Value {
     })
 }
 
+pub fn pf_ok_with_warnings(command: &str, data: Value, warnings: &[String]) -> Value {
+    if warnings.is_empty() {
+        return pf_ok(command, data);
+    }
+    json!({
+        "ok": true,
+        "command": command,
+        "version": PF_VERSION,
+        "data": data,
+        "error": Value::Null,
+        "warnings": warnings,
+    })
+}
+
+fn unknown_key_warnings(unknown_keys: &[String]) -> Vec<String> {
+    unknown_keys
+        .iter()
+        .map(|k| format!("unknown field '{k}' preserved but not interpreted"))
+        .collect()
+}
+
 pub fn pf_err(command: &str, code: &str, message: &str, details: Value, suggestions: &[&str]) -> Value {
     let mut err_obj = Map::new();
     err_obj.insert("code".into(), json!(code));
@@ -428,7 +449,7 @@ impl ConfigIssue {
             ConfigIssue::SecretField(k) => (json!({"config_code": c, "key": k}), &[]),
             ConfigIssue::Invalid(k, r) => (json!({"config_code": c, "key": k, "reason": r}), &[]),
         };
-        pf_err(command, "validation_error", c, details, suggestions)
+        pf_err(command, "VALIDATION_ERROR", c, details, suggestions)
     }
 }
 
@@ -440,16 +461,45 @@ fn spec_default_value(spec: &FieldSpec) -> Value {
     }
 }
 
+fn validate_http_url(s: &str, key: &str) -> Result<(), String> {
+    if !(s.starts_with("http://") || s.starts_with("https://")) {
+        return Err(format!("value for '{key}' must be an http(s) URL"));
+    }
+    let after_scheme = s.split_once("://").map(|(_, rest)| rest).unwrap_or("");
+    let authority = after_scheme.split('/').next().unwrap_or("");
+    if authority.is_empty() {
+        return Err(format!("value for '{key}' must include a host"));
+    }
+    if authority.contains('@') {
+        return Err(format!("value for '{key}' must not contain userinfo credentials"));
+    }
+    Ok(())
+}
+
+fn validate_profile_name(s: &str, key: &str) -> Result<(), String> {
+    let bytes = s.as_bytes();
+    if bytes.is_empty()
+        || bytes.len() > 64
+        || !bytes[0].is_ascii_lowercase()
+        || !bytes
+            .iter()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'_')
+    {
+        return Err(format!("value for '{key}' must match [a-z][a-z0-9_]{{0,63}}"));
+    }
+    Ok(())
+}
+
 pub fn validate_scalar(spec: &FieldSpec, val: &Value) -> Result<Value, String> {
     match spec.value_type {
         "boolean" => match val {
             Value::Bool(b) => Ok(Value::Bool(*b)),
             Value::String(s) => match s.trim().to_ascii_lowercase().as_str() {
-                "true" | "1" | "yes" | "on" => Ok(Value::Bool(true)),
-                "false" | "0" | "no" | "off" => Ok(Value::Bool(false)),
-                _ => Err("expected boolean".into()),
+                "true" | "1" => Ok(Value::Bool(true)),
+                "false" | "0" => Ok(Value::Bool(false)),
+                _ => Err("must be true|false|1|0".into()),
             },
-            _ => Err("expected boolean".into()),
+            _ => Err("must be true|false|1|0".into()),
         },
         "enum" => {
             let s = val.as_str().ok_or_else(|| "expected string".to_string())?.trim();
@@ -464,8 +514,13 @@ pub fn validate_scalar(spec: &FieldSpec, val: &Value) -> Result<Value, String> {
                 return Err("must not be empty".into());
             }
             if spec.vault_relative && !s.is_empty() {
-                let p = Path::new(s);
-                if p.is_absolute() || s.split(['/', '\\']).any(|seg| seg == "..") {
+                let bytes = s.as_bytes();
+                let is_abs = s.starts_with(['/', '\\'])
+                    || (bytes.len() >= 2 && bytes[1] == b':');
+                if is_abs
+                    || s.contains('\0')
+                    || s.split(['/', '\\']).any(|seg| seg == "..")
+                {
                     return Err("vault-relative path cannot be absolute or contain '..'".into());
                 }
             }
@@ -475,6 +530,11 @@ pub fn validate_scalar(spec: &FieldSpec, val: &Value) -> Result<Value, String> {
             let s = val.as_str().ok_or_else(|| "expected string".to_string())?.trim();
             if s.is_empty() && !spec.allow_empty {
                 return Err("must not be empty".into());
+            }
+            if matches!(spec.key, "paddleocr_job_url" | "vector_db_api_base") && !s.is_empty() {
+                validate_http_url(s, spec.key)?;
+            } else if matches!(spec.key, "ocr_profile" | "embedding_profile") {
+                validate_profile_name(s, spec.key)?;
             }
             Ok(Value::String(s.to_string()))
         }
@@ -741,7 +801,8 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                     .iter()
                     .map(|s| resolve_field_payload(&cfg.doc, s))
                     .collect();
-                let out = pf_ok(
+                let warnings = unknown_key_warnings(&cfg.unknown_keys);
+                let out = pf_ok_with_warnings(
                     "config.list",
                     json!({
                         "schema_version": SCHEMA_VERSION,
@@ -749,6 +810,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                         "unknown_keys": cfg.unknown_keys,
                         "fields": fields,
                     }),
+                    &warnings,
                 );
                 Some((0, format!("{out}\n"), String::new()))
             }
@@ -756,7 +818,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
         },
         "get" => {
             let Some(&key) = positional.get(1) else {
-                let out = pf_err("config.get", "validation_error", "config.usage", json!({"verb": "get"}), &[]);
+                let out = pf_err("config.get", "VALIDATION_ERROR", "config.usage", json!({"verb": "get"}), &[]);
                 return Some((2, format!("{out}\n"), String::new()));
             };
             match load_canonical_config(vault) {
@@ -764,14 +826,15 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                     let Some(spec) = FIELD_SPECS.iter().find(|s| s.key == key) else {
                         let out = pf_err(
                             "config.get",
-                            "validation_error",
+                            "VALIDATION_ERROR",
                             "config.unknown_key",
                             json!({"config_code": "config.unknown_key", "key": key}),
                             &[],
                         );
                         return Some((2, format!("{out}\n"), String::new()));
                     };
-                    let out = pf_ok(
+                    let warnings = unknown_key_warnings(&cfg.unknown_keys);
+                    let out = pf_ok_with_warnings(
                         "config.get",
                         json!({
                             "schema_version": SCHEMA_VERSION,
@@ -779,6 +842,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                             "unknown_keys": cfg.unknown_keys,
                             "field": resolve_field_payload(&cfg.doc, spec),
                         }),
+                        &warnings,
                     );
                     Some((0, format!("{out}\n"), String::new()))
                 }
@@ -857,7 +921,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
         }
         "set" => {
             let (Some(&key), Some(&raw_val)) = (positional.get(1), positional.get(2)) else {
-                let out = pf_err("config.set", "validation_error", "config.usage", json!({"verb": "set"}), &[]);
+                let out = pf_err("config.set", "VALIDATION_ERROR", "config.usage", json!({"verb": "set"}), &[]);
                 return Some((2, format!("{out}\n"), String::new()));
             };
             if is_secret_like(key) {
@@ -867,7 +931,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
             let Some(spec) = FIELD_SPECS.iter().find(|s| s.key == key) else {
                 let out = pf_err(
                     "config.set",
-                    "validation_error",
+                    "VALIDATION_ERROR",
                     "config.unknown_key",
                     json!({"config_code": "config.unknown_key", "key": key}),
                     &[],
@@ -878,6 +942,13 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                 Ok(v) => v,
                 Err(reason) => {
                     let out = ConfigIssue::Invalid(key.into(), reason).to_pf_error("config.set");
+                    return Some((1, format!("{out}\n"), String::new()));
+                }
+            };
+            let _lock = match acquire_advisory_lock(&vault.join("paperforge.json.lock"), 5000) {
+                Ok(l) => l,
+                Err(e) => {
+                    let out = pf_err("config.set", "INTERNAL_ERROR", "config.locked", json!({"detail": e.to_string()}), &[]);
                     return Some((1, format!("{out}\n"), String::new()));
                 }
             };
@@ -906,12 +977,13 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                         let mut bytes = serde_json::to_vec_pretty(&Value::Object(cfg.doc)).unwrap();
                         bytes.push(b'\n');
                         if let Err(e) = atomic_write_bytes(&vault.join(CONFIG_FILE), &bytes) {
-                            let out = pf_err("config.set", "io_error", &e.to_string(), json!({}), &[]);
+                            let out = pf_err("config.set", "IO_ERROR", &e.to_string(), json!({}), &[]);
                             return Some((1, format!("{out}\n"), String::new()));
                         }
                     }
                     let reloaded = load_canonical_config(vault).unwrap();
-                    let out = pf_ok(
+                    let warnings = unknown_key_warnings(&reloaded.unknown_keys);
+                    let out = pf_ok_with_warnings(
                         "config.set",
                         json!({
                             "schema_version": SCHEMA_VERSION,
@@ -920,6 +992,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                             "changed": changed,
                             "field": resolve_field_payload(&reloaded.doc, spec),
                         }),
+                        &warnings,
                     );
                     Some((0, format!("{out}\n"), String::new()))
                 }
@@ -928,7 +1001,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
         }
         "unset" => {
             let Some(&key) = positional.get(1) else {
-                let out = pf_err("config.unset", "validation_error", "config.usage", json!({"verb": "unset"}), &[]);
+                let out = pf_err("config.unset", "VALIDATION_ERROR", "config.usage", json!({"verb": "unset"}), &[]);
                 return Some((2, format!("{out}\n"), String::new()));
             };
             if is_secret_like(key) {
@@ -938,12 +1011,19 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
             let Some(spec) = FIELD_SPECS.iter().find(|s| s.key == key) else {
                 let out = pf_err(
                     "config.unset",
-                    "validation_error",
+                    "VALIDATION_ERROR",
                     "config.unknown_key",
                     json!({"config_code": "config.unknown_key", "key": key}),
                     &[],
                 );
                 return Some((2, format!("{out}\n"), String::new()));
+            };
+            let _lock = match acquire_advisory_lock(&vault.join("paperforge.json.lock"), 5000) {
+                Ok(l) => l,
+                Err(e) => {
+                    let out = pf_err("config.unset", "INTERNAL_ERROR", "config.locked", json!({"detail": e.to_string()}), &[]);
+                    return Some((1, format!("{out}\n"), String::new()));
+                }
             };
             match load_canonical_config(vault) {
                 Ok(mut cfg) => {
@@ -960,12 +1040,13 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                         let mut bytes = serde_json::to_vec_pretty(&Value::Object(cfg.doc)).unwrap();
                         bytes.push(b'\n');
                         if let Err(e) = atomic_write_bytes(&vault.join(CONFIG_FILE), &bytes) {
-                            let out = pf_err("config.unset", "io_error", &e.to_string(), json!({}), &[]);
+                            let out = pf_err("config.unset", "IO_ERROR", &e.to_string(), json!({}), &[]);
                             return Some((1, format!("{out}\n"), String::new()));
                         }
                     }
                     let reloaded = load_canonical_config(vault).unwrap();
-                    let out = pf_ok(
+                    let warnings = unknown_key_warnings(&reloaded.unknown_keys);
+                    let out = pf_ok_with_warnings(
                         "config.unset",
                         json!({
                             "schema_version": SCHEMA_VERSION,
@@ -974,6 +1055,7 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                             "changed": changed,
                             "field": resolve_field_payload(&reloaded.doc, spec),
                         }),
+                        &warnings,
                     );
                     Some((0, format!("{out}\n"), String::new()))
                 }
@@ -985,23 +1067,27 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                 let out = ConfigIssue::NotFound(vault.to_string_lossy().into_owned()).to_pf_error("config.init");
                 return Some((1, format!("{out}\n"), String::new()));
             }
+            let _lock = match acquire_advisory_lock(&vault.join("paperforge.json.lock"), 5000) {
+                Ok(l) => l,
+                Err(e) => {
+                    let out = pf_err("config.init", "INTERNAL_ERROR", "config.locked", json!({"detail": e.to_string()}), &[]);
+                    return Some((1, format!("{out}\n"), String::new()));
+                }
+            };
             let cfg_file = vault.join(CONFIG_FILE);
             if cfg_file.exists() {
                 match load_canonical_config(vault) {
                     Ok(cfg) => {
-                        let fields: Vec<Value> = FIELD_SPECS
-                            .iter()
-                            .map(|s| resolve_field_payload(&cfg.doc, s))
-                            .collect();
-                        let out = pf_ok(
+                        let warnings = unknown_key_warnings(&cfg.unknown_keys);
+                        let out = pf_ok_with_warnings(
                             "config.init",
                             json!({
                                 "schema_version": SCHEMA_VERSION,
                                 "revision": cfg.revision,
                                 "unknown_keys": cfg.unknown_keys,
-                                "changed": false,
-                                "fields": fields,
+                                "created": false,
                             }),
+                            &warnings,
                         );
                         return Some((0, format!("{out}\n"), String::new()));
                     }
@@ -1009,36 +1095,36 @@ pub fn try_handle_config_cli(vault: &Path, argv: &[String]) -> Option<(i32, Stri
                 }
             }
             let mut vc = Map::new();
-            let mut doc = Map::new();
-            doc.insert("schema_version".into(), json!(SCHEMA_VERSION));
             for spec in FIELD_SPECS {
                 if spec.nested_vault_config {
                     vc.insert(spec.key.into(), spec_default_value(spec));
-                } else {
+                }
+            }
+            let mut doc = Map::new();
+            doc.insert("schema_version".into(), json!(SCHEMA_VERSION));
+            doc.insert("vault_config".into(), Value::Object(vc));
+            for spec in FIELD_SPECS {
+                if !spec.nested_vault_config {
                     doc.insert(spec.key.into(), spec_default_value(spec));
                 }
             }
-            doc.insert("vault_config".into(), Value::Object(vc));
             let mut bytes = serde_json::to_vec_pretty(&Value::Object(doc)).unwrap();
             bytes.push(b'\n');
             if let Err(e) = atomic_write_bytes(&cfg_file, &bytes) {
-                let out = pf_err("config.init", "io_error", &e.to_string(), json!({}), &[]);
+                let out = pf_err("config.init", "IO_ERROR", &e.to_string(), json!({}), &[]);
                 return Some((1, format!("{out}\n"), String::new()));
             }
             let reloaded = load_canonical_config(vault).unwrap();
-            let fields: Vec<Value> = FIELD_SPECS
-                .iter()
-                .map(|s| resolve_field_payload(&reloaded.doc, s))
-                .collect();
-            let out = pf_ok(
+            let warnings = unknown_key_warnings(&reloaded.unknown_keys);
+            let out = pf_ok_with_warnings(
                 "config.init",
                 json!({
                     "schema_version": SCHEMA_VERSION,
                     "revision": reloaded.revision,
                     "unknown_keys": reloaded.unknown_keys,
-                    "changed": true,
-                    "fields": fields,
+                    "created": true,
                 }),
+                &warnings,
             );
             Some((0, format!("{out}\n"), String::new()))
         }

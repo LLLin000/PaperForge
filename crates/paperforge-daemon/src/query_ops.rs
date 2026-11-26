@@ -1,7 +1,7 @@
 //! Native SQLite FTS5 search, Base table snapshots, Living Memory reads,
 //! and Zero-Python Veteran Provenance detection.
 
-use crate::config_ops::{load_canonical_config, pf_err, pf_ok, resolve_vault_paths};
+use crate::config_ops::{load_canonical_config, pf_err, pf_ok, resolve_vault_paths, PF_VERSION};
 use rusqlite::{params_from_iter, Connection, OpenFlags};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
@@ -165,6 +165,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let mut db_papers: HashMap<String, DbPaperRow> = HashMap::new();
     let mut db_order: Vec<String> = Vec::new();
     let mut sqlite_schema_present = false;
+    let mut has_papers_table = false;
     let mut ocr_cat_ok: HashMap<String, bool> = HashMap::new();
     let mut ann_counts: HashMap<String, (i64, i64)> = HashMap::new();
     let mut mem_counts: HashMap<String, (i64, String)> = HashMap::new();
@@ -173,6 +174,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     if let Some(conn) = open_readonly_db(&db_path) {
         if table_exists(&conn, "papers") {
             sqlite_schema_present = true;
+            has_papers_table = true;
             let cols = table_columns(&conn, "papers");
             let has = |c: &str| cols.iter().any(|x| x == c);
             let sel = |c: &str| -> String {
@@ -287,10 +289,17 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                         if tk.is_empty() {
                             continue;
                         }
-                        let entry = db_papers.entry(tk.clone()).or_insert_with(|| {
-                            db_order.push(tk.clone());
-                            DbPaperRow::default()
-                        });
+                        let entry = if has_papers_table {
+                            let Some(existing) = db_papers.get_mut(&tk) else {
+                                continue;
+                            };
+                            existing
+                        } else {
+                            db_papers.entry(tk.clone()).or_insert_with(|| {
+                                db_order.push(tk.clone());
+                                DbPaperRow::default()
+                            })
+                        };
                         if entry.main_note_path.is_empty() && !note_rel.is_empty() {
                             entry.main_note_path = note_rel;
                         }
@@ -305,7 +314,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             }
         }
         if table_exists(&conn, "ocr_catalog") {
-            if let Ok(mut st) = conn.prepare("SELECT zotero_key, COALESCE(tier0_result_ok, 0) FROM ocr_catalog") {
+            if let Ok(mut st) = conn.prepare("SELECT zotero_key, COALESCE(tier0_truth_intact, 0) FROM ocr_catalog") {
                 if let Ok(rows) = st.query_map([], |r| {
                     Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1).unwrap_or(0) != 0))
                 }) {
@@ -448,14 +457,59 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                 let ws_dir = vault.join(pr.trim_end_matches(['/', '\\']));
                 let mc_file = ws_dir.join("ai").join("memory-card.json");
                 if let Ok(raw_mc) = fs::read_to_string(mc_file) {
-                    if let Ok(Value::Object(facets)) = serde_json::from_str::<Value>(&raw_mc) {
-                        m_cnt = facets.len() as i64;
-                        m_upd = facets
-                            .values()
-                            .filter_map(|f| f.get("updated_at").and_then(|u| u.as_str()))
-                            .max()
-                            .unwrap_or("")
-                            .to_string();
+                    if let Ok(Value::Object(doc)) = serde_json::from_str::<Value>(&raw_mc) {
+                        match doc.get("facets") {
+                            Some(Value::Object(facets)) => {
+                                let mut cnt: i64 = 0;
+                                let mut max_upd = String::new();
+                                for f in facets.values() {
+                                    let has_content = f
+                                        .get("content")
+                                        .and_then(|c| c.as_str())
+                                        .map(|s| !s.trim().is_empty())
+                                        .unwrap_or(false);
+                                    if !has_content {
+                                        continue;
+                                    }
+                                    cnt += 1;
+                                    if let Some(u) = f.get("updated_at").and_then(|u| u.as_str()) {
+                                        if u > max_upd.as_str() {
+                                            max_upd = u.to_string();
+                                        }
+                                    }
+                                }
+                                m_cnt = cnt;
+                                m_upd = max_upd;
+                            }
+                            Some(Value::Array(facets)) => {
+                                let mut cnt: i64 = 0;
+                                let mut max_upd = String::new();
+                                for f in facets {
+                                    let has_facet = f
+                                        .get("facet")
+                                        .and_then(|v| v.as_str())
+                                        .map(|s| !s.trim().is_empty())
+                                        .unwrap_or(false);
+                                    let has_content = f
+                                        .get("content")
+                                        .and_then(|c| c.as_str())
+                                        .map(|s| !s.trim().is_empty())
+                                        .unwrap_or(false);
+                                    if !has_facet || !has_content {
+                                        continue;
+                                    }
+                                    cnt += 1;
+                                    if let Some(u) = f.get("updated_at").and_then(|u| u.as_str()) {
+                                        if u > max_upd.as_str() {
+                                            max_upd = u.to_string();
+                                        }
+                                    }
+                                }
+                                m_cnt = cnt;
+                                m_upd = max_upd;
+                            }
+                            _ => {}
+                        }
                     }
                 }
                 let ann_file = ws_dir.join("annotations.jsonl");
@@ -500,8 +554,10 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                     .unwrap_or("")
                     .to_string()
             });
+        let ocr_cat_broken = ocr_cat_ok.get(&key) == Some(&false);
         let needs_diag = matches!(ocr_status.as_str(), "failed" | "done_incomplete" | "unknown")
-            || (ocr_status == "done" && !ocr_health.is_empty() && ocr_health != "healthy");
+            || (ocr_status == "done"
+                && ((!ocr_health.is_empty() && ocr_health != "healthy") || ocr_cat_broken));
 
         let collections: Vec<Value> = db_p
             .and_then(|p| p.collections.clone())
@@ -607,8 +663,19 @@ fn parse_search_argv(argv: &[String]) -> Option<SearchFlags> {
     };
     let mut i = 1;
     let mut query_set = false;
+    let mut after_double_dash = false;
     while i < argv.len() {
-        match argv[i].as_str() {
+        let arg = argv[i].as_str();
+        if after_double_dash {
+            if !query_set {
+                flags.query = arg.to_string();
+                query_set = true;
+            }
+            i += 1;
+            continue;
+        }
+        match arg {
+            "--" => after_double_dash = true,
             "--json" => flags.json_out = true,
             "--evidence" => flags.evidence = true,
             "--limit" => {
@@ -643,7 +710,31 @@ fn parse_search_argv(argv: &[String]) -> Option<SearchFlags> {
                 i += 1;
                 flags.next_step = Some(argv.get(i)?.clone());
             }
-            arg if arg.starts_with('-') => return None,
+            s if s.starts_with("--limit=") => {
+                flags.limit = s.strip_prefix("--limit=")?.parse().ok()?;
+            }
+            s if s.starts_with("--domain=") => {
+                flags.domain = Some(s.strip_prefix("--domain=")?.to_string());
+            }
+            s if s.starts_with("--year-from=") => {
+                flags.year_from = Some(s.strip_prefix("--year-from=")?.parse().ok()?);
+            }
+            s if s.starts_with("--year-to=") => {
+                flags.year_to = Some(s.strip_prefix("--year-to=")?.parse().ok()?);
+            }
+            s if s.starts_with("--ocr=") => {
+                flags.ocr = Some(s.strip_prefix("--ocr=")?.to_string());
+            }
+            s if s.starts_with("--deep=") => {
+                flags.deep = Some(s.strip_prefix("--deep=")?.to_string());
+            }
+            s if s.starts_with("--lifecycle=") => {
+                flags.lifecycle = Some(s.strip_prefix("--lifecycle=")?.to_string());
+            }
+            s if s.starts_with("--next-step=") => {
+                flags.next_step = Some(s.strip_prefix("--next-step=")?.to_string());
+            }
+            s if s.starts_with('-') => return None,
             positional => {
                 if !query_set {
                     flags.query = positional.to_string();
@@ -674,7 +765,7 @@ pub fn try_handle_search_cli(
     if !db_path.is_file() {
         let out = pf_err(
             "search",
-            "path_not_found",
+            "PATH_NOT_FOUND",
             "Memory database not found. Run paperforge memory build.",
             json!({}),
             &[],
@@ -820,64 +911,232 @@ pub fn try_handle_search_cli(
     Some((0, format!("{out}\n"), String::new()))
 }
 
-/// Fast Zero-Python `upgrade --plan --json` fallback so brand-new users see zero
-/// prompts and veteran users immediately see the non-blocking upgrade banner even
-/// before Python finishes installing!
-pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
-    let legacy_sys = vault.join("System").join("PaperForge");
-    let legacy_99 = vault.join("99_System").join("PaperForge");
-    let dot_pf = vault.join(".paperforge");
-    let manifest_path = dot_pf.join("vault-manifest.json");
-    let cfg_path = vault.join("paperforge.json");
-
-    // Also inspect custom `system_dir` in paperforge.json (matching Python vault_upgrade.py)
-    let mut configured_legacy_rel: Option<String> = None;
-    if cfg_path.is_file() {
-        if let Ok(raw) = std::fs::read_to_string(&cfg_path) {
-            if let Ok(val) = serde_json::from_str::<Value>(&raw) {
-                let sys_d = val
-                    .get("vault_config")
-                    .and_then(|v| v.get("system_dir"))
-                    .and_then(|v| v.as_str())
-                    .or_else(|| val.get("system_dir").and_then(|v| v.as_str()))
-                    .map(str::trim)
-                    .unwrap_or("");
-                if !sys_d.is_empty() && sys_d != ".paperforge" {
-                    let cand = vault.join(sys_d).join("PaperForge");
-                    if cand.is_dir() {
-                        configured_legacy_rel = Some(format!("{sys_d}/PaperForge"));
+fn bounded_tier2_rescue_probe(vault: &Path) -> Vec<String> {
+    let mut tier2 = Vec::new();
+    for base_dir in [vault.join("Bases"), vault.join("05_Bases")] {
+        if base_dir.is_dir() {
+            if let Ok(rd) = fs::read_dir(&base_dir) {
+                for ent in rd.flatten().take(20) {
+                    let p = ent.path();
+                    if p.extension().and_then(|s| s.to_str()) == Some("base") && p.is_file() {
+                        if let Ok(txt) = fs::read_to_string(&p) {
+                            if txt.contains("# PAPERFORGE_VIEW:") || txt.contains("paperforge-table") {
+                                tier2.push(format!(
+                                    "base_signature:{}",
+                                    p.file_name().and_then(|s| s.to_str()).unwrap_or("")
+                                ));
+                                break;
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    let legacy_rel: Option<String> = if legacy_sys.is_dir() {
-        Some("System/PaperForge".to_string())
-    } else if legacy_99.is_dir() {
-        Some("99_System/PaperForge".to_string())
-    } else {
-        configured_legacy_rel
-    };
-    let has_legacy_dir = legacy_rel.is_some();
-    let has_manifest = manifest_path.is_file();
+    let mut checked_md = 0usize;
+    let mut stack = vec![
+        vault.join("Resources").join("Literature"),
+        vault.join("03_Resources").join("Literature"),
+        vault.join("Literature"),
+    ];
+    while let Some(dir) = stack.pop() {
+        if !dir.is_dir() {
+            continue;
+        }
+        let Ok(rd) = fs::read_dir(&dir) else { continue };
+        let mut subdirs = Vec::new();
+        for ent in rd.flatten() {
+            let p = ent.path();
+            if fs::symlink_metadata(&p)
+                .map(|m| m.file_type().is_symlink())
+                .unwrap_or(false)
+            {
+                continue;
+            }
+            if p.is_dir() {
+                subdirs.push(p);
+                continue;
+            }
+            let name = ent.file_name();
+            let name_s = name.to_string_lossy();
+            if name_s == "paper-meta.json" {
+                if let Ok(raw) = fs::read_to_string(&p) {
+                    if let Ok(Value::Object(obj)) = serde_json::from_str::<Value>(&raw) {
+                        if obj.contains_key("paperforge_version") && obj.contains_key("ocr_status") {
+                            tier2.push("workspace_paper_meta".to_string());
+                            return tier2;
+                        }
+                    }
+                }
+            } else if name_s.ends_with(".md") && checked_md < 25 {
+                checked_md += 1;
+                if let Ok(bytes) = fs::read(&p) {
+                    let head = String::from_utf8_lossy(&bytes[..bytes.len().min(2500)]);
+                    if head.contains("zotero_key:")
+                        && head.contains("ocr_status:")
+                        && head.contains("deep_reading_status:")
+                        && head.contains("do_ocr:")
+                    {
+                        tier2.push("note_4key_signature".to_string());
+                        return tier2;
+                    }
+                }
+            }
+        }
+        if checked_md < 25 {
+            stack.extend(subdirs);
+        }
+    }
+    tier2
+}
 
-    let (state, needs_upgrade, signals) = if has_legacy_dir {
-        (
-            "veteran_legacy",
-            true,
-            vec![format!(
-                "legacy_engine_dir:{}",
-                legacy_rel.as_deref().unwrap_or("System/PaperForge")
-            )],
-        )
-    } else if has_manifest {
-        ("standard_current", false, vec!["vault_manifest_v2".to_string()])
-    } else if cfg_path.is_file() || dot_pf.join("indexes").is_dir() {
-        ("veteran_legacy", true, vec!["paperforge_config_without_v2_manifest".to_string()])
+/// Fast Zero-Python `upgrade --plan --json` fallback so brand-new users see zero
+/// prompts and veteran users immediately see the non-blocking upgrade banner even
+/// before Python finishes installing!
+pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
+    const PF_CONFIG_PROVENANCE_KEYS: &[&str] = &[
+        "vault_config",
+        "paddleocr_job_url",
+        "paddleocr_model",
+        "ocr_profile",
+        "agent_platform",
+        "agent_key",
+        "paperforge_path",
+    ];
+    const CURRENT_LAYOUT_VERSION: i64 = 2;
+
+    let legacy_sys = vault.join("System").join("PaperForge");
+    let legacy_99 = vault.join("99_System").join("PaperForge");
+    let dot_pf = vault.join(".paperforge");
+    let manifest_path = dot_pf.join("vault-manifest.json");
+    let cfg_path = vault.join("paperforge.json");
+
+    let mut tier1_evidence: Vec<String> = Vec::new();
+    let mut has_legacy_dir = false;
+    let mut legacy_rel: Option<String> = None;
+    for (cand, label) in [
+        (&legacy_sys, "System/PaperForge"),
+        (&legacy_99, "99_System/PaperForge"),
+    ] {
+        if cand.is_dir() {
+            has_legacy_dir = true;
+            if legacy_rel.is_none() {
+                legacy_rel = Some(label.to_string());
+            }
+            tier1_evidence.push(format!("legacy_engine_dir:{label}"));
+        }
+    }
+
+    // Check paperforge.json provenance keys and custom system_dir
+    if cfg_path.is_file() {
+        match fs::read_to_string(&cfg_path)
+            .ok()
+            .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+        {
+            Some(Value::Object(obj)) => {
+                if PF_CONFIG_PROVENANCE_KEYS.iter().any(|k| obj.contains_key(*k)) {
+                    tier1_evidence.push("paperforge.json".to_string());
+                }
+                let sys_d = obj
+                    .get("vault_config")
+                    .and_then(|v| v.get("system_dir"))
+                    .and_then(|v| v.as_str())
+                    .or_else(|| obj.get("system_dir").and_then(|v| v.as_str()))
+                    .map(str::trim)
+                    .unwrap_or("");
+                if !sys_d.is_empty() && sys_d != ".paperforge" {
+                    let cand = vault.join(sys_d).join("PaperForge");
+                    if cand.is_dir() {
+                        has_legacy_dir = true;
+                        let rel = format!("{sys_d}/PaperForge");
+                        if legacy_rel.is_none() {
+                            legacy_rel = Some(rel.clone());
+                        }
+                        tier1_evidence.push(format!("configured_legacy_engine:{rel}"));
+                    }
+                }
+            }
+            _ => {
+                tier1_evidence.push("paperforge.json:corrupt".to_string());
+            }
+        }
+    }
+
+    if dot_pf.is_dir()
+        && ["indexes", "ocr", "trash", ".migration-journal.json"]
+            .iter()
+            .any(|sub| dot_pf.join(sub).exists())
+    {
+        tier1_evidence.push(".paperforge".to_string());
+    }
+
+    let plugin_data_path = vault
+        .join(".obsidian")
+        .join("plugins")
+        .join("paperforge")
+        .join("data.json");
+    if plugin_data_path.is_file() {
+        if let Ok(raw) = fs::read_to_string(&plugin_data_path) {
+            if let Ok(Value::Object(pdata)) = serde_json::from_str::<Value>(&raw) {
+                let has_signal = [
+                    "_setup_complete",
+                    "last_seen_version",
+                    "_migrated_keys",
+                    "zotero_data_dir",
+                ]
+                .iter()
+                .any(|k| match pdata.get(*k) {
+                    Some(Value::Bool(b)) => *b,
+                    Some(Value::String(s)) => !s.is_empty(),
+                    Some(Value::Array(a)) => !a.is_empty(),
+                    Some(Value::Object(o)) => !o.is_empty(),
+                    Some(Value::Number(_)) => true,
+                    _ => false,
+                });
+                if has_signal {
+                    tier1_evidence.push("plugin_data.json".to_string());
+                }
+            }
+        }
+    }
+
+    let mut manifest_present = false;
+    let mut manifest_layout_version: i64 = 0;
+    if manifest_path.is_file() {
+        if let Ok(raw) = fs::read_to_string(&manifest_path) {
+            if let Ok(Value::Object(mobj)) = serde_json::from_str::<Value>(&raw) {
+                manifest_present = true;
+                manifest_layout_version = mobj
+                    .get("layout_version")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+            }
+        }
+    }
+
+    let mut tier2_evidence: Vec<String> = Vec::new();
+    let (state, needs_upgrade) = if manifest_present
+        && manifest_layout_version >= CURRENT_LAYOUT_VERSION
+        && !has_legacy_dir
+    {
+        ("standard_current", false)
+    } else if !tier1_evidence.is_empty() {
+        ("veteran_legacy", true)
     } else {
-        ("fresh_or_foreign", false, Vec::new())
+        tier2_evidence = bounded_tier2_rescue_probe(vault);
+        if !tier2_evidence.is_empty() {
+            ("veteran_rescue", true)
+        } else {
+            ("fresh_or_foreign", false)
+        }
     };
+
+    let mut signals = tier1_evidence.clone();
+    signals.extend(tier2_evidence.clone());
+    if state == "standard_current" && !signals.iter().any(|s| s == "vault_manifest_v2") {
+        signals.push("vault_manifest_v2".to_string());
+    }
 
     let mut auto_items = Vec::new();
     if let Some(ref lrel) = legacy_rel {
@@ -891,6 +1150,34 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
             "legacy_dir": lrel,
         }));
     }
+    if !manifest_present && needs_upgrade {
+        auto_items.push(json!({
+            "id": "manifest.initialize",
+            "area": "engine",
+            "title": "Write canonical vault layout manifest (.paperforge/vault-manifest.json)",
+            "count": 1,
+            "fast_cutover": true,
+            "detail": "Records layout version and backup snapshot paths for rollback and upgrades.",
+        }));
+    }
+
+    let mut tamper_items = Vec::new();
+    let journal_path = dot_pf.join(".migration-journal.json");
+    if journal_path.is_file() {
+        if let Ok(raw) = fs::read_to_string(&journal_path) {
+            if let Ok(jval) = serde_json::from_str::<Value>(&raw) {
+                if jval.get("state").and_then(|v| v.as_str()) == Some("in_progress") {
+                    tamper_items.push(json!({
+                        "id": "storage.interrupted_journal",
+                        "area": "storage",
+                        "title": "Interrupted migration journal detected",
+                        "detail": "Supports resuming or rolling back cleanly via the journal.",
+                        "remediation": "Run rollback or resume upgrade.",
+                    }));
+                }
+            }
+        }
+    }
 
     let backups_dir = dot_pf.join("backups");
     let rollback_available = backups_dir.is_dir()
@@ -903,34 +1190,41 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
                 ent.file_name().to_string_lossy().starts_with("upgrade-")
                     && ent.path().is_dir()
             });
+    let fast_cutover_count = auto_items.len();
     let out = pf_ok(
         "upgrade",
         json!({
+            "schema_version": 2,
             "vault": vault.to_string_lossy(),
+            "target_version": PF_VERSION,
             "provenance": {
                 "state": state,
                 "needs_upgrade": needs_upgrade,
                 "confidence": if signals.is_empty() { "none" } else { "high" },
                 "signals": signals,
+                "tier1_evidence": tier1_evidence,
+                "tier2_evidence": tier2_evidence,
                 "legacy_engine_dir": legacy_rel,
             },
+            "manifest_present": manifest_present,
+            "rollback_available": rollback_available,
             "census": {
+                "pf_machine_pure": 0,
+                "pf_user_enriched": 0,
+                "pf_confirmed_residual": 0,
+                "user_sovereign_untouched": 0,
+                "ambiguous_or_clone_frozen": 0,
                 "pf_canonical": { "workspaces": 0 }
             },
-            "manifest": Value::Null,
-            "rollback_available": rollback_available,
-            "category_a_auto": auto_items,
-            "category_b_reconfig": [],
-            "category_c_tamper": [],
-            "cleanup_candidates": [],
             "summary": {
                 "auto_count": auto_items.len(),
-                "fast_cutover_count": auto_items.len(),
+                "fast_cutover_count": fast_cutover_count,
                 "progressive_heal_count": 0,
                 "reconfig_critical_count": 0,
                 "reconfig_minor_count": 0,
-                "tamper_count": 0,
+                "tamper_count": tamper_items.len(),
                 "cleanup_candidate_count": 0,
+                "cleanup_candidate_bytes": 0,
                 "ocr_atoms": {
                     "total": 0,
                     "current": 0,
@@ -938,7 +1232,11 @@ pub fn handle_zero_python_upgrade_plan(vault: &Path) -> (i32, String, String) {
                     "backfill_from_result_json": 0,
                     "re_ocr_needed": 0,
                 }
-            }
+            },
+            "category_a_auto": auto_items,
+            "category_b_reconfig": [],
+            "category_c_tamper": tamper_items,
+            "cleanup_candidates": [],
         }),
     );
     (0, format!("{out}\n"), String::new())

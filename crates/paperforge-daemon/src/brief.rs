@@ -281,12 +281,17 @@ fn read_daemon_heartbeat(engine_dir: &Path) -> (bool, Vec<Value>, Option<String>
     (true, active_jobs, exclusive_barrier, recent_notices)
 }
 
-fn check_logs_writable(engine_dir: &Path) -> bool {
+fn check_logs_writable(engine_dir: &Path, vault: &Path) -> bool {
     let logs_dir = engine_dir.join("logs");
-    match fs::metadata(&logs_dir) {
-        Ok(meta) => meta.is_dir() && !meta.permissions().readonly(),
-        Err(_) => false,
+    if let Ok(meta) = fs::metadata(&logs_dir) {
+        return meta.is_dir() && !meta.permissions().readonly();
     }
+    for cand in [engine_dir, vault] {
+        if let Ok(meta) = fs::metadata(cand) {
+            return meta.is_dir() && !meta.permissions().readonly();
+        }
+    }
+    false
 }
 
 fn read_vector_status(vault: &Path, conn_opt: Option<&Connection>) -> (bool, bool, Value) {
@@ -295,28 +300,33 @@ fn read_vector_status(vault: &Path, conn_opt: Option<&Connection>) -> (bool, boo
         .join("plugins")
         .join("paperforge")
         .join("data.json");
-    let mut enabled = false;
+    let mut explicit_setting: Option<bool> = None;
     if let Ok(raw) = fs::read_to_string(settings_path) {
         if let Ok(val) = serde_json::from_str::<Value>(&raw) {
-            enabled = val
+            explicit_setting = val
                 .get("features")
                 .and_then(|f| f.get("vector_db"))
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
+                .and_then(|v| v.as_bool());
         }
     }
-    if !enabled {
+    if explicit_setting == Some(false) {
         return (false, false, json!({ "status": "disabled", "chunks": 0 }));
     }
 
     let Some(conn) = conn_opt else {
-        return (true, false, json!({ "status": "not_built", "chunks": 0 }));
+        let enabled = explicit_setting == Some(true);
+        return (
+            enabled,
+            false,
+            json!({ "status": if enabled { "not_built" } else { "disabled" }, "chunks": 0 }),
+        );
     };
 
     let mut build_status = String::from("idle");
     let mut current: i64 = 0;
     let mut total: i64 = 0;
     let mut message = String::new();
+    let mut identity_changed = false;
     if table_exists(conn, "build_state") {
         if let Ok(mut st) = conn.prepare("SELECT key, value FROM build_state") {
             if let Ok(rows) = st.query_map([], |r| {
@@ -337,6 +347,9 @@ fn read_vector_status(vault: &Path, conn_opt: Option<&Connection>) -> (bool, boo
                                 message = s.to_string();
                             }
                         }
+                        "identity_changed" | "identity_mismatch" => {
+                            identity_changed = parsed.as_bool().unwrap_or(false);
+                        }
                         _ => {}
                     }
                 }
@@ -344,14 +357,34 @@ fn read_vector_status(vault: &Path, conn_opt: Option<&Connection>) -> (bool, boo
         }
     }
 
-    let chunks: i64 = if table_exists(conn, "vec_body_meta") {
+    let body_chunks: i64 = if table_exists(conn, "vec_body_meta") {
         conn.query_row("SELECT COUNT(*) FROM vec_body_meta", [], |r| r.get(0))
             .unwrap_or(0)
     } else {
         0
     };
+    let obj_chunks: i64 = if table_exists(conn, "vec_objects_meta") {
+        conn.query_row("SELECT COUNT(*) FROM vec_objects_meta", [], |r| r.get(0))
+            .unwrap_or(0)
+    } else {
+        0
+    };
+    let chunks = body_chunks + obj_chunks;
 
-    let ready = (build_status == "completed" || chunks > 0) && build_status != "running" && build_status != "failed";
+    let enabled = explicit_setting == Some(true) || chunks > 0 || build_status != "idle";
+    if !enabled {
+        return (false, false, json!({ "status": "disabled", "chunks": 0 }));
+    }
+
+    let vec_tables_ok = (body_chunks == 0 || table_exists(conn, "vec_body"))
+        && (obj_chunks == 0 || table_exists(conn, "vec_objects"));
+    let ready = (build_status == "completed" || chunks > 0)
+        && vec_tables_ok
+        && !identity_changed
+        && !matches!(
+            build_status.as_str(),
+            "running" | "failed" | "interrupted" | "stale" | "corrupted"
+        );
     (
         true,
         ready,
@@ -555,8 +588,15 @@ pub fn build_agent_brief(vault: &Path, paper_key: Option<&str>) -> Value {
         read_daemon_heartbeat(&engine_dir);
 
     let db_path = engine_dir.join("indexes").join("paperforge.db");
-    let conn_opt = open_readonly_db(&db_path);
-    let db_exists = conn_opt.is_some();
+    let db_file_exists = db_path.is_file();
+    let raw_conn = open_readonly_db(&db_path);
+    let db_probe_ok = raw_conn.as_ref().is_some_and(|c| {
+        c.query_row("SELECT COUNT(*) FROM sqlite_master", [], |r| r.get::<_, i64>(0))
+            .is_ok()
+    });
+    let db_corrupt = db_file_exists && !db_probe_ok;
+    let conn_opt = if db_probe_ok { raw_conn } else { None };
+    let db_exists = db_probe_ok;
 
     let mut paper_count: i64 = 0;
     let mut ocr_failed_count: i64 = 0;
@@ -606,15 +646,32 @@ pub fn build_agent_brief(vault: &Path, paper_key: Option<&str>) -> Value {
         }
     }
 
-    let logs_writable = check_logs_writable(&engine_dir);
+    let logs_writable = check_logs_writable(&engine_dir, &clean_vault);
     let (vector_enabled, vector_ready, vector_info) =
         read_vector_status(&clean_vault, conn_opt.as_ref());
 
     let safe_read = config_ok && db_exists;
-    let safe_write = config_ok && db_exists && logs_writable && exclusive_barrier.is_none();
+    let safe_write = config_ok
+        && db_exists
+        && python_available
+        && logs_writable
+        && exclusive_barrier.is_none();
     let fts_search = safe_read;
 
-    if config_ok && !db_exists {
+    if db_corrupt {
+        blocked_actions.insert(
+            "read_and_search".into(),
+            json!("paperforge.db is corrupt. Run `paperforge memory build` or `paperforge engine rebuild-db` to recover."),
+        );
+        push_hint(
+            &mut hints,
+            0,
+            "blocker",
+            "db.corrupt",
+            "paperforge.db 索引数据库已损坏（file is not a database），请先重建后再检索或读取。",
+            Some("paperforge memory build".to_string()),
+        );
+    } else if config_ok && !db_exists {
         blocked_actions.insert(
             "read_and_search".into(),
             json!("paperforge.db not found. Run `paperforge memory build` first."),
@@ -626,6 +683,21 @@ pub fn build_agent_brief(vault: &Path, paper_key: Option<&str>) -> Value {
             "db.missing",
             "尚未生成 paperforge.db 记忆索引库，无法检索或读取论文。",
             Some("paperforge memory build".to_string()),
+        );
+    }
+
+    if config_ok && !logs_writable {
+        blocked_actions.insert(
+            "write_log".into(),
+            json!("Engine logs directory is read-only or not writable."),
+        );
+        push_hint(
+            &mut hints,
+            1,
+            "warn",
+            "logs.not_writable",
+            "引擎 logs 目录不可写，写操作已暂时锁定，请检查目录权限。",
+            None,
         );
     }
 
@@ -900,6 +972,7 @@ pub fn build_agent_brief(vault: &Path, paper_key: Option<&str>) -> Value {
         json!({
             "safe_read": safe_read,
             "safe_write": safe_write,
+            "db_corrupt": db_corrupt,
             "fts_search": fts_search,
             "vector_enabled": vector_enabled,
             "vector_retrieve": vector_ready,
@@ -921,7 +994,7 @@ pub fn query_library_filtered(vault: &Path, args: &Value) -> Value {
     let Ok(snap_env) = serde_json::from_str::<Value>(&out_str) else {
         return pf_err(
             "library-query",
-            "internal_error",
+            "INTERNAL_ERROR",
             "Failed to parse base-snapshot output",
             json!({}),
             &[],

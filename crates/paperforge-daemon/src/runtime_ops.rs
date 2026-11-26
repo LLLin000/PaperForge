@@ -9,13 +9,16 @@
 //!    `~/.paperforge/runtime/pointer.json`, streaming all output to `installer.log`
 //!    and `ControlDaemon` progress callbacks.
 
-use crate::platform::{atomic_write_bytes, configure_worker_command};
+use crate::platform::{atomic_write_bytes, attach_child_to_job, configure_worker_command, kill_process_tree};
 use sha2::{Digest, Sha256};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Cursor, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::mpsc;
+use std::time::Duration;
 
 pub const UV_VERSION: &str = "0.13.9";
 pub const GITHUB_REPO: &str = "LLLin000/PaperForge";
@@ -91,44 +94,298 @@ pub fn installer_log_path(home: &Path) -> PathBuf {
     home.join(".paperforge").join("runtime").join("installer.log")
 }
 
+const MAX_CHECKSUMS_BYTES: usize = 512 * 1024;
+const MAX_ARCHIVE_BYTES: usize = 128 * 1024 * 1024;
+
+const CREDENTIAL_ENV_PREFIXES: &[&str] = &[
+    "PAPERFORGE_CREDENTIAL_",
+    "PADDLEOCR_",
+    "VECTOR_DB_",
+    "OPENAI_",
+    "EASYSCHOLAR_",
+    "ZOTERO_API_",
+    "ANTHROPIC_",
+    "MISTRAL_",
+];
+
+pub fn redact_log_line(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let chars: Vec<char> = line.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        // Redact URL userinfo `://user:pass@`
+        if i + 3 <= chars.len() && chars[i..i + 3] == [':', '/', '/'] {
+            out.push_str("://");
+            i += 3;
+            let rest_start = i;
+            let mut at_pos = None;
+            let mut j = i;
+            while j < chars.len() && !chars[j].is_whitespace() && chars[j] != '/' && chars[j] != '"' && chars[j] != '\'' {
+                if chars[j] == '@' {
+                    at_pos = Some(j);
+                    break;
+                }
+                j += 1;
+            }
+            if let Some(ap) = at_pos {
+                if ap > rest_start {
+                    out.push_str("<redacted>@");
+                    i = ap + 1;
+                    continue;
+                }
+            }
+            continue;
+        }
+        // Redact `Bearer <token>`
+        let rem: String = chars[i..].iter().collect();
+        let rem_lower = rem.to_ascii_lowercase();
+        if rem_lower.starts_with("bearer ") {
+            let after = &chars[i + 7..];
+            let mut k = 0;
+            while k < after.len() && after[k] == ' ' {
+                k += 1;
+            }
+            let tok_start = k;
+            while k < after.len()
+                && (after[k].is_ascii_alphanumeric()
+                    || matches!(after[k], '.' | '_' | '~' | '+' | '/' | '=' | '-'))
+            {
+                k += 1;
+            }
+            if k - tok_start >= 8 {
+                out.push_str(&rem[..7]);
+                out.push_str("<redacted>");
+                i += 7 + k;
+                continue;
+            }
+        }
+        // Redact `sk-...`, `ghp_...`, `gho_...`, `ghu_...`, `ghs_...`, `ghr_...`, `AIza...`
+        let is_token_prefix = rem.starts_with("sk-")
+            || rem.starts_with("ghp_")
+            || rem.starts_with("gho_")
+            || rem.starts_with("ghu_")
+            || rem.starts_with("ghs_")
+            || rem.starts_with("ghr_")
+            || rem.starts_with("AIza");
+        if is_token_prefix && (i == 0 || !chars[i - 1].is_ascii_alphanumeric()) {
+            let mut k = 0;
+            while i + k < chars.len()
+                && (chars[i + k].is_ascii_alphanumeric() || matches!(chars[i + k], '_' | '-'))
+            {
+                k += 1;
+            }
+            if k >= 12 {
+                out.push_str("<redacted-key>");
+                i += k;
+                continue;
+            }
+        }
+        // Redact `key=value` secret parameters
+        let mut matched_kv = false;
+        for kw in ["api_key=", "api-key=", "token=", "secret=", "password=", "authorization="] {
+            if rem_lower.starts_with(kw)
+                && (i == 0 || !(chars[i - 1].is_ascii_alphanumeric() || chars[i - 1] == '_'))
+            {
+                let mut k = kw.len();
+                while i + k < chars.len()
+                    && !chars[i + k].is_whitespace()
+                    && !matches!(chars[i + k], '&' | '"' | '\'' | ',' | ';')
+                {
+                    k += 1;
+                }
+                if k > kw.len() {
+                    out.push_str(&rem[..kw.len()]);
+                    out.push_str("<redacted>");
+                    i += k;
+                    matched_kv = true;
+                    break;
+                }
+            }
+        }
+        if matched_kv {
+            continue;
+        }
+        out.push(chars[i]);
+        i += 1;
+    }
+    out
+}
+
 fn append_log(log_path: &Path, line: &str) {
     if let Some(parent) = log_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
+    let clean = redact_log_line(line);
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(log_path) {
-        let _ = writeln!(f, "{line}");
+        let _ = writeln!(f, "{clean}");
         let _ = f.flush();
     }
 }
 
-fn http_get_bytes(url: &str, timeout_secs: u64) -> Result<Vec<u8>, String> {
-    let mut builder = ureq::AgentBuilder::new()
-        .timeout_connect(std::time::Duration::from_secs(10))
-        .timeout_read(std::time::Duration::from_secs(timeout_secs))
-        .timeout(std::time::Duration::from_secs(timeout_secs));
-    if let Ok(proxy_raw) = env::var("PAPERFORGE_PROXY")
-        .or_else(|_| env::var("HTTPS_PROXY"))
-        .or_else(|_| env::var("HTTP_PROXY"))
-    {
-        let trimmed = proxy_raw.trim();
-        if !trimmed.is_empty() {
-            if let Ok(proxy) = ureq::Proxy::new(trimmed) {
-                builder = builder.proxy(proxy);
+fn is_cancelled(cancel_flag: Option<&AtomicBool>) -> bool {
+    cancel_flag
+        .map(|f| f.load(Ordering::Relaxed))
+        .unwrap_or(false)
+}
+
+fn http_get_bytes_cancellable(
+    url: &str,
+    timeout_secs: u64,
+    max_bytes: usize,
+    cancel_flag: Option<&AtomicBool>,
+) -> Result<Vec<u8>, String> {
+    if is_cancelled(cancel_flag) {
+        return Err("Runtime job cancelled".into());
+    }
+    let url_owned = url.to_string();
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut builder = ureq::AgentBuilder::new()
+            .timeout_connect(Duration::from_secs(10))
+            .timeout_read(Duration::from_secs(timeout_secs))
+            .timeout(Duration::from_secs(timeout_secs));
+        if let Ok(proxy_raw) = env::var("PAPERFORGE_PROXY")
+            .or_else(|_| env::var("HTTPS_PROXY"))
+            .or_else(|_| env::var("HTTP_PROXY"))
+        {
+            let trimmed = proxy_raw.trim();
+            if !trimmed.is_empty() {
+                if let Ok(proxy) = ureq::Proxy::new(trimmed) {
+                    builder = builder.proxy(proxy);
+                }
+            }
+        }
+        let agent = builder.build();
+        let res = (|| -> Result<Vec<u8>, String> {
+            let resp = agent
+                .get(&url_owned)
+                .set("User-Agent", "PaperForge-Native-Daemon/2.0")
+                .call()
+                .map_err(|e| format!("HTTP error for {url_owned}: {e}"))?;
+            let mut reader = resp.into_reader().take((max_bytes as u64) + 1);
+            let mut buf = Vec::new();
+            reader
+                .read_to_end(&mut buf)
+                .map_err(|e| format!("Read body failed for {url_owned}: {e}"))?;
+            if buf.len() > max_bytes {
+                return Err(format!("Response exceeded max limit ({max_bytes} bytes) for {url_owned}"));
+            }
+            Ok(buf)
+        })();
+        let _ = tx.send(res);
+    });
+
+    loop {
+        if is_cancelled(cancel_flag) {
+            return Err("Runtime job cancelled".into());
+        }
+        match rx.recv_timeout(Duration::from_millis(50)) {
+            Ok(res) => return res,
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(format!("HTTP worker disconnected for {url}"))
             }
         }
     }
-    let agent = builder.build();
-    let resp = agent
-        .get(url)
-        .set("User-Agent", "PaperForge-Native-Daemon/2.0")
-        .call()
-        .map_err(|e| format!("HTTP error for {url}: {e}"))?;
-    let mut reader = resp.into_reader();
-    let mut buf = Vec::new();
-    reader
-        .read_to_end(&mut buf)
-        .map_err(|e| format!("Read body failed for {url}: {e}"))?;
-    Ok(buf)
+}
+
+pub fn parse_checksum_for_asset(checksums_text: &str, asset_name: &str) -> Option<String> {
+    let target = asset_name.trim();
+    if target.is_empty() {
+        return None;
+    }
+    for line in checksums_text.lines() {
+        let mut parts = line.split_whitespace();
+        let Some(hash) = parts.next() else { continue };
+        let Some(raw_name) = parts.next() else { continue };
+        let hex = hash.trim().to_ascii_lowercase();
+        if hex.len() != 64 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+            continue;
+        }
+        let fname = raw_name
+            .trim_start_matches('*')
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or("");
+        if fname == target {
+            return Some(hex);
+        }
+    }
+    None
+}
+
+pub fn is_valid_wheel_zip(bytes: &[u8]) -> bool {
+    if !bytes.starts_with(b"PK") {
+        return false;
+    }
+    let Ok(mut archive) = zip::ZipArchive::new(Cursor::new(bytes)) else {
+        return false;
+    };
+    if archive.is_empty() {
+        return false;
+    }
+    for i in 0..archive.len() {
+        let Ok(mut entry) = archive.by_index(i) else {
+            return false;
+        };
+        if std::io::copy(&mut entry, &mut std::io::sink()).is_err() {
+            return false;
+        }
+    }
+    true
+}
+
+fn candidate_release_tags(clean_tag: &str, pep440: &str) -> Vec<String> {
+    let mut tags = Vec::new();
+    for raw in [clean_tag, pep440] {
+        let t = raw.trim();
+        if !t.is_empty() && !tags.iter().any(|x| x == t) {
+            tags.push(t.to_string());
+        }
+    }
+    // Also map PEP440 `2.0.7rc1` -> SemVer `2.0.7-rc.1`
+    let lower = pep440.to_ascii_lowercase();
+    for (short, full) in [("rc", "rc"), ("a", "alpha"), ("b", "beta")] {
+        if let Some(pos) = lower.rfind(short) {
+            let prefix = &pep440[..pos];
+            let suffix = &pep440[pos + short.len()..];
+            if !prefix.is_empty()
+                && !suffix.is_empty()
+                && suffix.chars().all(|c| c.is_ascii_digit())
+            {
+                if let Ok(num) = suffix.parse::<u32>() {
+                    let sv = format!("{prefix}-{full}.{num}");
+                    if !tags.iter().any(|x| x == &sv) {
+                        tags.push(sv);
+                    }
+                }
+            }
+        }
+    }
+    tags
+}
+
+fn fetch_official_release_checksum(
+    tags: &[String],
+    asset_name: &str,
+    cancel_flag: Option<&AtomicBool>,
+) -> Option<(String, String)> {
+    // Trust anchor: checksums.txt MUST come exclusively from official github.com,
+    // NEVER from third-party mirrors (ghfast.top / gh-proxy.com).
+    for tag in tags {
+        if is_cancelled(cancel_flag) {
+            return None;
+        }
+        let url = format!("https://github.com/{GITHUB_REPO}/releases/download/{tag}/checksums.txt");
+        if let Ok(bytes) = http_get_bytes_cancellable(&url, 20, MAX_CHECKSUMS_BYTES, cancel_flag) {
+            if let Ok(txt) = std::str::from_utf8(&bytes) {
+                if let Some(sha) = parse_checksum_for_asset(txt, asset_name) {
+                    return Some((tag.clone(), sha));
+                }
+            }
+        }
+    }
+    None
 }
 
 fn prefer_cn_mirrors() -> bool {
@@ -210,7 +467,14 @@ fn extract_uv_from_targz(archive_bytes: &[u8], dest_bin: &Path) -> Result<(), St
     Err("uv binary not found inside tar.gz archive".into())
 }
 
-fn find_or_install_uv(home: &Path, log_path: &Path) -> Result<PathBuf, String> {
+fn find_or_install_uv(
+    home: &Path,
+    log_path: &Path,
+    cancel_flag: Option<&AtomicBool>,
+) -> Result<PathBuf, String> {
+    if is_cancelled(cancel_flag) {
+        return Err("Runtime job cancelled".into());
+    }
     let bin_name = if cfg!(windows) { "uv.exe" } else { "uv" };
     let local_uv = home.join(".paperforge").join("runtime").join("bin").join(bin_name);
     if local_uv.is_file() {
@@ -232,8 +496,11 @@ fn find_or_install_uv(home: &Path, log_path: &Path) -> Result<PathBuf, String> {
 
     let mut archive_bytes: Option<Vec<u8>> = None;
     for url in &urls {
+        if is_cancelled(cancel_flag) {
+            return Err("Runtime job cancelled".into());
+        }
         append_log(log_path, &format!("[PaperForge] Downloading uv ({UV_VERSION}) from {url} ..."));
-        if let Ok(bytes) = http_get_bytes(url, 60) {
+        if let Ok(bytes) = http_get_bytes_cancellable(url, 60, MAX_ARCHIVE_BYTES, cancel_flag) {
             let actual = sha256_lower(&bytes);
             if actual == expected_sha {
                 archive_bytes = Some(bytes);
@@ -246,6 +513,9 @@ fn find_or_install_uv(home: &Path, log_path: &Path) -> Result<PathBuf, String> {
         }
     }
 
+    if is_cancelled(cancel_flag) {
+        return Err("Runtime job cancelled".into());
+    }
     let bytes = archive_bytes
         .ok_or_else(|| "Failed to download and SHA-256 verify portable uv.".to_string())?;
     if let Some(parent) = local_uv.parent() {
@@ -260,17 +530,27 @@ fn find_or_install_uv(home: &Path, log_path: &Path) -> Result<PathBuf, String> {
     Ok(local_uv)
 }
 
-fn run_logged_command(
+fn run_logged_command_cancellable(
     exe: &Path,
     args: &[&str],
     envs: &[(&str, &str)],
     log_path: &Path,
+    cancel_flag: Option<&AtomicBool>,
+    active_child_pid: Option<&AtomicU32>,
 ) -> Result<(), String> {
+    if is_cancelled(cancel_flag) {
+        return Err("Runtime job cancelled".into());
+    }
     let mut cmd = Command::new(exe);
     cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    for (k, _) in env::vars() {
+        if CREDENTIAL_ENV_PREFIXES.iter().any(|p| k.starts_with(p)) {
+            cmd.env_remove(&k);
+        }
+    }
     for (k, v) in envs {
         cmd.env(k, v);
     }
@@ -279,6 +559,11 @@ fn run_logged_command(
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn {}: {e}", exe.display()))?;
+    attach_child_to_job(&child);
+    if let Some(pid_slot) = active_child_pid {
+        pid_slot.store(child.id(), Ordering::SeqCst);
+    }
+
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
     let log_err = log_path.to_path_buf();
@@ -290,21 +575,44 @@ fn run_logged_command(
             }
         }
     });
-    if let Some(pipe) = stdout {
-        let reader = BufReader::new(pipe);
-        for line in reader.lines().map_while(Result::ok) {
-            append_log(log_path, &line);
+    let log_out = log_path.to_path_buf();
+    let out_thread = std::thread::spawn(move || {
+        if let Some(pipe) = stdout {
+            let reader = BufReader::new(pipe);
+            for line in reader.lines().map_while(Result::ok) {
+                append_log(&log_out, &line);
+            }
         }
+    });
+
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(st)) => break Ok(st),
+            Ok(None) => {
+                if is_cancelled(cancel_flag) {
+                    kill_process_tree(&mut child);
+                    let _ = child.wait();
+                    break Err("Runtime job cancelled".to_string());
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Err(e) => break Err(e.to_string()),
+        }
+    };
+    if let Some(pid_slot) = active_child_pid {
+        pid_slot.store(0, Ordering::SeqCst);
     }
+    let _ = out_thread.join();
     let _ = err_thread.join();
-    let status = child.wait().map_err(|e| e.to_string())?;
-    if status.success() {
+
+    let st = status?;
+    if st.success() {
         Ok(())
     } else {
         Err(format!(
             "{} exited with code {}",
             exe.file_name().and_then(|s| s.to_str()).unwrap_or("cmd"),
-            status.code().unwrap_or(1)
+            st.code().unwrap_or(1)
         ))
     }
 }
@@ -313,6 +621,19 @@ fn run_logged_command(
 pub fn install_runtime_native<F>(
     action: &str,
     version: &str,
+    on_phase: F,
+) -> Result<PathBuf, String>
+where
+    F: Fn(&str, i64, i64),
+{
+    install_runtime_native_cancellable(action, version, None, None, on_phase)
+}
+
+pub fn install_runtime_native_cancellable<F>(
+    action: &str,
+    version: &str,
+    cancel_flag: Option<&AtomicBool>,
+    active_child_pid: Option<&AtomicU32>,
     on_phase: F,
 ) -> Result<PathBuf, String>
 where
@@ -349,7 +670,7 @@ where
 
     let res: Result<PathBuf, String> = (|| {
         on_phase("downloading_uv", 1, 5);
-        let uv_bin = find_or_install_uv(&home, &log_path)?;
+        let uv_bin = find_or_install_uv(&home, &log_path, cancel_flag)?;
 
         let cache_str = cache_dir.to_string_lossy().into_owned();
         let py_dir_str = py_dir.to_string_lossy().into_owned();
@@ -375,7 +696,17 @@ where
         let mut py_ok = false;
         let mut py_err = String::new();
         for env_set in py_attempts {
-            match run_logged_command(&uv_bin, &["python", "install", "3.12"], env_set, &log_path) {
+            if is_cancelled(cancel_flag) {
+                return Err("Runtime job cancelled".into());
+            }
+            match run_logged_command_cancellable(
+                &uv_bin,
+                &["python", "install", "3.12"],
+                env_set,
+                &log_path,
+                cancel_flag,
+                active_child_pid,
+            ) {
                 Ok(()) => {
                     py_ok = true;
                     break;
@@ -390,11 +721,13 @@ where
         }
 
         let boot_str = boot_dir.to_string_lossy().into_owned();
-        run_logged_command(
+        run_logged_command_cancellable(
             &uv_bin,
             &["venv", "--clear", "--python", "3.12", &boot_str],
             &base_envs,
             &log_path,
+            cancel_flag,
+            active_child_pid,
         )?;
         let boot_py = if cfg!(windows) {
             boot_dir.join("Scripts").join("python.exe")
@@ -407,19 +740,75 @@ where
         if !pep440.is_empty() && !clean_tag.is_empty() {
             let wheel_name = format!("paperforge-{pep440}-py3-none-any.whl");
             let wheel_file = wheel_dir.join(&wheel_name);
+            let tags = candidate_release_tags(clean_tag, &pep440);
+            let official_checksum =
+                fetch_official_release_checksum(&tags, &wheel_name, cancel_flag);
+
+            if wheel_file.is_file() {
+                let valid_cached = fs::read(&wheel_file)
+                    .ok()
+                    .is_some_and(|existing| {
+                        is_valid_wheel_zip(&existing)
+                            && official_checksum
+                                .as_ref()
+                                .is_some_and(|(_, exp)| sha256_lower(&existing) == *exp)
+                    });
+                if !valid_cached {
+                    append_log(
+                        &log_path,
+                        &format!("[PaperForge] Removing unverified or corrupt cached wheel {wheel_name}"),
+                    );
+                    let _ = fs::remove_file(&wheel_file);
+                }
+            }
+
             if !wheel_file.is_file() {
-                let w_direct = format!("https://github.com/{GITHUB_REPO}/releases/download/{clean_tag}/{wheel_name}");
-                for wu in github_candidate_urls(&w_direct) {
-                    append_log(&log_path, &format!("[PaperForge] Downloading wheel {wu} ..."));
-                    if let Ok(bytes) = http_get_bytes(&wu, 60) {
-                        if bytes.starts_with(b"PK") && atomic_write_bytes(&wheel_file, &bytes).is_ok() {
-                            break;
+                if let Some((verified_tag, expected_sha)) = official_checksum {
+                    let w_direct = format!(
+                        "https://github.com/{GITHUB_REPO}/releases/download/{verified_tag}/{wheel_name}"
+                    );
+                    for wu in github_candidate_urls(&w_direct) {
+                        if is_cancelled(cancel_flag) {
+                            return Err("Runtime job cancelled".into());
+                        }
+                        append_log(&log_path, &format!("[PaperForge] Downloading wheel {wu} ..."));
+                        if let Ok(bytes) =
+                            http_get_bytes_cancellable(&wu, 60, MAX_ARCHIVE_BYTES, cancel_flag)
+                        {
+                            let actual_sha = sha256_lower(&bytes);
+                            if actual_sha != expected_sha {
+                                append_log(
+                                    &log_path,
+                                    &format!(
+                                        "[PaperForge] Wheel SHA-256 mismatch for {wu}: got {actual_sha}, want {expected_sha}"
+                                    ),
+                                );
+                                continue;
+                            }
+                            if !is_valid_wheel_zip(&bytes) {
+                                append_log(
+                                    &log_path,
+                                    &format!("[PaperForge] Wheel ZIP integrity check failed for {wu}"),
+                                );
+                                continue;
+                            }
+                            if atomic_write_bytes(&wheel_file, &bytes).is_ok() {
+                                break;
+                            }
                         }
                     }
+                } else {
+                    append_log(
+                        &log_path,
+                        "[PaperForge] Authoritative GitHub checksums.txt unavailable; skipping wheel pre-cache.",
+                    );
                 }
             }
         }
 
+        if is_cancelled(cancel_flag) {
+            return Err("Runtime job cancelled".into());
+        }
         on_phase("installing_paperforge", 4, 5);
         append_log(&log_path, &format!("[PaperForge] Installing {spec} ..."));
         let has_wheels = fs::read_dir(&wheel_dir)
@@ -445,6 +834,9 @@ where
         };
         let mut installed = false;
         for idx in mirrors {
+            if is_cancelled(cancel_flag) {
+                return Err("Runtime job cancelled".into());
+            }
             let mut args: Vec<&str> = vec!["pip", "install", "--python", &boot_py_str, "--upgrade"];
             if has_wheels {
                 args.push("--find-links");
@@ -455,7 +847,16 @@ where
                 args.push(idx);
             }
             args.push(&spec);
-            if run_logged_command(&uv_bin, &args, &base_envs, &log_path).is_ok() {
+            if run_logged_command_cancellable(
+                &uv_bin,
+                &args,
+                &base_envs,
+                &log_path,
+                cancel_flag,
+                active_child_pid,
+            )
+            .is_ok()
+            {
                 installed = true;
                 break;
             }
@@ -464,7 +865,11 @@ where
             return Err("uv pip install failed across default and mirror indexes.".into());
         }
 
+        if is_cancelled(cancel_flag) {
+            return Err("Runtime job cancelled".into());
+        }
         on_phase("verifying_runtime", 5, 5);
+        append_log(&log_path, "[PaperForge] Publishing verified runtime environment...");
         let expected_ver = if pep440.is_empty() {
             version.trim()
         } else {
@@ -475,7 +880,25 @@ where
             rt_args.push("--expected-version");
             rt_args.push(expected_ver);
         }
-        run_logged_command(&boot_py, &rt_args, &base_envs, &log_path)?;
+        let step5_envs: Vec<(&str, &str)> = if has_wheels {
+            vec![
+                ("UV_CACHE_DIR", cache_str.as_str()),
+                ("UV_PYTHON_INSTALL_DIR", py_dir_str.as_str()),
+                ("UV_LINK_MODE", "hardlink"),
+                ("UV_PYTHON_DOWNLOADS", "automatic"),
+                ("PAPERFORGE_NO_GITHUB_WHEEL", "1"),
+            ]
+        } else {
+            base_envs.to_vec()
+        };
+        run_logged_command_cancellable(
+            &boot_py,
+            &rt_args,
+            &step5_envs,
+            &log_path,
+            cancel_flag,
+            active_child_pid,
+        )?;
         Ok(log_path.clone())
     })();
 

@@ -10,7 +10,9 @@
 
 use crate::brief::{build_agent_brief, discover_vault_from_cwd, query_library_filtered};
 use crate::config_ops::{load_canonical_config, pf_err, pf_ok, strip_verbatim_prefix, PF_VERSION};
-use crate::platform::{atomic_write_bytes, now_unix_secs};
+use crate::platform::{
+    atomic_write_bytes, attach_child_to_job, is_pid_alive, kill_process_tree, now_unix_secs,
+};
 use crate::query_ops::{resolve_engine_dir, try_handle_search_cli};
 use crate::supervisor::NativeControlDaemon;
 use serde_json::{json, Map, Value};
@@ -18,8 +20,10 @@ use sha2::{Digest, Sha256};
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::mpsc;
+use std::time::Duration;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FramingMode {
@@ -70,12 +74,12 @@ pub fn resolve_stable_binary_path(explicit_override: Option<&Path>) -> PathBuf {
         }
     }
     if let Some(meta_path) = daemon_meta_file_path() {
-        if let Ok(raw) = fs::read_to_string(&meta_path) {
-            if let Ok(val) = serde_json::from_str::<Value>(&raw) {
-                if let Some(bp) = val.get("binaryPath").and_then(|v| v.as_str()) {
-                    let p = PathBuf::from(bp);
-                    if p.is_file() {
-                        return strip_verbatim_prefix(&p);
+        if let Some(bin_dir) = meta_path.parent() {
+            if let Ok(raw) = fs::read_to_string(&meta_path) {
+                if let Ok(val) = serde_json::from_str::<Value>(&raw) {
+                    if let Some(verified) = validate_meta_binary_for_reexec(bin_dir, &val, PF_VERSION)
+                    {
+                        return strip_verbatim_prefix(&verified);
                     }
                 }
             }
@@ -86,37 +90,146 @@ pub fn resolve_stable_binary_path(explicit_override: Option<&Path>) -> PathBuf {
         .unwrap_or_else(|_| PathBuf::from("paperforge-daemon"))
 }
 
-fn parse_semver_core(raw: &str) -> Option<(u64, u64, u64, String)> {
+fn parse_semver_precedence(raw: &str) -> Option<(u64, u64, u64, i8, u64, u64, String)> {
     let trimmed = raw.trim().trim_start_matches(['v', 'V']);
     if trimmed.is_empty() {
         return None;
     }
-    let (core, pre) = match trimmed.split_once('-') {
-        Some((c, p)) => (c, p.to_string()),
-        None => (trimmed, String::new()),
+    // Split optional `.postN`
+    let (without_post, post_num) = if let Some((left, right)) = trimmed.rsplit_once(".post") {
+        if !right.is_empty() && right.bytes().all(|b| b.is_ascii_digit()) {
+            (left, right.parse::<u64>().ok()?)
+        } else {
+            (trimmed, 0)
+        }
+    } else {
+        (trimmed, 0)
     };
+
+    // Split core and optional pre-release (either `2.0.6-rc.1` or PEP440 `2.0.6rc1`)
+    let (core, pre_raw) = if let Some((c, p)) = without_post.split_once('-') {
+        (c, p.to_string())
+    } else {
+        let lower = without_post.to_ascii_lowercase();
+        let mut split_idx = None;
+        for marker in ["alpha", "beta", "rc", "a", "b"] {
+            if let Some(pos) = lower.find(marker) {
+                if pos > 0 && without_post[..pos].ends_with(|ch: char| ch.is_ascii_digit()) {
+                    split_idx = Some(pos);
+                    break;
+                }
+            }
+        }
+        match split_idx {
+            Some(pos) => (&without_post[..pos], without_post[pos..].to_string()),
+            None => (without_post, String::new()),
+        }
+    };
+
     let mut parts = core.split('.');
     let major = parts.next()?.parse::<u64>().ok()?;
     let minor = parts.next().unwrap_or("0").parse::<u64>().ok()?;
     let patch = parts.next().unwrap_or("0").parse::<u64>().ok()?;
-    Some((major, minor, patch, pre))
+    if parts.next().is_some() {
+        return None;
+    }
+
+    if pre_raw.is_empty() {
+        return Some((major, minor, patch, 0, 0, post_num, String::new()));
+    }
+
+    let pre_lower = pre_raw.trim().to_ascii_lowercase();
+    let (stage_rank, rest) = if let Some(r) = pre_lower.strip_prefix("alpha") {
+        (-3i8, r)
+    } else if let Some(r) = pre_lower.strip_prefix("beta") {
+        (-2i8, r)
+    } else if let Some(r) = pre_lower.strip_prefix("rc") {
+        (-1i8, r)
+    } else if let Some(r) = pre_lower.strip_prefix('a') {
+        (-3i8, r)
+    } else if let Some(r) = pre_lower.strip_prefix('b') {
+        (-2i8, r)
+    } else {
+        (-4i8, pre_lower.as_str())
+    };
+    let num_str = rest.trim_start_matches(['.', '-']);
+    let stage_num = if !num_str.is_empty() && num_str.bytes().all(|b| b.is_ascii_digit()) {
+        num_str.parse::<u64>().unwrap_or(0)
+    } else {
+        0
+    };
+    Some((major, minor, patch, stage_rank, stage_num, post_num, pre_lower))
 }
 
 pub fn is_meta_tag_compatible_for_reexec(meta_tag: &str, current_version: &str) -> bool {
-    let Some((maj_m, min_m, pat_m, _)) = parse_semver_core(meta_tag) else {
-        return true;
+    let Some(m) = parse_semver_precedence(meta_tag) else {
+        return false;
     };
-    let Some((maj_c, min_c, pat_c, _)) = parse_semver_core(current_version) else {
-        return true;
+    let Some(c) = parse_semver_precedence(current_version) else {
+        return false;
     };
-    (maj_m, min_m, pat_m) >= (maj_c, min_c, pat_c)
+    m >= c
+}
+
+/// Validate `.daemon-meta.json` `binaryPath`:
+/// 1. `tag` is present and `>= current_version` (rejecting pre-release downgrades).
+/// 2. `sha256` is a valid 64-hex digest matching the on-disk file bytes.
+/// 3. `binaryPath` canonicalizes strictly inside `managed_bin_dir` (no symlink/traversal escape)
+///    and its file name starts with `paperforge-daemon`.
+pub fn validate_meta_binary_for_reexec(
+    managed_bin_dir: &Path,
+    meta_val: &Value,
+    current_version: &str,
+) -> Option<PathBuf> {
+    let tag = meta_val.get("tag").and_then(|v| v.as_str()).unwrap_or("").trim();
+    if tag.is_empty() || !is_meta_tag_compatible_for_reexec(tag, current_version) {
+        return None;
+    }
+    let expected_sha = meta_val
+        .get("sha256")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    if expected_sha.len() != 64 || !expected_sha.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let bp = meta_val.get("binaryPath").and_then(|v| v.as_str())?.trim();
+    if bp.is_empty() {
+        return None;
+    }
+    let target = PathBuf::from(bp);
+    if !target.is_file() {
+        return None;
+    }
+    let bin_canon = strip_verbatim_prefix(&fs::canonicalize(managed_bin_dir).ok()?);
+    let tgt_canon = strip_verbatim_prefix(&fs::canonicalize(&target).ok()?);
+    if tgt_canon.parent() != Some(bin_canon.as_path()) {
+        return None;
+    }
+    let fname = tgt_canon
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if !fname.starts_with("paperforge-daemon") {
+        return None;
+    }
+    let bytes = fs::read(&tgt_canon).ok()?;
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    let actual_sha = format!("{:x}", hasher.finalize());
+    if actual_sha != expected_sha {
+        return None;
+    }
+    Some(tgt_canon)
 }
 
 /// When invoked via the stable shim `~/.paperforge/bin/paperforge-daemon(.exe)` while
 /// `.daemon-meta.json` points to an equal-or-newer versioned binary in the same
 /// managed bin dir, transparently forward execution with `PAPERFORGE_DAEMON_NO_REEXEC=1`
-/// (prevents loops, never hijacks explicit `cargo`/`--binary` invocations, and never
-/// downgrades to an older binary version).
+/// (prevents loops, never hijacks explicit `cargo`/`--binary` invocations, never
+/// downgrades to an older/pre-release binary, and verifies containment + SHA-256).
 pub fn maybe_reexec_latest_binary(raw_args: &[String]) -> Option<i32> {
     if env::var("PAPERFORGE_DAEMON_NO_REEXEC")
         .map(|v| v.trim() == "1")
@@ -126,38 +239,29 @@ pub fn maybe_reexec_latest_binary(raw_args: &[String]) -> Option<i32> {
     }
     let stable = stable_daemon_bin_path()?;
     let cur = env::current_exe().ok()?;
-    let stable_canon = fs::canonicalize(&stable).unwrap_or(stable);
-    let cur_canon = fs::canonicalize(&cur).unwrap_or(cur);
+    let stable_canon = strip_verbatim_prefix(&fs::canonicalize(&stable).unwrap_or(stable.clone()));
+    let cur_canon = strip_verbatim_prefix(&fs::canonicalize(&cur).unwrap_or(cur));
     if cur_canon != stable_canon {
         return None;
     }
 
     let meta_path = daemon_meta_file_path()?;
+    let bin_dir = meta_path.parent()?;
     let raw = fs::read_to_string(&meta_path).ok()?;
     let val: Value = serde_json::from_str(&raw).ok()?;
-    let tag = val.get("tag").and_then(|v| v.as_str()).unwrap_or("");
-    if !tag.is_empty() && !is_meta_tag_compatible_for_reexec(tag, PF_VERSION) {
-        return None;
-    }
-    let bp = val.get("binaryPath").and_then(|v| v.as_str())?.trim();
-    if bp.is_empty() {
-        return None;
-    }
-    let target = PathBuf::from(bp);
-    if !target.is_file() {
-        return None;
-    }
-    let tgt_canon = fs::canonicalize(&target).unwrap_or_else(|_| target.clone());
+    let tgt_canon = validate_meta_binary_for_reexec(bin_dir, &val, PF_VERSION)?;
     if cur_canon == tgt_canon {
         return None;
     }
-    let mut cmd = Command::new(&target);
+    let mut cmd = Command::new(&tgt_canon);
     cmd.args(raw_args)
         .env("PAPERFORGE_DAEMON_NO_REEXEC", "1")
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
-    match cmd.status() {
+    let mut child = cmd.spawn().ok()?;
+    attach_child_to_job(&child);
+    match child.wait() {
         Ok(st) => Some(st.code().unwrap_or(0)),
         Err(_) => None,
     }
@@ -448,14 +552,20 @@ fn collect_skill_files(root: &Path, dir: &Path, out: &mut Vec<(String, PathBuf)>
     };
     for entry in rd.flatten() {
         let p = entry.path();
+        let Ok(meta) = fs::symlink_metadata(&p) else {
+            continue;
+        };
+        if meta.file_type().is_symlink() {
+            continue;
+        }
         let name = entry.file_name();
         let name_str = name.to_string_lossy();
         if name_str == "__pycache__" {
             continue;
         }
-        if p.is_dir() {
+        if meta.is_dir() {
             collect_skill_files(root, &p, out);
-        } else if p.is_file() {
+        } else if meta.is_file() {
             if name_str.to_ascii_lowercase().ends_with(".pyc") {
                 continue;
             }
@@ -503,15 +613,66 @@ pub fn skill_tree_digest(root: &Path) -> Option<String> {
 }
 
 fn is_link_to_dir(dst: &Path, hub: &Path) -> bool {
-    if let Ok(meta) = fs::symlink_metadata(dst) {
-        if meta.file_type().is_symlink() {
-            return true;
-        }
-    }
     match (fs::canonicalize(dst), fs::canonicalize(hub)) {
-        (Ok(a), Ok(b)) => a == b && dst != hub,
+        (Ok(a), Ok(b)) => {
+            let a_clean = strip_verbatim_prefix(&a);
+            let b_clean = strip_verbatim_prefix(&b);
+            a_clean == b_clean && strip_verbatim_prefix(dst) != b_clean
+        }
         _ => false,
     }
+}
+
+fn is_symlink_or_reparse(p: &Path) -> bool {
+    fs::symlink_metadata(p)
+        .map(|m| m.file_type().is_symlink())
+        .unwrap_or(false)
+}
+
+fn is_known_skill_parent(parent: &Path) -> bool {
+    let pname = parent
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    pname == "skills" || pname.ends_with("_skills") || pname.ends_with("-skills") || pname == ".skills"
+}
+
+fn is_safe_registered_skill_dir(dst: &Path, hub: &Path) -> Result<(), String> {
+    if !dst.is_absolute() {
+        return Err("skill_dir must be an absolute path".into());
+    }
+    if dst.components().any(|c| matches!(c, Component::ParentDir)) {
+        return Err("skill_dir must not contain '..' segments".into());
+    }
+    if dst.file_name().and_then(|n| n.to_str()) != Some("paperforge") {
+        return Err("skill_dir leaf directory must be named 'paperforge'".into());
+    }
+    let Some(parent) = dst.parent() else {
+        return Err("skill_dir must have a parent skills directory".into());
+    };
+    if parent.parent().is_none() {
+        return Err("skill_dir cannot sit directly at filesystem root".into());
+    }
+    if let Some(home) = user_home_dir() {
+        let home_canon = strip_verbatim_prefix(&fs::canonicalize(&home).unwrap_or(home));
+        let parent_canon = strip_verbatim_prefix(&fs::canonicalize(parent).unwrap_or_else(|_| parent.to_path_buf()));
+        if parent_canon == home_canon {
+            return Err("skill_dir cannot sit directly under user home directory".into());
+        }
+    }
+    if !is_known_skill_parent(parent) && !dst.join("SKILL.md").is_file() {
+        return Err("skill_dir is outside known agent skills locations".into());
+    }
+    if is_symlink_or_reparse(dst) && !is_link_to_dir(dst, hub) {
+        return Err("Refusing symlink pointing outside Skill Hub".into());
+    }
+    if let (Ok(dc), Ok(hc)) = (fs::canonicalize(dst), fs::canonicalize(hub)) {
+        if strip_verbatim_prefix(&dc) == strip_verbatim_prefix(&hc) && !is_link_to_dir(dst, hub) {
+            return Err("skill_dir cannot alias Skill Hub itself".into());
+        }
+    }
+    Ok(())
 }
 
 fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
@@ -519,10 +680,14 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
     for entry in fs::read_dir(src)? {
         let entry = entry?;
         let sp = entry.path();
+        let meta = fs::symlink_metadata(&sp)?;
+        if meta.file_type().is_symlink() {
+            continue;
+        }
         let dp = dst.join(entry.file_name());
-        if sp.is_dir() {
+        if meta.is_dir() {
             copy_dir_recursive(&sp, &dp)?;
-        } else if sp.is_file() {
+        } else if meta.is_file() {
             fs::copy(&sp, &dp)?;
         }
     }
@@ -629,23 +794,32 @@ pub fn sync_all_registered_installs_with_paths(hub: &Path, reg_path: &Path) -> V
             continue;
         }
 
+        if let Err(reason) = is_safe_registered_skill_dir(&dst, hub) {
+            errors.push(format!("{raw_dir}: {reason}"));
+            next_installs.push(Value::Object(obj));
+            continue;
+        }
+
         let recorded = obj
             .get("last_synced_digest")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
-        let mode = obj
-            .get("link_mode")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
 
-        if is_link_to_dir(&dst, hub) || mode == "link" {
+        if is_link_to_dir(&dst, hub) {
             obj.insert("link_mode".into(), json!("link"));
             obj.insert("last_synced_digest".into(), json!(hub_digest));
             up_to_date += 1;
             next_installs.push(Value::Object(obj));
             continue;
+        }
+        if is_symlink_or_reparse(&dst) {
+            errors.push(format!("{raw_dir}: Refusing symlink pointing outside Skill Hub"));
+            next_installs.push(Value::Object(obj));
+            continue;
+        }
+        if obj.get("link_mode").and_then(|v| v.as_str()) == Some("link") {
+            obj.insert("link_mode".into(), json!("copy"));
         }
 
         let cur_digest = skill_tree_digest(&dst).unwrap_or_default();
@@ -735,6 +909,22 @@ pub fn handle_agent_onboarding(
         "\"{bin_str}\" mcp-check --vault \"{vault_str}\" --skill-dir \"<SKILL_DIR>\" --mcp-config \"<MCP_CONFIG_PATH>\" --register --probe-mcp --json"
     );
 
+    let skill_source_exists = skill_src_opt.is_some();
+    let prereq_zh = if skill_source_exists {
+        String::new()
+    } else {
+        format!(
+            "\n> **前置提示（官方 Skill 源目录尚未生成）**：`{skill_src_str}` 当前不存在（`skill_source_exists: false`）。请勿直接对不存在的目录创建符号链接/Junction；请先运行 `\"{bin_str}\" install-runtime`（或先在 Obsidian 设置中完成运行环境安装）以自动释放官方 Skill 源目录，再执行下方第 2 步。\n"
+        )
+    };
+    let prereq_en = if skill_source_exists {
+        String::new()
+    } else {
+        format!(
+            "\n> **Prerequisite (`skill_source_exists: false`)**: `{skill_src_str}` does not exist yet. Do NOT create a symlink/Junction to a missing target; first run `\"{bin_str}\" install-runtime` (or complete runtime setup in Obsidian Settings) to populate the canonical Skill Hub before executing Step 2.\n"
+        )
+    };
+
     let prompt = if is_zh {
         format!(
             "请为当前 Agent 环境配置 PaperForge 研究记忆配套设施（**不要往用户的 Obsidian Vault 根目录写入 `.agents/` 或 `.mcp.json` 等杂项文件**，优先安装到你自身平台的原生全局/工作区目录）：\n\n\
@@ -742,7 +932,7 @@ pub fn handle_agent_onboarding(
 - Vault 路径：`{vault_str}`\n\
 - MCP 稳定入口：`{bin_str}`\n\
 - MCP 启动参数：`[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\
-- 官方 Skill 源目录：`{skill_src_str}`\n\n\
+- 官方 Skill 源目录：`{skill_src_str}`{prereq_zh}\n\n\
 ### 请按以下 3 步完成安装并做端到端自检\n\
 1. **接入 `paperforge` MCP 服务**：按你自身平台的原生配置格式（如 Claude/Cursor/Antigravity 的 `mcpServers` JSON、OpenCode 的 `mcp` JSON、Codex 的 `[mcp_servers.paperforge]` TOML 等），非破坏性地合并添加名为 `paperforge` 的 stdio 服务，严禁覆盖用户已有其他 MCP 服务。\n\
 2. **安装 PaperForge Skill**：将上方 `官方 Skill 源目录` 链接或复制到你自身原生识别的全局 skills 目录（优先用符号链接/Windows NTFS Junction `New-Item -ItemType Junction -Path \"<你的skills目录>\\paperforge\" -Target \"{skill_src_str}\"`，无需管理员权限即可随软件升级自动同步；若复制完整目录也支持自动更新）。\n\
@@ -761,7 +951,7 @@ pub fn handle_agent_onboarding(
 - Vault path: `{vault_str}`\n\
 - Stable MCP binary: `{bin_str}`\n\
 - MCP args: `[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\
-- Canonical Skill source: `{skill_src_str}`\n\n\
+- Canonical Skill source: `{skill_src_str}`{prereq_en}\n\n\
 ### Execute these 3 steps and verify\n\
 1. **Register the `paperforge` stdio MCP server** in your harness's native config (`mcpServers` JSON, OpenCode `mcp` JSON, or Codex `[mcp_servers.paperforge]` TOML) without overwriting existing servers.\n\
 2. **Install the PaperForge Skill** from the Canonical Skill source above into your native skills directory (prefer symlink or Windows NTFS Junction `New-Item -ItemType Junction -Path \"<skills_dir>\\paperforge\" -Target \"{skill_src_str}\"` for zero-touch live updates; full directory copy is also auto-synced).\n\
@@ -797,18 +987,203 @@ struct McpCheckResult {
     format: &'static str,
 }
 
+fn strip_toml_comment_quote_aware(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut in_double = false;
+    let mut in_single = false;
+    let mut escaped = false;
+    for ch in line.chars() {
+        if in_double {
+            out.push(ch);
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_double = false;
+            }
+        } else if in_single {
+            out.push(ch);
+            if ch == '\'' {
+                in_single = false;
+            }
+        } else {
+            match ch {
+                '#' => break,
+                '"' => {
+                    in_double = true;
+                    out.push(ch);
+                }
+                '\'' => {
+                    in_single = true;
+                    out.push(ch);
+                }
+                _ => out.push(ch),
+            }
+        }
+    }
+    out
+}
+
+fn unquote_toml_string(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.starts_with('"') && trimmed.ends_with('"') && trimmed.len() >= 2 {
+        let inner = &trimmed[1..trimmed.len() - 1];
+        let mut out = String::with_capacity(inner.len());
+        let mut chars = inner.chars();
+        while let Some(ch) = chars.next() {
+            if ch == '\\' {
+                match chars.next() {
+                    Some('\\') => out.push('\\'),
+                    Some('"') => out.push('"'),
+                    Some('n') => out.push('\n'),
+                    Some('t') => out.push('\t'),
+                    Some('r') => out.push('\r'),
+                    Some(other) => {
+                        out.push('\\');
+                        out.push(other);
+                    }
+                    None => out.push('\\'),
+                }
+            } else {
+                out.push(ch);
+            }
+        }
+        return out;
+    }
+    if trimmed.starts_with('\'') && trimmed.ends_with('\'') && trimmed.len() >= 2 {
+        return trimmed[1..trimmed.len() - 1].to_string();
+    }
+    trimmed.to_string()
+}
+
+fn parse_toml_string_array(raw: &str) -> Vec<String> {
+    let mut items = Vec::new();
+    let trimmed = raw.trim();
+    let Some(start) = trimmed.find('[') else {
+        return items;
+    };
+    let Some(end) = trimmed.rfind(']') else {
+        return items;
+    };
+    if end <= start {
+        return items;
+    }
+    let body = &trimmed[start + 1..end];
+    let mut chars = body.chars().peekable();
+    while let Some(&ch) = chars.peek() {
+        if ch == '"' {
+            let mut raw_str = String::from("\"");
+            chars.next();
+            let mut escaped = false;
+            for c in chars.by_ref() {
+                raw_str.push(c);
+                if escaped {
+                    escaped = false;
+                } else if c == '\\' {
+                    escaped = true;
+                } else if c == '"' {
+                    break;
+                }
+            }
+            items.push(unquote_toml_string(&raw_str));
+        } else if ch == '\'' {
+            let mut raw_str = String::from("'");
+            chars.next();
+            for c in chars.by_ref() {
+                raw_str.push(c);
+                if c == '\'' {
+                    break;
+                }
+            }
+            items.push(unquote_toml_string(&raw_str));
+        } else {
+            chars.next();
+        }
+    }
+    items
+}
+
+fn bracket_delta_outside_quotes(s: &str) -> i32 {
+    let mut delta = 0i32;
+    let mut in_double = false;
+    let mut in_single = false;
+    let mut escaped = false;
+    for ch in s.chars() {
+        if in_double {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_double = false;
+            }
+        } else if in_single {
+            if ch == '\'' {
+                in_single = false;
+            }
+        } else {
+            match ch {
+                '"' => in_double = true,
+                '\'' => in_single = true,
+                '[' => delta += 1,
+                ']' => delta -= 1,
+                _ => {}
+            }
+        }
+    }
+    delta
+}
+
+fn is_toml_paperforge_section(header: &str) -> bool {
+    let norm: String = header
+        .split('.')
+        .map(|seg| {
+            let t = seg.trim();
+            if (t.starts_with('"') && t.ends_with('"') && t.len() >= 2)
+                || (t.starts_with('\'') && t.ends_with('\'') && t.len() >= 2)
+            {
+                &t[1..t.len() - 1]
+            } else {
+                t
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(".");
+    norm == "mcp_servers.paperforge"
+}
+
 fn parse_toml_paperforge_section(raw: &str) -> McpCheckResult {
     let mut in_section = false;
     let mut cmd = String::new();
     let mut args_raw = String::new();
+    let mut pending_key: Option<String> = None;
+    let mut pending_val = String::new();
+    let mut bracket_depth: i32 = 0;
+
     for raw_line in raw.lines() {
-        let line = raw_line.split('#').next().unwrap_or("").trim();
+        let clean = strip_toml_comment_quote_aware(raw_line);
+        let line = clean.trim();
         if line.is_empty() {
+            continue;
+        }
+        if let Some(ref pkey) = pending_key {
+            pending_val.push(' ');
+            pending_val.push_str(line);
+            bracket_depth += bracket_delta_outside_quotes(line);
+            if bracket_depth <= 0 {
+                if pkey == "args" {
+                    args_raw = std::mem::take(&mut pending_val);
+                }
+                pending_key = None;
+                pending_val.clear();
+                bracket_depth = 0;
+            }
             continue;
         }
         if line.starts_with('[') && line.ends_with(']') {
             let sec = line[1..line.len() - 1].trim();
-            in_section = sec == "mcp_servers.paperforge";
+            in_section = is_toml_paperforge_section(sec);
             continue;
         }
         if !in_section {
@@ -818,21 +1193,28 @@ fn parse_toml_paperforge_section(raw: &str) -> McpCheckResult {
             let key = k.trim();
             let val = v.trim();
             if key == "command" {
-                let unq = val.trim_matches('"').trim_matches('\'');
-                cmd = unq.replace("\\\\", "\\").replace("\\\"", "\"");
+                cmd = unquote_toml_string(val);
             } else if key == "args" {
-                args_raw = val.to_string();
+                let depth = bracket_delta_outside_quotes(val);
+                if depth > 0 {
+                    pending_key = Some("args".to_string());
+                    pending_val = val.to_string();
+                    bracket_depth = depth;
+                } else {
+                    args_raw = val.to_string();
+                }
             }
         }
     }
     if cmd.is_empty() && args_raw.is_empty() {
         return McpCheckResult::default();
     }
+    let parsed_args = parse_toml_string_array(&args_raw);
     McpCheckResult {
         configured: true,
         binary_valid: !cmd.is_empty() && Path::new(&cmd).is_file(),
         configured_cmd: cmd,
-        args_ok: args_raw.contains("--mcp"),
+        args_ok: parsed_args.iter().any(|a| a == "--mcp"),
         format: "toml",
     }
 }
@@ -897,6 +1279,83 @@ fn normalize_installed_skill_dir(candidate: &Path) -> Option<PathBuf> {
         return Some(strip_verbatim_prefix(&nested));
     }
     None
+}
+
+fn probe_configured_mcp_binary(cmd_path: &Path, vault: &Path) -> (bool, usize) {
+    let mut cmd = Command::new(cmd_path);
+    cmd.args(["--mcp", "--vault"])
+        .arg(vault)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    let Ok(mut child) = cmd.spawn() else {
+        return (false, 0);
+    };
+    attach_child_to_job(&child);
+    if let Some(mut sin) = child.stdin.take() {
+        let init_line = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "protocolVersion": "2025-03-26" }
+        })
+        .to_string();
+        let tools_line = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list"
+        })
+        .to_string();
+        let _ = writeln!(sin, "{init_line}");
+        let _ = writeln!(sin, "{tools_line}");
+        let _ = sin.flush();
+        drop(sin);
+    }
+
+    let stdout_pipe = child.stdout.take();
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut init_ok = false;
+        let mut tool_len = 0usize;
+        if let Some(pipe) = stdout_pipe {
+            let mut reader = BufReader::new(pipe);
+            for _ in 0..4 {
+                match read_next_mcp_message(&mut reader) {
+                    Ok(Some((msg, _))) => {
+                        let id = msg.get("id").and_then(|v| v.as_i64());
+                        if id == Some(1) && msg.get("result").is_some() {
+                            init_ok = true;
+                        } else if id == Some(2) {
+                            tool_len = msg
+                                .get("result")
+                                .and_then(|r| r.get("tools"))
+                                .and_then(|t| t.as_array())
+                                .map(|a| a.len())
+                                .unwrap_or(0);
+                        }
+                        if init_ok && tool_len > 0 {
+                            break;
+                        }
+                    }
+                    _ => break,
+                }
+            }
+        }
+        let _ = tx.send((init_ok, tool_len));
+    });
+
+    let res = match rx.recv_timeout(Duration::from_secs(5)) {
+        Ok((init_ok, tool_len)) => {
+            let _ = child.wait();
+            (init_ok && tool_len == 7, tool_len)
+        }
+        Err(_) => {
+            kill_process_tree(&mut child);
+            let _ = child.wait();
+            (false, 0)
+        }
+    };
+    res
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -994,30 +1453,44 @@ pub fn handle_mcp_check_with_options(
             .and_then(|v| v.as_bool())
             == Some(true);
 
-    // Optional live MCP JSON-RPC handshake probe
+    // Optional live MCP JSON-RPC handshake probe (spawns configured_cmd when configured)
     let mut mcp_handshake_ok: Option<bool> = None;
     let mut mcp_tool_count: Option<usize> = None;
     if probe_mcp {
-        let daemon = NativeControlDaemon::new(None, None);
-        let init_r = process_mcp_message(
-            &daemon,
-            Some(&clean_vault),
-            &json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-03-26" } }),
-        );
-        let tools_r = process_mcp_message(
-            &daemon,
-            Some(&clean_vault),
-            &json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }),
-        );
-        let tool_len = tools_r
-            .as_ref()
-            .and_then(|v| v.get("result"))
-            .and_then(|r| r.get("tools"))
-            .and_then(|t| t.as_array())
-            .map(|a| a.len())
-            .unwrap_or(0);
-        mcp_tool_count = Some(tool_len);
-        mcp_handshake_ok = Some(init_r.is_some() && tool_len == 7);
+        if mcp_res.configured {
+            if !mcp_res.binary_valid {
+                mcp_handshake_ok = Some(false);
+                mcp_tool_count = Some(0);
+            } else {
+                let (ok, cnt) = probe_configured_mcp_binary(
+                    Path::new(&mcp_res.configured_cmd),
+                    &clean_vault,
+                );
+                mcp_handshake_ok = Some(ok);
+                mcp_tool_count = Some(cnt);
+            }
+        } else {
+            let daemon = NativeControlDaemon::new(None, None);
+            let init_r = process_mcp_message(
+                &daemon,
+                Some(&clean_vault),
+                &json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-03-26" } }),
+            );
+            let tools_r = process_mcp_message(
+                &daemon,
+                Some(&clean_vault),
+                &json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }),
+            );
+            let tool_len = tools_r
+                .as_ref()
+                .and_then(|v| v.get("result"))
+                .and_then(|r| r.get("tools"))
+                .and_then(|t| t.as_array())
+                .map(|a| a.len())
+                .unwrap_or(0);
+            mcp_tool_count = Some(tool_len);
+            mcp_handshake_ok = Some(init_r.is_some() && tool_len == 7);
+        }
     }
 
     // Optional registration in ~/.paperforge/agent-installs.json for zero-touch auto-updates
@@ -1030,6 +1503,26 @@ pub fn handle_mcp_check_with_options(
             } else {
                 String::new()
             };
+            let prior_last_synced = existing_installs
+                .iter()
+                .find(|v| v.get("skill_dir").and_then(|s| s.as_str()) == Some(sd_str.as_str()))
+                .and_then(|v| v.get("last_synced_digest"))
+                .and_then(|s| s.as_str())
+                .unwrap_or("")
+                .to_string();
+            let reg_digest = if skill_link_mode == "link" {
+                hub_digest.clone().unwrap_or_default()
+            } else if let (Some(inst), Some(hub)) = (&installed_skill_digest, &hub_digest) {
+                if inst == hub {
+                    hub.clone()
+                } else if !prior_last_synced.is_empty() && prior_last_synced != *inst {
+                    prior_last_synced
+                } else {
+                    String::new()
+                }
+            } else {
+                String::new()
+            };
             let mut next: Vec<Value> = existing_installs
                 .into_iter()
                 .filter(|v| v.get("skill_dir").and_then(|s| s.as_str()) != Some(sd_str.as_str()))
@@ -1039,7 +1532,7 @@ pub fn handle_mcp_check_with_options(
                 "mcp_config": mc_str,
                 "vault": clean_vault.to_string_lossy(),
                 "link_mode": skill_link_mode,
-                "last_synced_digest": installed_skill_digest.clone().unwrap_or_default(),
+                "last_synced_digest": reg_digest,
                 "updated_at": now_unix_secs(),
             }));
             if write_agent_installs_file(reg_path, &next).is_ok() {
@@ -1258,13 +1751,75 @@ fn resolve_tool_vault(args: &Value, default_vault: Option<&Path>) -> Result<Path
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(PathBuf::from);
-    if let Some(vp) = arg_vault.as_deref().or(default_vault) {
+    if let Some(def_vp) = default_vault {
+        let def_canon = strip_verbatim_prefix(
+            &fs::canonicalize(def_vp).unwrap_or_else(|_| def_vp.to_path_buf()),
+        );
+        if let Some(ref av) = arg_vault {
+            let av_canon = strip_verbatim_prefix(
+                &fs::canonicalize(av).unwrap_or_else(|_| av.to_path_buf()),
+            );
+            let same = if cfg!(windows) {
+                av_canon
+                    .to_string_lossy()
+                    .eq_ignore_ascii_case(&def_canon.to_string_lossy())
+            } else {
+                av_canon == def_canon
+            };
+            if !same {
+                return Err(format!(
+                    "Access denied: tool `vault` argument ({}) must match pinned MCP `--vault` ({}).",
+                    av_canon.display(),
+                    def_canon.display()
+                ));
+            }
+        }
+        return Ok(def_canon);
+    }
+    if let Some(ref vp) = arg_vault {
         return Ok(strip_verbatim_prefix(
             &fs::canonicalize(vp).unwrap_or_else(|_| vp.to_path_buf()),
         ));
     }
     discover_vault_from_cwd(None)
         .ok_or_else(|| "Vault path not resolved. Pass `vault` or start `--mcp --vault <path>`.".to_string())
+}
+
+fn active_exclusive_barrier(daemon: &NativeControlDaemon, vault: &Path) -> Option<String> {
+    if let Some(b) = daemon.has_exclusive_barrier(vault) {
+        return Some(b);
+    }
+    let eng = resolve_engine_dir(vault);
+    let hb_path = eng.join("indexes").join(".daemon-state.json");
+    let raw = fs::read_to_string(hb_path).ok()?;
+    let val: Value = serde_json::from_str(&raw).ok()?;
+    let pid = val.get("pid").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    if pid == 0 || !is_pid_alive(pid, None) {
+        return None;
+    }
+    val.get("exclusive_barrier")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+}
+
+fn validate_enum(val: &str, allowed: &[&str], field: &str) -> Result<(), String> {
+    if allowed.contains(&val) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Invalid `{field}` value '{val}': expected one of {}",
+            allowed.join(", ")
+        ))
+    }
+}
+
+fn validate_no_nul(val: &str, field: &str) -> Result<(), String> {
+    if val.contains('\0') {
+        Err(format!("Invalid `{field}`: NUL byte not allowed"))
+    } else {
+        Ok(())
+    }
 }
 
 fn tool_ok(payload: Value) -> Value {
@@ -1343,35 +1898,67 @@ fn execute_mcp_tool(
             if query.is_empty() {
                 return Ok(tool_err("`query` is required and cannot be empty."));
             }
-            let mut argv = vec!["search".to_string(), query.to_string(), "--json".to_string()];
-            for (arg_k, flag) in [
-                ("domain", "--domain"),
-                ("ocr", "--ocr"),
-                ("deep", "--deep"),
-            ] {
-                if let Some(val) = args
-                    .get(arg_k)
-                    .and_then(|v| v.as_str())
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty())
-                {
-                    argv.push(flag.into());
-                    argv.push(val.into());
+            if let Err(e) = validate_no_nul(query, "query") {
+                return Ok(tool_err(&e));
+            }
+            let mut argv = vec!["search".to_string(), "--json".to_string()];
+            if let Some(dom) = args
+                .get("domain")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                if let Err(e) = validate_no_nul(dom, "domain") {
+                    return Ok(tool_err(&e));
                 }
+                argv.push(format!("--domain={dom}"));
+            }
+            if let Some(ocr) = args
+                .get("ocr")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                if let Err(e) = validate_enum(
+                    ocr,
+                    &["done", "pending", "failed", "processing", "done_incomplete"],
+                    "ocr",
+                ) {
+                    return Ok(tool_err(&e));
+                }
+                argv.push("--ocr".into());
+                argv.push(ocr.into());
+            }
+            if let Some(deep) = args
+                .get("deep")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                if let Err(e) = validate_enum(deep, &["done", "pending"], "deep") {
+                    return Ok(tool_err(&e));
+                }
+                argv.push("--deep".into());
+                argv.push(deep.into());
             }
             for (arg_k, flag) in [
                 ("year_from", "--year-from"),
                 ("year_to", "--year-to"),
-                ("limit", "--limit"),
             ] {
                 if let Some(n) = args.get(arg_k).and_then(|v| v.as_i64()) {
                     argv.push(flag.into());
                     argv.push(n.to_string());
                 }
             }
+            if let Some(lim) = args.get("limit").and_then(|v| v.as_i64()) {
+                argv.push("--limit".into());
+                argv.push(lim.clamp(1, 100).to_string());
+            }
             if args.get("evidence").and_then(|v| v.as_bool()) == Some(true) {
                 argv.push("--evidence".into());
             }
+            argv.push("--".into());
+            argv.push(query.to_string());
 
             let python_available = NativeControlDaemon::resolve_python_exe().is_some();
             if let Some((rc, out, err)) = try_handle_search_cli(&vault, &argv, python_available) {
@@ -1395,7 +1982,10 @@ fn execute_mcp_tool(
             if key.is_empty() {
                 return Ok(tool_err("`key` is required."));
             }
-            let mut argv = vec!["paper-context".to_string(), key.to_string()];
+            if let Err(e) = validate_no_nul(key, "key") {
+                return Ok(tool_err(&e));
+            }
+            let mut argv = vec!["paper-context".to_string()];
             if args
                 .get("structure")
                 .and_then(|v| v.as_bool())
@@ -1404,6 +1994,8 @@ fn execute_mcp_tool(
                 argv.push("--structure".into());
             }
             argv.push("--json".into());
+            argv.push("--".into());
+            argv.push(key.to_string());
             Ok(call_python_tool(daemon, &vault, &argv, None))
         }
         "paperforge_retrieve" => {
@@ -1415,10 +2007,13 @@ fn execute_mcp_tool(
             if query.is_empty() {
                 return Ok(tool_err("`query` is required."));
             }
-            let mut argv = vec!["retrieve".to_string(), query.to_string(), "--json".to_string()];
+            if let Err(e) = validate_no_nul(query, "query") {
+                return Ok(tool_err(&e));
+            }
+            let mut argv = vec!["retrieve".to_string(), "--json".to_string()];
             if let Some(lim) = args.get("limit").and_then(|v| v.as_i64()) {
                 argv.push("--limit".into());
-                argv.push(lim.to_string());
+                argv.push(lim.clamp(1, 50).to_string());
             }
             if args.get("deep").and_then(|v| v.as_bool()) == Some(true) {
                 argv.push("--deep".into());
@@ -1429,12 +2024,21 @@ fn execute_mcp_tool(
                 .map(str::trim)
                 .filter(|s| !s.is_empty())
             {
-                argv.push("--domain".into());
-                argv.push(dom.into());
+                if let Err(e) = validate_no_nul(dom, "domain") {
+                    return Ok(tool_err(&e));
+                }
+                argv.push(format!("--domain={dom}"));
             }
+            argv.push("--".into());
+            argv.push(query.to_string());
             Ok(call_python_tool(daemon, &vault, &argv, None))
         }
         "paperforge_annotate_batch" => {
+            if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
+                return Ok(tool_err(&format!(
+                    "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
+                )));
+            }
             let key = args
                 .get("paper_key")
                 .and_then(|v| v.as_str())
@@ -1442,6 +2046,9 @@ fn execute_mcp_tool(
                 .unwrap_or("");
             if key.is_empty() {
                 return Ok(tool_err("`paper_key` is required."));
+            }
+            if let Err(e) = validate_no_nul(key, "paper_key") {
+                return Ok(tool_err(&e));
             }
             let Some(items) = args.get("items").and_then(|v| v.as_array()) else {
                 return Ok(tool_err("`items` must be a non-empty array."));
@@ -1453,6 +2060,26 @@ fn execute_mcp_tool(
                 .get("lens")
                 .and_then(|v| v.as_str())
                 .unwrap_or("skeleton");
+            if let Err(e) = validate_enum(lens, &["skeleton", "methods", "critique", "custom"], "lens")
+            {
+                return Ok(tool_err(&e));
+            }
+            for item in items {
+                if let Some(c) = item.get("color").and_then(|v| v.as_str()) {
+                    if let Err(e) =
+                        validate_enum(c, &["yellow", "green", "blue", "red", "purple"], "items[].color")
+                    {
+                        return Ok(tool_err(&e));
+                    }
+                }
+                if let Some(il) = item.get("lens").and_then(|v| v.as_str()) {
+                    if let Err(e) =
+                        validate_enum(il, &["skeleton", "methods", "critique", "custom"], "items[].lens")
+                    {
+                        return Ok(tool_err(&e));
+                    }
+                }
+            }
             let replace_lens = args
                 .get("replace_lens")
                 .and_then(|v| v.as_bool())
@@ -1466,7 +2093,6 @@ fn execute_mcp_tool(
             let mut argv = vec![
                 "annotations".into(),
                 "agent-apply".into(),
-                key.into(),
                 "--input".into(),
                 "-".into(),
                 "--lens".into(),
@@ -1478,6 +2104,8 @@ fn execute_mcp_tool(
             if replace_lens {
                 argv.push("--replace-lens".into());
             }
+            argv.push("--".into());
+            argv.push(key.into());
             let stdin_payload = json!({
                 "items": items,
                 "lens": lens,
@@ -1488,6 +2116,11 @@ fn execute_mcp_tool(
             Ok(call_python_tool(daemon, &vault, &argv, Some(&stdin_payload)))
         }
         "paperforge_memory_refine" => {
+            if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
+                return Ok(tool_err(&format!(
+                    "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
+                )));
+            }
             let key = args
                 .get("paper_key")
                 .and_then(|v| v.as_str())
@@ -1506,15 +2139,33 @@ fn execute_mcp_tool(
             if key.is_empty() || facet.is_empty() || content.is_empty() {
                 return Ok(tool_err("`paper_key`, `facet`, and `content` are required."));
             }
+            if let Err(e) = validate_no_nul(key, "paper_key") {
+                return Ok(tool_err(&e));
+            }
+            if let Err(e) = validate_enum(
+                facet,
+                &[
+                    "idea_logic",
+                    "methods_params",
+                    "research_craft",
+                    "critique_limits",
+                    "my_connection",
+                ],
+                "facet",
+            ) {
+                return Ok(tool_err(&e));
+            }
+            if let Err(e) = validate_no_nul(content, "content") {
+                return Ok(tool_err(&e));
+            }
             let argv = vec![
                 "memory-card".into(),
                 "refine".into(),
-                key.into(),
-                "--facet".into(),
-                facet.into(),
-                "--content".into(),
-                content.into(),
+                format!("--facet={facet}"),
+                format!("--content={content}"),
                 "--json".into(),
+                "--".into(),
+                key.into(),
             ];
             Ok(call_python_tool(daemon, &vault, &argv, None))
         }

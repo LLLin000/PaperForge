@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import os
 import zipfile
 from pathlib import Path
+
+import pytest
 
 from paperforge import runtime_uv
 
@@ -121,17 +124,24 @@ def test_pinned_uv_checksums_and_fail_closed_verification(tmp_path: Path, monkey
     assert Path(resolved).read_bytes() == b"trusted-uv-payload"
 
 
+def _make_wheel_bytes() -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("paperforge/__init__.py", b'__version__ = "2.0.0"\n')
+    return buf.getvalue()
+
+
 def test_release_wheel_urls_and_cached_download(tmp_path: Path, monkeypatch) -> None:
     urls = runtime_uv.release_wheel_urls("2.0.0")
     assert urls == [
         "https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl",
         "https://ghfast.top/https://github.com/LLLin000/PaperForge/releases/download/2.0.0/paperforge-2.0.0-py3-none-any.whl",
     ]
+    rc_urls = runtime_uv.release_wheel_urls("2.1.0-rc.4")
+    assert "paperforge-2.1.0rc4-py3-none-any.whl" in rc_urls[0]
 
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w") as zf:
-        zf.writestr("paperforge/__init__.py", b'__version__ = "2.0.0"\n')
-    good_whl = buf.getvalue()
+    good_whl = _make_wheel_bytes()
+    good_sha = hashlib.sha256(good_whl).hexdigest()
 
     class _Resp:
         def __init__(self, data: bytes) -> None:
@@ -146,16 +156,32 @@ def test_release_wheel_urls_and_cached_download(tmp_path: Path, monkeypatch) -> 
         def __exit__(self, *_args):
             return False
 
-    responses = [b"<html>not a wheel</html>", good_whl]
-    monkeypatch.setattr(
-        runtime_uv.urllib.request,
-        "urlopen",
-        lambda req, timeout=45: _Resp(responses.pop(0)),
-    )
+    def _fake_urlopen(req, timeout=45):
+        url = req.full_url if hasattr(req, "full_url") else str(req)
+        if url.endswith("/checksums.txt"):
+            assert url.startswith("https://github.com/")
+            return _Resp(f"{good_sha}  paperforge-2.0.0-py3-none-any.whl\n".encode("utf-8"))
+        if "ghfast.top" in url:
+            return _Resp(good_whl)
+        return _Resp(b"<html>not a wheel</html>")
+
+    monkeypatch.setattr(runtime_uv.urllib.request, "urlopen", _fake_urlopen)
     wheel_dir = runtime_uv.uv_wheel_cache_dir(tmp_path)
     downloaded = runtime_uv.download_release_wheel("2.0.0", wheel_dir)
     assert downloaded == wheel_dir / "paperforge-2.0.0-py3-none-any.whl"
     assert downloaded.read_bytes() == good_whl
+
+    # Second call reuses verified local cache without re-downloading .whl
+    monkeypatch.setattr(
+        runtime_uv.urllib.request,
+        "urlopen",
+        lambda req, timeout=45: _Resp(
+            f"{good_sha}  paperforge-2.0.0-py3-none-any.whl\n".encode("utf-8")
+        )
+        if req.full_url.endswith("/checksums.txt")
+        else pytest.fail("should reuse verified cached wheel"),
+    )
+    assert runtime_uv.download_release_wheel("2.0.0", wheel_dir) == downloaded
 
     recorded_cmds: list[list[str]] = []
 
@@ -176,3 +202,52 @@ def test_release_wheel_urls_and_cached_download(tmp_path: Path, monkeypatch) -> 
     assert res.returncode == 0
     assert "--find-links" in recorded_cmds[0]
     assert str(wheel_dir) in recorded_cmds[0]
+
+
+def test_download_release_wheel_rejects_forged_sha_and_unsafe_override(
+    tmp_path: Path, monkeypatch
+) -> None:
+    good_whl = _make_wheel_bytes()
+    wrong_sha = "f" * 64
+    requested_urls: list[str] = []
+
+    class _Resp:
+        def __init__(self, data: bytes) -> None:
+            self._data = data
+
+        def read(self) -> bytes:
+            return self._data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def _fake_urlopen(req, timeout=45):
+        url = req.full_url if hasattr(req, "full_url") else str(req)
+        requested_urls.append(url)
+        if url.endswith("/checksums.txt"):
+            return _Resp(f"{wrong_sha}  paperforge-2.0.0-py3-none-any.whl\n".encode("utf-8"))
+        return _Resp(good_whl)
+
+    monkeypatch.setattr(runtime_uv.urllib.request, "urlopen", _fake_urlopen)
+    wheel_dir = runtime_uv.uv_wheel_cache_dir(tmp_path)
+    tampered = wheel_dir / "paperforge-2.0.0-py3-none-any.whl"
+    tampered.parent.mkdir(parents=True, exist_ok=True)
+    tampered.write_bytes(good_whl)
+    assert runtime_uv.download_release_wheel("2.0.0", wheel_dir) is None
+    assert not tampered.exists()
+    assert all("ghfast.top" not in u for u in requested_urls if u.endswith("checksums.txt"))
+
+    monkeypatch.setenv("PAPERFORGE_RELEASE_WHEEL_URL", "http://insecure.example/paperforge-2.0.0-py3-none-any.whl")
+    assert runtime_uv.release_wheel_urls("2.0.0") == []
+    monkeypatch.setenv("PAPERFORGE_RELEASE_WHEEL_URL", "https://example.com/..%5Cevil.whl")
+    assert runtime_uv.release_wheel_urls("2.0.0") == []
+    monkeypatch.delenv("PAPERFORGE_RELEASE_WHEEL_URL", raising=False)
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-secret")
+    monkeypatch.setenv("ZOTERO_API_KEY", "zot-secret")
+    sanitized = runtime_uv.uv_env(tmp_path)
+    assert "OPENAI_API_KEY" not in sanitized
+    assert "ZOTERO_API_KEY" not in sanitized
