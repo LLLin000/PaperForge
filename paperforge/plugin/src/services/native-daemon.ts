@@ -671,6 +671,7 @@ export async function ensureNativeDaemonDownloaded(
     platform?: NodeJS.Platform;
     arch?: string;
     checkVersionUpdate?: boolean;
+    useRemoteTtl?: boolean;
     onBeforeReplace?: () => void | Promise<void>;
     onReplace?: (swapFn: () => Promise<void> | void) => Promise<void>;
     onQuarantineSuspected?: (binDir: string) => void;
@@ -767,7 +768,7 @@ export async function ensureNativeDaemonDownloaded(
   // recorded metadata (proving local bytes are uncorrupted), and we verified
   // remotely within the last 12h, skip the startup GitHub HTTPS round-trip.
   if (
-    !opts.fetchBuffer &&
+    (!opts.fetchBuffer || opts.useRemoteTtl === true) &&
     existingPath &&
     !existingCorrupted &&
     meta &&
@@ -959,7 +960,8 @@ export type ObsidianRequestUrlFn = (
  */
 export function createObsidianRequestFetcher(
   requestUrlFn: ObsidianRequestUrlFn,
-  maxBytes: number = MAX_DAEMON_BINARY_BYTES
+  maxBytes: number = MAX_DAEMON_BINARY_BYTES,
+  timeoutMs: number = 15000
 ): (url: string) => Promise<Buffer> {
   return async (url: string): Promise<Buffer> => {
     let parsedUrl: URL;
@@ -971,11 +973,32 @@ export function createObsidianRequestFetcher(
     if (parsedUrl.protocol !== "https:") {
       throw new Error(`Refusing non-HTTPS URL: ${parsedUrl.protocol}`);
     }
-    const res = await requestUrlFn({
-      url: parsedUrl.toString(),
-      method: "GET",
-      headers: { "User-Agent": "PaperForge-Obsidian-Plugin/2.0" },
-      throw: false,
+    const effectiveTimeoutMs = parsedUrl.pathname.endsWith("/checksums.txt")
+      ? Math.min(timeoutMs, 10000)
+      : timeoutMs;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(
+          new Error(
+            `Request timed out after ${effectiveTimeoutMs}ms for ${parsedUrl.toString()}`
+          )
+        );
+      }, effectiveTimeoutMs);
+    });
+    const res = await Promise.race([
+      requestUrlFn({
+        url: parsedUrl.toString(),
+        method: "GET",
+        headers: { "User-Agent": "PaperForge-Obsidian-Plugin/2.0" },
+        throw: false,
+      }),
+      timeoutPromise,
+    ]).finally(() => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
     });
     if (res.status !== 200) {
       throw new Error(`HTTP ${res.status} for ${parsedUrl.toString()}`);

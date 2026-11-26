@@ -1036,6 +1036,7 @@ export default class PaperForgePlugin extends Plugin {
         this._startupDaemonCheckPending = true;
         void ensureNativeDaemonDownloaded(pluginVersion, {
           checkVersionUpdate: true,
+          useRemoteTtl: true,
           fetchBuffer:
             typeof requestUrl === "function"
               ? createObsidianRequestFetcher(requestUrl)
