@@ -47,6 +47,10 @@ describe("stripCredentialEnv", () => {
       PADDLEOCR_API_TOKEN: "legacy-1",
       VECTOR_DB_API_KEY: "legacy-2",
       OPENAI_API_KEY: "legacy-3",
+      EASYSCHOLAR_API_KEY: "legacy-4",
+      ZOTERO_API_KEY: "legacy-5",
+      ANTHROPIC_API_KEY: "legacy-6",
+      MISTRAL_API_KEY: "legacy-7",
     };
     const stripped = stripCredentialEnv(env);
     expect(stripped.PATH).toBe("/usr/bin");
@@ -56,6 +60,31 @@ describe("stripCredentialEnv", () => {
     expect(stripped.PADDLEOCR_API_TOKEN).toBeUndefined();
     expect(stripped.VECTOR_DB_API_KEY).toBeUndefined();
     expect(stripped.OPENAI_API_KEY).toBeUndefined();
+    expect(stripped.EASYSCHOLAR_API_KEY).toBeUndefined();
+    expect(stripped.ZOTERO_API_KEY).toBeUndefined();
+    expect(stripped.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(stripped.MISTRAL_API_KEY).toBeUndefined();
+  });
+
+  it("PF-SEC-011: redactDiagnostic scrubs sk-proj-*, Bearer, ghp_*, AIza*, password=, and forward-slash Windows paths", async () => {
+    const { redactDiagnostic } = await import("../src/primitives");
+    const raw = [
+      "key=sk-proj-abc_1234567890XYZ",
+      "auth=Bearer tok_abc.def/123",
+      "gh=ghp_1234567890abcdef123456",
+      "password=supersecret",
+      "secret: topsecret",
+      "path=C:/Users/Alice/vault/paper.pdf",
+      "url=https://github.com/LLLin000/PaperForge",
+    ].join(" ");
+    const clean = redactDiagnostic(raw);
+    expect(clean).not.toContain("sk-proj-abc_1234567890XYZ");
+    expect(clean).not.toContain("tok_abc.def/123");
+    expect(clean).not.toContain("ghp_1234567890abcdef123456");
+    expect(clean).not.toContain("supersecret");
+    expect(clean).not.toContain("topsecret");
+    expect(clean).not.toContain("C:/Users/Alice");
+    expect(clean).toContain("https://github.com/LLLin000/PaperForge");
   });
 });
 

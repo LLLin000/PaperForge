@@ -56,7 +56,10 @@ import {
   readNativeDaemonMeta,
   resolveNativeDaemonBinary,
 } from "./services/native-daemon";
-import { normalizeSemverForCompare } from "./services/setup-decision-tree";
+import {
+  isEngineVersionCompatible,
+  normalizeSemverForCompare,
+} from "./services/setup-decision-tree";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -129,6 +132,7 @@ export default class PaperForgePlugin extends Plugin {
   private _lastAutoSyncError: { message: string; at: number } | null = null;
   private _pendingReleaseNotesVersion: string | null = null;
   private _daemonUpdating = false;
+  private _unloaded = false;
   private _startupDeferTimer: ReturnType<typeof setTimeout> | null = null;
   private _lastSyncedZoteroSig: string | null = null;
   private _statusBarEl: HTMLElement | null = null;
@@ -165,7 +169,11 @@ export default class PaperForgePlugin extends Plugin {
 
   isRuntimeUpdating(): boolean {
     for (const dj of this._daemonJobs.values()) {
-      if (dj.kind === "runtime.install" || dj.kind === "runtime.update") {
+      if (
+        dj.kind === "runtime.install" ||
+        dj.kind === "runtime.update" ||
+        dj.kind === "runtime.repair"
+      ) {
         return true;
       }
     }
@@ -253,7 +261,11 @@ export default class PaperForgePlugin extends Plugin {
           this._daemonJobs.delete(job.job_id);
         }
         this._emitStateChanged(job.item_id ? [job.item_id] : []);
-        if (job.kind === "runtime.install" || job.kind === "runtime.update") {
+        if (
+          job.kind === "runtime.install" ||
+          job.kind === "runtime.update" ||
+          job.kind === "runtime.repair"
+        ) {
           if (!isActive) {
             this._settingTab?._refreshAllReadModels({ background: true });
           }
@@ -606,6 +618,7 @@ export default class PaperForgePlugin extends Plugin {
     ).open();
   }
   async onload() {
+    this._unloaded = false;
     await this.loadSettings();
     this.applyUiThemeMode();
     // Diagnostic boundary trace (metadata only; see client/trace.ts).
@@ -715,12 +728,18 @@ export default class PaperForgePlugin extends Plugin {
       });
     }
 
-    this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () =>
-      PaperForgeStatusView.open(this as any)
+    this.addRibbonIcon(
+      PF_ICON_ID,
+      t("ribbon_dashboard") || "PaperForge Dashboard",
+      () => PaperForgeStatusView.open(this as any)
     );
-    this.addRibbonIcon("library", "PaperForge Literature Hub", () => {
-      void this.openLiteratureBase();
-    });
+    this.addRibbonIcon(
+      "library",
+      t("ribbon_literature_hub") || "PaperForge Literature Hub",
+      () => {
+        void this.openLiteratureBase();
+      }
+    );
 
     // #99 (owner decision): redo is an internal maintenance command, NOT
     // exposed to users. No ribbon, no command — the CLI keeps it.
@@ -927,12 +946,16 @@ export default class PaperForgePlugin extends Plugin {
 
     const pluginVersion = this.manifest?.version ?? "";
 
+    const minEngineVersion = (
+      this.manifest as { minEngineVersion?: string } | undefined
+    )?.minEngineVersion;
+
     const runStartupHydration = () => {
-      if (!vaultBase) return;
-      this._startStateSeqWatcher(vaultBase);
+      if (this._unloaded || !vaultBase) return;
       // Fast Rust-native upgrade plan check (< 3ms, zero Python spawned)
       void this.refreshUpgradePlan()
         .then((plan) => {
+          if (this._unloaded) return;
           this._refreshSettingTabIfOpen();
           if (
             this.settings._setup_complete === false &&
@@ -944,19 +967,26 @@ export default class PaperForgePlugin extends Plugin {
           }
         })
         .catch(() => undefined);
-      // Non-blocking config mirror hydration (only when Python runtime exists)
+      // Non-blocking config mirror hydration (only when Python runtime exists).
+      // PF-ARCH-007: _startStateSeqWatcher() MUST run AFTER _hydrateConfigMirrors()
+      // so isConfigHydrated() and resolveVaultPaths() are populated first.
       if (readRuntimePointer()) {
         void this._hydrateConfigMirrors(vaultBase).then(() => {
+          if (this._unloaded) return;
+          this._startStateSeqWatcher(vaultBase);
           this._startConvergenceTimer();
         });
       } else {
+        this._startStateSeqWatcher(vaultBase);
         this._startConvergenceTimer();
       }
     };
 
     const scheduleDeferredStartup = () => {
+      if (this._unloaded) return;
       this._startupDeferTimer = setTimeout(() => {
         this._startupDeferTimer = null;
+        if (this._unloaded) return;
         const prevNativeBin = resolveNativeDaemonBinary({
           vaultPath: vaultBase,
         });
@@ -977,7 +1007,12 @@ export default class PaperForgePlugin extends Plugin {
         void ensureNativeDaemonDownloaded(pluginVersion, {
           checkVersionUpdate: true,
           onBeforeReplace: () => this._client?.shutdownTransportAsync(),
+          onReplace: (swapFn) =>
+            this._client
+              ? this._client.runWithTransportSwap(swapFn)
+              : Promise.resolve(swapFn()),
           onQuarantineSuspected: (binDir) => {
+            if (this._unloaded) return;
             this._quarantinedBinDir = binDir;
             this._emitStateChanged();
             this._refreshSettingTabIfOpen();
@@ -985,6 +1020,10 @@ export default class PaperForgePlugin extends Plugin {
           },
         })
           .then((downloadedBin) => {
+            if (this._unloaded) {
+              this._daemonUpdating = false;
+              return;
+            }
             const swapped = Boolean(
               downloadedBin && downloadedBin !== prevNativeBin
             );
@@ -997,7 +1036,9 @@ export default class PaperForgePlugin extends Plugin {
             } else if (swapped && vaultBase) {
               this._lastAutoSyncError = null;
               void this.refreshUpgradePlan()
-                .then(() => this._refreshSettingTabIfOpen())
+                .then(() => {
+                  if (!this._unloaded) this._refreshSettingTabIfOpen();
+                })
                 .catch(() => undefined);
               void this.refreshBaseSnapshot().catch(() => undefined);
               this._settingTab?._refreshAllReadModels({ background: true });
@@ -1028,8 +1069,11 @@ export default class PaperForgePlugin extends Plugin {
             }
             if (ptr && pluginVersion) {
               if (
-                normalizeSemverForCompare(ptr.paperforgeVersion) !==
-                normalizeSemverForCompare(pluginVersion)
+                !isEngineVersionCompatible(
+                  ptr.paperforgeVersion,
+                  pluginVersion,
+                  minEngineVersion
+                )
               ) {
                 void this.getClient()
                   .daemonSubmitRuntimeUpdate(pluginVersion)
@@ -1039,6 +1083,7 @@ export default class PaperForgePlugin extends Plugin {
           })
           .catch(() => {
             this._daemonUpdating = false;
+            if (this._unloaded) return;
             if (needsDaemonSwap) {
               runStartupHydration();
               this._refreshSettingTabIfOpen();
@@ -1175,6 +1220,7 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   private _startConvergenceTimer() {
+    if (this._unloaded) return;
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
     const cadenceMs =
       Math.max(30, this.settings.autoSyncIntervalSeconds ?? 120) * 1000;
@@ -1182,9 +1228,13 @@ export default class PaperForgePlugin extends Plugin {
     if (this.settings.autoSyncEnabled === false) {
       return;
     }
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
     this._maybeAutoSync(vaultPath);
     this._pollTimer = setInterval(() => {
-      if (!isConfigHydrated()) return;
+      if (this._unloaded || !isConfigHydrated()) return;
       this._maybeAutoSync(vaultPath);
     }, cadenceMs);
   }
@@ -1871,8 +1921,8 @@ export default class PaperForgePlugin extends Plugin {
     }
   }
 
-  openOcrDiagnostic(_paperKey?: string): void {
-    void OcrWorkspaceView.open(this as any);
+  openOcrDiagnostic(paperKey?: string): void {
+    void (OcrWorkspaceView.open as any)(this, paperKey);
   }
 
   async openLiteratureBase(): Promise<void> {
@@ -1910,7 +1960,13 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   private _startStateSeqWatcher(vaultBase: string): void {
-    if (this._stateSeqWatcher || !vaultBase || !isConfigHydrated()) return;
+    if (
+      this._unloaded ||
+      this._stateSeqWatcher ||
+      !vaultBase ||
+      !isConfigHydrated()
+    )
+      return;
     let indexesDir = "";
     try {
       indexesDir = resolveVaultPaths(vaultBase).indexesDir;
@@ -2035,18 +2091,102 @@ export default class PaperForgePlugin extends Plugin {
     void this.saveSettings();
   }
 
-  async triggerBuildEmbeddings(): Promise<void> {
-    try {
-      const client = this.getClient();
-      new Notice(t("activity_embed") || "Building vector retrieval index...");
-      await client.runAction({
-        action_id: "memory.build",
-        scope: { kind: "library" },
-      });
-      new Notice(t("feat_build_complete") || "Vector build complete.");
-    } catch (err) {
-      new Notice(formatHumanError(err) || t("feat_build_failed"), 6000);
+  async triggerBuildEmbeddings(skipConfirm = false): Promise<void> {
+    const client = this.getClient();
+    if (client.isOperationActive?.()) {
+      new Notice(t("embed_already_running") || "Vector build is already in progress.");
+      return;
     }
+
+    const executeBuild = async (): Promise<void> => {
+      try {
+        new Notice(
+          t("embed_activity_building") ||
+            t("activity_embed") ||
+            "Building vector retrieval index..."
+        );
+        let sawCancelled = false;
+        const result = await client.runAction(
+          {
+            action_id: "embed.build",
+            scope: { kind: "all" },
+            confirm: "embed.build",
+          },
+          {
+            onEvent: (event) => {
+              if (event.event === "cancelled") sawCancelled = true;
+              if (event.event === "progress") {
+                this._embedProgress = {
+                  current: Number(event.current ?? this._embedProgress.current),
+                  total: Number(event.total ?? this._embedProgress.total),
+                  key: String(event.item_id ?? this._embedProgress.key),
+                };
+              }
+            },
+          }
+        );
+        if (result.ok) {
+          new Notice(
+            t("embed_build_complete") ||
+              t("feat_build_complete") ||
+              "Vector index build complete."
+          );
+        } else if (result.cancelled || sawCancelled) {
+          new Notice(
+            t("embed_build_stopped") || "Build stopped. Run again to resume.",
+            8000
+          );
+        } else {
+          const payload = result.payload as Record<string, unknown> | null;
+          const payloadError = payload?.error as
+            | { message?: unknown }
+            | undefined;
+          const reason =
+            typeof payload?.availability_reason === "string"
+              ? payload.availability_reason
+              : typeof payloadError?.message === "string"
+                ? payloadError.message
+                : `exit code ${result.exitCode}`;
+          const formatted = formatHumanError(reason) || reason;
+          new Notice(
+            (t("sr_build_failed_notice") || "Vector index build failed: {detail}").replace(
+              "{detail}",
+              formatted
+            ),
+            8000
+          );
+        }
+      } catch (err) {
+        const msg = formatHumanError(err) || (err instanceof Error ? err.message : String(err));
+        new Notice(
+          (t("sr_build_failed_notice") || "Vector index build failed: {detail}").replace(
+            "{detail}",
+            msg
+          ),
+          8000
+        );
+      }
+    };
+
+    if (skipConfirm) {
+      await executeBuild();
+      return;
+    }
+
+    new PaperForgeConfirmModal(
+      this.app,
+      {
+        title: t("embed_confirm_title") || t("cmd_build_embeddings") || "Build vector retrieval index",
+        effectLabel:
+          t("embed_confirm_body") ||
+          "Generate or update vector embeddings for all OCR-completed papers in the library.",
+        confirmLabel: t("feat_build_btn") || "Build",
+        cancelLabel: t("maintenance_confirm_cancel") || "Cancel",
+      },
+      () => {
+        void executeBuild();
+      }
+    ).open();
   }
 
   private _registerExtendedCommands(): void {
@@ -2143,14 +2283,14 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "paperforge-status-panel",
         title: t("guide_open") || "Open PaperForge Companion",
-        category: "导航",
+        category: t("cmd_cat_navigation") || "Navigation",
         icon: "book-open" as const,
         run: () => void PaperForgeStatusView.open(this as any),
       },
       {
         id: "paperforge-open-literature-base",
         title: t("base_open_hub") || "Open Literature Hub Base",
-        category: "文献库",
+        category: t("cmd_cat_library") || "Library",
         icon: "layers" as const,
         run: () => void this.openLiteratureBase(),
       },
@@ -2164,14 +2304,14 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "open-ui-gallery",
         title: t("cmd_open_ui_gallery") || "Open UI Gallery & Design System",
-        category: "外观",
+        category: t("cmd_cat_appearance") || "Appearance",
         icon: "palette" as const,
         run: () => void this.openUiGallery(),
       },
       {
         id: "focus-companion-search",
         title: t("cmd_focus_companion") || "Focus Companion search",
-        category: "检索",
+        category: t("cmd_cat_search") || "Search",
         icon: "search" as const,
         run: () => {
           void PaperForgeStatusView.open(this as any).then((v) =>
@@ -2182,7 +2322,7 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "open-paper-split-reading",
         title: t("cmd_split_reading") || "Open current paper in split reading",
-        category: "阅读",
+        category: t("cmd_cat_reading") || "Reading",
         icon: "columns-2" as const,
         run: () => {
           const ctx = this._resolveActivePaperKey();
@@ -2192,7 +2332,7 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "paperforge-open-current-pdf",
         title: t("cmd_open_current_pdf") || "Open current paper PDF",
-        category: "阅读",
+        category: t("cmd_cat_reading") || "Reading",
         icon: "book-open" as const,
         run: () => {
           const ctx = this._resolveActivePaperKey();
@@ -2213,14 +2353,14 @@ export default class PaperForgePlugin extends Plugin {
       },
       {
         id: "paperforge-sync",
-        title: "Sync Zotero Library",
-        category: "文献库",
+        title: t("cmd_sync_library") || "Sync Zotero Library",
+        category: t("cmd_cat_library") || "Library",
         icon: "refresh-cw" as const,
         run: () => this.triggerManualSync(),
       },
       {
         id: "paperforge-ocr",
-        title: "Run OCR Batch",
+        title: t("cmd_run_ocr_batch") || "Run OCR Batch",
         category: "OCR",
         icon: "sparkles" as const,
         run: () => void this.requestOcrRun(),
@@ -2228,14 +2368,14 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "paperforge-build-embeddings",
         title: t("cmd_build_embeddings") || "Build vector retrieval index",
-        category: "智能检索",
+        category: t("cmd_cat_retrieval") || "Smart Retrieval",
         icon: "database" as const,
         run: () => void this.triggerBuildEmbeddings(),
       },
       {
         id: "paperforge-open-settings",
         title: t("cmd_open_settings") || "Open PaperForge Control Center",
-        category: "系统",
+        category: t("cmd_cat_system") || "System",
         icon: "settings" as const,
         run: () => {
           this.openSettingsControlCenter();
@@ -2244,35 +2384,35 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "paperforge-cycle-theme",
         title: t("cmd_cycle_theme") || "Cycle theme preset",
-        category: "外观",
+        category: t("cmd_cat_appearance") || "Appearance",
         icon: "palette" as const,
         run: () => this.cycleUiThemeMode(),
       },
       {
         id: "paperforge-cycle-density",
         title: t("cmd_cycle_density") || "Cycle UI spacing density",
-        category: "外观",
+        category: t("cmd_cat_appearance") || "Appearance",
         icon: "sliders" as const,
         run: () => this.cycleUiDensity(),
       },
       {
         id: "paperforge-toggle-liquid-glass",
         title: t("cmd_toggle_liquid_glass") || "Toggle Liquid Glass",
-        category: "外观",
+        category: t("cmd_cat_appearance") || "Appearance",
         icon: "sparkles" as const,
         run: () => this.toggleLiquidGlass(),
       },
       {
         id: "paperforge-toggle-reduce-motion",
         title: t("cmd_toggle_reduce_motion") || "Toggle Reduce Motion",
-        category: "外观",
+        category: t("cmd_cat_appearance") || "Appearance",
         icon: "eye" as const,
         run: () => this.toggleReduceMotion(),
       },
       {
         id: "paperforge-check-orphans",
         title: t("cmd_check_orphans") || "Check orphan literature workspaces",
-        category: "维护",
+        category: t("cmd_cat_maintenance") || "Maintenance",
         icon: "trash-2" as const,
         run: () => {
           const vp =
@@ -2284,7 +2424,7 @@ export default class PaperForgePlugin extends Plugin {
       {
         id: "paperforge-vault-upgrade",
         title: t("main_cmd_check_upgrade") || "Check Vault upgrade plan",
-        category: "维护",
+        category: t("cmd_cat_maintenance") || "Maintenance",
         icon: "wrench" as const,
         run: () => void this.openUpgradeModal(),
       },
@@ -2362,10 +2502,16 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   onunload() {
+    this._unloaded = true;
     this._closeStatusPopover();
     if (this._startupDeferTimer) {
       clearTimeout(this._startupDeferTimer);
       this._startupDeferTimer = null;
+    }
+    try {
+      this._settingTab?.hide?.();
+    } catch {
+      // ignore setting tab hide errors on unload
     }
     const clearClasses = (doc: Document | null | undefined) => {
       doc?.body?.classList?.remove(
@@ -2385,8 +2531,14 @@ export default class PaperForgePlugin extends Plugin {
       clearClasses(win.document);
     }
     this._popoutWindows.clear();
-    if (this._pollTimer) clearInterval(this._pollTimer);
-    if (this._stateSeqTimer) clearTimeout(this._stateSeqTimer);
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
+    if (this._stateSeqTimer) {
+      clearTimeout(this._stateSeqTimer);
+      this._stateSeqTimer = null;
+    }
     try {
       this._stateSeqWatcher?.close?.();
     } catch {
@@ -2397,6 +2549,7 @@ export default class PaperForgePlugin extends Plugin {
     this._unsubscribeDaemon = null;
     this._daemonJobs.clear();
     this._client?.cancelActiveOperation();
+    this._client?.shutdownTransport?.();
     // Reap ordinary (non-streamed) execute children so they do not outlive
     // the plugin/Window (issue #266).
     try {

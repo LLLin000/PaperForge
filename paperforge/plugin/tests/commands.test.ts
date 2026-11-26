@@ -271,4 +271,84 @@ describe("Obsidian Command Palette Registration", () => {
       document.querySelector('[data-pf-testid="pf-status-popover"]')
     ).toBeNull();
   });
+
+  it("PF-ARCH-002 / PF-UI-002: triggerBuildEmbeddings dispatches embed.build with scope all and surfaces error Notice when ok=false", async () => {
+    const obsidianMod = await import("obsidian");
+    vi.mocked(obsidianMod.Notice).mockClear();
+    const runAction = vi.fn(async () => ({
+      ok: false,
+      exitCode: 2,
+      payload: { error: { code: "action.scope_invalid", message: "bad scope" } },
+    }));
+    const plugin = Object.create(PaperForgePlugin.prototype) as PaperForgePlugin & {
+      getClient: () => unknown;
+      app: unknown;
+      _embedProgress: { current: number; total: number; key: string };
+    };
+    plugin.app = { vault: { adapter: { basePath: "/vault" } } };
+    plugin._embedProgress = { current: 0, total: 0, key: "" };
+    plugin.getClient = () => ({
+      isOperationActive: () => false,
+      runAction,
+    });
+
+    await plugin.triggerBuildEmbeddings(true);
+
+    expect(runAction).toHaveBeenCalledWith(
+      {
+        action_id: "embed.build",
+        scope: { kind: "all" },
+        confirm: "embed.build",
+      },
+      expect.any(Object)
+    );
+    const notices = vi
+      .mocked(obsidianMod.Notice)
+      .mock.calls.map((c) => String(c[0]));
+    expect(notices.some((m) => m.includes("Vector build complete"))).toBe(false);
+    expect(notices.some((m) => m.includes("bad scope") || m.includes("failed"))).toBe(
+      true
+    );
+  });
+
+  it("PF-UI-007 / PF-RT-006: forwards paperKey in openOcrDiagnostic and tracks runtime.repair in isRuntimeUpdating", async () => {
+    const { OcrWorkspaceView } = await import("../src/views/ocr-workspace");
+    const openSpy = vi
+      .spyOn(OcrWorkspaceView, "open")
+      .mockResolvedValue(undefined as never);
+    try {
+      const plugin = Object.create(PaperForgePlugin.prototype) as PaperForgePlugin;
+      plugin.openOcrDiagnostic("KEY_DIAG_9");
+      expect(openSpy).toHaveBeenCalledWith(plugin, "KEY_DIAG_9");
+    } finally {
+      openSpy.mockRestore();
+    }
+
+    const plugin2 = Object.create(PaperForgePlugin.prototype) as PaperForgePlugin & {
+      _daemonJobs: Map<string, unknown>;
+      _emitStateChanged: () => void;
+      _refreshSettingTabIfOpen: () => void;
+      _handleDaemonPushEvent: (ev: {
+        event: string;
+        data?: Record<string, unknown>;
+      }) => void;
+    };
+    (plugin2 as unknown as { _daemonJobs: Map<string, unknown> })._daemonJobs =
+      new Map();
+    plugin2._emitStateChanged = vi.fn();
+    plugin2._refreshSettingTabIfOpen = vi.fn();
+    plugin2._settingTab = null as never;
+
+    expect(plugin2.isRuntimeUpdating()).toBe(false);
+    plugin2._handleDaemonPushEvent({
+      event: "task.updated",
+      data: { job_id: "job_rep_1", kind: "runtime.repair", status: "running" },
+    });
+    expect(plugin2.isRuntimeUpdating()).toBe(true);
+    plugin2._handleDaemonPushEvent({
+      event: "task.updated",
+      data: { job_id: "job_rep_1", kind: "runtime.repair", status: "succeeded" },
+    });
+    expect(plugin2.isRuntimeUpdating()).toBe(false);
+  });
 });

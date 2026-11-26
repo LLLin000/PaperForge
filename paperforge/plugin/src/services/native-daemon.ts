@@ -14,9 +14,11 @@
 
 import * as crypto from "crypto";
 import * as fs from "fs";
+import * as http from "http";
 import * as https from "https";
 import * as os from "os";
 import * as path from "path";
+import * as tls from "tls";
 import { PAPERFORGE_GITHUB_REPO } from "./runtime-installer-launcher";
 
 export function nativeDaemonTargetTriple(
@@ -224,6 +226,45 @@ export function syncStableDaemonEntry(
   return stablePath;
 }
 
+const MAX_CHECKSUMS_BYTES = 256 * 1024;
+const MAX_DAEMON_BINARY_BYTES = 32 * 1024 * 1024;
+
+function realpathSafe(p: string): string {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return path.resolve(p);
+  }
+}
+
+export function isManagedDaemonBinaryPath(
+  binDir: string,
+  candidatePath: string
+): boolean {
+  if (!binDir || !candidatePath) return false;
+  const baseDir = realpathSafe(binDir);
+  const resolved = realpathSafe(candidatePath);
+  const rel = path.relative(baseDir, resolved);
+  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+    return false;
+  }
+  const base = path.basename(resolved).toLowerCase();
+  return base.startsWith("paperforge-daemon");
+}
+
+function isValidSha256Hex(sha: string | undefined | null): sha is string {
+  return typeof sha === "string" && /^[a-f0-9]{64}$/i.test(sha.trim());
+}
+
+function unlinkQuiet(filePath: string | null | undefined): void {
+  if (!filePath) return;
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch {
+    // Best-effort temp cleanup
+  }
+}
+
 export interface ResolveNativeDaemonOptions {
   vaultPath?: string;
   explicitPath?: string | null;
@@ -256,7 +297,7 @@ export function resolveNativeDaemonBinary(
   if (process.env.PAPERFORGE_NATIVE_DAEMON_PATH) {
     candidates.push(process.env.PAPERFORGE_NATIVE_DAEMON_PATH);
   }
-  if (opts.vaultPath) {
+  if (opts.vaultPath && process.env.PAPERFORGE_ALLOW_VAULT_DAEMON === "1") {
     const pluginBinDir = path.join(
       opts.vaultPath,
       ".obsidian",
@@ -268,9 +309,24 @@ export function resolveNativeDaemonBinary(
     candidates.push(path.join(pluginBinDir, exeName));
   }
   if (home) {
+    const binDir = path.dirname(managedNativeDaemonPath(home, plat));
     const meta = readNativeDaemonMeta(home, plat);
-    if (meta?.binaryPath) {
-      candidates.push(meta.binaryPath);
+    if (
+      meta?.binaryPath &&
+      isManagedDaemonBinaryPath(binDir, meta.binaryPath) &&
+      isValidSha256Hex(meta.sha256)
+    ) {
+      try {
+        if (
+          fs.existsSync(meta.binaryPath) &&
+          fs.statSync(meta.binaryPath).isFile() &&
+          sha256File(meta.binaryPath) === meta.sha256.toLowerCase()
+        ) {
+          candidates.push(meta.binaryPath);
+        }
+      } catch {
+        // Ignore unreadable/tampered meta target
+      }
     }
     candidates.push(managedNativeDaemonPath(home, plat));
   }
@@ -288,51 +344,240 @@ export function resolveNativeDaemonBinary(
   return null;
 }
 
-function httpsGetBuffer(
-  url: string,
-  redirectsLeft = 5,
-  timeoutMs = 15000
-): Promise<Buffer> {
+function matchesNoProxy(hostname: string, noProxyRaw: string | undefined): boolean {
+  if (!noProxyRaw) return false;
+  const host = hostname.toLowerCase();
+  for (const rawEntry of noProxyRaw.split(",")) {
+    const entry = rawEntry.trim().toLowerCase();
+    if (!entry) continue;
+    if (entry === "*") return true;
+    const clean = entry.replace(/:\d+$/, "");
+    if (clean.startsWith(".")) {
+      if (host.endsWith(clean) || host === clean.slice(1)) return true;
+    } else if (host === clean || host.endsWith(`.${clean}`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function resolveProxyForUrl(
+  targetUrl: string,
+  env: Record<string, string | undefined> = process.env
+): URL | null {
+  let parsedTarget: URL;
+  try {
+    parsedTarget = new URL(targetUrl);
+  } catch {
+    return null;
+  }
+  const noProxy = env.NO_PROXY ?? env.no_proxy;
+  if (matchesNoProxy(parsedTarget.hostname, noProxy)) {
+    return null;
+  }
+  const rawProxy =
+    env.PAPERFORGE_PROXY ||
+    env.HTTPS_PROXY ||
+    env.https_proxy ||
+    env.HTTP_PROXY ||
+    env.http_proxy ||
+    "";
+  const trimmed = rawProxy.trim();
+  if (!trimmed) return null;
+  try {
+    const normalized = /^[a-z]+:\/\//i.test(trimmed)
+      ? trimmed
+      : `http://${trimmed}`;
+    const proxyUrl = new URL(normalized);
+    if (proxyUrl.protocol !== "http:" && proxyUrl.protocol !== "https:") {
+      return null;
+    }
+    return proxyUrl;
+  } catch {
+    return null;
+  }
+}
+
+function openProxyTunnel(
+  proxyUrl: URL,
+  targetHost: string,
+  targetPort: number,
+  timeoutMs: number
+): Promise<tls.TLSSocket> {
   return new Promise((resolve, reject) => {
-    const req = https.get(
-      url,
-      {
-        headers: { "User-Agent": "PaperForge-Obsidian-Plugin/2.0" },
-        timeout: timeoutMs,
-      },
-      (res) => {
-        const code = res.statusCode ?? 0;
-        if (
-          (code === 301 || code === 302 || code === 307 || code === 308) &&
-          res.headers.location
-        ) {
-          res.resume();
-          if (redirectsLeft <= 0) {
-            reject(new Error("Too many redirects"));
-            return;
-          }
-          httpsGetBuffer(
-            res.headers.location,
-            redirectsLeft - 1,
-            timeoutMs
-          ).then(resolve, reject);
-          return;
-        }
-        if (code !== 200) {
-          res.resume();
-          reject(new Error(`HTTP ${code} for ${url}`));
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on("data", (c: Buffer) => chunks.push(c));
-        res.on("end", () => resolve(Buffer.concat(chunks)));
-        res.on("error", reject);
+    const proxyPort =
+      Number(proxyUrl.port) || (proxyUrl.protocol === "https:" ? 443 : 80);
+    const headers: Record<string, string> = {
+      Host: `${targetHost}:${targetPort}`,
+    };
+    if (proxyUrl.username || proxyUrl.password) {
+      const creds = Buffer.from(
+        `${decodeURIComponent(proxyUrl.username)}:${decodeURIComponent(proxyUrl.password)}`
+      ).toString("base64");
+      headers["Proxy-Authorization"] = `Basic ${creds}`;
+    }
+    const requester = proxyUrl.protocol === "https:" ? https.request : http.request;
+    const req = requester({
+      host: proxyUrl.hostname,
+      port: proxyPort,
+      method: "CONNECT",
+      path: `${targetHost}:${targetPort}`,
+      headers,
+      timeout: timeoutMs,
+    });
+    req.on("connect", (res, socket) => {
+      if (res.statusCode !== 200) {
+        socket.destroy();
+        reject(new Error(`Proxy CONNECT failed with HTTP ${res.statusCode}`));
+        return;
       }
-    );
+      const tlsSock = tls.connect({
+        socket,
+        servername: targetHost,
+      });
+      tlsSock.once("error", reject);
+      resolve(tlsSock);
+    });
     req.on("timeout", () => {
-      req.destroy(new Error(`Timeout fetching ${url}`));
+      req.destroy(new Error(`Proxy CONNECT timeout to ${proxyUrl.hostname}`));
     });
     req.on("error", reject);
+    req.end();
+  });
+}
+
+export async function httpsGetBuffer(
+  url: string,
+  redirectsLeft = 5,
+  timeoutMs = 15000,
+  maxBytes = MAX_DAEMON_BINARY_BYTES,
+  env: Record<string, string | undefined> = process.env
+): Promise<Buffer> {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  if (parsedUrl.protocol !== "https:") {
+    throw new Error(`Refusing non-HTTPS URL: ${parsedUrl.protocol}`);
+  }
+
+  const proxyUrl = resolveProxyForUrl(parsedUrl.toString(), env);
+  const targetPort = Number(parsedUrl.port) || 443;
+  const tunnelSocket = proxyUrl
+    ? await openProxyTunnel(proxyUrl, parsedUrl.hostname, targetPort, timeoutMs)
+    : null;
+
+  return new Promise((resolve, reject) => {
+    const reqOpts: https.RequestOptions = tunnelSocket
+      ? {
+          hostname: parsedUrl.hostname,
+          port: targetPort,
+          path: parsedUrl.pathname + parsedUrl.search,
+          headers: {
+            Host: parsedUrl.host,
+            "User-Agent": "PaperForge-Obsidian-Plugin/2.0",
+          },
+          agent: false,
+          createConnection: () => tunnelSocket,
+          timeout: timeoutMs,
+        }
+      : {
+          headers: { "User-Agent": "PaperForge-Obsidian-Plugin/2.0" },
+          timeout: timeoutMs,
+        };
+
+    const handleResponse = (res: http.IncomingMessage) => {
+      const code = res.statusCode ?? 0;
+      if (
+        (code === 301 || code === 302 || code === 307 || code === 308) &&
+        res.headers.location
+      ) {
+        res.resume();
+        tunnelSocket?.destroy();
+        if (redirectsLeft <= 0) {
+          reject(new Error("Too many redirects"));
+          return;
+        }
+        let nextUrl: URL;
+        try {
+          nextUrl = new URL(res.headers.location, parsedUrl);
+        } catch {
+          reject(new Error("Invalid redirect URL"));
+          return;
+        }
+        if (nextUrl.protocol !== "https:") {
+          reject(
+            new Error(`Refusing non-HTTPS redirect to ${nextUrl.protocol}`)
+          );
+          return;
+        }
+        httpsGetBuffer(
+          nextUrl.toString(),
+          redirectsLeft - 1,
+          timeoutMs,
+          maxBytes,
+          env
+        ).then(resolve, reject);
+        return;
+      }
+      if (code !== 200) {
+        res.resume();
+        tunnelSocket?.destroy();
+        reject(new Error(`HTTP ${code} for ${parsedUrl.toString()}`));
+        return;
+      }
+      const contentLen = Number(res.headers["content-length"]);
+      if (Number.isFinite(contentLen) && contentLen > maxBytes) {
+        res.destroy();
+        tunnelSocket?.destroy();
+        reject(
+          new Error(
+            `Response size ${contentLen} exceeds maximum allowed ${maxBytes} bytes`
+          )
+        );
+        return;
+      }
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
+      let aborted = false;
+      res.on("data", (c: Buffer) => {
+        if (aborted) return;
+        totalBytes += c.length;
+        if (totalBytes > maxBytes) {
+          aborted = true;
+          res.destroy();
+          tunnelSocket?.destroy();
+          reject(
+            new Error(
+              `Response exceeded maximum allowed ${maxBytes} bytes`
+            )
+          );
+          return;
+        }
+        chunks.push(c);
+      });
+      res.on("end", () => {
+        if (!aborted) resolve(Buffer.concat(chunks));
+      });
+      res.on("error", (err) => {
+        tunnelSocket?.destroy();
+        reject(err);
+      });
+    };
+
+    const req = tunnelSocket
+      ? https.get(reqOpts, handleResponse)
+      : https.get(parsedUrl.toString(), reqOpts, handleResponse);
+    req.on("timeout", () => {
+      req.destroy(new Error(`Timeout fetching ${parsedUrl.toString()}`));
+      tunnelSocket?.destroy();
+    });
+    req.on("error", (err) => {
+      tunnelSocket?.destroy();
+      reject(err);
+    });
   });
 }
 
@@ -401,6 +646,7 @@ export async function ensureNativeDaemonDownloaded(
     arch?: string;
     checkVersionUpdate?: boolean;
     onBeforeReplace?: () => void | Promise<void>;
+    onReplace?: (swapFn: () => Promise<void> | void) => Promise<void>;
     onQuarantineSuspected?: (binDir: string) => void;
     fetchBuffer?: (url: string) => Promise<Buffer>;
   } = {}
@@ -413,19 +659,24 @@ export async function ensureNativeDaemonDownloaded(
   const verFile = path.join(binDir, ".daemon-version");
   const metaFile = nativeDaemonMetaFile(home, plat);
   const wantTag = normalizeDaemonTag(version);
-  const fetcher =
+  const checksumFetcher =
     opts.fetchBuffer ??
-    ((u: string) =>
-      httpsGetBuffer(u, 5, u.endsWith("/checksums.txt") ? 10000 : 25000));
+    ((u: string) => httpsGetBuffer(u, 5, 10000, MAX_CHECKSUMS_BYTES));
+  const binaryFetcher =
+    opts.fetchBuffer ??
+    ((u: string) => httpsGetBuffer(u, 5, 25000, MAX_DAEMON_BINARY_BYTES));
 
   const meta = readNativeDaemonMeta(home, plat);
+  const metaPathValid = Boolean(
+    meta?.binaryPath && isManagedDaemonBinaryPath(binDir, meta.binaryPath)
+  );
   let existingPath: string | null = null;
   let installedSha: string | null = null;
   let installedTag = "";
   let suspectedQuarantine = false;
 
   try {
-    if (meta?.binaryPath) {
+    if (meta?.binaryPath && metaPathValid) {
       if (
         fs.existsSync(meta.binaryPath) &&
         fs.statSync(meta.binaryPath).size > 0
@@ -455,10 +706,20 @@ export async function ensureNativeDaemonDownloaded(
       installedSha = await sha256FileAsync(legacyDest);
     }
   } catch {
-    if (plat === "win32" && meta?.binaryPath) {
+    if (plat === "win32" && meta?.binaryPath && metaPathValid) {
       suspectedQuarantine = true;
     }
   }
+
+  const existingCorrupted = Boolean(
+    meta &&
+      metaPathValid &&
+      existingPath &&
+      path.resolve(existingPath) === path.resolve(meta.binaryPath) &&
+      (!isValidSha256Hex(meta.sha256) ||
+        !installedSha ||
+        installedSha !== meta.sha256.toLowerCase())
+  );
 
   if (suspectedQuarantine) {
     try {
@@ -468,7 +729,7 @@ export async function ensureNativeDaemonDownloaded(
     }
   }
 
-  if (existingPath && (!opts.checkVersionUpdate || !wantTag)) {
+  if (existingPath && !existingCorrupted && (!opts.checkVersionUpdate || !wantTag)) {
     return existingPath;
   }
 
@@ -478,7 +739,9 @@ export async function ensureNativeDaemonDownloaded(
   if (
     !opts.fetchBuffer &&
     existingPath &&
+    !existingCorrupted &&
     meta &&
+    metaPathValid &&
     installedTag === wantTag &&
     installedSha &&
     installedSha === meta.sha256 &&
@@ -493,7 +756,7 @@ export async function ensureNativeDaemonDownloaded(
 
   const assetName = nativeDaemonAssetName(plat, arch);
   const tag = wantTag;
-  if (!assetName || !tag) return existingPath;
+  if (!assetName || !tag) return existingCorrupted ? null : existingPath;
 
   const baseRelease = `https://github.com/${PAPERFORGE_GITHUB_REPO}/releases/download/${tag}`;
   const cnMirrors = [
@@ -504,42 +767,59 @@ export async function ensureNativeDaemonDownloaded(
     ? [...cnMirrors, baseRelease]
     : [baseRelease, ...cnMirrors];
 
-  for (const base of bases) {
-    try {
-      const checksumBuf = await fetcher(`${base}/checksums.txt`);
-      const expectedSha = parseChecksumForAsset(
-        checksumBuf.toString("utf-8"),
-        assetName
-      );
-      if (!expectedSha) continue;
+  // PF-SEC-001: Authoritative checksums.txt MUST be fetched ONLY from official
+  // github.com (never from third-party mirrors), failing closed if unreachable.
+  let expectedSha: string | null = null;
+  try {
+    const checksumBuf = await checksumFetcher(`${baseRelease}/checksums.txt`);
+    expectedSha = parseChecksumForAsset(
+      checksumBuf.toString("utf-8"),
+      assetName
+    );
+  } catch {
+    expectedSha = null;
+  }
+  if (!expectedSha) {
+    return existingCorrupted ? null : existingPath;
+  }
 
-      // Content-addressed short-circuit: only skip download when BOTH tag AND
-      // actual binary SHA-256 match the published checksums.txt!
-      if (
-        existingPath &&
-        installedTag === tag &&
-        installedSha &&
-        installedSha === expectedSha
-      ) {
-        if (meta) {
-          try {
-            const refreshed: NativeDaemonMeta = {
-              ...meta,
-              checkedAt: Date.now(),
-            };
-            fs.writeFileSync(
-              metaFile,
-              JSON.stringify(refreshed, null, 2),
-              "utf-8"
-            );
-          } catch {
-            // Best-effort timestamp refresh
-          }
+  // Content-addressed short-circuit: only skip download when BOTH tag AND
+  // actual binary SHA-256 match the official published checksums.txt!
+  if (
+    existingPath &&
+    installedTag === tag &&
+    installedSha &&
+    installedSha === expectedSha
+  ) {
+    if (meta && metaPathValid) {
+      try {
+        const refreshed: NativeDaemonMeta = {
+          ...meta,
+          checkedAt: Date.now(),
+        };
+        const refreshTmp = `${metaFile}.${process.pid}.${Date.now()}.tmp`;
+        try {
+          fs.writeFileSync(
+            refreshTmp,
+            JSON.stringify(refreshed, null, 2),
+            "utf-8"
+          );
+          fs.renameSync(refreshTmp, metaFile);
+        } finally {
+          unlinkQuiet(refreshTmp);
         }
-        return existingPath;
+      } catch {
+        // Best-effort timestamp refresh
       }
+    }
+    return existingPath;
+  }
 
-      const binBuf = await fetcher(`${base}/${assetName}`);
+  for (const base of bases) {
+    let tmpPath: string | null = null;
+    let metaTmp: string | null = null;
+    try {
+      const binBuf = await binaryFetcher(`${base}/${assetName}`);
       const actualSha = crypto
         .createHash("sha256")
         .update(binBuf)
@@ -551,47 +831,55 @@ export async function ensureNativeDaemonDownloaded(
       // Write to a content-addressed versioned filename so Windows NEVER fails
       // trying to overwrite a currently running `paperforge-daemon.exe`.
       const targetPath = versionedNativeDaemonPath(home, plat, tag, actualSha);
-      const tmpPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+      tmpPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
       fs.writeFileSync(tmpPath, binBuf, { mode: 0o755 });
       ensureExecutableMode(tmpPath, plat);
-      const repairingSamePath = existingPath === targetPath;
-      if (repairingSamePath && opts.onBeforeReplace) {
-        try {
-          await opts.onBeforeReplace();
-        } catch {
-          // Best-effort release before repairing same-path corrupted binary
-        }
-      }
-      try {
-        fs.renameSync(tmpPath, targetPath);
-      } catch {
-        // Target already exists with identical content-addressed hash
-        if (fs.existsSync(targetPath) && sha256File(targetPath) === actualSha) {
-          try {
-            fs.unlinkSync(tmpPath);
-          } catch {
-            // ignore
-          }
-        } else {
-          throw new Error(`Failed to stage daemon binary at ${targetPath}`);
-        }
-      }
-      ensureExecutableMode(targetPath, plat);
+      const repairingSamePath =
+        existingPath !== null &&
+        path.resolve(existingPath) === path.resolve(targetPath);
 
-      // Atomically flip metadata pointer to the new binary BEFORE stopping old daemon
-      const nextMeta: NativeDaemonMeta = {
-        tag,
-        sha256: actualSha,
-        binaryPath: targetPath,
-        checkedAt: Date.now(),
+      const promoteBinary = () => {
+        try {
+          fs.renameSync(tmpPath!, targetPath);
+        } catch {
+          // Target already exists with identical content-addressed hash
+          if (fs.existsSync(targetPath) && sha256File(targetPath) === actualSha) {
+            unlinkQuiet(tmpPath);
+          } else {
+            throw new Error(`Failed to stage daemon binary at ${targetPath}`);
+          }
+        }
+        ensureExecutableMode(targetPath, plat);
+
+        // Atomically flip metadata pointer to the new binary BEFORE stopping old daemon
+        const nextMeta: NativeDaemonMeta = {
+          tag,
+          sha256: actualSha,
+          binaryPath: targetPath,
+          checkedAt: Date.now(),
+        };
+        metaTmp = `${metaFile}.${process.pid}.${Date.now()}.tmp`;
+        fs.writeFileSync(metaTmp, JSON.stringify(nextMeta, null, 2), "utf-8");
+        fs.renameSync(metaTmp, metaFile);
+        metaTmp = null;
+        try {
+          fs.writeFileSync(verFile, tag, "utf-8");
+        } catch {
+          // Non-fatal legacy version marker write
+        }
       };
-      const metaTmp = `${metaFile}.${process.pid}.${Date.now()}.tmp`;
-      fs.writeFileSync(metaTmp, JSON.stringify(nextMeta, null, 2), "utf-8");
-      fs.renameSync(metaTmp, metaFile);
-      try {
-        fs.writeFileSync(verFile, tag, "utf-8");
-      } catch {
-        // Non-fatal legacy version marker write
+
+      if (repairingSamePath && opts.onReplace) {
+        await opts.onReplace(promoteBinary);
+      } else {
+        if (repairingSamePath && opts.onBeforeReplace) {
+          try {
+            await opts.onBeforeReplace();
+          } catch {
+            // Best-effort release before repairing same-path corrupted binary
+          }
+        }
+        promoteBinary();
       }
 
       if (existingPath && !repairingSamePath && opts.onBeforeReplace) {
@@ -605,8 +893,11 @@ export async function ensureNativeDaemonDownloaded(
       pruneObsoleteDaemonBinaries(binDir, targetPath);
       return targetPath;
     } catch {
-      // Try mirror or silently stay on existing / Python fallback when offline
+      // Try next mirror or fail closed if corrupted
+    } finally {
+      unlinkQuiet(tmpPath);
+      unlinkQuiet(metaTmp);
     }
   }
-  return existingPath;
+  return existingCorrupted ? null : existingPath;
 }

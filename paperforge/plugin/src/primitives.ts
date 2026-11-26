@@ -470,8 +470,8 @@ export function redactDiagnostic(
     out = out.split(root).join("<path>");
   }
   out = out
-    // Windows absolute path (stops at whitespace, a quote, or a delimiter).
-    .replace(/[A-Za-z]:[\\/][^\s"'<>|,;]*/g, "<path>")
+    // Windows absolute path (stops at whitespace, a quote, or a delimiter; excludes URL schemes like https://).
+    .replace(/(?<![A-Za-z])[A-Za-z]:(?:\\|\/(?!\/))[^\s"'<>|,;]*/g, "<path>")
     // POSIX absolute path in the directories a machine profile lives under.
     .replace(
       /(?<![\w:])\/(?:Users|home|root|var|tmp|opt|mnt|Volumes)\/[^\s"'<>|,;]*/g,
@@ -479,11 +479,17 @@ export function redactDiagnostic(
     )
     // Provider keys and bearer tokens.
     .replace(/\bsk-[A-Za-z0-9_-]{8,}/g, "<redacted-key>")
-    .replace(/\b(Bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, "$1 <redacted>")
-    // key=value secrets in query strings and inline diagnostics.
+    .replace(/\bgh[pousr]_[A-Za-z0-9_]{16,}/g, "<redacted-key>")
+    .replace(/\bAIza[A-Za-z0-9_-]{20,}/g, "<redacted-key>")
     .replace(
-      /\b(token|api[_-]?key|secret|password|authorization)=([^\s&"']+)/gi,
-      "$1=<redacted>"
+      /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_-]+)?/g,
+      "<redacted-token>"
+    )
+    .replace(/\b(Bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, "$1 <redacted>")
+    // key=value / key: value secrets in query strings and inline diagnostics.
+    .replace(
+      /\b(token|api[_-]?key|secret|password|authorization)\s*([=:])\s*([^\s&"']+)/gi,
+      "$1$2<redacted>"
     );
   return out;
 }

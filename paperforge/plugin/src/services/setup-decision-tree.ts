@@ -74,6 +74,7 @@ export interface SetupDecisionInput {
   upgradeBannerDismissed: boolean;
   runtimePointer: PointerInfo | null;
   expectedVersion: string;
+  minEngineVersion?: string;
   installationEnv: ProbeEnvelope;
   libraryEnv: ProbeEnvelope;
   isProbing: boolean;
@@ -82,6 +83,13 @@ export interface SetupDecisionInput {
   lastAutoSyncError: string | null;
   paperCount: number | null;
 }
+
+const STAGE_ORDER: Record<string, number> = {
+  a: -3,
+  b: -2,
+  rc: -1,
+  "": 0,
+};
 
 export function normalizeSemverForCompare(
   raw: string | null | undefined
@@ -93,6 +101,69 @@ export function normalizeSemverForCompare(
     .replace(/[-_.]?(?:beta|b)\.?(\d+)/i, "b$1")
     .replace(/[-_.]?(?:alpha|a)\.?(\d+)/i, "a$1")
     .toLowerCase();
+}
+
+export function parseReleaseTuple(
+  version: string | null | undefined
+): [number, number, number, number, number, number] | null {
+  const norm = normalizeSemverForCompare(version);
+  if (!norm) return null;
+  const preMatch =
+    /^(\d+(?:\.\d+)*)(a|b|rc)(\d+)(?:\.post(\d+))?$/.exec(norm);
+  let nums: number[];
+  let stage = 0;
+  let stageNum = 0;
+  let postNum = 0;
+  if (preMatch) {
+    nums = preMatch[1].split(".").map((n) => parseInt(n, 10));
+    stage = STAGE_ORDER[preMatch[2]] ?? 0;
+    stageNum = parseInt(preMatch[3], 10);
+    postNum = preMatch[4] ? parseInt(preMatch[4], 10) : 0;
+  } else {
+    const finalMatch = /^(\d+(?:\.\d+)*)(?:\.post(\d+))?$/.exec(norm);
+    if (!finalMatch) return null;
+    nums = finalMatch[1].split(".").map((n) => parseInt(n, 10));
+    postNum = finalMatch[2] ? parseInt(finalMatch[2], 10) : 0;
+  }
+  while (nums.length < 3) nums.push(0);
+  return [nums[0], nums[1], nums[2], stage, stageNum, postNum];
+}
+
+export function compareReleaseVersions(
+  a: string | null | undefined,
+  b: string | null | undefined
+): number | null {
+  const ta = parseReleaseTuple(a);
+  const tb = parseReleaseTuple(b);
+  if (!ta || !tb) return null;
+  for (let i = 0; i < 6; i++) {
+    if (ta[i] !== tb[i]) return ta[i] < tb[i] ? -1 : 1;
+  }
+  return 0;
+}
+
+/**
+ * Evaluate runtime compatibility matching `paperforge/core/versioning.py`:
+ * when `minEngineVersion` is provided, any runtime >= `minEngineVersion` is
+ * compatible (so UI-only patch bumps do not force unnecessary backend updates);
+ * otherwise falls back to exact normalized equality against `expectedVersion`.
+ */
+export function isEngineVersionCompatible(
+  coreVersion: string | null | undefined,
+  expectedVersion: string | null | undefined,
+  minEngineVersion?: string | null
+): boolean {
+  const core = normalizeSemverForCompare(coreVersion);
+  if (!core) return false;
+  const minEng = normalizeSemverForCompare(minEngineVersion);
+  if (minEng) {
+    const cmp = compareReleaseVersions(core, minEng);
+    if (cmp !== null) return cmp >= 0;
+    return core === minEng;
+  }
+  const exp = normalizeSemverForCompare(expectedVersion);
+  if (exp) return core === exp;
+  return true;
 }
 
 export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
@@ -151,10 +222,15 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
   }
 
   const ptr = input.runtimePointer;
-  const expNorm = normalizeSemverForCompare(input.expectedVersion);
-  const ptrNorm = normalizeSemverForCompare(ptr?.paperforgeVersion);
+  const versionCompatible = ptr
+    ? isEngineVersionCompatible(
+        ptr.paperforgeVersion,
+        input.expectedVersion,
+        input.minEngineVersion
+      )
+    : true;
   const versionMismatch =
-    Boolean(ptr && expNorm && ptrNorm && ptrNorm !== expNorm) ||
+    Boolean(ptr && !versionCompatible) ||
     input.installationEnv.reason?.code === "version_mismatch";
   const needsVaultUpgrade =
     input.upgradePlan?.provenance?.needs_upgrade === true;
@@ -180,7 +256,7 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
   }
 
   // 4. Engine not installed at all (brand-new user or legacy user before new runtime install)
-  if (instState !== "ready" && !ptr) {
+  if (!ptr) {
     const body = needsVaultUpgrade
       ? `${t("dt_step1_body")} ${t("dt_legacy_after_engine_hint")}`
       : t("dt_step1_body");

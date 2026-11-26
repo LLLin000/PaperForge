@@ -193,4 +193,68 @@ describe("Performance hygiene & zero-lag runtime invariants", () => {
     expect(domSrc).not.toMatch(/\.innerHTML\s*=/);
     expect(mainSrc).not.toMatch(/detachLeavesOfType/);
   });
+
+  it("PF-RT-009 / PF-UI-006: onunload() calls _settingTab.hide() and prevents post-unload startup timers or fs.watch", async () => {
+    const hideFn = vi.fn();
+    const cancelOp = vi.fn();
+    const shutdownTransport = vi.fn();
+    const pf = Object.create(PaperForgePlugin.prototype) as PaperForgePlugin & {
+      _unloaded: boolean;
+      _settingTab: { hide: () => void } | null;
+      _popoutWindows: Set<Window>;
+      _daemonJobs: Map<string, unknown>;
+      _client: {
+        cancelActiveOperation: () => void;
+        shutdownTransport: () => void;
+      } | null;
+      _pollTimer: ReturnType<typeof setInterval> | null;
+      _stateSeqWatcher: { close?: () => void } | null;
+      _closeStatusPopover: () => void;
+      _startStateSeqWatcher: (vaultBase: string) => void;
+      _startConvergenceTimer: () => void;
+      app: unknown;
+      settings: Record<string, unknown>;
+    };
+    pf._unloaded = false;
+    pf._settingTab = { hide: hideFn };
+    pf._popoutWindows = new Set();
+    pf._daemonJobs = new Map();
+    pf._client = {
+      cancelActiveOperation: cancelOp,
+      shutdownTransport,
+    };
+    pf._pollTimer = setInterval(() => {}, 5000);
+    pf._stateSeqWatcher = null;
+    pf._closeStatusPopover = vi.fn();
+    pf.app = { vault: { adapter: { basePath: "/vault" } } };
+    pf.settings = { ...DEFAULT_SETTINGS, autoSyncEnabled: true };
+
+    pf.onunload();
+
+    expect(pf._unloaded).toBe(true);
+    expect(hideFn).toHaveBeenCalledOnce();
+    expect(pf._pollTimer).toBeNull();
+    expect(shutdownTransport).toHaveBeenCalledOnce();
+
+    // Post-unload calls to _startConvergenceTimer / _startStateSeqWatcher are no-ops
+    pf._startConvergenceTimer();
+    pf._startStateSeqWatcher("/vault");
+    expect(pf._pollTimer).toBeNull();
+    expect(pf._stateSeqWatcher).toBeNull();
+  });
+
+  it("PF-ARCH-007: runStartupHydration calls _startStateSeqWatcher AFTER _hydrateConfigMirrors resolves", () => {
+    const mainSrc = fs.readFileSync(
+      path.join(path.resolve(__dirname, "../src"), "main.ts"),
+      "utf-8"
+    );
+    const hydrationBlock = mainSrc.slice(
+      mainSrc.indexOf("const runStartupHydration"),
+      mainSrc.indexOf("const scheduleDeferredStartup")
+    );
+    const hydrateIdx = hydrationBlock.indexOf("this._hydrateConfigMirrors(vaultBase)");
+    const watcherIdx = hydrationBlock.indexOf("this._startStateSeqWatcher(vaultBase)");
+    expect(hydrateIdx).toBeGreaterThan(-1);
+    expect(watcherIdx).toBeGreaterThan(hydrateIdx);
+  });
 });

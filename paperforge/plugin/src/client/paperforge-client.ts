@@ -2685,6 +2685,19 @@ export class PaperForgeClient {
     }
   }
 
+  async runWithTransportSwap<T>(fn: () => Promise<T> | T): Promise<T> {
+    const t = this._transport as unknown as {
+      runWithDaemonSwap?: <R>(cb: () => Promise<R> | R) => Promise<R>;
+      shutdownDaemonAsync?: () => Promise<void>;
+      shutdownDaemon?: () => void;
+    };
+    if (typeof t?.runWithDaemonSwap === "function") {
+      return await t.runWithDaemonSwap(fn);
+    }
+    await this.shutdownTransportAsync();
+    return await fn();
+  }
+
   async daemonSubmitRuntimeUpdate(
     version: string
   ): Promise<{ accepted: boolean; coalesced?: boolean; reason?: string }> {

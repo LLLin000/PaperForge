@@ -225,6 +225,35 @@ describe("PaperForgeIssueDraftModal redaction", () => {
       modal.contentEl.querySelectorAll("input[type=password]").length
     ).toBe(0);
   });
+
+  it("PF-SEC-011: redacts sk-proj-*, Bearer, password=, and forward-slash Windows paths in PaperForgeIssueDraftModal", () => {
+    const draft = {
+      title: "OCR: ocr.failed",
+      body: [
+        "Key: sk-proj-abc_1234567890XYZ",
+        "Header: Bearer tok_abc.def/123",
+        "Pass: password=supersecret",
+        "WinPath: C:/Users/Alice/vault/paper.pdf",
+        "Link: https://github.com/o/r/issues/new",
+      ].join("\n"),
+      labels: ["ocr"],
+    } as unknown as PublicIssueDraft;
+    const modal = new PaperForgeIssueDraftModal(
+      {
+        vault: { adapter: { basePath: "/test" }, getConfig: () => "en" },
+      } as never,
+      draft,
+      "https://github.com/o/r/issues/new"
+    );
+    augmentEl(modal.contentEl);
+    modal.onOpen();
+    const textarea = modal.contentEl.querySelector("textarea")!;
+    expect(textarea.value).not.toContain("sk-proj-abc_1234567890XYZ");
+    expect(textarea.value).not.toContain("tok_abc.def/123");
+    expect(textarea.value).not.toContain("supersecret");
+    expect(textarea.value).not.toContain("C:/Users/Alice");
+    expect(textarea.value).toContain("https://github.com/o/r/issues/new");
+  });
   it("14. no auto-open + URL redacted after explicit click", () => {
     const draft = {
       title: "OCR issue",

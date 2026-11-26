@@ -22,15 +22,69 @@ import * as path from "path";
 export type RuntimeInstallerAction = "install" | "update" | "repair";
 
 const PYTHON_PLACEHOLDER = "{{python}}";
+const SAFE_VERSION_RE =
+  /^[vV]?\d+(?:\.\d+){0,3}(?:[-.]?(?:alpha|beta|rc|a|b)\.?\d+)?(?:\.post\d+)?$/i;
+
+export function assertSafeVersion(version: string): string {
+  const trimmed = String(version || "").trim();
+  if (!trimmed || !SAFE_VERSION_RE.test(trimmed)) {
+    throw new Error(`Invalid PaperForge version string: ${String(version)}`);
+  }
+  return trimmed;
+}
+
+function assertSafeAction(action: RuntimeInstallerAction): RuntimeInstallerAction {
+  if (action !== "install" && action !== "update" && action !== "repair") {
+    throw new Error(`Invalid runtime installer action: ${String(action)}`);
+  }
+  return action;
+}
+
+export function quoteShellArg(
+  value: string,
+  platform: NodeJS.Platform = process.platform
+): string {
+  if (/[\r\n\0]/.test(value)) {
+    throw new Error("Shell argument contains illegal control characters");
+  }
+  if (/^[A-Za-z0-9_./:\\-]+$/.test(value)) {
+    return value;
+  }
+  if (platform === "win32") {
+    if (value.includes('"')) {
+      throw new Error("Windows shell argument cannot contain double quotes");
+    }
+    return `"${value.replace(/%/g, "%%")}"`;
+  }
+  return shSingleQuote(value);
+}
+
+function splitUnquotedAndAnd(cmd: string): [string, string | undefined] {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < cmd.length - 3; i++) {
+    const ch = cmd[i];
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+    } else if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+    } else if (!inSingle && !inDouble && cmd.slice(i, i + 4) === " && ") {
+      return [cmd.slice(0, i), cmd.slice(i + 4)];
+    }
+  }
+  return [cmd, undefined];
+}
 
 /** The two steps the external installer runs, in order. */
 export function runtimeInstallerSteps(
   action: RuntimeInstallerAction,
   version: string
 ): string[] {
+  const safeAction = assertSafeAction(action);
+  const safeVersion = assertSafeVersion(version);
   return [
-    `${PYTHON_PLACEHOLDER} -m pip install --user --upgrade paperforge==${version}`,
-    `${PYTHON_PLACEHOLDER} -m paperforge runtime ${action} --expected-version ${version}`,
+    `${PYTHON_PLACEHOLDER} -m pip install --user --upgrade paperforge==${safeVersion}`,
+    `${PYTHON_PLACEHOLDER} -m paperforge runtime ${safeAction} --expected-version ${safeVersion}`,
   ];
 }
 
@@ -38,9 +92,10 @@ export function runtimeInstallerSteps(
 export function runtimeInstallerShellCommand(
   python: string,
   action: RuntimeInstallerAction,
-  version: string
+  version: string,
+  platform: NodeJS.Platform = process.platform
 ): string {
-  const quoted = /\s/.test(python) ? `"${python}"` : python;
+  const quoted = quoteShellArg(python, platform);
   return runtimeInstallerSteps(action, version)
     .map((step) => step.replace(PYTHON_PLACEHOLDER, quoted))
     .join(" && ");
@@ -51,34 +106,42 @@ export function installerShellCommand(
   python: string,
   action: RuntimeInstallerAction,
   version: string,
-  bootstrapPath: string
+  bootstrapPath: string,
+  platform: NodeJS.Platform = process.platform
 ): string {
-  const quoted = (value: string) => (/\s/.test(value) ? `"${value}"` : value);
+  const safeAction = assertSafeAction(action);
+  const safeVersion = assertSafeVersion(version);
+  const py = quoteShellArg(python, platform);
+  const boot = quoteShellArg(bootstrapPath, platform);
   return [
-    `${quoted(python)} ${quoted(bootstrapPath)}`,
-    `${quoted(python)} -m paperforge runtime ${action} --expected-version ${version}`,
+    `${py} ${boot}`,
+    `${py} -m paperforge runtime ${safeAction} --expected-version ${safeVersion}`,
   ].join(" && ");
 }
 
 /** Windows batch script — avoids every nested-quoting layer of `cmd /c`. */
 export function windowsInstallerScript(shellCommand: string): string {
-  const [first, second] = shellCommand.split(" && ");
-  return [
+  const [first, second] = splitUnquotedAndAnd(shellCommand);
+  const lines = [
     "@echo off",
     "@chcp 65001 >nul",
     first,
     "if errorlevel 1 goto :paperforge_failed",
-    second,
+  ];
+  if (second) {
+    lines.push(second, "if errorlevel 1 goto :paperforge_failed");
+  }
+  lines.push(
     "goto :paperforge_done",
     ":paperforge_failed",
     "echo.",
     "echo [PaperForge] Installer step failed. Fix the error above and retry.",
-    "goto :paperforge_exit",
+    "exit /b 1",
     ":paperforge_done",
     "echo [PaperForge] Installer finished.",
-    ":paperforge_exit",
-    "",
-  ].join("\r\n");
+    ""
+  );
+  return lines.join("\r\n");
 }
 
 /** POSIX script: same fail-fast semantics and the same terminal markers. */
@@ -144,15 +207,28 @@ export function releaseWheelUrl(version: string, useMirror = false): string {
   return useMirror ? `https://ghfast.top/${direct}` : direct;
 }
 
+export function releaseChecksumsUrl(version: string): string {
+  const cleanTag = assertSafeVersion(version).replace(/^[vV]/, "");
+  const pep440 = normalizePep440Version(cleanTag);
+  const tag = cleanTag || pep440;
+  return tag
+    ? `https://github.com/${PAPERFORGE_GITHUB_REPO}/releases/download/${tag}/checksums.txt`
+    : "";
+}
+
 export function bootstrapPythonSource(version: string): string {
-  const pepVersion = normalizePep440Version(version);
-  const wheelName = releaseWheelFilename(version);
-  const ghWheelUrl = releaseWheelUrl(version, false);
-  const mirrorWheelUrl = releaseWheelUrl(version, true);
+  const safeVersion = assertSafeVersion(version);
+  const pepVersion = normalizePep440Version(safeVersion);
+  const wheelName = releaseWheelFilename(safeVersion);
+  const checksumsUrl = releaseChecksumsUrl(safeVersion);
+  const ghWheelUrl = releaseWheelUrl(safeVersion, false);
+  const mirrorWheelUrl = releaseWheelUrl(safeVersion, true);
   return `"""Bootstrap the PaperForge CLI; the CLI owns the runtime install itself.
 
 Generated by the plugin. Prints human-readable progress to the installer log.
 """
+import hashlib
+import io
 import os
 import pathlib
 import re
@@ -160,10 +236,14 @@ import subprocess
 import sys
 import sysconfig
 import urllib.request
+import zipfile
 
-VERSION = "${pepVersion}"
-WHEEL_NAME = "${wheelName}"
-WHEEL_URLS = [u for u in ("${ghWheelUrl}", "${mirrorWheelUrl}") if u]
+VERSION = ${JSON.stringify(pepVersion)}
+WHEEL_NAME = ${JSON.stringify(wheelName)}
+CHECKSUMS_URL = ${JSON.stringify(checksumsUrl)}
+WHEEL_URLS = [u for u in (${JSON.stringify(ghWheelUrl)}, ${JSON.stringify(mirrorWheelUrl)}) if u]
+if os.environ.get("PAPERFORGE_PREFER_CN_MIRROR") == "1" and len(WHEEL_URLS) > 1:
+    WHEEL_URLS = list(reversed(WHEEL_URLS))
 
 
 def _norm_ver(v):
@@ -175,6 +255,24 @@ def _norm_ver(v):
         return s
     phase = {"alpha": "a", "a": "a", "beta": "b", "b": "b", "rc": "rc"}[m.group(2).lower()]
     return f"{m.group(1)}{phase}{int(m.group(3))}"
+
+
+def _fetch_official_wheel_sha(checksums_url, wheel_name):
+    if not checksums_url or not wheel_name:
+        return None
+    try:
+        req = urllib.request.Request(
+            checksums_url, headers={"User-Agent": "PaperForge-Installer/2.1"}
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            text = resp.read(262144).decode("utf-8", errors="replace")
+        for line in text.splitlines():
+            m = re.match(r"^([a-fA-F0-9]{64})\\s+\\*?(.+)$", line.strip())
+            if m and pathlib.PurePosixPath(m.group(2).strip().replace("\\\\", "/")).name == wheel_name:
+                return m.group(1).lower()
+    except Exception as exc:
+        print("[PaperForge] Official checksums fetch skipped (" + str(exc) + ")", flush=True)
+    return None
 
 
 try:
@@ -201,7 +299,16 @@ except Exception:
 wheel_dir = pathlib.Path.home() / ".paperforge" / "runtime" / "cache" / "wheels"
 if WHEEL_NAME and WHEEL_URLS and not os.environ.get("PIP_INDEX_URL") and not os.environ.get("PIP_FIND_LINKS"):
     wheel_path = wheel_dir / WHEEL_NAME
-    if not wheel_path.is_file() or wheel_path.stat().st_size == 0:
+    expected_sha = _fetch_official_wheel_sha(CHECKSUMS_URL, WHEEL_NAME)
+    if wheel_path.is_file():
+        cache_ok = zipfile.is_zipfile(wheel_path)
+        if cache_ok and expected_sha:
+            got_sha = hashlib.sha256(wheel_path.read_bytes()).hexdigest().lower()
+            cache_ok = got_sha == expected_sha
+        if not cache_ok:
+            print("[PaperForge] Removing invalid/unverified cached wheel", flush=True)
+            wheel_path.unlink(missing_ok=True)
+    if (not wheel_path.is_file() or wheel_path.stat().st_size == 0) and expected_sha:
         wheel_dir.mkdir(parents=True, exist_ok=True)
         for u in WHEEL_URLS:
             try:
@@ -209,14 +316,20 @@ if WHEEL_NAME and WHEEL_URLS and not os.environ.get("PIP_INDEX_URL") and not os.
                 req = urllib.request.Request(u, headers={"User-Agent": "PaperForge-Installer/2.1"})
                 with urllib.request.urlopen(req, timeout=45) as resp:
                     raw = resp.read()
-                if raw[:2] == b"PK":
-                    tmp = wheel_path.with_suffix(".whl.tmp")
-                    tmp.write_bytes(raw)
-                    os.replace(tmp, wheel_path)
-                    break
+                got_sha = hashlib.sha256(raw).hexdigest().lower()
+                if got_sha != expected_sha:
+                    print("[PaperForge] Release wheel SHA-256 mismatch from " + u, flush=True)
+                    continue
+                if not zipfile.is_zipfile(io.BytesIO(raw)):
+                    print("[PaperForge] Release wheel is not a valid ZIP archive", flush=True)
+                    continue
+                tmp = wheel_path.with_suffix(".whl.tmp")
+                tmp.write_bytes(raw)
+                os.replace(tmp, wheel_path)
+                break
             except Exception as exc:
                 print("[PaperForge] Release wheel fetch skipped (" + str(exc) + ")", flush=True)
-    if wheel_path.is_file():
+    if wheel_path.is_file() and expected_sha:
         extra.extend(["--find-links", str(wheel_dir)])
 
 print("[PaperForge] Installing CLI " + VERSION + " ...", flush=True)
@@ -233,12 +346,12 @@ cmd = [
 ]
 rc = subprocess.call(cmd)
 if rc != 0 and not os.environ.get("PIP_INDEX_URL") and not os.environ.get("PIP_FIND_LINKS"):
-    for idx, host in (
-        ("https://pypi.tuna.tsinghua.edu.cn/simple", "pypi.tuna.tsinghua.edu.cn"),
-        ("https://mirrors.aliyun.com/pypi/simple", "mirrors.aliyun.com"),
+    for idx in (
+        "https://pypi.tuna.tsinghua.edu.cn/simple",
+        "https://mirrors.aliyun.com/pypi/simple",
     ):
-        print("[PaperForge] Retrying CLI install with mirror " + host + " ...", flush=True)
-        rc = subprocess.call(cmd + ["-i", idx, "--trusted-host", host])
+        print("[PaperForge] Retrying CLI install with mirror " + idx + " ...", flush=True)
+        rc = subprocess.call(cmd + ["-i", idx])
         if rc == 0:
             break
 raise SystemExit(rc)
@@ -345,8 +458,10 @@ function uvTargetTriple(platform: NodeJS.Platform, arch: string): string {
 }
 
 export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
+  const safeAction = assertSafeAction(opts.action);
+  const safeVersion = assertSafeVersion(opts.version);
   const home = opts.home ?? os.homedir();
-  const pep440 = normalizePep440Version(opts.version);
+  const pep440 = normalizePep440Version(safeVersion);
   const spec = pep440 ? `paperforge[vector]==${pep440}` : "paperforge[vector]";
   const target = uvTargetTriple("win32", opts.arch ?? process.arch);
   const assetName = `uv-${target}.zip`;
@@ -359,9 +474,10 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
   const bootDir = uvBootstrapVenvDir(home);
   const logFile = opts.logPath ?? installerLogPath(home);
   const uvSeed = opts.uvPath ?? "";
-  const wheelName = releaseWheelFilename(opts.version);
-  const wheelUrl1 = releaseWheelUrl(opts.version, false);
-  const wheelUrl2 = releaseWheelUrl(opts.version, true);
+  const wheelName = releaseWheelFilename(safeVersion);
+  const checksumsUrl = releaseChecksumsUrl(safeVersion);
+  const wheelUrl1 = releaseWheelUrl(safeVersion, false);
+  const wheelUrl2 = releaseWheelUrl(safeVersion, true);
 
   const lines = [
     "$ErrorActionPreference = 'Stop'",
@@ -371,6 +487,7 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
     `$env:UV_PYTHON_INSTALL_DIR = ${psSingleQuote(pyDir)}`,
     "$env:UV_LINK_MODE = 'hardlink'",
     "$env:UV_PYTHON_DOWNLOADS = 'automatic'",
+    "$preferCn = ($env:PAPERFORGE_PREFER_CN_MIRROR -eq '1')",
     `New-Item -ItemType Directory -Force -Path ${psSingleQuote(binDir)} | Out-Null`,
     `New-Item -ItemType Directory -Force -Path ${psSingleQuote(cacheDir)} | Out-Null`,
     `New-Item -ItemType Directory -Force -Path ${psSingleQuote(pyDir)} | Out-Null`,
@@ -382,7 +499,9 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
     "    if (-not $expectedSha) { throw 'No pinned SHA-256 digest for uv archive.' }",
     `    $zipPath = Join-Path $env:TEMP ('uv-' + [guid]::NewGuid().ToString('N') + '.zip')`,
     `    $extDir = Join-Path $env:TEMP ('uv-ext-' + [guid]::NewGuid().ToString('N'))`,
-    `    $urls = @('https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}', 'https://ghfast.top/https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}')`,
+    `    $uvDirect = 'https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}'`,
+    `    $uvMirror = 'https://ghfast.top/' + $uvDirect`,
+    "    $urls = if ($preferCn) { @($uvMirror, $uvDirect) } else { @($uvDirect, $uvMirror) }",
     "    $downloaded = $false",
     "    foreach ($u in $urls) {",
     "      try {",
@@ -415,12 +534,49 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
     `  $wheelDir = ${psSingleQuote(wheelCacheDir)}`,
     "  New-Item -ItemType Directory -Force -Path $wheelDir | Out-Null",
     `  $wheelName = ${psSingleQuote(wheelName)}`,
-    "  if ($wheelName) {",
+    `  $checksumsUrl = ${psSingleQuote(checksumsUrl)}`,
+    "  $wheelVerified = $false",
+    "  if ($wheelName -and $checksumsUrl) {",
+    "    $wheelSha = ''",
+    "    try {",
+    "      $csText = (Invoke-WebRequest -UseBasicParsing -Uri $checksumsUrl -TimeoutSec 20).Content",
+    "      foreach ($line in ($csText -split \"`r?`n\")) {",
+    "        if ($line.Trim() -match '^([a-fA-F0-9]{64})\\s+\\*?(.+)$') {",
+    "          $leaf = ($Matches[2].Trim() -split '[\\\\/]')[-1]",
+    "          if ($leaf -eq $wheelName) { $wheelSha = $Matches[1].ToLowerInvariant(); break }",
+    "        }",
+    "      }",
+    "    } catch {}",
     "    $wheelFile = Join-Path $wheelDir $wheelName",
-    "    if (-not (Test-Path $wheelFile)) {",
-    `      foreach ($wu in @(${psSingleQuote(wheelUrl1)}, ${psSingleQuote(wheelUrl2)})) {`,
+    "    Add-Type -AssemblyName System.IO.Compression.FileSystem",
+    "    if (Test-Path $wheelFile) {",
+    "      $cacheOk = $false",
+    "      try {",
+    "        $zf = [System.IO.Compression.ZipFile]::OpenRead($wheelFile); $zf.Dispose()",
+    "        if ($wheelSha) {",
+    "          $curSha = (Get-FileHash -Algorithm SHA256 -Path $wheelFile).Hash.ToLowerInvariant()",
+    "          $cacheOk = ($curSha -eq $wheelSha)",
+    "        }",
+    "      } catch { $cacheOk = $false }",
+    "      if (-not $cacheOk) { Remove-Item -Force -ErrorAction SilentlyContinue $wheelFile }",
+    "      else { $wheelVerified = $true }",
+    "    }",
+    "    if (-not (Test-Path $wheelFile) -and $wheelSha) {",
+    `      $wDirect = ${psSingleQuote(wheelUrl1)}`,
+    `      $wMirror = ${psSingleQuote(wheelUrl2)}`,
+    "      $wheelUrls = if ($preferCn) { @($wMirror, $wDirect) } else { @($wDirect, $wMirror) }",
+    "      foreach ($wu in $wheelUrls) {",
     "        if (-not $wu) { continue }",
-    "        try { Invoke-WebRequest -UseBasicParsing -Uri $wu -OutFile ($wheelFile + '.tmp'); Move-Item -Force ($wheelFile + '.tmp') $wheelFile; break } catch { Remove-Item -Force -ErrorAction SilentlyContinue ($wheelFile + '.tmp') }",
+    "        $tmpWheel = $wheelFile + '.tmp'",
+    "        try {",
+    "          Invoke-WebRequest -UseBasicParsing -Uri $wu -OutFile $tmpWheel",
+    "          $gotSha = (Get-FileHash -Algorithm SHA256 -Path $tmpWheel).Hash.ToLowerInvariant()",
+    "          if ($gotSha -ne $wheelSha) { throw \"Wheel SHA-256 mismatch from $wu\" }",
+    "          $zf = [System.IO.Compression.ZipFile]::OpenRead($tmpWheel); $zf.Dispose()",
+    "          Move-Item -Force $tmpWheel $wheelFile",
+    "          $wheelVerified = $true",
+    "          break",
+    "        } catch { Remove-Item -Force -ErrorAction SilentlyContinue $tmpWheel }",
     "      }",
     "    }",
     "  }",
@@ -428,14 +584,14 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
     "  $installed = $false",
     "  foreach ($idx in @('', 'https://pypi.tuna.tsinghua.edu.cn/simple', 'https://mirrors.aliyun.com/pypi/simple/')) {",
     "    try {",
-    "      $findArgs = if (Test-Path (Join-Path $wheelDir '*.whl')) { @('--find-links', $wheelDir) } else { @() }",
+    "      $findArgs = if ($wheelVerified -and (Test-Path (Join-Path $wheelDir '*.whl'))) { @('--find-links', $wheelDir) } else { @() }",
     "      if ($idx) { & $uvBin pip install --python $bootPy --upgrade @findArgs --index-url $idx $spec 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host }",
     "      else { & $uvBin pip install --python $bootPy --upgrade @findArgs $spec 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host }",
     "      if ($LASTEXITCODE -eq 0) { $installed = $true; break }",
     "    } catch {}",
     "  }",
     "  if (-not $installed) { throw 'uv pip install failed across mirrors.' }",
-    `  & $bootPy -m paperforge runtime ${opts.action} --expected-version ${psSingleQuote(pep440 || opts.version)} 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host`,
+    `  & $bootPy -m paperforge runtime ${safeAction} --expected-version ${psSingleQuote(pep440 || safeVersion)} 2>&1 | Tee-Object -FilePath $logFile -Append | Out-Host`,
     "  if ($LASTEXITCODE -ne 0) { throw 'paperforge runtime command failed.' }",
     `  $done = ${psSingleQuote(INSTALLER_FINISHED_MARKER)}`,
     "  $done | Out-File -FilePath $logFile -Append -Encoding utf8",
@@ -455,9 +611,11 @@ export function windowsUvInstallerScript(opts: UvInstallerOptions): string {
 }
 
 export function posixUvInstallerScript(opts: UvInstallerOptions): string {
+  const safeAction = assertSafeAction(opts.action);
+  const safeVersion = assertSafeVersion(opts.version);
   const home = opts.home ?? os.homedir();
   const platform = opts.platform === "darwin" ? "darwin" : "linux";
-  const pep440 = normalizePep440Version(opts.version);
+  const pep440 = normalizePep440Version(safeVersion);
   const spec = pep440 ? `paperforge[vector]==${pep440}` : "paperforge[vector]";
   const target = uvTargetTriple(platform, opts.arch ?? process.arch);
   const assetName = `uv-${target}.tar.gz`;
@@ -470,9 +628,10 @@ export function posixUvInstallerScript(opts: UvInstallerOptions): string {
   const bootDir = uvBootstrapVenvDir(home);
   const logFile = opts.logPath ?? installerLogPath(home);
   const uvSeed = opts.uvPath ?? "";
-  const wheelName = releaseWheelFilename(opts.version);
-  const wheelUrl1 = releaseWheelUrl(opts.version, false);
-  const wheelUrl2 = releaseWheelUrl(opts.version, true);
+  const wheelName = releaseWheelFilename(safeVersion);
+  const checksumsUrl = releaseChecksumsUrl(safeVersion);
+  const wheelUrl1 = releaseWheelUrl(safeVersion, false);
+  const wheelUrl2 = releaseWheelUrl(safeVersion, true);
 
   return [
     "#!/bin/sh",
@@ -509,8 +668,13 @@ export function posixUvInstallerScript(opts: UvInstallerOptions): string {
     `  EXPECTED_SHA=${shSingleQuote(expectedSha)}`,
     '  TMP_DIR="$(mktemp -d)"',
     '  ARC="$TMP_DIR/uv.tar.gz"',
-    `  URL1="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}"`,
-    `  URL2="https://ghfast.top/$URL1"`,
+    `  URL_DIRECT="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${assetName}"`,
+    '  URL_MIRROR="https://ghfast.top/$URL_DIRECT"',
+    '  if [ "${PAPERFORGE_PREFER_CN_MIRROR:-}" = "1" ]; then',
+    '    URL1="$URL_MIRROR"; URL2="$URL_DIRECT"',
+    "  else",
+    '    URL1="$URL_DIRECT"; URL2="$URL_MIRROR"',
+    "  fi",
     '  if ! (curl -fsSL "$URL1" -o "$ARC" && verify_sha256 "$ARC" "$EXPECTED_SHA"); then',
     '    rm -f "$ARC"',
     '    curl -fsSL "$URL2" -o "$ARC"',
@@ -530,16 +694,35 @@ export function posixUvInstallerScript(opts: UvInstallerOptions): string {
     `WHEEL_DIR=${shSingleQuote(wheelCacheDir)}`,
     'mkdir -p "$WHEEL_DIR"',
     `WHEEL_NAME=${shSingleQuote(wheelName)}`,
-    'if [ -n "$WHEEL_NAME" ] && [ ! -f "$WHEEL_DIR/$WHEEL_NAME" ]; then',
-    `  WURL1=${shSingleQuote(wheelUrl1)}`,
-    `  WURL2=${shSingleQuote(wheelUrl2)}`,
-    '  (curl -fsSL "$WURL1" -o "$WHEEL_DIR/$WHEEL_NAME.tmp" && mv "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_DIR/$WHEEL_NAME") || \\',
-    '  (curl -fsSL "$WURL2" -o "$WHEEL_DIR/$WHEEL_NAME.tmp" && mv "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_DIR/$WHEEL_NAME") || \\',
-    '  rm -f "$WHEEL_DIR/$WHEEL_NAME.tmp"',
+    `CHECKSUMS_URL=${shSingleQuote(checksumsUrl)}`,
+    'WHEEL_SHA=""',
+    'WHEEL_VERIFIED=0',
+    'if [ -n "$WHEEL_NAME" ] && [ -n "$CHECKSUMS_URL" ]; then',
+    '  WHEEL_SHA="$(curl -fsSL --max-time 20 "$CHECKSUMS_URL" 2>/dev/null | awk -v w="$WHEEL_NAME" \'{h=$1; sub(/^\\*/, "", $2); n=split($2, a, /[\\/\\\\]/); if (a[n]==w && h ~ /^[a-fA-F0-9]{64}$/) {print tolower(h); exit}}\')" || WHEEL_SHA=""',
+    '  if [ -f "$WHEEL_DIR/$WHEEL_NAME" ]; then',
+    '    if ! "$BOOT_PY" -m zipfile -t "$WHEEL_DIR/$WHEEL_NAME" >/dev/null 2>&1 || [ -z "$WHEEL_SHA" ] || ! verify_sha256 "$WHEEL_DIR/$WHEEL_NAME" "$WHEEL_SHA"; then',
+    '      rm -f "$WHEEL_DIR/$WHEEL_NAME"',
+    "    else",
+    '      WHEEL_VERIFIED=1',
+    "    fi",
+    "  fi",
+    '  if [ ! -f "$WHEEL_DIR/$WHEEL_NAME" ] && [ -n "$WHEEL_SHA" ]; then',
+    `    WURL_DIRECT=${shSingleQuote(wheelUrl1)}`,
+    `    WURL_MIRROR=${shSingleQuote(wheelUrl2)}`,
+    '    if [ "${PAPERFORGE_PREFER_CN_MIRROR:-}" = "1" ]; then',
+    '      WURL1="$WURL_MIRROR"; WURL2="$WURL_DIRECT"',
+    "    else",
+    '      WURL1="$WURL_DIRECT"; WURL2="$WURL_MIRROR"',
+    "    fi",
+    '    (curl -fsSL "$WURL1" -o "$WHEEL_DIR/$WHEEL_NAME.tmp" && verify_sha256 "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_SHA" && "$BOOT_PY" -m zipfile -t "$WHEEL_DIR/$WHEEL_NAME.tmp" >/dev/null 2>&1 && mv "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_DIR/$WHEEL_NAME") || \\',
+    '    (rm -f "$WHEEL_DIR/$WHEEL_NAME.tmp" && curl -fsSL "$WURL2" -o "$WHEEL_DIR/$WHEEL_NAME.tmp" && verify_sha256 "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_SHA" && "$BOOT_PY" -m zipfile -t "$WHEEL_DIR/$WHEEL_NAME.tmp" >/dev/null 2>&1 && mv "$WHEEL_DIR/$WHEEL_NAME.tmp" "$WHEEL_DIR/$WHEEL_NAME") || \\',
+    '    rm -f "$WHEEL_DIR/$WHEEL_NAME.tmp"',
+    '    if [ -f "$WHEEL_DIR/$WHEEL_NAME" ]; then WHEEL_VERIFIED=1; fi',
+    "  fi",
     "fi",
     `SPEC=${shSingleQuote(spec)}`,
     'FIND_LINKS_FLAG=""',
-    'if [ -n "$WHEEL_NAME" ] && [ -f "$WHEEL_DIR/$WHEEL_NAME" ]; then FIND_LINKS_FLAG="--find-links"; fi',
+    'if [ "$WHEEL_VERIFIED" = "1" ] && [ -n "$WHEEL_NAME" ] && [ -f "$WHEEL_DIR/$WHEEL_NAME" ]; then FIND_LINKS_FLAG="--find-links"; fi',
     'if [ -n "$FIND_LINKS_FLAG" ]; then',
     '  "$UV_BIN" pip install --python "$BOOT_PY" --upgrade --find-links "$WHEEL_DIR" "$SPEC" >> "$LOG_FILE" 2>&1 || \\',
     '    "$UV_BIN" pip install --python "$BOOT_PY" --upgrade --find-links "$WHEEL_DIR" --index-url "https://pypi.tuna.tsinghua.edu.cn/simple" "$SPEC" >> "$LOG_FILE" 2>&1 || \\',
@@ -549,7 +732,7 @@ export function posixUvInstallerScript(opts: UvInstallerOptions): string {
     '    "$UV_BIN" pip install --python "$BOOT_PY" --upgrade --index-url "https://pypi.tuna.tsinghua.edu.cn/simple" "$SPEC" >> "$LOG_FILE" 2>&1 || \\',
     '    "$UV_BIN" pip install --python "$BOOT_PY" --upgrade --index-url "https://mirrors.aliyun.com/pypi/simple/" "$SPEC" >> "$LOG_FILE" 2>&1',
     "fi",
-    `"$BOOT_PY" -m paperforge runtime ${opts.action} --expected-version ${shSingleQuote(pep440 || opts.version)} >> "$LOG_FILE" 2>&1`,
+    `"$BOOT_PY" -m paperforge runtime ${safeAction} --expected-version ${shSingleQuote(pep440 || safeVersion)} >> "$LOG_FILE" 2>&1`,
     `printf '%s\\n' ${shSingleQuote(INSTALLER_FINISHED_MARKER)} >> "$LOG_FILE"`,
     `printf '%s\\n' ${shSingleQuote(INSTALLER_FINISHED_MARKER)}`,
     "",

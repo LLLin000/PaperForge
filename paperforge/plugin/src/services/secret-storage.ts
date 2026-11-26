@@ -22,6 +22,10 @@ const LEGACY_CREDENTIAL_ENV_PREFIXES = [
   "PADDLEOCR_",
   "VECTOR_DB_",
   "OPENAI_",
+  "EASYSCHOLAR_",
+  "ZOTERO_API_",
+  "ANTHROPIC_",
+  "MISTRAL_",
 ];
 
 export function stripCredentialEnv(

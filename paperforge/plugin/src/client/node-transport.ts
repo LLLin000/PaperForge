@@ -755,7 +755,8 @@ export class NodeProcessTransport implements Transport {
       python,
       action,
       version,
-      bootstrapPath
+      bootstrapPath,
+      process.platform
     );
     const scriptPath = this._writeInstallerScript(
       process.platform === "win32"
@@ -1208,6 +1209,7 @@ export class NodeProcessTransport implements Transport {
       this.shutdownDaemon(force);
       return;
     }
+    const hadOuterSwap = Boolean(this._swapInFlight);
     const swapWork = new Promise<void>((resolve) => {
       let settled = false;
       const done = () => {
@@ -1231,8 +1233,36 @@ export class NodeProcessTransport implements Transport {
         this._swapInFlight = null;
       }
     });
-    this._swapInFlight = swapWork;
+    if (!hadOuterSwap) {
+      this._swapInFlight = swapWork;
+    }
     await swapWork;
+  }
+
+  /**
+   * Hold the `_swapInFlight` barrier across both daemon shutdown AND the
+   * replacement operation (e.g. `fs.renameSync` on Windows) so concurrent RPCs
+   * cannot respawn and re-lock the binary mid-repair.
+   */
+  async runWithDaemonSwap<T>(fn: () => Promise<T> | T): Promise<T> {
+    const prev = this._swapInFlight;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this._swapInFlight = gate;
+    try {
+      if (prev) {
+        await prev.catch(() => undefined);
+      }
+      await this.shutdownDaemonAsync();
+      return await fn();
+    } finally {
+      if (this._swapInFlight === gate) {
+        this._swapInFlight = null;
+      }
+      release();
+    }
   }
 
   private async _executeDaemon(
@@ -1601,6 +1631,9 @@ export class NodeProcessTransport implements Transport {
     let daemonStreamCancel: (() => void) | null = null;
 
     const outcomePromise = (async (): Promise<LongTaskOutcome> => {
+      if (this._swapInFlight) {
+        await this._swapInFlight.catch(() => undefined);
+      }
       const canUseNativeDaemon =
         this._useDaemon &&
         this._daemonSupported &&

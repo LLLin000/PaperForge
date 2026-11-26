@@ -6,6 +6,7 @@ import {
   setTooltip,
   MarkdownRenderer,
   Component,
+  requestUrl,
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
@@ -16,7 +17,7 @@ import {
   resolveNativeDaemonBinary,
   syncStableDaemonEntry,
 } from "./services/native-daemon";
-import { t, setLanguage, langFromApp } from "./i18n";
+import { t, setLanguage, langFromApp, getActiveLang } from "./i18n";
 import { formatHumanError } from "./services/feedback";
 import { resolveSetupDecision } from "./services/setup-decision-tree";
 import {
@@ -419,6 +420,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   display() {
     this._isOpen = true;
     this._displayInProgress = true;
+    if (this.plugin?.settings?.language) {
+      setLanguage(this.app, this.plugin.settings.language);
+    }
     if (this._readModelsDirty) {
       this._readModelsDirty = false;
       this._overviewAutoProbedThisSession = false;
@@ -1211,7 +1215,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (opts?.autoContinueSetup) {
       this._autoContinueSetupAfterInstall = true;
     }
-    const isZh = langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
+    const isZh = getActiveLang(this.app) === "zh";
     const launchOpts: {
       allowUvDownload: boolean;
       proxyUrl?: string;
@@ -1477,22 +1481,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     const vp = this._getVaultBasePath();
     // Vault structure
-    const systemDir = path.join(
-      vp,
-      this.plugin.settings.system_dir || "System"
-    );
+    const sysDirRaw = this.plugin.settings.system_dir || "System";
+    const sysLeaf = sysDirRaw
+      .replace(/[\\/]+$/, "")
+      .split(/[\\/]/)
+      .pop();
+    const systemDir =
+      sysLeaf === ".paperforge"
+        ? path.join(vp, sysDirRaw)
+        : path.join(vp, sysDirRaw, "PaperForge");
+    const systemDisplayPath =
+      sysLeaf === ".paperforge"
+        ? sysDirRaw
+        : `${sysDirRaw.replace(/[\\/]+$/, "")}/PaperForge`;
     const hasSystem = fs.existsSync(systemDir);
     addCheck(
       t("foundation_vault_structure"),
       hasSystem
         ? t("cc_badge_ready") || "Ready"
         : t("cc_badge_setup_required") || "Setup Required",
-      hasSystem
-        ? path.posix.join(
-            this.plugin.settings.system_dir || "System",
-            "PaperForge"
-          )
-        : t("foundation_vault_missing"),
+      hasSystem ? systemDisplayPath : t("foundation_vault_missing"),
       hasSystem ? "pf-status-ok" : "pf-status-error"
     );
 
@@ -2999,8 +3007,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: "",
     });
     testBtn.addEventListener("click", () => {
-      const isZhNow =
-        langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
+      const isZhNow = getActiveLang(this.app) === "zh";
       testBtn.disabled = true;
       testOut.textContent = t("settings_probing");
       void this.getClient()
@@ -3886,6 +3893,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Help tab — fetches Markdown from GitHub for live-editable docs. */
   _renderHelpTab(containerEl: HTMLElement): void {
+    if (this.plugin?.settings?.language) {
+      setLanguage(this.app, this.plugin.settings.language);
+    }
     containerEl.createEl("div", {
       cls: "pf-cc-eyebrow",
       text: t("help_section_label"),
@@ -3953,22 +3963,83 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ).openUiGallery?.();
     });
 
-    // Loading indicator
+    // Support & Diagnostics section is always rendered locally BEFORE remote doc fetch
+    // so users offline or behind firewalls never lose Copy Support Diagnostic (PF-UI-004).
+    const supportCard = containerEl.createEl("details", {
+      cls: "pf-help-section pf-help-support-card",
+      attr: { open: "true", "data-pf-testid": "help-support-section" },
+    });
+    supportCard.createEl("summary", {
+      cls: "pf-help-section-title",
+      text: t("help_support") || "Support & Diagnostics",
+    });
+    const supportBody = supportCard.createDiv({ cls: "pf-help-section-body" });
+    supportBody.createEl("p", {
+      cls: "setting-item-description",
+      text:
+        t("help_support_desc") ||
+        "Copies module state and versions only; excludes keys, notes, and paths.",
+    });
+    const supportActions = supportBody.createDiv({ cls: "pf-help-support-actions" });
+    supportActions
+      .createEl("button", {
+        cls: "pf-btn pf-btn-primary pf-help-diagnostic-btn",
+        text: t("help_copy") || "Copy Support Diagnostic",
+        attr: { type: "button", "data-pf-testid": "help-copy-diagnostic" },
+      })
+      .addEventListener("click", () => this._buildAndCopyDiagnostic());
+    const manualBtn = supportActions.createEl("a", {
+      cls: "pf-btn pf-btn-secondary pf-help-manual-link",
+      text: t("settings_manual_link") || t("help_open_documentation") || "Open Documentation",
+      href: "https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md",
+    });
+    manualBtn.setAttr("target", "_blank");
+    manualBtn.setAttr("rel", "noopener noreferrer");
+
+    // Loading indicator for live online docs
     const loading = containerEl.createEl("p", {
       cls: "pf-help-loading",
-      text: "Loading help content\u2026",
+      text:
+        getActiveLang(this.app) === "zh"
+          ? "正在加载在线帮助文档…"
+          : "Loading help content\u2026",
     });
 
-    const lang = langFromApp(this.app);
+    const lang = getActiveLang(this.app);
     const base =
       "https://api.github.com/repos/LLLin000/PaperForge/contents/docs/help";
     const files = ["guide", "faq", "support"];
     const self = this;
+    const docsHost = containerEl.createDiv({ cls: "pf-help-docs-host" });
+
+    const fetchHelpDoc = async (url: string): Promise<{ content: string }> => {
+      if (typeof requestUrl === "function") {
+        const res = await requestUrl({ url });
+        if (!res || (typeof res.status === "number" && res.status >= 400)) {
+          throw new Error(`HTTP ${res?.status ?? "error"}`);
+        }
+        if (
+          res.json &&
+          typeof (res.json as { content?: unknown }).content === "string"
+        ) {
+          return res.json as { content: string };
+        }
+        if (typeof res.text === "string" && res.text.trim()) {
+          return JSON.parse(res.text) as { content: string };
+        }
+        throw new Error("Empty help response");
+      }
+      if (typeof fetch === "function") {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return (await r.json()) as { content: string };
+      }
+      throw new Error("No HTTP client available");
+    };
 
     Promise.all(
       files.map((f) =>
-        fetch(`${base}/${lang}/${f}.md`)
-          .then((r) => (r.ok ? r.json() : Promise.reject()))
+        fetchHelpDoc(`${base}/${lang}/${f}.md`)
           .then((j: { content: string }) => {
             const bin = atob(j.content.replace(/\n/g, ""));
             const bytes = new Uint8Array(bin.length);
@@ -3980,48 +4051,51 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       )
     )
       .then((results) => {
+        if (loading.parentElement !== containerEl) return;
         loading.remove();
+        let renderedCount = 0;
         for (const { name, text } of results) {
           if (!text) continue;
+          renderedCount++;
           const titleMatch = text.match(/^#\s+(.+)/m);
           const title = titleMatch ? titleMatch[1] : name;
           const body = text.replace(/^#\s+.+(\r?\n|$)/, "").trim();
 
-          const section = containerEl.createEl("details", {
+          const section = docsHost.createEl("details", {
             cls: "pf-help-section",
-            attr: name === "support" ? { open: "true" } : {},
           });
           section.createEl("summary", {
             cls: "pf-help-section-title",
             text: title,
           });
           const bodyEl = section.createDiv({ cls: "pf-help-section-body" });
-          if (name === "support") {
-            MarkdownRenderer.render(
-              self.app,
-              body,
-              bodyEl,
-              "",
-              self.plugin as unknown as Component
-            );
-            bodyEl
-              .createEl("button", {
-                cls: "pf-help-diagnostic-btn",
-                text: t("help_copy") || "Copy Support Diagnostic",
-              })
-              .addEventListener("click", () => self._buildAndCopyDiagnostic());
-          } else {
-            MarkdownRenderer.render(
-              self.app,
-              body,
-              bodyEl,
-              "",
-              self.plugin as unknown as Component
-            );
-          }
+          MarkdownRenderer.render(
+            self.app,
+            body,
+            bodyEl,
+            "",
+            self.plugin as unknown as Component
+          );
+        }
+        if (renderedCount === 0) {
+          const errBox = docsHost.createDiv({
+            cls: "pf-help-load-error",
+            attr: { "data-pf-testid": "help-offline-fallback" },
+          });
+          errBox.createEl("p", {
+            cls: "pf-help-error-title",
+            text: t("help_load_error") || "Failed to load help content.",
+          });
+          errBox.createEl("p", {
+            cls: "setting-item-description",
+            text:
+              t("help_offline_manual_note") ||
+              "Online documentation could not be loaded. Use Copy Support Diagnostic above or open the user manual directly.",
+          });
         }
       })
       .catch(() => {
+        if (loading.parentElement !== containerEl) return;
         loading.setText(t("help_load_error") || "Failed to load help content.");
       });
   }
@@ -4696,14 +4770,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * - Keeps deep-link _handleCardNavigation + _render*Detail API compatibility.
    */
   _renderControlCenter(containerEl: HTMLElement): void {
+    if (this.plugin?.settings?.language) {
+      setLanguage(this.app, this.plugin.settings.language);
+    }
     const cc = containerEl.createEl("div", { cls: "pf-control-center" });
     const envelopes: Record<string, ProbeEnvelope> =
       this._capabilityState ?? {};
-    const isZh = langFromApp(this.app) === "zh";
+    const isZh = getActiveLang(this.app) === "zh";
 
     // ── Single Deterministic Decision-Tree Hero Card ──
-    const foundationEnv =
+    const runtimePtr = readRuntimePointer();
+    let foundationEnv =
       envelopes["installation"] ?? createUnknownEnvelope("installation");
+    if (!runtimePtr && foundationEnv.user_state === "ready") {
+      foundationEnv = this._setupRequiredEnvelope();
+    }
     const libraryEnv = envelopes["library"] ?? createUnknownEnvelope("library");
     const pfState = this.plugin as unknown as {
       isDaemonUpdating?: () => boolean;
@@ -4716,7 +4797,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       openUpgradeModal?: () => Promise<void>;
       dismissUpgradeBannerForSession?: () => void;
     };
-    const runtimePtr = readRuntimePointer();
     const expectedVersion = this.plugin.manifest?.version ?? "";
     const paperCountRaw = (
       libraryEnv.details as Record<string, unknown> | undefined
@@ -4732,6 +4812,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       upgradeBannerDismissed: Boolean(pfState.isUpgradeBannerDismissed?.()),
       runtimePointer: runtimePtr,
       expectedVersion,
+      minEngineVersion: this._minEngineVersion(),
       installationEnv: foundationEnv,
       libraryEnv,
       isProbing: this._probing.size > 0,
@@ -4929,7 +5010,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ocrEnv.user_state === "ready"
         ? undefined
         : isZh
-          ? "把 PDF 里的图表、公式与扫描件拆成可编辑 Markdown 笔记（用到再开）"
+          ? "把 PDF 里的图表、公式与扫描件拆成可编辑 Markdown 笔记（按需启用）"
           : "Turn scanned PDFs & figures into editable Markdown notes (unlock anytime)"
     );
 
@@ -4944,7 +5025,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         : memEnv.user_state === "ready"
           ? undefined
           : isZh
-            ? "忘掉论文标题也能用大白话跨全库找回某段结论（用到再开）"
+            ? "忘掉论文标题也能用大白话跨全库找回某段结论（按需启用）"
             : "Search across hundreds of papers using plain questions (unlock anytime)"
     );
 
@@ -6281,7 +6362,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     c2Head.createEl("span", { cls: "pf-express-num", text: "2" });
     c2Head.createEl("strong", {
       text: isZh
-        ? "进阶科研能力（全部可选 · 以后用到再开）"
+        ? "进阶科研能力（全部可选 · 按需启用）"
         : "Optional AI & Metrics (Skip for now, unlock later)",
     });
     c2Head.createEl("span", {
@@ -8047,8 +8128,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           void commitOcrKey();
         });
         testOcrBtn.addEventListener("click", () => {
-          const isZhNow =
-            langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
+          const isZhNow = getActiveLang(this.app) === "zh";
           testOcrBtn.disabled = true;
           testOcrMsg.textContent = t("settings_testing");
           void commitOcrKey()
@@ -8207,8 +8287,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           void commitMemKey();
         });
         testMemBtn.addEventListener("click", () => {
-          const isZhNow =
-            langFromApp(this.app) === "zh" || t("nav_close") === "关闭";
+          const isZhNow = getActiveLang(this.app) === "zh";
           testMemBtn.disabled = true;
           testMemMsg.textContent = t("settings_probing");
           void commitMemKey()

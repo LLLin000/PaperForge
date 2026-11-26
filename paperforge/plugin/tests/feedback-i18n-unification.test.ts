@@ -22,6 +22,20 @@ describe("i18n dictionary parity & zero-leak guards", () => {
     expect(enKeys.length).toBeGreaterThan(1300);
   });
 
+  it("PF-UI-008: keeps identical {placeholder} sets across EN and ZH for every i18n key", () => {
+    const extractPlaceholders = (str: string) =>
+      [...new Set(str.match(/\{[a-zA-Z0-9_]+\}/g) ?? [])].sort();
+    const mismatches: Array<{ key: string; en: string[]; zh: string[] }> = [];
+    for (const key of Object.keys(I18N_DICTIONARIES.en)) {
+      const enPh = extractPlaceholders(I18N_DICTIONARIES.en[key]);
+      const zhPh = extractPlaceholders(I18N_DICTIONARIES.zh[key]);
+      if (JSON.stringify(enPh) !== JSON.stringify(zhPh)) {
+        mismatches.push({ key, en: enPh, zh: zhPh });
+      }
+    }
+    expect(mismatches).toEqual([]);
+  });
+
   it("ensures Rust daemon production code emits zero hardcoded Chinese strings", () => {
     const rustDir = path.resolve(
       __dirname,

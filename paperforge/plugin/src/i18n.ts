@@ -1841,6 +1841,23 @@ const LANG: Record<string, Record<string, string>> = {
     pdf_ctx_copy_quote: "Copy citation quote",
     pdf_ctx_copy_text: "Copy selected text",
     pdf_text_copied: "Text copied to clipboard",
+    cmd_sync_library: "Sync Zotero Library",
+    cmd_run_ocr_batch: "Run OCR Batch",
+    ribbon_dashboard: "PaperForge Dashboard",
+    ribbon_literature_hub: "PaperForge Literature Hub",
+    cmd_cat_navigation: "Navigation",
+    cmd_cat_library: "Library",
+    cmd_cat_appearance: "Appearance",
+    cmd_cat_search: "Search",
+    cmd_cat_reading: "Reading",
+    cmd_cat_retrieval: "Smart Retrieval",
+    cmd_cat_system: "System",
+    cmd_cat_maintenance: "Maintenance",
+    embed_confirm_title: "Build vector retrieval index",
+    embed_confirm_body:
+      "Generate or update vector embeddings for all OCR-completed papers in the library.",
+    help_offline_manual_note:
+      "Online documentation could not be loaded. Use Copy Support Diagnostic below or open the user manual directly.",
   },
   zh: {
     record_save: "保存研究记录",
@@ -1913,7 +1930,7 @@ const LANG: Record<string, Record<string, string>> = {
     copied: "已复制！",
     copy_pf_deep_cmd: "复制 /pf-deep 命令",
     dashboard_drift_warning:
-      '插件版本与 Python 运行时版本不匹配。请在设置中点击"同步运行时"。',
+      "PaperForge CLI (v{0}) 与插件 (v{1}) 版本不一致。请打开设置 → 运行环境检查同步。",
     deep_reading_not_found: "精读文件未找到",
     desc: "Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式文献精读工作流。",
     dir_base: "文献表格目录",
@@ -3532,6 +3549,22 @@ const LANG: Record<string, Record<string, string>> = {
     pdf_ctx_copy_quote: "复制引用摘录",
     pdf_ctx_copy_text: "复制纯文本",
     pdf_text_copied: "文本已复制到剪贴板",
+    cmd_sync_library: "同步 Zotero 文献库",
+    cmd_run_ocr_batch: "批量运行 OCR 解析",
+    ribbon_dashboard: "PaperForge 科研面板",
+    ribbon_literature_hub: "PaperForge 文献总库",
+    cmd_cat_navigation: "导航",
+    cmd_cat_library: "文献库",
+    cmd_cat_appearance: "外观",
+    cmd_cat_search: "检索",
+    cmd_cat_reading: "阅读",
+    cmd_cat_retrieval: "智能检索",
+    cmd_cat_system: "系统",
+    cmd_cat_maintenance: "维护",
+    embed_confirm_title: "构建向量检索索引",
+    embed_confirm_body: "为文献库中已完成 OCR 的论文生成或更新向量检索索引。",
+    help_offline_manual_note:
+      "无法加载在线帮助文档。请使用下方的“复制支持诊断”按钮或直接打开离线/在线使用手册。",
   },
 };
 
@@ -3563,6 +3596,12 @@ export function langFromApp(app: App): "zh" | "en" {
 export function setLanguage(app: App, override = ""): void {
   const language = override || langFromApp(app);
   T = language.startsWith("zh") ? LANG.zh : LANG.en;
+}
+
+export function getActiveLang(app?: App): "zh" | "en" {
+  if (T === LANG.zh) return "zh";
+  if (T === LANG.en) return "en";
+  return app ? langFromApp(app) : "en";
 }
 
 export function t(key: string): string {
