@@ -170,10 +170,16 @@ def run(args: argparse.Namespace) -> int:
     # Build — M3-B: canonical preconditions from the SERVICE (package +
     # credential authority).  Obsidian plugin settings are a caller, not
     # configuration authority — never read here.
+    from paperforge.core.keys import normalize_paper_keys
     from paperforge.services.embedding import assess_embedding_preconditions
 
     stream_mode = bool(getattr(args, "stream", False))
     single_json = bool(getattr(args, "json", False)) and not stream_mode
+    is_rebuild = sub == "rebuild"
+    force_flag = bool(getattr(args, "force", False)) or is_rebuild
+    resume_flag = False if is_rebuild else bool(getattr(args, "resume", False))
+    raw_keys = getattr(args, "keys", None)
+    norm_keys = normalize_paper_keys(raw_keys) if raw_keys else None
 
     preflight = assess_embedding_preconditions(vault)
     if not preflight["ok"]:
@@ -222,9 +228,9 @@ def run(args: argparse.Namespace) -> int:
     return run_embedding_build(
         vault,
         items,
-        keys=getattr(args, "keys", None),
-        force=getattr(args, "force", False),
-        resume=getattr(args, "resume", False),
+        keys=norm_keys,
+        force=force_flag,
+        resume=resume_flag,
         json=single_json,
     )
 

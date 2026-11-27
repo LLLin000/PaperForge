@@ -440,7 +440,124 @@ def _run_ocr_resume(vault: Path, batch_id: str, json_output: bool = False) -> in
     return rc
 
 
-def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = None) -> int:
+def _resolve_ocr_targets(
+    vault: Path,
+    *,
+    keys: list[str] | None = None,
+    collection: str = "",
+    domain: str = "",
+    limit: int | None = None,
+    force: bool = False,
+) -> dict:
+    """Resolve targeted OCR keys with collection/domain/limit/force/dry-run filtering."""
+    from paperforge.config import paperforge_paths
+    from paperforge.worker.asset_index import read_index
+
+    ocr_root = Path(paperforge_paths(vault)["ocr"])
+    idx = read_index(vault)
+    items = idx.get("items", []) if isinstance(idx, dict) else (idx or [])
+
+    if not items:
+        try:
+            from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+            db_path = get_memory_db_path(vault)
+            if db_path.exists():
+                with open_live_reader(vault, db_path) as conn:
+                    rows = conn.execute(
+                        "SELECT zotero_key, domain, collection_path, has_pdf, ocr_status FROM papers"
+                    ).fetchall()
+                    items = [dict(r) for r in rows]
+        except Exception:  # noqa: BLE001
+            items = []
+
+    item_by_key: dict[str, dict] = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("zotero_key") or it.get("key") or "").strip()
+        if k:
+            item_by_key[k] = it
+
+    def _effective_status(k: str, item: dict) -> str:
+        meta_p = ocr_root / k / "meta.json"
+        if meta_p.is_file():
+            try:
+                m = read_json(meta_p)
+                st = str(m.get("ocr_status") or "").strip().lower()
+                if st:
+                    return st
+            except Exception:  # noqa: BLE001
+                pass
+        return str(item.get("ocr_status") or "").strip().lower()
+
+    def _matches_filters(item: dict) -> bool:
+        if domain:
+            if str(item.get("domain") or "").strip().lower() != domain.strip().lower():
+                return False
+        if collection:
+            col_q = collection.strip().lower()
+            cp = str(item.get("collection_path") or "").lower()
+            cols = [str(c).lower() for c in (item.get("collections") or [])]
+            if col_q not in cp and not any(col_q in c for c in cols):
+                return False
+        return True
+
+    selected_keys: list[str] = []
+    skipped_done: list[str] = []
+    skipped_no_pdf: list[str] = []
+    unknown_keys: list[str] = []
+
+    if keys:
+        candidates = list(keys)
+        for k in candidates:
+            item = item_by_key.get(k)
+            if item is None:
+                # If index exists and key isn't in it, check exports or mark unknown
+                unknown_keys.append(k)
+                selected_keys.append(k)
+                continue
+            if not _matches_filters(item):
+                continue
+            if not bool(item.get("has_pdf", True)):
+                skipped_no_pdf.append(k)
+                continue
+            st = _effective_status(k, item)
+            if st == "done" and not force:
+                skipped_done.append(k)
+                continue
+            selected_keys.append(k)
+    else:
+        for k in sorted(item_by_key):
+            item = item_by_key[k]
+            if not _matches_filters(item):
+                continue
+            if not bool(item.get("has_pdf", False)):
+                skipped_no_pdf.append(k)
+                continue
+            st = _effective_status(k, item)
+            if st == "done" and not force:
+                skipped_done.append(k)
+                continue
+            selected_keys.append(k)
+
+    if limit is not None and limit > 0:
+        selected_keys = selected_keys[:limit]
+
+    return {
+        "selected_keys": selected_keys,
+        "skipped_done": skipped_done,
+        "skipped_no_pdf": skipped_no_pdf,
+        "unknown_keys": unknown_keys,
+    }
+
+
+def _run_ocr_status(
+    vault: Path,
+    json_output: bool = False,
+    batch: str | None = None,
+    keys: list[str] | None = None,
+) -> int:
     """Live per-paper OCR job status (owner request 2026-08-16): show every
     active provider job — key, provider state, elapsed, job id — by querying
     the provider directly, WITHOUT running the OCR loop.  Lets an operator
@@ -471,6 +588,8 @@ def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = 
             submission_state = str(meta.get("submission_state", "") or "").strip().lower()
             job_id = str(meta.get("ocr_job_id", "") or "")
             if batch and str(meta.get("provider_batch_id", "") or "") != batch:
+                continue
+            if keys and meta_dir.name not in keys:
                 continue
             # Include the write-ahead submit window: a remote job may exist
             # without a persisted job id, so it is execution-unknown rather
@@ -893,6 +1012,8 @@ def run(args: argparse.Namespace) -> int:
     json_output = getattr(args, "json", False)
     from paperforge.core.keys import normalize_paper_keys
     keys: list[str] = list(getattr(args, "keys", None) or [])
+    if getattr(args, "opt_keys", None):
+        keys.extend(list(args.opt_keys))
     if getattr(args, "key", None) is not None:
         keys.append(args.key)
 
@@ -997,7 +1118,16 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
         return _run_ocr_pipeline_versions(vault, json_output=json_output)
 
     if ocr_action == "status":
-        return _run_ocr_status(vault, json_output=json_output, batch=getattr(args, "batch", None))
+        from paperforge.core.keys import normalize_paper_keys
+
+        raw_status_keys = getattr(args, "opt_keys", None) or []
+        status_keys = set(normalize_paper_keys(raw_status_keys)) if raw_status_keys else None
+        return _run_ocr_status(
+            vault,
+            json_output=json_output,
+            batch=getattr(args, "batch", None),
+            keys=status_keys,
+        )
 
     if ocr_action == "resume":
         batch_id = getattr(args, "batch", None)
@@ -1026,6 +1156,94 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
             resume=getattr(args, "resume", False),
             parallel_workers=parallel_workers,
         )
+
+    collection = str(getattr(args, "collection", "") or "").strip()
+    domain = str(getattr(args, "domain", "") or "").strip()
+    limit = getattr(args, "limit", None)
+    force = bool(getattr(args, "force", False))
+    dry_run = bool(getattr(args, "dry_run", False))
+
+    if dry_run or collection or domain or limit is not None or force:
+        target_info = _resolve_ocr_targets(
+            vault,
+            keys=keys or None,
+            collection=collection,
+            domain=domain,
+            limit=limit,
+            force=force,
+        )
+        if dry_run:
+            data = {
+                "dry_run": True,
+                "selected_keys": target_info["selected_keys"],
+                "count": len(target_info["selected_keys"]),
+                "skipped_done": target_info["skipped_done"],
+                "skipped_no_pdf": target_info["skipped_no_pdf"],
+                "unknown_keys": target_info["unknown_keys"],
+                "force": force,
+                "filters": {
+                    "collection": collection,
+                    "domain": domain,
+                    "limit": limit,
+                },
+            }
+            if json_output:
+                pf = PFResult(ok=True, command="ocr", version=__version__, data=data)
+                print(pf.to_json())
+            else:
+                print(f"[DRY-RUN] Would process {data['count']} paper(s): {', '.join(data['selected_keys'])}")
+            return 0
+
+        keys = target_info["selected_keys"]
+        if not keys:
+            if json_output:
+                queue_data = _collect_ocr_queue_data(vault)
+                pf = PFResult(
+                    ok=True,
+                    command="ocr",
+                    version=__version__,
+                    data={
+                        **queue_data,
+                        "selected_keys": [],
+                        "skipped_done": target_info["skipped_done"],
+                        "skipped_no_pdf": target_info["skipped_no_pdf"],
+                    },
+                )
+                print(pf.to_json())
+            else:
+                print("No OCR targets matched.", file=sys.stderr)
+            return 0
+
+        if force:
+            from paperforge.config import paperforge_paths
+            from paperforge.worker.ocr import redo_papers_for_keys
+
+            ocr_root = Path(paperforge_paths(vault)["ocr"])
+            done_keys = []
+            fresh_keys = []
+            for k in keys:
+                mp = ocr_root / k / "meta.json"
+                is_done = False
+                if mp.is_file():
+                    try:
+                        is_done = str(read_json(mp).get("ocr_status") or "").strip().lower() == "done"
+                    except Exception:
+                        is_done = False
+                if is_done:
+                    done_keys.append(k)
+                else:
+                    fresh_keys.append(k)
+            if done_keys and not fresh_keys:
+                redo_res = redo_papers_for_keys(vault, done_keys, verbose=getattr(args, "verbose", False))
+                rc = int(redo_res.get("exit_code", 0))
+                if json_output:
+                    queue_data = _collect_ocr_queue_data(vault)
+                    pf = PFResult(ok=rc == 0, command="ocr", version=__version__, data={**queue_data, **redo_res})
+                    print(pf.to_json())
+                return rc
+            if done_keys:
+                redo_papers_for_keys(vault, done_keys, verbose=getattr(args, "verbose", False))
+                keys = fresh_keys
 
     if keys:
         logger.info("Processing specific keys: %s", keys)
