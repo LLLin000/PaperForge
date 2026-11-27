@@ -2416,6 +2416,8 @@ mod tests {
             false
         );
         let instr = init_resp["result"]["instructions"].as_str().unwrap();
+        assert!(instr.len() < 600, "Global instructions must stay concise: len={}", instr.len());
+        assert!(instr.contains("unrelated coding"));
         assert!(instr.contains("paperforge_brief"));
         assert!(instr.contains("paperforge_read_paper"));
         assert!(instr.contains("paperforge_annotate_batch"));
@@ -2667,6 +2669,8 @@ mod tests {
         let s_pruned = handle_agent_sessions(Some(&vault));
         assert_eq!(s_pruned["data"]["total_active"], 0);
         assert_eq!(s_pruned["data"]["state"], "unconnected");
+        assert_eq!(s_pruned["data"]["has_connected_before"], false);
+        assert_eq!(s_pruned["data"]["last_client_name"], "");
 
         // Verify serve_mcp_with_io cleans up on EOF automatically
         let input_lines = format!(
@@ -2686,6 +2690,9 @@ mod tests {
         assert!(out_str.contains("PaperForge Research Memory MCP Contract"));
         let s_after_eof = handle_agent_sessions(Some(&vault));
         assert_eq!(s_after_eof["data"]["total_active"], 0);
+        assert_eq!(s_after_eof["data"]["state"], "configured_idle");
+        assert_eq!(s_after_eof["data"]["has_connected_before"], true);
+        assert_eq!(s_after_eof["data"]["last_client_name"], "cursor");
         assert_eq!(s_after_eof["data"]["historical_clients"][0]["client_name"], "cursor");
 
         let _ = fs::remove_dir_all(&tmp);

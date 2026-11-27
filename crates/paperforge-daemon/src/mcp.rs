@@ -1003,13 +1003,13 @@ pub fn handle_agent_onboarding(
 
     let prompt = if is_zh {
         format!(
-            "请为当前 Agent 环境接入 PaperForge MCP 服务（**不要往用户的 Obsidian Vault 根目录写入 `.agents/` 或 `.mcp.json` 等杂项文件**，优先安装到你自身平台的原生全局配置中）：\n\n\
+            "请为当前 Agent 环境接入 PaperForge 全局轻量 MCP 服务（**推荐写入你自身平台的全局 MCP 配置**以便在任意科研/实验代码项目中随时调用；连接后在无关编程/闲聊中保持完全静默，**不要往用户的 Obsidian Vault 根目录写入 `.agents/` 或 `.mcp.json` 等杂项文件**）：\n\n\
 ### 本机真实路径（禁止猜测）\n\
 - Vault 路径：`{vault_str}`\n\
 - MCP 可执行文件：`{bin_str}`\n\
 - MCP 启动参数：`[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\n\
 ### 操作步骤\n\
-1. **非破坏性合并注册 `paperforge` stdio MCP 服务**（如 Claude/Cursor/Antigravity 的 `mcpServers` JSON、OpenCode 的 `mcp` JSON、Codex 的 `[mcp_servers.paperforge]` TOML），保留用户已有其他服务。连接后服务端会在握手时自动注入全部操作规程、11 个 MCP 工具与提示模板（无需额外安装本地 Skill）。\n\
+1. **非破坏性合并注册 `paperforge` 全局 stdio MCP 服务**（如 Claude/Cursor/Antigravity 的 `mcpServers` JSON、OpenCode 的 `mcp` JSON、Codex 的 `[mcp_servers.paperforge]` TOML），保留用户已有其他服务。连接后服务端会在握手时自动注入全部操作规程、11 个 MCP 工具与提示模板（无需额外安装本地 Skill）。\n\
 2. **运行握手自检**：\n\
    ```bash\n\
    {self_check_tpl}\n\
@@ -1018,13 +1018,13 @@ pub fn handle_agent_onboarding(
         )
     } else {
         format!(
-            "Connect your Agent harness to the PaperForge MCP server (**do NOT write `.agents/` or `.mcp.json` clutter into the user's Obsidian Vault root**; use your harness's native config instead):\n\n\
+            "Connect your Agent harness to the PaperForge MCP server (**recommended: register in your harness's global MCP config** so it is available across projects while staying silent on unrelated coding chats; **do NOT write `.agents/` or `.mcp.json` clutter into the user's Obsidian Vault root**):\n\n\
 ### Verified Local Paths\n\
 - Vault path: `{vault_str}`\n\
 - MCP binary: `{bin_str}`\n\
 - MCP args: `[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\n\
 ### Steps\n\
-1. **Register the `paperforge` stdio MCP server** non-destructively in your native config (`mcpServers` JSON, OpenCode `mcp` JSON, or Codex `[mcp_servers.paperforge]` TOML). On handshake, PaperForge auto-injects operating instructions, resources, prompts, and all 11 tools (local Skill install is optional).\n\
+1. **Register the `paperforge` stdio MCP server globally** and non-destructively in your native config (`mcpServers` JSON, OpenCode `mcp` JSON, or Codex `[mcp_servers.paperforge]` TOML). On handshake, PaperForge auto-injects concise instructions, resources, prompts, and all 11 tools (local Skill install is optional).\n\
 2. **Verify MCP handshake**:\n\
    ```bash\n\
    {self_check_tpl}\n\
@@ -2409,6 +2409,18 @@ pub fn handle_agent_sessions(vault: Option<&Path>) -> Value {
     }) || clean_vault.as_deref().is_some_and(check_vault_reconciled);
     let tools_ready = connected;
 
+    let has_connected_before = !matching_history.is_empty();
+    let last_client_name = matching_history
+        .iter()
+        .max_by_key(|e| {
+            e.get("last_seen_at")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+        })
+        .and_then(|e| e.get("client_name").and_then(|v| v.as_str()))
+        .unwrap_or("")
+        .to_string();
+
     pf_ok(
         "agent-sessions",
         json!({
@@ -2416,6 +2428,8 @@ pub fn handle_agent_sessions(vault: Option<&Path>) -> Value {
             "active_sessions": active_sessions,
             "total_active": total_active,
             "historical_clients": matching_history,
+            "has_connected_before": has_connected_before,
+            "last_client_name": last_client_name,
             "configured_platforms": configured_platforms,
             "setup_checklist": {
                 "connected": connected,
@@ -3549,14 +3563,10 @@ fn execute_mcp_tool_with_meta(
 }
 
 pub fn mcp_instructions() -> &'static str {
-    "PaperForge Research Memory MCP Contract:\n\
-1. ALWAYS call `paperforge_brief` first (pass `paper_key` when inspecting a specific paper) to obtain vault paths, health, active jobs, and capability flags.\n\
-2. Discover & inspect papers using `paperforge_search`, `paperforge_library_query`, `paperforge_retrieve`, and `paperforge_paper_context`.\n\
-3. Read papers via `paperforge_read_paper` — it works for BOTH OCR `fulltext.md` AND non-OCR native PDFs page-by-page (`pages: \"1-3\"`).\n\
-4. Annotate PDFs directly via `paperforge_annotate_batch` (supports both OCR and native-text PDFs without waiting for OCR; use `paperforge_annotations` to list/adopt/clear/delete marks). Never write pure paraphrases.\n\
-5. Persist synthesized insights via `paperforge_memory_refine` (Living Paper Memory Card facets) and `paperforge_log_write` (`reading_log`, `project_log`, `methodology`).\n\
-6. Control background OCR, vector embedding, Zotero sync, vault reconcile, and cancellation via `paperforge_job`.\n\
-7. ANTI-HALLUCINATION RULE: NEVER fabricate quotes, page numbers, statistics, or citations. Every `quote` or `excerpt` MUST be copied verbatim from `paperforge_read_paper` or `fulltext.md`."
+    "PaperForge Research Memory MCP Contract (Global Mode):\n\
+- SILENCE: Ignore during unrelated coding/general chats. Use `paperforge_*` ONLY for papers, literature search, PDF annotations, OCR/embeddings, or research notes.\n\
+- TOOLS: Call `paperforge_brief` first (auto-heals vault). Use `paperforge_read_paper` (OCR or native PDF), `paperforge_annotate_batch`, `paperforge_job`, `paperforge_memory_refine`, `paperforge_log_write`, and `paperforge://guide/*` on demand.\n\
+- TRUTH: Never invent quotes/citations; copy verbatim from `paperforge_read_paper`."
 }
 
 fn mcp_resources_list() -> Value {

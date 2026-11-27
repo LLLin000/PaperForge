@@ -2013,9 +2013,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
 
       const reconcileClient =
-        typeof this.plugin.getClient === "function"
-          ? this.getClient()
-          : null;
+        typeof this.plugin.getClient === "function" ? this.getClient() : null;
       if (
         reconcileClient &&
         typeof reconcileClient.reconcileVault === "function"
@@ -2057,12 +2055,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                       refreshBaseSnapshot?: () => Promise<unknown>;
                       refreshUpgradePlan?: () => Promise<unknown>;
                     };
-                    await pluginCtl.refreshBaseSnapshot?.().catch(() => undefined);
-                    await pluginCtl.refreshUpgradePlan?.().catch(() => undefined);
+                    await pluginCtl
+                      .refreshBaseSnapshot?.()
+                      .catch(() => undefined);
+                    await pluginCtl
+                      .refreshUpgradePlan?.()
+                      .catch(() => undefined);
                   } catch (err: unknown) {
                     new Notice(
-                      (isZhReconcile ? "重建本地索引失败：" : "Index rebuild failed: ") +
-                        formatHumanError(err),
+                      (isZhReconcile
+                        ? "重建本地索引失败："
+                        : "Index rebuild failed: ") + formatHumanError(err),
                       8000
                     );
                   } finally {
@@ -2742,34 +2745,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     skillHubDir: string,
     isZh: boolean
   ): string {
-    const checkCmd = `"${binPath}" mcp-check --vault "${vaultBase}" --skill-dir "<SKILL_DIR>" --mcp-config "<MCP_CONFIG_PATH>" --register --probe-mcp --json`;
+    const checkCmd = `"${binPath}" mcp-check --vault "${vaultBase}" --mcp-config "<MCP_CONFIG_PATH>" --probe-mcp --json`;
     if (isZh) {
       return (
-        `请为当前 Agent 环境配置 PaperForge 研究记忆配套设施（**不要往用户的 Obsidian Vault 根目录写入 \`.agents/\` 或 \`.mcp.json\` 等杂项文件**，优先安装到你自身平台的原生全局/工作区目录）：\n\n` +
+        `请为当前 Agent 环境接入 PaperForge 全局轻量 MCP 服务（**推荐写入你自身平台的全局 MCP 配置**以便跨项目随时调用；在无关编程/闲聊中保持完全静默，**不要往用户的 Obsidian Vault 根目录写入 \`.agents/\` 或 \`.mcp.json\` 等杂项文件**）：\n\n` +
         `### 本机真实路径（禁止猜测或自行拼接）\n` +
         `- Vault 路径：\`${vaultBase}\`\n` +
         `- MCP 稳定入口：\`${binPath}\`\n` +
         `- MCP 启动参数：\`["--mcp", "--vault", "${vaultBase}"]\`\n` +
-        `- 官方 Skill 源目录：\`${skillHubDir}\`\n\n` +
-        `### 请按以下 3 步完成安装并做端到端自检\n` +
-        `1. **接入 \`paperforge\` MCP 服务**：按你自身平台的原生配置格式，非破坏性地合并添加名为 \`paperforge\` 的 stdio 服务，严禁覆盖用户已有其他 MCP 服务。\n` +
-        `2. **安装 PaperForge Skill**：将上方 \`官方 Skill 源目录\` 链接或复制到你自身原生识别的全局 skills 目录（Windows 推荐 \`New-Item -ItemType Junction -Path "<你的skills目录>\\\\paperforge" -Target "${skillHubDir}"\`，macOS/Linux 推荐 \`ln -s\`）。\n` +
-        `3. **运行端到端自检并登记自动更新**：\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
-        `   确认 \`data.status == "ready"\` 且 \`data.mcp_handshake_ok == true\`，并汇报 4 项自检清单。`
+        `- 可选 Skill 源目录：\`${skillHubDir}\`\n\n` +
+        `### 请按以下 2 步接入并验证\n` +
+        `1. **注册 \`paperforge\` 全局 stdio MCP 服务**：按你自身平台的原生全局配置格式，非破坏性地合并添加名为 \`paperforge\` 的 stdio 服务，严禁覆盖用户已有其他 MCP 服务。连接后服务端会在握手时自动注入精简操作规程与 11 个 MCP 工具。\n` +
+        `2. **运行握手自检**：\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
+        `   确认 \`data.mcp_handshake_ok == true\`；如当前会话支持热加载，立即调用 \`paperforge_brief\` 完成实时握手。`
       );
     }
     return (
-      `Set up the PaperForge Research Memory integration for your own Agent harness (**do NOT write \`.agents/\` or \`.mcp.json\` clutter into the user's Obsidian Vault root**; install into your platform's native global/harness directories):\n\n` +
+      `Connect your Agent harness to the PaperForge global lightweight MCP server (**recommended: register in your harness's global MCP config** so it works across projects while staying silent on unrelated coding chats; **do NOT write \`.agents/\` or \`.mcp.json\` clutter into the user's Obsidian Vault root**):\n\n` +
       `### Verified Local Paths\n` +
       `- Vault path: \`${vaultBase}\`\n` +
       `- Stable MCP binary: \`${binPath}\`\n` +
       `- MCP args: \`["--mcp", "--vault", "${vaultBase}"]\`\n` +
-      `- Canonical Skill source: \`${skillHubDir}\`\n\n` +
-      `### Execute these 3 steps and verify\n` +
-      `1. **Register \`paperforge\` stdio MCP server** in your native config without overwriting existing servers.\n` +
-      `2. **Install the PaperForge Skill** from the Canonical Skill source above (prefer symlink or Windows NTFS Junction for zero-touch live updates).\n` +
-      `3. **Run self-check & register for auto-updates**:\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
-      `   Confirm \`data.status == "ready"\` and \`data.mcp_handshake_ok == true\`, then report the 4-item checklist.`
+      `- Optional Skill source: \`${skillHubDir}\`\n\n` +
+      `### Execute these 2 steps and verify\n` +
+      `1. **Register \`paperforge\` stdio MCP server globally** and non-destructively in your native config without overwriting existing servers. PaperForge auto-injects concise instructions and all 11 tools on handshake.\n` +
+      `2. **Run handshake check**:\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
+      `   Confirm \`data.mcp_handshake_ok == true\`, then call \`paperforge_brief\` if hot-reload is active.`
     );
   }
 
@@ -2880,6 +2881,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return base;
     }
     if (presence.state === "configured_idle") {
+      if (presence.has_connected_before) {
+        const lastRaw =
+          presence.last_client_name || presence.historical_clients?.[0] || "";
+        const lastLabel = lastRaw ? formatAgentClientName(lastRaw) : "AI Agent";
+        return t("agent_state_standby").replace("{client}", lastLabel);
+      }
       return t("agent_state_configured_idle");
     }
     return t("agent_state_unconnected");
@@ -2942,6 +2949,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         : base;
     }
     if (presence.state === "configured_idle") {
+      if (presence.has_connected_before) {
+        const lastRaw =
+          presence.last_client_name || presence.historical_clients?.[0] || "";
+        const lastLabel = lastRaw ? formatAgentClientName(lastRaw) : "AI Agent";
+        return t("agent_overview_standby_sentence").replace(
+          "{client}",
+          lastLabel
+        );
+      }
       const platforms =
         presence.configured_platforms &&
         presence.configured_platforms.length > 0
@@ -3252,7 +3268,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     for (const item of checklistRows) {
       const row = checklistCard.createDiv({
         cls: `pf-agent-check-item ${
-          item.done ? "pf-agent-check-item--done" : "pf-agent-check-item--pending"
+          item.done
+            ? "pf-agent-check-item--done"
+            : "pf-agent-check-item--pending"
         }`,
         attr: {
           "data-pf-testid": item.id,
@@ -6246,31 +6264,34 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Derive Agent availability from live MCP session presence (never fake-green). */
   _getAgentPlaceholderEnvelope(): ProbeEnvelope {
     const presence = this._getEffectiveAgentPresence();
-    const isLive =
-      presence.state === "connected" || presence.state === "ready";
+    const isLive = presence.state === "connected" || presence.state === "ready";
     const isIdle = presence.state === "configured_idle";
+    const isStandby = isIdle && Boolean(presence.has_connected_before);
+    const isHealthy = isLive || isStandby;
     return {
       schema_version: 2,
       module: "agent",
-      capability_state: isLive ? "ready" : "needs_action",
+      capability_state: isHealthy ? "ready" : "needs_action",
       activity_state: "idle",
       activity_label: null,
       activity_progress: null,
-      severity: isLive ? "ok" : isIdle ? "unknown" : "warning",
+      severity: isHealthy ? "ok" : isIdle ? "unknown" : "warning",
       reason: {
         code:
           presence.state === "ready"
             ? "agent.ready"
             : presence.state === "connected"
               ? "agent.connected"
-              : isIdle
-                ? "agent.configured_idle"
-                : "agent.unconnected",
+              : isStandby
+                ? "agent.standby"
+                : isIdle
+                  ? "agent.configured_idle"
+                  : "agent.unconnected",
         text: this._getAgentPresenceSentence(presence),
       },
       action: { primary: null },
       notices: [],
-      user_state: isLive
+      user_state: isHealthy
         ? "ready"
         : isIdle
           ? "action_required"
@@ -9002,7 +9023,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const needsSecret = opt.id === "ocr" || opt.id === "memory";
       const agentStateCls =
         agentPresence?.state === "ready" ||
-        agentPresence?.state === "connected"
+        agentPresence?.state === "connected" ||
+        (agentPresence?.state === "configured_idle" &&
+          Boolean(agentPresence?.has_connected_before))
           ? "pf-setup-optional-state--ok"
           : agentPresence?.state === "configured_idle"
             ? "pf-setup-optional-state--info"

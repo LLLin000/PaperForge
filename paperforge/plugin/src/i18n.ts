@@ -1900,16 +1900,18 @@ const LANG: Record<string, Record<string, string>> = {
       "Online documentation could not be loaded. Use Copy Support Diagnostic below or open the user manual directly.",
     agent_state_unconnected: "Not Connected",
     agent_state_configured_idle: "Configured · Waiting",
+    agent_state_standby: "Connected ({client}) · Standby",
     agent_state_connected: "Connected",
     agent_state_ready: "Connected · Ready",
     agent_overview_unconnected_sentence:
       "Copy setup prompt to connect Claude Code, Cursor, OpenCode, or Codex",
     agent_overview_configured_idle_sentence:
       "Configured ({platforms}) — open your Agent session to handshake",
+    agent_overview_standby_sentence:
+      "{client} connected previously (standby — reconnects automatically when opened)",
     agent_overview_connected_sentence:
       "{client} connected via MCP · initializing vault context",
-    agent_overview_ready_sentence:
-      "{client} connected · all MCP tools ready",
+    agent_overview_ready_sentence: "{client} connected · all MCP tools ready",
     agent_running_tool: "Running {tool}",
     agent_active_sessions_title: "Active MCP Sessions",
     agent_onboarding_preview_hint:
@@ -3675,16 +3677,18 @@ const LANG: Record<string, Record<string, string>> = {
       "无法加载在线帮助文档。请使用下方的“复制支持诊断”按钮或直接打开离线/在线使用手册。",
     agent_state_unconnected: "未接入 AI 助手",
     agent_state_configured_idle: "已配置 · 等待首次握手",
+    agent_state_standby: "已接入（{client}）· 待机中",
     agent_state_connected: "已连接",
     agent_state_ready: "已连接 · 全能力就绪",
     agent_overview_unconnected_sentence:
       "复制接入指令发给 Claude Code / Cursor / OpenCode / Codex，发完自动检测接入",
     agent_overview_configured_idle_sentence:
       "已检测到配置（{platforms}）— 打开 Agent 对话后自动完成首次握手",
+    agent_overview_standby_sentence:
+      "已接入 {client}（当前未活跃，打开 AI 助手即自动重连）",
     agent_overview_connected_sentence:
       "{client} 已通过 MCP 连接 · 正在初始化研究库上下文",
-    agent_overview_ready_sentence:
-      "{client} 已连接 · 全能力工具就绪",
+    agent_overview_ready_sentence: "{client} 已连接 · 全能力工具就绪",
     agent_running_tool: "正在执行 {tool}",
     agent_active_sessions_title: "实时在线 Agent 会话",
     agent_onboarding_preview_hint:

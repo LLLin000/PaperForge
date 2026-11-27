@@ -219,7 +219,10 @@ function createMockWorkspace() {
     offref(ref: { event: string; cb: (payload?: unknown) => void }) {
       listeners.get(ref.event)?.delete(ref.cb);
     },
-    off(event: string, ref: { cb?: (payload?: unknown) => void } | ((p?: unknown) => void)) {
+    off(
+      event: string,
+      ref: { cb?: (payload?: unknown) => void } | ((p?: unknown) => void)
+    ) {
       const cb = typeof ref === "function" ? ref : ref?.cb;
       if (cb) listeners.get(event)?.delete(cb);
     },
@@ -630,7 +633,9 @@ describe("Real-Time Poki Agent Presence & 4-State Onboarding UI", () => {
       '[data-pf-testid="agent-status-badge"]'
     );
     expect(readyBadge?.getAttribute("data-agent-state")).toBe("ready");
-    expect(readyBadge?.textContent).toContain("Claude Code 已连接 · 全能力就绪");
+    expect(readyBadge?.textContent).toContain(
+      "Claude Code 已连接 · 全能力就绪"
+    );
     for (const i of [1, 2, 3, 4]) {
       expect(
         readyEl
@@ -773,5 +778,47 @@ describe("Real-Time Poki Agent Presence & 4-State Onboarding UI", () => {
     pf.onunload();
     expect(watcherClose).toHaveBeenCalledOnce();
     expect(pf._agentSessionsWatcher).toBeNull();
+  });
+
+  it("(e) distinguishes first-time configured_idle from previously-connected standby across restarts", () => {
+    const { setPresence, tab } = createHarness({
+      lang: "zh",
+      presence: {
+        state: "configured_idle",
+        active_sessions: [],
+        total_active: 0,
+        configured_platforms: ["claude"],
+        has_connected_before: false,
+      },
+    });
+    const firstEl = document.createElement("div");
+    tab._renderAgentDetail(firstEl);
+    expect(
+      firstEl.querySelector('[data-pf-testid="agent-status-badge"]')
+        ?.textContent
+    ).toContain("已配置 · 等待首次握手");
+    expect(tab._getAgentPlaceholderEnvelope().user_state).toBe(
+      "action_required"
+    );
+
+    setPresence({
+      state: "configured_idle",
+      active_sessions: [],
+      total_active: 0,
+      configured_platforms: ["claude"],
+      historical_clients: ["claude-code"],
+      has_connected_before: true,
+      last_client_name: "claude-code",
+    });
+    const standbyEl = document.createElement("div");
+    tab._renderAgentDetail(standbyEl);
+    expect(
+      standbyEl.querySelector('[data-pf-testid="agent-status-badge"]')
+        ?.textContent
+    ).toContain("已接入（Claude Code）· 待机中");
+    const env = tab._getAgentPlaceholderEnvelope();
+    expect(env.user_state).toBe("ready");
+    expect(env.severity).toBe("ok");
+    expect(env.reason.text).toContain("自动重连");
   });
 });

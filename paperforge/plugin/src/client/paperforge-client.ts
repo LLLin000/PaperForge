@@ -650,6 +650,8 @@ export interface AgentPresenceSnapshotDto {
   total_active: number;
   configured_platforms?: string[];
   historical_clients?: string[];
+  has_connected_before?: boolean;
+  last_client_name?: string;
   setup_checklist?: {
     connected: boolean;
     instructions_injected: boolean;
@@ -754,7 +756,11 @@ function readConfiguredPlatformsFallback(
     // Ignore corrupt registry during presence fallback
   }
   if (vaultPath) {
-    const checks: Array<{ rel: string; label: string; key: "mcp" | "mcpServers" }> = [
+    const checks: Array<{
+      rel: string;
+      label: string;
+      key: "mcp" | "mcpServers";
+    }> = [
       { rel: ".mcp.json", label: "claude", key: "mcpServers" },
       { rel: ".cursor/mcp.json", label: "cursor", key: "mcpServers" },
       { rel: "opencode.json", label: "opencode", key: "mcp" },
@@ -788,7 +794,11 @@ function extractSessionList(raw: unknown): AgentSessionDto[] {
   if (Array.isArray(obj.sessions)) {
     return obj.sessions as AgentSessionDto[];
   }
-  if (obj.sessions && typeof obj.sessions === "object" && !Array.isArray(obj.sessions)) {
+  if (
+    obj.sessions &&
+    typeof obj.sessions === "object" &&
+    !Array.isArray(obj.sessions)
+  ) {
     return Object.values(obj.sessions as Record<string, AgentSessionDto>);
   }
   return [];
@@ -814,12 +824,42 @@ export function normalizeAgentPresenceSnapshot(
       if (s) configuredSet.add(s);
     }
   }
-  const historicalClients = Array.isArray(obj.historical_clients)
-    ? obj.historical_clients.map((x) => String(x ?? "").trim()).filter(Boolean)
-    : [];
+  const historicalClients: string[] = [];
+  let latestHistClient = "";
+  let latestHistSeen = "";
+  if (Array.isArray(obj.historical_clients)) {
+    for (const rawEntry of obj.historical_clients) {
+      if (typeof rawEntry === "string") {
+        const s = rawEntry.trim();
+        if (s) {
+          historicalClients.push(s);
+          if (!latestHistClient) latestHistClient = s;
+        }
+      } else if (rawEntry && typeof rawEntry === "object") {
+        const rec = rawEntry as Record<string, unknown>;
+        const cn = String(rec.client_name ?? rec.client ?? "").trim();
+        const seen = String(rec.last_seen_at ?? "").trim();
+        if (cn) {
+          historicalClients.push(cn);
+          if (!latestHistClient || seen >= latestHistSeen) {
+            latestHistClient = cn;
+            latestHistSeen = seen;
+          }
+        }
+      }
+    }
+  }
   for (const h of historicalClients) {
     configuredSet.add(h);
   }
+  const hasConnectedBefore =
+    typeof obj.has_connected_before === "boolean"
+      ? obj.has_connected_before
+      : historicalClients.length > 0;
+  const lastClientName =
+    typeof obj.last_client_name === "string" && obj.last_client_name.trim()
+      ? obj.last_client_name.trim()
+      : latestHistClient;
   const configuredPlatforms = Array.from(configuredSet);
 
   const rawChecklist =
@@ -836,7 +876,9 @@ export function normalizeAgentPresenceSnapshot(
     liveSessions.length > 0 &&
     (rawChecklist
       ? Boolean(rawChecklist.instructions_injected)
-      : liveSessions.some((s) => Boolean(s.setup_steps?.instructions_injected)));
+      : liveSessions.some((s) =>
+          Boolean(s.setup_steps?.instructions_injected)
+        ));
   const vaultReconciled =
     liveSessions.length > 0 &&
     (rawChecklist
@@ -872,6 +914,8 @@ export function normalizeAgentPresenceSnapshot(
     total_active: liveSessions.length,
     configured_platforms: configuredPlatforms,
     historical_clients: historicalClients,
+    has_connected_before: hasConnectedBefore,
+    last_client_name: lastClientName,
     setup_checklist: {
       connected,
       instructions_injected: instructionsInjected,
@@ -886,7 +930,10 @@ export function readAgentSessionsFallback(
   nowMs = Date.now()
 ): AgentPresenceSnapshotDto {
   const pfHome = resolvePaperForgeHomeDir();
-  const configuredPlatforms = readConfiguredPlatformsFallback(pfHome, vaultPath);
+  const configuredPlatforms = readConfiguredPlatformsFallback(
+    pfHome,
+    vaultPath
+  );
   const sessionsFile = path.join(pfHome, "state", "agent-sessions.json");
   if (!fs.existsSync(sessionsFile)) {
     return normalizeAgentPresenceSnapshot(
@@ -3253,7 +3300,9 @@ export class PaperForgeClient {
    * with fast non-blocking fallback to `~/.paperforge/state/agent-sessions.json`
    * when daemon RPC isn't active yet.
    */
-  async getAgentSessions(vaultPath?: string): Promise<AgentPresenceSnapshotDto> {
+  async getAgentSessions(
+    vaultPath?: string
+  ): Promise<AgentPresenceSnapshotDto> {
     const transportAny = this._transport as unknown as {
       hasNativeDaemonRpc?: () => boolean;
     };
