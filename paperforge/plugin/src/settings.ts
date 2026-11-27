@@ -99,7 +99,14 @@ export function formatProviderConnectionError(
         : "Embedding probe failed";
   return compact ? `${fallback}：${compact.slice(0, 72)}` : fallback;
 }
-import type { ZoteroDetectDto } from "./client/paperforge-client";
+import type {
+  AgentPresenceSnapshotDto,
+  ZoteroDetectDto,
+} from "./client/paperforge-client";
+import {
+  formatAgentClientName,
+  normalizeAgentPresenceSnapshot,
+} from "./client/paperforge-client";
 import {
   PaperForgeSettings,
   ProbeEnvelope,
@@ -360,6 +367,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _lastRenderedTab: string = "overview";
   _detailReturn: { tab: string; selector: string } | null = null;
   private _agentPlatformDraft: string | null = null;
+  private _agentPresenceCache: AgentPresenceSnapshotDto | null = null;
+  private _agentPresenceProbedThisSession = false;
+  private _agentPresenceWsRef: unknown = null;
 
   /** #86: Five operational modules in display order with user-facing names. */
   private _getOverviewModules(): { id: string; label: string }[] {
@@ -437,6 +447,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   display() {
     this._isOpen = true;
     this._displayInProgress = true;
+    const wsPresence = (
+      this.app as unknown as {
+        workspace?: {
+          on?: (ev: string, cb: (payload?: unknown) => void) => unknown;
+        };
+      }
+    )?.workspace;
+    if (!this._agentPresenceWsRef && typeof wsPresence?.on === "function") {
+      this._agentPresenceWsRef = wsPresence.on(
+        "paperforge:agent-presence-changed",
+        (payload?: unknown) => {
+          const next = (
+            payload as { presence?: AgentPresenceSnapshotDto } | undefined
+          )?.presence;
+          if (next && typeof next === "object") {
+            this._agentPresenceCache = normalizeAgentPresenceSnapshot(
+              next,
+              this._getVaultBasePath() || undefined
+            );
+          } else if (typeof this.plugin.getAgentPresence === "function") {
+            const cached = this.plugin.getAgentPresence();
+            if (cached) {
+              this._agentPresenceCache = cached;
+            }
+          }
+          this.refreshIfOpen();
+        }
+      );
+    }
+    this._refreshAgentPresenceOnce();
     if (this.plugin?.settings?.language) {
       setLanguage(this.app, this.plugin.settings.language);
     }
@@ -2733,76 +2773,267 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
   }
 
-  _renderAgentDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
-    if (!opts?.inline) {
-      this._renderModuleDetailShell(containerEl, "agent");
+  private _detectLocalVaultConfiguredPlatforms(vaultBase: string): string[] {
+    if (!vaultBase) return [];
+    const found: string[] = [];
+    for (const [plat, rel] of [
+      ["claude", ".mcp.json"],
+      ["cursor", ".cursor/mcp.json"],
+      ["opencode", "opencode.json"],
+    ] as const) {
+      if (this._getVaultMcpConfigStatus(vaultBase, plat) === "ready") {
+        found.push(plat);
+      } else {
+        void rel;
+      }
     }
-    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    return found;
+  }
 
-    const current = this.plugin.settings.agent_platform || "opencode";
-    const vaultBase = this._getVaultBasePath();
-    const installedBin = this._resolvePreferredDaemonBin(vaultBase);
-    const binReady = fs.existsSync(installedBin);
+  private _getEffectiveAgentPresence(): AgentPresenceSnapshotDto {
+    const vaultBase = this._getVaultBasePath() || undefined;
+    if (this._agentPresenceCache) {
+      return this._agentPresenceCache;
+    }
+    if (typeof this.plugin.getAgentPresence === "function") {
+      const fromPlugin = this.plugin.getAgentPresence() as
+        | AgentPresenceSnapshotDto
+        | null
+        | undefined;
+      if (fromPlugin && typeof fromPlugin === "object") {
+        return fromPlugin;
+      }
+    }
+    const localPlatforms = this._detectLocalVaultConfiguredPlatforms(
+      vaultBase ?? ""
+    );
+    return normalizeAgentPresenceSnapshot({}, vaultBase, localPlatforms);
+  }
+
+  private _tryGetClient(): PaperForgeClient | null {
+    try {
+      return this.getClient();
+    } catch {
+      return null;
+    }
+  }
+
+  private _refreshAgentPresenceOnce(): void {
+    if (this._agentPresenceProbedThisSession) return;
+    this._agentPresenceProbedThisSession = true;
+    if (typeof this.plugin.refreshAgentPresence === "function") {
+      void (
+        this.plugin.refreshAgentPresence() as Promise<AgentPresenceSnapshotDto | null>
+      )
+        .then((next) => {
+          if (next && typeof next === "object") {
+            const prevSig = this._agentPresenceCache
+              ? JSON.stringify(this._agentPresenceCache)
+              : null;
+            this._agentPresenceCache = next;
+            if (prevSig !== JSON.stringify(next)) {
+              this.refreshIfOpen();
+            }
+          }
+        })
+        .catch(() => undefined);
+      return;
+    }
+    const client = this._tryGetClient();
+    if (!client || typeof client.getAgentSessions !== "function") return;
+    const vaultBase = this._getVaultBasePath() || undefined;
+    void client
+      .getAgentSessions(vaultBase)
+      .then((next) => {
+        if (!next || typeof next !== "object") return;
+        const prevSig = this._agentPresenceCache
+          ? JSON.stringify(this._agentPresenceCache)
+          : null;
+        this._agentPresenceCache = next;
+        if (prevSig !== JSON.stringify(next)) {
+          this.refreshIfOpen();
+        }
+      })
+      .catch(() => undefined);
+  }
+
+  private _formatAgentPresenceBadgeText(
+    presence: AgentPresenceSnapshotDto,
+    includeTool = false
+  ): string {
+    const primary = presence.active_sessions[0];
+    const clientName = primary
+      ? formatAgentClientName(primary.client_name)
+      : "";
+    if (presence.state === "ready" && clientName) {
+      const base = `${clientName} ${t("agent_state_ready")}`;
+      if (includeTool && primary?.current_tool) {
+        return `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`;
+      }
+      return base;
+    }
+    if (presence.state === "connected" && clientName) {
+      const base = `${clientName} ${t("agent_state_connected")}`;
+      if (includeTool && primary?.current_tool) {
+        return `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`;
+      }
+      return base;
+    }
+    if (presence.state === "configured_idle") {
+      return t("agent_state_configured_idle");
+    }
+    return t("agent_state_unconnected");
+  }
+
+  private _renderAgentPresenceBadge(
+    parent: HTMLElement,
+    presence: AgentPresenceSnapshotDto,
+    includeTool = false
+  ): HTMLElement {
+    const clsMap: Record<AgentPresenceSnapshotDto["state"], string> = {
+      unconnected: "pf-agent-badge pf-agent-badge--unconnected",
+      configured_idle: "pf-agent-badge pf-agent-badge--configured-idle",
+      connected: "pf-agent-badge pf-agent-badge--connected",
+      ready: "pf-agent-badge pf-agent-badge--ready",
+    };
+    const badge = parent.createEl("span", {
+      cls: clsMap[presence.state],
+      attr: {
+        role: "status",
+        "data-pf-testid": "agent-status-badge",
+        "data-agent-state": presence.state,
+      },
+    });
+    if (presence.state === "connected" || presence.state === "ready") {
+      badge.createEl("span", {
+        cls: "pf-agent-pulse-dot",
+        attr: { "aria-hidden": "true" },
+      });
+    }
+    badge.createEl("span", {
+      cls: "pf-agent-badge-text",
+      text: this._formatAgentPresenceBadgeText(presence, includeTool),
+    });
+    return badge;
+  }
+
+  private _getAgentPresenceSentence(
+    presence: AgentPresenceSnapshotDto
+  ): string {
+    const primary = presence.active_sessions[0];
+    if (presence.state === "ready" && primary) {
+      const client = formatAgentClientName(primary.client_name);
+      const base = t("agent_overview_ready_sentence").replace(
+        "{client}",
+        client
+      );
+      return primary.current_tool
+        ? `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`
+        : base;
+    }
+    if (presence.state === "connected" && primary) {
+      const client = formatAgentClientName(primary.client_name);
+      const base = t("agent_overview_connected_sentence").replace(
+        "{client}",
+        client
+      );
+      return primary.current_tool
+        ? `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`
+        : base;
+    }
+    if (presence.state === "configured_idle") {
+      const platforms =
+        presence.configured_platforms &&
+        presence.configured_platforms.length > 0
+          ? presence.configured_platforms
+              .map((p) => AGENT_PLATFORM_LABELS[p] ?? formatAgentClientName(p))
+              .join(", ")
+          : "MCP";
+      return t("agent_overview_configured_idle_sentence").replace(
+        "{platforms}",
+        platforms
+      );
+    }
+    return t("agent_overview_unconnected_sentence");
+  }
+
+  private _renderAgentOnboardingBox(
+    parent: HTMLElement,
+    vaultBase: string,
+    currentPlatform: string,
+    isZh: boolean
+  ): void {
+    const binPath = this._resolvePreferredDaemonBin(vaultBase);
     const hubInfo = this._readSkillHubAndInstallCount();
+    const fallbackPrompt = this._buildLocalOnboardingPrompt(
+      vaultBase,
+      binPath,
+      hubInfo.hubDir,
+      isZh
+    );
 
-    const facts = body.createDiv({ cls: "pf-module-facts" });
-    const binFact = facts.createDiv({ cls: "pf-module-fact" });
-    binFact.createEl("span", { text: t("agent_mcp_bin_label") });
-    binFact.createEl("span", {
-      text: binReady ? t("agent_mcp_bin_ready") : t("agent_mcp_bin_missing"),
+    const box = parent.createDiv({
+      cls: "pf-agent-onboarding-box",
+      attr: { "data-pf-testid": "agent-onboarding-box" },
     });
-
-    const hubFact = facts.createDiv({ cls: "pf-module-fact" });
-    hubFact.createEl("span", { text: t("agent_skill_hub_label") });
-    hubFact.createEl("span", {
-      text:
-        hubInfo.installCount > 0
-          ? t("agent_skill_hub_ready").replace(
-              "{count}",
-              String(hubInfo.installCount)
-            )
-          : hubInfo.hubReady
-            ? t("agent_skill_hub_unconnected")
-            : t("agent_skill_hub_pending"),
+    box.createEl("p", {
+      cls: "pf-agent-onboarding-hint",
+      text: t("agent_onboarding_preview_hint"),
     });
+    const preview = box.createEl("textarea", {
+      cls: "pf-agent-prompt-preview",
+      attr: {
+        readonly: "true",
+        rows: "7",
+        "aria-label": t("agent_copy_onboarding_primary"),
+        "data-pf-testid": "agent-onboarding-prompt-preview",
+      },
+    }) as HTMLTextAreaElement;
+    preview.value = fallbackPrompt;
 
-    body.createEl("p", {
-      cls: "caption",
-      text: t("agent_external_cli_hint"),
+    const liveDaemon = resolveNativeDaemonBinary({
+      vaultPath: vaultBase,
     });
+    const client = this._tryGetClient();
+    if (liveDaemon && client && typeof client.agentOnboarding === "function") {
+      const langCode = isZh ? "zh" : "en";
+      void client
+        .agentOnboarding(langCode, binPath)
+        .then((res) => {
+          if (res?.prompt && preview.isConnected) {
+            preview.value = res.prompt;
+          }
+        })
+        .catch(() => undefined);
+    }
 
-    const primaryActions = body.createDiv({ cls: "pf-agent-config-actions" });
-    renderActionButton(primaryActions, {
-      label: t("agent_copy_onboarding_btn"),
+    const primaryActions = box.createDiv({ cls: "pf-agent-config-actions" });
+    const copyOnboardingBtn = renderActionButton(primaryActions, {
+      label: t("agent_copy_onboarding_primary"),
       variant: "primary",
       onClick: () => {
         void (async () => {
-          const client = this.getClient();
-          const binPath = this._resolvePreferredDaemonBin(vaultBase);
-          const isZh = (
-            this.plugin.settings.language || langFromApp(this.app)
-          ).startsWith("zh");
+          const cli = this.getClient();
+          const curBinPath = this._resolvePreferredDaemonBin(vaultBase);
           const langCode = isZh ? "zh" : "en";
-          if (!hubInfo.hubReady && typeof client.skillSyncHub === "function") {
+          if (!hubInfo.hubReady && typeof cli.skillSyncHub === "function") {
             try {
-              await client.skillSyncHub();
+              await cli.skillSyncHub();
             } catch {
               // Best-effort Skill Hub hydration before generating onboarding prompt
             }
           }
-          let promptText = this._buildLocalOnboardingPrompt(
-            vaultBase,
-            binPath,
-            this._readSkillHubAndInstallCount().hubDir,
-            isZh
-          );
-          const liveDaemon = resolveNativeDaemonBinary({
+          let promptText = preview.value || fallbackPrompt;
+          const daemonBin = resolveNativeDaemonBinary({
             vaultPath: vaultBase,
           });
-          if (liveDaemon && typeof client.agentOnboarding === "function") {
+          if (daemonBin && typeof cli.agentOnboarding === "function") {
             try {
-              const res = await client.agentOnboarding(langCode, binPath);
-              if (res?.prompt) promptText = res.prompt;
+              const res = await cli.agentOnboarding(langCode, curBinPath);
+              if (res?.prompt) {
+                promptText = res.prompt;
+                if (preview.isConnected) preview.value = promptText;
+              }
             } catch {
               // Keep deterministic local prompt fallback
             }
@@ -2813,29 +3044,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           } catch {
             new Notice(promptText, 8000);
           }
-          this.display();
         })();
       },
     });
+    copyOnboardingBtn.setAttribute(
+      "data-pf-testid",
+      "agent-copy-onboarding-btn"
+    );
     renderActionButton(primaryActions, {
       label: t("agent_copy_mcp"),
       variant: "secondary",
       onClick: () => {
         void (async () => {
-          const binPath = this._resolvePreferredDaemonBin(vaultBase);
+          const curBinPath = this._resolvePreferredDaemonBin(vaultBase);
           const fallback = this._buildLocalMcpConfig(
             vaultBase,
-            current,
-            binPath
+            currentPlatform,
+            curBinPath
           );
           let copyText = fallback.text;
           let fileLabel = fallback.targetRel;
-          const liveDaemon = resolveNativeDaemonBinary({
+          const daemonBin = resolveNativeDaemonBinary({
             vaultPath: vaultBase,
           });
-          if (liveDaemon && typeof this.getClient().mcpConfig === "function") {
+          if (daemonBin && typeof this.getClient().mcpConfig === "function") {
             try {
-              const res = await this.getClient().mcpConfig(current, binPath);
+              const res = await this.getClient().mcpConfig(
+                currentPlatform,
+                curBinPath
+              );
               copyText =
                 res.toml_snippet || JSON.stringify(res.config_snippet, null, 2);
               fileLabel = res.target_relpath || fallback.targetRel;
@@ -2851,6 +3088,239 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         })();
       },
+    });
+  }
+
+  _renderAgentDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "agent");
+    }
+    this._refreshAgentPresenceOnce();
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+
+    const current = this.plugin.settings.agent_platform || "opencode";
+    const vaultBase = this._getVaultBasePath();
+    const installedBin = this._resolvePreferredDaemonBin(vaultBase);
+    const binReady = fs.existsSync(installedBin);
+    const hubInfo = this._readSkillHubAndInstallCount();
+    const isZh = (
+      this.plugin.settings.language || langFromApp(this.app)
+    ).startsWith("zh");
+    const presence = this._getEffectiveAgentPresence();
+    const primarySession = presence.active_sessions[0];
+
+    // ── Live 4-State Poki Presence Card ──
+    const presenceCard = body.createDiv({
+      cls: "pf-agent-presence-card",
+      attr: {
+        "data-pf-testid": "agent-presence-card",
+        "data-agent-state": presence.state,
+      },
+    });
+    const presenceHead = presenceCard.createDiv({
+      cls: "pf-agent-presence-head",
+    });
+    this._renderAgentPresenceBadge(presenceHead, presence, false);
+
+    if (
+      (presence.state === "connected" || presence.state === "ready") &&
+      primarySession
+    ) {
+      const clientLabel = formatAgentClientName(primarySession.client_name);
+      const metaParts = [clientLabel];
+      if (primarySession.client_version) {
+        metaParts.push(`v${primarySession.client_version}`);
+      }
+      if (presence.total_active > 1) {
+        metaParts.push(
+          isZh
+            ? `共 ${presence.total_active} 个在线会话`
+            : `${presence.total_active} active sessions`
+        );
+      }
+      presenceHead.createEl("span", {
+        cls: "pf-agent-presence-meta",
+        text: metaParts.join(" · "),
+      });
+      if (primarySession.current_tool) {
+        const toolEl = presenceCard.createDiv({
+          cls: "pf-agent-tool-activity",
+          attr: { "data-pf-testid": "agent-live-tool" },
+        });
+        toolEl.createEl("span", {
+          cls: "pf-agent-pulse-dot",
+          attr: { "aria-hidden": "true" },
+        });
+        toolEl.createEl("span", {
+          text: t("agent_running_tool").replace(
+            "{tool}",
+            primarySession.current_tool
+          ),
+        });
+      }
+      if (presence.active_sessions.length > 1) {
+        const sessionList = presenceCard.createDiv({
+          cls: "pf-agent-sessions-list",
+        });
+        sessionList.createEl("div", {
+          cls: "pf-agent-sessions-title",
+          text: t("agent_active_sessions_title"),
+        });
+        for (const sess of presence.active_sessions) {
+          const row = sessionList.createDiv({ cls: "pf-agent-session-row" });
+          const name = formatAgentClientName(sess.client_name);
+          const ver = sess.client_version ? ` v${sess.client_version}` : "";
+          const tool = sess.current_tool
+            ? ` · ${t("agent_running_tool").replace("{tool}", sess.current_tool)}`
+            : "";
+          row.createEl("span", { text: `● ${name}${ver}${tool}` });
+        }
+      }
+    } else if (presence.state === "configured_idle") {
+      const platforms =
+        presence.configured_platforms &&
+        presence.configured_platforms.length > 0
+          ? presence.configured_platforms
+              .map((p) => AGENT_PLATFORM_LABELS[p] ?? formatAgentClientName(p))
+              .join(", ")
+          : "MCP";
+      presenceCard.createEl("p", {
+        cls: "pf-agent-presence-sub",
+        text: t("agent_configured_waiting_hint").replace(
+          "{platforms}",
+          platforms
+        ),
+      });
+    } else {
+      presenceCard.createEl("p", {
+        cls: "pf-agent-presence-sub",
+        text: this._getAgentPresenceSentence(presence),
+      });
+    }
+
+    // ── Live Auto-Setup Progress Checklist (4 rows) ──
+    const checklistState = presence.setup_checklist ?? {
+      connected: false,
+      instructions_injected: false,
+      vault_reconciled: false,
+      tools_ready: false,
+    };
+    const checklistCard = body.createDiv({
+      cls: "pf-agent-checklist",
+      attr: { "data-pf-testid": "agent-setup-checklist" },
+    });
+    checklistCard.createEl("div", {
+      cls: "pf-agent-checklist-title",
+      text: t("agent_checklist_title"),
+    });
+    const handshakeDetail =
+      checklistState.connected && primarySession
+        ? `${formatAgentClientName(primarySession.client_name)}${
+            primarySession.client_version
+              ? ` v${primarySession.client_version}`
+              : ""
+          }`
+        : t("agent_check_1_waiting");
+    const checklistRows: Array<{
+      id: string;
+      done: boolean;
+      label: string;
+      detail?: string;
+    }> = [
+      {
+        id: "agent-check-1",
+        done: Boolean(checklistState.connected),
+        label: t("agent_check_1_handshake"),
+        detail: handshakeDetail,
+      },
+      {
+        id: "agent-check-2",
+        done: Boolean(checklistState.instructions_injected),
+        label: t("agent_check_2_instructions"),
+      },
+      {
+        id: "agent-check-3",
+        done: Boolean(checklistState.vault_reconciled),
+        label: t("agent_check_3_reconciled"),
+      },
+      {
+        id: "agent-check-4",
+        done: Boolean(checklistState.tools_ready),
+        label: t("agent_check_4_tools"),
+      },
+    ];
+    for (const item of checklistRows) {
+      const row = checklistCard.createDiv({
+        cls: `pf-agent-check-item ${
+          item.done ? "pf-agent-check-item--done" : "pf-agent-check-item--pending"
+        }`,
+        attr: {
+          "data-pf-testid": item.id,
+          "data-checked": item.done ? "true" : "false",
+        },
+      });
+      row.createEl("span", {
+        cls: "pf-agent-check-icon",
+        text: item.done ? "✓" : "○",
+        attr: { "aria-hidden": "true" },
+      });
+      const textWrap = row.createDiv({ cls: "pf-agent-check-text" });
+      textWrap.createEl("span", {
+        cls: "pf-agent-check-label",
+        text: item.label,
+      });
+      if (item.detail) {
+        textWrap.createEl("span", {
+          cls: "pf-agent-check-detail",
+          text: item.detail,
+        });
+      }
+    }
+
+    body.createEl("p", {
+      cls: "caption",
+      text: t("agent_external_cli_hint"),
+    });
+
+    if (presence.state === "connected" || presence.state === "ready") {
+      const connectMoreDetails = body.createEl("details", {
+        cls: "pf-adv-details",
+      });
+      connectMoreDetails.createEl("summary", {
+        text: t("agent_connect_another"),
+      });
+      const connectMoreBody = connectMoreDetails.createDiv({
+        cls: "pf-adv-body",
+      });
+      this._renderAgentOnboardingBox(connectMoreBody, vaultBase, current, isZh);
+    } else {
+      this._renderAgentOnboardingBox(body, vaultBase, current, isZh);
+    }
+
+    const facts = body.createDiv({ cls: "pf-module-facts" });
+    const binFact = facts.createDiv({ cls: "pf-module-fact" });
+    binFact.createEl("span", { text: t("agent_mcp_bin_label") });
+    binFact.createEl("span", {
+      text: binReady ? t("agent_mcp_bin_ready") : t("agent_mcp_bin_missing"),
+    });
+
+    const hubFact = facts.createDiv({ cls: "pf-module-fact" });
+    hubFact.createEl("span", { text: t("agent_skill_hub_label") });
+    hubFact.createEl("span", {
+      text:
+        presence.total_active > 0
+          ? t("agent_skill_hub_ready").replace(
+              "{count}",
+              String(presence.total_active)
+            )
+          : hubInfo.installCount > 0
+            ? t("agent_skill_hub_ready").replace(
+                "{count}",
+                String(hubInfo.installCount)
+              )
+            : hubInfo.hubReady
+              ? t("agent_skill_hub_unconnected")
+              : t("agent_skill_hub_pending"),
     });
 
     const vaultSkillDirs = [
@@ -4054,11 +4524,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: this._getUserModuleName(mod),
       attr: { id: "pf-" + mod + "-detail-heading", tabindex: "-1" },
     });
-    renderStatusBadge(header, userState, this._getUserStateLabel(userState));
-    summary.createEl("p", {
-      cls: "pf-module-summary-consequence",
-      text: this._getModuleConsequence(mod, env),
-    });
+    if (mod === "agent") {
+      const presence = this._getEffectiveAgentPresence();
+      this._renderAgentPresenceBadge(header, presence, true);
+      summary.createEl("p", {
+        cls: "pf-module-summary-consequence",
+        text: this._getAgentPresenceSentence(presence),
+      });
+    } else {
+      renderStatusBadge(header, userState, this._getUserStateLabel(userState));
+      summary.createEl("p", {
+        cls: "pf-module-summary-consequence",
+        text: this._getModuleConsequence(mod, env),
+      });
+    }
 
     if (env.activity_state === "running") {
       renderActivityRow(summary, {
@@ -5390,14 +5869,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
 
     const agentEnv = this._getAgentPlaceholderEnvelope();
+    const agentPresence = this._getEffectiveAgentPresence();
     this._renderOverviewNavRow(
       optList,
       "agent",
       t("cc_module_agent") || "AI Agent 技能",
       agentEnv,
-      AGENT_PLATFORM_LABELS[
-        this.plugin.settings.agent_platform || "opencode"
-      ] ?? this.plugin.settings.agent_platform
+      this._getAgentPresenceSentence(agentPresence)
     );
 
     // ── VS Code Walkthrough-style Dismissible Exploration Checklist (when core is ready) ──
@@ -5497,21 +5975,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     env: ProbeEnvelope,
     sentenceOverride?: string
   ): void {
+    const agentPresence =
+      mod === "agent" ? this._getEffectiveAgentPresence() : null;
     const row = listEl.createEl("div", {
       cls: "pf-cc-module-card pf-open-module-btn pf-cc-nav-row",
       attr: {
         "data-module": mod,
-        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+        "aria-label":
+          label +
+          " — " +
+          (agentPresence
+            ? this._formatAgentPresenceBadgeText(agentPresence, false)
+            : this._getUserStateLabel(env.user_state)),
         role: "button",
         tabindex: "0",
       },
     });
     row.createEl("span", { cls: "pf-cc-card-name", text: label });
-    renderStatusBadge(
-      row,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
+    if (agentPresence) {
+      this._renderAgentPresenceBadge(row, agentPresence, false);
+    } else {
+      renderStatusBadge(
+        row,
+        env.user_state,
+        this._getUserStateLabel(env.user_state)
+      );
+    }
     row.createEl("span", {
       cls: "pf-cc-card-sentence",
       text: sentenceOverride ?? this._getModuleConsequence(mod, env),
@@ -5754,41 +6243,38 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
-  /** Derive Agent availability from the shared .agents/skills or legacy per-platform skill dir. */
+  /** Derive Agent availability from live MCP session presence (never fake-green). */
   _getAgentPlaceholderEnvelope(): ProbeEnvelope {
-    const vaultBase = this._getVaultBasePath();
-    const platform = this.plugin.settings.agent_platform || "opencode";
-    const configuredSkillDir = String(
-      this._pfConfig?.skill_dir ||
-        this.plugin.settings.skill_dir ||
-        ".agents/skills"
-    );
-    const legacyDir =
-      AGENT_PLATFORM_SKILL_DIRS[platform] ?? AGENT_PLATFORM_SKILL_DIRS.opencode;
-    const candidateDirs =
-      configuredSkillDir === legacyDir
-        ? [configuredSkillDir]
-        : [configuredSkillDir, legacyDir];
-    const deployed = candidateDirs.some((dir) =>
-      fs.existsSync(path.join(vaultBase, dir, "paperforge", "SKILL.md"))
-    );
+    const presence = this._getEffectiveAgentPresence();
+    const isLive =
+      presence.state === "connected" || presence.state === "ready";
+    const isIdle = presence.state === "configured_idle";
     return {
       schema_version: 2,
       module: "agent",
-      capability_state: deployed ? "ready" : "needs_action",
+      capability_state: isLive ? "ready" : "needs_action",
       activity_state: "idle",
       activity_label: null,
       activity_progress: null,
-      severity: deployed ? "ok" : "warning",
+      severity: isLive ? "ok" : isIdle ? "unknown" : "warning",
       reason: {
-        code: deployed ? "agent.skills_deployed" : "agent.skills_not_deployed",
-        text: deployed
-          ? "PaperForge Skills are deployed for the selected platform."
-          : "PaperForge Skills have not been deployed for the selected platform.",
+        code:
+          presence.state === "ready"
+            ? "agent.ready"
+            : presence.state === "connected"
+              ? "agent.connected"
+              : isIdle
+                ? "agent.configured_idle"
+                : "agent.unconnected",
+        text: this._getAgentPresenceSentence(presence),
       },
       action: { primary: null },
       notices: [],
-      user_state: deployed ? "ready" : "not_enabled",
+      user_state: isLive
+        ? "ready"
+        : isIdle
+          ? "action_required"
+          : "not_enabled",
       capability_kind: "optional",
       maintenance_eligible: false,
       user_visible_failure: false,
@@ -8502,34 +8988,46 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupOptionals[opt.id] = checkbox.checked;
         this.display();
       });
+      const agentPresence =
+        opt.id === "agent" ? this._getEffectiveAgentPresence() : null;
       const configured =
         opt.id === "ocr"
           ? !!this.plugin.settings._paddleocr_configured
           : opt.id === "memory"
             ? !!this.plugin.settings._vector_db_configured
-            : true;
+            : agentPresence?.state === "connected" ||
+              agentPresence?.state === "ready";
       // The chip states what the user must do next, not just "configured":
       // a green "not configured" reads as done and is why people skip it.
       const needsSecret = opt.id === "ocr" || opt.id === "memory";
+      const agentStateCls =
+        agentPresence?.state === "ready" ||
+        agentPresence?.state === "connected"
+          ? "pf-setup-optional-state--ok"
+          : agentPresence?.state === "configured_idle"
+            ? "pf-setup-optional-state--info"
+            : "pf-setup-optional-state--neutral";
       const status = copy.createEl("span", {
         cls:
           "pf-setup-optional-state " +
-          (needsSecret && !configured
-            ? "pf-setup-optional-state--warn"
-            : "pf-setup-optional-state--ok"),
+          (opt.id === "agent"
+            ? agentStateCls
+            : needsSecret && !configured
+              ? "pf-setup-optional-state--warn"
+              : "pf-setup-optional-state--ok"),
         text:
-          opt.id === "agent"
-            ? t("setup_optional_platform").replace(
-                "{platform}",
-                AGENT_PLATFORM_LABELS[
-                  this.plugin.settings.agent_platform || "opencode"
-                ] ??
-                  this.plugin.settings.agent_platform ??
-                  "opencode"
-              )
+          opt.id === "agent" && agentPresence
+            ? this._formatAgentPresenceBadgeText(agentPresence, false)
             : configured
               ? t("config_configured")
               : t("setup_optional_needs_key"),
+        attr:
+          opt.id === "agent" && agentPresence
+            ? {
+                "data-pf-testid": "setup-optional-agent-state",
+                "data-agent-state": agentPresence.state,
+              }
+            : undefined,
       });
       if (!checkbox.checked) continue;
 
@@ -8809,6 +9307,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             });
         });
       } else {
+        const isZhOpt = (
+          this.plugin.settings.language || langFromApp(this.app)
+        ).startsWith("zh");
+        const vaultBase = this._getVaultBasePath();
+        const curPlatform = this.plugin.settings.agent_platform || "opencode";
+        this._renderAgentOnboardingBox(config, vaultBase, curPlatform, isZhOpt);
         config.createEl("label", { text: t("feat_agent_platform") });
         config.createEl("p", {
           cls: "caption",
@@ -8991,6 +9495,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * resume the Setup Journey at the stage the user left. */
   hide(): void {
     this._isOpen = false;
+    this._agentPresenceProbedThisSession = false;
+    if (this._agentPresenceWsRef) {
+      const ws = (
+        this.app as unknown as {
+          workspace?: {
+            offref?: (ref: unknown) => void;
+            off?: (ev: string, ref: unknown) => void;
+          };
+        }
+      )?.workspace;
+      if (typeof ws?.offref === "function") {
+        ws.offref(this._agentPresenceWsRef);
+      } else if (typeof ws?.off === "function") {
+        ws.off("paperforge:agent-presence-changed", this._agentPresenceWsRef);
+      }
+      this._agentPresenceWsRef = null;
+    }
     this._setupJourneyDismissedForSession = false;
     this._attemptedProbes.delete("help");
     if (this._saveTimeout) {

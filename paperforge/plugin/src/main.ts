@@ -106,6 +106,9 @@ import {
 import {
   PaperForgeClient,
   NodeProcessTransport,
+  formatAgentClientName,
+  resolvePaperForgeHomeDir,
+  type AgentPresenceSnapshotDto,
   type BaseTableSnapshotDto,
   type VaultUpgradePlanDto,
   type DaemonJobDto,
@@ -146,6 +149,13 @@ export default class PaperForgePlugin extends Plugin {
   private _lastStateSeq = -1;
   private _stateSeqWatcher: fs.FSWatcher | null = null;
   private _stateSeqTimer: ReturnType<typeof setTimeout> | null = null;
+  private _agentPresence: AgentPresenceSnapshotDto | null = null;
+  private _agentPresenceInFlight: Promise<AgentPresenceSnapshotDto | null> | null =
+    null;
+  private _agentSessionsWatcher: fs.FSWatcher | null = null;
+  private _agentSessionsDirWatcher: fs.FSWatcher | null = null;
+  private _agentSessionsWatchTimer: ReturnType<typeof setTimeout> | null = null;
+  private _agentStatusBarEl: HTMLElement | null = null;
   private _daemonJobs = new Map<string, DaemonJobDto>();
   private _unsubscribeDaemon: (() => void) | null = null;
   private _upgradePlanCache: VaultUpgradePlanDto | null = null;
@@ -478,6 +488,7 @@ export default class PaperForgePlugin extends Plugin {
         this._client?.invalidateCache();
         void this.refreshBaseSnapshot().catch(() => undefined);
       }
+      void this.refreshAgentPresence();
     }
   }
 
@@ -1151,11 +1162,15 @@ export default class PaperForgePlugin extends Plugin {
         void this._hydrateConfigMirrors(vaultBase).then(() => {
           if (this._unloaded) return;
           this._startStateSeqWatcher(vaultBase);
+          this._startAgentSessionsWatcher();
           this._startConvergenceTimer();
+          void this.refreshAgentPresence();
         });
       } else {
         this._startStateSeqWatcher(vaultBase);
+        this._startAgentSessionsWatcher();
         this._startConvergenceTimer();
+        void this.refreshAgentPresence();
       }
     };
 
@@ -1801,6 +1816,7 @@ export default class PaperForgePlugin extends Plugin {
 
   private _emitStateChanged(changedKeys: string[] = []): void {
     this._updateStatusBar();
+    void this.refreshAgentPresence();
     const ws = (
       this.app as unknown as {
         workspace?: { trigger?: (name: string, data?: unknown) => void };
@@ -1812,6 +1828,162 @@ export default class PaperForgePlugin extends Plugin {
         changedKeys,
       });
     }
+  }
+
+  getAgentPresence(): AgentPresenceSnapshotDto | null {
+    return this._agentPresence;
+  }
+
+  refreshAgentPresence(): Promise<AgentPresenceSnapshotDto | null> {
+    if (this._unloaded) return Promise.resolve(null);
+    if (this._agentPresenceInFlight) return this._agentPresenceInFlight;
+    const vaultBase =
+      (this.app?.vault?.adapter as unknown as { basePath?: string } | undefined)
+        ?.basePath ?? "";
+    let work!: Promise<AgentPresenceSnapshotDto | null>;
+    work = (async (): Promise<AgentPresenceSnapshotDto | null> => {
+      try {
+        const next = await this.getClient().getAgentSessions(
+          vaultBase || undefined
+        );
+        if (this._unloaded) return null;
+        const prevSig = this._agentPresence
+          ? JSON.stringify(this._agentPresence)
+          : null;
+        const nextSig = JSON.stringify(next);
+        this._agentPresence = next;
+        this._updateAgentStatusBar();
+        if (prevSig !== nextSig) {
+          const ws = (
+            this.app as unknown as {
+              workspace?: { trigger?: (name: string, data?: unknown) => void };
+            }
+          )?.workspace;
+          if (typeof ws?.trigger === "function") {
+            ws.trigger("paperforge:agent-presence-changed", {
+              presence: next,
+            });
+          }
+          this._refreshSettingTabIfOpen();
+        }
+        return next;
+      } catch {
+        return this._agentPresence;
+      } finally {
+        if (this._agentPresenceInFlight === work) {
+          this._agentPresenceInFlight = null;
+        }
+      }
+    })();
+    this._agentPresenceInFlight = work;
+    return work;
+  }
+
+  private _formatAgentToolBadgeLabel(toolName: string, isZh: boolean): string {
+    const clean = String(toolName || "").trim();
+    if (!clean) return "";
+    if (
+      clean === "paperforge_annotate_batch" ||
+      clean === "paperforge_annotations"
+    ) {
+      return isZh ? "批注中" : "Annotating";
+    }
+    if (clean === "paperforge_read_paper") {
+      return isZh ? "阅读中" : "Reading";
+    }
+    if (
+      clean === "paperforge_search" ||
+      clean === "paperforge_library_query" ||
+      clean === "paperforge_retrieve"
+    ) {
+      return isZh ? "检索中" : "Searching";
+    }
+    if (
+      clean === "paperforge_log_write" ||
+      clean === "paperforge_memory_refine"
+    ) {
+      return isZh ? "记录中" : "Writing";
+    }
+    if (clean === "paperforge_job") {
+      return isZh ? "任务调度中" : "Running job";
+    }
+    if (clean === "paperforge_brief") {
+      return isZh ? "同步上下文" : "Syncing";
+    }
+    return clean;
+  }
+
+  private _ensureAgentStatusBarPill(doc: Document): HTMLElement {
+    if (this._agentStatusBarEl) return this._agentStatusBarEl;
+    const pill = doc.createElement("span");
+    pill.className = "pf-status-agent-pill";
+    pill.setAttribute("data-pf-testid", "pf-status-agent-pill");
+    pill.setAttribute("role", "button");
+    pill.setAttribute("tabindex", "0");
+    pill.style.display = "none";
+    pill.addEventListener("click", (ev: MouseEvent) => {
+      ev.stopPropagation();
+      this._closeStatusPopover();
+      this.openModuleSettings("agent");
+    });
+    pill.addEventListener("keydown", (ev: KeyboardEvent) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this._closeStatusPopover();
+        this.openModuleSettings("agent");
+      }
+    });
+    this._agentStatusBarEl = pill;
+    return pill;
+  }
+
+  private _updateAgentStatusBar(): void {
+    const parent = this._statusBarEl;
+    const doc = parent?.ownerDocument ?? this._agentStatusBarEl?.ownerDocument;
+    if (!doc) return;
+    const presence = this._agentPresence;
+    if (
+      !presence ||
+      presence.total_active <= 0 ||
+      presence.active_sessions.length === 0
+    ) {
+      if (this._agentStatusBarEl) {
+        this._agentStatusBarEl.style.display = "none";
+        this._agentStatusBarEl.textContent = "";
+      }
+      return;
+    }
+
+    const el = this._ensureAgentStatusBarPill(doc);
+    if (parent && el.parentElement !== parent) {
+      parent.appendChild(el);
+    }
+
+    const isZh = t("nav_close") === "关闭";
+    const primary = presence.active_sessions[0];
+    const clientLabel = formatAgentClientName(primary.client_name);
+    const activity = primary.current_tool
+      ? this._formatAgentToolBadgeLabel(primary.current_tool, isZh)
+      : "";
+    const text = activity
+      ? `${clientLabel} · ${activity}`
+      : presence.total_active > 1
+        ? `${clientLabel} +${presence.total_active - 1}`
+        : clientLabel;
+
+    el.style.display = "inline-flex";
+    el.textContent = "";
+    const dot = doc.createElement("span");
+    dot.className = "pf-status-agent-dot";
+    const label = doc.createElement("span");
+    label.className = "pf-status-agent-label";
+    label.textContent = text;
+    el.appendChild(dot);
+    el.appendChild(label);
+    const tip = t("agent_statusbar_tooltip").replace("{client}", clientLabel);
+    el.setAttribute("title", tip);
+    el.setAttribute("aria-label", tip);
   }
 
   private _notifySettingTabDaemonSwapFinished(): void {
@@ -2083,6 +2255,10 @@ export default class PaperForgePlugin extends Plugin {
 
     el.appendChild(dot);
     el.appendChild(label);
+    if (this._agentStatusBarEl) {
+      el.appendChild(this._agentStatusBarEl);
+    }
+    this._updateAgentStatusBar();
   }
 
   private _setupEcosystemHooks(): void {
@@ -2314,6 +2490,71 @@ export default class PaperForgePlugin extends Plugin {
       });
     } catch {
       this._stateSeqWatcher = null;
+    }
+  }
+
+  private _startAgentSessionsWatcher(): void {
+    if (this._unloaded || this._agentSessionsWatcher) return;
+    const pfHome = resolvePaperForgeHomeDir();
+    const stateDir = path.join(pfHome, "state");
+    const schedulePresenceRefresh = () => {
+      if (this._unloaded) return;
+      if (this._agentSessionsWatchTimer) {
+        clearTimeout(this._agentSessionsWatchTimer);
+      }
+      this._agentSessionsWatchTimer = setTimeout(() => {
+        this._agentSessionsWatchTimer = null;
+        if (!this._unloaded) {
+          void this.refreshAgentPresence();
+        }
+      }, 120);
+    };
+
+    const attachStateWatcher = () => {
+      if (this._unloaded || this._agentSessionsWatcher) return;
+      if (!fs.existsSync(stateDir)) return;
+      try {
+        this._agentSessionsWatcher = fs.watch(
+          stateDir,
+          (_event, filename) => {
+            if (!filename || filename === "agent-sessions.json") {
+              schedulePresenceRefresh();
+            }
+          }
+        );
+      } catch {
+        this._agentSessionsWatcher = null;
+      }
+    };
+
+    if (fs.existsSync(stateDir)) {
+      attachStateWatcher();
+      return;
+    }
+
+    if (fs.existsSync(pfHome) && !this._agentSessionsDirWatcher) {
+      try {
+        this._agentSessionsDirWatcher = fs.watch(
+          pfHome,
+          (_event, filename) => {
+            if (
+              (!filename || filename === "state") &&
+              fs.existsSync(stateDir)
+            ) {
+              try {
+                this._agentSessionsDirWatcher?.close?.();
+              } catch {
+                // ignore watcher close errors
+              }
+              this._agentSessionsDirWatcher = null;
+              attachStateWatcher();
+              schedulePresenceRefresh();
+            }
+          }
+        );
+      } catch {
+        this._agentSessionsDirWatcher = null;
+      }
     }
   }
 
@@ -2867,6 +3108,23 @@ export default class PaperForgePlugin extends Plugin {
       // ignore watcher close errors
     }
     this._stateSeqWatcher = null;
+    if (this._agentSessionsWatchTimer) {
+      clearTimeout(this._agentSessionsWatchTimer);
+      this._agentSessionsWatchTimer = null;
+    }
+    try {
+      this._agentSessionsWatcher?.close?.();
+    } catch {
+      // ignore watcher close errors
+    }
+    this._agentSessionsWatcher = null;
+    try {
+      this._agentSessionsDirWatcher?.close?.();
+    } catch {
+      // ignore watcher close errors
+    }
+    this._agentSessionsDirWatcher = null;
+    this._agentPresenceInFlight = null;
     this._unsubscribeDaemon?.();
     this._unsubscribeDaemon = null;
     this._daemonJobs.clear();

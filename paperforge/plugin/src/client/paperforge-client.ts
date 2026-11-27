@@ -9,6 +9,9 @@
  * - Authority-write mutations
  */
 
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   type Transport,
   type StreamOptions,
@@ -621,6 +624,294 @@ export interface EmbedStatusData {
   total_chunks?: number;
   build_state?: Record<string, unknown>;
   [key: string]: unknown;
+}
+
+export interface AgentSessionDto {
+  session_id: string;
+  client_name: string;
+  client_version?: string;
+  vault?: string;
+  pid?: number;
+  connected_at?: string;
+  last_seen_at?: string;
+  current_tool?: string | null;
+  status?: "connected" | "ready";
+  setup_steps?: {
+    connected?: boolean;
+    instructions_injected?: boolean;
+    vault_reconciled?: boolean;
+    skill_ready?: boolean;
+  };
+}
+
+export interface AgentPresenceSnapshotDto {
+  state: "unconnected" | "configured_idle" | "connected" | "ready";
+  active_sessions: AgentSessionDto[];
+  total_active: number;
+  configured_platforms?: string[];
+  historical_clients?: string[];
+  setup_checklist?: {
+    connected: boolean;
+    instructions_injected: boolean;
+    vault_reconciled: boolean;
+    tools_ready: boolean;
+  };
+}
+
+const AGENT_SESSION_STALE_MS = 5 * 60 * 1000;
+
+const AGENT_CLIENT_DISPLAY_NAMES: Record<string, string> = {
+  "claude-code": "Claude Code",
+  claude: "Claude Code",
+  "claude-desktop": "Claude Desktop",
+  cursor: "Cursor",
+  opencode: "OpenCode",
+  codex: "Codex",
+  windsurf: "Windsurf",
+  "github-copilot": "GitHub Copilot",
+  github_copilot: "GitHub Copilot",
+  "gemini-cli": "Gemini CLI",
+  gemini: "Gemini CLI",
+  cline: "Cline",
+  kilo: "Kilo Code",
+  kilocode: "Kilo Code",
+  trae: "Trae",
+  augment: "Augment",
+  kimi: "Kimi CLI",
+  crush: "Crush",
+  pi: "Pi Agent",
+  omp: "Oh My Pi",
+};
+
+export function formatAgentClientName(rawName: string): string {
+  const clean = String(rawName || "").trim();
+  if (!clean) return "AI Agent";
+  const mapped = AGENT_CLIENT_DISPLAY_NAMES[clean.toLowerCase()];
+  return mapped ?? clean;
+}
+
+export function resolvePaperForgeHomeDir(homeDir = os.homedir()): string {
+  const envHome = process.env.PAPERFORGE_HOME?.trim();
+  return envHome || path.join(homeDir, ".paperforge");
+}
+
+function normalizeVaultCompare(p: string): string {
+  const resolved = path.resolve(p).replace(/\\/g, "/").replace(/\/+$/, "");
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+function parseSessionTimestampMs(ts: unknown): number | null {
+  if (typeof ts === "number" && Number.isFinite(ts)) {
+    return ts < 1e12 ? ts * 1000 : ts;
+  }
+  if (typeof ts === "string" && ts.trim()) {
+    const parsed = Date.parse(ts);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function isSessionLiveForVault(
+  session: AgentSessionDto,
+  vaultPath: string | undefined,
+  nowMs: number
+): boolean {
+  if (!session || typeof session !== "object" || !session.session_id) {
+    return false;
+  }
+  const ts =
+    parseSessionTimestampMs(session.last_seen_at) ??
+    parseSessionTimestampMs(session.connected_at);
+  if (ts !== null && nowMs - ts > AGENT_SESSION_STALE_MS) {
+    return false;
+  }
+  const sVault = String(session.vault ?? "").trim();
+  if (vaultPath && sVault) {
+    return normalizeVaultCompare(sVault) === normalizeVaultCompare(vaultPath);
+  }
+  return true;
+}
+
+function readConfiguredPlatformsFallback(
+  pfHome: string,
+  vaultPath?: string
+): string[] {
+  const platforms = new Set<string>();
+  try {
+    const regFile = path.join(pfHome, "agent-installs.json");
+    if (fs.existsSync(regFile)) {
+      const parsed = JSON.parse(fs.readFileSync(regFile, "utf-8")) as {
+        installs?: Array<{ platform?: unknown; client?: unknown }>;
+      };
+      if (Array.isArray(parsed?.installs)) {
+        for (const item of parsed.installs) {
+          const name = String(item?.platform ?? item?.client ?? "").trim();
+          if (name) platforms.add(name);
+        }
+      }
+    }
+  } catch {
+    // Ignore corrupt registry during presence fallback
+  }
+  if (vaultPath) {
+    const checks: Array<{ rel: string; label: string; key: "mcp" | "mcpServers" }> = [
+      { rel: ".mcp.json", label: "claude", key: "mcpServers" },
+      { rel: ".cursor/mcp.json", label: "cursor", key: "mcpServers" },
+      { rel: "opencode.json", label: "opencode", key: "mcp" },
+    ];
+    for (const c of checks) {
+      try {
+        const f = path.join(vaultPath, c.rel);
+        if (!fs.existsSync(f)) continue;
+        const parsed = JSON.parse(fs.readFileSync(f, "utf-8")) as Record<
+          string,
+          Record<string, unknown> | undefined
+        >;
+        if (parsed?.[c.key]?.paperforge) {
+          platforms.add(c.label);
+        }
+      } catch {
+        // Ignore malformed local MCP configs
+      }
+    }
+  }
+  return Array.from(platforms);
+}
+
+function extractSessionList(raw: unknown): AgentSessionDto[] {
+  if (Array.isArray(raw)) return raw as AgentSessionDto[];
+  if (!raw || typeof raw !== "object") return [];
+  const obj = raw as Record<string, unknown>;
+  if (Array.isArray(obj.active_sessions)) {
+    return obj.active_sessions as AgentSessionDto[];
+  }
+  if (Array.isArray(obj.sessions)) {
+    return obj.sessions as AgentSessionDto[];
+  }
+  if (obj.sessions && typeof obj.sessions === "object" && !Array.isArray(obj.sessions)) {
+    return Object.values(obj.sessions as Record<string, AgentSessionDto>);
+  }
+  return [];
+}
+
+export function normalizeAgentPresenceSnapshot(
+  raw: unknown,
+  vaultPath?: string,
+  extraConfiguredPlatforms: string[] = [],
+  nowMs = Date.now()
+): AgentPresenceSnapshotDto {
+  const obj =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+  const liveSessions = extractSessionList(raw).filter((s) =>
+    isSessionLiveForVault(s, vaultPath, nowMs)
+  );
+  const configuredSet = new Set<string>(extraConfiguredPlatforms);
+  if (Array.isArray(obj.configured_platforms)) {
+    for (const p of obj.configured_platforms) {
+      const s = String(p ?? "").trim();
+      if (s) configuredSet.add(s);
+    }
+  }
+  const historicalClients = Array.isArray(obj.historical_clients)
+    ? obj.historical_clients.map((x) => String(x ?? "").trim()).filter(Boolean)
+    : [];
+  for (const h of historicalClients) {
+    configuredSet.add(h);
+  }
+  const configuredPlatforms = Array.from(configuredSet);
+
+  const rawChecklist =
+    obj.setup_checklist && typeof obj.setup_checklist === "object"
+      ? (obj.setup_checklist as Record<string, unknown>)
+      : null;
+
+  const connected =
+    liveSessions.length > 0 &&
+    (rawChecklist
+      ? Boolean(rawChecklist.connected)
+      : liveSessions.some((s) => s.setup_steps?.connected !== false));
+  const instructionsInjected =
+    liveSessions.length > 0 &&
+    (rawChecklist
+      ? Boolean(rawChecklist.instructions_injected)
+      : liveSessions.some((s) => Boolean(s.setup_steps?.instructions_injected)));
+  const vaultReconciled =
+    liveSessions.length > 0 &&
+    (rawChecklist
+      ? Boolean(rawChecklist.vault_reconciled)
+      : liveSessions.some((s) => Boolean(s.setup_steps?.vault_reconciled)));
+  const toolsReady =
+    liveSessions.length > 0 &&
+    (rawChecklist
+      ? Boolean(rawChecklist.tools_ready)
+      : liveSessions.some(
+          (s) => Boolean(s.setup_steps?.skill_ready) || s.status === "ready"
+        ));
+
+  let state: AgentPresenceSnapshotDto["state"];
+  if (liveSessions.length > 0) {
+    const anyReady =
+      obj.state === "ready" ||
+      liveSessions.some((s) => s.status === "ready") ||
+      (connected && instructionsInjected && vaultReconciled && toolsReady);
+    state = anyReady ? "ready" : "connected";
+  } else if (
+    obj.state === "configured_idle" ||
+    configuredPlatforms.length > 0
+  ) {
+    state = "configured_idle";
+  } else {
+    state = "unconnected";
+  }
+
+  return {
+    state,
+    active_sessions: liveSessions,
+    total_active: liveSessions.length,
+    configured_platforms: configuredPlatforms,
+    historical_clients: historicalClients,
+    setup_checklist: {
+      connected,
+      instructions_injected: instructionsInjected,
+      vault_reconciled: vaultReconciled,
+      tools_ready: toolsReady,
+    },
+  };
+}
+
+export function readAgentSessionsFallback(
+  vaultPath?: string,
+  nowMs = Date.now()
+): AgentPresenceSnapshotDto {
+  const pfHome = resolvePaperForgeHomeDir();
+  const configuredPlatforms = readConfiguredPlatformsFallback(pfHome, vaultPath);
+  const sessionsFile = path.join(pfHome, "state", "agent-sessions.json");
+  if (!fs.existsSync(sessionsFile)) {
+    return normalizeAgentPresenceSnapshot(
+      {},
+      vaultPath,
+      configuredPlatforms,
+      nowMs
+    );
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(sessionsFile, "utf-8"));
+    return normalizeAgentPresenceSnapshot(
+      parsed,
+      vaultPath,
+      configuredPlatforms,
+      nowMs
+    );
+  } catch {
+    return normalizeAgentPresenceSnapshot(
+      {},
+      vaultPath,
+      configuredPlatforms,
+      nowMs
+    );
+  }
 }
 
 const ACTION_AVAILABLE = "available";
@@ -2955,6 +3246,37 @@ export class PaperForgeClient {
     pruned?: number;
   }> {
     return this._executePfResult(["skill-sync-all"], { timeoutMs: 10000 });
+  }
+
+  /**
+   * Real-time Poki-style Agent presence (`agent-sessions --vault <vault> --json`),
+   * with fast non-blocking fallback to `~/.paperforge/state/agent-sessions.json`
+   * when daemon RPC isn't active yet.
+   */
+  async getAgentSessions(vaultPath?: string): Promise<AgentPresenceSnapshotDto> {
+    const transportAny = this._transport as unknown as {
+      hasNativeDaemonRpc?: () => boolean;
+    };
+    const isNodeTransportWithoutNativeDaemon =
+      typeof transportAny.hasNativeDaemonRpc === "function" &&
+      !transportAny.hasNativeDaemonRpc();
+
+    if (!isNodeTransportWithoutNativeDaemon) {
+      const argv = ["agent-sessions"];
+      if (vaultPath && vaultPath.trim()) {
+        argv.push("--vault", vaultPath.trim());
+      }
+      argv.push("--json");
+      try {
+        const data = await this._executePfResult<unknown>(argv, {
+          timeoutMs: 5000,
+        });
+        return normalizeAgentPresenceSnapshot(data, vaultPath);
+      } catch {
+        // Fall through to fast non-blocking state-file fallback
+      }
+    }
+    return readAgentSessionsFallback(vaultPath);
   }
 }
 

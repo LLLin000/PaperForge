@@ -1898,6 +1898,36 @@ const LANG: Record<string, Record<string, string>> = {
       "Generate or update vector embeddings for all OCR-completed papers in the library.",
     help_offline_manual_note:
       "Online documentation could not be loaded. Use Copy Support Diagnostic below or open the user manual directly.",
+    agent_state_unconnected: "Not Connected",
+    agent_state_configured_idle: "Configured · Waiting",
+    agent_state_connected: "Connected",
+    agent_state_ready: "Connected · Ready",
+    agent_overview_unconnected_sentence:
+      "Copy setup prompt to connect Claude Code, Cursor, OpenCode, or Codex",
+    agent_overview_configured_idle_sentence:
+      "Configured ({platforms}) — open your Agent session to handshake",
+    agent_overview_connected_sentence:
+      "{client} connected via MCP · initializing vault context",
+    agent_overview_ready_sentence:
+      "{client} connected · all MCP tools ready",
+    agent_running_tool: "Running {tool}",
+    agent_active_sessions_title: "Active MCP Sessions",
+    agent_onboarding_preview_hint:
+      "Send the message below to Claude Code / Cursor / OpenCode / Codex — PaperForge will detect the connection automatically:",
+    agent_copy_onboarding_primary: "Copy Onboarding Prompt",
+    agent_connect_another: "Connect another AI assistant",
+    agent_configured_waiting_hint:
+      "Detected configuration for {platforms}. Open or reload your Agent session so it completes its first MCP handshake.",
+    agent_checklist_title: "Live Auto-Setup Progress",
+    agent_check_1_handshake: "Agent MCP Live Handshake",
+    agent_check_1_waiting: "Waiting for first MCP initialize handshake",
+    agent_check_2_instructions:
+      "Operating instructions auto-injected via MCP (initialize.instructions)",
+    agent_check_3_reconciled: "Vault index & directories reconciled in-place",
+    agent_check_4_tools:
+      "Full toolset ready (search / read / annotate / OCR & vector jobs)",
+    agent_statusbar_tooltip:
+      "{client} connected via MCP — click to open Agent Integration",
   },
   zh: {
     record_save: "保存研究记录",
@@ -3643,6 +3673,36 @@ const LANG: Record<string, Record<string, string>> = {
     embed_confirm_body: "为文献库中已完成 OCR 的论文生成或更新向量检索索引。",
     help_offline_manual_note:
       "无法加载在线帮助文档。请使用下方的“复制支持诊断”按钮或直接打开离线/在线使用手册。",
+    agent_state_unconnected: "未接入 AI 助手",
+    agent_state_configured_idle: "已配置 · 等待首次握手",
+    agent_state_connected: "已连接",
+    agent_state_ready: "已连接 · 全能力就绪",
+    agent_overview_unconnected_sentence:
+      "复制接入指令发给 Claude Code / Cursor / OpenCode / Codex，发完自动检测接入",
+    agent_overview_configured_idle_sentence:
+      "已检测到配置（{platforms}）— 打开 Agent 对话后自动完成首次握手",
+    agent_overview_connected_sentence:
+      "{client} 已通过 MCP 连接 · 正在初始化研究库上下文",
+    agent_overview_ready_sentence:
+      "{client} 已连接 · 全能力工具就绪",
+    agent_running_tool: "正在执行 {tool}",
+    agent_active_sessions_title: "实时在线 Agent 会话",
+    agent_onboarding_preview_hint:
+      "把下面这段话发给 Claude Code / Cursor / OpenCode / Codex，发完我会自动检测接入：",
+    agent_copy_onboarding_primary: "一键复制接入指令",
+    agent_connect_another: "接入其他 AI 助手",
+    agent_configured_waiting_hint:
+      "已检测到 {platforms} 配置。请打开或重启你的 AI 助手会话，完成首次 MCP 握手后此处会自动变绿。",
+    agent_checklist_title: "实时自动接入进度",
+    agent_check_1_handshake: "Agent MCP 实时握手",
+    agent_check_1_waiting: "等待首次 MCP initialize 握手",
+    agent_check_2_instructions:
+      "操作规程已通过 MCP 自动注入（initialize.instructions）",
+    agent_check_3_reconciled: "Vault 索引与目录已就地自愈就绪",
+    agent_check_4_tools:
+      "全能力工具就绪（检索 / 读原文 / 批注 / OCR & 向量控制）",
+    agent_statusbar_tooltip:
+      "{client} 已通过 MCP 实时连接 — 点击打开 Agent 集成设置",
   },
 };
 
