@@ -383,4 +383,62 @@ describe("Plugin views qualification regressions", () => {
 
     await view.onClose();
   });
+
+  it("PF-UI-013: renders immediate loading state during pending startup and shows recovery banner if bootstrap throws", async () => {
+    let resolveStats!: (val: any) => void;
+    const pendingStats = new Promise((res) => {
+      resolveStats = res;
+    });
+    const view = new PaperForgeStatusView({} as any);
+    Object.assign(view as any, {
+      app: {
+        workspace: {
+          on: vi.fn(() => ({})),
+          offref: vi.fn(),
+          getActiveFile: () => null,
+          getActiveViewOfType: () => null,
+        },
+        vault: {
+          on: vi.fn(() => ({})),
+          offref: vi.fn(),
+          adapter: { basePath: "" },
+        },
+        plugins: { plugins: {} },
+      },
+      _getClient: () => ({
+        backendVersion: vi.fn(async () => "2.0.8"),
+        dashboardStats: vi.fn(() => pendingStats),
+        credentialAvailable: vi.fn(async () => false),
+        resolvePaperContext: vi.fn(async () => {
+          throw new Error("boom during context resolution");
+        }),
+      }),
+      _detectAndSwitch: vi.fn(async () => {
+        throw new Error("boom during context resolution");
+      }),
+    });
+    setLanguage((view as any).app, "en");
+
+    await view.onOpen();
+    const loadingEl = view.containerEl.querySelector(
+      '[data-pf-testid="companion-loading"]'
+    );
+    expect(loadingEl).not.toBeNull();
+    expect(loadingEl?.textContent).toContain("Loading Companion");
+
+    // Settle stats and let _detectAndSwitch throw -> recovery banner & global fallback must appear instead of blank
+    resolveStats({
+      stats: { papers: 0, ocr_health: {}, pdf_health: {} },
+      items: [],
+      permissions: {},
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      view.containerEl.querySelector('[data-pf-testid="recovery-banner"]')
+        ?.textContent
+    ).toContain("boom during context resolution");
+    expect((view as any)._currentMode).toBe("global");
+
+    await view.onClose();
+  });
 });
