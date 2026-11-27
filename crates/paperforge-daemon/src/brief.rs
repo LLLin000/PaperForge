@@ -56,17 +56,10 @@ fn table_exists(conn: &Connection, name: &str) -> bool {
 }
 
 fn read_runtime_pointer_info() -> Value {
-    let home = env::var("HOME")
-        .or_else(|_| env::var("USERPROFILE"))
-        .ok()
-        .map(PathBuf::from);
-    let Some(home_dir) = home else {
+    let Some(pf_home) = crate::mcp::paperforge_home_dir() else {
         return json!({ "status": "missing", "python_path": Value::Null, "paperforge_version": Value::Null });
     };
-    let ptr_path = home_dir
-        .join(".paperforge")
-        .join("runtime")
-        .join("pointer.json");
+    let ptr_path = pf_home.join("runtime").join("pointer.json");
     if !ptr_path.is_file() {
         return json!({
             "status": "missing",
@@ -818,17 +811,32 @@ pub fn build_agent_brief(vault: &Path, paper_key: Option<&str>) -> Value {
             .get("fulltext_ready")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
-        if !ft_ready && ocr_st != "done" {
+        let has_pdf = pb
+            .get("has_pdf")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        if !has_pdf {
             blocked_actions.insert(
                 "annotate_batch".into(),
-                json!(format!("Paper OCR is not ready (ocr_status={ocr_st}). Run OCR first.")),
+                json!("Paper has no bound PDF (has_pdf=false). Sync or attach a PDF first."),
             );
             push_hint(
                 &mut hints,
                 1,
                 "warn",
-                "paper.not_ocr_ready",
-                format!("目标论文尚未完成 OCR (status={ocr_st})，禁止强行批量批注或虚构原文。"),
+                "paper.no_pdf",
+                "目标论文尚未绑定 PDF，无法读取原文或写入 PDF 批注。",
+                None,
+            );
+        } else if !ft_ready && ocr_st != "done" {
+            push_hint(
+                &mut hints,
+                3,
+                "tip",
+                "paper.native_pdf_mode",
+                format!(
+                    "目标论文尚未完成 OCR (status={ocr_st})，已启用原生 PDF 模式：可直接通过 paperforge_read_paper 逐页阅读，并直接调用 paperforge_annotate_batch 批注；如需结构化全文也可通过 paperforge_job 排队 OCR。"
+                ),
                 None,
             );
         }
@@ -873,8 +881,7 @@ pub fn build_agent_brief(vault: &Path, paper_key: Option<&str>) -> Value {
     }
 
     // Check if any registered copy-mode Agent Skill lags the machine Skill Hub
-    if let Ok(home) = env::var("HOME").or_else(|_| env::var("USERPROFILE")) {
-        let pf_home = PathBuf::from(home).join(".paperforge");
+    if let Some(pf_home) = crate::mcp::paperforge_home_dir() {
         let meta_path = pf_home.join("skills").join(".skill-meta.json");
         let reg_path = pf_home.join("agent-installs.json");
         if let (Ok(meta_raw), Ok(reg_raw)) =

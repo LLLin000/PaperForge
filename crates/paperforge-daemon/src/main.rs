@@ -17,8 +17,9 @@ mod supervisor;
 use brief::{build_agent_brief, discover_vault_from_cwd};
 use config_ops::{pf_err, try_handle_config_cli, PF_VERSION};
 use mcp::{
-    handle_agent_onboarding, handle_mcp_check_with_options, handle_mcp_config, handle_mcp_install,
-    handle_skill_sync_all, maybe_reexec_latest_binary, serve_mcp,
+    handle_agent_onboarding, handle_agent_sessions, handle_mcp_check_with_options,
+    handle_mcp_config, handle_mcp_install, handle_skill_sync_all, maybe_reexec_latest_binary,
+    serve_mcp,
 };
 use query_ops::{handle_zero_python_upgrade_plan, try_handle_search_cli};
 use serde_json::{json, Value};
@@ -99,6 +100,12 @@ fn dispatch_request(
         "daemon.health" => {
             return DispatchOutcome::Immediate(
                 json_ok_resp(id, daemon.health(vault_path.as_deref())),
+                false,
+            );
+        }
+        "agent.sessions" => {
+            return DispatchOutcome::Immediate(
+                json_ok_resp(id, handle_agent_sessions(vault_path.as_deref())),
                 false,
             );
         }
@@ -445,6 +452,31 @@ fn dispatch_request(
         );
     }
 
+    // 1c. Instant `<2ms` Poki Agent Session Presence (`agent-sessions [--vault DIR] --json`)
+    if argv.first().map(|s| s.as_str()) == Some("agent-sessions") {
+        let mut explicit_vp: Option<PathBuf> = None;
+        let mut i = 1;
+        while i < argv.len() {
+            if argv[i] == "--vault" {
+                if let Some(val) = argv.get(i + 1) {
+                    explicit_vp = Some(PathBuf::from(val));
+                    i += 1;
+                }
+            } else if let Some(val) = argv[i].strip_prefix("--vault=") {
+                explicit_vp = Some(PathBuf::from(val));
+            }
+            i += 1;
+        }
+        let target_vp = explicit_vp
+            .or_else(|| vault_path.clone())
+            .and_then(|p| discover_vault_from_cwd(Some(&p)).or(Some(p)));
+        let out = handle_agent_sessions(target_vp.as_deref());
+        return DispatchOutcome::Immediate(
+            json!({ "id": id, "exit_code": 0, "stdout": format!("{out}\n"), "stderr": "" }),
+            false,
+        );
+    }
+
     let python_available = NativeControlDaemon::resolve_python_exe().is_some();
 
     // 2. Native `< 2ms` fast-paths when vault is supplied
@@ -673,6 +705,7 @@ USAGE:\n\
   paperforge-daemon [--vault PATH] <SUBCOMMAND> [OPTIONS]\n\n\
 SUBCOMMANDS:\n\
   agent-brief        Session state-machine brief (--vault PATH, --paper KEY, --json)\n\
+  agent-sessions     Live Poki-style MCP agent presence (--vault PATH, --json)\n\
   agent-onboarding   Generate Agent MCP & Skill onboarding prompt (--vault PATH, --lang zh|en)\n\
   mcp-config         Print MCP config snippet (--vault PATH, --platform NAME)\n\
   mcp-install        Merge paperforge MCP server into vault config (--vault PATH, --platform NAME)\n\
@@ -726,6 +759,16 @@ fn main() {
     let subcmd = extract_leading_subcommand(&args);
     if subcmd == Some("skill-sync-all") {
         let out = handle_skill_sync_all();
+        println!("{}", serde_json::to_string_pretty(&out).unwrap());
+        std::process::exit(0);
+    }
+    if subcmd == Some("agent-sessions") {
+        let vault_arg = parse_cli_kv(&args, "--vault").map(PathBuf::from);
+        let resolved = match vault_arg {
+            Some(p) => discover_vault_from_cwd(Some(&p)).or(Some(p)),
+            None => discover_vault_from_cwd(None),
+        };
+        let out = handle_agent_sessions(resolved.as_deref());
         println!("{}", serde_json::to_string_pretty(&out).unwrap());
         std::process::exit(0);
     }
@@ -1725,7 +1768,7 @@ mod tests {
         assert!(hint_codes.contains(&"job.ocr.running"));
         assert!(hint_codes.contains(&"paper.has_user_questions"));
 
-        // 2. MCP initialize -> tools/list (exact 7) -> tools/call
+        // 2. MCP initialize -> tools/list (exact 11) -> tools/call
         let init_resp = mcp::process_mcp_message(
             &daemon,
             Some(&tmp),
@@ -1734,6 +1777,14 @@ mod tests {
         .unwrap();
         assert_eq!(init_resp["result"]["protocolVersion"], "2025-03-26");
         assert_eq!(init_resp["result"]["serverInfo"]["name"], "paperforge");
+        assert!(init_resp["result"]["instructions"]
+            .as_str()
+            .unwrap()
+            .contains("paperforge_brief"));
+        assert_eq!(
+            init_resp["result"]["capabilities"]["prompts"]["listChanged"],
+            false
+        );
 
         let notif_resp = mcp::process_mcp_message(
             &daemon,
@@ -1748,7 +1799,7 @@ mod tests {
             &json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }),
         )
         .unwrap();
-        assert_eq!(tools_resp["result"]["tools"].as_array().unwrap().len(), 7);
+        assert_eq!(tools_resp["result"]["tools"].as_array().unwrap().len(), 11);
 
         let lib_resp = mcp::process_mcp_message(
             &daemon,
@@ -2215,6 +2266,427 @@ mod tests {
             }
             _ => panic!("expected Python delegation for vault.reconcile"),
         }
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    struct EnvVarGuard {
+        key: &'static str,
+        prev: Option<String>,
+    }
+
+    impl EnvVarGuard {
+        fn set(key: &'static str, val: &std::path::Path) -> Self {
+            let prev = env::var(key).ok();
+            env::set_var(key, val);
+            Self { key, prev }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            if let Some(ref p) = self.prev {
+                env::set_var(self.key, p);
+            } else {
+                env::remove_var(self.key);
+            }
+        }
+    }
+
+    #[test]
+    fn poki_presence_handshake_injection_resources_prompts_and_11_tools() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let tmp = env::temp_dir().join(format!("pf-poki-mcp-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let pf_home = tmp.join("pf_home");
+        let vault = tmp.join("vault");
+        let eng = vault.join(".paperforge");
+        let idx = eng.join("indexes");
+        fs::create_dir_all(&pf_home).unwrap();
+        fs::create_dir_all(&idx).unwrap();
+        let _env_guard = EnvVarGuard::set("PAPERFORGE_HOME", &pf_home);
+
+        fs::write(
+            vault.join("paperforge.json"),
+            json!({
+                "schema_version": 2,
+                "vault_config": { "system_dir": ".paperforge", "resources_dir": "Resources", "literature_dir": "Literature" }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        // Create SQLite DB (missing logs/ initially to test in-place self-healing)
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE papers (
+                zotero_key TEXT PRIMARY KEY,
+                citation_key TEXT,
+                title TEXT,
+                first_author TEXT,
+                year INTEGER,
+                journal TEXT,
+                doi TEXT,
+                domain TEXT,
+                lifecycle TEXT,
+                ocr_status TEXT,
+                deep_reading_status TEXT,
+                has_pdf INTEGER,
+                main_note_path TEXT,
+                collection_path TEXT
+            );
+            INSERT INTO papers VALUES (
+                'NONOCR01', 'Smith2025', 'Native PDF Paper', 'Smith', 2025, 'Nature', '', 'Neuro',
+                'pdf_ready', 'pending', 'pending', 1, '', 'Lab'
+            );
+            INSERT INTO papers VALUES (
+                'NOPDF002', 'Doe2024', 'No PDF Paper', 'Doe', 2024, 'Science', '', 'Neuro',
+                'indexed', 'pending', 'pending', 0, '', 'Lab'
+            );",
+        )
+        .unwrap();
+        drop(conn);
+
+        // 1. Unconnected state initially
+        let s0 = handle_agent_sessions(Some(&vault));
+        assert_eq!(s0["ok"], true);
+        assert_eq!(s0["data"]["state"], "unconnected");
+        assert_eq!(s0["data"]["total_active"], 0);
+
+        // 2. brief.rs MUST NOT block annotate_batch when has_pdf=true && ocr_status=pending,
+        //    and MUST block annotate_batch when has_pdf=false
+        {
+            let fake_py = tmp.join("fake_python.exe");
+            fs::write(&fake_py, b"").unwrap();
+            let _py_guard = EnvVarGuard::set("PAPERFORGE_PYTHON_EXE", &fake_py);
+            let brief_pdf = build_agent_brief(&vault, Some("NONOCR01"));
+            assert!(
+                brief_pdf["data"]["capabilities"]["blocked_actions"]
+                    .get("annotate_batch")
+                    .is_none(),
+                "has_pdf=true non-OCR paper must NOT block annotate_batch: {:?}",
+                brief_pdf["data"]["capabilities"]["blocked_actions"]
+            );
+            let pdf_hints: Vec<&str> = brief_pdf["data"]["hints"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter_map(|h| h.get("code").and_then(|v| v.as_str()))
+                .collect();
+            assert!(pdf_hints.contains(&"paper.native_pdf_mode"));
+            assert!(!pdf_hints.contains(&"paper.not_ocr_ready"));
+
+            let brief_nopdf = build_agent_brief(&vault, Some("NOPDF002"));
+            assert!(
+                brief_nopdf["data"]["capabilities"]["blocked_actions"]
+                    .get("annotate_batch")
+                    .is_some(),
+                "has_pdf=false paper MUST block annotate_batch"
+            );
+        }
+
+        // 3. Simulate full MCP stdio session via serve_mcp_with_io:
+        //    initialize -> tools/list -> resources/list & read -> prompts/list & get -> paperforge_brief (self-heals logs/)
+        let daemon = NativeControlDaemon::new(None, None);
+        let mut session: Option<mcp::McpSessionTracker> = None;
+
+        let init_resp = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "clientInfo": { "name": "claude-code", "version": "2.1.0" }
+                }
+            }),
+        )
+        .unwrap();
+        assert_eq!(
+            init_resp["result"]["capabilities"]["prompts"]["listChanged"],
+            false
+        );
+        assert_eq!(
+            init_resp["result"]["capabilities"]["resources"]["listChanged"],
+            false
+        );
+        let instr = init_resp["result"]["instructions"].as_str().unwrap();
+        assert!(instr.contains("paperforge_brief"));
+        assert!(instr.contains("paperforge_read_paper"));
+        assert!(instr.contains("paperforge_annotate_batch"));
+        assert!(instr.contains("paperforge_job"));
+        assert!(instr.contains("paperforge_log_write"));
+
+        // Verify Poki session registered + .state-seq.json bumped
+        let seq_after_init = query_ops::read_state_seq(&vault).0;
+        assert!(seq_after_init >= 1);
+        let s1 = handle_agent_sessions(Some(&vault));
+        assert_eq!(s1["data"]["state"], "connected");
+        assert_eq!(s1["data"]["total_active"], 1);
+        assert_eq!(s1["data"]["active_sessions"][0]["client_name"], "claude-code");
+        assert_eq!(s1["data"]["active_sessions"][0]["client_version"], "2.1.0");
+        assert_eq!(
+            s1["data"]["active_sessions"][0]["setup_steps"]["connected"],
+            true
+        );
+        assert_eq!(
+            s1["data"]["active_sessions"][0]["setup_steps"]["instructions_injected"],
+            true
+        );
+        // logs/ doesn't exist yet -> vault_reconciled is false
+        assert_eq!(
+            s1["data"]["active_sessions"][0]["setup_steps"]["vault_reconciled"],
+            false
+        );
+
+        // Call paperforge_brief -> transparently creates logs/ in-place and marks vault_reconciled = true -> state = "ready"!
+        let brief_call = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/call",
+                "params": {
+                    "name": "paperforge_brief",
+                    "arguments": { "paper_key": "NONOCR01" }
+                }
+            }),
+        )
+        .unwrap();
+        assert_eq!(brief_call["result"]["isError"], false);
+        assert!(eng.join("logs").is_dir(), "logs/ must be auto-created in-place");
+
+        let s2 = handle_agent_sessions(Some(&vault));
+        assert_eq!(s2["data"]["state"], "ready");
+        assert_eq!(
+            s2["data"]["active_sessions"][0]["setup_steps"]["vault_reconciled"],
+            true
+        );
+        assert_eq!(s2["data"]["setup_checklist"]["tools_ready"], true);
+
+        // Verify daemon RPC `agent.sessions` and `argv: ["agent-sessions"]`
+        match dispatch_request(
+            &daemon,
+            &json!({ "id": 100, "op": "agent.sessions", "vault": vault.to_string_lossy() }),
+            None,
+        ) {
+            DispatchOutcome::Immediate(resp, false) => {
+                let parsed: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+                assert_eq!(parsed["data"]["state"], "ready");
+            }
+            _ => panic!("expected immediate response for agent.sessions"),
+        }
+        match dispatch_request(
+            &daemon,
+            &json!({ "id": 101, "argv": ["agent-sessions", "--vault", vault.to_string_lossy(), "--json"] }),
+            None,
+        ) {
+            DispatchOutcome::Immediate(resp, false) => {
+                let parsed: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+                assert_eq!(parsed["data"]["state"], "ready");
+            }
+            _ => panic!("expected immediate response for argv agent-sessions"),
+        }
+
+        // Verify all 11 tools
+        let tools_resp = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({ "jsonrpc": "2.0", "id": 3, "method": "tools/list" }),
+        )
+        .unwrap();
+        let tool_names: Vec<&str> = tools_resp["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|t| t.get("name").and_then(|v| v.as_str()))
+            .collect();
+        assert_eq!(tool_names.len(), 11);
+        for expected in [
+            "paperforge_brief",
+            "paperforge_search",
+            "paperforge_library_query",
+            "paperforge_paper_context",
+            "paperforge_read_paper",
+            "paperforge_retrieve",
+            "paperforge_annotate_batch",
+            "paperforge_annotations",
+            "paperforge_memory_refine",
+            "paperforge_log_write",
+            "paperforge_job",
+        ] {
+            assert!(
+                tool_names.contains(&expected),
+                "missing MCP tool: {expected}"
+            );
+        }
+
+        // Verify resources/list & resources/read
+        let res_list = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({ "jsonrpc": "2.0", "id": 4, "method": "resources/list" }),
+        )
+        .unwrap();
+        let uris: Vec<&str> = res_list["result"]["resources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|r| r.get("uri").and_then(|v| v.as_str()))
+            .collect();
+        assert_eq!(uris.len(), 4);
+        for u in uris {
+            let rr = mcp::process_mcp_message_with_session(
+                &daemon,
+                Some(&vault),
+                &mut session,
+                &json!({ "jsonrpc": "2.0", "id": 5, "method": "resources/read", "params": { "uri": u } }),
+            )
+            .unwrap();
+            assert!(!rr["result"]["contents"][0]["text"].as_str().unwrap().is_empty());
+        }
+
+        // Verify prompts/list & prompts/get
+        let pr_list = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({ "jsonrpc": "2.0", "id": 6, "method": "prompts/list" }),
+        )
+        .unwrap();
+        assert_eq!(pr_list["result"]["prompts"].as_array().unwrap().len(), 3);
+        let pr_get = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 7,
+                "method": "prompts/get",
+                "params": { "name": "annotate_pdf", "arguments": { "paper_key": "NONOCR01", "lens": "methods" } }
+            }),
+        )
+        .unwrap();
+        let ptxt = pr_get["result"]["messages"][0]["content"]["text"].as_str().unwrap();
+        assert!(ptxt.contains("NONOCR01") && ptxt.contains("methods"));
+
+        // Verify paperforge_job status works cleanly even without Python installed,
+        // and new tool argument validation rejects invalid enums / missing required fields
+        let job_st = mcp::process_mcp_message_with_session(
+            &daemon,
+            Some(&vault),
+            &mut session,
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 8,
+                "method": "tools/call",
+                "params": { "name": "paperforge_job", "arguments": { "action": "status" } }
+            }),
+        )
+        .unwrap();
+        assert_eq!(job_st["result"]["isError"], false);
+
+        for (tool_name, bad_args) in [
+            ("paperforge_read_paper", json!({ "paper_key": "" })),
+            ("paperforge_annotations", json!({ "paper_key": "NONOCR01", "action": "adopt" })),
+            ("paperforge_annotations", json!({ "paper_key": "NONOCR01", "action": "bogus" })),
+            ("paperforge_log_write", json!({ "kind": "reading_log", "paper_key": "NONOCR01" })),
+            ("paperforge_log_write", json!({ "kind": "methodology", "title": "t" })),
+            ("paperforge_job", json!({ "action": "cancel" })),
+            ("paperforge_job", json!({ "action": "embed", "embed_mode": "invalid" })),
+        ] {
+            let err_call = mcp::process_mcp_message_with_session(
+                &daemon,
+                Some(&vault),
+                &mut session,
+                &json!({
+                    "jsonrpc": "2.0",
+                    "id": 9,
+                    "method": "tools/call",
+                    "params": { "name": tool_name, "arguments": bad_args }
+                }),
+            )
+            .unwrap();
+            assert_eq!(
+                err_call["result"]["isError"], true,
+                "expected validation error for {tool_name} with {bad_args}"
+            );
+        }
+
+        // Close session (simulates EOF) -> removes active session, bumps .state-seq.json, transitions to configured_idle
+        session.take().unwrap().close();
+        let seq_after_close = query_ops::read_state_seq(&vault).0;
+        assert!(seq_after_close > seq_after_init);
+        let s3 = handle_agent_sessions(Some(&vault));
+        assert_eq!(s3["data"]["state"], "configured_idle");
+        assert_eq!(s3["data"]["total_active"], 0);
+        assert_eq!(
+            s3["data"]["historical_clients"][0]["client_name"],
+            "claude-code"
+        );
+
+        // Verify dead PID & stale (>5min) session pruning
+        let sess_file = mcp::agent_sessions_path().unwrap();
+        let stale_ts = platform::now_unix_secs() - 600.0;
+        fs::write(
+            &sess_file,
+            serde_json::to_string_pretty(&json!({
+                "schema_version": 1,
+                "active_sessions": [
+                    {
+                        "session_id": "dead_pid_sess",
+                        "client_name": "dead-agent",
+                        "vault": vault.to_string_lossy(),
+                        "pid": 999_999_999u64,
+                        "last_seen_unix": platform::now_unix_secs(),
+                        "setup_steps": { "connected": true, "instructions_injected": true, "vault_reconciled": true, "skill_ready": false }
+                    },
+                    {
+                        "session_id": "stale_ts_sess",
+                        "client_name": "stale-agent",
+                        "vault": vault.to_string_lossy(),
+                        "pid": std::process::id(),
+                        "last_seen_unix": stale_ts,
+                        "setup_steps": { "connected": true, "instructions_injected": true, "vault_reconciled": true, "skill_ready": false }
+                    }
+                ],
+                "historical_clients": []
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let s_pruned = handle_agent_sessions(Some(&vault));
+        assert_eq!(s_pruned["data"]["total_active"], 0);
+        assert_eq!(s_pruned["data"]["state"], "unconnected");
+
+        // Verify serve_mcp_with_io cleans up on EOF automatically
+        let input_lines = format!(
+            "{}\n{}\n",
+            json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": { "protocolVersion": "2025-03-26", "clientInfo": { "name": "cursor", "version": "1.0" } }
+            }),
+            json!({ "jsonrpc": "2.0", "id": 2, "method": "ping" })
+        );
+        let mut cur_in = std::io::Cursor::new(input_lines.into_bytes());
+        let mut out_buf = Vec::<u8>::new();
+        mcp::serve_mcp_with_io(Some(vault.clone()), &mut cur_in, &mut out_buf);
+        let out_str = String::from_utf8(out_buf).unwrap();
+        assert!(out_str.contains("PaperForge Research Memory MCP Contract"));
+        let s_after_eof = handle_agent_sessions(Some(&vault));
+        assert_eq!(s_after_eof["data"]["total_active"], 0);
+        assert_eq!(s_after_eof["data"]["historical_clients"][0]["client_name"], "cursor");
 
         let _ = fs::remove_dir_all(&tmp);
     }

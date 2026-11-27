@@ -330,11 +330,7 @@ impl NativeControlDaemon {
                 return Some(p);
             }
         }
-        let home = env::var("HOME")
-            .or_else(|_| env::var("USERPROFILE"))
-            .ok()?;
-        let ptr_path = Path::new(&home)
-            .join(".paperforge")
+        let ptr_path = crate::mcp::paperforge_home_dir()?
             .join("runtime")
             .join("pointer.json");
         let raw = fs::read_to_string(ptr_path).ok()?;
