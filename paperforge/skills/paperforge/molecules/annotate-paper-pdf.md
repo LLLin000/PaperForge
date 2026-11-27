@@ -1,7 +1,7 @@
 # annotate-paper-pdf
 
 > [!warning] Safety Rules
-> - **严禁使用捏造的引文**：`--quote` 必须是 `fulltext.md` 或 OCR 文本中的**逐字原文片段**，不可自行改写后再传给定位引擎
+> - **严禁使用捏造的引文**：`--quote` 必须是 `fulltext.md`/OCR 文本或 PDF 原生文本层中的**逐字原文片段**，不可自行改写后再传给定位引擎
 > - **严禁同义复述型无效批注**：`--comment` 不得复述划线原句内容，必须写出推理角色、隐藏前提、参数坑点或跨章节联系
 > - **永不修改原 PDF 字节**：所有 AI 批注写入侧车层（`<workspace>/annotations.jsonl` 与 SQLite `paper_annotations`，`author: "agent"`），Obsidian 内置阅读器通过 `[🤖 AI 批注层]` 独立开关呈现
 
@@ -28,9 +28,12 @@
    $PYTHON -m paperforge --vault "$VAULT" paper-context <KEY> --structure --json
    ```
 3. 核对前置状态：
-   - 若 `data.paper.ocr_status != "done"` 或 `data.paper.has_pdf != true`：提示用户需要先完成 PDF 绑定与 OCR，停止批注。
-   - 检查 `data.living_memory.facets`（已有长期认知）、`data.user_annotations`（用户自己已划的高亮和问题）以及 `data.paper.fulltext_path`。
-4. 读取 `fulltext_path`（与 `structure.nodes`）通读全文骨架，定位关键段落、参数细节与核心图表。
+   - 若 `data.paper.has_pdf != true`：提示用户需要先绑定 PDF，停止批注。
+   - **无需强制等待 OCR**：
+     - 若 `data.paper.ocr_status == "done"`：直接读取 `data.paper.fulltext_path` 与 `structure.nodes` 通读全文骨架。
+     - 若尚未运行 OCR（`ocr_status != "done"`）：只要 PDF 内嵌文本层（绝大多数现代期刊 PDF），定位引擎可直接对原生 PDF 文本块与 `Figure N` / `Table N` 图注执行精确坐标定位（无需先跑 OCR）；若为纯扫描图像 PDF（既无 OCR 产物也无文本层），可为每条批注传入 `page_hint` 生成页边括号批注，或提示用户按需运行 OCR。
+   - 检查 `data.living_memory.facets`（已有长期认知）与 `data.user_annotations`（用户自己已划的高亮和问题）。
+4. 读取 `fulltext_path`（与 `structure.nodes`）或原生 PDF 文本（可使用 `paperforge annotations pdf-info <KEY>` 获取 `pdf_abs_path`），定位关键段落、参数细节与核心图表。
 
 ---
 
@@ -51,7 +54,7 @@
 
 ## Step 3: 批量原子提交 AI 批注（强制优先，零引号转义问题）
 
-**严禁调用面向用户的 `annotations add` 写入 AI 批注**。AI 批注必须经过 3 级 PDF 定位与后端护栏（OCR 就绪拦截、去重、防同义复述、15 条上限与 `batch_id` 追踪）：
+**严禁调用面向用户的 `annotations add` 写入 AI 批注**。AI 批注必须经过 3 级 PDF 定位与后端护栏（支持有 OCR 与无 OCR 原生文本 PDF、去重、防同义复述、15 条上限与 `batch_id` 追踪，整批一次原子落盘并仅触发一次视图刷新）：
 
 1. **首选（MCP 工具）**：直接调用 **`paperforge_annotate_batch`**，传入 `paper_key`、`lens`、`replace_lens`（重跑同一视角时建议设 `true` 清旧留新）与结构化 `items` 数组。
 2. **CLI 回退（一次事务提交整批，通过 stdin 传 JSON）**：
@@ -89,10 +92,10 @@
 
 ### 定位引擎行为说明（只读理解）
 
-`annotations agent-mark` 内部自动执行 3 级抗误差定位：
-1. **Stage 1**：基于 OCR block + ±1 页窗口锁定候选文字块；
-2. **Stage 2a/2b**：折叠字符流归一化（自动跨越断行连字符、连字、LaTeX `$...$` 公式与希腊字母符号漂移，并在合并双栏 OCR 框时同页跨栏救援）计算精确词语框 → `exact_sentence` / `exact_cross_column`；
-3. **Stage 3**：对纯扫描无文本层页面不乱画框，诚实降级为左侧页边竖线括号标记（`kind: "margin"`, `grounding_tier: "margin_fallback"`）。
+`annotations agent-mark` / `agent-apply` 内部自动执行 3 级抗误差定位：
+1. **Stage 1**：基于 OCR block（或无 OCR 时的 PyMuPDF 原生文本块）+ ±1 页窗口锁定候选文字块（支持跨相邻块 / 跨栏拼接救援）；图表 `figure_id` 优先查 OCR 清单，无 OCR 时自动回退检索原生 `Figure N` / `Fig. N` / `Table N` 图注块；
+2. **Stage 2a/2b**：折叠字符流归一化（自动跨越断行连字符、连字、LaTeX `$...$` 公式与希腊字母符号漂移，规范化 CropBox 与旋转页坐标，并在合并双栏或短引文时执行同页唯一跨栏救援）计算精确词语框 → `exact_sentence` / `exact_cross_column`；
+3. **Stage 3**：对纯扫描无文本层页面不乱画框，诚实降级为左侧页边竖线括号标记（`kind: "margin"`, `grounding_tier: "margin_fallback"`；无 OCR 的纯扫描页传 `page_hint` 亦可生成页边批注）。
 
 ---
 

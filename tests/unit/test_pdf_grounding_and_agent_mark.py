@@ -324,15 +324,29 @@ def test_agent_apply_enforces_ocr_dedup_paraphrase_cap_and_replace_lens(tmp_path
     assert {a["ann_id"] for a in active if a["author"] == "user"} == {user_ann["ann_id"]}
     assert len([a for a in active if a["author"] == "agent"]) == 1
 
-    # 4. OCR-not-ready blocks AI annotation unless OCR status or fulltext exists
+    # 4. Removing OCR artifacts still allows native PDF grounding (no hard OCR gate)
     import shutil
     shutil.rmtree(vault / ".paperforge" / "ocr" / "APPLY001")
-    with pytest.raises(ValueError, match="OCR is not ready"):
-        agent_apply_annotations(
-            vault,
-            "APPLY001",
-            [{"figure_id": "figure_001", "comment": "Should fail because OCR artifacts and status are not ready"}],
-        )
+    no_ocr_res = agent_apply_annotations(
+        vault,
+        "APPLY001",
+        [
+            {
+                "quote": "PEMF stimulation at 75 Hz ± 5 uM markedly enhanced galvanotaxis",
+                "comment": "Native PyMuPDF fallback grounds quotes directly without OCR artifacts.",
+            },
+            {
+                "figure_id": "figure_099",
+                "comment": "Missing figure without caption should fail cleanly with diagnostic reason.",
+            },
+        ],
+        lens="methods",
+    )
+    assert no_ocr_res["created_count"] == 1
+    assert no_ocr_res["created"][0]["grounding_tier"] == "exact_sentence"
+    assert no_ocr_res["rejected_count"] == 1
+    assert no_ocr_res["rejected"][0]["reason"] == "grounding_failed"
+    assert "not found" in no_ocr_res["rejected"][0]["detail"].lower()
 
 
 def test_agent_apply_atomic_replace_and_vault_boundary(tmp_path: Path):

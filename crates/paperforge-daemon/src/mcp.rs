@@ -1694,7 +1694,7 @@ pub fn mcp_tools_list() -> Value {
             },
             {
                 "name": "paperforge_annotate_batch",
-                "description": "Atomically ground and save a batch of AI review annotations onto the PDF sidecar layer (validates OCR readiness, enforces batch limit, rejects pure paraphrases, deduplicates existing marks, optional replace_lens).",
+                "description": "Atomically ground and save a batch of AI review annotations onto the PDF sidecar layer (works with or without OCR by grounding against OCR blocks or native PDF text layers, enforces batch limit, rejects pure paraphrases, deduplicates existing marks, optional replace_lens).",
                 "inputSchema": {
                     "type": "object",
                     "required": ["paper_key", "items"],
@@ -1712,8 +1712,8 @@ pub fn mcp_tools_list() -> Value {
                                 "type": "object",
                                 "required": ["comment"],
                                 "properties": {
-                                    "quote": { "type": "string", "description": "Verbatim substring copied from fulltext.md." },
-                                    "figure_id": { "type": "string", "description": "Figure/table ID such as figure_001 or table_001." },
+                                    "quote": { "type": "string", "description": "Verbatim substring copied from fulltext.md or the PDF text layer." },
+                                    "figure_id": { "type": "string", "description": "Figure/table ID such as figure_001 or table_001 (resolved via OCR inventory or native PDF caption fallback)." },
                                     "comment": { "type": "string", "description": "Non-paraphrase analytical/review insight (>=8 chars)." },
                                     "color": { "type": "string", "enum": ["yellow", "green", "blue", "red", "purple"] },
                                     "lens": { "type": "string", "enum": ["skeleton", "methods", "critique", "custom"] },

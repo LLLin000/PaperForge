@@ -372,20 +372,11 @@ def _rect_iou_and_overlap(a: list[float], b: list[float]) -> tuple[float, float]
     return iou, frac_a
 
 
-def _bind_ocr_structure(
-    paths: dict[str, Path],
-    paper_key: str,
-    page: int,
-    rects: list[list[float]],
-    pdf_page_size: tuple[float, float] | None = None,
-) -> dict[str, str]:
-    """Bind annotation ``(page, rects)`` against V3 OCR blocks, tree, and figure inventory."""
-    out = {"block_id": "", "section_path": "", "figure_id": ""}
-    if not rects:
-        return out
+def _load_ocr_binding_cache(paths: dict[str, Path], paper_key: str) -> dict[str, Any]:
+    """Load V3 OCR blocks, structure tree, and figure inventory once for a paper."""
     ocr_dir = paths["ocr"] / paper_key
     if not ocr_dir.exists():
-        return out
+        return {"exists": False}
 
     structured_path = ocr_dir / "structure" / "blocks.structured.jsonl"
     tree_path = ocr_dir / "index" / "structure-tree.json"
@@ -398,28 +389,61 @@ def _bind_ocr_structure(
         except Exception:
             block_to_section = {}
 
-    target = rects[0]
-    default_pw, default_ph = pdf_page_size if pdf_page_size else (0.0, 0.0)
-    page_blocks: list[dict[str, Any]] = []
+    pages_blocks: dict[int, list[dict[str, Any]]] = {}
+    page_dims: dict[int, tuple[float, float]] = {}
     if structured_path.exists():
         try:
             for b in read_jsonl(structured_path):
-                if int(b.get("page") or 0) == page:
-                    page_blocks.append(b)
+                pno = int(b.get("page") or 0)
+                if pno <= 0:
+                    continue
+                pages_blocks.setdefault(pno, []).append(b)
+                if pno not in page_dims:
+                    pw = float(b.get("page_width") or 0)
+                    ph = float(b.get("page_height") or 0)
+                    if pw > 0 and ph > 0:
+                        page_dims[pno] = (pw, ph)
         except Exception:
-            page_blocks = []
+            pages_blocks = {}
+            page_dims = {}
 
+    matched_figures: list[dict[str, Any]] = []
+    if fig_path.exists():
+        try:
+            fig_inv = read_json(fig_path)
+            matched_figures = [
+                f for f in (fig_inv.get("matched_figures", []) or []) if isinstance(f, dict)
+            ]
+        except Exception:
+            matched_figures = []
+
+    return {
+        "exists": True,
+        "block_to_section": block_to_section,
+        "pages_blocks": pages_blocks,
+        "page_dims": page_dims,
+        "matched_figures": matched_figures,
+    }
+
+
+def _bind_ocr_structure_from_cache(
+    cache: dict[str, Any],
+    page: int,
+    rects: list[list[float]],
+    pdf_page_size: tuple[float, float] | None = None,
+) -> dict[str, str]:
+    out = {"block_id": "", "section_path": "", "figure_id": ""}
+    if not rects or not cache.get("exists"):
+        return out
+
+    block_to_section: dict[str, str] = cache.get("block_to_section") or {}
+    page_blocks: list[dict[str, Any]] = (cache.get("pages_blocks") or {}).get(page, [])
+    default_pw, default_ph = pdf_page_size if pdf_page_size else (0.0, 0.0)
+    inferred_pw, inferred_ph = (cache.get("page_dims") or {}).get(page, (default_pw, default_ph))
+
+    target = rects[0]
     best_score = -1.0
     best_block: dict[str, Any] | None = None
-    inferred_pw = default_pw
-    inferred_ph = default_ph
-    for b in page_blocks:
-        pw = float(b.get("page_width") or 0)
-        ph = float(b.get("page_height") or 0)
-        if pw > 0 and ph > 0:
-            inferred_pw, inferred_ph = pw, ph
-            break
-
     for b in page_blocks:
         pw = float(b.get("page_width") or inferred_pw or 0)
         ph = float(b.get("page_height") or inferred_ph or 0)
@@ -440,37 +464,93 @@ def _bind_ocr_structure(
             or str(best_block.get("section_path") or best_block.get("section_title") or "")
         )
 
-    if fig_path.exists():
-        try:
-            fig_inv = read_json(fig_path)
-            best_fig_overlap = 0.0
-            for fig in fig_inv.get("matched_figures", []) or []:
+    matched_figures: list[dict[str, Any]] = cache.get("matched_figures") or []
+    if matched_figures:
+        best_fig_overlap = 0.0
+        for fig in matched_figures:
+            if int(fig.get("page") or 0) != page:
+                continue
+            bbox = fig.get("cluster_bbox")
+            norm_fig = _bbox_to_norm(bbox or [], inferred_pw, inferred_ph)
+            if norm_fig is None:
+                continue
+            _, frac_a = _rect_iou_and_overlap(target, norm_fig)
+            if frac_a > best_fig_overlap:
+                best_fig_overlap = frac_a
+                out["figure_id"] = str(fig.get("figure_id") or "")
+        if not out["figure_id"] and out["block_id"]:
+            for fig in matched_figures:
                 if int(fig.get("page") or 0) != page:
                     continue
-                bbox = fig.get("cluster_bbox")
-                norm_fig = _bbox_to_norm(bbox or [], inferred_pw, inferred_ph)
-                if norm_fig is None:
-                    continue
-                _, frac_a = _rect_iou_and_overlap(target, norm_fig)
-                if frac_a > best_fig_overlap:
-                    best_fig_overlap = frac_a
+                owned = {str(x) for x in (fig.get("associated_text_block_ids") or [])}
+                if out["block_id"] in owned or out["block_id"] == str(fig.get("caption_block_id") or ""):
                     out["figure_id"] = str(fig.get("figure_id") or "")
-            if not out["figure_id"] and out["block_id"]:
-                for fig in fig_inv.get("matched_figures", []) or []:
-                    if int(fig.get("page") or 0) != page:
-                        continue
-                    owned = {str(x) for x in (fig.get("associated_text_block_ids") or [])}
-                    if out["block_id"] in owned or out["block_id"] == str(fig.get("caption_block_id") or ""):
-                        out["figure_id"] = str(fig.get("figure_id") or "")
-                        break
-        except Exception:
-            pass
+                    break
 
     return out
 
 
-def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_id: str | None = None) -> None:
-    """Best-effort sync into ``paperforge.db`` ``paper_annotations`` if the DB exists."""
+def _bind_ocr_structure(
+    paths: dict[str, Path],
+    paper_key: str,
+    page: int,
+    rects: list[list[float]],
+    pdf_page_size: tuple[float, float] | None = None,
+) -> dict[str, str]:
+    """Bind annotation ``(page, rects)`` against V3 OCR blocks, tree, and figure inventory."""
+    if not rects:
+        return {"block_id": "", "section_path": "", "figure_id": ""}
+    cache = _load_ocr_binding_cache(paths, paper_key)
+    return _bind_ocr_structure_from_cache(cache, page, rects, pdf_page_size=pdf_page_size)
+
+
+_SQLITE_UPSERT_SQL = """INSERT OR REPLACE INTO paper_annotations (
+    ann_id, paper_id, page, kind, color, intent, author, lens,
+    grounding_tier, exact_text, comment, section_path, block_id,
+    figure_id, rects_json, crop_asset_rel, embed_wikilink,
+    tags_json, style_json, pdf_sha256, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+
+def _upsert_sqlite_annotation(conn: Any, record: dict[str, Any]) -> None:
+    conn.execute(
+        _SQLITE_UPSERT_SQL,
+        (
+            record["ann_id"],
+            record["paper_id"],
+            int(record["page"]),
+            record.get("kind", "highlight"),
+            record.get("color", "yellow"),
+            record.get("intent", "general"),
+            record.get("author", "user"),
+            record.get("lens", ""),
+            record.get("grounding_tier", "manual"),
+            record.get("exact_text", ""),
+            record.get("comment", ""),
+            record.get("section_path", ""),
+            record.get("block_id", ""),
+            record.get("figure_id", ""),
+            json.dumps(record.get("rects", [])),
+            record.get("crop_asset_rel", ""),
+            record.get("embed_wikilink", ""),
+            json.dumps(record.get("tags", []), ensure_ascii=False),
+            json.dumps(record.get("style") or {}, ensure_ascii=False),
+            record.get("pdf_sha256", ""),
+            record.get("created_at", ""),
+            record.get("updated_at", ""),
+        ),
+    )
+
+
+def _sync_sqlite_annotation_batch(
+    vault: Path,
+    records: list[dict[str, Any]],
+    *,
+    delete_ids: list[str] | None = None,
+) -> None:
+    """Best-effort single-transaction sync of batch annotation writes/deletes into ``paperforge.db``."""
+    if not records and not delete_ids:
+        return
     try:
         db_path = get_memory_db_path(vault)
     except FileNotFoundError:
@@ -481,50 +561,29 @@ def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_i
         conn = get_connection(db_path)
         try:
             ensure_schema(conn)
-            if delete_id:
-                conn.execute("DELETE FROM paper_annotations WHERE ann_id = ?", (delete_id,))
-            elif record is not None:
+            for did in delete_ids or []:
+                conn.execute("DELETE FROM paper_annotations WHERE ann_id = ?", (did,))
+            if records:
+                paper_id = records[0]["paper_id"]
                 paper_row = conn.execute(
                     "SELECT 1 FROM papers WHERE zotero_key = ?",
-                    (record["paper_id"],),
+                    (paper_id,),
                 ).fetchone()
-                if paper_row is None:
-                    return
-                conn.execute(
-                    """INSERT OR REPLACE INTO paper_annotations (
-                        ann_id, paper_id, page, kind, color, intent, author, lens,
-                        grounding_tier, exact_text, comment, section_path, block_id,
-                        figure_id, rects_json, crop_asset_rel, embed_wikilink,
-                        tags_json, style_json, pdf_sha256, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        record["ann_id"],
-                        record["paper_id"],
-                        int(record["page"]),
-                        record.get("kind", "highlight"),
-                        record.get("color", "yellow"),
-                        record.get("intent", "general"),
-                        record.get("author", "user"),
-                        record.get("lens", ""),
-                        record.get("grounding_tier", "manual"),
-                        record.get("exact_text", ""),
-                        record.get("comment", ""),
-                        record.get("section_path", ""),
-                        record.get("block_id", ""),
-                        record.get("figure_id", ""),
-                        json.dumps(record.get("rects", [])),
-                        record.get("crop_asset_rel", ""),
-                        record.get("embed_wikilink", ""),
-                        json.dumps(record.get("tags", []), ensure_ascii=False),
-                        json.dumps(record.get("style") or {}, ensure_ascii=False),
-                        record.get("pdf_sha256", ""),
-                        record.get("created_at", ""),
-                        record.get("updated_at", ""),
-                    ),
-                )
+                if paper_row is not None:
+                    for rec in records:
+                        _upsert_sqlite_annotation(conn, rec)
             conn.commit()
         finally:
             conn.close()
+
+
+def _sync_sqlite_annotation(vault: Path, record: dict[str, Any] | None, delete_id: str | None = None) -> None:
+    """Best-effort sync into ``paperforge.db`` ``paper_annotations`` if the DB exists."""
+    _sync_sqlite_annotation_batch(
+        vault,
+        [record] if record is not None else [],
+        delete_ids=[delete_id] if delete_id else None,
+    )
 
 
 def _attach_live_provenance(anns: list[dict[str, Any]], current_sha: str) -> list[dict[str, Any]]:
@@ -898,7 +957,7 @@ def agent_apply_annotations(
     min_comment_chars: int = 8,
     batch_id: str | None = None,
 ) -> dict[str, Any]:
-    """Batch-ground and apply AI review annotations with OCR, dedup, anti-paraphrase, and cap guardrails."""
+    """Batch-ground and apply AI review annotations with dedup, anti-paraphrase, and single-commit batching."""
     if not isinstance(items, list) or not items:
         raise ValueError("items must be a non-empty list")
 
@@ -908,16 +967,6 @@ def agent_apply_annotations(
     pdf_abs, _, _, _ = _resolve_pdf_from_item(vault_root, paths, paper_key, item)
     if pdf_abs is None or not pdf_abs.exists():
         raise ValueError(f"Canonical PDF not found for {paper_key}")
-
-    ocr_status = str(item.get("ocr_status") or "").strip().lower()
-    ocr_dir = paths["ocr"] / paper_key
-    has_ocr_artifacts = (ocr_dir / "fulltext.md").is_file() or (
-        ocr_dir / "structure" / "blocks.structured.jsonl"
-    ).is_file()
-    if ocr_status != "done" and not has_ocr_artifacts:
-        raise ValueError(
-            f"Paper {paper_key} OCR is not ready (ocr_status={ocr_status or 'pending'}); run OCR before AI annotation."
-        )
 
     default_lens = str(lens or "skeleton").strip().lower() or "skeleton"
     lens_default_colors = {
@@ -948,237 +997,334 @@ def agent_apply_annotations(
         )
     ]
 
-    from paperforge.services.pdf_grounding import ground_target_in_pdf
+    from paperforge.services.pdf_grounding import PdfGroundingContext, ground_target_in_pdf
 
     staged: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
     grounding_summary: dict[str, int] = {}
+    created: list[dict[str, Any]] = []
+    replaced_count = 0
 
-    for idx, entry in enumerate(items):
-        if not isinstance(entry, dict):
-            rejected.append({"index": idx, "reason": "invalid_item", "detail": "item must be an object"})
-            continue
-        if len(staged) >= effective_max:
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "batch_limit_exceeded",
-                    "detail": f"Exceeded batch cap ({effective_max})",
-                }
-            )
-            continue
-
-        quote = str(entry.get("quote") or "").strip()
-        figure_id = str(entry.get("figure_id") or "").strip()
-        comment = str(entry.get("comment") or "").strip()
-        item_lens = str(entry.get("lens") or default_lens).strip().lower() or default_lens
-        default_color = lens_default_colors.get(item_lens, "purple")
-        color = str(entry.get("color") or default_color).strip().lower() or default_color
-        if color not in VALID_COLORS:
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "invalid_color",
-                    "detail": f"Unsupported color {color!r}; expected one of {sorted(VALID_COLORS)}",
-                }
-            )
-            continue
-
-        raw_page_hint = entry.get("page_hint")
-        page_hint: int | None = None
-        if raw_page_hint is not None and raw_page_hint != "":
-            if isinstance(raw_page_hint, bool):
+    with PdfGroundingContext(vault_root, paper_key, pdf_abs) as ctx:
+        for idx, entry in enumerate(items):
+            if not isinstance(entry, dict):
+                rejected.append({"index": idx, "reason": "invalid_item", "detail": "item must be an object"})
+                continue
+            if len(staged) >= effective_max:
                 rejected.append(
                     {
                         "index": idx,
-                        "reason": "invalid_page_hint",
-                        "detail": "page_hint must be an integer >= 1",
+                        "reason": "batch_limit_exceeded",
+                        "detail": f"Exceeded batch cap ({effective_max})",
                     }
                 )
                 continue
+
+            quote = str(entry.get("quote") or "").strip()
+            figure_id = str(entry.get("figure_id") or "").strip()
+            comment = str(entry.get("comment") or "").strip()
+            item_lens = str(entry.get("lens") or default_lens).strip().lower() or default_lens
+            default_color = lens_default_colors.get(item_lens, "purple")
+            color = str(entry.get("color") or default_color).strip().lower() or default_color
+            if color not in VALID_COLORS:
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "invalid_color",
+                        "detail": f"Unsupported color {color!r}; expected one of {sorted(VALID_COLORS)}",
+                    }
+                )
+                continue
+
+            raw_page_hint = entry.get("page_hint")
+            page_hint: int | None = None
+            if raw_page_hint is not None and raw_page_hint != "":
+                if isinstance(raw_page_hint, bool):
+                    rejected.append(
+                        {
+                            "index": idx,
+                            "reason": "invalid_page_hint",
+                            "detail": "page_hint must be an integer >= 1",
+                        }
+                    )
+                    continue
+                try:
+                    page_hint = int(raw_page_hint)
+                except (TypeError, ValueError):
+                    rejected.append(
+                        {
+                            "index": idx,
+                            "reason": "invalid_page_hint",
+                            "detail": f"page_hint must be an integer >= 1 (got {raw_page_hint!r})",
+                        }
+                    )
+                    continue
+                if page_hint < 1:
+                    rejected.append(
+                        {
+                            "index": idx,
+                            "reason": "invalid_page_hint",
+                            "detail": f"page_hint must be >= 1 (got {page_hint})",
+                        }
+                    )
+                    continue
+
+            section_hint = str(entry.get("section_hint") or "").strip()
+            raw_tags = entry.get("tags")
+            if raw_tags is None:
+                tags: list[str] = []
+            elif isinstance(raw_tags, str):
+                tags = [raw_tags.strip()] if raw_tags.strip() else []
+            elif isinstance(raw_tags, list):
+                tags = [str(t).strip() for t in raw_tags if str(t).strip()]
+            else:
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "invalid_tags",
+                        "detail": "tags must be a list of strings or a string",
+                    }
+                )
+                continue
+
+            if not quote and not figure_id:
+                rejected.append({"index": idx, "reason": "missing_target", "detail": "Provide quote or figure_id"})
+                continue
+            if len(comment) < int(min_comment_chars):
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "comment_too_short",
+                        "detail": f"Comment must be at least {min_comment_chars} characters",
+                    }
+                )
+                continue
+            if quote and _is_paraphrase_comment(quote, comment):
+                rejected.append(
+                    {
+                        "index": idx,
+                        "reason": "comment_paraphrases_quote",
+                        "detail": "Comment appears to paraphrase the quote instead of adding analytical insight",
+                    }
+                )
+                continue
+
             try:
-                page_hint = int(raw_page_hint)
-            except (TypeError, ValueError):
+                grounded = ground_target_in_pdf(
+                    vault_root,
+                    paper_key,
+                    pdf_abs,
+                    quote=quote,
+                    figure_id=figure_id,
+                    page_hint=page_hint,
+                    section_hint=section_hint,
+                    ctx=ctx,
+                )
+            except Exception as exc:  # noqa: BLE001
                 rejected.append(
                     {
                         "index": idx,
-                        "reason": "invalid_page_hint",
-                        "detail": f"page_hint must be an integer >= 1 (got {raw_page_hint!r})",
+                        "reason": "grounding_failed",
+                        "detail": str(exc),
                     }
                 )
                 continue
-            if page_hint < 1:
+
+            g_page = int(grounded["page"])
+            g_rects = _normalize_rects(grounded["rects"])
+            g_kind = str(grounded["kind"])
+            g_fig = str(grounded.get("figure_id") or figure_id or "").strip()
+            g_text = str(grounded.get("matched_text") or "").strip()
+            if g_kind not in VALID_KINDS or not g_rects:
                 rejected.append(
                     {
                         "index": idx,
-                        "reason": "invalid_page_hint",
-                        "detail": f"page_hint must be >= 1 (got {page_hint})",
+                        "reason": "grounding_failed",
+                        "detail": "Grounded target produced invalid kind or empty rects",
                     }
                 )
                 continue
+            norm_g_text = _norm_for_dedup(g_text)
 
-        section_hint = str(entry.get("section_hint") or "").strip()
-        raw_tags = entry.get("tags")
-        if raw_tags is None:
-            tags: list[str] = []
-        elif isinstance(raw_tags, str):
-            tags = [raw_tags.strip()] if raw_tags.strip() else []
-        elif isinstance(raw_tags, list):
-            tags = [str(t).strip() for t in raw_tags if str(t).strip()]
-        else:
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "invalid_tags",
-                    "detail": "tags must be a list of strings or a string",
-                }
-            )
-            continue
-
-        if not quote and not figure_id:
-            rejected.append({"index": idx, "reason": "missing_target", "detail": "Provide quote or figure_id"})
-            continue
-        if len(comment) < int(min_comment_chars):
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "comment_too_short",
-                    "detail": f"Comment must be at least {min_comment_chars} characters",
-                }
-            )
-            continue
-        if quote and _is_paraphrase_comment(quote, comment):
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "comment_paraphrases_quote",
-                    "detail": "Comment appears to paraphrase the quote instead of adding analytical insight",
-                }
-            )
-            continue
-
-        try:
-            grounded = ground_target_in_pdf(
-                vault_root,
-                paper_key,
-                pdf_abs,
-                quote=quote,
-                figure_id=figure_id,
-                page_hint=page_hint,
-                section_hint=section_hint,
-            )
-        except Exception as exc:  # noqa: BLE001
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "grounding_failed",
-                    "detail": str(exc),
-                }
-            )
-            continue
-
-        g_page = int(grounded["page"])
-        g_rects = grounded["rects"]
-        g_kind = str(grounded["kind"])
-        g_fig = str(grounded.get("figure_id") or figure_id or "").strip()
-        g_text = str(grounded.get("matched_text") or "").strip()
-        if g_kind not in VALID_KINDS or not _normalize_rects(g_rects):
-            rejected.append(
-                {
-                    "index": idx,
-                    "reason": "grounding_failed",
-                    "detail": "Grounded target produced invalid kind or empty rects",
-                }
-            )
-            continue
-        norm_g_text = _norm_for_dedup(g_text)
-
-        dup_match: dict[str, Any] | None = None
-        dup_reason = ""
-        for ex in active:
-            if int(ex.get("page") or 0) != g_page:
-                continue
-            if g_fig and ex.get("author") == "agent" and str(ex.get("figure_id") or "").strip() == g_fig:
-                dup_match = ex
-                dup_reason = "duplicate_figure"
-                break
-            ex_text = _norm_for_dedup(str(ex.get("exact_text") or ""))
-            if norm_g_text and ex_text and norm_g_text == ex_text:
-                dup_match = ex
-                dup_reason = "duplicate_target"
-                break
-            ex_rects = ex.get("rects") or []
-            if g_rects and ex_rects:
-                hit_overlap = False
-                for r1 in g_rects:
-                    for r2 in ex_rects:
-                        iou, _ = _rect_iou_and_overlap(r1, r2)
-                        if iou >= 0.60:
-                            hit_overlap = True
-                            break
-                    if hit_overlap:
-                        break
-                if hit_overlap:
+            dup_match: dict[str, Any] | None = None
+            dup_reason = ""
+            for ex in active:
+                if int(ex.get("page") or 0) != g_page:
+                    continue
+                if g_fig and ex.get("author") == "agent" and str(ex.get("figure_id") or "").strip() == g_fig:
+                    dup_match = ex
+                    dup_reason = "duplicate_figure"
+                    break
+                ex_text = _norm_for_dedup(str(ex.get("exact_text") or ""))
+                if norm_g_text and ex_text and norm_g_text == ex_text:
                     dup_match = ex
                     dup_reason = "duplicate_target"
                     break
+                ex_rects = ex.get("rects") or []
+                if g_rects and ex_rects:
+                    hit_overlap = False
+                    for r1 in g_rects:
+                        for r2 in ex_rects:
+                            iou, _ = _rect_iou_and_overlap(r1, r2)
+                            if iou >= 0.60:
+                                hit_overlap = True
+                                break
+                        if hit_overlap:
+                            break
+                    if hit_overlap:
+                        dup_match = ex
+                        dup_reason = "duplicate_target"
+                        break
 
-        if dup_match is not None:
-            skipped.append(
-                {
-                    "index": idx,
-                    "reason": dup_reason,
-                    "existing_ann_id": dup_match.get("ann_id", ""),
-                }
-            )
-            continue
+            if dup_match is not None:
+                skipped.append(
+                    {
+                        "index": idx,
+                        "reason": dup_reason,
+                        "existing_ann_id": dup_match.get("ann_id", ""),
+                    }
+                )
+                continue
 
-        tier = str(grounded["grounding_tier"])
-        item_spec = {
-            "page": g_page,
-            "rects": g_rects,
-            "kind": g_kind,
-            "color": color,
-            "intent": lens_to_intent.get(item_lens, "general"),
-            "author": "agent",
-            "lens": item_lens,
-            "grounding_tier": tier,
-            "exact_text": g_text,
-            "comment": comment,
-            "tags": tags,
-            "section_hint": str(grounded.get("section_path") or section_hint),
-            "figure_hint": g_fig,
-            "batch_id": resolved_batch_id,
-        }
-        staged.append(item_spec)
-        active.append(
-            {
-                "ann_id": f"_staged_{idx}",
+            tier = str(grounded["grounding_tier"])
+            item_spec = {
                 "page": g_page,
                 "rects": g_rects,
+                "kind": g_kind,
+                "color": color,
+                "intent": lens_to_intent.get(item_lens, "general"),
                 "author": "agent",
-                "figure_id": g_fig,
+                "lens": item_lens,
+                "grounding_tier": tier,
                 "exact_text": g_text,
+                "comment": comment,
+                "tags": tags,
+                "section_hint": str(grounded.get("section_path") or section_hint),
+                "figure_hint": g_fig,
+                "batch_id": resolved_batch_id,
             }
-        )
+            staged.append(item_spec)
+            active.append(
+                {
+                    "ann_id": f"_staged_{idx}",
+                    "page": g_page,
+                    "rects": g_rects,
+                    "author": "agent",
+                    "figure_id": g_fig,
+                    "exact_text": g_text,
+                }
+            )
 
-    # Phase 2: commit atomically — never clear prior lens annotations when 0 items staged.
-    replaced_count = 0
-    if replace_lens and staged:
-        clr = clear_agent_annotations(vault_root, paper_key, lens=default_lens)
-        replaced_count = int(clr.get("deleted_count") or 0)
+        # Phase 2: commit atomically in ONE PDF SHA-256, ONE FileLock, ONE SQLite transaction,
+        # and ONE _bump_seq_safe — never clear prior lens annotations when 0 items staged.
+        if staged:
+            import pymupdf
 
-    created: list[dict[str, Any]] = []
-    for item_spec in staged:
-        rec = add_annotation(
-            vault_root,
-            paper_key,
-            **item_spec,
-        )
-        created.append(rec)
-        tier = str(item_spec["grounding_tier"])
-        grounding_summary[tier] = grounding_summary.get(tier, 0) + 1
+            ws_dir.mkdir(parents=True, exist_ok=True)
+            pdf_sha = _sha256_file(pdf_abs)
+            ocr_cache = _load_ocr_binding_cache(paths, paper_key)
+            now = _utcnow_iso()
+            doc = ctx.doc
+
+            for item_spec in staged:
+                page = int(item_spec["page"])
+                if page < 1 or page > len(doc):
+                    raise ValueError(f"page {page} exceeds PDF page count {len(doc)}")
+                pdf_page = doc[page - 1]
+                pr = pdf_page.rect
+                page_size = (float(pr.width), float(pr.height))
+                norm_rects = item_spec["rects"]
+                ann_id = f"ann_{secrets.token_hex(6)}"
+                crop_asset_rel = ""
+                embed_wikilink = ""
+                if item_spec["kind"] == "area":
+                    r = norm_rects[0]
+                    clip = pymupdf.Rect(
+                        pr.x0 + r[0] * pr.width,
+                        pr.y0 + r[1] * pr.height,
+                        pr.x0 + r[2] * pr.width,
+                        pr.y0 + r[3] * pr.height,
+                    )
+                    assets_dir = ws_dir / "assets"
+                    assets_dir.mkdir(parents=True, exist_ok=True)
+                    img_name = f"{paper_key}_{ann_id[:12]}.jpg"
+                    img_path = assets_dir / img_name
+                    pix = pdf_page.get_pixmap(clip=clip, dpi=200)
+                    pix.save(str(img_path))
+                    crop_asset_rel = str(img_path.relative_to(vault_root)).replace("\\", "/")
+                    embed_wikilink = f"![[{img_name}]]"
+
+                ocr_binding = _bind_ocr_structure_from_cache(
+                    ocr_cache, page, norm_rects, pdf_page_size=page_size
+                )
+                record: dict[str, Any] = {
+                    "ann_id": ann_id,
+                    "paper_id": paper_key,
+                    "page": page,
+                    "kind": item_spec["kind"],
+                    "color": item_spec["color"],
+                    "intent": item_spec["intent"],
+                    "author": "agent",
+                    "lens": item_spec["lens"],
+                    "grounding_tier": item_spec["grounding_tier"],
+                    "exact_text": item_spec["exact_text"],
+                    "comment": item_spec["comment"],
+                    "tags": list(item_spec["tags"]),
+                    "rects": norm_rects,
+                    "style": {},
+                    "section_path": ocr_binding["section_path"] or item_spec["section_hint"],
+                    "block_id": ocr_binding["block_id"],
+                    "figure_id": ocr_binding["figure_id"] or item_spec["figure_hint"],
+                    "crop_asset_rel": crop_asset_rel,
+                    "embed_wikilink": embed_wikilink,
+                    "pdf_sha256": pdf_sha,
+                    "created_at": now,
+                    "updated_at": now,
+                    "batch_id": resolved_batch_id,
+                }
+                created.append(record)
+                tier = str(item_spec["grounding_tier"])
+                grounding_summary[tier] = grounding_summary.get(tier, 0) + 1
+
+            jsonl_path = _annotations_file_for_workspace(ws_dir)
+            deleted_ids: list[str] = []
+            lock = FileLock(str(jsonl_path) + ".lock", timeout=10)
+            with lock:
+                state: dict[str, dict[str, Any]] | None = (
+                    _replay_jsonl_events(jsonl_path) if (replace_lens and jsonl_path.exists()) else None
+                )
+                with jsonl_path.open("a", encoding="utf-8") as fh:
+                    if replace_lens and state:
+                        targets = [
+                            aid
+                            for aid, rec in state.items()
+                            if rec.get("author") == "agent"
+                            and (not default_lens or str(rec.get("lens") or "") == default_lens)
+                        ]
+                        for aid in targets:
+                            fh.write(
+                                json.dumps({"op": "delete", "ann_id": aid, "updated_at": now}, ensure_ascii=False)
+                                + "\n"
+                            )
+                            state.pop(aid, None)
+                            deleted_ids.append(aid)
+                    for rec in created:
+                        fh.write(
+                            json.dumps({"op": "add", "ann_id": rec["ann_id"], "record": rec}, ensure_ascii=False)
+                            + "\n"
+                        )
+                        if state is not None:
+                            state[rec["ann_id"]] = rec
+                if state is not None:
+                    _maybe_compact_jsonl_locked(jsonl_path, state)
+
+            replaced_count = len(deleted_ids)
+            _sync_sqlite_annotation_batch(vault_root, created, delete_ids=deleted_ids)
+            _bump_seq_safe(vault_root, "annotations.agent_apply", paper_key)
+            prov = "verified" if pdf_sha else "unknown"
+            for rec in created:
+                rec["provenance_status"] = prov
 
     return {
         "paper_id": paper_key,
