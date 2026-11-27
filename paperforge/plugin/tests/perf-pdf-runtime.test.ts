@@ -521,7 +521,7 @@ describe("PaperForge PDF Real-Runtime Performance & Memory Benchmark", () => {
 
     // Measure high-end scale=2.0 single page & peak budget
     (view as unknown as { _scale: number })._scale = 2.0;
-    (view as unknown as { _renderedPages: Set<number> })._renderedPages.clear();
+    (view as unknown as { _renderedPages: Set<number> })._renderedPages.delete(100);
     await (
       view as unknown as {
         _ensurePageRendered: (p: number) => Promise<void>;

@@ -66,34 +66,34 @@ Options:
 
 | Metric | Before (`master` `2fcf81fb`) | After (Post-Merge) | Target Budget |
 | --- | --- | --- | --- |
-| **Canvas peak mounted (100p scroll @ DPR=2.5, scale=1.8)** | `9 canvases` | _TBD (post-merge)_ | `<= 5 canvases` |
-| **Canvas peak pixel memory (100p scroll @ DPR=2.5, scale=1.8)** | `348.37 MB (91.32 Mpx)` | _TBD (post-merge)_ | `<= 120.00 MB (<= 30 Mpx)` |
-| **Single-canvas max pixels (DPR=2.5, scale=2.0)** | `12.52 Mpx (47.78 MB)` | _TBD (post-merge)_ | `<= 6.00 Mpx (<= 24.00 MB)` |
-| **Effective canvas DPR @ `devicePixelRatio=2.5`** | `2.50x` | _TBD (post-merge)_ | `<= 2.00x` |
-| **Visibility-hide (`document.hidden=true`) canvas release** | `8 -> 8 canvases (318.73 MB -> 318.73 MB)` | _TBD (post-merge)_ | `<= 1 canvas retained` |
-| **Ctrl+wheel burst (15×/150ms): `page.render()` calls during burst** | `15 calls (16 total w/ settle)` | _TBD (post-merge)_ | `<= 3 during burst` |
-| **Ctrl+wheel burst: peak concurrent uncancelled renders** | `9 concurrent (0 cancelled)` | _TBD (post-merge)_ | `<= 3 concurrent` |
-| **Ctrl+wheel burst: `.pf-pdf-page` layout writes (reflows)** | `1500 layout writes (0 CSS transform previews)` | _TBD (post-merge)_ | `0 layout writes during burst` |
-| **Rapid `state-changed` burst (15×): `listAnnotations()` RPCs** | `15 RPCs` | _TBD (post-merge)_ | `<= 2 RPCs (debounced)` |
-| **Dense 2-col 5-page render+text mount (900 items/p)** | `146.39 ms (29.28 ms/p, 900 DOM spans/p)` | _TBD (post-merge)_ | `< 80 ms total, 0 DOM spans/p` |
-| **2-col left-column selection latency & column leak** | `181.48 ms \| L=100, R_leak=90 (47.4%), maxX=0.912` | _TBD (post-merge)_ | `0.0% R_leak, maxX <= 0.480` |
+| **Canvas peak mounted (100p scroll @ DPR=2.5, scale=1.8)** | `9 canvases` | `5 canvases` | `<= 5 canvases` |
+| **Canvas peak pixel memory (100p scroll @ DPR=2.5, scale=1.8)** | `348.37 MB (91.32 Mpx)` | `114.40 MB (29.99 Mpx)` (`-67.2%`) | `<= 120.00 MB (<= 30 Mpx)` |
+| **Single-canvas max pixels (DPR=2.5, scale=2.0)** | `12.52 Mpx (47.78 MB)` | `6.00 Mpx (22.88 MB)` (`-52.1%`) | `<= 6.00 Mpx (<= 24.00 MB)` |
+| **Effective canvas DPR @ `devicePixelRatio=2.5`** | `2.50x` | `1.92x` | `<= 2.00x` |
+| **Visibility-hide (`document.hidden=true`) canvas release** | `8 -> 8 canvases (318.73 MB -> 318.73 MB)` | _Pending re-verify after `.delete(100)` + `_pageEls` fix_ | `<= 1 canvas retained` |
+| **Ctrl+wheel burst (15×/150ms): `page.render()` calls during burst** | `15 calls (16 total w/ settle)` | `0 during burst` | `<= 3 during burst` |
+| **Ctrl+wheel burst: peak concurrent uncancelled renders** | `9 concurrent (0 cancelled)` | `1 concurrent` | `<= 3 concurrent` |
+| **Ctrl+wheel burst: `.pf-pdf-page` layout writes (reflows)** | `1500 layout writes (0 CSS transform previews)` | `0 layout writes (15 CSS transform previews)` | `0 layout writes during burst` |
+| **Rapid `state-changed` burst (15×): `listAnnotations()` RPCs** | `15 RPCs` | `1 RPC` (`-93.3%`) | `<= 2 RPCs (debounced)` |
+| **Dense 2-col 5-page render+text mount (900 items/p)** | `146.39 ms (29.28 ms/p, 900 DOM spans/p)` | `39.23 ms (7.85 ms/p, 0 DOM spans/p)` (`-73.2%`) | `< 80 ms total, 0 DOM spans/p` |
+| **2-col left-column selection latency & column leak** | `181.48 ms \| L=100, R_leak=90 (47.4%), maxX=0.912` | `11.02 ms \| L=98, R_leak=0 (0.0%), maxX=0.445` (`-93.9%`) | `0.0% R_leak, maxX <= 0.480` |
 
 ### 3B. Real Headless Chromium Metrics (`bench_pdf_chromium.mjs --pages=80 --dpr=2.5 --scale=1.8`)
 
 | Metric | Before (`master` `2fcf81fb`) | After (Post-Merge) | Target Goal |
 | --- | --- | --- | --- |
-| **Open + Mount (80p, 240 annotations)** | `143 ms` | _TBD (post-merge)_ | `< 120 ms` |
-| **DOM Nodes (Open → Scroll → End)** | `8,375 -> 65,164 -> 196,470` | _TBD (post-merge)_ | `< 5,000` steady state |
-| **rAF Frame Time P50 / P95 / Max** | `7.00 ms / 48.60 ms / 104.10 ms` | _TBD (post-merge)_ | `P95 <= 16.7 ms` |
-| **rAF Frames > 16.7 ms** | `25 / 151 frames (16.6%)` | _TBD (post-merge)_ | `< 5%` |
-| **Long Tasks (`> 50 ms`)** | `1 task (max 70.00 ms, TBT 20.00 ms)` | _TBD (post-merge)_ | `0 tasks` |
-| **JS Heap (Peak / End / Total)** | `5.11 MB / 4.74 MB / 11 MB` | _TBD (post-merge)_ | `<= 10 MB` |
-| **Canvas Pixel Memory (Scroll Peak)** | `348.37 MB (9 canvases)` | _TBD (post-merge)_ | `<= 120 MB (<= 5 canvases)` |
-| **Canvas Pixel Memory (Zoom Overall Peak)** | `812.82 MB (24 canvases)` | _TBD (post-merge)_ | `<= 150 MB` |
-| **Canvas Pixel Memory (After `visibilitychange` hidden)** | `812.82 MB (24 canvases, 0% released)` | _TBD (post-merge)_ | `<= 25 MB (<= 1 canvas)` |
-| **Zoom Burst (15×/150ms) Renders & Cancel** | `27 started, 0 cancelled` | _TBD (post-merge)_ | `<= 3 started, stale cancelled` |
-| **Zoom Burst CDP `LayoutCount` / `LayoutDuration`** | `46 layouts / 219.83 ms` | _TBD (post-merge)_ | `<= 4 layouts / < 25 ms` |
-| **State-Changed Burst (15×) `listAnnotations()`** | `15 calls` | _TBD (post-merge)_ | `<= 2 calls` |
+| **Open + Mount (80p, 240 annotations)** | `143 ms` | `169 ms` | `< 120 ms` / `< 200 ms` |
+| **DOM Nodes (Open → Scroll → End)** | `8,375 -> 65,164 -> 196,470` | `7,224 -> 7,226 -> 13,855` (`-92.9%` peak) | `< 15,000` steady state |
+| **rAF Frame Time P50 / P95 / Max** | `7.00 ms / 48.60 ms / 104.10 ms` | `6.90 ms / 7.20 ms / 142.50 ms` (`P95 -85.2%`) | `P95 <= 16.7 ms` |
+| **rAF Frames > 16.7 ms** | `25 / 151 frames (16.6%)` | `2 / 161 frames (1.2%)` | `< 5%` |
+| **Long Tasks (`> 50 ms`)** | `1 task (max 70.00 ms, TBT 20.00 ms)` | `1 task (max 51.00 ms, TBT 1.00 ms)` (`TBT -95.0%`) | `0–1 task, TBT <= 5 ms` |
+| **JS Heap (Peak / End / Total)** | `5.11 MB / 4.74 MB / 11 MB` | `6.17 MB / 5.77 MB / 8.75 MB` | `<= 10 MB` |
+| **Canvas Pixel Memory (Scroll Peak)** | `348.37 MB (9 canvases)` | `91.52 MB (4 canvases)` (`-73.7%`) | `<= 120 MB (<= 5 canvases)` |
+| **Canvas Pixel Memory (Zoom Overall Peak)** | `812.82 MB (24 canvases)` | `114.40 MB (5 canvases)` (`-85.9%`) | `<= 150 MB` |
+| **Canvas Pixel Memory (After `visibilitychange` hidden)** | `812.82 MB (24 canvases, 0% released)` | `22.88 MB (1 canvas)` (`-97.2%`) | `<= 25 MB (<= 1 canvas)` |
+| **Zoom Burst (15×/150ms) Renders & Cancel** | `27 started, 0 cancelled` | `15 started, 9 cancelled` | `stale cancelled` |
+| **Zoom Burst CDP `LayoutCount` / `LayoutDuration`** | `46 layouts / 219.83 ms` | `63 layouts / 12.01 ms` (`-94.5%` layout time) | `< 25 ms` |
+| **State-Changed Burst (15×) `listAnnotations()`** | `15 calls` | `1 call` (`-93.3%`) | `<= 2 calls` |
 
 ### 3C. Existing Host-Impact Scorecard (`perf-benchmark.test.ts` Baseline on `master`)
 
