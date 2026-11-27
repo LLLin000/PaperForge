@@ -1100,6 +1100,10 @@ export class NodeProcessTransport implements Transport {
     };
   }
 
+  hasNativeDaemonRpc(): boolean {
+    return Boolean(this._resolveNativeDaemon());
+  }
+
   async rpc(
     payload: Record<string, unknown>,
     timeoutMs = 30000

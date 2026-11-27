@@ -2698,18 +2698,47 @@ export class PaperForgeClient {
     return await fn();
   }
 
-  async daemonSubmitRuntimeUpdate(
-    version: string
+  hasDaemonRpc(): boolean {
+    const t = this._transport as unknown as {
+      rpc?: unknown;
+      hasNativeDaemonRpc?: () => boolean;
+    };
+    if (typeof t?.hasNativeDaemonRpc === "function") {
+      return t.hasNativeDaemonRpc();
+    }
+    return typeof t?.rpc === "function";
+  }
+
+  async daemonSubmitRuntimeJob(
+    action: "install" | "update" | "repair",
+    version: string,
+    options?: {
+      proxyUrl?: string;
+      preferCnMirror?: boolean;
+    }
   ): Promise<{ accepted: boolean; coalesced?: boolean; reason?: string }> {
     if (typeof this._transport.rpc !== "function") {
       return { accepted: false, reason: "rpc_unavailable" };
     }
-    const raw = await this._transport.rpc({
+    const payload: Record<string, unknown> = {
       op: "job.submit",
-      kind: "runtime.update",
+      kind: `runtime.${action}`,
       version,
-    });
+    };
+    if (options?.proxyUrl?.trim()) {
+      payload.proxy_url = options.proxyUrl.trim();
+    }
+    if (options?.preferCnMirror !== undefined) {
+      payload.prefer_cn_mirror = options.preferCnMirror;
+    }
+    const raw = await this._transport.rpc(payload);
     return JSON.parse(raw);
+  }
+
+  async daemonSubmitRuntimeUpdate(
+    version: string
+  ): Promise<{ accepted: boolean; coalesced?: boolean; reason?: string }> {
+    return this.daemonSubmitRuntimeJob("update", version);
   }
 
   /** Fast Zero-Python Zotero data directory + collections detector (`zotero detect --json`). */

@@ -7,7 +7,6 @@ use crate::platform::{
     kill_pid_tree, kill_process_tree, now_unix_secs, process_rss_bytes,
 };
 use crate::query_ops::{open_readonly_db, read_state_seq, resolve_engine_dir};
-use crate::runtime_ops::install_runtime_native_cancellable;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::env;
@@ -689,6 +688,21 @@ impl NativeControlDaemon {
     }
 
     pub fn submit_runtime_job(&self, vault: Option<&Path>, action: &str, version: &str) -> Value {
+        self.submit_runtime_job_with_opts(
+            vault,
+            action,
+            version,
+            crate::runtime_ops::RuntimeInstallOptions::default(),
+        )
+    }
+
+    pub fn submit_runtime_job_with_opts(
+        &self,
+        vault: Option<&Path>,
+        action: &str,
+        version: &str,
+        opts: crate::runtime_ops::RuntimeInstallOptions,
+    ) -> Value {
         let vkey = vault
             .map(Self::norm_vault)
             .unwrap_or_else(|| "global".to_string());
@@ -758,11 +772,13 @@ impl NativeControlDaemon {
         let tid_worker = trace_id.clone();
         let cf_worker = cancel_flag.clone();
         let rpid_worker = runtime_child_pid.clone();
+        let opts_worker = opts;
         thread::spawn(move || {
             let v_opt = if vkey == "global" { None } else { Some(vkey.as_str()) };
-            let res = install_runtime_native_cancellable(
+            let res = crate::runtime_ops::install_runtime_native_with_opts(
                 &act,
                 &ver,
+                &opts_worker,
                 Some(cf_worker.as_ref()),
                 Some(rpid_worker.as_ref()),
                 |phase, cur, tot| {
@@ -1725,5 +1741,57 @@ fn vault_path_opt(vkey: &str) -> Option<&Path> {
         None
     } else {
         Some(Path::new(vkey))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtime_job_coalesces_when_another_runtime_job_is_running() {
+        let sup = NativeControlDaemon::new(None, None);
+        let active_id = "job_test_runtime_running".to_string();
+        {
+            let mut g = sup.inner.lock().unwrap();
+            g.active_jobs.insert(
+                active_id.clone(),
+                Arc::new(Mutex::new(JobRecord {
+                    job_id: active_id.clone(),
+                    trace_id: "tr_test".into(),
+                    vault: "global".into(),
+                    kind: "runtime.update".into(),
+                    scope_key: "global".into(),
+                    source: "job.submit".into(),
+                    stream_id: None,
+                    status: JobStatus::Running,
+                    current: 2,
+                    total: 5,
+                    phase: "downloading".into(),
+                    item_id: "2.0.9".into(),
+                    priority_key: None,
+                    started_at: now_unix_secs(),
+                    finished_at: None,
+                    exit_code: None,
+                    error: String::new(),
+                    stderr_tail: String::new(),
+                    pid: None,
+                    child: None,
+                    cancel_flag: None,
+                    runtime_child_pid: None,
+                })),
+            );
+        }
+
+        let res = sup.submit_runtime_job_with_opts(
+            None,
+            "install",
+            "2.0.9",
+            crate::runtime_ops::RuntimeInstallOptions::default(),
+        );
+        assert_eq!(res["accepted"], true);
+        assert_eq!(res["coalesced"], true);
+        assert_eq!(res["job"]["job_id"], active_id);
+        assert_eq!(sup.inner.lock().unwrap().active_jobs.len(), 1);
     }
 }

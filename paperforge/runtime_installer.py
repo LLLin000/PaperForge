@@ -97,6 +97,52 @@ LOCK_NAME = "install.lock"
 LOCK_STALE_SECONDS = 3600
 
 
+def _read_lock_pid(path: Path) -> int | None:
+    try:
+        head = path.read_text(encoding="utf-8", errors="ignore").strip().split(None, 1)[0]
+        pid = int(head)
+        return pid if pid > 0 else None
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def _is_pid_alive(pid: int) -> bool:
+    """Return True if *pid* appears alive; fail open (True) on ambiguous permission errors."""
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            k32 = ctypes.windll.kernel32
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            ERROR_ACCESS_DENIED = 5
+            STILL_ACTIVE = 259
+            k32.SetLastError(0)
+            handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+            if not handle:
+                return k32.GetLastError() == ERROR_ACCESS_DENIED
+            try:
+                exit_code = wintypes.DWORD()
+                if k32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                    return exit_code.value == STILL_ACTIVE
+                return True
+            finally:
+                k32.CloseHandle(handle)
+        except Exception:
+            return True
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return True
+
+
 @contextlib.contextmanager
 def install_lock(runtime_dir: Path) -> Iterator[Path]:
     """Hold the machine-wide install lock for the duration of the block.
@@ -112,7 +158,9 @@ def install_lock(runtime_dir: Path) -> Iterator[Path]:
             age = time.time() - path.stat().st_mtime
         except OSError:
             age = 0.0
-        if age < LOCK_STALE_SECONDS:
+        lock_pid = _read_lock_pid(path)
+        holder_dead = lock_pid is not None and not _is_pid_alive(lock_pid)
+        if age < LOCK_STALE_SECONDS and not holder_dead:
             raise RuntimeInstallError(
                 "runtime.install_in_progress",
                 "Another PaperForge runtime install is already running.",
