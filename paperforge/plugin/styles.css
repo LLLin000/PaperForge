@@ -9204,6 +9204,14 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-pdf-scroll.is-note-mode .pf-pdf-page {
   cursor: crosshair;
 }
+.pf-pdf-pages-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  transform-origin: center top;
+  will-change: transform;
+}
 .pf-pdf-page {
   position: relative;
   isolation: isolate;
@@ -9218,18 +9226,21 @@ input.pf-ocr-ws-search-input::placeholder {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  user-select: text;
+  cursor: text;
+  user-select: none;
 }
-.pf-pdf-text-layer span {
+.pf-pdf-sel-rect {
   position: absolute;
-  color: transparent;
-  white-space: pre;
-  line-height: 1;
+  pointer-events: none;
+  background: rgba(59, 130, 246, 0.28);
+  border-radius: 2px;
 }
 .pf-pdf-overlay-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  isolation: isolate;
+  contain: layout style;
 }
 .pf-pdf-svg-layer,
 .pf-pdf-svg-draft {
@@ -9238,6 +9249,17 @@ input.pf-ocr-ws-search-input::placeholder {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.pf-pdf-svg-layer > polyline,
+.pf-pdf-svg-layer > line,
+.pf-pdf-svg-layer > rect,
+.pf-pdf-svg-layer > ellipse {
+  cursor: pointer;
+  pointer-events: stroke;
+  transition: opacity 120ms ease-out;
+}
+.pf-pdf-svg-layer > .is-ann-hover {
+  opacity: 0.72;
 }
 .pf-pdf-ann-box {
   position: absolute;
@@ -9487,6 +9509,20 @@ input.pf-ocr-ws-search-input::placeholder {
   padding-left: 8px;
   border-left: 2px solid var(--pf-border, var(--background-modifier-border));
 }
+.pf-pdf-popover-agent-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pf-pdf-popover-grounding {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--background-secondary);
+  color: var(--pf-text-muted, var(--text-muted));
+  border: 1px solid var(--pf-border, var(--background-modifier-border));
+}
 .pf-pdf-swatch-row,
 .pf-pdf-popover-actions {
   display: flex;
@@ -9496,6 +9532,29 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 .pf-pdf-popover-actions {
   justify-content: flex-end;
+}
+.pf-pdf-popover-del-btn {
+  margin-right: auto;
+  color: var(--text-error, #d64545);
+}
+.pf-pdf-clear-ai-btn.is-confirming {
+  color: var(--text-error, #d64545);
+  border-color: rgba(214, 69, 69, 0.4);
+  background: rgba(214, 69, 69, 0.08);
+}
+.pf-pdf-undo-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf-pdf-undo-btn {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--pf-border, var(--background-modifier-border));
+  background: var(--pf-surface, var(--background-primary));
+  color: var(--pf-accent, var(--interactive-accent));
+  font-weight: 600;
+  cursor: pointer;
 }
 .pf-pdf-swatch {
   width: 18px;
