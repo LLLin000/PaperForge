@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 from paperforge.adapters.collections import build_collection_lookup
@@ -44,19 +45,24 @@ def normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tupl
         zotero_storage_key = parts[0] if parts else ""
         return (f"storage:{storage_rel}", bbt_path_raw, zotero_storage_key)
 
+    # Format 2b: Linked-attachment base-dir prefix (Zotero attachments:) or explicit absolute:
+    if raw.startswith("attachments:"):
+        att_rel = raw[len("attachments:") :].replace("\\", "/").lstrip("/")
+        return (f"attachments:{att_rel}", bbt_path_raw, "")
+    if raw.startswith("absolute:"):
+        return (raw, bbt_path_raw, "")
+
     # Format 1: Absolute Windows path pointing to Zotero storage
     candidate = Path(raw)
     _looks_absolute = candidate.is_absolute() or (len(raw) >= 2 and raw[0].isalpha() and raw[1] == ":")
     if _looks_absolute:
         norm_path = raw.replace("\\", "/")
         # Detect Zotero storage pattern: .../storage/8CHARKEY/...
-        if "/storage/" in norm_path:
-            parts_after_storage = norm_path.split("/storage/", 1)[1]
-            parts = parts_after_storage.split("/")
-            if len(parts) >= 2 and len(parts[0]) == 8 and parts[0].isalnum():
-                zotero_storage_key = parts[0]
-                filename = "/".join(parts[1:])
-                return (f"storage:{zotero_storage_key}/{filename}", bbt_path_raw, zotero_storage_key)
+        m_storage = re.search(r"/storage/([A-Za-z0-9]{8})/(.+)$", norm_path, re.IGNORECASE)
+        if m_storage:
+            zotero_storage_key = m_storage.group(1)
+            filename = m_storage.group(2)
+            return (f"storage:{zotero_storage_key}/{filename}", bbt_path_raw, zotero_storage_key)
         # Absolute path but not in Zotero storage — mark as absolute
         return (f"absolute:{raw}", bbt_path_raw, "")
 

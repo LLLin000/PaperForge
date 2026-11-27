@@ -84,9 +84,11 @@ def _resolve_canonical_pdf(vault: Path, paper: dict) -> Path | None:
     locator = paper.get("pdf_path") or ""
     if not locator:
         return None
+    from paperforge.config import paperforge_paths
     from paperforge.pdf_resolver import resolve_pdf_path
 
-    resolved = resolve_pdf_path(locator, True, vault)
+    zotero_dir = paperforge_paths(vault).get("zotero_dir")
+    resolved = resolve_pdf_path(locator, True, vault, zotero_dir)
     if not resolved:
         return None
     p = Path(resolved)

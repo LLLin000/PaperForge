@@ -268,3 +268,81 @@ class TestLoadExportRowsAttachmentNormalization:
         assert len(rows) == 1
         assert rows[0]["attachments"][0]["path"] == "storage:ABC123/ABC123.docx"
         assert rows[0]["attachments"][0]["contentType"] == ""
+
+    def test_attachments_and_case_insensitive_storage_preserved(self, tmp_path: Path) -> None:
+        from paperforge.adapters.bbt import normalize_attachment_path
+
+        att_norm, _, _ = normalize_attachment_path("attachments:Ortho\\paper.pdf")
+        assert att_norm == "attachments:Ortho/paper.pdf"
+
+        win_norm, _, key = normalize_attachment_path("D:\\Zotero\\STORAGE\\ABCD1234\\paper.pdf")
+        assert win_norm == "storage:ABCD1234/paper.pdf"
+        assert key == "ABCD1234"
+
+
+class TestExtendedPdfResolverAndAnnotationsResolution:
+    """Regression coverage for attachments:, .paperforge/Zotero fallback, v2 config, and PDF viewer."""
+
+    def test_attachments_and_dot_paperforge_junction_fallback(self, tmp_path: Path, monkeypatch) -> None:
+        from paperforge.adapters import zotero_sqlite
+
+        vault = tmp_path / "vault"
+        pf_storage = vault / ".paperforge" / "Zotero" / "storage" / "KEY12345"
+        pf_storage.mkdir(parents=True)
+        real_pdf = pf_storage / "actual.pdf"
+        real_pdf.write_bytes(b"%PDF-1.4\nactual\n")
+
+        assert Path(resolve_pdf_path("storage:KEY12345/missing.pdf", True, vault)).resolve() == real_pdf.resolve()
+
+        base_att = tmp_path / "LinkedDir"
+        (base_att / "Sub").mkdir(parents=True)
+        linked_pdf = base_att / "Sub" / "linked.pdf"
+        linked_pdf.write_bytes(b"%PDF-1.4\nlinked\n")
+        monkeypatch.setattr(zotero_sqlite, "read_zotero_base_attachment_path", lambda _z=None: base_att)
+        assert Path(resolve_pdf_path("attachments:Sub\\linked.pdf", True, vault)).resolve() == linked_pdf.resolve()
+
+    def test_annotations_resolve_pdf_from_item_linked_attachments_and_traversal_guard(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        from paperforge.adapters import zotero_sqlite
+        from paperforge.services.annotations_service import _resolve_pdf_from_item
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        zdir = tmp_path / "zotero"
+        (zdir / "storage" / "KEY99999").mkdir(parents=True)
+        renamed_pdf = zdir / "storage" / "KEY99999" / "renamed.pdf"
+        renamed_pdf.write_bytes(b"%PDF-1.4\nrenamed\n")
+
+        ext_pdf = tmp_path / "ExternalZotFile" / "linked.pdf"
+        ext_pdf.parent.mkdir(parents=True)
+        ext_pdf.write_bytes(b"%PDF-1.4\next\n")
+
+        base_att = tmp_path / "BaseAtt"
+        base_att.mkdir()
+        att_pdf = base_att / "file.pdf"
+        att_pdf.write_bytes(b"%PDF-1.4\natt\n")
+        monkeypatch.setattr(zotero_sqlite, "read_zotero_base_attachment_path", lambda _z=None: base_att)
+
+        secret_pdf = tmp_path / "secret.pdf"
+        secret_pdf.write_bytes(b"%PDF-1.4\nsecret\n")
+
+        paths = {"ocr": vault / ".paperforge" / "ocr", "zotero_dir": zdir}
+        paths["ocr"].mkdir(parents=True)
+
+        # External linked absolute PDF + absolute: prefix
+        p_ext, _, is_rel, _ = _resolve_pdf_from_item(vault, paths, "P1", {"pdf_path": f"[[absolute:{ext_pdf}]]"})
+        assert p_ext == ext_pdf.resolve()
+        assert is_rel is False
+
+        # attachments: prefix
+        p_att, _, _, _ = _resolve_pdf_from_item(vault, paths, "P2", {"pdf_path": "attachments:file.pdf"})
+        assert p_att == att_pdf.resolve()
+
+        # Renamed file inside storage/<KEY>
+        p_ren, _, _, _ = _resolve_pdf_from_item(vault, paths, "P3", {"pdf_path": "storage:KEY99999/old.pdf"})
+        assert p_ren == renamed_pdf.resolve()
+
+        # Relative traversal must remain blocked
+        p_sec, _, _, _ = _resolve_pdf_from_item(vault, paths, "P4", {"pdf_path": "../secret.pdf"})
+        assert p_sec is None

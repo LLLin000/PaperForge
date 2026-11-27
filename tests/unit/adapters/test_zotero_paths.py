@@ -157,3 +157,22 @@ def test_external_linked_pdf_absolute_prefix_resolves_cleanly(tmp_path: Path) ->
     assert Path(resolve_pdf_path(tagged, True, vault)).resolve() == ext_pdf.resolve()
     assert Path(resolve_pdf_path(f"[[{tagged}]]", True, vault)).resolve() == ext_pdf.resolve()
     assert Path(resolve_pdf_path(wikilink, True, vault)).resolve() == ext_pdf.resolve()
+
+
+def test_storage_prefix_routes_through_in_vault_dot_paperforge_junction(tmp_path: Path, monkeypatch) -> None:
+    """When zotero_dir is external but vault has .paperforge/Zotero junction, output vault-relative wikilink."""
+    vault = tmp_path / "vault"
+    junction = vault / ".paperforge" / "Zotero"
+    junction.mkdir(parents=True)
+    ext_zotero = tmp_path / "ext_zotero"
+    (ext_zotero / "storage" / "KEY12345").mkdir(parents=True)
+    (ext_zotero / "storage" / "KEY12345" / "paper.pdf").write_bytes(b"%PDF-1.4\nok\n")
+
+    def _mock_resolve_junction(p: Path) -> Path:
+        if p == junction:
+            return ext_zotero
+        return p
+
+    monkeypatch.setattr("paperforge.pdf_resolver.resolve_junction", _mock_resolve_junction)
+    result = obsidian_wikilink_for_pdf("storage:KEY12345/paper.pdf", vault, ext_zotero)
+    assert result == "[[.paperforge/Zotero/storage/KEY12345/paper.pdf]]"

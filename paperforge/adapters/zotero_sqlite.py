@@ -94,16 +94,36 @@ def sys_is_darwin() -> bool:
     return sys.platform == "darwin"
 
 
-def read_zotero_base_attachment_path() -> Path | None:
+def _same_dir_path(a: Path, b: Path) -> bool:
+    try:
+        sa = str(a.expanduser().resolve())
+        sb = str(b.expanduser().resolve())
+    except OSError:
+        sa = str(a)
+        sb = str(b)
+    if os.name == "nt":
+        return sa.rstrip("/\\").casefold() == sb.rstrip("/\\").casefold()
+    return sa.rstrip("/") == sb.rstrip("/")
+
+
+def read_zotero_base_attachment_path(zotero_dir: Path | None = None) -> Path | None:
     """Resolve Zotero's linked attachment base directory from prefs.js if configured."""
+    fallback: Path | None = None
     for prof in _zotero_profile_dirs():
         prefs = _parse_prefs_js(prof / "prefs.js")
         raw = prefs.get("extensions.zotero.baseAttachmentPath", "").strip()
-        if raw:
-            p = Path(raw).expanduser()
-            if p.exists():
-                return p
-    return None
+        if not raw:
+            continue
+        base_p = Path(raw).expanduser()
+        if not base_p.exists():
+            continue
+        if zotero_dir is not None:
+            prof_data_raw = prefs.get("extensions.zotero.dataDir", "").strip()
+            if prof_data_raw and _same_dir_path(Path(prof_data_raw), zotero_dir):
+                return base_p
+        if fallback is None:
+            fallback = base_p
+    return fallback
 
 
 def auto_detect_zotero_data_dir() -> Path | None:
@@ -393,16 +413,35 @@ def _resolve_sqlite_attachment_path(
     """Return (bbt_like_path, resolved_disk_hint, byte_size)."""
     raw = str(raw_path or "").strip()
     if raw.startswith("storage:"):
-        rel = raw[len("storage:") :].lstrip("/\\")
-        norm = f"storage:{att_key}/{rel}" if att_key and "/" not in rel else f"storage:{rel}"
-        disk = zotero_dir / "storage" / att_key / rel
-        size = int(disk.stat().st_size) if disk.is_file() else 0
-        return (norm, raw, size)
-    if raw.startswith("attachments:") and base_att_dir is not None:
-        rel = raw[len("attachments:") :].lstrip("/\\")
-        disk = base_att_dir / rel
-        size = int(disk.stat().st_size) if disk.is_file() else 0
-        return (str(disk), raw, size)
+        rel = raw[len("storage:") :].replace("\\", "/").lstrip("/")
+        if att_key:
+            if rel.startswith(f"{att_key}/"):
+                norm = f"storage:{rel}"
+                disk_rel = rel[len(att_key) + 1 :]
+            else:
+                norm = f"storage:{att_key}/{rel}"
+                disk_rel = rel
+            disk = zotero_dir / "storage" / att_key / disk_rel.replace("/", os.sep)
+            if disk.is_file():
+                return (norm, raw, int(disk.stat().st_size))
+            st_dir = zotero_dir / "storage" / att_key
+            if st_dir.is_dir():
+                pdfs = sorted(p for p in st_dir.iterdir() if p.is_file() and p.suffix.lower() == ".pdf")
+                if pdfs:
+                    return (
+                        f"storage:{att_key}/{pdfs[0].name}",
+                        raw,
+                        int(pdfs[0].stat().st_size),
+                    )
+            return (norm, raw, 0)
+        return (f"storage:{rel}", raw, 0)
+    if raw.startswith("attachments:"):
+        rel = raw[len("attachments:") :].replace("\\", "/").lstrip("/")
+        if base_att_dir is not None:
+            disk = base_att_dir / rel.replace("/", os.sep)
+            size = int(disk.stat().st_size) if disk.is_file() else 0
+            return (str(disk), raw, size)
+        return (f"attachments:{rel}", raw, 0)
     if raw:
         cand = Path(raw)
         if cand.is_file():
@@ -431,7 +470,7 @@ def build_bbt_export_documents_from_sqlite(
     structure consumed by ``paperforge.adapters.bbt.load_export_rows`` and
     ``paperforge.worker._domain.export_collection_paths``.
     """
-    base_att_dir = read_zotero_base_attachment_path()
+    base_att_dir = read_zotero_base_attachment_path(zotero_dir)
 
     with open_zotero_snapshot_ro(zotero_dir) as (conn, bbt_conn):
         has_deleted_items = _table_exists(conn, "deletedItems")
