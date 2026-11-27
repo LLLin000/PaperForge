@@ -107,7 +107,7 @@ import {
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
 export interface ActiveBackgroundTask {
-  kind: "sync" | "ocr" | "embed" | "heal";
+  kind: "sync" | "ocr" | "embed" | "heal" | "runtime";
   label: string;
   current?: number;
   total?: number;
@@ -285,6 +285,17 @@ export default class PaperForgePlugin extends Plugin {
           job.kind === "runtime.repair"
         ) {
           if (!isActive) {
+            (
+              this._settingTab as unknown as {
+                onDaemonRuntimeJobFinished?: (
+                  succeeded: boolean,
+                  detail?: string
+                ) => void;
+              } | null
+            )?.onDaemonRuntimeJobFinished?.(
+              job.status === "succeeded",
+              String(job.error ?? "")
+            );
             this._settingTab?._refreshAllReadModels({ background: true });
           }
           this._refreshSettingTabIfOpen();
@@ -1556,14 +1567,17 @@ export default class PaperForgePlugin extends Plugin {
       });
     }
     for (const dj of this._daemonJobs.values()) {
+      const isRuntimeJob = dj.kind.startsWith("runtime.");
       const mappedKind: ActiveBackgroundTask["kind"] =
         dj.kind === "upgrade.heal"
           ? "heal"
-          : dj.kind === "ocr"
-            ? "ocr"
-            : dj.kind === "embed"
-              ? "embed"
-              : "sync";
+          : isRuntimeJob
+            ? "runtime"
+            : dj.kind === "ocr"
+              ? "ocr"
+              : dj.kind === "embed"
+                ? "embed"
+                : "sync";
       if (mappedKind !== "heal" && tasks.some((x) => x.kind === mappedKind)) {
         continue;
       }
@@ -1572,11 +1586,13 @@ export default class PaperForgePlugin extends Plugin {
         label:
           mappedKind === "heal"
             ? t("main_activity_heal")
-            : mappedKind === "ocr"
-              ? t("activity_ocr") || "Parsing fulltext"
-              : mappedKind === "embed"
-                ? t("activity_embed") || "Building embeddings"
-                : t("activity_syncing") || "Syncing library",
+            : mappedKind === "runtime"
+              ? t("activity_runtime_updating") || "Updating compute engine"
+              : mappedKind === "ocr"
+                ? t("activity_ocr") || "Parsing fulltext"
+                : mappedKind === "embed"
+                  ? t("activity_embed") || "Building embeddings"
+                  : t("activity_syncing") || "Syncing library",
         current: dj.total > 0 ? dj.current : undefined,
         total: dj.total > 0 ? dj.total : undefined,
         key: dj.item_id || undefined,

@@ -735,6 +735,9 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_installer_opened:
       "Automatic setup started in the background. You can keep reading; this panel will update automatically.",
     runtime_installer_failed: "Could not open the installer: {error}",
+    runtime_install_step_failed: "Runtime setup did not complete: {error}",
+    runtime_update_already_running:
+      "The compute engine is already updating in the background — syncing live progress…",
     runtime_install_complete: "Runtime ready.",
     setup_ready: "Foundation is ready.",
     setup_library_title: "Step 2: Connect Library",
@@ -1053,6 +1056,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_stale: "Cached probe data for {module} is stale.",
     cc_reason_invalid_response: "Probe response for {module} was invalid.",
     activity_syncing: "Syncing...",
+    activity_runtime_updating: "Updating compute engine...",
     activity_ocr_running: "Processing OCR... {pct}%",
     activity_ocr_running_noprogress: "Processing OCR...",
     cc_action_unknown_verb: "Unknown backend action: {verb}",
@@ -2548,6 +2552,8 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_installer_opened:
       "已在后台启动全自动配置，无需等待——你可以继续浏览文献，完成后此面板会自动更新。",
     runtime_installer_failed: "无法打开安装器：{error}",
+    runtime_install_step_failed: "运行环境安装未完成：{error}",
+    runtime_update_already_running: "后台已在自动更新计算引擎，正在同步进度…",
     runtime_install_complete: "运行环境已就绪。",
     setup_ready: "基础环境已就绪。",
     setup_library_title: "第 2 步：连接文献库",
@@ -2827,6 +2833,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_stale: "{module} 的检测数据已过期。",
     cc_reason_invalid_response: "{module} 的检测响应无效。",
     activity_syncing: "\u540C\u6B65\u4E2D...",
+    activity_runtime_updating: "正在自动更新计算引擎…",
     activity_ocr_running: "\u6B63\u5728\u5904\u7406 OCR... {pct}%",
     activity_ocr_running_noprogress: "\u6B63\u5728\u5904\u7406 OCR...",
     cc_action_unknown_verb: "\u672A\u77E5\u540E\u7AEF\u64CD\u4F5C: {verb}",

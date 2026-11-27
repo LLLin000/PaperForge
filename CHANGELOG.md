@@ -4,6 +4,17 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.9] - 2026-11-27
+
+### Single-Owner Runtime Installer & Daemon Coalescing
+
+- **Single-Owner Runtime Install/Update Orchestration**: Routed Obsidian Settings install/update/repair actions through the Rust daemon's coalesced `job.submit` (`runtime.*`) queue whenever native daemon RPC is available, attaching cleanly to in-progress background runtime updates and forwarding explicit proxy URL and CN mirror preferences into `runtime_ops` (`settings.ts`, `paperforge-client.ts`, `node-transport.ts`, `supervisor.rs`, `runtime_ops.rs`, `main.rs`).
+- **Dead-PID Lock Reclamation**: Upgraded `install_lock` in `paperforge/runtime_installer.py` to probe lock-holder PID liveness (`OpenProcess` on Windows, `os.kill(pid, 0)` on POSIX) and immediately reclaim stale locks left by dead processes instead of blocking for `LOCK_STALE_SECONDS`.
+- **Run-Offset Log Polling & Accurate Attribution**: Sliced `installer.log` reads from the active run's byte offset in `settings.ts`, kept polling active through transient concurrent lock contention until `runtime_ready` or a terminal outcome arrives, separated step execution errors from launcher spawn errors (`runtime_install_step_failed` vs `runtime_installer_failed`), and wired terminal daemon `runtime.*` push events directly to `onDaemonRuntimeJobFinished`.
+- **Activity Drawer Runtime Task Classification**: Classified daemon `runtime.*` jobs as `kind: "runtime"` with localized runtime updating labels instead of mislabeling them as library sync (`main.ts`, `i18n.ts`).
+
+---
+
 ## [2.0.8] - 2026-11-27
 
 ### Onboarding, System Proxy & Host Lifecycle Hardening

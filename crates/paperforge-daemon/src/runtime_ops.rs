@@ -487,23 +487,44 @@ fn resolve_effective_proxy_for_url(url: &str) -> Option<String> {
     resolve_effective_proxy()
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct RuntimeInstallOptions {
+    pub proxy_url: Option<String>,
+    pub prefer_cn_mirror: Option<bool>,
+}
+
 fn http_get_bytes_cancellable(
     url: &str,
     timeout_secs: u64,
     max_bytes: usize,
     cancel_flag: Option<&AtomicBool>,
 ) -> Result<Vec<u8>, String> {
+    http_get_bytes_cancellable_with_proxy(url, timeout_secs, max_bytes, cancel_flag, None)
+}
+
+fn http_get_bytes_cancellable_with_proxy(
+    url: &str,
+    timeout_secs: u64,
+    max_bytes: usize,
+    cancel_flag: Option<&AtomicBool>,
+    proxy_override: Option<&str>,
+) -> Result<Vec<u8>, String> {
     if is_cancelled(cancel_flag) {
         return Err("Runtime job cancelled".into());
     }
     let url_owned = url.to_string();
+    let explicit_proxy = proxy_override
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || {
         let mut builder = ureq::AgentBuilder::new()
             .timeout_connect(Duration::from_secs(10))
             .timeout_read(Duration::from_secs(timeout_secs))
             .timeout(Duration::from_secs(timeout_secs));
-        if let Some(trimmed) = resolve_effective_proxy_for_url(&url_owned) {
+        let chosen_proxy = explicit_proxy.or_else(|| resolve_effective_proxy_for_url(&url_owned));
+        if let Some(trimmed) = chosen_proxy {
             if let Ok(proxy) = ureq::Proxy::new(&trimmed) {
                 builder = builder.proxy(proxy);
             }
@@ -622,6 +643,7 @@ fn fetch_official_release_checksum(
     tags: &[String],
     asset_name: &str,
     cancel_flag: Option<&AtomicBool>,
+    proxy_override: Option<&str>,
 ) -> Option<(String, String)> {
     // Trust anchor: checksums.txt MUST come exclusively from official github.com,
     // NEVER from third-party mirrors (ghfast.top / gh-proxy.com).
@@ -630,7 +652,9 @@ fn fetch_official_release_checksum(
             return None;
         }
         let url = format!("https://github.com/{GITHUB_REPO}/releases/download/{tag}/checksums.txt");
-        if let Ok(bytes) = http_get_bytes_cancellable(&url, 20, MAX_CHECKSUMS_BYTES, cancel_flag) {
+        if let Ok(bytes) =
+            http_get_bytes_cancellable_with_proxy(&url, 20, MAX_CHECKSUMS_BYTES, cancel_flag, proxy_override)
+        {
             if let Ok(txt) = std::str::from_utf8(&bytes) {
                 if let Some(sha) = parse_checksum_for_asset(txt, asset_name) {
                     return Some((tag.clone(), sha));
@@ -642,6 +666,15 @@ fn fetch_official_release_checksum(
 }
 
 fn prefer_cn_mirrors() -> bool {
+    prefer_cn_mirrors_with_override(None)
+}
+
+fn prefer_cn_mirrors_with_override(override_val: Option<bool>) -> bool {
+    if let Some(explicit) = override_val {
+        if explicit {
+            return true;
+        }
+    }
     if env::var("PAPERFORGE_PREFER_CN_MIRROR")
         .map(|v| v.trim() == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
@@ -658,16 +691,20 @@ fn prefer_cn_mirrors() -> bool {
     false
 }
 
-fn github_candidate_urls(direct_url: &str) -> Vec<String> {
+fn github_candidate_urls_with_pref(direct_url: &str, prefer_cn: bool) -> Vec<String> {
     let mirrors = [
         format!("https://ghfast.top/{direct_url}"),
         format!("https://gh-proxy.com/{direct_url}"),
     ];
-    if prefer_cn_mirrors() {
+    if prefer_cn {
         vec![mirrors[0].clone(), mirrors[1].clone(), direct_url.to_string()]
     } else {
         vec![direct_url.to_string(), mirrors[0].clone(), mirrors[1].clone()]
     }
+}
+
+fn github_candidate_urls(direct_url: &str) -> Vec<String> {
+    github_candidate_urls_with_pref(direct_url, prefer_cn_mirrors())
 }
 
 fn sha256_lower(bytes: &[u8]) -> String {
@@ -724,6 +761,8 @@ fn find_or_install_uv(
     home: &Path,
     log_path: &Path,
     cancel_flag: Option<&AtomicBool>,
+    proxy_override: Option<&str>,
+    prefer_cn: bool,
 ) -> Result<PathBuf, String> {
     if is_cancelled(cancel_flag) {
         return Err("Runtime job cancelled".into());
@@ -745,7 +784,7 @@ fn find_or_install_uv(
     let (asset, expected_sha, kind) =
         uv_target_asset_and_sha().ok_or_else(|| "Unsupported OS/architecture for uv".to_string())?;
     let direct_url = format!("https://github.com/astral-sh/uv/releases/download/{UV_VERSION}/{asset}");
-    let urls = github_candidate_urls(&direct_url);
+    let urls = github_candidate_urls_with_pref(&direct_url, prefer_cn);
 
     let mut archive_bytes: Option<Vec<u8>> = None;
     for url in &urls {
@@ -753,7 +792,9 @@ fn find_or_install_uv(
             return Err("Runtime job cancelled".into());
         }
         append_log(log_path, &format!("[PaperForge] Downloading uv ({UV_VERSION}) from {url} ..."));
-        if let Ok(bytes) = http_get_bytes_cancellable(url, 60, MAX_ARCHIVE_BYTES, cancel_flag) {
+        if let Ok(bytes) =
+            http_get_bytes_cancellable_with_proxy(url, 60, MAX_ARCHIVE_BYTES, cancel_flag, proxy_override)
+        {
             let actual = sha256_lower(&bytes);
             if actual == expected_sha {
                 archive_bytes = Some(bytes);
@@ -892,6 +933,27 @@ pub fn install_runtime_native_cancellable<F>(
 where
     F: Fn(&str, i64, i64),
 {
+    install_runtime_native_with_opts(
+        action,
+        version,
+        &RuntimeInstallOptions::default(),
+        cancel_flag,
+        active_child_pid,
+        on_phase,
+    )
+}
+
+pub fn install_runtime_native_with_opts<F>(
+    action: &str,
+    version: &str,
+    opts: &RuntimeInstallOptions,
+    cancel_flag: Option<&AtomicBool>,
+    active_child_pid: Option<&AtomicU32>,
+    on_phase: F,
+) -> Result<PathBuf, String>
+where
+    F: Fn(&str, i64, i64),
+{
     let home = user_home_dir()?;
     let log_path = installer_log_path(&home);
     if let Ok(meta) = fs::metadata(&log_path) {
@@ -911,6 +973,12 @@ where
     } else {
         format!("paperforge[vector]=={pep440}")
     };
+    let explicit_proxy = opts
+        .proxy_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let prefer_cn = prefer_cn_mirrors_with_override(opts.prefer_cn_mirror);
 
     let rt_root = home.join(".paperforge").join("runtime");
     let cache_dir = rt_root.join("cache").join("uv");
@@ -923,11 +991,13 @@ where
 
     let res: Result<PathBuf, String> = (|| {
         on_phase("downloading_uv", 1, 5);
-        let uv_bin = find_or_install_uv(&home, &log_path, cancel_flag)?;
+        let uv_bin = find_or_install_uv(&home, &log_path, cancel_flag, explicit_proxy, prefer_cn)?;
 
         let cache_str = cache_dir.to_string_lossy().into_owned();
         let py_dir_str = py_dir.to_string_lossy().into_owned();
-        let os_proxy_fallback = if resolve_proxy_from_env().is_none() {
+        let os_proxy_fallback = if explicit_proxy.is_some() {
+            None
+        } else if resolve_proxy_from_env().is_none() {
             detect_os_system_proxy()
         } else {
             None
@@ -938,11 +1008,15 @@ where
             ("UV_LINK_MODE", "hardlink"),
             ("UV_PYTHON_DOWNLOADS", "automatic"),
         ];
-        if let Some(ref px) = os_proxy_fallback {
-            base_envs.push(("HTTPS_PROXY", px.as_str()));
-            base_envs.push(("HTTP_PROXY", px.as_str()));
-            base_envs.push(("https_proxy", px.as_str()));
-            base_envs.push(("http_proxy", px.as_str()));
+        if prefer_cn {
+            base_envs.push(("PAPERFORGE_PREFER_CN_MIRROR", "1"));
+        }
+        if let Some(px) = explicit_proxy.or(os_proxy_fallback.as_deref()) {
+            base_envs.push(("PAPERFORGE_PROXY", px));
+            base_envs.push(("HTTPS_PROXY", px));
+            base_envs.push(("HTTP_PROXY", px));
+            base_envs.push(("https_proxy", px));
+            base_envs.push(("http_proxy", px));
             base_envs.push(("NO_PROXY", "localhost,127.0.0.1,::1"));
             base_envs.push(("no_proxy", "localhost,127.0.0.1,::1"));
         }
@@ -954,7 +1028,7 @@ where
             "UV_PYTHON_INSTALL_MIRROR",
             "https://registry.npmmirror.com/-/binary/python-build-standalone",
         ));
-        let py_attempts: [&[(&str, &str)]; 2] = if prefer_cn_mirrors() {
+        let py_attempts: [&[(&str, &str)]; 2] = if prefer_cn {
             [cn_py_envs.as_slice(), base_envs.as_slice()]
         } else {
             [base_envs.as_slice(), cn_py_envs.as_slice()]
@@ -1008,7 +1082,7 @@ where
             let wheel_file = wheel_dir.join(&wheel_name);
             let tags = candidate_release_tags(clean_tag, &pep440);
             let official_checksum =
-                fetch_official_release_checksum(&tags, &wheel_name, cancel_flag);
+                fetch_official_release_checksum(&tags, &wheel_name, cancel_flag, explicit_proxy);
 
             if wheel_file.is_file() {
                 let valid_cached = fs::read(&wheel_file)
@@ -1033,14 +1107,18 @@ where
                     let w_direct = format!(
                         "https://github.com/{GITHUB_REPO}/releases/download/{verified_tag}/{wheel_name}"
                     );
-                    for wu in github_candidate_urls(&w_direct) {
+                    for wu in github_candidate_urls_with_pref(&w_direct, prefer_cn) {
                         if is_cancelled(cancel_flag) {
                             return Err("Runtime job cancelled".into());
                         }
                         append_log(&log_path, &format!("[PaperForge] Downloading wheel {wu} ..."));
-                        if let Ok(bytes) =
-                            http_get_bytes_cancellable(&wu, 60, MAX_ARCHIVE_BYTES, cancel_flag)
-                        {
+                        if let Ok(bytes) = http_get_bytes_cancellable_with_proxy(
+                            &wu,
+                            60,
+                            MAX_ARCHIVE_BYTES,
+                            cancel_flag,
+                            explicit_proxy,
+                        ) {
                             let actual_sha = sha256_lower(&bytes);
                             if actual_sha != expected_sha {
                                 append_log(

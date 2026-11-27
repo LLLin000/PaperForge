@@ -174,10 +174,19 @@ fn dispatch_request(
                     .get("version")
                     .and_then(|v| v.as_str())
                     .unwrap_or(PF_VERSION);
+                let opts = runtime_ops::RuntimeInstallOptions {
+                    proxy_url: req
+                        .get("proxy_url")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .map(|s| s.to_string()),
+                    prefer_cn_mirror: req.get("prefer_cn_mirror").and_then(|v| v.as_bool()),
+                };
                 return DispatchOutcome::Immediate(
                     json_ok_resp(
                         id,
-                        daemon.submit_runtime_job(vault_path.as_deref(), action, ver),
+                        daemon.submit_runtime_job_with_opts(vault_path.as_deref(), action, ver, opts),
                     ),
                     false,
                 );

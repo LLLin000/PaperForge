@@ -176,6 +176,7 @@ import { processProgressChunk } from "./services/progress-parser";
 import type { RuntimeInstallerAction } from "./services/runtime-installer-launcher";
 import {
   INSTALLER_FAILED_MARKER,
+  installerLogPath,
   runtimeInstallerSteps,
 } from "./services/runtime-installer-launcher";
 import type { ActionRequest } from "./client/action-contract";
@@ -299,6 +300,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupReinstallRequested = false;
   /** Log of the installer launched from this panel (null before any launch). */
   private _installerLogPath: string | null = null;
+  /** Byte offset in installer.log when this run started (-1 = attaching mid-run). */
+  private _installerLogStartOffset = 0;
+  /** True when the active install/update is owned by the native Rust daemon queue. */
+  private _daemonDrivenRuntimeInstall = false;
   /** #87: Selected optional capabilities. */
   _setupOptionals: Record<string, boolean> = {
     ocr: false,
@@ -1237,13 +1242,55 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return manifest?.minEngineVersion || undefined;
   }
 
-  /** Open the background installer and watch the published pointer. */
+  private _captureInstallerLogStartOffset(logPath: string): number {
+    try {
+      return fs.statSync(logPath).size;
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Attach Settings progress UI if a daemon background runtime job is already active. */
+  private _syncRuntimePollFromBackground(): boolean {
+    if (this._runtimePollTimer) return true;
+    if (!this.plugin?.isRuntimeUpdating?.()) return false;
+    this._daemonDrivenRuntimeInstall = true;
+    this._installerLogPath = installerLogPath();
+    this._installerLogStartOffset = -1;
+    if (this._setupOperation === "idle") this._setupOperation = "running";
+    this._pollRuntimeUntilReady();
+    return true;
+  }
+
+  /** Fast-path transition invoked by main.ts when daemon task.updated reports terminal runtime state. */
+  onDaemonRuntimeJobFinished(succeeded: boolean, errorDetail?: string): void {
+    if (!this._daemonDrivenRuntimeInstall && !this._runtimePollTimer) return;
+    if (succeeded) {
+      this._refreshRuntimeStatus(true);
+      this._stopRuntimePoll(true);
+      return;
+    }
+    this._stopRuntimePoll(
+      false,
+      undefined,
+      errorDetail || this._installerLogTail() || "runtime setup failed",
+      "runtime_install_step_failed"
+    );
+  }
+
+  /** Launch or attach to the single runtime installer owner (Rust daemon coalesced queue first). */
   private _launchRuntimeInstaller(
     action: RuntimeInstallerAction,
     opts?: { autoContinueSetup?: boolean }
   ): void {
     if (opts?.autoContinueSetup) {
       this._autoContinueSetupAfterInstall = true;
+    }
+    if (this.plugin?.isRuntimeUpdating?.()) {
+      this._syncRuntimePollFromBackground();
+      new Notice(t("runtime_update_already_running"), 8000);
+      this.display();
+      return;
     }
     const isZh = getActiveLang(this.app) === "zh";
     const launchOpts: {
@@ -1257,6 +1304,68 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (isZh) {
       launchOpts.preferCnMirror = true;
     }
+    const client = this.getClient();
+    if (
+      typeof client.hasDaemonRpc === "function" &&
+      client.hasDaemonRpc() &&
+      typeof client.daemonSubmitRuntimeJob === "function"
+    ) {
+      const logPath = installerLogPath();
+      this._installerLogPath = logPath;
+      this._installerLogStartOffset =
+        this._captureInstallerLogStartOffset(logPath);
+      this._daemonDrivenRuntimeInstall = true;
+      if (this._setupOperation === "idle") this._setupOperation = "running";
+      this._pollRuntimeUntilReady();
+      this.display();
+      void client
+        .daemonSubmitRuntimeJob(action, this.plugin.manifest.version, {
+          proxyUrl: launchOpts.proxyUrl,
+          preferCnMirror: launchOpts.preferCnMirror,
+        })
+        .then(
+          (res) => {
+            if (res?.accepted) {
+              new Notice(
+                res.coalesced
+                  ? t("runtime_update_already_running")
+                  : t("runtime_installer_opened"),
+                8000
+              );
+              return;
+            }
+            this._daemonDrivenRuntimeInstall = false;
+            if (this._runtimePollTimer) {
+              clearInterval(this._runtimePollTimer);
+              this._runtimePollTimer = null;
+            }
+            this._launchDetachedInstallerFallback(action, launchOpts);
+          },
+          () => {
+            this._daemonDrivenRuntimeInstall = false;
+            if (this._runtimePollTimer) {
+              clearInterval(this._runtimePollTimer);
+              this._runtimePollTimer = null;
+            }
+            this._launchDetachedInstallerFallback(action, launchOpts);
+          }
+        );
+      return;
+    }
+    this._launchDetachedInstallerFallback(action, launchOpts);
+  }
+
+  private _launchDetachedInstallerFallback(
+    action: RuntimeInstallerAction,
+    launchOpts: {
+      allowUvDownload: boolean;
+      proxyUrl?: string;
+      preferCnMirror?: boolean;
+    }
+  ): void {
+    const defaultLog = installerLogPath();
+    this._installerLogStartOffset =
+      this._captureInstallerLogStartOffset(defaultLog);
     const result = this.getClient().launchRuntimeInstaller(
       action,
       this.plugin.manifest.version,
@@ -1275,11 +1384,45 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.display();
       return;
     }
-    this._installerLogPath = result.logPath ?? null;
+    const chosenLog = result.logPath ?? defaultLog;
+    if (chosenLog !== defaultLog) {
+      this._installerLogStartOffset =
+        this._captureInstallerLogStartOffset(chosenLog);
+    }
+    this._installerLogPath = chosenLog;
     new Notice(t("runtime_installer_opened"), 8000);
     if (this._setupOperation === "idle") this._setupOperation = "running";
     this._pollRuntimeUntilReady();
     this.display();
+  }
+
+  /** Read installer.log strictly from the start of the active run (never stale prior errors). */
+  private _readInstallerLogSinceStart(): string {
+    if (!this._installerLogPath) return "";
+    try {
+      const buf = fs.readFileSync(this._installerLogPath);
+      if (this._installerLogStartOffset < 0) {
+        const full = buf.toString("utf-8");
+        const markers = [
+          "[PaperForge] Publishing verified runtime environment",
+          "[PaperForge] Installing managed Python",
+          "[PaperForge] Downloading uv",
+        ];
+        let cutIdx = -1;
+        for (const m of markers) {
+          const idx = full.lastIndexOf(m);
+          if (idx > cutIdx) cutIdx = idx;
+        }
+        return cutIdx >= 0 ? full.slice(cutIdx) : full.slice(-4096);
+      }
+      const slice =
+        buf.length >= this._installerLogStartOffset
+          ? buf.subarray(this._installerLogStartOffset)
+          : buf;
+      return slice.toString("utf-8");
+    } catch {
+      return "";
+    }
   }
 
   /** Poll while the installer window runs; stop on ready or after 25 min
@@ -1292,14 +1435,31 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._stopRuntimePoll(true);
         return;
       }
-      // The installer prints its own outcome: waiting out the full budget
-      // after it already died only hides the reason for 25 minutes.
-      if (this._installerLogTail().includes(INSTALLER_FAILED_MARKER)) {
-        this._stopRuntimePoll(false);
+      const logSinceStart = this._readInstallerLogSinceStart();
+      // If another installer already holds install.lock and is finishing, keep polling
+      // instead of aborting early — runtime_ready will flip true when it finishes.
+      const lockContentionOnly = logSinceStart.includes(
+        "Another PaperForge runtime install is already running"
+      );
+      if (
+        logSinceStart.includes(INSTALLER_FAILED_MARKER) &&
+        !lockContentionOnly
+      ) {
+        this._stopRuntimePoll(
+          false,
+          undefined,
+          undefined,
+          "runtime_install_step_failed"
+        );
         return;
       }
       if (Date.now() - startedAt > 25 * 60 * 1000) {
-        this._stopRuntimePoll(false);
+        this._stopRuntimePoll(
+          false,
+          undefined,
+          undefined,
+          "runtime_install_step_failed"
+        );
         return;
       }
       this._refreshRuntimeStatus(true);
@@ -1309,70 +1469,60 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** The installer's current phase translated into beginner-friendly progress text. */
   private _installerProgressLine(): string {
-    if (!this._installerLogPath) return "";
-    try {
-      const lines = fs
-        .readFileSync(this._installerLogPath, "utf-8")
-        .split(/\r?\n/)
-        .filter((line) => line.trim());
-      const isZh = t("nav_close") === "关闭";
-      for (let i = lines.length - 1; i >= 0 && i > lines.length - 60; i -= 1) {
-        const line = lines[i].trim();
-        if (
-          line.includes("Installing paperforge") ||
-          (line.startsWith("Downloading ") &&
-            !line.includes("uv") &&
-            !line.includes("wheel"))
-        ) {
-          return isZh
-            ? "阶段 4/5：正在自动配置 PaperForge 核心与 AI 组件…"
-            : "Step 4/5: Installing PaperForge core & AI dependencies…";
-        }
-        if (line.includes("Downloading wheel")) {
-          return isZh
-            ? "阶段 3/5：正在下载 PaperForge 计算引擎…"
-            : "Step 3/5: Downloading PaperForge compute package…";
-        }
-        if (line.includes("Installing managed Python")) {
-          return isZh
-            ? "阶段 2/5：正在自动配置独立运行环境（无需手动安装）…"
-            : "Step 2/5: Provisioning isolated Python runtime automatically…";
-        }
-        if (line.includes("Portable uv ready")) {
-          return isZh
-            ? "阶段 1/5：自动安装器已就绪，即将配置运行环境…"
-            : "Step 1/5: Automatic bootstrapper ready…";
-        }
-        if (line.includes("Downloading uv")) {
-          return isZh
-            ? "阶段 1/5：正在准备零依赖自动安装器…"
-            : "Step 1/5: Preparing zero-dependency automatic bootstrapper…";
-        }
-        if (
-          /^\[PaperForge\]|^Collecting |^Installing collected|^Successfully installed/.test(
-            line
-          )
-        ) {
-          return isZh
-            ? "正在后台自动安装与自检组件，请稍候…"
-            : "Completing automatic background setup and verification…";
-        }
+    const raw = this._readInstallerLogSinceStart();
+    if (!raw) return "";
+    const lines = raw.split(/\r?\n/).filter((line) => line.trim());
+    const isZh = t("nav_close") === "关闭";
+    for (let i = lines.length - 1; i >= 0 && i > lines.length - 60; i -= 1) {
+      const line = lines[i].trim();
+      if (
+        line.includes("Installing paperforge") ||
+        (line.startsWith("Downloading ") &&
+          !line.includes("uv") &&
+          !line.includes("wheel"))
+      ) {
+        return isZh
+          ? "阶段 4/5：正在自动配置 PaperForge 核心与 AI 组件…"
+          : "Step 4/5: Installing PaperForge core & AI dependencies…";
       }
-    } catch {
-      // The log appears only once the installer starts.
+      if (line.includes("Downloading wheel")) {
+        return isZh
+          ? "阶段 3/5：正在下载 PaperForge 计算引擎…"
+          : "Step 3/5: Downloading PaperForge compute package…";
+      }
+      if (line.includes("Installing managed Python")) {
+        return isZh
+          ? "阶段 2/5：正在自动配置独立运行环境（无需手动安装）…"
+          : "Step 2/5: Provisioning isolated Python runtime automatically…";
+      }
+      if (line.includes("Portable uv ready")) {
+        return isZh
+          ? "阶段 1/5：自动安装器已就绪，即将配置运行环境…"
+          : "Step 1/5: Automatic bootstrapper ready…";
+      }
+      if (line.includes("Downloading uv")) {
+        return isZh
+          ? "阶段 1/5：正在准备零依赖自动安装器…"
+          : "Step 1/5: Preparing zero-dependency automatic bootstrapper…";
+      }
+      if (
+        /^\[PaperForge\]|^Collecting |^Installing collected|^Successfully installed/.test(
+          line
+        )
+      ) {
+        return isZh
+          ? "正在后台自动安装与自检组件，请稍候…"
+          : "Completing automatic background setup and verification…";
+      }
     }
     return "";
   }
 
   /** Last lines the detached installer wrote (empty when unreadable). */
   private _installerLogTail(): string {
-    if (!this._installerLogPath) return "";
-    try {
-      const text = fs.readFileSync(this._installerLogPath, "utf-8");
-      return text.trim().split(/\r?\n/).slice(-6).join(" | ");
-    } catch {
-      return "";
-    }
+    const raw = this._readInstallerLogSinceStart();
+    if (!raw) return "";
+    return raw.trim().split(/\r?\n/).slice(-6).join(" | ");
   }
 
   isRuntimeInstallPollingActive(): boolean {
@@ -1383,11 +1533,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._launchRuntimeInstaller("update");
   }
 
-  private _stopRuntimePoll(ready: boolean, cancelReason?: string): void {
+  private _stopRuntimePoll(
+    ready: boolean,
+    cancelReason?: string,
+    errorDetailOverride?: string,
+    templateKey:
+      | "runtime_install_step_failed"
+      | "runtime_installer_failed" = "runtime_install_step_failed"
+  ): void {
     if (this._runtimePollTimer) {
       clearInterval(this._runtimePollTimer);
       this._runtimePollTimer = null;
     }
+    this._daemonDrivenRuntimeInstall = false;
     if (this._setupOperation === "running") {
       this._setupOperation = cancelReason ? "idle" : ready ? "idle" : "failed";
       if (!ready) {
@@ -1397,8 +1555,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           // Say why the poll gave up: a template with an empty slot tells the
           // user nothing and hides the failing command's own message.
           const detail =
-            this._runtimeStatusError || this._installerLogTail() || "";
-          this._setupFeedback = t("runtime_installer_failed").replace(
+            errorDetailOverride ||
+            this._runtimeStatusError ||
+            this._installerLogTail() ||
+            "";
+          this._setupFeedback = t(templateKey).replace(
             "{error}",
             detail || "the runtime did not become ready in time"
           );
@@ -1610,11 +1771,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       : runtime?.version_matches_expected === false
         ? "update"
         : "repair";
+    const runtimeInProgress =
+      this._syncRuntimePollFromBackground() || Boolean(this._runtimePollTimer);
     if (!runtimeReady) {
-      if (this._runtimePollTimer) {
+      if (runtimeInProgress) {
         body.createEl("p", {
           cls: "pf-setup-status",
-          text: t("runtime_installing"),
+          text: this._installerProgressLine() || t("runtime_installing"),
         });
         renderActionButton(body, {
           label: t("runtime_cancel_btn"),
@@ -6019,8 +6182,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     updateReadySummary();
 
     // Seamless Engine Auto-Pipeline notice/progress inside Card 1
+    const expressRuntimeInProgress =
+      !rtReady &&
+      (this._syncRuntimePollFromBackground() ||
+        Boolean(this._runtimePollTimer));
     if (!rtReady) {
-      if (this._runtimePollTimer) {
+      if (expressRuntimeInProgress) {
         const prog = this._installerProgressLine();
         const pct = prog.includes("4/5")
           ? 80
@@ -6988,7 +7155,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: t("runtime_installer_hint"),
         cls: "setting-item-description",
       });
-      if (this._runtimePollTimer) {
+      const stageRuntimeInProgress =
+        this._syncRuntimePollFromBackground() ||
+        Boolean(this._runtimePollTimer);
+      if (stageRuntimeInProgress) {
         containerEl.createEl("p", {
           cls: "pf-setup-status",
           text: t("runtime_installing"),

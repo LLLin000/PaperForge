@@ -475,3 +475,26 @@ def test_pip_mirror_fallback_enforces_tls_no_trusted_host(tmp_path: Path, monkey
     assert len(recorded_cmds) >= 2
     assert all("--trusted-host" not in cmd for cmd in recorded_cmds)
 
+
+def test_install_lock_reclaims_dead_pid_and_blocks_live_pid(tmp_path: Path, monkeypatch) -> None:
+    rdir = pointer_dir(tmp_path)
+    rdir.mkdir(parents=True, exist_ok=True)
+    lock_file = rdir / runtime_installer.LOCK_NAME
+
+    # Dead PID lock created just now must be reclaimed immediately rather than blocking for 1 hour.
+    lock_file.write_text("999999999 9999999999\n", encoding="utf-8")
+    monkeypatch.setattr(runtime_installer, "_is_pid_alive", lambda pid: pid == os.getpid())
+    with runtime_installer.install_lock(rdir):
+        assert str(os.getpid()) in lock_file.read_text(encoding="utf-8")
+    assert not lock_file.exists()
+
+    # Live PID lock must still block concurrent installers.
+    lock_file.write_text(f"{os.getpid()} {int(__import__('time').time())}\n", encoding="utf-8")
+    try:
+        with __import__("pytest").raises(runtime_installer.RuntimeInstallError, match="already running"):
+            with runtime_installer.install_lock(rdir):
+                pass
+    finally:
+        lock_file.unlink(missing_ok=True)
+
+
