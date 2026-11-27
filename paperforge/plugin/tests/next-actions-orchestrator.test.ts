@@ -18,10 +18,16 @@ import {
   resetNextActionTracker,
   type NextAction,
 } from "../src/services/next-actions-types";
-import { orchestrateFromSync } from "../src/services/next-actions-bridge";
+import {
+  orchestrateFromSync,
+  resetPendingNoticeDedupeForTest,
+} from "../src/services/next-actions-bridge";
 import { Notice } from "obsidian";
 
-beforeEach(() => resetNextActionTracker());
+beforeEach(() => {
+  resetNextActionTracker();
+  resetPendingNoticeDedupeForTest();
+});
 
 function action(overrides: Partial<NextAction> = {}): NextAction {
   return {
@@ -284,6 +290,40 @@ describe("sync bridge consent boundary", () => {
     expect(Notice).toHaveBeenCalledTimes(1);
     expect(vi.mocked(Notice).mock.calls[0][0]).toContain("require review");
     expect(vi.mocked(Notice).mock.calls[0][0]).not.toContain("ready");
+  });
+  it("suppresses pending notices when silentPending is true or only ocr.run is pending, and deduplicates identical pending signatures", async () => {
+    vi.mocked(Notice).mockClear();
+    const runAction = vi.fn();
+
+    // 1. silentPending=true (background convergence auto-sync) -> zero popups
+    await orchestrateFromSync(
+      JSON.stringify({
+        next_actions: [action({ action_id: "embed.build", automatic: false })],
+      }),
+      { runAction, silentPending: true }
+    );
+    expect(Notice).not.toHaveBeenCalled();
+
+    // 2. Routine ocr.run pending only -> zero popups even when silentPending is unset
+    await orchestrateFromSync(
+      JSON.stringify({
+        next_actions: [action({ action_id: "ocr.run", automatic: false })],
+      }),
+      { runAction }
+    );
+    expect(Notice).not.toHaveBeenCalled();
+
+    // 3. Repeated calls with identical non-routine pending actions -> popup at most once
+    const payload = JSON.stringify({
+      next_actions: [
+        action({ action_id: "embed.build", automatic: false }),
+        action({ action_id: "embed.resume", automatic: false }),
+      ],
+    });
+    await orchestrateFromSync(payload, { runAction });
+    await orchestrateFromSync(payload, { runAction });
+    await orchestrateFromSync(payload, { runAction });
+    expect(Notice).toHaveBeenCalledTimes(1);
   });
   it("runs automatic work and leaves consent-required work pending", async () => {
     const runAction = vi.fn(async () => ({

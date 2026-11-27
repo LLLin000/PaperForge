@@ -1435,6 +1435,54 @@ mod tests {
     }
 
     #[test]
+    fn base_snapshot_uses_workspace_registry_when_papers_unbuilt_before_memory_build() {
+        let tmp = env::temp_dir().join(format!("pf_ssot_ws_reg_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let idx = tmp.join(".paperforge").join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+
+        fs::write(
+            idx.join("formal-library.json"),
+            serde_json::to_string(&json!({
+                "items": [
+                    { "zotero_key": "LIVE01", "title": "Synced Paper", "domain": "Sports", "has_pdf": true },
+                    { "zotero_key": "ORPHAN99", "title": "Deleted Paper", "domain": "Sports", "has_pdf": true }
+                ]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, has_pdf INTEGER, ocr_status TEXT);
+             CREATE TABLE workspace_registry (zotero_key TEXT PRIMARY KEY, main_note_relpath TEXT, domain TEXT, title TEXT);
+             INSERT INTO workspace_registry VALUES ('LIVE01', 'Resources/Literature/Sports/LIVE01.md', 'Sports', 'Synced Paper');",
+        )
+        .unwrap();
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 15,
+                "vault": tmp.to_string_lossy(),
+                "argv": ["memory-card", "base-snapshot", "--json"],
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let env: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(env["data"]["state_authority"], "sqlite");
+        let rows = env["data"]["rows"].as_object().unwrap();
+        assert!(rows.contains_key("LIVE01"));
+        assert_eq!(rows["LIVE01"]["has_pdf"], true);
+        assert!(!rows.contains_key("ORPHAN99"));
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
     fn engine_resolve_key_falls_back_to_sqlite_beyond_2048_cache_limit() {
         let tmp = env::temp_dir().join(format!("pf_resolve_2048_{}", std::process::id()));
         let _ = fs::remove_dir_all(&tmp);

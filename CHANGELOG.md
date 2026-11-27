@@ -4,6 +4,16 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.10] - 2026-11-27
+
+### Base Snapshot PDF Flag Fix & Live Backend-to-Frontend Progress Visibility
+
+- **Zero-Python Base Snapshot PDF Fix (`query_ops.rs`, `paperforge-base-view.ts`)**: Populated `base-snapshot` rows from SQLite `workspace_registry` whenever the `papers` table exists but has not yet been built by `memory.build`, preserving `has_pdf` flags from the canonical index and note frontmatter (`note.has_pdf`) instead of falling back to 0 rows and false missing-PDF banners.
+- **End-to-End Live Step Telemetry & 1s Elapsed Heartbeat (`sync_service.py`, `supervisor.rs`, `feedback.ts`, `main.ts`, `settings.ts`, `setup-decision-tree.ts`)**: Streamed out-of-band `PF_PROGRESS:` step phases on `stderr` during Python `sync` and relayed throttled `task.updated` events through Rust daemon `cli.run` without altering JSON `stdout`; rendered determinate/indeterminate progress bars, localized current steps (`1/5`–`5/5`), and live elapsed counters across the Overview Hero Card, bottom Status Bar, and Status Popover.
+- **Sync State & Follow-up Toast Clarity (`next-actions-bridge.ts`, `setup-decision-tree.ts`, `settings.ts`, `main.ts`)**: Distinguished `library_syncing` and `library_sync_needed` (`library.index_stale`) from genuine `library_sync_error` failures, guarded `_runManualSync` against duplicate launches, suppressed repetitive `"follow-up actions require review"` popup stacking during auto-sync and routine `ocr.run` queues, and surfaced background daemon/runtime auto-update start and completion notices.
+
+---
+
 ## [2.0.9] - 2026-11-27
 
 ### Single-Owner Runtime Installer & Daemon Coalescing

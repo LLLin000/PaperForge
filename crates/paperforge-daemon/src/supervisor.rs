@@ -1702,6 +1702,11 @@ impl NativeControlDaemon {
             .stderr(Stdio::piped());
         configure_worker_command(&mut cmd);
 
+        let is_sync_cmd = argv.first().map(|s| s.as_str()) == Some("sync");
+        let vkey_str = vault.map(Self::norm_vault).unwrap_or_default();
+        let sync_job_id = format!("cli_sync_{}_{}", std::process::id(), now_unix_secs());
+        let sync_started_at = now_unix_secs();
+
         let outcome = match cmd.spawn() {
             Ok(mut child) => {
                 attach_child_to_job(&child);
@@ -1712,13 +1717,117 @@ impl NativeControlDaemon {
                         let _ = sin.write_all(secret_in.as_bytes());
                     }
                 }
-                let res = match child.wait_with_output() {
-                    Ok(out) => (
-                        out.status.code().unwrap_or(1),
-                        String::from_utf8_lossy(&out.stdout).into_owned(),
-                        String::from_utf8_lossy(&out.stderr).into_owned(),
-                    ),
-                    Err(e) => (1, String::new(), format!("Python worker IO error: {e}")),
+                let res = if is_sync_cmd {
+                    let v_opt = if vkey_str.is_empty() { None } else { Some(vkey_str.as_str()) };
+                    self.emit_push(
+                        "task.updated",
+                        v_opt,
+                        json!({
+                            "job_id": sync_job_id,
+                            "kind": "sync",
+                            "status": "running",
+                            "current": 0,
+                            "total": 5,
+                            "phase": "starting",
+                            "item_id": "",
+                            "vault": vkey_str,
+                            "started_at": sync_started_at,
+                        }),
+                    );
+                    let out_pipe = child.stdout.take();
+                    let err_pipe = child.stderr.take();
+                    let out_thread = out_pipe.map(|mut op| {
+                        thread::spawn(move || {
+                            use std::io::Read;
+                            let mut buf = Vec::new();
+                            let _ = op.read_to_end(&mut buf);
+                            String::from_utf8_lossy(&buf).into_owned()
+                        })
+                    });
+                    let mut stderr_clean = String::new();
+                    let mut last_phase = String::from("starting");
+                    let mut last_cur: i64 = 0;
+                    let mut last_tot: i64 = 5;
+                    let mut last_emit = Instant::now();
+                    if let Some(ep) = err_pipe {
+                        let reader = BufReader::new(ep);
+                        for line in reader.lines().map_while(Result::ok) {
+                            if let Some(raw_json) = line.strip_prefix("PF_PROGRESS:") {
+                                if let Ok(ev) = serde_json::from_str::<Value>(raw_json.trim()) {
+                                    let phase = ev
+                                        .get("phase")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("starting")
+                                        .to_string();
+                                    let cur = ev.get("current").and_then(|v| v.as_i64()).unwrap_or(last_cur);
+                                    let tot = ev.get("total").and_then(|v| v.as_i64()).unwrap_or(5);
+                                    let detail = ev
+                                        .get("detail")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("")
+                                        .to_string();
+                                    if phase != last_phase || last_emit.elapsed() >= Duration::from_millis(120) {
+                                        last_phase = phase.clone();
+                                        last_cur = cur;
+                                        last_tot = tot;
+                                        last_emit = Instant::now();
+                                        self.emit_push(
+                                            "task.updated",
+                                            v_opt,
+                                            json!({
+                                                "job_id": sync_job_id,
+                                                "kind": "sync",
+                                                "status": "running",
+                                                "current": cur,
+                                                "total": tot,
+                                                "phase": phase,
+                                                "item_id": detail,
+                                                "vault": vkey_str,
+                                                "started_at": sync_started_at,
+                                            }),
+                                        );
+                                    }
+                                    continue;
+                                }
+                            }
+                            stderr_clean.push_str(&line);
+                            stderr_clean.push('\n');
+                        }
+                    }
+                    let rc = child
+                        .wait()
+                        .ok()
+                        .and_then(|s| s.code())
+                        .unwrap_or(1);
+                    let stdout_str = out_thread
+                        .and_then(|t| t.join().ok())
+                        .unwrap_or_default();
+                    self.emit_push(
+                        "task.updated",
+                        v_opt,
+                        json!({
+                            "job_id": sync_job_id,
+                            "kind": "sync",
+                            "status": if rc == 0 { "succeeded" } else { "failed" },
+                            "current": last_tot,
+                            "total": last_tot,
+                            "phase": "done",
+                            "item_id": "",
+                            "vault": vkey_str,
+                            "started_at": sync_started_at,
+                            "finished_at": now_unix_secs(),
+                        }),
+                    );
+                    (rc, stdout_str, stderr_clean)
+                } else {
+                    match child.wait_with_output() {
+                        Ok(out) => (
+                            out.status.code().unwrap_or(1),
+                            String::from_utf8_lossy(&out.stdout).into_owned(),
+                            String::from_utf8_lossy(&out.stderr).into_owned(),
+                        ),
+                        Err(e) => (1, String::new(), format!("Python worker IO error: {e}")),
+                    }
                 };
                 self.inner.lock().unwrap().delegated_pids.remove(&pid);
                 res

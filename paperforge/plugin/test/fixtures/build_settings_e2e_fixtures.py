@@ -53,9 +53,14 @@ def _build_fresh_vault(vault: Path) -> None:
 
 def _build_zotero_fixture(zdir: Path) -> None:
     _reset_dir(zdir)
-    storage = zdir / "storage" / "ATT00001"
-    storage.mkdir(parents=True, exist_ok=True)
-    (storage / "hydrogel.pdf").write_bytes(b"%PDF-1.4\n% PaperForge E2E tiny PDF\n")
+    for att_dir, pdf_name in (
+        ("ATT00001", "hydrogel.pdf"),
+        ("ATT00003", "rotator_cuff.pdf"),
+        ("ATT00004", "运动医学_肩袖修复.pdf"),
+    ):
+        storage = zdir / "storage" / att_dir
+        storage.mkdir(parents=True, exist_ok=True)
+        (storage / pdf_name).write_bytes(b"%PDF-1.4\n% PaperForge E2E tiny PDF\n")
 
     conn = sqlite3.connect(str(zdir / "zotero.sqlite"))
     conn.executescript(
@@ -90,7 +95,11 @@ def _build_zotero_fixture(zdir: Path) -> None:
             (10, 1, 'ZOTKEY01'),
             (11, 2, 'ATT00001'),
             (12, 1, 'DELKEY99'),
-            (13, 1, 'ZOTKEY02');
+            (13, 1, 'ZOTKEY02'),
+            (14, 1, 'ZOTKEY03'),
+            (15, 2, 'ATT00003'),
+            (16, 1, 'ZOTKEY04'),
+            (17, 2, 'ATT00004');
         INSERT INTO deletedItems VALUES (12);
 
         INSERT INTO fields VALUES
@@ -108,22 +117,44 @@ def _build_zotero_fixture(zdir: Path) -> None:
             (9, 'Journal of Orthopaedic Research'),
             (10, '2026-01-15'),
             (11, '10.1002/jor.2026.002'),
-            (12, 'linTendon2026');
+            (12, 'linTendon2026'),
+            (13, 'Rotator Cuff Suture Bridge Biomechanics'),
+            (14, 'AJSM'),
+            (15, '2025-07-10'),
+            (16, '10.1177/0363546525000003'),
+            (17, 'zhangRotator2025'),
+            (18, '肩袖修复术后 MRI 评估'),
+            (19, '中华骨科杂志'),
+            (20, '2025-09-01'),
+            (21, '10.3760/cma.j.cn121113.2025.004'),
+            (22, 'wangRotator2025');
         INSERT INTO itemData VALUES
             (10,1,1), (10,2,2), (10,3,3), (10,4,4), (10,5,5), (10,6,6), (10,7,7),
-            (13,1,8), (13,2,9), (13,3,10), (13,4,11), (13,7,12);
+            (13,1,8), (13,2,9), (13,3,10), (13,4,11), (13,7,12),
+            (14,1,13), (14,2,14), (14,3,15), (14,4,16), (14,7,17),
+            (16,1,18), (16,2,19), (16,3,20), (16,4,21), (16,7,22);
 
         INSERT INTO creatorTypes VALUES (1, 'author');
-        INSERT INTO creators VALUES (1, 'Wei', 'Lin', 0), (2, 'Bo', 'Chen', 0);
-        INSERT INTO itemCreators VALUES (10, 1, 1, 0), (13, 2, 1, 0);
+        INSERT INTO creators VALUES
+            (1, 'Wei', 'Lin', 0),
+            (2, 'Bo', 'Chen', 0),
+            (3, 'Mei', 'Zhang', 0),
+            (4, 'Jun', 'Wang', 0);
+        INSERT INTO itemCreators VALUES
+            (10, 1, 1, 0),
+            (13, 2, 1, 0),
+            (14, 3, 1, 0),
+            (16, 4, 1, 0);
 
         INSERT INTO collections VALUES
             (100, 'BoneRegen', NULL, 'COLTOP01'),
             (101, 'Hydrogels', 100, 'COLSUB01');
-        INSERT INTO collectionItems VALUES (101, 10), (100, 13);
+        INSERT INTO collectionItems VALUES (101, 10), (100, 13), (100, 14), (100, 16);
 
         INSERT INTO itemAttachments VALUES
-            (11, 10, 0, 'application/pdf', 'storage:hydrogel.pdf');
+            (11, 10, 0, 'application/pdf', 'storage:hydrogel.pdf'),
+            (15, 14, 0, 'application/pdf', 'storage:rotator_cuff.pdf'),
+            (17, 16, 0, 'application/pdf', 'storage:运动医学_肩袖修复.pdf');
         """
     )
     conn.commit()

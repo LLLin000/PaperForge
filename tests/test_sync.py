@@ -122,3 +122,45 @@ def test_sync_orphan_state_and_cleanup_use_configured_index_dir(tmp_path):
     (index_dir / "memory-runtime-state.json").write_text("legacy", encoding="utf-8")
     _cleanup_legacy_snapshot_files(vault)
     assert not (index_dir / "memory-runtime-state.json").exists()
+
+
+def test_sync_fastpath_bypasses_when_index_export_hash_is_stale(tmp_path):
+    import json
+    from paperforge.services.sync_service import SyncService
+    from paperforge.worker import asset_index
+    from tests.conftest import canonical_test_config
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    svc = SyncService(vault)
+    paths = svc.resolve_paths()
+    paths["exports"].mkdir(parents=True, exist_ok=True)
+    (paths["exports"] / "Sports.json").write_text(
+        json.dumps({"items": [{"key": "K1", "title": "Paper 1"}]}),
+        encoding="utf-8",
+    )
+
+    idx_dir = paths["index"].parent
+    idx_dir.mkdir(parents=True, exist_ok=True)
+    digest = svc._compute_sync_fastpath_digest(paths)
+    (idx_dir / ".sync-fastpath.json").write_text(
+        json.dumps({"digest": digest, "data": {"selection": {}}}),
+        encoding="utf-8",
+    )
+
+    # Stale formal-library.json export_hash MUST bypass fastpath so sync refreshes the index
+    paths["index"].write_text(
+        json.dumps({"export_hash": "stale-e2e-hash", "items": []}),
+        encoding="utf-8",
+    )
+    _, hit = svc._check_fastpath_or_sqlite_preflight()
+    assert hit is None
+
+    # Matching export_hash allows fastpath hit
+    paths["index"].write_text(
+        json.dumps({"export_hash": asset_index.compute_export_hash(paths), "items": []}),
+        encoding="utf-8",
+    )
+    _, hit2 = svc._check_fastpath_or_sqlite_preflight()
+    assert hit2 is not None and hit2.ok is True

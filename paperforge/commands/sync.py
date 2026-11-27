@@ -101,6 +101,12 @@ def run(args: argparse.Namespace) -> int:
     # runner executes the emitted intents; reconcile is the SINGLE
     # producer — no command-specific branch, no hardcoded follow-ups.
     if result.ok and not index_only and not selection_only:
+        import sys as _sys
+        try:
+            _sys.stderr.write('PF_PROGRESS:{"phase":"reconcile","current":5,"total":5,"detail":""}\n')
+            _sys.stderr.flush()
+        except Exception:
+            pass
         with timing.phase("sync.reconcile"):
             _reconcile_and_attach(vault, result, execute=not json_output)
 

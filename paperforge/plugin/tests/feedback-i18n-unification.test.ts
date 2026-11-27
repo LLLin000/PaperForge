@@ -8,7 +8,9 @@ import { I18N_DICTIONARIES, setLanguage, t } from "../src/i18n";
 import {
   extractConciseErrorLine,
   formatDaemonNotice,
+  formatElapsedDuration,
   formatHumanError,
+  formatLiveTaskPhase,
 } from "../src/services/feedback";
 
 describe("i18n dictionary parity & zero-leak guards", () => {
@@ -359,6 +361,52 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
     expect(zoteroMissingOverride.id).toBe("zotero_not_configured");
     expect(zoteroMissingOverride.primaryAction?.kind).toBe("connect_zotero");
 
+    // 7.5 Library syncing shows active progress card without raw error
+    const syncing = resolveSetupDecision({
+      ...base,
+      librarySyncing: true,
+      syncDetail: "Step 3/5: Building library index…",
+      progressCurrent: 3,
+      progressTotal: 5,
+      progressElapsedText: "Running for 6s in background",
+    });
+    expect(syncing.id).toBe("library_syncing");
+    expect(syncing.progress).toEqual({
+      current: 3,
+      total: 5,
+      detail: "Step 3/5: Building library index…",
+      elapsed: "Running for 6s in background",
+    });
+
+    // 7.6 Normal stale index without error shows friendly Sync Now card (never raw English "Library index is stale")
+    const staleLib = resolveSetupDecision({
+      ...base,
+      libraryEnv: {
+        ...actionLib,
+        user_state: "action_required",
+        capability_state: "needs_action",
+        reason: {
+          code: "library.index_stale",
+          text: "Library index is stale (1358 papers — export files changed since last sync)",
+        },
+      },
+    });
+    expect(staleLib.id).toBe("library_sync_needed");
+    expect(staleLib.primaryAction?.kind).toBe("retry_sync");
+    expect(staleLib.body).not.toContain("Library index is stale");
+
+    // 0b. Engine updating embeds live step progress detail
+    const updatingDetail = resolveSetupDecision({
+      ...base,
+      runtimeUpdating: true,
+      engineUpdateDetail: "Step 4/5: Installing compute & AI dependencies…",
+      progressCurrent: 4,
+      progressTotal: 5,
+    });
+    expect(updatingDetail.id).toBe("engine_updating");
+    expect(updatingDetail.progress?.current).toBe(4);
+    expect(updatingDetail.progress?.detail).toContain("Step 4/5");
+
     // 8. Sync error -> Retry Sync
     const syncErr = resolveSetupDecision({
       ...base,
@@ -372,5 +420,15 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
     expect(ok.id).toBe("ready");
     expect(ok.badgeCls).toBe("ready");
     expect(ok.title).toContain("42");
+
+    // Live phase translator (EN & ZH) + elapsed helper
+    setLanguage({} as never, "zh");
+    expect(
+      formatLiveTaskPhase("sync", "verify_library", 4, 5, "1358")
+    ).toContain("1358");
+    expect(
+      formatLiveTaskPhase("runtime.update", "downloading_wheel", 3, 5)
+    ).toContain("步骤 3/5");
+    expect(formatElapsedDuration(1000, 76_000)).toBe("1m 15s");
   });
 });

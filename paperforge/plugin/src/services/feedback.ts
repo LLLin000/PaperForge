@@ -219,3 +219,71 @@ export function formatDaemonNotice(
     durationMs,
   };
 }
+
+/** Translate real backend daemon/worker `phase` codes into clear user-facing labels. */
+export function formatLiveTaskPhase(
+  kind: string,
+  phase?: string | null,
+  current?: number,
+  total?: number,
+  detail?: string | null
+): string {
+  const p = String(phase ?? "").trim();
+  const cleanDetail = String(detail ?? "").trim();
+  if (kind === "sync" || kind === "cli_sync") {
+    switch (p) {
+      case "starting":
+        return t("phase_sync_starting");
+      case "read_zotero":
+        return t("phase_sync_read_zotero");
+      case "sync_notes":
+        return t("phase_sync_notes");
+      case "build_index":
+        return t("phase_sync_build_index");
+      case "verify_library":
+        if (/^\d+$/.test(cleanDetail) && Number(cleanDetail) > 0) {
+          return t("phase_sync_verify_count").replace("{count}", cleanDetail);
+        }
+        return t("phase_sync_verify");
+      case "reconcile":
+      case "done":
+        return t("phase_sync_reconcile");
+      default:
+        return current && total && total > 0
+          ? `${t("activity_syncing")} (${current}/${total})`
+          : t("phase_sync_starting");
+    }
+  }
+  if (kind.startsWith("runtime")) {
+    switch (p) {
+      case "downloading_uv":
+        return t("phase_rt_uv");
+      case "installing_python":
+        return t("phase_rt_python");
+      case "downloading_wheel":
+        return t("phase_rt_wheel");
+      case "installing_paperforge":
+        return t("phase_rt_install");
+      case "verifying_runtime":
+      case "done":
+        return t("phase_rt_verify");
+      default:
+        return current && total && total > 0
+          ? `${t("activity_runtime_updating")} (${current}/${total})`
+          : t("activity_runtime_updating");
+    }
+  }
+  return p || localizedJobKind(kind);
+}
+
+/** Format compact elapsed duration string (e.g. `6s`, `1m 12s`). */
+export function formatElapsedDuration(
+  startedAtMs: number,
+  nowMs: number = Date.now()
+): string {
+  const totalSecs = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
+  if (totalSecs < 60) return `${totalSecs}s`;
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return `${mins}m ${secs}s`;
+}
