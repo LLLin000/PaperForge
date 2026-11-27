@@ -2099,13 +2099,19 @@ describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
 
 // ═══════════ Commit 1C: Agent platforms, endpoint & URL normalization ═══════════
 describe("settings robustness fixes (Commit 1C)", () => {
-  it("renders non-legacy agent platforms (trae, cline, kimi) without throwing", () => {
+  it("renders non-legacy agent platforms (trae, cline, kimi) without throwing or exposing legacy jargon", () => {
     for (const platform of ["trae", "cline", "kimi", "pi", "augment"]) {
       const tab = makeTab();
       (tab.plugin as any).settings.agent_platform = platform;
       const el = dom.window.document.createElement("div");
       expect(() => (tab as any)._renderAgentDetail(el)).not.toThrow();
-      expect(el.textContent ?? "").toContain("/pf-deep");
+      const text = el.textContent ?? "";
+      expect(text).toContain("/pf-deep");
+      expect(text).not.toContain("paperforge-daemon");
+      expect(text).not.toContain("SKILL.md");
+      expect(
+        el.querySelector('select[aria-label="Target platform"]')
+      ).toBeNull();
     }
   });
 
