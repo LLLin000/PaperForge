@@ -270,7 +270,7 @@ describe("single-owner runtime installer & daemon UI progress", () => {
       "utf-8"
     );
 
-    const { tab, runtimeStatus } = makeTab({ hasDaemonRpc: true });
+    const { tab } = makeTab({ hasDaemonRpc: true });
     (tab as any)._installerLogPath = logPath;
     (tab as any)._installerLogStartOffset = (
       tab as any
@@ -288,7 +288,7 @@ describe("single-owner runtime installer & daemon UI progress", () => {
 
     await vi.advanceTimersByTimeAsync(3100);
     expect((tab as any)._runtimePollTimer).not.toBeNull();
-    expect(runtimeStatus).toHaveBeenCalled();
+    expect((tab as any).display).toHaveBeenCalled();
 
     // Advance start offset to a fresh run and append a real step failure without lock contention.
     (tab as any)._installerLogStartOffset = (
