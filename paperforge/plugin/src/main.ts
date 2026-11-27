@@ -53,7 +53,12 @@ import {
   PaperForgeSettings,
 } from "./constants";
 import { t, setLanguage } from "./i18n";
-import { formatDaemonNotice, formatHumanError } from "./services/feedback";
+import {
+  formatDaemonNotice,
+  formatElapsedDuration,
+  formatHumanError,
+  formatLiveTaskPhase,
+} from "./services/feedback";
 import {
   readRuntimePointer,
   resolveRuntimeCommand,
@@ -109,6 +114,9 @@ import { dumpTrace, setTraceEnabled } from "./client/trace";
 export interface ActiveBackgroundTask {
   kind: "sync" | "ocr" | "embed" | "heal" | "runtime";
   label: string;
+  phase?: string;
+  detail?: string;
+  startedAt?: number;
   current?: number;
   total?: number;
   key?: string;
@@ -146,6 +154,12 @@ export default class PaperForgePlugin extends Plugin {
   private _pendingReleaseNotesVersion: string | null = null;
   private _daemonUpdating = false;
   private _startupDaemonCheckPending = false;
+  private _syncStartedAt: number | null = null;
+  private _statusBarHeartbeat: ReturnType<typeof setInterval> | null = null;
+  private _settingTabRefreshThrottleTimer: ReturnType<
+    typeof setTimeout
+  > | null = null;
+  private _lastSettingTabRefreshAt = 0;
   private _unloaded = false;
   private _startupDeferTimer: ReturnType<typeof setTimeout> | null = null;
   private _lastSyncedZoteroSig: string | null = null;
@@ -196,6 +210,105 @@ export default class PaperForgePlugin extends Plugin {
       }
     }
     return false;
+  }
+
+  isSyncing(): boolean {
+    if (this._autoSyncRunning) return true;
+    for (const dj of this._daemonJobs.values()) {
+      if (dj.kind === "sync") return true;
+    }
+    return false;
+  }
+
+  setManualSyncActive(active: boolean): void {
+    this._autoSyncRunning = active;
+    this._syncStartedAt = active ? Date.now() : null;
+    this._emitStateChanged();
+  }
+
+  getLiveTaskSummary(kind: "runtime" | "sync"): {
+    phaseText: string;
+    current: number;
+    total: number;
+    startedAt: number | null;
+  } | null {
+    if (kind === "runtime") {
+      let rtJob: DaemonJobDto | null = null;
+      for (const dj of this._daemonJobs.values()) {
+        if (
+          dj.kind === "runtime.install" ||
+          dj.kind === "runtime.update" ||
+          dj.kind === "runtime.repair"
+        ) {
+          rtJob = dj;
+          break;
+        }
+      }
+      if (!rtJob && !this._daemonUpdating) return null;
+      if (!rtJob) {
+        return {
+          phaseText: t("activity_daemon_updating") || "Updating local service",
+          current: 0,
+          total: 5,
+          startedAt: null,
+        };
+      }
+      const tot = rtJob.total > 0 ? rtJob.total : 5;
+      return {
+        phaseText: formatLiveTaskPhase(
+          rtJob.kind,
+          rtJob.phase,
+          rtJob.current,
+          tot,
+          rtJob.item_id
+        ),
+        current: rtJob.current,
+        total: tot,
+        startedAt: rtJob.started_at > 0 ? rtJob.started_at * 1000 : null,
+      };
+    }
+
+    let syncJob: DaemonJobDto | null = null;
+    for (const dj of this._daemonJobs.values()) {
+      if (dj.kind === "sync") {
+        syncJob = dj;
+        break;
+      }
+    }
+    if (!syncJob && !this._autoSyncRunning) return null;
+    const tot = syncJob && syncJob.total > 0 ? syncJob.total : 5;
+    const cur = syncJob ? syncJob.current : 0;
+    const startedAt =
+      syncJob && syncJob.started_at > 0
+        ? syncJob.started_at * 1000
+        : this._syncStartedAt;
+    return {
+      phaseText: syncJob
+        ? formatLiveTaskPhase("sync", syncJob.phase, cur, tot, syncJob.item_id)
+        : t("phase_sync_starting"),
+      current: cur,
+      total: tot,
+      startedAt,
+    };
+  }
+
+  private _scheduleThrottledSettingsRefresh(): void {
+    const now = Date.now();
+    if (now - this._lastSettingTabRefreshAt >= 200) {
+      this._lastSettingTabRefreshAt = now;
+      if (this._settingTabRefreshThrottleTimer) {
+        clearTimeout(this._settingTabRefreshThrottleTimer);
+        this._settingTabRefreshThrottleTimer = null;
+      }
+      this._refreshSettingTabIfOpen();
+      return;
+    }
+    if (this._settingTabRefreshThrottleTimer) return;
+    this._settingTabRefreshThrottleTimer = setTimeout(() => {
+      this._settingTabRefreshThrottleTimer = null;
+      this._lastSettingTabRefreshAt = Date.now();
+      this._refreshSettingTabIfOpen();
+    }, 200);
   }
 
   getQuarantinedBinDir(): string | null {
@@ -296,15 +409,27 @@ export default class PaperForgePlugin extends Plugin {
               job.status === "succeeded",
               String(job.error ?? "")
             );
+            if (job.status === "succeeded") {
+              void this.refreshBaseSnapshot().catch(() => undefined);
+            }
             this._settingTab?._refreshAllReadModels({ background: true });
+            this._refreshSettingTabIfOpen();
+          } else {
+            this._scheduleThrottledSettingsRefresh();
           }
-          this._refreshSettingTabIfOpen();
+        } else if (job.kind === "sync") {
+          if (isActive) {
+            this._scheduleThrottledSettingsRefresh();
+          } else {
+            this._refreshSettingTabIfOpen();
+          }
         }
       }
       return;
     }
     if (ev.event === "notice.push" && ev.data) {
       const nid = String(ev.data.notice_id ?? "");
+      const code = String(ev.data.code ?? "");
       const suppressRuntimeInstall = Boolean(
         (
           this._settingTab as unknown as {
@@ -315,7 +440,7 @@ export default class PaperForgePlugin extends Plugin {
       const formatted = formatDaemonNotice(
         {
           notice_id: nid,
-          code: String(ev.data.code ?? ""),
+          code,
           level: String(ev.data.level ?? "info"),
           title: String(ev.data.title ?? ""),
           detail: String(ev.data.detail ?? ""),
@@ -329,7 +454,7 @@ export default class PaperForgePlugin extends Plugin {
           rawLevel,
           formatted.message
         );
-        if (rawLevel === "error") {
+        if (rawLevel === "error" || code === "runtime.install.done") {
           new Notice(formatted.message, formatted.durationMs);
         }
       }
@@ -1032,6 +1157,8 @@ export default class PaperForgePlugin extends Plugin {
         );
         if (needsDaemonSwap) {
           this._daemonUpdating = true;
+          this._emitStateChanged();
+          this._refreshSettingTabIfOpen();
         } else {
           runStartupHydration();
         }
@@ -1123,6 +1250,20 @@ export default class PaperForgePlugin extends Plugin {
               ) {
                 void this.getClient()
                   .daemonSubmitRuntimeUpdate(pluginVersion)
+                  .then((res) => {
+                    if (this._unloaded) return;
+                    if (res?.accepted && !res?.coalesced) {
+                      new Notice(
+                        t("main_runtime_autoupdate_started").replace(
+                          "{version}",
+                          pluginVersion
+                        ),
+                        6000
+                      );
+                    }
+                    this._emitStateChanged();
+                    this._refreshSettingTabIfOpen();
+                  })
                   .catch(() => undefined);
               }
             }
@@ -1306,7 +1447,9 @@ export default class PaperForgePlugin extends Plugin {
       return;
     }
     this._autoSyncRunning = true;
+    this._syncStartedAt = Date.now();
     this._emitStateChanged();
+    this._refreshSettingTabIfOpen();
 
     void (async () => {
       let ok = false;
@@ -1321,6 +1464,7 @@ export default class PaperForgePlugin extends Plugin {
             expectedZoteroSig ?? (await this._readZoteroFingerprint());
           void orchestrateFromSync(JSON.stringify(result), {
             runAction: (req) => client.runAction(req),
+            silentPending: true,
           });
           this._settingTab?._refreshAllReadModels({ background: true });
           if (vaultPath) this._startStateSeqWatcher(vaultPath);
@@ -1366,8 +1510,10 @@ export default class PaperForgePlugin extends Plugin {
         }
       } finally {
         this._autoSyncRunning = false;
+        this._syncStartedAt = null;
         this._memoryStatusText = null;
         this._emitStateChanged();
+        this._refreshSettingTabIfOpen();
       }
     })();
   }
@@ -1540,10 +1686,59 @@ export default class PaperForgePlugin extends Plugin {
   /** Zero-idle shared background activity projection for Companion / Base UI strips. */
   getActiveBackgroundTasks(): ActiveBackgroundTask[] {
     const tasks: ActiveBackgroundTask[] = [];
-    if (this._autoSyncRunning) {
+    for (const dj of this._daemonJobs.values()) {
+      const isRuntimeJob = dj.kind.startsWith("runtime.");
+      const mappedKind: ActiveBackgroundTask["kind"] =
+        dj.kind === "upgrade.heal"
+          ? "heal"
+          : isRuntimeJob
+            ? "runtime"
+            : dj.kind === "ocr"
+              ? "ocr"
+              : dj.kind === "embed"
+                ? "embed"
+                : "sync";
+      if (mappedKind !== "heal" && tasks.some((x) => x.kind === mappedKind)) {
+        continue;
+      }
+      const tot = dj.total > 0 ? dj.total : undefined;
+      const cur = dj.total > 0 ? dj.current : undefined;
+      const livePhase =
+        mappedKind === "sync" || mappedKind === "runtime"
+          ? formatLiveTaskPhase(dj.kind, dj.phase, cur, tot, dj.item_id)
+          : undefined;
+      tasks.push({
+        kind: mappedKind,
+        label:
+          mappedKind === "heal"
+            ? t("main_activity_heal")
+            : mappedKind === "runtime"
+              ? t("activity_runtime_updating") || "Updating compute engine"
+              : mappedKind === "ocr"
+                ? t("activity_ocr") || "Parsing fulltext"
+                : mappedKind === "embed"
+                  ? t("activity_embed") || "Building embeddings"
+                  : t("activity_syncing") || "Syncing library",
+        phase: livePhase,
+        startedAt: dj.started_at > 0 ? dj.started_at * 1000 : undefined,
+        current: cur,
+        total: tot,
+        key: dj.item_id || undefined,
+        jobId: dj.job_id,
+      });
+    }
+    if (this._daemonUpdating && !tasks.some((x) => x.kind === "runtime")) {
+      tasks.push({
+        kind: "runtime",
+        label: t("activity_daemon_updating") || "Updating local service",
+      });
+    }
+    if (this._autoSyncRunning && !tasks.some((x) => x.kind === "sync")) {
       tasks.push({
         kind: "sync",
         label: t("activity_syncing") || "Syncing library",
+        phase: t("phase_sync_starting"),
+        startedAt: this._syncStartedAt ?? undefined,
       });
     }
     if (this._ocrRunning || this.getClient().isOperationActive()) {
@@ -1564,39 +1759,6 @@ export default class PaperForgePlugin extends Plugin {
         current: ep?.total > 0 ? ep.current : undefined,
         total: ep?.total > 0 ? ep.total : undefined,
         key: ep?.key || undefined,
-      });
-    }
-    for (const dj of this._daemonJobs.values()) {
-      const isRuntimeJob = dj.kind.startsWith("runtime.");
-      const mappedKind: ActiveBackgroundTask["kind"] =
-        dj.kind === "upgrade.heal"
-          ? "heal"
-          : isRuntimeJob
-            ? "runtime"
-            : dj.kind === "ocr"
-              ? "ocr"
-              : dj.kind === "embed"
-                ? "embed"
-                : "sync";
-      if (mappedKind !== "heal" && tasks.some((x) => x.kind === mappedKind)) {
-        continue;
-      }
-      tasks.push({
-        kind: mappedKind,
-        label:
-          mappedKind === "heal"
-            ? t("main_activity_heal")
-            : mappedKind === "runtime"
-              ? t("activity_runtime_updating") || "Updating compute engine"
-              : mappedKind === "ocr"
-                ? t("activity_ocr") || "Parsing fulltext"
-                : mappedKind === "embed"
-                  ? t("activity_embed") || "Building embeddings"
-                  : t("activity_syncing") || "Syncing library",
-        current: dj.total > 0 ? dj.current : undefined,
-        total: dj.total > 0 ? dj.total : undefined,
-        key: dj.item_id || undefined,
-        jobId: dj.job_id,
       });
     }
     return tasks;
@@ -1720,7 +1882,11 @@ export default class PaperForgePlugin extends Plugin {
           typeof task.total === "number" && task.total > 0
             ? ` (${task.current ?? 0}/${task.total})`
             : "";
-        row.textContent = `${task.label}${prog}`;
+        const elapsed =
+          typeof task.startedAt === "number" && task.startedAt > 0
+            ? ` · ${formatElapsedDuration(task.startedAt)}`
+            : "";
+        row.textContent = `${task.phase || task.label}${prog}${elapsed}`;
         sec.appendChild(row);
       }
       pop.appendChild(sec);
@@ -1845,19 +2011,40 @@ export default class PaperForgePlugin extends Plugin {
     label.className = "pf-sb-label";
 
     if (tasks.length > 0) {
+      if (!this._statusBarHeartbeat) {
+        this._statusBarHeartbeat = setInterval(() => {
+          if (this._unloaded || this.getActiveBackgroundTasks().length === 0) {
+            if (this._statusBarHeartbeat) {
+              clearInterval(this._statusBarHeartbeat);
+              this._statusBarHeartbeat = null;
+            }
+          }
+          this._updateStatusBar();
+        }, 1000);
+      }
       const primary = tasks[0];
       const prog =
         typeof primary.total === "number" && primary.total > 0
-          ? ` ${primary.current ?? 0}/${primary.total}`
+          ? ` (${primary.current ?? 0}/${primary.total})`
           : "";
-      label.textContent = `PaperForge · ${primary.label}${prog}`;
-    } else if (alerts.length > 0) {
-      label.textContent = `PaperForge · ${alerts.length}`;
+      const elapsed =
+        typeof primary.startedAt === "number" && primary.startedAt > 0
+          ? ` · ${formatElapsedDuration(primary.startedAt)}`
+          : "";
+      label.textContent = `PaperForge · ${primary.phase || primary.label}${prog}${elapsed}`;
     } else {
-      const cnt = this._baseSnapshotCache?.rows
-        ? Object.keys(this._baseSnapshotCache.rows).length
-        : null;
-      label.textContent = cnt !== null ? `PaperForge · ${cnt}` : "PaperForge";
+      if (this._statusBarHeartbeat) {
+        clearInterval(this._statusBarHeartbeat);
+        this._statusBarHeartbeat = null;
+      }
+      if (alerts.length > 0) {
+        label.textContent = `PaperForge · ${alerts.length}`;
+      } else {
+        const cnt = this._baseSnapshotCache?.rows
+          ? Object.keys(this._baseSnapshotCache.rows).length
+          : null;
+        label.textContent = cnt !== null ? `PaperForge · ${cnt}` : "PaperForge";
+      }
     }
 
     el.appendChild(dot);
@@ -2587,6 +2774,14 @@ export default class PaperForgePlugin extends Plugin {
   onunload() {
     this._unloaded = true;
     this._closeStatusPopover();
+    if (this._statusBarHeartbeat) {
+      clearInterval(this._statusBarHeartbeat);
+      this._statusBarHeartbeat = null;
+    }
+    if (this._settingTabRefreshThrottleTimer) {
+      clearTimeout(this._settingTabRefreshThrottleTimer);
+      this._settingTabRefreshThrottleTimer = null;
+    }
     if (this._startupDeferTimer) {
       clearTimeout(this._startupDeferTimer);
       this._startupDeferTimer = null;

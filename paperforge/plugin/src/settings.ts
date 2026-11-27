@@ -18,7 +18,7 @@ import {
   syncStableDaemonEntry,
 } from "./services/native-daemon";
 import { t, setLanguage, langFromApp, getActiveLang } from "./i18n";
-import { formatHumanError } from "./services/feedback";
+import { formatElapsedDuration, formatHumanError } from "./services/feedback";
 import { resolveSetupDecision } from "./services/setup-decision-tree";
 import {
   EMBEDDING_PRESETS,
@@ -336,6 +336,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _runtimeStatusLoading = false;
   private _runtimePollTimer: ReturnType<typeof setInterval> | null = null;
   private _runtimeStatusWatchdog: ReturnType<typeof setTimeout> | null = null;
+  private _liveActivityTimer: ReturnType<typeof setInterval> | null = null;
+  private _liveElapsedEl: HTMLElement | null = null;
+  private _liveElapsedStartedAt: number | null = null;
   /** Step id the guided library flow keeps expanded after an explicit edit. */
   private _setupOpenStep: string | null = null;
   /** True while a library sync or memory build is in flight. */
@@ -4148,6 +4151,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _runManualSync() {
+    if (this._libraryRunning || this.plugin._autoSyncRunning) {
+      new Notice(t("settings_sync_already_running"), 4000);
+      this.display();
+      return;
+    }
     const vp =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
       "";
@@ -4164,7 +4172,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       envelopes["library"].activity_label = "Syncing library…";
     }
 
-    this.plugin._autoSyncRunning = true;
+    const pluginCtl = this.plugin as unknown as {
+      clearLastAutoSyncError?: () => void;
+      setManualSyncActive?: (active: boolean) => void;
+      _emitStateChanged?: () => void;
+      refreshBaseSnapshot?: () => Promise<unknown>;
+    };
+    pluginCtl.clearLastAutoSyncError?.();
+    if (typeof pluginCtl.setManualSyncActive === "function") {
+      pluginCtl.setManualSyncActive(true);
+    } else {
+      this.plugin._autoSyncRunning = true;
+      pluginCtl._emitStateChanged?.();
+    }
     this._libraryRunning = true;
     this.display();
 
@@ -4176,11 +4196,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (exitCode === 0) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           this.plugin._lastSyncTime = this._lastSyncTime;
+          pluginCtl.clearLastAutoSyncError?.();
+          void pluginCtl.refreshBaseSnapshot?.().catch(() => undefined);
+          new Notice(t("settings_sync_complete"), 4000);
           // #127: consume backend next_actions. Automatic local work starts
           // now; consent-required work remains visible in the module card.
           void orchestrateFromSync(JSON.stringify(result), {
             runAction: (req) => client.runAction(req),
           });
+        } else {
+          const errMsg = (
+            result as { error?: { message?: string } } | null | undefined
+          )?.error?.message;
+          new Notice(
+            t("settings_sync_failed").replace(
+              "{detail}",
+              formatHumanError(errMsg || "sync_failed")
+            ),
+            8000
+          );
         }
       } catch (err: unknown) {
         new Notice(
@@ -4188,7 +4222,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           8000
         );
       } finally {
-        this.plugin._autoSyncRunning = false;
+        if (typeof pluginCtl.setManualSyncActive === "function") {
+          pluginCtl.setManualSyncActive(false);
+        } else {
+          this.plugin._autoSyncRunning = false;
+          pluginCtl._emitStateChanged?.();
+        }
         this._libraryRunning = false;
         this._memoryStatusText = null;
         if (envelopes["library"]) {
@@ -4836,6 +4875,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const pfState = this.plugin as unknown as {
       isDaemonUpdating?: () => boolean;
       isRuntimeUpdating?: () => boolean;
+      isSyncing?: () => boolean;
+      getLiveTaskSummary?: (kind: "runtime" | "sync") => {
+        phaseText: string;
+        current: number;
+        total: number;
+        startedAt: number | null;
+      } | null;
       getQuarantinedBinDir?: () => string | null;
       dismissQuarantineBanner?: () => void;
       getLastAutoSyncError?: () => { message: string; at: number } | null;
@@ -4848,11 +4894,33 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const paperCountRaw = (
       libraryEnv.details as Record<string, unknown> | undefined
     )?.["paper_count"];
+    const runtimeActive =
+      Boolean(pfState.isRuntimeUpdating?.()) || Boolean(this._runtimePollTimer);
+    const syncActive = Boolean(
+      this._libraryRunning ||
+      this.plugin._autoSyncRunning ||
+      pfState.isSyncing?.()
+    );
+    const runtimeSummary = runtimeActive
+      ? (pfState.getLiveTaskSummary?.("runtime") ?? null)
+      : null;
+    const syncSummary = syncActive
+      ? (pfState.getLiveTaskSummary?.("sync") ?? null)
+      : null;
+    const activeSummary = runtimeActive ? runtimeSummary : syncSummary;
+    const engineUpdateDetail = runtimeActive
+      ? runtimeSummary?.phaseText || this._installerProgressLine() || null
+      : null;
+    const activeStartedAt = activeSummary?.startedAt ?? null;
+    const elapsedText = activeStartedAt
+      ? t("live_elapsed_running").replace(
+          "{elapsed}",
+          formatElapsedDuration(activeStartedAt)
+        )
+      : null;
     const decision = resolveSetupDecision({
       daemonUpdating: Boolean(pfState.isDaemonUpdating?.()),
-      runtimeUpdating:
-        Boolean(pfState.isRuntimeUpdating?.()) ||
-        Boolean(this._runtimePollTimer),
+      runtimeUpdating: runtimeActive,
       canCancelInstall: Boolean(this._runtimePollTimer),
       quarantinedBinDir: pfState.getQuarantinedBinDir?.() ?? null,
       upgradePlan: pfState.getUpgradePlanCache?.() ?? null,
@@ -4869,6 +4937,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         : null,
       lastAutoSyncError: pfState.getLastAutoSyncError?.()?.message ?? null,
       paperCount: typeof paperCountRaw === "number" ? paperCountRaw : null,
+      librarySyncing: syncActive,
+      engineUpdateDetail,
+      syncDetail: syncSummary?.phaseText || null,
+      progressCurrent: activeSummary?.current,
+      progressTotal: activeSummary?.total,
+      progressElapsedText: elapsedText,
     });
 
     const summaryEl = cc.createEl("div", {
@@ -4883,6 +4957,61 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const summaryCopy = summaryEl.createDiv({ cls: "pf-cc-summary-copy" });
     summaryCopy.createEl("strong", { text: decision.title });
     summaryCopy.createEl("span", { cls: "caption", text: decision.body });
+    if (decision.progress) {
+      const pWrap = summaryCopy.createDiv({ cls: "pf-cc-progress-wrap" });
+      const bar = pWrap.createDiv({ cls: "pf-runtime-stage-bar" });
+      const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
+      if (decision.progress.current > 0 && decision.progress.total > 0) {
+        const pct = Math.max(
+          12,
+          Math.min(
+            100,
+            Math.round(
+              (decision.progress.current / decision.progress.total) * 100
+            )
+          )
+        );
+        fill.style.width = `${pct}%`;
+      } else {
+        fill.classList.add("is-indeterminate");
+      }
+      const metaRow = pWrap.createDiv({ cls: "pf-cc-progress-meta" });
+      metaRow.createEl("span", {
+        text: decision.progress.detail || "",
+      });
+      const elSpan = metaRow.createEl("span", {
+        text: decision.progress.elapsed || "",
+      });
+      this._liveElapsedEl = elSpan;
+      this._liveElapsedStartedAt = activeStartedAt;
+      if (this._isOpen && !this._liveActivityTimer && activeStartedAt) {
+        this._liveActivityTimer = setInterval(() => {
+          if (
+            !this._isOpen ||
+            !this._liveElapsedEl ||
+            !this._liveElapsedEl.isConnected ||
+            !this._liveElapsedStartedAt
+          ) {
+            if (this._liveActivityTimer) {
+              clearInterval(this._liveActivityTimer);
+              this._liveActivityTimer = null;
+            }
+            return;
+          }
+          this._liveElapsedEl.textContent = t("live_elapsed_running").replace(
+            "{elapsed}",
+            formatElapsedDuration(this._liveElapsedStartedAt)
+          );
+        }, 1000);
+      }
+    } else {
+      this._liveElapsedEl = null;
+      this._liveElapsedStartedAt = null;
+      if (this._liveActivityTimer) {
+        clearInterval(this._liveActivityTimer);
+        this._liveActivityTimer = null;
+      }
+    }
     if (decision.codeBlock) {
       summaryCopy.createEl("code", {
         cls: "pf-defender-path-code",
@@ -8564,6 +8693,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       clearInterval(this._runtimePollTimer);
       this._runtimePollTimer = null;
     }
+    if (this._liveActivityTimer) {
+      clearInterval(this._liveActivityTimer);
+      this._liveActivityTimer = null;
+    }
+    this._liveElapsedEl = null;
+    this._liveElapsedStartedAt = null;
     if (this._runtimeStatusWatchdog) {
       clearTimeout(this._runtimeStatusWatchdog);
       this._runtimeStatusWatchdog = null;

@@ -16,6 +16,13 @@ export interface NextActionBridgeContext {
   /** The SAME client instance that executed the sync — next_actions share
    * its epoch/OperationLock semantics with user-initiated actions. */
   runAction: (req: ActionRequest) => Promise<ActionRunResult>;
+  silentPending?: boolean;
+}
+
+const _notifiedPendingSigs = new Set<string>();
+
+export function resetPendingNoticeDedupeForTest(): void {
+  _notifiedPendingSigs.clear();
 }
 
 /**
@@ -33,11 +40,21 @@ export async function orchestrateFromSync(
 
   // Background/manual sync may run local automatic work immediately, but
   // consent-required work stays pending in the Python read model. The module
-  // card is the durable place to review and start it; a 120 s convergence
-  // tick must never reopen a modal.
+  // card is the durable place to review and start it; suppress routine
+  // `ocr.run` prompts and deduplicate repeated same-signature notifications.
   const runnable = actions.filter((action) => action.automatic);
-  if (runnable.length !== actions.length) {
-    new Notice(t("next_action_pending"), 8000);
+  const nonRoutinePending = actions.filter(
+    (action) => !action.automatic && action.action_id !== "ocr.run"
+  );
+  if (!ctx.silentPending && nonRoutinePending.length > 0) {
+    const sig = nonRoutinePending
+      .map((a) => a.action_id)
+      .sort()
+      .join(",");
+    if (!_notifiedPendingSigs.has(sig)) {
+      _notifiedPendingSigs.add(sig);
+      new Notice(t("next_action_pending"), 8000);
+    }
   }
   if (runnable.length === 0) return 0;
 

@@ -13246,6 +13246,33 @@ body.pf-no-glass
   transition: width 260ms var(--pf-ease-out, ease);
 }
 
+.pf-runtime-stage-fill.is-indeterminate {
+  width: 38%;
+  animation: pf-stage-indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes pf-stage-indeterminate {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+.pf-cc-progress-wrap {
+  margin-top: 8px;
+}
+
+.pf-cc-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .pf-zotero-col-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));

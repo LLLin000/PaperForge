@@ -230,6 +230,11 @@ function stubRowForEntry(
   const baseName = entry.file?.basename || "";
   const guessedKey = baseName.split(/\s+-\s+/)[0]?.trim() || baseName;
   if (!guessedKey) return null;
+  const rawHasPdf = readValueString(
+    entry.getValue?.("note.has_pdf" as obsidian.BasesPropertyId)
+  )
+    .trim()
+    .toLowerCase();
   return {
     zotero_key: guessedKey,
     title:
@@ -254,7 +259,7 @@ function stubRowForEntry(
     domain: readValueString(
       entry.getValue?.("note.domain" as obsidian.BasesPropertyId)
     ),
-    has_pdf: false,
+    has_pdf: rawHasPdf === "true" || rawHasPdf === "1",
     do_ocr: false,
     analyze: false,
     ocr_status: snapshot ? "unknown" : "pending",
@@ -2587,6 +2592,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       this._missingPdfSlotEl.textContent = "";
       if (
         snapshot &&
+        Object.keys(snapshot.rows || {}).length > 0 &&
         !this._missingPdfHintDismissed &&
         rawFlatItems.length >= 3
       ) {

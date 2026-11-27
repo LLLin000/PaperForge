@@ -363,4 +363,53 @@ describe("single-owner runtime installer & daemon UI progress", () => {
     expect(syncTask).toBeDefined();
     expect(tasks).toHaveLength(2);
   });
+
+  it("exposes live daemon updating & sync phase summary in getActiveBackgroundTasks and getLiveTaskSummary", () => {
+    const clientMock = {
+      isOperationActive: () => false,
+    };
+    const nowSec = Math.floor(Date.now() / 1000) - 5;
+    const daemonJobs = new Map([
+      [
+        "cli_sync_1",
+        {
+          job_id: "cli_sync_1",
+          kind: "sync",
+          status: "running",
+          current: 3,
+          total: 5,
+          phase: "build_index",
+          item_id: "",
+          vault: "/vault",
+          started_at: nowSec,
+        },
+      ],
+    ]);
+    const pluginCtx = {
+      _client: clientMock,
+      getClient: () => clientMock,
+      _daemonJobs: daemonJobs,
+      _daemonUpdating: true,
+      _ocrRunning: false,
+      _runningIndexTask: false,
+      _runningOcrKey: null,
+      _syncInFlight: false,
+      _autoSyncRunning: true,
+      _syncStartedAt: nowSec * 1000,
+      app: { vault: { getConfig: () => "zh" } },
+      settings: { language: "zh" },
+    };
+    setLanguage(pluginCtx.app as unknown as App, "zh");
+    const tasks =
+      PaperForgePlugin.prototype.getActiveBackgroundTasks.call(pluginCtx);
+    expect(tasks.some((x) => x.kind === "runtime")).toBe(true);
+    const syncSummary = PaperForgePlugin.prototype.getLiveTaskSummary.call(
+      pluginCtx,
+      "sync"
+    );
+    expect(syncSummary).not.toBeNull();
+    expect(syncSummary!.current).toBe(3);
+    expect(syncSummary!.total).toBe(5);
+    expect(syncSummary!.phaseText).toContain("步骤 3/5");
+  });
 });

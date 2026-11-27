@@ -32,6 +32,8 @@ export type SetupDecisionId =
   | "engine_version_mismatch"
   | "engine_probe_failed"
   | "zotero_not_configured"
+  | "library_syncing"
+  | "library_sync_needed"
   | "library_sync_error"
   | "ready";
 
@@ -54,6 +56,13 @@ export interface SetupDecisionAction {
   label: string;
 }
 
+export interface SetupDecisionProgress {
+  current: number;
+  total: number;
+  detail?: string;
+  elapsed?: string;
+}
+
 export interface SetupDecision {
   id: SetupDecisionId;
   badgeCls: "ready" | "checking" | "attention";
@@ -61,6 +70,7 @@ export interface SetupDecision {
   title: string;
   body: string;
   codeBlock?: string;
+  progress?: SetupDecisionProgress;
   primaryAction?: SetupDecisionAction;
   secondaryAction?: SetupDecisionAction;
 }
@@ -82,6 +92,12 @@ export interface SetupDecisionInput {
   zoteroDetectedPapers: number | null;
   lastAutoSyncError: string | null;
   paperCount: number | null;
+  librarySyncing?: boolean;
+  engineUpdateDetail?: string | null;
+  syncDetail?: string | null;
+  progressCurrent?: number;
+  progressTotal?: number;
+  progressElapsedText?: string | null;
 }
 
 const STAGE_ORDER: Record<string, number> = {
@@ -168,6 +184,13 @@ export function isEngineVersionCompatible(
 export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
   // 0. Active hot-swap / engine install / update — suppress transient probe/sync noise
   if (input.daemonUpdating || input.runtimeUpdating) {
+    const detail = input.engineUpdateDetail?.trim();
+    const cur =
+      typeof input.progressCurrent === "number" ? input.progressCurrent : 0;
+    const tot =
+      typeof input.progressTotal === "number" && input.progressTotal > 0
+        ? input.progressTotal
+        : 5;
     return {
       id: "engine_updating",
       badgeCls: "checking",
@@ -175,7 +198,15 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
       title: input.daemonUpdating
         ? t("dt_engine_hotswap_title")
         : t("dt_engine_updating_title"),
-      body: t("dt_engine_updating_body"),
+      body: detail
+        ? `${detail} — ${t("dt_engine_updating_body")}`
+        : t("dt_engine_updating_body"),
+      progress: {
+        current: cur,
+        total: tot,
+        detail: detail || t("activity_runtime_updating"),
+        elapsed: input.progressElapsedText || undefined,
+      },
       primaryAction: input.canCancelInstall
         ? { kind: "cancel_install", label: t("wizard_cancel") }
         : undefined,
@@ -341,7 +372,60 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
-  // 8. Engine & Zotero configured, but sync failed or library probe not ready
+  // 7.5 Library sync currently running
+  if (input.librarySyncing) {
+    const detail = input.syncDetail?.trim();
+    const cur =
+      typeof input.progressCurrent === "number" ? input.progressCurrent : 0;
+    const tot =
+      typeof input.progressTotal === "number" && input.progressTotal > 0
+        ? input.progressTotal
+        : 5;
+    return {
+      id: "library_syncing",
+      badgeCls: "checking",
+      badgeText: t("dt_badge_syncing"),
+      title: t("dt_library_syncing_title"),
+      body: t("dt_library_syncing_body"),
+      progress: {
+        current: cur,
+        total: tot,
+        detail: detail || t("phase_sync_starting"),
+        elapsed: input.progressElapsedText || undefined,
+      },
+    };
+  }
+
+  // 8. Normal stale index waiting for sync (no actual sync failure recorded)
+  if (
+    !input.lastAutoSyncError &&
+    input.libraryEnv.reason?.code === "library.index_stale"
+  ) {
+    const body =
+      typeof input.paperCount === "number" && input.paperCount > 0
+        ? t("dt_library_stale_body_count").replace(
+            "{count}",
+            String(input.paperCount)
+          )
+        : t("dt_library_stale_body");
+    return {
+      id: "library_sync_needed",
+      badgeCls: "attention",
+      badgeText: t("dt_badge_sync_needed"),
+      title: t("dt_library_stale_title"),
+      body,
+      primaryAction: {
+        kind: "retry_sync",
+        label: t("dt_btn_sync_now"),
+      },
+      secondaryAction: {
+        kind: "connect_zotero",
+        label: t("dt_btn_check_zotero"),
+      },
+    };
+  }
+
+  // 8b. Engine & Zotero configured, but sync failed or library probe not ready
   if (libState !== "ready" || input.lastAutoSyncError) {
     const detail =
       input.lastAutoSyncError ||

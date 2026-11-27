@@ -165,7 +165,6 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let mut db_papers: HashMap<String, DbPaperRow> = HashMap::new();
     let mut db_order: Vec<String> = Vec::new();
     let mut sqlite_schema_present = false;
-    let mut has_papers_table = false;
     let mut ocr_cat_ok: HashMap<String, bool> = HashMap::new();
     let mut ann_counts: HashMap<String, (i64, i64)> = HashMap::new();
     let mut mem_counts: HashMap<String, (i64, String)> = HashMap::new();
@@ -174,7 +173,6 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     if let Some(conn) = open_readonly_db(&db_path) {
         if table_exists(&conn, "papers") {
             sqlite_schema_present = true;
-            has_papers_table = true;
             let cols = table_columns(&conn, "papers");
             let has = |c: &str| cols.iter().any(|x| x == c);
             let sel = |c: &str| -> String {
@@ -263,6 +261,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                 }
             }
         }
+        let papers_has_rows = !db_papers.is_empty();
         if table_exists(&conn, "workspace_registry") {
             sqlite_schema_present = true;
             let cols = table_columns(&conn, "workspace_registry");
@@ -289,7 +288,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                         if tk.is_empty() {
                             continue;
                         }
-                        let entry = if has_papers_table {
+                        let entry = if papers_has_rows {
                             let Some(existing) = db_papers.get_mut(&tk) else {
                                 continue;
                             };

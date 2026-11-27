@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json as _sync_progress_json
 import logging
 import re
+import sys as _sync_progress_sys
 from pathlib import Path
 
 from paperforge import __version__
@@ -17,6 +19,19 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
+
+
+def _emit_sync_progress(phase: str, current: int, total: int = 5, detail: str = "") -> None:
+    """Emit out-of-band sync progress frame on stderr for Rust daemon `task.updated` relay."""
+    try:
+        frame = _sync_progress_json.dumps(
+            {"phase": phase, "current": current, "total": total, "detail": detail},
+            ensure_ascii=False,
+        )
+        _sync_progress_sys.stderr.write(f"PF_PROGRESS:{frame}\n")
+        _sync_progress_sys.stderr.flush()
+    except Exception:
+        pass
 
 _OCR_RUNTIME_FILES: tuple[str, ...] = (
     "paperforge/worker/ocr_render.py",
@@ -412,6 +427,7 @@ class SyncService:
                 return fp_err_or_hit
 
         # ── Phase 0: Direct zotero.sqlite materialization (when fastpath missed) ──
+        _emit_sync_progress("read_zotero", 1, 5)
         if fastpath_paths is None:
             fastpath_paths = self.resolve_paths()
         mat_err = self._safe_materialize_sqlite_phase0(fastpath_paths)
@@ -450,6 +466,7 @@ class SyncService:
         # ── Phase 1: Select ──
         import time as _time
 
+        _emit_sync_progress("sync_notes", 2, 5)
         if not index_only:
             from paperforge.worker.sync import run_selection_sync
 
@@ -504,12 +521,14 @@ class SyncService:
             import paperforge.worker.asset_index as asset_index
 
             _t2 = _time.time()
+            _emit_sync_progress("build_index", 3, 5)
             with timing.phase("sync.build_index"):
                 index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
             _t3 = _time.time()
             logger.info("build_index: %d entries in %.1fs", index_count, _t3 - _t2)
 
             # ── Phase 3: Clean ──
+            _emit_sync_progress("verify_library", 4, 5, str(index_count))
             with timing.phase("sync.cleanup"):
                 orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
                 flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
