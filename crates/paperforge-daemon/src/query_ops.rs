@@ -165,6 +165,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
     let mut db_papers: HashMap<String, DbPaperRow> = HashMap::new();
     let mut db_order: Vec<String> = Vec::new();
     let mut sqlite_schema_present = false;
+    let mut papers_has_rows = false;
     let mut ocr_cat_ok: HashMap<String, bool> = HashMap::new();
     let mut ann_counts: HashMap<String, (i64, i64)> = HashMap::new();
     let mut mem_counts: HashMap<String, (i64, String)> = HashMap::new();
@@ -261,7 +262,7 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
                 }
             }
         }
-        let papers_has_rows = !db_papers.is_empty();
+        papers_has_rows = !db_papers.is_empty();
         if table_exists(&conn, "workspace_registry") {
             sqlite_schema_present = true;
             let cols = table_columns(&conn, "workspace_registry");
@@ -543,16 +544,50 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             }
         }
 
-        let main_note = db_p
-            .map(|p| p.main_note_path.as_str())
-            .filter(|s| !s.is_empty())
-            .map(String::from)
-            .unwrap_or_else(|| {
-                obj.and_then(|m| m.get("main_note_path").or_else(|| m.get("note_path")))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string()
-            });
+        let fl_main_note = obj
+            .and_then(|m| m.get("main_note_path").or_else(|| m.get("note_path")))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let db_main_note = db_p.map(|p| p.main_note_path.as_str()).unwrap_or("");
+        let file_is_nonempty = |rel: &str| -> bool {
+            !rel.is_empty()
+                && vault
+                    .join(rel.replace('\\', "/"))
+                    .metadata()
+                    .map(|m| m.is_file() && m.len() > 0)
+                    .unwrap_or(false)
+        };
+        let ws_row_stale = !papers_has_rows
+            && !db_main_note.is_empty()
+            && !fl_main_note.is_empty()
+            && !file_is_nonempty(db_main_note)
+            && file_is_nonempty(&fl_main_note);
+        let main_note = if ws_row_stale || db_main_note.is_empty() {
+            fl_main_note
+        } else {
+            db_main_note.to_string()
+        };
+        let resolved_title = if ws_row_stale {
+            let jt = json_str("title");
+            if !jt.is_empty() {
+                jt
+            } else {
+                pick_db_first(db_p.map(|p| p.title.as_str()), "title", &key)
+            }
+        } else {
+            pick_db_first(db_p.map(|p| p.title.as_str()), "title", &key)
+        };
+        let resolved_domain = if ws_row_stale {
+            let jd = json_str("domain");
+            if !jd.is_empty() {
+                jd
+            } else {
+                pick_db_first(db_p.map(|p| p.domain.as_str()), "domain", "")
+            }
+        } else {
+            pick_db_first(db_p.map(|p| p.domain.as_str()), "domain", "")
+        };
         let ocr_cat_broken = ocr_cat_ok.get(&key) == Some(&false);
         let needs_diag = matches!(ocr_status.as_str(), "failed" | "done_incomplete" | "unknown")
             || (ocr_status == "done"
@@ -584,14 +619,14 @@ pub fn handle_base_snapshot(vault: &Path) -> (i32, String, String) {
             key.clone(),
             json!({
                 "zotero_key": key,
-                "title": pick_db_first(db_p.map(|p| p.title.as_str()), "title", &key),
+                "title": resolved_title,
                 "first_author": pick_db_first(db_p.map(|p| p.first_author.as_str()), "first_author", ""),
                 "year": pick_db_first(db_p.map(|p| p.year.as_str()), "year", ""),
                 "journal": pick_db_first(db_p.map(|p| p.journal.as_str()), "journal", ""),
                 "impact_factor": pick_db_first(db_p.map(|p| p.impact_factor.as_str()), "impact_factor", ""),
                 "impact_factor_source": json_str("impact_factor_source"),
                 "journal_partition": pick_db_first(db_p.map(|p| p.journal_partition.as_str()), "journal_partition", ""),
-                "domain": pick_db_first(db_p.map(|p| p.domain.as_str()), "domain", ""),
+                "domain": resolved_domain,
                 "collections": collections,
                 "has_pdf": has_pdf,
                 "do_ocr": do_ocr,

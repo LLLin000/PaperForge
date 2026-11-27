@@ -724,6 +724,8 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_cancel_btn: "Cancel waiting",
     runtime_install_cancelled:
       "Stopped waiting for background setup. You can restart installation or refresh status anytime.",
+    runtime_daemon_swapping_resume:
+      "Updating local background service — installation and library import will continue automatically…",
     runtime_install_btn: "Install PaperForge runtime",
     runtime_reinstall_btn: "Reinstall PaperForge runtime",
     runtime_update_btn: "Update PaperForge runtime",
@@ -2571,6 +2573,8 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_cancel_btn: "取消等待",
     runtime_install_cancelled:
       "已停止等待自动配置。你可以随时重新点击一键安装或刷新状态。",
+    runtime_daemon_swapping_resume:
+      "正在切换至新版后台服务，完成后将自动继续安装引擎并导入文献…",
     runtime_install_btn: "安装 PaperForge 运行环境",
     runtime_reinstall_btn: "重新安装 PaperForge 运行环境",
     runtime_update_btn: "更新 PaperForge 运行环境",

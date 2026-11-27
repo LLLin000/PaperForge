@@ -170,6 +170,7 @@ import {
   readRuntimePointer,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
+import { isEngineVersionCompatible } from "./services/setup-decision-tree";
 import type { RuntimeStatus } from "./client";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
@@ -258,6 +259,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _exploreChecklistDismissed = false;
   private _detectedFolderCollisionMsg: string | null = null;
   private _autoContinueSetupAfterInstall = false;
+  private _pendingRuntimeRestartAfterDaemonSwap: RuntimeInstallerAction | null =
+    null;
+  private _setupPhase:
+    | "idle"
+    | "daemon_updating"
+    | "installing_engine"
+    | "configuring"
+    | "syncing" = "idle";
   private _setupProxyUrl = "";
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
@@ -830,6 +839,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
+    this._setupPhase = "configuring";
     this._setupFeedback = null;
     this._setupFailureDetail = null;
     const settings = this.plugin.settings;
@@ -889,11 +899,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (!outcome.ok) {
           if (outcome.cancelled) {
             this._setupOperation = "idle";
+            this._setupPhase = "idle";
             this._setupFeedback = t("setup_install_cancelled");
             this.display();
             return;
           }
           this._setupOperation = "failed";
+          this._setupPhase = "idle";
           this._setupFeedback = t("setup_library_config_failed");
           const rawOutcome = outcome as unknown as {
             error?: unknown;
@@ -980,6 +992,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
         if (problems.length > 0) {
           this._setupOperation = "failed";
+          this._setupPhase = "idle";
           this._setupFeedback = t("setup_library_config_failed");
           this._setupFailureDetail = this._formatConfigFailures(problems);
           this.display();
@@ -1001,8 +1014,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // canonical index from Zotero. Always run it — deciding from a
         // just-requested probe races the async envelope update.
         this._setupOperation = "running";
+        this._setupPhase = "syncing";
         const syncStartedAt = Date.now();
-        this._setupFeedback = `${t("setup_library_syncing")} (0s)`;
+        const initialLive = this.plugin?.getLiveTaskSummary?.("sync");
+        this._setupFeedback = initialLive?.phaseText
+          ? `${initialLive.phaseText} (0s)`
+          : `${t("setup_library_syncing")} (0s)`;
         this.display();
         const syncTicker = setInterval(() => {
           if (this._setupOperation !== "running") return;
@@ -1010,7 +1027,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             1,
             Math.floor((Date.now() - syncStartedAt) / 1000)
           );
-          this._setupFeedback = `${t("setup_library_syncing")} (${elapsedSec}s)`;
+          const live = this.plugin?.getLiveTaskSummary?.("sync");
+          const label = live?.phaseText || t("setup_library_syncing");
+          this._setupFeedback = `${label} (${elapsedSec}s)`;
           if (this._isOpen && elapsedSec % 2 === 0) {
             this.display();
           }
@@ -1020,6 +1039,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         } catch (error) {
           console.error("PaperForge library sync failed:", error);
           this._setupOperation = "failed";
+          this._setupPhase = "idle";
           this._setupFeedback = t("setup_library_sync_failed");
           const msg = this._formatSetupFailure(error);
           if (msg) this._setupFailureDetail = msg;
@@ -1031,6 +1051,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._attemptedProbes.add("library");
         this._probeModule("library");
         this._setupOperation = "idle";
+        this._setupPhase = "idle";
         this._setupFeedback = t("setup_library_configured");
         if (opts?.autoCompleteOnSuccess) {
           this.plugin.settings._setup_complete = true;
@@ -1054,6 +1075,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           });
         }
         this._setupOperation = "failed";
+        this._setupPhase = "idle";
         this._setupFeedback = t(
           libraryConfigured
             ? "setup_library_refresh_failed"
@@ -1260,25 +1282,110 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._daemonDrivenRuntimeInstall = true;
     this._installerLogPath = installerLogPath();
     this._installerLogStartOffset = -1;
-    if (this._setupOperation === "idle") this._setupOperation = "running";
+    if (this._setupOperation === "failed") {
+      this._setupFeedback = null;
+      this._setupFailureDetail = null;
+    }
+    this._setupOperation = "running";
+    this._setupPhase = "installing_engine";
     this._pollRuntimeUntilReady();
     return true;
   }
 
   /** Fast-path transition invoked by main.ts when daemon task.updated reports terminal runtime state. */
-  onDaemonRuntimeJobFinished(succeeded: boolean, errorDetail?: string): void {
-    if (!this._daemonDrivenRuntimeInstall && !this._runtimePollTimer) return;
-    if (succeeded) {
+  onDaemonRuntimeJobFinished(
+    status: "succeeded" | "failed" | "cancelled" | boolean,
+    errorDetail?: string
+  ): void {
+    const normStatus: "succeeded" | "failed" | "cancelled" =
+      status === true ? "succeeded" : status === false ? "failed" : status;
+    const hasActiveObserver =
+      this._daemonDrivenRuntimeInstall ||
+      Boolean(this._runtimePollTimer) ||
+      this._autoContinueSetupAfterInstall;
+    if (!hasActiveObserver) return;
+
+    if (normStatus === "succeeded") {
+      this._pendingRuntimeRestartAfterDaemonSwap = null;
       this._refreshRuntimeStatus(true);
       this._stopRuntimePoll(true);
       return;
     }
+
+    if (normStatus === "cancelled") {
+      // Old daemon cancels in-flight runtime jobs during binary hot-swap.
+      // Preserve Express auto-chain and queue seamless resume on the new daemon.
+      if (this.plugin?.isDaemonUpdating?.()) {
+        if (this._runtimePollTimer) {
+          clearInterval(this._runtimePollTimer);
+          this._runtimePollTimer = null;
+        }
+        this._daemonDrivenRuntimeInstall = false;
+        this._pendingRuntimeRestartAfterDaemonSwap =
+          this._currentRuntimeAction();
+        this._setupOperation = "running";
+        this._setupPhase = "daemon_updating";
+        this._setupFeedback = t("runtime_daemon_swapping_resume");
+        this._setupFailureDetail = null;
+        this.display();
+        return;
+      }
+
+      const ptr = readRuntimePointer();
+      const pluginVersion = String(this.plugin?.manifest?.version ?? "");
+      if (
+        ptr &&
+        pluginVersion &&
+        isEngineVersionCompatible(
+          ptr.paperforgeVersion,
+          pluginVersion,
+          this._minEngineVersion()
+        )
+      ) {
+        this._pendingRuntimeRestartAfterDaemonSwap = null;
+        this._refreshRuntimeStatus(true);
+        this._stopRuntimePoll(true);
+        return;
+      }
+
+      this._stopRuntimePoll(false, t("runtime_install_cancelled"));
+      return;
+    }
+
     this._stopRuntimePoll(
       false,
       undefined,
       errorDetail || this._installerLogTail() || "runtime setup failed",
       "runtime_install_step_failed"
     );
+  }
+
+  /** Resume a runtime install/auto-chain queued while the daemon binary hot-swapped. */
+  onDaemonSwapFinished(): void {
+    const pendingAction = this._pendingRuntimeRestartAfterDaemonSwap;
+    this._pendingRuntimeRestartAfterDaemonSwap = null;
+    this._refreshRuntimeStatus(true);
+    if (!pendingAction) {
+      this.display();
+      return;
+    }
+    const ptr = readRuntimePointer();
+    const pluginVersion = String(this.plugin?.manifest?.version ?? "");
+    if (
+      ptr &&
+      pluginVersion &&
+      isEngineVersionCompatible(
+        ptr.paperforgeVersion,
+        pluginVersion,
+        this._minEngineVersion()
+      )
+    ) {
+      this._stopRuntimePoll(true);
+      return;
+    }
+    this._launchRuntimeInstaller(pendingAction, {
+      autoContinueSetup: this._autoContinueSetupAfterInstall,
+    });
   }
 
   /** Launch or attach to the single runtime installer owner (Rust daemon coalesced queue first). */
@@ -1288,6 +1395,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   ): void {
     if (opts?.autoContinueSetup) {
       this._autoContinueSetupAfterInstall = true;
+    }
+    this._setupFeedback = null;
+    this._setupFailureDetail = null;
+    if (this.plugin?.isDaemonUpdating?.()) {
+      this._pendingRuntimeRestartAfterDaemonSwap = action;
+      this._setupOperation = "running";
+      this._setupPhase = "daemon_updating";
+      this._setupFeedback = t("runtime_daemon_swapping_resume");
+      this.display();
+      return;
     }
     if (this.plugin?.isRuntimeUpdating?.()) {
       this._syncRuntimePollFromBackground();
@@ -1318,7 +1435,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._installerLogStartOffset =
         this._captureInstallerLogStartOffset(logPath);
       this._daemonDrivenRuntimeInstall = true;
-      if (this._setupOperation === "idle") this._setupOperation = "running";
+      this._setupOperation = "running";
+      this._setupPhase = "installing_engine";
       this._pollRuntimeUntilReady();
       this.display();
       void client
@@ -1549,24 +1667,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._runtimePollTimer = null;
     }
     this._daemonDrivenRuntimeInstall = false;
-    if (this._setupOperation === "running") {
-      this._setupOperation = cancelReason ? "idle" : ready ? "idle" : "failed";
-      if (!ready) {
-        if (cancelReason) {
-          this._setupFeedback = cancelReason;
-        } else {
-          // Say why the poll gave up: a template with an empty slot tells the
-          // user nothing and hides the failing command's own message.
-          const detail =
-            errorDetailOverride ||
-            this._runtimeStatusError ||
-            this._installerLogTail() ||
-            "";
-          this._setupFeedback = t(templateKey).replace(
-            "{error}",
-            detail || "the runtime did not become ready in time"
-          );
-        }
+    this._pendingRuntimeRestartAfterDaemonSwap = null;
+    this._setupPhase = "idle";
+    if (ready) {
+      this._setupOperation = "idle";
+      this._setupFeedback = null;
+      this._setupFailureDetail = null;
+    } else if (this._setupOperation === "running") {
+      this._setupOperation = cancelReason ? "idle" : "failed";
+      if (cancelReason) {
+        this._setupFeedback = cancelReason;
+      } else {
+        // Say why the poll gave up: a template with an empty slot tells the
+        // user nothing and hides the failing command's own message.
+        const detail =
+          errorDetailOverride ||
+          this._runtimeStatusError ||
+          this._installerLogTail() ||
+          "";
+        this._setupFeedback = t(templateKey).replace(
+          "{error}",
+          detail || "the runtime did not become ready in time"
+        );
       }
     } else if (cancelReason) {
       this._setupFeedback = cancelReason;
@@ -6102,7 +6224,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const settings = this.plugin.settings;
     const pointer = readRuntimePointer();
     const runtime = this._runtimeStatus;
-    const rtReady = runtime?.runtime_ready === true;
+    const ptrReady = Boolean(
+      pointer &&
+      fs.existsSync(pointer.pythonPath) &&
+      !this._runtimeStatusError &&
+      isEngineVersionCompatible(
+        pointer.paperforgeVersion,
+        String(this.plugin?.manifest?.version ?? ""),
+        this._minEngineVersion()
+      )
+    );
+    const rtReady =
+      runtime?.runtime_ready === true || (runtime === null && ptrReady);
     const action: RuntimeInstallerAction = !pointer
       ? "install"
       : runtime?.version_matches_expected === false
@@ -6312,28 +6445,76 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     updateReadySummary();
 
     // Seamless Engine Auto-Pipeline notice/progress inside Card 1
+    const daemonUpdating = Boolean(this.plugin?.isDaemonUpdating?.());
+    const liveRuntime = this.plugin?.getLiveTaskSummary?.("runtime") ?? null;
+    const liveSync = this.plugin?.getLiveTaskSummary?.("sync") ?? null;
     const expressRuntimeInProgress =
       !rtReady &&
       (this._syncRuntimePollFromBackground() ||
-        Boolean(this._runtimePollTimer));
-    if (!rtReady) {
+        Boolean(this._runtimePollTimer) ||
+        Boolean(this.plugin?.isRuntimeUpdating?.()) ||
+        Boolean(this._pendingRuntimeRestartAfterDaemonSwap));
+    const rtChecking =
+      !rtReady &&
+      !this._runtimeStatusError &&
+      !daemonUpdating &&
+      !expressRuntimeInProgress &&
+      (this._runtimeStatusLoading ||
+        (Boolean(pointer) && this._runtimeStatus === null));
+    const isImporting =
+      this._setupOperation === "running" &&
+      !expressRuntimeInProgress &&
+      !daemonUpdating;
+    const ctaBusy =
+      daemonUpdating || rtChecking || expressRuntimeInProgress || isImporting;
+
+    if (daemonUpdating) {
+      const pipeBox = c1.createDiv({ cls: "pf-express-pipeline-box" });
+      pipeBox.createDiv({
+        cls: "pf-express-pipeline-steps",
+        text: isZh
+          ? "正在切换至新版后台服务组件 → 完成后自动继续安装引擎与导入…"
+          : "Updating local background service → Engine & import will resume automatically…",
+      });
+      const bar = pipeBox.createDiv({ cls: "pf-runtime-stage-bar" });
+      const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
+      fill.classList.add("is-indeterminate");
+    } else if (!rtReady) {
       if (expressRuntimeInProgress) {
-        const prog = this._installerProgressLine();
-        const pct = prog.includes("4/5")
-          ? 80
-          : prog.includes("3/5")
-            ? 60
-            : prog.includes("2/5")
-              ? 40
-              : prog.includes("1/5")
-                ? 22
-                : 15;
+        const prog =
+          liveRuntime?.phaseText || this._installerProgressLine() || "";
+        const elapsedText =
+          liveRuntime?.startedAt && liveRuntime.startedAt > 0
+            ? ` · ${Math.max(1, Math.floor((Date.now() - liveRuntime.startedAt) / 1000))}s`
+            : "";
+        let pct = 15;
+        if (liveRuntime && liveRuntime.total > 0 && liveRuntime.current > 0) {
+          pct = Math.max(
+            10,
+            Math.min(
+              100,
+              Math.round((liveRuntime.current / liveRuntime.total) * 100)
+            )
+          );
+        } else if (prog.includes("4/5")) {
+          pct = 80;
+        } else if (prog.includes("3/5")) {
+          pct = 60;
+        } else if (prog.includes("2/5")) {
+          pct = 40;
+        } else if (prog.includes("1/5")) {
+          pct = 22;
+        }
         const pipeBox = c1.createDiv({ cls: "pf-express-pipeline-box" });
         pipeBox.createDiv({
           cls: "pf-express-pipeline-steps",
-          text: isZh
-            ? `① 自动准备本地同步组件 (${prog || "进行中…"})  →  ② 自动导入 Zotero 文献`
-            : `1. Preparing local sync engine (${prog || "working…"})  →  2. Auto-importing Zotero`,
+          text: this._autoContinueSetupAfterInstall
+            ? isZh
+              ? `① 正在安装计算引擎 (${prog || "进行中…"}${elapsedText})  →  ② 自动导入 Zotero 文献`
+              : `1. Installing compute engine (${prog || "working…"}${elapsedText})  →  2. Auto-importing Zotero`
+            : isZh
+              ? `正在后台安装 PaperForge 计算引擎 (${prog || "进行中…"}${elapsedText})`
+              : `Installing PaperForge compute engine (${prog || "working…"}${elapsedText})`,
         });
         const bar = pipeBox.createDiv({ cls: "pf-runtime-stage-bar" });
         const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
@@ -6342,10 +6523,42 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         c1.createEl("p", {
           cls: "pf-express-card-sub",
           text: isZh
-            ? "提示：点击右下角开始导入时，系统会自动静默完成本地组件准备与同步（约 20 秒，无需手动装 Python）。"
-            : "Note: Clicking Import below automatically sets up required local components (~20s, zero terminal needed).",
+            ? "提示：点击右下角按钮会先全自动安装 PaperForge 计算引擎（约 20 秒，无需手动装 Python），就绪后自动开始导入文献。"
+            : "Note: Clicking the button below first installs the PaperForge compute engine (~20s, zero terminal needed), then automatically imports your library.",
         });
       }
+    } else if (isImporting) {
+      const syncLabel =
+        liveSync?.phaseText ||
+        (this._setupPhase === "configuring"
+          ? isZh
+            ? "正在写入文献库配置…"
+            : "Writing library configuration…"
+          : t("setup_library_syncing"));
+      const syncElapsed =
+        liveSync?.startedAt && liveSync.startedAt > 0
+          ? ` · ${Math.max(1, Math.floor((Date.now() - liveSync.startedAt) / 1000))}s`
+          : "";
+      const syncPct =
+        liveSync && liveSync.total > 0 && liveSync.current > 0
+          ? Math.max(
+              10,
+              Math.min(
+                100,
+                Math.round((liveSync.current / liveSync.total) * 100)
+              )
+            )
+          : 25;
+      const pipeBox = c1.createDiv({ cls: "pf-express-pipeline-box" });
+      pipeBox.createDiv({
+        cls: "pf-express-pipeline-steps",
+        text: isZh
+          ? `✓ 计算引擎已就绪  →  正在导入 Zotero 文献 (${syncLabel}${syncElapsed})`
+          : `✓ Compute engine ready  →  Importing Zotero (${syncLabel}${syncElapsed})`,
+      });
+      const bar = pipeBox.createDiv({ cls: "pf-runtime-stage-bar" });
+      const fill = bar.createDiv({ cls: "pf-runtime-stage-fill" });
+      fill.style.width = `${syncPct}%`;
     }
 
     // Collapsed Smart Defaults (open automatically only if Zotero not found yet)
@@ -7210,29 +7423,62 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     renderActionButton(fActions, {
       label: isZh ? "稍后配置，先逛逛" : t("setup_nav_later"),
       variant: "ghost",
-      disabled: this._setupOperation === "running",
+      disabled:
+        this._setupOperation === "running" ||
+        expressRuntimeInProgress ||
+        isImporting,
       onClick: () => this._goHome(),
     });
-    const isInstalling = Boolean(this._runtimePollTimer);
+    const rtStepTag =
+      liveRuntime && liveRuntime.total > 0 && liveRuntime.current > 0
+        ? ` (${liveRuntime.current}/${liveRuntime.total})`
+        : "";
+    const syncStepTag =
+      liveSync && liveSync.total > 0 && liveSync.current > 0
+        ? ` (${liveSync.current}/${liveSync.total})`
+        : "";
+    let primaryLabel: string;
+    if (daemonUpdating) {
+      primaryLabel = isZh ? "正在更新本地服务…" : "Updating local service…";
+    } else if (rtChecking) {
+      primaryLabel = isZh ? "正在检测运行环境…" : "Checking engine…";
+    } else if (expressRuntimeInProgress) {
+      primaryLabel = this._autoContinueSetupAfterInstall
+        ? isZh
+          ? `正在安装引擎${rtStepTag}，完成后自动导入…`
+          : `Installing engine${rtStepTag}, then importing…`
+        : isZh
+          ? `正在安装 PaperForge 引擎${rtStepTag}…`
+          : `Installing PaperForge engine${rtStepTag}…`;
+    } else if (isImporting) {
+      primaryLabel =
+        this._setupPhase === "configuring"
+          ? isZh
+            ? "正在写入文献库配置…"
+            : "Configuring library…"
+          : isZh
+            ? `正在导入文献库${syncStepTag}…`
+            : `Importing library${syncStepTag}…`;
+    } else if (!rtReady) {
+      if (action === "update") {
+        primaryLabel = isZh
+          ? `更新引擎并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
+          : `Update Engine & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`;
+      } else {
+        primaryLabel = isZh
+          ? `安装引擎并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
+          : `Install Engine & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`;
+      }
+    } else {
+      primaryLabel = isZh
+        ? `立即导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献并开始使用`
+        : `Import${paperCnt ? ` ${paperCnt}` : ""} Papers & Start`;
+    }
     renderActionButton(fActions, {
-      label:
-        this._setupOperation === "running"
-          ? isInstalling
-            ? isZh
-              ? "正在准备组件并同步文献…"
-              : "Preparing & importing library…"
-            : isZh
-              ? "正在导入文献库…"
-              : "Importing library…"
-          : rtReady
-            ? isZh
-              ? `立即导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献并开始使用`
-              : `Import${paperCnt ? ` ${paperCnt}` : ""} Papers & Start`
-            : isZh
-              ? `自动准备组件并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
-              : `Prepare & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`,
-      disabled: this._setupOperation === "running",
+      label: primaryLabel,
+      disabled: ctaBusy,
       onClick: () => {
+        if (ctaBusy) return;
         if (!rtReady) {
           void this.plugin.saveSettings();
           this._launchRuntimeInstaller(action, { autoContinueSetup: true });

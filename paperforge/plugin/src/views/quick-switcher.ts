@@ -7,6 +7,7 @@ import type {
 import type { CommandRegistry, CommandSpec } from "../uikit/commands";
 import { renderKeycap } from "../uikit/primitives";
 import { setPfIcon } from "./icons";
+import { openVaultFileSafely } from "./paper-interactions";
 
 export interface PaperForgeQuickSwitcherHost {
   getBaseSnapshotCache(): BaseTableSnapshotDto | null;
@@ -407,7 +408,11 @@ export class PaperForgeQuickSwitcherModal extends BaseSuggestModal<QuickSwitcher
       if (row.has_pdf) {
         void this.plugin.openPaperPdf(row.zotero_key);
       } else if (row.main_note_path) {
-        void this.app.workspace?.openLinkText?.(row.main_note_path, "", false);
+        void openVaultFileSafely(this.app, {
+          filePath: row.main_note_path,
+          zoteroKey: row.zotero_key,
+          mod: false,
+        });
       }
       return;
     }
@@ -416,7 +421,11 @@ export class PaperForgeQuickSwitcherModal extends BaseSuggestModal<QuickSwitcher
       return;
     }
     if (row.main_note_path) {
-      void this.app.workspace?.openLinkText?.(row.main_note_path, "", false);
+      void openVaultFileSafely(this.app, {
+        filePath: row.main_note_path,
+        zoteroKey: row.zotero_key,
+        mod: false,
+      });
       return;
     }
     if (row.has_pdf) {

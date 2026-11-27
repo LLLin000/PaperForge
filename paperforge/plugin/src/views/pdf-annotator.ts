@@ -33,6 +33,7 @@ import type {
   PdfAnnotationDto,
 } from "../client/paperforge-client";
 import { createPfIconBtn, setPfIcon, type PfIconName } from "./icons";
+import { openVaultFileSafely } from "./paper-interactions";
 
 export interface PdfAnnotatorOpenState {
   paperKey: string;
@@ -1674,17 +1675,16 @@ export class PaperForgePdfView extends ItemView {
 
   private async _openNoteSideBySide(): Promise<void> {
     const noteRel = this._ctx?.note_rel_path;
-    if (!noteRel) {
+    const key = this._state?.paperKey;
+    if (!noteRel && !key) {
       new Notice(t("paper_note_missing") || "Reading note path unavailable.");
       return;
     }
-    const af = this.app.vault.getAbstractFileByPath(noteRel);
-    if (af instanceof TFile) {
-      const leaf = this.app.workspace.getLeaf("split");
-      await leaf.openFile(af);
-      return;
-    }
-    await this.app.workspace.openLinkText(noteRel, "", "split");
+    await openVaultFileSafely(this.app, {
+      filePath: noteRel,
+      zoteroKey: key,
+      mod: "split",
+    });
   }
 
   private async _mountPages(): Promise<void> {

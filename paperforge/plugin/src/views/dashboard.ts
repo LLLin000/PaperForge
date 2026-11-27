@@ -38,6 +38,7 @@ import {
   type VersionEntryDTO,
 } from "../client/paperforge-client";
 import { diffFulltext } from "../services/version-diff";
+import { openVaultFileSafely } from "./paper-interactions";
 import { VersionRestoreModal } from "./ocr-workspace";
 import {
   rejectionCode,
@@ -1513,7 +1514,13 @@ export class PaperForgeStatusView extends ItemView {
         notePath: noteLink,
         hasPdf: Boolean(entry.pdf_path || entry.has_pdf),
         onOpenNote: () => {
-          if (noteLink) void this.app.workspace.openLinkText(noteLink, "");
+          if (noteLink || key) {
+            void openVaultFileSafely(this.app, {
+              filePath: noteLink,
+              zoteroKey: key,
+              preferRootLeaf: true,
+            });
+          }
         },
         onOpenPdf: () => void pfPlugin?.openPaperPdf?.(key),
         onOpenSplit:
@@ -1600,12 +1607,21 @@ export class PaperForgeStatusView extends ItemView {
         }
         const pathMatch = entry.pdf_path.match(/\[\[([^\]]+)\]\]/);
         const isWikilink = pathMatch !== null;
-        const targetPath = pathMatch ? pathMatch[1] : entry.pdf_path;
+        const targetPath = (pathMatch ? pathMatch[1] : entry.pdf_path)
+          .replace(/^absolute:/i, "")
+          .trim();
+        if (path.isAbsolute(targetPath)) {
+          this._openExternalPath(targetPath);
+          return;
+        }
         if (isWikilink) {
-          // Vault-relative wikilink body: resolve through Obsidian's VFS.
+          // Vault-relative wikilink body: resolve through Obsidian's VFS safely.
           const file = this.app.vault.getAbstractFileByPath(targetPath);
           if (file) {
-            this.app.workspace.openLinkText(targetPath, "");
+            void openVaultFileSafely(this.app, {
+              filePath: targetPath,
+              preferRootLeaf: true,
+            });
             return;
           }
           this._setRecoveryError(
@@ -1619,27 +1635,6 @@ export class PaperForgeStatusView extends ItemView {
               },
             ]
           );
-          return;
-        }
-        // F-14: a plain path is already absolute (OS path) OR a vault-relative
-        // non-wikilink. Only join the vault base when it is NOT absolute.
-        if (path.isAbsolute(targetPath)) {
-          const openPdf = (Platform as any).openPath;
-          if (typeof openPdf === "function") {
-            openPdf.call(Platform, targetPath);
-          } else {
-            this._setRecoveryError(
-              t("dash_pdf_missing") || "PDF not found",
-              targetPath,
-              [
-                {
-                  label: t("dash_sync_library"),
-                  primary: true,
-                  run: () => void this._runLibrarySync(),
-                },
-              ]
-            );
-          }
           return;
         }
         // Junction-inside-vault paths (System/Zotero → outside storage) are
@@ -2325,7 +2320,11 @@ export class PaperForgeStatusView extends ItemView {
           e.preventDefault();
           const discFile = this.app.vault.getAbstractFileByPath(mdPath);
           if (discFile) {
-            this.app.workspace.openLinkText(mdPath, "");
+            void openVaultFileSafely(this.app, {
+              filePath: mdPath,
+              preferRootLeaf: true,
+              missingNotice: t("dash_discussions_missing"),
+            });
           } else {
             new Notice(t("dash_discussions_missing"));
           }
@@ -3046,7 +3045,10 @@ export class PaperForgeStatusView extends ItemView {
     const file = this.app.vault.getAbstractFileByPath(fulltextPath);
     if (file) {
       this._clearRecoveryError();
-      this.app.workspace.openLinkText(file.path, "");
+      void openVaultFileSafely(this.app, {
+        filePath: file.path,
+        preferRootLeaf: true,
+      });
     } else {
       this._setRecoveryError(
         t("dash_fulltext_missing") || "未找到全文文件",
@@ -3087,8 +3089,31 @@ export class PaperForgeStatusView extends ItemView {
     return file instanceof TFile ? file : null;
   }
 
-  async _openSearchResult(notePath: string, newLeaf: boolean) {
+  async _openSearchResult(
+    notePath: string,
+    newLeaf: boolean,
+    zoteroKey?: string
+  ) {
     let file = this.app.vault.getAbstractFileByPath(notePath);
+    const isHealthy =
+      file instanceof TFile &&
+      ((file as { stat?: { size?: number } })?.stat?.size ?? 1) > 0;
+    if (
+      !isHealthy &&
+      zoteroKey &&
+      typeof this.app.vault.getMarkdownFiles === "function"
+    ) {
+      const matches = this.app.vault
+        .getMarkdownFiles()
+        .filter(
+          (f) =>
+            f.basename === zoteroKey ||
+            (typeof f.basename === "string" &&
+              f.basename.startsWith(`${zoteroKey} - `))
+        );
+      const healthy = matches.find((f) => (f.stat?.size ?? 1) > 0);
+      if (healthy) file = healthy;
+    }
     if (!(file instanceof TFile)) {
       file = await this._registerExternalNote(notePath);
     }
@@ -3195,7 +3220,7 @@ export class PaperForgeStatusView extends ItemView {
       }
     }
     if (resolvedPath) {
-      await this._openSearchResult(resolvedPath, newLeaf);
+      await this._openSearchResult(resolvedPath, newLeaf, zoteroKey);
       return;
     }
     this._setRecoveryError(

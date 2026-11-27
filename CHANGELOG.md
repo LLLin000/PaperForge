@@ -4,6 +4,16 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.11] - 2026-11-27
+
+### Express Setup Auto-Chain, Safe Base Note Opening & External PDF Property Fix
+
+- **Express Setup Daemon Hot-Swap Continuity & Honest CTA States (`main.ts`, `settings.ts`, `i18n.ts`)**: Distinguished `job.status === "cancelled"` from `"failed"` in `onDaemonRuntimeJobFinished`, preserved `_autoContinueSetupAfterInstall` and seamlessly resumed installation when the native daemon cancels an old runtime job during binary hot-swap (`onDaemonSwapFinished`), cleared stale failure banners on retry, and updated Express Setup's footer CTA button label and disabled state dynamically across daemon swap, runtime install (`1/5–5/5`), configuration, and Zotero import.
+- **SQLite `workspace_registry` Sync & Stale-Row Guard (`sync_service.py`, `query_ops.rs`)**: Updated `paperforge.db::workspace_registry` during `sync` and self-healed stale rows during fast-path preflight; guarded `base-snapshot` so non-existent stale `workspace_registry` paths (`Resources/Literature/Literature/...`) yield to valid on-disk `formal-library.json` note paths and domain labels.
+- **Safe Base Note Opening & External `pdf_path` Property Links (`paperforge-base-view.ts`, `main.ts`)**: Anchored Base table rows to Obsidian's live `entry.file.path`, opened notes via `leaf.openFile(TFile)` with `zotero_key` fallback (eliminating `openLinkText` creation of 0-byte phantom notes), and intercepted clicks on external OS `pdf_path` wikilinks in Properties to open PaperForge's built-in PDF viewer cleanly instead of triggering Obsidian's filename character error.
+
+---
+
 ## [2.0.10] - 2026-11-27
 
 ### Base Snapshot PDF Flag Fix & Live Backend-to-Frontend Progress Visibility

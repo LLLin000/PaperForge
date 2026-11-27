@@ -931,10 +931,16 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     });
 
     // Drag a column resizer
-    const resizer = container.querySelector<HTMLElement>(".pf-base-col-resizer")!;
+    const resizer = container.querySelector<HTMLElement>(
+      ".pf-base-col-resizer"
+    )!;
     const PtrEvt = (dom.window as any).PointerEvent || dom.window.MouseEvent;
     resizer.dispatchEvent(
-      new PtrEvt("pointerdown", { bubbles: true, cancelable: true, clientX: 100 })
+      new PtrEvt("pointerdown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 100,
+      })
     );
     dom.window.document.dispatchEvent(
       new PtrEvt("pointerup", { bubbles: true, cancelable: true, clientX: 160 })
@@ -999,13 +1005,17 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     view.onload();
     // Collapse middle group GroupB
     container
-      .querySelector<HTMLElement>('tr.pf-base-group-row[data-pf-group="GroupB"]')!
+      .querySelector<HTMLElement>(
+        'tr.pf-base-group-row[data-pf-group="GroupB"]'
+      )!
       .click();
 
     const cbStart = container.querySelector<HTMLInputElement>(
       'input[data-pf-select-key="KEY0002"]'
     )!;
-    cbStart.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    cbStart.dispatchEvent(
+      new dom.window.MouseEvent("click", { bubbles: true })
+    );
     cbStart.checked = true;
     cbStart.dispatchEvent(new dom.window.Event("change"));
 
@@ -1041,7 +1051,10 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     (view as any).data = {
       data: [
         {
-          file: { basename: "K_DONE", path: snapshot.rows.K_DONE.main_note_path },
+          file: {
+            basename: "K_DONE",
+            path: snapshot.rows.K_DONE.main_note_path,
+          },
           getValue: (propId: string) =>
             propId === "note.zotero_key"
               ? { data: "K_DONE", toString: () => "K_DONE" }
@@ -1072,6 +1085,99 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
       expect(editableTd.textContent).toContain("Original Topic");
       expect(editableTd.textContent).not.toContain("Failed Edit");
     });
+    view.onunload();
+  });
+
+  it("prefers live Obsidian entry.file.path over stale snapshot main_note_path and opens via leaf.openFile instead of creating 0B ghosts", () => {
+    const staleRowKey = "STALE_01";
+    snapshot.rows[staleRowKey] = {
+      zotero_key: staleRowKey,
+      title: "Orthopaedics Paper",
+      first_author: "Lin",
+      year: "2024",
+      journal: "JOR",
+      impact_factor: "3.1",
+      domain: "Ortho",
+      has_pdf: true,
+      do_ocr: false,
+      analyze: false,
+      ocr_status: "pending",
+      deep_reading_status: "pending",
+      main_note_path:
+        "Resources/Literature/Literature/STALE_01 - Paper/STALE_01.md",
+      user_ann_count: 0,
+      agent_ann_count: 0,
+      memory_facet_count: 0,
+      memory_updated_at: "",
+      needs_diagnostic: false,
+    };
+    const realFile = {
+      path: "Resources/Literature/Ortho/STALE_01 - Paper/STALE_01.md",
+      basename: "STALE_01",
+      extension: "md",
+      stat: { size: 4096 },
+    };
+    const leafOpenFile = vi.fn().mockResolvedValue(undefined);
+    const localHost = {
+      ...host,
+      app: {
+        vault: {
+          getAbstractFileByPath: (p: string) =>
+            p === realFile.path ? realFile : null,
+          getMarkdownFiles: () => [realFile],
+        },
+        workspace: {
+          ...host.app.workspace,
+          getLeaf: vi.fn(() => ({ openFile: leafOpenFile })),
+        },
+      } as any,
+    };
+
+    const container = dom.window.document.createElement("div");
+    const view = new PaperForgeBasesView({} as any, container, localHost);
+    (view as any).config = {
+      getOrder: () => ["note.title"],
+      getDisplayName: () => "",
+    };
+    (view as any).data = {
+      data: [
+        {
+          file: { basename: "STALE_01", path: realFile.path },
+          getValue: (propId: string) =>
+            propId === "note.zotero_key"
+              ? { data: staleRowKey, toString: () => staleRowKey }
+              : null,
+        },
+      ],
+    };
+    view.render();
+
+    const titleLink = container.querySelector<HTMLAnchorElement>(
+      "a.pf-base-title-link"
+    )!;
+    titleLink.click();
+    expect(leafOpenFile).toHaveBeenCalledWith(realFile);
+    expect(openLinkText).not.toHaveBeenCalled();
+
+    // Even if called directly with the stale path, zotero_key resolves to realFile without calling openLinkText
+    leafOpenFile.mockClear();
+    (view as any)._openNote(
+      "Resources/Literature/Literature/STALE_01 - Paper/STALE_01.md",
+      undefined,
+      staleRowKey
+    );
+    expect(leafOpenFile).toHaveBeenCalledWith(realFile);
+    expect(openLinkText).not.toHaveBeenCalled();
+
+    // Missing note (even if key is unknown) MUST NOT call openLinkText to create a 0B ghost file
+    leafOpenFile.mockClear();
+    (view as any)._openNote(
+      "Resources/Literature/Literature/MISSING99/MISSING99.md",
+      undefined,
+      "MISSING99"
+    );
+    expect(leafOpenFile).not.toHaveBeenCalled();
+    expect(openLinkText).not.toHaveBeenCalled();
     view.onunload();
   });
 });

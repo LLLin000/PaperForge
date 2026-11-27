@@ -78,6 +78,19 @@ def _dashboard_from_db(vault: Path) -> dict | None:
                 FROM papers GROUP BY has_pdf, ocr
             """).fetchall()
             total = sum(r["cnt"] for r in rows)
+            if total == 0:
+                import json as _json
+
+                cfg = load_vault_config(vault)
+                idx_path = paperforge_paths(vault, cfg)["index"]
+                if idx_path.is_file():
+                    try:
+                        idx_raw = _json.loads(idx_path.read_text(encoding="utf-8"))
+                        idx_items = idx_raw.get("items", idx_raw) if isinstance(idx_raw, dict) else idx_raw
+                        if isinstance(idx_items, list) and len(idx_items) > 0:
+                            return None
+                    except Exception:
+                        pass
             pdf_healthy = sum(r["cnt"] for r in rows if r["has_pdf"] == 1)
             pdf_missing = sum(r["cnt"] for r in rows if r["has_pdf"] == 0)
             pdf_broken = total - pdf_healthy - pdf_missing

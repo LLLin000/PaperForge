@@ -2,6 +2,139 @@ import { Notice } from "obsidian";
 import * as obsidian from "obsidian";
 import { t } from "../i18n";
 
+export interface SafeOpenVaultFileOptions {
+  filePath?: string | null;
+  zoteroKey?: string | null;
+  mod?: boolean | "tab" | "split" | "window";
+  preferRootLeaf?: boolean;
+  missingNotice?: string;
+}
+
+/**
+ * Safely open an existing vault note or asset without calling `openLinkText` on
+ * non-existent paths (which creates 0-byte phantom files or fails on OS paths).
+ * When a path is stale or points to a 0-byte stub and `zoteroKey` is provided,
+ * recovers by scanning `getMarkdownFiles()` for a non-empty matching note.
+ */
+export async function openVaultFileSafely(
+  app: unknown,
+  opts: SafeOpenVaultFileOptions
+): Promise<boolean> {
+  const appObj = app as {
+    vault?: {
+      getAbstractFileByPath?: (p: string) => {
+        path?: string;
+        basename?: string;
+        extension?: string;
+        stat?: { size?: number };
+      } | null;
+      getMarkdownFiles?: () => Array<{
+        path: string;
+        basename?: string;
+        extension?: string;
+        stat?: { size?: number };
+      }>;
+    };
+    workspace?: {
+      getLeaf?: (newLeaf?: boolean | "tab" | "split" | "window") => {
+        openFile?: (f: unknown) => Promise<void>;
+      } | null;
+      getMostRecentLeaf?: () => {
+        openFile?: (f: unknown) => Promise<void>;
+      } | null;
+      revealLeaf?: (leaf: unknown) => Promise<void> | void;
+      setActiveLeaf?: (leaf: unknown, opts?: { focus?: boolean }) => void;
+      openLinkText?: (
+        linktext: string,
+        sourcePath: string,
+        newLeaf?: boolean | "tab" | "split" | "window"
+      ) => Promise<void> | void;
+    };
+  } | null;
+
+  const rawPath = String(opts.filePath ?? "");
+  const normPath = rawPath.replace(/\\/g, "/").trim();
+  const zoteroKey = String(opts.zoteroKey ?? "").trim();
+
+  const callOpenLink = async (pathToOpen: string): Promise<void> => {
+    const ws = appObj?.workspace;
+    if (typeof ws?.openLinkText !== "function") return;
+    if (opts.mod !== undefined) {
+      await ws.openLinkText(pathToOpen, "", opts.mod);
+    } else {
+      await ws.openLinkText(pathToOpen, "");
+    }
+  };
+
+  const vaultApi = appObj?.vault;
+  if (typeof vaultApi?.getAbstractFileByPath === "function") {
+    const direct = normPath ? vaultApi.getAbstractFileByPath(normPath) : null;
+    const isFileNode = (node: unknown): boolean =>
+      Boolean(node) &&
+      typeof node === "object" &&
+      "extension" in (node as Record<string, unknown>);
+    const directHealthy =
+      isFileNode(direct) &&
+      ((direct as { stat?: { size?: number } })?.stat?.size ?? 1) > 0;
+
+    let targetFile = directHealthy ? direct : null;
+    if (
+      !targetFile &&
+      zoteroKey &&
+      typeof vaultApi.getMarkdownFiles === "function"
+    ) {
+      const matches = vaultApi
+        .getMarkdownFiles()
+        .filter(
+          (f) =>
+            f.basename === zoteroKey ||
+            (typeof f.basename === "string" &&
+              f.basename.startsWith(`${zoteroKey} - `))
+        );
+      targetFile =
+        matches.find((f) => (f.stat?.size ?? 1) > 0) ??
+        (isFileNode(direct) ? direct : (matches[0] ?? null));
+    } else if (!targetFile && isFileNode(direct)) {
+      targetFile = direct;
+    }
+
+    if (targetFile) {
+      const ws = appObj?.workspace;
+      if (typeof ws?.getLeaf === "function") {
+        const leaf = opts.mod
+          ? ws.getLeaf(opts.mod)
+          : opts.preferRootLeaf
+            ? (ws.getMostRecentLeaf?.() ?? ws.getLeaf("tab"))
+            : ws.getLeaf(false);
+        if (typeof leaf?.openFile === "function") {
+          await leaf.openFile(targetFile);
+          await ws.revealLeaf?.(leaf);
+          ws.setActiveLeaf?.(leaf, { focus: true });
+          return true;
+        }
+      }
+      await callOpenLink(targetFile.path || normPath);
+      return true;
+    }
+
+    new Notice(
+      opts.missingNotice ||
+        t("paper_note_missing") ||
+        "Note not found in vault."
+    );
+    return false;
+  }
+
+  if (!normPath) {
+    new Notice(
+      opts.missingNotice || t("paper_note_missing") || "Note path unavailable."
+    );
+    return false;
+  }
+  await callOpenLink(rawPath);
+  return true;
+}
+
 export interface UnifiedPaperMenuOptions {
   key: string;
   title?: string;

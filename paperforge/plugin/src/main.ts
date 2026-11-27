@@ -84,6 +84,7 @@ import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeBasesView } from "./views/paperforge-base-view";
 import { PaperForgeQuickSwitcherModal } from "./views/quick-switcher";
+import { openVaultFileSafely } from "./views/paper-interactions";
 import { PaperForgeGalleryView } from "./views/ui-gallery";
 import {
   PaperForgePdfView,
@@ -398,15 +399,21 @@ export default class PaperForgePlugin extends Plugin {
           job.kind === "runtime.repair"
         ) {
           if (!isActive) {
+            const termStatus: "succeeded" | "failed" | "cancelled" =
+              job.status === "succeeded"
+                ? "succeeded"
+                : job.status === "cancelled"
+                  ? "cancelled"
+                  : "failed";
             (
               this._settingTab as unknown as {
                 onDaemonRuntimeJobFinished?: (
-                  succeeded: boolean,
+                  status: "succeeded" | "failed" | "cancelled",
                   detail?: string
                 ) => void;
               } | null
             )?.onDaemonRuntimeJobFinished?.(
-              job.status === "succeeded",
+              termStatus,
               String(job.error ?? "")
             );
             if (job.status === "succeeded") {
@@ -998,6 +1005,19 @@ export default class PaperForgePlugin extends Plugin {
       defaultMod: true,
     });
 
+    this.registerDomEvent(
+      document,
+      "click",
+      (evt: MouseEvent) => {
+        tryHandleExternalPdfLinkClick(evt, {
+          app: this.app,
+          baseSnapshot: this._baseSnapshotCache ?? null,
+          openPaperPdf: (paperKey: string) => this.openPaperPdf(paperKey),
+        });
+      },
+      true
+    );
+
     for (const a of ACTIONS) {
       // #99 (owner decision): redo is internal-only — never a user command.
       if (a.id === "paperforge-ocr-redo") continue;
@@ -1217,7 +1237,10 @@ export default class PaperForgePlugin extends Plugin {
               this._settingTab?._refreshAllReadModels({ background: true });
               this._refreshSettingTabIfOpen();
             }
-            if (!downloadedBin || !vaultBase) return;
+            if (!downloadedBin || !vaultBase) {
+              this._notifySettingTabDaemonSwapFinished();
+              return;
+            }
             const ptr = readRuntimePointer();
             const hubSkillMd = path.join(
               os.homedir(),
@@ -1240,33 +1263,39 @@ export default class PaperForgePlugin extends Plugin {
                 .skillSyncAll()
                 .catch(() => undefined);
             }
-            if (ptr && pluginVersion) {
-              if (
-                !isEngineVersionCompatible(
-                  ptr.paperforgeVersion,
-                  pluginVersion,
-                  minEngineVersion
-                )
-              ) {
-                void this.getClient()
-                  .daemonSubmitRuntimeUpdate(pluginVersion)
-                  .then((res) => {
-                    if (this._unloaded) return;
-                    if (res?.accepted && !res?.coalesced) {
-                      new Notice(
-                        t("main_runtime_autoupdate_started").replace(
-                          "{version}",
-                          pluginVersion
-                        ),
-                        6000
-                      );
-                    }
-                    this._emitStateChanged();
-                    this._refreshSettingTabIfOpen();
-                  })
-                  .catch(() => undefined);
-              }
+            if (
+              ptr &&
+              pluginVersion &&
+              !isEngineVersionCompatible(
+                ptr.paperforgeVersion,
+                pluginVersion,
+                minEngineVersion
+              )
+            ) {
+              void this.getClient()
+                .daemonSubmitRuntimeUpdate(pluginVersion)
+                .then((res) => {
+                  if (this._unloaded) return;
+                  if (res?.accepted && !res?.coalesced) {
+                    new Notice(
+                      t("main_runtime_autoupdate_started").replace(
+                        "{version}",
+                        pluginVersion
+                      ),
+                      6000
+                    );
+                  }
+                  this._emitStateChanged();
+                  this._refreshSettingTabIfOpen();
+                })
+                .catch(() => undefined)
+                .finally(() => {
+                  if (!this._unloaded)
+                    this._notifySettingTabDaemonSwapFinished();
+                });
+              return;
             }
+            this._notifySettingTabDaemonSwapFinished();
           })
           .catch(() => {
             this._daemonUpdating = false;
@@ -1275,6 +1304,7 @@ export default class PaperForgePlugin extends Plugin {
               runStartupHydration();
               this._refreshSettingTabIfOpen();
             }
+            this._notifySettingTabDaemonSwapFinished();
           })
           .finally(() => {
             this._startupDaemonCheckPending = false;
@@ -1591,15 +1621,11 @@ export default class PaperForgePlugin extends Plugin {
         // Ignore fallback lookup errors
       }
     }
-    if (!targetPath) return;
-    const splitLeaf = this.app.workspace.getLeaf("split", "vertical");
-    const file = this.app.vault.getAbstractFileByPath?.(targetPath);
-    if (file && "extension" in file && splitLeaf) {
-      await splitLeaf.openFile(file as any);
-      await this.app.workspace.revealLeaf(splitLeaf);
-      return;
-    }
-    await this.app.workspace.openLinkText?.(targetPath, "", "split");
+    await openVaultFileSafely(this.app, {
+      filePath: targetPath || null,
+      zoteroKey: paperKey,
+      mod: "split",
+    });
   }
 
   /** Open the 4-stage setup wizard inside a dedicated Obsidian modal. */
@@ -1786,6 +1812,14 @@ export default class PaperForgePlugin extends Plugin {
         changedKeys,
       });
     }
+  }
+
+  private _notifySettingTabDaemonSwapFinished(): void {
+    (
+      this._settingTab as unknown as {
+        onDaemonSwapFinished?: () => void;
+      } | null
+    )?.onDaemonSwapFinished?.();
   }
 
   private _resolvePaperByPath(
@@ -2207,6 +2241,16 @@ export default class PaperForgePlugin extends Plugin {
         ?.find((f) => f.name === "Literature Hub.base") ||
       null;
     if (targetFile) {
+      if (
+        "extension" in targetFile &&
+        typeof this.app.workspace?.getLeaf === "function"
+      ) {
+        const leaf = this.app.workspace.getLeaf(false);
+        if (typeof leaf?.openFile === "function") {
+          await leaf.openFile(targetFile as TFile);
+          return;
+        }
+      }
       await this.app.workspace.openLinkText(targetFile.path, "");
       return;
     }
@@ -3028,4 +3072,124 @@ export default class PaperForgePlugin extends Plugin {
     new ReleaseNotesModal(this.app, currentEntry).open();
     this.dismissPendingReleaseNotes();
   }
+}
+
+/**
+ * Intercept clicks on external OS `pdf_path` wikilinks in Obsidian Properties
+ * so Obsidian does not fail with "File name cannot contain any of the following characters".
+ */
+export function tryHandleExternalPdfLinkClick(
+  evt: MouseEvent,
+  ctx: {
+    app: App;
+    baseSnapshot: BaseTableSnapshotDto | null;
+    openPaperPdf: (paperKey: string) => Promise<void> | void;
+  }
+): boolean {
+  if (evt.button !== 0) return false;
+  const target = evt.target as HTMLElement | null;
+  if (!target || typeof target.closest !== "function") return false;
+
+  const pdfPropLink = target.closest(
+    '.metadata-property[data-property-key="pdf_path"] .internal-link, ' +
+      '.metadata-property[data-property-key="pdf_path"] .metadata-link-inner, ' +
+      '.metadata-property[data-property-key="pdf_path"] .metadata-link, ' +
+      '.metadata-property[data-property-key="pdf_path"] .multi-select-pill-content'
+  ) as HTMLElement | null;
+  const internalLink = pdfPropLink
+    ? null
+    : (target.closest(
+        ".internal-link, .cm-hmd-internal-link"
+      ) as HTMLElement | null);
+  const linkEl = pdfPropLink ?? internalLink;
+  if (!linkEl) return false;
+
+  const activeFile = ctx.app?.workspace?.getActiveFile?.();
+  const activeFm = activeFile
+    ? ctx.app?.metadataCache?.getFileCache?.(activeFile)?.frontmatter
+    : undefined;
+  let rawHref = (
+    linkEl.getAttribute("data-href") ||
+    linkEl.getAttribute("href") ||
+    linkEl.textContent ||
+    ""
+  ).trim();
+  if (
+    pdfPropLink &&
+    typeof activeFm?.pdf_path === "string" &&
+    activeFm.pdf_path.trim()
+  ) {
+    rawHref = activeFm.pdf_path.trim();
+  }
+  const cleanPath = rawHref
+    .replace(/^\[\[/, "")
+    .replace(/\]\]$/, "")
+    .replace(/^absolute:/i, "")
+    .replace(/^file:\/\/\/?/i, (m) => (m === "file:///" ? "" : "/"))
+    .trim();
+  if (!cleanPath) return false;
+
+  const isExternalOsPath =
+    /^[A-Za-z]:[/\\]/.test(cleanPath) ||
+    cleanPath.startsWith("/") ||
+    /^file:\/\//i.test(rawHref);
+  const isPdfPropertyOutsideVault =
+    Boolean(pdfPropLink) &&
+    cleanPath.toLowerCase().endsWith(".pdf") &&
+    !ctx.app?.vault?.getAbstractFileByPath?.(cleanPath.replace(/\\/g, "/"));
+
+  if (
+    !isPdfPropertyOutsideVault &&
+    !(isExternalOsPath && cleanPath.toLowerCase().endsWith(".pdf"))
+  ) {
+    return false;
+  }
+
+  evt.preventDefault();
+  evt.stopPropagation();
+  if (typeof evt.stopImmediatePropagation === "function") {
+    evt.stopImmediatePropagation();
+  }
+
+  let zoteroKey = "";
+  if (activeFile?.path) {
+    const fm = activeFm;
+    if (typeof fm?.zotero_key === "string" && fm.zotero_key.trim()) {
+      zoteroKey = fm.zotero_key.trim();
+    }
+    if (!zoteroKey && ctx.baseSnapshot?.rows) {
+      const normActive = activeFile.path.replace(/\\/g, "/");
+      for (const row of Object.values(ctx.baseSnapshot.rows)) {
+        if ((row.main_note_path || "").replace(/\\/g, "/") === normActive) {
+          zoteroKey = row.zotero_key;
+          break;
+        }
+      }
+    }
+    if (!zoteroKey && activeFile.basename) {
+      const m = activeFile.basename.match(/^([A-Za-z0-9]{8})(?:\s+-|$)/);
+      if (m) zoteroKey = m[1];
+    }
+  }
+
+  if (zoteroKey) {
+    void ctx.openPaperPdf(zoteroKey);
+    return true;
+  }
+
+  if (fs.existsSync(cleanPath)) {
+    try {
+      const { shell } = require("electron") as {
+        shell?: { openPath?: (p: string) => Promise<string> };
+      };
+      if (typeof shell?.openPath === "function") {
+        void shell.openPath(cleanPath);
+        return true;
+      }
+    } catch {
+      // Non-Electron environment fallback
+    }
+  }
+  new Notice(t("paper_note_missing") || "PDF link cannot be opened directly.");
+  return true;
 }

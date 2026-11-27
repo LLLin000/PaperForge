@@ -1483,6 +1483,63 @@ mod tests {
     }
 
     #[test]
+    fn base_snapshot_prefers_existing_formal_library_note_over_stale_workspace_registry() {
+        let tmp = env::temp_dir().join(format!("pf_ssot_stale_ws_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let idx = tmp.join(".paperforge").join("indexes");
+        fs::create_dir_all(&idx).unwrap();
+
+        let real_rel = "Resources/Literature/Ortho/GK0001 - Paper/GK0001.md";
+        let real_abs = tmp.join(real_rel);
+        fs::create_dir_all(real_abs.parent().unwrap()).unwrap();
+        fs::write(&real_abs, "---\ntitle: Ortho Paper\n---\n\n# Ortho Paper\n").unwrap();
+
+        fs::write(
+            idx.join("formal-library.json"),
+            serde_json::to_string(&json!({
+                "items": [
+                    {
+                        "zotero_key": "GK0001",
+                        "title": "Ortho Paper",
+                        "domain": "Ortho",
+                        "has_pdf": true,
+                        "main_note_path": real_rel
+                    }
+                ]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let conn = Connection::open(idx.join("paperforge.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT, has_pdf INTEGER, ocr_status TEXT);
+             CREATE TABLE workspace_registry (zotero_key TEXT PRIMARY KEY, main_note_relpath TEXT, domain TEXT, title TEXT);
+             INSERT INTO workspace_registry VALUES ('GK0001', 'Resources/Literature/Literature/GK0001 - Paper/GK0001.md', 'Literature', 'GK0001');",
+        )
+        .unwrap();
+        drop(conn);
+
+        let daemon = NativeControlDaemon::new(None, None);
+        let (resp, _) = execute_request(
+            &daemon,
+            &json!({
+                "id": 16,
+                "vault": tmp.to_string_lossy(),
+                "argv": ["memory-card", "base-snapshot", "--json"],
+            }),
+        );
+        assert_eq!(resp["exit_code"], 0);
+        let env: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+        let row = &env["data"]["rows"]["GK0001"];
+        assert_eq!(row["main_note_path"], real_rel);
+        assert_eq!(row["domain"], "Ortho");
+        assert_eq!(row["title"], "Ortho Paper");
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
     fn engine_resolve_key_falls_back_to_sqlite_beyond_2048_cache_limit() {
         let tmp = env::temp_dir().join(format!("pf_resolve_2048_{}", std::process::id()));
         let _ = fs::remove_dir_all(&tmp);
