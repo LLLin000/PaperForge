@@ -174,21 +174,62 @@ def _resolve_pdf_from_item(
             pass
 
     for raw in candidates:
-        locator = raw[2:-2] if raw.startswith("[[") and raw.endswith("]]") else raw
+        locator = raw[2:-2].strip() if raw.startswith("[[") and raw.endswith("]]") else raw
+        if locator.startswith("absolute:"):
+            locator = locator[len("absolute:") :].strip()
         resolved: Path | None = None
         if locator.startswith("storage:"):
             if zotero_resolved is not None:
-                rel = locator[len("storage:") :].lstrip("/")
+                rel = locator[len("storage:") :].replace("\\", "/").lstrip("/")
                 cand = (zotero_resolved / "storage" / rel).resolve()
                 if cand.is_relative_to(zotero_resolved):
-                    resolved = cand
+                    if cand.is_file():
+                        resolved = cand
+                    else:
+                        skey = rel.split("/")[0].strip()
+                        if skey:
+                            from paperforge.pdf_resolver import first_pdf_in_storage_dir
+
+                            fb = first_pdf_in_storage_dir(skey, zotero_resolved)
+                            if fb:
+                                fb_path = Path(fb).resolve()
+                                if fb_path.is_relative_to(zotero_resolved):
+                                    resolved = fb_path
+        elif locator.startswith("attachments:"):
+            rel = locator[len("attachments:") :].replace("\\", "/").lstrip("/")
+            if rel:
+                from paperforge.adapters.zotero_sqlite import read_zotero_base_attachment_path
+
+                base_att_dir = read_zotero_base_attachment_path(zotero_dir)
+                if base_att_dir is not None:
+                    base_resolved = base_att_dir.resolve()
+                    cand = (base_resolved / rel).resolve()
+                    if cand.is_relative_to(base_resolved):
+                        resolved = cand
         else:
             p = Path(locator)
-            cand = p.resolve() if p.is_absolute() else (vault_root / locator).resolve()
-            if cand.is_relative_to(vault_root) or (
-                zotero_resolved is not None and cand.is_relative_to(zotero_resolved)
-            ):
-                resolved = cand
+            if p.is_absolute():
+                # Linked Zotero attachments (outside both vault and Zotero storage)
+                # come from the canonical index or OCR meta.
+                resolved = p.resolve()
+            else:
+                cand = (vault_root / locator.replace("\\", "/")).resolve()
+                if cand.is_relative_to(vault_root) or (
+                    zotero_resolved is not None and cand.is_relative_to(zotero_resolved)
+                ):
+                    resolved = cand
+            if (resolved is None or not resolved.is_file()) and zotero_resolved is not None:
+                import re as _re
+
+                m = _re.search(r"storage[/\\]([A-Za-z0-9]{8})", locator, _re.IGNORECASE)
+                if m:
+                    from paperforge.pdf_resolver import first_pdf_in_storage_dir
+
+                    fb = first_pdf_in_storage_dir(m.group(1), zotero_resolved)
+                    if fb:
+                        fb_path = Path(fb).resolve()
+                        if fb_path.is_relative_to(zotero_resolved):
+                            resolved = fb_path
 
         if resolved is not None and resolved.is_file() and resolved.suffix.lower() == ".pdf":
             is_rel = resolved.is_relative_to(vault_root)

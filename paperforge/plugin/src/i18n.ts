@@ -131,8 +131,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Rebuild all OCR fulltext vectors. Required after model or mode change.",
     feat_removing: "Removing...",
 
-    feat_skills_desc:
-      "Manage and enable/disable agent skills installed in your vault. Each row corresponds to a SKILL.md file — toggle off to prevent the agent from auto-invoking that skill.",
+    feat_skills_desc: "Enable or disable individual research skills.",
     feat_skills_system:
       "System Skills ship with PaperForge and are updated alongside PaperForge.",
     feat_skills_user:
@@ -508,6 +507,7 @@ const LANG: Record<string, Record<string, string>> = {
     dash_fulltext_missing: "Fulltext file not found",
     dash_base_missing: "Literature Hub .base file not found",
     dash_checking: "Checking…",
+    dash_bootstrap_loading: "Loading Companion…",
     activity_ocr: "Parsing fulltext",
     activity_embed: "Building embeddings",
     activity_jump: "Open",
@@ -599,7 +599,7 @@ const LANG: Record<string, Record<string, string>> = {
     md_retrieval_ready: "All available papers are indexed and searchable.",
     md_agent_integration: "Agent Integration",
     md_agent_placeholder:
-      "Configure a target platform, deploy PaperForge files, and manage Skills. File deployment does not verify a live agent connection.",
+      "Connect external AI assistants (Claude Code, Cursor, Codex, etc.) to your PaperForge library.",
     md_agent_platform: "Target platform",
     md_agent_deployment: "Deployment state",
     agent_deployed: "Files deployed",
@@ -613,22 +613,24 @@ const LANG: Record<string, Record<string, string>> = {
     agent_mcp_stale: "Binary path missing",
     agent_mcp_not_configured: "Not configured",
     agent_setup_sync: "Setup / Sync Agent (Skill + MCP)",
-    agent_copy_mcp: "Copy MCP Config",
+    agent_copy_mcp: "Copy Connection Config",
     agent_setup_done: "Agent Skill & MCP configured",
     agent_setup_failed: "Agent setup did not complete: {detail}",
-    agent_mcp_copied: "MCP config copied ({file})",
-    agent_mcp_bin_label: "MCP Sidecar Binary",
+    agent_mcp_copied: "Connection config copied ({file})",
+    agent_mcp_bin_label: "Local connection service",
     agent_mcp_bin_ready: "Ready",
     agent_mcp_bin_missing: "Pending download",
-    agent_skill_hub_label: "Skill Hub & Registered Agents",
-    agent_skill_hub_ready: "Ready ({count} Agent install(s) tracked)",
-    agent_skill_hub_pending: "Will sync automatically once runtime is ready",
+    agent_skill_hub_label: "Connected AI assistants",
+    agent_skill_hub_ready: "{count} connected",
+    agent_skill_hub_unconnected:
+      "Not connected yet — copy the setup prompt below and send it to your AI assistant",
+    agent_skill_hub_pending: "Ready once engine setup finishes",
     agent_auto_update_label: "Auto-Update",
     agent_auto_update_desc:
       "Enabled — MCP binary and registered Agent Skills sync automatically across updates",
-    agent_copy_onboarding_btn: "Copy Agent Setup Prompt",
+    agent_copy_onboarding_btn: "Copy Setup Prompt for AI Assistant",
     agent_onboarding_copied:
-      "Copied Agent setup & self-check prompt. Paste it to your AI Agent (zero vault clutter).",
+      "Copied setup prompt. Paste it into your AI assistant to connect automatically.",
     agent_adv_vault_local: "Advanced: Vault-local setup & platform override",
     agent_deploy_vault_local: "Write Skill + MCP to Vault root",
     skills_system: "System Skills",
@@ -771,7 +773,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_syncing:
       "Syncing your Zotero library (first import may take a moment)…",
     setup_library_sync_failed:
-      "Configuration saved, but the library sync failed. Check the export and try again.",
+      "Configuration saved, but the library sync failed. Check the details below or your Zotero folder and try again.",
     setup_library_loading: "Reading the vault configuration…",
     setup_library_configured:
       "Library configuration saved. Checking the connection.",
@@ -1293,7 +1295,7 @@ const LANG: Record<string, Record<string, string>> = {
     mem_provider_type_label: "API Client Mode",
     api_key_save_btn: "Save",
     agent_external_cli_hint:
-      "Note: /pf-deep, /pf-lit, and PaperForge skills run inside your chosen external AI coding CLI/editor (e.g., Claude Code, OpenCode, Cursor), not directly inside Obsidian chat.",
+      "Open this vault in an external AI assistant (e.g., Claude Code, Cursor, Codex) to use /pf-deep, /pf-lit, and other research workflows.",
     pdf_select_paper_hint:
       "Select a paper from PaperForge Library or Dashboard to open its PDF.",
     pdf_loading: "Loading PDF and annotations…",
@@ -1991,8 +1993,7 @@ const LANG: Record<string, Record<string, string>> = {
       "重建所有 OCR 全文向量。更换模型或模式后需要重建。",
     feat_removing: "删除中…",
     feat_retry_btn: "重试",
-    feat_skills_desc:
-      "管理 Vault 中已安装的 Agent 技能。每行对应一个 SKILL.md 文件，关闭开关可阻止 Agent 自动调用该技能。",
+    feat_skills_desc: "按需开启或关闭单条研究技能。",
     feat_skills_system:
       "系统技能随 PaperForge 一同发布，会跟随 PaperForge 版本更新。",
     feat_skills_user: "用户技能是你自行安装或创建的自定义技能。",
@@ -2298,6 +2299,7 @@ const LANG: Record<string, Record<string, string>> = {
     dash_fulltext_missing: "未找到全文文件",
     dash_base_missing: "未找到文献库 .base 视图",
     dash_checking: "正在检查…",
+    dash_bootstrap_loading: "正在加载伴读面板…",
     activity_ocr: "正在解析全文",
     activity_embed: "正在构建语义向量",
     activity_jump: "查看",
@@ -2416,7 +2418,7 @@ const LANG: Record<string, Record<string, string>> = {
     md_retrieval_ready: "所有可用论文均已建立索引并可搜索。",
     md_agent_integration: "Agent 集成",
     md_agent_placeholder:
-      "配置目标平台、部署 PaperForge 文件并管理 Skills。文件已部署不代表实时连接已经验证。",
+      "将外部 AI 助手（如 Claude Code、Cursor、Codex 等）接入你的 PaperForge 文献库。",
     md_agent_platform: "目标平台",
     md_agent_deployment: "部署状态",
     agent_deployed: "文件已部署",
@@ -2430,22 +2432,24 @@ const LANG: Record<string, Record<string, string>> = {
     agent_mcp_stale: "可执行路径失效",
     agent_mcp_not_configured: "未配置",
     agent_setup_sync: "一键安装 / 同步 Agent (Skill + MCP)",
-    agent_copy_mcp: "复制 MCP 配置",
+    agent_copy_mcp: "复制连接配置",
     agent_setup_done: "Agent Skill 与 MCP 已完成配置",
     agent_setup_failed: "Agent 配置未完成：{detail}",
-    agent_mcp_copied: "已复制 MCP 配置（{file}）",
-    agent_mcp_bin_label: "MCP 常驻二进制",
+    agent_mcp_copied: "已复制连接配置（{file}）",
+    agent_mcp_bin_label: "本地连接服务",
     agent_mcp_bin_ready: "就绪",
     agent_mcp_bin_missing: "待下载",
-    agent_skill_hub_label: "Skill 中心与已登记 Agent",
-    agent_skill_hub_ready: "就绪（已登记 {count} 个 Agent 安装点）",
-    agent_skill_hub_pending: "引擎就绪后将自动同步",
+    agent_skill_hub_label: "已连接的 AI 助手",
+    agent_skill_hub_ready: "已连接 {count} 个",
+    agent_skill_hub_unconnected:
+      "尚未连接 — 复制下方配置指令发给你的 AI 助手即可",
+    agent_skill_hub_pending: "引擎就绪后自动准备",
     agent_auto_update_label: "自动更新机制",
     agent_auto_update_desc:
       "已开启 — 插件升级时自动更新 MCP 二进制，并同步未魔改的 Agent Skill 副本",
-    agent_copy_onboarding_btn: "复制 Agent 安装与自检指令",
+    agent_copy_onboarding_btn: "复制给 AI 助手的配置指令",
     agent_onboarding_copied:
-      "已复制安装与自检指令，直接发给你的 Agent 即可自动配置（不污染 Vault 目录）。",
+      "已复制配置指令，直接发给你的 AI 助手即可自动完成接入。",
     agent_adv_vault_local: "高级：库内本地部署与平台切换（传统模式）",
     agent_deploy_vault_local: "写入 Skill + MCP 到当前 Vault 根目录",
     skills_system: "系统 Skills",
@@ -2579,7 +2583,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_bbt_section_title: "导入 Better BibTeX JSON 导出（必需）",
     setup_library_syncing: "正在从 Zotero 同步文献库（首次导入可能需要片刻）…",
     setup_library_sync_failed:
-      "配置已保存，但文献库同步失败。请检查导出文件后重试。",
+      "配置已保存，但文献库同步失败。请查看下方详情或检查 Zotero 目录后重试。",
     setup_library_loading: "正在读取库配置…",
     setup_library_configured: "文献库配置已保存，正在检查连接。",
     setup_library_configuring: "正在保存并检查文献库配置…",
@@ -3058,7 +3062,7 @@ const LANG: Record<string, Record<string, string>> = {
     mem_provider_type_label: "API 客户端模式",
     api_key_save_btn: "保存",
     agent_external_cli_hint:
-      "提示：/pf-deep、/pf-lit 等深度精读技能需在所选外部 AI Agent 工具（如 Claude Code、OpenCode、Cursor 等）中以本库为工作目录调用，并非在 Obsidian 内嵌聊天窗口中执行。",
+      "在 Claude Code、Cursor、Codex 等外部 AI 助手中打开本库后，即可使用 /pf-deep、/pf-lit 等精读与文献技能。",
     pdf_select_paper_hint:
       "请在文献库或伴读面板中选择一篇文献以打开 PDF 阅读。",
     pdf_loading: "正在加载 PDF 与批注记录…",

@@ -14,15 +14,39 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def _first_pdf_in_storage_dir(storage_key: str, zotero_dir: Path | None) -> str:
+def first_pdf_in_storage_dir(storage_key: str, zotero_dir: Path | None) -> str:
     """First PDF inside a Zotero storage KEY directory, or ''."""
     if not storage_key or zotero_dir is None:
         return ""
     storage_dir = (zotero_dir / "storage" / storage_key).resolve()
     if not storage_dir.exists():
         return ""
-    pdfs = [f for f in storage_dir.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"]
+    pdfs = sorted(f for f in storage_dir.iterdir() if f.is_file() and f.suffix.lower() == ".pdf")
     return str(pdfs[0]) if pdfs else ""
+
+
+_first_pdf_in_storage_dir = first_pdf_in_storage_dir
+
+
+def _candidate_zotero_dirs(vault_root: Path, zotero_dir: Path | None) -> list[Path]:
+    """Candidate Zotero roots including explicit zotero_dir and in-vault junctions."""
+    candidates: list[Path] = []
+    if zotero_dir is not None:
+        candidates.append(zotero_dir)
+    for sub in (".paperforge", "System"):
+        cand = vault_root / sub / "Zotero"
+        if cand not in candidates:
+            candidates.append(cand)
+    return candidates
+
+
+def _resolve_base_attachment_dir(zotero_dir: Path | None) -> Path | None:
+    try:
+        from paperforge.adapters.zotero_sqlite import read_zotero_base_attachment_path
+
+        return read_zotero_base_attachment_path(zotero_dir)
+    except Exception:
+        return None
 
 
 def resolve_source_pdf(vault_root: Path, locator: str | None) -> Path | None:
@@ -35,19 +59,34 @@ def resolve_source_pdf(vault_root: Path, locator: str | None) -> Path | None:
     """
     if not locator:
         return None
+    vault_path = Path(vault_root)
     zotero_dir: Path | None = None
-    config_path = Path(vault_root) / "paperforge.json"
-    if config_path.exists():
-        try:
-            import json
+    try:
+        from paperforge.config import paperforge_paths
 
-            config = json.loads(config_path.read_text(encoding="utf-8"))
-            configured = config.get("zotero_data_dir") or config.get("zotero_link") or ""
-            if configured:
-                zotero_dir = Path(configured)
-        except (OSError, ValueError):
-            zotero_dir = None
-    resolved = resolve_pdf_path(str(locator), True, Path(vault_root), zotero_dir)
+        zotero_dir = paperforge_paths(vault_path).get("zotero_dir")
+    except Exception:
+        zotero_dir = None
+    if zotero_dir is None:
+        config_path = vault_path / "paperforge.json"
+        if config_path.exists():
+            try:
+                import json
+
+                config = json.loads(config_path.read_text(encoding="utf-8"))
+                vault_cfg = config.get("vault_config") if isinstance(config.get("vault_config"), dict) else {}
+                configured = (
+                    config.get("zotero_data_dir")
+                    or vault_cfg.get("zotero_data_dir")
+                    or config.get("zotero_link")
+                    or ""
+                )
+                if configured:
+                    cfg_p = Path(configured).expanduser()
+                    zotero_dir = cfg_p if cfg_p.is_absolute() else (vault_path / cfg_p)
+            except (OSError, ValueError):
+                zotero_dir = None
+    resolved = resolve_pdf_path(str(locator), True, vault_path, zotero_dir)
     candidate = Path(resolved) if resolved else None
     if candidate is None:
         raw = str(locator).strip()
@@ -105,6 +144,33 @@ def resolve_pdf_path(
     if not raw:
         return ""
 
+    # Try linked-attachment base directory (`attachments:...`)
+    if raw.startswith("attachments:"):
+        att_rel = raw[len("attachments:") :].replace("\\", "/").lstrip("/")
+        base_att_dir = _resolve_base_attachment_dir(zotero_dir)
+        if base_att_dir is not None and att_rel:
+            att_candidate = (base_att_dir / att_rel.replace("/", os.sep)).resolve()
+            if is_valid_pdf(att_candidate):
+                return str(att_candidate)
+        logger.error(f"PDF path could not be resolved: {raw}")
+        return ""
+
+    # Try Zotero storage-relative (format: "storage:XXXX/item.pdf")
+    if raw.startswith("storage:"):
+        storage_rel = raw[len("storage:") :].replace("\\", "/").lstrip("/")
+        storage_key = storage_rel.split("/")[0].strip() if "/" in storage_rel else ""
+        for zcand in _candidate_zotero_dirs(vault_root, zotero_dir):
+            if storage_rel:
+                storage_candidate = (zcand / "storage" / storage_rel.replace("/", os.sep)).resolve()
+                if is_valid_pdf(storage_candidate):
+                    return str(storage_candidate)
+            if storage_key:
+                fallback = _first_pdf_in_storage_dir(storage_key, zcand)
+                if fallback:
+                    return fallback
+        logger.error(f"PDF path could not be resolved: {raw}")
+        return ""
+
     # Try absolute first
     candidate = Path(raw)
     if candidate.is_absolute():
@@ -112,12 +178,15 @@ def resolve_pdf_path(
         if is_valid_pdf(resolved):
             return str(resolved)
         # absolute + exact-name miss → storage KEY dir fallback
-        m = re.search(r"storage[/\\]([A-Z0-9]{8})", raw)
+        m = re.search(r"storage[/\\]([A-Za-z0-9]{8})", raw, re.IGNORECASE)
         if m:
-            return _first_pdf_in_storage_dir(m.group(1), zotero_dir)
+            for zcand in _candidate_zotero_dirs(vault_root, zotero_dir):
+                fallback = _first_pdf_in_storage_dir(m.group(1), zcand)
+                if fallback:
+                    return fallback
 
     # Try vault-relative
-    vault_candidate = (vault_root / raw.replace("/", os.sep)).resolve()
+    vault_candidate = (vault_root / raw.replace("\\", "/").replace("/", os.sep)).resolve()
     if is_valid_pdf(vault_candidate):
         return str(vault_candidate)
 
@@ -129,32 +198,12 @@ def resolve_pdf_path(
     # vault-relative exact-name miss → the storage KEY directory may hold
     # the PDF under a renamed/restore-shuffled filename (the storage key is
     # the identity anchor, the filename is only a label).
-    m = re.search(r"storage[/\\]([A-Z0-9]{8})", raw)
+    m = re.search(r"storage[/\\]([A-Za-z0-9]{8})", raw, re.IGNORECASE)
     if m:
-        storage_dir = (vault_root / "System" / "Zotero" / "storage" / m.group(1)).resolve()
-        if storage_dir.exists():
-            pdfs = [f for f in storage_dir.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"]
-            if pdfs:
-                return str(pdfs[0])
-        # junction-resolved Zotero storage (outside vault)
-        fallback = _first_pdf_in_storage_dir(m.group(1), zotero_dir)
-        if fallback:
-            return fallback
-
-    # Try Zotero storage-relative (format: "storage:XXXX/item.pdf")
-    if raw.startswith("storage:") and zotero_dir is not None:
-        storage_rel = raw[len("storage:") :].lstrip("/")
-        storage_candidate = (zotero_dir / "storage" / storage_rel.replace("/", os.sep)).resolve()
-        if is_valid_pdf(storage_candidate):
-            return str(storage_candidate)
-        # 2026-08-16: the recorded filename may be stale (renamed /
-        # restore-shuffled) while the storage KEY directory holds the PDF.
-        # Fall back to the first PDF in that directory — the storage key
-        # is the identity anchor, the filename is only a label.
-        storage_key = storage_rel.split("/")[0].strip()
-        if storage_key:
-            return _first_pdf_in_storage_dir(storage_key, zotero_dir)
-        return ""
+        for zcand in _candidate_zotero_dirs(vault_root, zotero_dir):
+            fallback = _first_pdf_in_storage_dir(m.group(1), zcand)
+            if fallback:
+                return fallback
 
     logger.error(f"PDF path could not be resolved: {raw}")
     return ""

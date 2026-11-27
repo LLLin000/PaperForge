@@ -2396,38 +2396,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const binReady = fs.existsSync(installedBin);
     const hubInfo = this._readSkillHubAndInstallCount();
 
-    const skillDirectory = path.join(
-      vaultBase,
-      AGENT_PLATFORM_SKILL_DIRS[current] ?? ".agents/skills"
-    );
-    const deployed =
-      fs.existsSync(skillDirectory) ||
-      fs.existsSync(path.join(vaultBase, ".agents/skills"));
-    const mcpStatus = this._getVaultMcpConfigStatus(vaultBase, current);
-
     const facts = body.createDiv({ cls: "pf-module-facts" });
     const binFact = facts.createDiv({ cls: "pf-module-fact" });
     binFact.createEl("span", { text: t("agent_mcp_bin_label") });
     binFact.createEl("span", {
-      text: binReady
-        ? `${t("agent_mcp_bin_ready")} (${installedBin})`
-        : t("agent_mcp_bin_missing"),
+      text: binReady ? t("agent_mcp_bin_ready") : t("agent_mcp_bin_missing"),
     });
 
     const hubFact = facts.createDiv({ cls: "pf-module-fact" });
     hubFact.createEl("span", { text: t("agent_skill_hub_label") });
     hubFact.createEl("span", {
-      text: hubInfo.hubReady
-        ? t("agent_skill_hub_ready").replace(
-            "{count}",
-            String(hubInfo.installCount)
-          )
-        : t("agent_skill_hub_pending"),
+      text:
+        hubInfo.installCount > 0
+          ? t("agent_skill_hub_ready").replace(
+              "{count}",
+              String(hubInfo.installCount)
+            )
+          : hubInfo.hubReady
+            ? t("agent_skill_hub_unconnected")
+            : t("agent_skill_hub_pending"),
     });
-
-    const updateFact = facts.createDiv({ cls: "pf-module-fact" });
-    updateFact.createEl("span", { text: t("agent_auto_update_label") });
-    updateFact.createEl("span", { text: t("agent_auto_update_desc") });
 
     body.createEl("p", {
       cls: "caption",
@@ -2516,174 +2504,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       },
     });
 
-    // Advanced vault-local deployment & platform override (collapsed by default to keep Vault clean)
-    const advDetails = body.createEl("details", {
-      cls: "pf-adv-details",
-    });
-    if (this._agentPlatformDraft !== null) {
-      advDetails.setAttribute("open", "true");
-    }
-    advDetails.createEl("summary", { text: t("agent_adv_vault_local") });
-    const advBody = advDetails.createDiv({ cls: "pf-adv-body" });
-
-    const legacyFacts = advBody.createDiv({ cls: "pf-module-facts" });
-    const platform = legacyFacts.createDiv({ cls: "pf-module-fact" });
-    platform.createEl("span", { text: t("md_agent_platform") });
-    platform.createEl("span", {
-      text: AGENT_PLATFORM_LABELS[current] ?? current,
-    });
-    const deployment = legacyFacts.createDiv({ cls: "pf-module-fact" });
-    deployment.createEl("span", { text: t("md_agent_deployment") });
-    deployment.createEl("span", {
-      text: deployed ? t("agent_deployed") : t("agent_not_deployed"),
-    });
-    const mcpFact = legacyFacts.createDiv({ cls: "pf-module-fact" });
-    mcpFact.createEl("span", { text: t("md_agent_mcp") });
-    mcpFact.createEl("span", {
-      text:
-        mcpStatus === "ready"
-          ? t("agent_mcp_ready")
-          : mcpStatus === "stale_binary"
-            ? t("agent_mcp_stale")
-            : t("agent_mcp_not_configured"),
-    });
-
-    if (this._agentPlatformDraft === null) {
-      const advRow = advBody.createDiv({ cls: "pf-agent-config-actions" });
-      renderActionButton(advRow, {
-        label: t("agent_deploy_vault_local"),
-        variant: "secondary",
-        onClick: () => {
-          void (async () => {
-            try {
-              const targetSkillRel =
-                AGENT_PLATFORM_SKILL_DIRS[current] ?? ".agents/skills";
-              const client = this.getClient();
-              const binPath = this._resolvePreferredDaemonBin(vaultBase);
-              if (!deployed) {
-                try {
-                  await client.skillDeploy(targetSkillRel, true);
-                } catch {
-                  // Python runtime may not be installed yet; still wire MCP!
-                }
-              } else {
-                try {
-                  await client.skillSync(targetSkillRel);
-                } catch {
-                  // Best-effort sync
-                }
-              }
-              const liveDaemon = resolveNativeDaemonBinary({
-                vaultPath: vaultBase,
-              });
-              if (liveDaemon && typeof client.mcpInstall === "function") {
-                try {
-                  await client.mcpInstall(current, binPath);
-                } catch {
-                  this._installLocalMcpFallback(vaultBase, current, binPath);
-                }
-              } else {
-                this._installLocalMcpFallback(vaultBase, current, binPath);
-              }
-              new Notice(t("agent_setup_done"));
-            } catch (err) {
-              new Notice(
-                t("agent_setup_failed").replace(
-                  "{detail}",
-                  formatHumanError(err)
-                ),
-                6000
-              );
-            } finally {
-              this.display();
-            }
-          })();
-        },
-      });
-      renderActionButton(advRow, {
-        label: t("config_change"),
-        variant: "ghost",
-        onClick: () => {
-          this._agentPlatformDraft = current;
-          this.display();
-        },
-      });
-    } else {
-      const editor = advBody.createDiv({ cls: "pf-agent-config-editor" });
-      const select = editor.createEl("select", {
-        attr: { "aria-label": t("md_agent_platform") },
-      });
-      // #142: choices come from Python's config list when hydrated; the
-      // hardcoded map is a presentation label lookup only.
-      const editorChoices = this.plugin.agentPlatformChoices.length
-        ? this.plugin.agentPlatformChoices
-        : Object.keys(AGENT_PLATFORM_LABELS);
-      for (const value of editorChoices) {
-        const option = select.createEl("option", {
-          text: AGENT_PLATFORM_LABELS[value] ?? value,
-          attr: { value },
-        }) as HTMLOptionElement;
-        option.selected = value === this._agentPlatformDraft;
-      }
-      select.addEventListener("change", () => {
-        this._agentPlatformDraft = select.value;
-      });
-      const actions = editor.createDiv({ cls: "pf-agent-config-actions" });
-      renderActionButton(actions, {
-        label: t("config_save"),
-        onClick: () => {
-          const value = this._agentPlatformDraft ?? current;
-          // #142 / C0: mutation through the typed config command; the
-          // mirror and the persisted settings follow backend acceptance,
-          // never lead it.
-          void this.getClient()
-            .configSet("agent_platform", value)
-            .then(
-              () => {
-                this.plugin.settings.agent_platform = value;
-                this._agentPlatformDraft = null;
-                void this.plugin.saveSettings();
-                this.display();
-              },
-              (e) => {
-                new Notice(
-                  t("settings_config_set_failed")
-                    .replace("{key}", "agent_platform")
-                    .replace("{detail}", formatHumanError(e)),
-                  6000
-                );
-                this.display();
-              }
-            );
-        },
-      });
-      renderActionButton(actions, {
-        label: t("config_cancel"),
-        variant: "ghost",
-        onClick: () => {
-          this._agentPlatformDraft = null;
-          this.display();
-        },
-      });
-      renderActionButton(actions, {
-        label: t("config_verify"),
-        variant: "secondary",
-        onClick: () => {
-          const value = this._agentPlatformDraft ?? current;
-          const dirRel = AGENT_PLATFORM_SKILL_DIRS[value] ?? ".agents/skills";
-          const found =
-            fs.existsSync(path.join(this._getVaultBasePath(), dirRel)) ||
-            fs.existsSync(
-              path.join(this._getVaultBasePath(), ".agents/skills")
-            );
-          new Notice(
-            found ? t("agent_verify_found") : t("agent_verify_missing")
+    const vaultSkillDirs = [
+      path.join(
+        vaultBase,
+        AGENT_PLATFORM_SKILL_DIRS[current] ?? ".agents/skills"
+      ),
+      path.join(vaultBase, ".agents/skills"),
+    ];
+    const hasVaultSkills = vaultSkillDirs.some((dir) => {
+      if (!fs.existsSync(dir)) return false;
+      try {
+        return fs
+          .readdirSync(dir, { withFileTypes: true })
+          .some(
+            (entry) =>
+              entry.isDirectory() &&
+              fs.existsSync(path.join(dir, entry.name, "SKILL.md"))
           );
-        },
+      } catch {
+        return false;
+      }
+    });
+    if (hasVaultSkills) {
+      const skillsDetails = body.createEl("details", {
+        cls: "pf-adv-details",
       });
+      skillsDetails.createEl("summary", { text: t("md_agent_skills") });
+      const skillsBody = skillsDetails.createDiv({ cls: "pf-adv-body" });
+      this._renderSkillsList(skillsBody);
     }
-
-    this._renderSkillsList(advBody);
   }
 
   /**
