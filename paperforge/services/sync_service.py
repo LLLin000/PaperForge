@@ -794,9 +794,14 @@ class SyncService:
                 fastpath_digest = self._compute_sync_fastpath_digest(fastpath_paths)
                 cached = _json.loads(fp_file.read_text(encoding="utf-8"))
                 if cached.get("digest") == fastpath_digest and isinstance(cached.get("data"), dict):
-                    return fastpath_paths, PFResult(
-                        ok=True, command="sync", version=__version__, data=cached["data"]
-                    )
+                    from paperforge.worker import asset_index
+
+                    idx_env = asset_index.read_index(self.vault)
+                    stored_hash = idx_env.get("export_hash", "") if isinstance(idx_env, dict) else ""
+                    if stored_hash and stored_hash == asset_index.compute_export_hash(fastpath_paths):
+                        return fastpath_paths, PFResult(
+                            ok=True, command="sync", version=__version__, data=cached["data"]
+                        )
             return fastpath_paths, None
         except (FileNotFoundError, PermissionError, OSError, ValueError) as exc:
             return None, PFResult(

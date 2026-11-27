@@ -1016,13 +1016,11 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     // Also verify pre-memory.build Base snapshot preserves real has_pdf & shows zero false missing-PDF banner
     const preBuildBaseCheck = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        getClient(): {
-          baseSnapshot(): Promise<{
-            rows?: Record<string, { has_pdf?: boolean }>;
-          }>;
-        };
+        refreshBaseSnapshot(): Promise<{
+          rows?: Record<string, { has_pdf?: boolean }>;
+        } | null>;
       };
-      const snap = await plugin.getClient().baseSnapshot();
+      const snap = await plugin.refreshBaseSnapshot();
       const doc =
         typeof activeDocument !== "undefined" ? activeDocument : document;
       const missingPdfBanner =
