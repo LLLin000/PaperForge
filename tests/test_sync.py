@@ -164,3 +164,72 @@ def test_sync_fastpath_bypasses_when_index_export_hash_is_stale(tmp_path):
     )
     _, hit2 = svc._check_fastpath_or_sqlite_preflight()
     assert hit2 is not None and hit2.ok is True
+
+
+def test_sync_fastpath_self_heals_stale_workspace_registry(tmp_path):
+    import json
+    import sqlite3
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.services.sync_service import SyncService
+    from paperforge.worker import asset_index
+    from tests.conftest import canonical_test_config
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    svc = SyncService(vault)
+    paths = svc.resolve_paths()
+    paths["exports"].mkdir(parents=True, exist_ok=True)
+    (paths["exports"] / "Ortho.json").write_text(
+        json.dumps({"items": [{"key": "GK000001", "title": "Ortho Paper"}]}),
+        encoding="utf-8",
+    )
+
+    real_dir = paths["literature"] / "Ortho" / "GK000001 - Ortho Paper"
+    real_dir.mkdir(parents=True, exist_ok=True)
+    (real_dir / "GK000001.md").write_text(
+        '---\nzotero_key: "GK000001"\ndomain: "Ortho"\ntitle: "Ortho Paper"\n---\n',
+        encoding="utf-8",
+    )
+
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = get_connection(db_path)
+    ensure_schema(conn)
+    conn.execute(
+        "INSERT OR REPLACE INTO workspace_registry (zotero_key, domain, workspace_relpath, main_note_relpath, dir_mtime_ns, identity_source, status, verified_at) "
+        "VALUES (?, ?, ?, ?, 0, 'legacy', 'active', '2026-01-01')",
+        (
+            "GK000001",
+            "Literature",
+            "Resources/Literature/Literature/GK000001 - Ortho Paper",
+            "Resources/Literature/Literature/GK000001 - Ortho Paper/GK000001.md",
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    idx_dir = paths["index"].parent
+    idx_dir.mkdir(parents=True, exist_ok=True)
+    paths["index"].write_text(
+        json.dumps({"export_hash": asset_index.compute_export_hash(paths), "items": []}),
+        encoding="utf-8",
+    )
+    digest = svc._compute_sync_fastpath_digest(paths)
+    (idx_dir / ".sync-fastpath.json").write_text(
+        json.dumps({"digest": digest, "data": {"selection": {}}}),
+        encoding="utf-8",
+    )
+
+    _, hit = svc._check_fastpath_or_sqlite_preflight()
+    assert hit is not None and hit.ok is True
+
+    check = sqlite3.connect(str(db_path))
+    row = check.execute(
+        "SELECT domain, main_note_relpath FROM workspace_registry WHERE zotero_key = 'GK000001'"
+    ).fetchone()
+    check.close()
+    assert row is not None
+    assert row[0] == "Ortho"
+    assert row[1] == "Resources/Literature/Ortho/GK000001 - Ortho Paper/GK000001.md"

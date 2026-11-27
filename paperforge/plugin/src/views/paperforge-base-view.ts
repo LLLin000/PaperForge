@@ -200,25 +200,29 @@ function resolveRowForEntry(
   rowsByKey: Record<string, BasePaperRowDto>,
   pathIndex: Map<string, BasePaperRowDto>
 ): BasePaperRowDto | null {
+  const entryPath = (entry.file?.path || "").replace(/\\/g, "/");
+  const withLivePath = (row: BasePaperRowDto): BasePaperRowDto =>
+    entryPath && (row.main_note_path || "").replace(/\\/g, "/") !== entryPath
+      ? { ...row, main_note_path: entryPath }
+      : row;
   try {
     const val = entry.getValue?.("note.zotero_key" as obsidian.BasesPropertyId);
     const cleaned = readValueString(val).replace(/^["']|["']$/g, "");
     if (cleaned && rowsByKey[cleaned]) {
-      return rowsByKey[cleaned];
+      return withLivePath(rowsByKey[cleaned]);
     }
   } catch {
     // Ignore malformed formula/property values on individual notes
   }
-  const entryPath = (entry.file?.path || "").replace(/\\/g, "/");
   if (entryPath) {
     const byPath = pathIndex.get(entryPath);
-    if (byPath) return byPath;
+    if (byPath) return withLivePath(byPath);
   }
   const baseName = entry.file?.basename || "";
   if (baseName) {
-    if (rowsByKey[baseName]) return rowsByKey[baseName];
+    if (rowsByKey[baseName]) return withLivePath(rowsByKey[baseName]);
     const prefix = baseName.split(/\s+-\s+/)[0]?.trim();
-    if (prefix && rowsByKey[prefix]) return rowsByKey[prefix];
+    if (prefix && rowsByKey[prefix]) return withLivePath(rowsByKey[prefix]);
   }
   return null;
 }
@@ -1293,15 +1297,13 @@ export class PaperForgeBasesView extends RuntimeBasesView {
             );
             return;
           }
-          this._openNote(row.main_note_path, e);
+          this._openNote(row.main_note_path, e, row.zotero_key);
         });
         titleLink.addEventListener("auxclick", (e) => {
           if (e.button !== 1) return;
           e.preventDefault();
           e.stopPropagation();
-          if (!row.main_note_path) return;
-          const app = this.app ?? this.plugin.app;
-          void app.workspace?.openLinkText?.(row.main_note_path, "", "tab");
+          this._openNote(row.main_note_path, e, row.zotero_key);
         });
         bindObsidianHoverPreview(
           this.app ?? this.plugin.app,
@@ -1813,15 +1815,100 @@ export class PaperForgeBasesView extends RuntimeBasesView {
     }
   }
 
-  private _openNote(notePath: string, evt?: MouseEvent | KeyboardEvent): void {
+  private _openNote(
+    notePath: string,
+    evt?: MouseEvent | KeyboardEvent,
+    zoteroKey?: string
+  ): void {
+    const app = this.app ?? this.plugin.app;
+    const mod = resolveModEvent(evt);
+    const auxTab =
+      evt instanceof MouseEvent && evt.button === 1 ? ("tab" as const) : mod;
+    const normPath = (notePath || "").replace(/\\/g, "/");
+    const vaultApi = app?.vault as
+      | {
+          getAbstractFileByPath?: (p: string) => {
+            path?: string;
+            basename?: string;
+            extension?: string;
+            stat?: { size?: number };
+          } | null;
+          getMarkdownFiles?: () => Array<{
+            path: string;
+            basename?: string;
+            extension?: string;
+            stat?: { size?: number };
+          }>;
+        }
+      | undefined;
+
+    if (typeof vaultApi?.getAbstractFileByPath === "function") {
+      const direct = normPath ? vaultApi.getAbstractFileByPath(normPath) : null;
+      const directIsFile =
+        Boolean(direct) &&
+        "extension" in (direct as Record<string, unknown>) &&
+        ((direct as { stat?: { size?: number } })?.stat?.size ?? 1) > 0;
+      let targetFile = directIsFile ? direct : null;
+
+      if (
+        !targetFile &&
+        zoteroKey &&
+        typeof vaultApi.getMarkdownFiles === "function"
+      ) {
+        const mdFiles = vaultApi.getMarkdownFiles();
+        const matches = mdFiles.filter(
+          (f) =>
+            f.basename === zoteroKey ||
+            (typeof f.basename === "string" &&
+              f.basename.startsWith(`${zoteroKey} - `))
+        );
+        targetFile =
+          matches.find((f) => (f.stat?.size ?? 1) > 0) ??
+          (direct && "extension" in (direct as Record<string, unknown>)
+            ? direct
+            : null);
+      } else if (
+        !targetFile &&
+        direct &&
+        "extension" in (direct as Record<string, unknown>)
+      ) {
+        targetFile = direct;
+      }
+
+      if (targetFile) {
+        const wsAny = app?.workspace as
+          | {
+              getLeaf?: (
+                newLeaf?: boolean | "tab" | "split" | "window"
+              ) => { openFile?: (f: unknown) => Promise<void> } | null;
+            }
+          | undefined;
+        if (typeof wsAny?.getLeaf === "function") {
+          const leaf = wsAny.getLeaf(auxTab || false);
+          if (typeof leaf?.openFile === "function") {
+            void leaf.openFile(targetFile);
+            return;
+          }
+        }
+        const resolvedPath = targetFile.path || normPath;
+        if (auxTab) {
+          void app.workspace?.openLinkText?.(resolvedPath, "", auxTab);
+        } else {
+          void app.workspace?.openLinkText?.(resolvedPath, "");
+        }
+        return;
+      }
+
+      new Notice(t("paper_note_missing") || "Note not found in vault.");
+      return;
+    }
+
     if (!notePath) {
       new Notice(t("paper_note_missing") || "Note path unavailable.");
       return;
     }
-    const app = this.app ?? this.plugin.app;
-    const mod = resolveModEvent(evt);
-    if (mod) {
-      void app.workspace?.openLinkText?.(notePath, "", mod);
+    if (auxTab) {
+      void app.workspace?.openLinkText?.(notePath, "", auxTab);
       return;
     }
     void app.workspace?.openLinkText?.(notePath, "");
@@ -1837,7 +1924,8 @@ export class PaperForgeBasesView extends RuntimeBasesView {
         row.needs_diagnostic ||
         row.ocr_status === "failed" ||
         row.ocr_status === "done_incomplete",
-      onOpenNote: () => this._openNote(row.main_note_path, event),
+      onOpenNote: () =>
+        this._openNote(row.main_note_path, event, row.zotero_key),
       onOpenPdf: () => void this.plugin.openPaperPdf(row.zotero_key),
       onOpenSplit: this.plugin.openPaperSplitReading
         ? () =>
@@ -2313,7 +2401,7 @@ export class PaperForgeBasesView extends RuntimeBasesView {
       } else if ((e.ctrlKey || e.metaKey) && row.has_pdf) {
         void this.plugin.openPaperPdf(row.zotero_key);
       } else if (row.main_note_path) {
-        this._openNote(row.main_note_path, e);
+        this._openNote(row.main_note_path, e, row.zotero_key);
       } else if (row.has_pdf) {
         void this.plugin.openPaperPdf(row.zotero_key);
       }

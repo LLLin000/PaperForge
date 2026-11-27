@@ -537,6 +537,14 @@ class SyncService:
                 with timing.phase("sync.rebuild_index_after_cleanup"):
                     index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
 
+            try:
+                from paperforge.services.vault_engine import sync_workspace_registry
+
+                with timing.phase("sync.workspace_registry"):
+                    sync_workspace_registry(self.vault, lit_root=paths["literature"])
+            except Exception as exc:
+                logger.warning("workspace_registry sync skipped: %s", exc)
+
             # ── Phase 4: Prune orphans ──
             prune_data = None
             try:
@@ -799,6 +807,7 @@ class SyncService:
                     idx_env = asset_index.read_index(self.vault)
                     stored_hash = idx_env.get("export_hash", "") if isinstance(idx_env, dict) else ""
                     if stored_hash and stored_hash == asset_index.compute_export_hash(fastpath_paths):
+                        self._self_heal_stale_workspace_registry(fastpath_paths)
                         return fastpath_paths, PFResult(
                             ok=True, command="sync", version=__version__, data=cached["data"]
                         )
@@ -816,6 +825,41 @@ class SyncService:
             )
         except Exception:
             return None, None
+
+    def _self_heal_stale_workspace_registry(self, fastpath_paths: dict[str, Path]) -> None:
+        """Re-sync workspace_registry if any sampled row points to a missing/empty note file."""
+        import sqlite3
+
+        db_path = fastpath_paths["paperforge"] / "indexes" / "paperforge.db"
+        if not db_path.is_file():
+            return
+        needs_resync = False
+        try:
+            conn = sqlite3.connect(str(db_path))
+            try:
+                rows = conn.execute(
+                    "SELECT main_note_relpath FROM workspace_registry "
+                    "WHERE main_note_relpath IS NOT NULL AND main_note_relpath != '' LIMIT 10"
+                ).fetchall()
+            finally:
+                conn.close()
+            for (rel,) in rows:
+                rel_str = str(rel or "").replace("\\", "/").strip()
+                if not rel_str:
+                    continue
+                target = self.vault / rel_str
+                if not target.is_file() or target.stat().st_size == 0:
+                    needs_resync = True
+                    break
+        except Exception:
+            return
+        if needs_resync:
+            try:
+                from paperforge.services.vault_engine import sync_workspace_registry
+
+                sync_workspace_registry(self.vault, lit_root=fastpath_paths["literature"])
+            except Exception as exc:
+                logger.warning("workspace_registry self-heal skipped: %s", exc)
 
     def _safe_materialize_sqlite_phase0(self, fastpath_paths: dict[str, Path]) -> PFResult | None:
         try:

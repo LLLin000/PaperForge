@@ -118,7 +118,8 @@ vi.mock("obsidian", () => ({
   Platform: {},
 }));
 
-import PaperForgePlugin from "../src/main";
+import PaperForgePlugin, { tryHandleExternalPdfLinkClick } from "../src/main";
+import * as managedRuntime from "../src/services/managed-runtime";
 import { setLanguage, t } from "../src/i18n";
 import { PaperForgeSettingTab } from "../src/settings";
 import type { App } from "obsidian";
@@ -129,6 +130,7 @@ describe("single-owner runtime installer & daemon UI progress", () => {
   afterEach(() => {
     clearNoticeCalls();
     vi.useRealTimers();
+    vi.restoreAllMocks();
     for (const d of tempDirs.splice(0)) {
       fs.rmSync(d, { recursive: true, force: true });
     }
@@ -137,6 +139,19 @@ describe("single-owner runtime installer & daemon UI progress", () => {
   function makeTab(opts: {
     hasDaemonRpc?: boolean;
     runtimeUpdating?: boolean;
+    daemonUpdating?: boolean;
+    liveRuntime?: {
+      phaseText: string;
+      current: number;
+      total: number;
+      startedAt: number | null;
+    } | null;
+    liveSync?: {
+      phaseText: string;
+      current: number;
+      total: number;
+      startedAt: number | null;
+    } | null;
     daemonSubmitRuntimeJob?: ReturnType<typeof vi.fn>;
     launchRuntimeInstaller?: ReturnType<typeof vi.fn>;
     runtimeStatus?: ReturnType<typeof vi.fn>;
@@ -165,15 +180,21 @@ describe("single-owner runtime installer & daemon UI progress", () => {
         prefer_cn_mirror: false,
         allow_uv_download: true,
       },
-      manifest: { version: "2.0.9" },
-      saveSettings: vi.fn(),
+      manifest: { version: "2.0.11" },
+      saveSettings: vi.fn(async () => undefined),
       readPaperforgeJson: () => ({}),
+      isDaemonUpdating: () => Boolean(opts.daemonUpdating),
       isRuntimeUpdating: () => Boolean(opts.runtimeUpdating),
+      getLiveTaskSummary: (kind: "runtime" | "sync") =>
+        kind === "runtime"
+          ? (opts.liveRuntime ?? null)
+          : (opts.liveSync ?? null),
       getClient: () => ({
         hasDaemonRpc: () => Boolean(opts.hasDaemonRpc),
         daemonSubmitRuntimeJob,
         launchRuntimeInstaller,
         runtimeStatus,
+        zoteroDetect: vi.fn(async () => ({ found: false })),
         probeAll: vi.fn(),
         probe: vi.fn(),
         invalidateCache: vi.fn(),
@@ -208,7 +229,7 @@ describe("single-owner runtime installer & daemon UI progress", () => {
     });
     expect(daemonSubmitRuntimeJob).toHaveBeenCalledWith(
       "update",
-      "2.0.9",
+      "2.0.11",
       expect.objectContaining({
         proxyUrl: undefined,
         preferCnMirror: undefined,
@@ -411,5 +432,188 @@ describe("single-owner runtime installer & daemon UI progress", () => {
     expect(syncSummary!.current).toBe(3);
     expect(syncSummary!.total).toBe(5);
     expect(syncSummary!.phaseText).toContain("步骤 3/5");
+  });
+
+  it("suppresses false 'cancelled' failure during daemon hot-swap and resumes Express auto-chain", () => {
+    let daemonSwap = true;
+    const daemonSubmitRuntimeJob = vi.fn(async () => ({
+      accepted: true,
+      coalesced: false,
+      job: { job_id: "job_rt_2", status: "running" },
+    }));
+    const { tab } = makeTab({
+      hasDaemonRpc: true,
+      daemonSubmitRuntimeJob,
+    });
+    (
+      (tab as any).plugin as { isDaemonUpdating: () => boolean }
+    ).isDaemonUpdating = () => daemonSwap;
+
+    (tab as any)._autoContinueSetupAfterInstall = true;
+    (tab as any)._daemonDrivenRuntimeInstall = true;
+    (tab as any)._setupOperation = "running";
+
+    // Daemon hot-swap cancels the pre-swap runtime job
+    tab.onDaemonRuntimeJobFinished("cancelled", "cancelled");
+    expect((tab as any)._setupOperation).toBe("running");
+    expect((tab as any)._setupFeedback).toBe(
+      t("runtime_daemon_swapping_resume")
+    );
+    expect(String((tab as any)._setupFeedback)).not.toContain(
+      "Runtime setup did not complete"
+    );
+    expect((tab as any)._autoContinueSetupAfterInstall).toBe(true);
+
+    // Once hot-swap finishes, setup automatically resumes installer submission with autoContinueSetup preserved
+    daemonSwap = false;
+    tab.onDaemonSwapFinished();
+    expect(daemonSubmitRuntimeJob).toHaveBeenCalledTimes(1);
+    expect((tab as any)._autoContinueSetupAfterInstall).toBe(true);
+    (tab as any)._stopRuntimePoll(false, "cleanup");
+  });
+
+  it("shows calm localized message on genuine runtime cancel and clears prior failure on retry", () => {
+    const { tab } = makeTab({ hasDaemonRpc: true });
+    (tab as any)._daemonDrivenRuntimeInstall = true;
+    (tab as any)._setupOperation = "running";
+    tab.onDaemonRuntimeJobFinished("cancelled", "cancelled");
+    expect((tab as any)._setupOperation).toBe("idle");
+    expect((tab as any)._setupFeedback).toBe(t("runtime_install_cancelled"));
+    expect(String((tab as any)._setupFeedback)).not.toContain(": cancelled");
+
+    (tab as any)._setupOperation = "failed";
+    (tab as any)._setupFeedback = "stale error";
+    (tab as any)._launchRuntimeInstaller("install", {
+      autoContinueSetup: true,
+    });
+    expect((tab as any)._setupOperation).toBe("running");
+    expect((tab as any)._setupFeedback).toBeNull();
+    (tab as any)._stopRuntimePoll(false, "cleanup");
+  });
+
+  it("renders accurate Express CTA button labels & disabled state across engine install, sync, and ready stages", () => {
+    const getPrimaryFooterBtn = (root: HTMLElement): HTMLButtonElement => {
+      const btns = Array.from(
+        root.querySelectorAll<HTMLButtonElement>(
+          ".pf-express-footer-actions button.pf-action-btn"
+        )
+      );
+      expect(btns.length).toBeGreaterThanOrEqual(2);
+      return btns[btns.length - 1];
+    };
+
+    // Stage 1a: idle, no pointer -> honest Install Engine & Import label
+    const ptrSpy = vi
+      .spyOn(managedRuntime, "readRuntimePointer")
+      .mockReturnValue(null);
+    const t1 = makeTab({ hasDaemonRpc: true });
+    (t1.tab as any)._runtimeStatusVersion = "2.0.11";
+    (t1.tab as any)._runtimeStatus = { runtime_ready: false };
+    (t1.tab as any)._zoteroDetectData = { found: true, total_papers: 12 };
+    const w1 = document.createElement("div");
+    (t1.tab as any)._renderExpressSetup(w1, false);
+    const btn1 = getPrimaryFooterBtn(w1);
+    expect(btn1.disabled).toBe(false);
+    expect(btn1.textContent).toContain("Install Engine & Import 12 Papers");
+
+    // Stage 1b: idle, outdated pointer -> honest Update Engine & Import label
+    ptrSpy.mockReturnValue({
+      pythonPath: "/opt/pf/python",
+      environmentRoot: "/opt/pf",
+      paperforgeVersion: "2.0.10",
+    });
+    (t1.tab as any)._runtimeStatus = {
+      runtime_ready: false,
+      version_matches_expected: false,
+    };
+    const w1b = document.createElement("div");
+    (t1.tab as any)._renderExpressSetup(w1b, false);
+    const btn1b = getPrimaryFooterBtn(w1b);
+    expect(btn1b.disabled).toBe(false);
+    expect(btn1b.textContent).toContain("Update Engine & Import 12 Papers");
+
+    // Stage 2: installing runtime (step 3/5) -> disabled with Installing engine (3/5)
+    ptrSpy.mockReturnValue(null);
+    const t2 = makeTab({
+      hasDaemonRpc: true,
+      runtimeUpdating: true,
+      liveRuntime: {
+        phaseText: "Step 3/5: Downloading engine",
+        current: 3,
+        total: 5,
+        startedAt: Date.now() - 4000,
+      },
+    });
+    (t2.tab as any)._runtimeStatusVersion = "2.0.11";
+    (t2.tab as any)._runtimeStatus = { runtime_ready: false };
+    (t2.tab as any)._autoContinueSetupAfterInstall = true;
+    const w2 = document.createElement("div");
+    (t2.tab as any)._renderExpressSetup(w2, false);
+    const btn2 = getPrimaryFooterBtn(w2);
+    expect(btn2.disabled).toBe(true);
+    expect(btn2.textContent).toContain(
+      "Installing engine (3/5), then importing"
+    );
+    (t2.tab as any)._stopRuntimePoll(false, "cleanup");
+
+    // Stage 3: runtime ready & syncing library (step 2/5) -> disabled with Importing library (2/5)
+    const t3 = makeTab({
+      hasDaemonRpc: true,
+      liveSync: {
+        phaseText: "Step 2/5: Generating notes",
+        current: 2,
+        total: 5,
+        startedAt: Date.now() - 2000,
+      },
+    });
+    (t3.tab as any)._runtimeStatusVersion = "2.0.11";
+    (t3.tab as any)._runtimeStatus = { runtime_ready: true };
+    (t3.tab as any)._setupOperation = "running";
+    (t3.tab as any)._setupPhase = "syncing";
+    const w3 = document.createElement("div");
+    (t3.tab as any)._renderExpressSetup(w3, false);
+    const btn3 = getPrimaryFooterBtn(w3);
+    expect(btn3.disabled).toBe(true);
+    expect(btn3.textContent).toContain("Importing library (2/5)");
+  });
+
+  it("intercepts clicks on external OS pdf_path wikilinks in Obsidian Properties", () => {
+    const prop = document.createElement("div");
+    prop.className = "metadata-property";
+    prop.setAttribute("data-property-key", "pdf_path");
+    const link = document.createElement("div");
+    link.className = "internal-link metadata-link-inner";
+    link.textContent = "C:/Users/Researcher/Zotero/storage/Q2245LXK/paper.pdf";
+    prop.appendChild(link);
+    document.body.appendChild(prop);
+
+    const openPaperPdf = vi.fn();
+    const clickEvt = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(clickEvt, "target", { value: link });
+
+    const handled = tryHandleExternalPdfLinkClick(clickEvt, {
+      app: {
+        vault: { getAbstractFileByPath: () => null },
+        workspace: {
+          getActiveFile: () => ({
+            path: "Resources/Literature/Ortho/4M3K4W7C/4M3K4W7C.md",
+            basename: "4M3K4W7C",
+          }),
+        },
+        metadataCache: {
+          getFileCache: () => ({ frontmatter: { zotero_key: "4M3K4W7C" } }),
+        },
+      } as unknown as App,
+      baseSnapshot: null,
+      openPaperPdf,
+    });
+
+    prop.remove();
+    expect(handled).toBe(true);
+    expect(clickEvt.defaultPrevented).toBe(true);
+    expect(openPaperPdf).toHaveBeenCalledWith("4M3K4W7C");
   });
 });
