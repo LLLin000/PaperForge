@@ -771,7 +771,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_syncing:
       "Syncing your Zotero library (first import may take a moment)…",
     setup_library_sync_failed:
-      "Configuration saved, but the library sync failed. Check the export and try again.",
+      "Configuration saved, but the library sync failed. Check the details below or your Zotero folder and try again.",
     setup_library_loading: "Reading the vault configuration…",
     setup_library_configured:
       "Library configuration saved. Checking the connection.",
@@ -2579,7 +2579,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_bbt_section_title: "导入 Better BibTeX JSON 导出（必需）",
     setup_library_syncing: "正在从 Zotero 同步文献库（首次导入可能需要片刻）…",
     setup_library_sync_failed:
-      "配置已保存，但文献库同步失败。请检查导出文件后重试。",
+      "配置已保存，但文献库同步失败。请查看下方详情或检查 Zotero 目录后重试。",
     setup_library_loading: "正在读取库配置…",
     setup_library_configured: "文献库配置已保存，正在检查连接。",
     setup_library_configuring: "正在保存并检查文献库配置…",

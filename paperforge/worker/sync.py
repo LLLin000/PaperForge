@@ -208,92 +208,15 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
 
 def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = False) -> dict:
     from paperforge.worker.base_views import ensure_base_views
-    from paperforge.worker.ocr import validate_ocr_meta
 
     paths = pipeline_paths(vault)
     config = load_domain_config(paths)
     ensure_base_views(vault, paths, config)
-    domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
     written = 0
     updated = 0
     for export_path in sorted(paths["exports"].glob("*.json")):
-        domain = domain_lookup.get(export_path.name, export_path.stem)
-        for item in load_export_rows(export_path):
-            pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
-            has_pdf = bool(pdf_attachments)
-            # #135: same main-PDF rule as asset_index + paper DB —
-            # identify_main_pdf (title=="PDF" > largest > shortest > first),
-            # never attachments[0]: a paper with two PDF attachments would
-            # get a different main PDF here than in the canonical index.
-            from paperforge.adapters.bbt import identify_main_pdf
-
-            main_pdf, _supplementary = identify_main_pdf(pdf_attachments)
-            raw_pdf_path = (
-                main_pdf.get("path", "") if main_pdf else (pdf_attachments[0].get("path", "") if pdf_attachments else "")
-            )
-            from paperforge.pdf_resolver import resolve_pdf_path
-
-            zotero_dir = paths["zotero_dir"]
-            resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
-            collection_meta = collection_fields(item.get("collections", []))
-            meta_path = paths["ocr"] / item["key"] / "meta.json"
-            # SSOT boundary (2026-08-16): OCR meta.json's only writer is the
-            # OCR subsystem.  Selection sync is a READ-ONLY consumer:
-            # unreadable meta (restore corruption) → unobservable, continue;
-            # validated status is used locally, never written back.
-            meta = None
-            _meta_unreadable = False
-            if meta_path.exists():
-                try:
-                    meta = read_json(meta_path)
-                except Exception:  # noqa: BLE001
-                    meta = None
-                    _meta_unreadable = True
-            if meta:
-                validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
-            else:
-                validated_ocr_status = "pending"
-            ocr_status_effective = (
-                validated_ocr_status
-                if meta is not None
-                else ("unknown" if _meta_unreadable else "pending")
-            )
-            note_path = paths["literature"] / domain / f"{item['key']}.md"
-            note_text = ""
-            if note_path.exists():
-                try:
-                    note_text = note_path.read_text(encoding="utf-8")
-                except Exception:  # noqa: BLE001 — corrupt restored note
-                    note_text = ""
-            fulltext_md_path = obsidian_wikilink_for_path(
-                vault,
-                (meta or {}).get("fulltext_md_path", "")
-                or (meta or {}).get("markdown_path", ""),
-            )
-            ocr_status = ocr_status_effective
-            record_ocr_status = "nopdf" if not has_pdf or not resolved_pdf else ocr_status
-            creators = item.get("creators", [])
-            first_author = ""
-            for c in creators:
-                if c.get("creatorType") == "author":
-                    first_author = f"{c.get('firstName', '')} {c.get('lastName', '')}".strip()
-                    break
-            journal = item.get("journal", "")
-            extra = item.get("extra", "")
-            impact_factor = lookup_impact_factor(journal, extra, vault)
-            # Convert supplementary storage: paths to wikilinks
-            supplementary_wikilinks = []
-            for supp_path in item.get("supplementary", []):
-                if supp_path:
-                    wikilink = obsidian_wikilink_for_pdf(supp_path, vault, zotero_dir)
-                    if wikilink:
-                        supplementary_wikilinks.append(wikilink)
-            pdf_wikilink = obsidian_wikilink_for_pdf(resolved_pdf, vault, zotero_dir) if resolved_pdf else ""
-
-            # Phase 37: library-records deprecated — skip creation.
-            # Formal notes now carry workflow flags (do_ocr, analyze) directly.
-            # Existing library-records are migrated via Phase 40 logic.
-            updated += 1
+        # Phase 37 deprecated library-records creation; still validate/count rows here.
+        updated += len(load_export_rows(export_path))
     result = {"new": written, "updated": updated, "skipped": 0, "failed": 0, "errors": []}
     if not json_output:
         print(f"selection-sync: wrote {written} records, updated {updated} records")

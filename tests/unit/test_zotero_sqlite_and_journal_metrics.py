@@ -332,3 +332,116 @@ def test_cross_collection_item_resolves_no_raw_collection_keys(tmp_path: Path) -
     rows = load_export_rows(tmp_json)
     assert rows[0]["collections"] == ["BoneRegen/Hydrogels"]
     assert "COL_SPRT" not in rows[0]["collections"]
+
+
+def test_sqlite_nested_storage_backslash_renamed_and_attachments_base_dir(tmp_path: Path, monkeypatch) -> None:
+    """Nested storage paths, stale filenames, backslashes, and multi-profile baseAttachmentPath all resolve cleanly."""
+    from paperforge.adapters import zotero_sqlite
+
+    zdir = tmp_path / "ZoteroMain"
+    att_dir = zdir / "storage" / "ATTNEST1"
+    (att_dir / "sub").mkdir(parents=True)
+    nested_pdf = att_dir / "sub" / "nested.pdf"
+    nested_pdf.write_bytes(b"%PDF-1.4\nnested\n")
+
+    att_renamed = zdir / "storage" / "ATTREN01"
+    att_renamed.mkdir(parents=True)
+    actual_pdf = att_renamed / "actual_name.pdf"
+    actual_pdf.write_bytes(b"%PDF-1.4\nrenamed\n")
+
+    prof1 = tmp_path / "prof1"
+    prof1.mkdir()
+    base1 = tmp_path / "LinkedOther"
+    base1.mkdir()
+    (prof1 / "prefs.js").write_text(
+        f'user_pref("extensions.zotero.dataDir", "{(tmp_path / "OtherZotero").as_posix()}");\n'
+        f'user_pref("extensions.zotero.baseAttachmentPath", "{base1.as_posix()}");\n',
+        encoding="utf-8",
+    )
+
+    prof2 = tmp_path / "prof2"
+    prof2.mkdir()
+    base2 = tmp_path / "LinkedMain"
+    (base2 / "Ortho").mkdir(parents=True)
+    linked_pdf = base2 / "Ortho" / "linked.pdf"
+    linked_pdf.write_bytes(b"%PDF-1.4\nlinked\n")
+    (prof2 / "prefs.js").write_text(
+        f'user_pref("extensions.zotero.dataDir", "{zdir.as_posix()}");\n'
+        f'user_pref("extensions.zotero.baseAttachmentPath", "{base2.as_posix()}");\n',
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(zotero_sqlite, "_zotero_profile_dirs", lambda: [prof1, prof2])
+    resolved_base = zotero_sqlite.read_zotero_base_attachment_path(zdir)
+    assert resolved_base == base2
+
+    norm_nested, _, sz_nested = zotero_sqlite._resolve_sqlite_attachment_path(
+        "storage:sub\\nested.pdf", "ATTNEST1", 0, zdir, resolved_base
+    )
+    assert norm_nested == "storage:ATTNEST1/sub/nested.pdf"
+    assert sz_nested > 0
+
+    norm_renamed, _, sz_renamed = zotero_sqlite._resolve_sqlite_attachment_path(
+        "storage:stale_name.pdf", "ATTREN01", 0, zdir, resolved_base
+    )
+    assert norm_renamed == "storage:ATTREN01/actual_name.pdf"
+    assert sz_renamed > 0
+
+    norm_att, _, sz_att = zotero_sqlite._resolve_sqlite_attachment_path(
+        "attachments:Ortho\\linked.pdf", "ATTLNK01", 2, zdir, resolved_base
+    )
+    assert Path(norm_att) == linked_pdf
+    assert sz_att > 0
+
+
+def test_journal_metrics_offline_seed_and_cache_fast_paths(tmp_path: Path, monkeypatch) -> None:
+    """Bundled CC0 seed works when allow_network=False, local plugin DB is mtime-cached, and misses memoize."""
+    from paperforge import journal_metrics
+
+    vault = tmp_path / "vault_jm"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+
+    zoterostyle = vault / ".paperforge" / "Zotero" / "zoterostyle.json"
+    zoterostyle.parent.mkdir(parents=True, exist_ok=True)
+    zoterostyle.write_text(json.dumps({"Custom Journal": {"rank": {"sciif": "9.5"}}}), encoding="utf-8")
+
+    journal_metrics._LOCAL_DB_CACHE.clear()
+    journal_metrics._INMEM_MISS_OFFLINE.clear()
+    journal_metrics._INMEM_MISS_NETWORK.clear()
+
+    read_calls = 0
+    orig_read_json = journal_metrics.read_json
+
+    def _counting_read_json(p: Path):
+        nonlocal read_calls
+        if p == zoterostyle:
+            read_calls += 1
+        return orig_read_json(p)
+
+    monkeypatch.setattr(journal_metrics, "read_json", _counting_read_json)
+    for _ in range(10):
+        hit = lookup_journal_metric("Custom Journal", "", vault, allow_network=False)
+        assert hit["impact_factor"] == "9.5"
+    assert read_calls == 1
+
+    # Offline lookup should hit bundled CC0 seed with 0 HTTP calls
+    seeded_offline = lookup_journal_metric("Nature", "", vault, allow_network=False)
+    assert seeded_offline["impact_factor_source"] == "openalex_2yr"
+    assert float(seeded_offline["impact_factor"]) > 0.0
+
+    # Negative misses memoize per vault without repeatedly hitting SQLite
+    sqlite_calls = 0
+    orig_read_sqlite = journal_metrics._read_sqlite_cache
+
+    def _counting_sqlite(*args, **kwargs):
+        nonlocal sqlite_calls
+        sqlite_calls += 1
+        return orig_read_sqlite(*args, **kwargs)
+
+    monkeypatch.setattr(journal_metrics, "_read_sqlite_cache", _counting_sqlite)
+    miss1 = lookup_journal_metric("NonExistentJournal_XYZ_999", "", vault, allow_network=False)
+    miss2 = lookup_journal_metric("NonExistentJournal_XYZ_999", "", vault, allow_network=False)
+    assert miss1["impact_factor"] == ""
+    assert miss2["impact_factor"] == ""
+    assert sqlite_calls == 1

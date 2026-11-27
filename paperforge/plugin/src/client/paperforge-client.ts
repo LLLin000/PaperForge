@@ -1992,7 +1992,7 @@ export class PaperForgeClient {
     const argv = ["sync", "--json"];
     if (dryRun) argv.push("--dry-run");
     try {
-      return await this._executePfResult(argv, undefined, false);
+      return await this._executePfResult(argv, { timeoutMs: 300_000 }, false);
     } finally {
       this.invalidateCache();
     }

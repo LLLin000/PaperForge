@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import sqlite3
 import time
@@ -27,9 +28,41 @@ logger = logging.getLogger(__name__)
 
 _CACHE_TTL_SECONDS = 90 * 86400
 _INMEM_CACHE: dict[str, dict[str, str]] = {}
+_INMEM_MISS_OFFLINE: set[tuple[str, str]] = set()
+_INMEM_MISS_NETWORK: set[tuple[str, str]] = set()
+_LOCAL_DB_CACHE: dict[Path, tuple[int, dict, dict[str, dict]]] = {}
+_PRELOADED_NORM_INDEX: dict[int, tuple[int, dict[str, dict]]] = {}
+_MODE_CACHE: dict[str, tuple[int, str, str]] = {}
 _OPENALEX_BACKOFF_UNTIL = 0.0
 _OPENALEX_SEED_BY_NAME: dict[str, dict] | None = None
 _OPENALEX_SEED_BY_ISSN: dict[str, dict] | None = None
+
+
+def _norm_journal_name(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(name or "").lower()).strip()
+
+
+def _get_journal_metrics_mode(vault: Path) -> str:
+    env_mode = str(os.environ.get("PAPERFORGE_JOURNAL_METRICS_MODE", "") or "").strip()
+    cfg_path = vault / "paperforge.json"
+    try:
+        cfg_mtime = cfg_path.stat().st_mtime_ns if cfg_path.is_file() else -1
+    except OSError:
+        cfg_mtime = -1
+    vault_key = str(vault)
+    cached = _MODE_CACHE.get(vault_key)
+    if cached is not None and cached[0] == cfg_mtime and cached[1] == env_mode:
+        return cached[2]
+    mode = "auto"
+    try:
+        from paperforge.config import load_config
+
+        snap = load_config(vault)
+        mode = str(snap.values.get("journal_metrics_mode").value or "auto")
+    except Exception:
+        mode = env_mode or "auto"
+    _MODE_CACHE[vault_key] = (cfg_mtime, env_mode, mode)
+    return mode
 
 
 def _load_openalex_seed() -> tuple[dict[str, dict], dict[str, dict]]:
@@ -143,6 +176,8 @@ def _write_sqlite_cache(
 ) -> None:
     if not key:
         return
+    _INMEM_MISS_OFFLINE.discard((str(vault), key))
+    _INMEM_MISS_NETWORK.discard((str(vault), key))
     try:
         from paperforge.memory.db import WriterLock, get_connection, get_memory_db_path
 
@@ -232,33 +267,60 @@ def _find_zotero_plugin_db_candidates(vault: Path, zotero_dir: Path | None) -> l
     return candidates
 
 
+def _get_cached_local_db(path: Path) -> tuple[dict, dict[str, dict]] | None:
+    try:
+        mtime_ns = path.stat().st_mtime_ns if path.is_file() else -1
+    except OSError:
+        return None
+    if mtime_ns < 0:
+        return None
+    cached = _LOCAL_DB_CACHE.get(path)
+    if cached is not None and cached[0] == mtime_ns:
+        return cached[1], cached[2]
+    try:
+        loaded = read_json(path)
+    except Exception:
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    norm_index: dict[str, dict] = {}
+    for k, v in loaded.items():
+        if isinstance(k, str) and isinstance(v, dict):
+            norm_index.setdefault(_norm_journal_name(k), v)
+    _LOCAL_DB_CACHE[path] = (mtime_ns, loaded, norm_index)
+    return loaded, norm_index
+
+
 def _lookup_local_zoterostyle(
     journal_name: str,
     vault: Path,
     zotero_dir: Path | None,
     preloaded_db: dict | None = None,
 ) -> dict[str, str] | None:
-    dbs: list[dict] = []
+    dbs: list[tuple[dict, dict[str, dict]]] = []
     if preloaded_db:
-        dbs.append(preloaded_db)
+        db_id = id(preloaded_db)
+        db_len = len(preloaded_db)
+        cached_pre = _PRELOADED_NORM_INDEX.get(db_id)
+        if cached_pre is not None and cached_pre[0] == db_len:
+            norm_pre = cached_pre[1]
+        else:
+            norm_pre = {}
+            for k, v in preloaded_db.items():
+                if isinstance(k, str) and isinstance(v, dict):
+                    norm_pre.setdefault(_norm_journal_name(k), v)
+            _PRELOADED_NORM_INDEX[db_id] = (db_len, norm_pre)
+        dbs.append((preloaded_db, norm_pre))
     for path in _find_zotero_plugin_db_candidates(vault, zotero_dir):
-        if path.is_file():
-            try:
-                loaded = read_json(path)
-                if isinstance(loaded, dict):
-                    dbs.append(loaded)
-            except Exception:
-                continue
+        pair = _get_cached_local_db(path)
+        if pair is not None:
+            dbs.append(pair)
 
-    norm_target = re.sub(r"[^a-z0-9]+", " ", journal_name.lower()).strip()
-    for db in dbs:
+    norm_target = _norm_journal_name(journal_name)
+    for db, norm_index in dbs:
         entry = db.get(journal_name)
         if not isinstance(entry, dict):
-            for k, v in db.items():
-                if isinstance(k, str) and isinstance(v, dict):
-                    if re.sub(r"[^a-z0-9]+", " ", k.lower()).strip() == norm_target:
-                        entry = v
-                        break
+            entry = norm_index.get(norm_target)
         if not isinstance(entry, dict):
             continue
         rank = entry.get("rank", entry)
@@ -395,24 +457,32 @@ def lookup_journal_metric(
     if cache_key in _INMEM_CACHE:
         return dict(_INMEM_CACHE[cache_key])
 
+    miss_key = (str(vault), cache_key)
+    if (allow_network and miss_key in _INMEM_MISS_NETWORK) or (
+        not allow_network and miss_key in _INMEM_MISS_OFFLINE
+    ):
+        return empty
+
     cached = _read_sqlite_cache(vault, cache_key, journal_name, issn)
     if cached and cached.get("impact_factor"):
         _INMEM_CACHE[cache_key] = dict(cached)
         return cached
 
-    if not allow_network:
+    mode = _get_journal_metrics_mode(vault)
+    if mode == "local_only":
+        _INMEM_MISS_OFFLINE.add(miss_key)
+        _INMEM_MISS_NETWORK.add(miss_key)
         return empty
 
-    mode = "auto"
-    try:
-        from paperforge.config import load_config
+    # 3.5 Bundled CC0 OpenAlex top-journals offline seed (instant 0ms hit, zero HTTP)
+    if mode != "easyscholar":
+        seed_hit = _lookup_openalex_seed(journal_name, issn=issn)
+        if seed_hit and seed_hit.get("impact_factor"):
+            _INMEM_CACHE[cache_key] = dict(seed_hit)
+            return seed_hit
 
-        snap = load_config(vault)
-        mode = str(snap.values.get("journal_metrics_mode").value or "auto")
-    except Exception:
-        mode = "auto"
-
-    if mode == "local_only":
+    if not allow_network:
+        _INMEM_MISS_OFFLINE.add(miss_key)
         return empty
 
     # 4. EasyScholar official JCR + CAS if secretKey is saved
@@ -423,13 +493,8 @@ def lookup_journal_metric(
         return es
 
     if mode == "easyscholar":
+        _INMEM_MISS_NETWORK.add(miss_key)
         return empty
-
-    # 4.5 Bundled CC0 OpenAlex top-journals offline seed (instant 0ms hit)
-    seed_hit = _lookup_openalex_seed(journal_name, issn=issn)
-    if seed_hit and seed_hit.get("impact_factor"):
-        _INMEM_CACHE[cache_key] = dict(seed_hit)
-        return seed_hit
 
     # 5. OpenAlex free open 2-year citation proxy
     oa = _fetch_openalex_source(journal_name, issn=issn)
@@ -438,4 +503,5 @@ def lookup_journal_metric(
         _write_sqlite_cache(vault, key=cache_key, journal_name=journal_name, issn=issn, metric=oa)
         return oa
 
+    _INMEM_MISS_NETWORK.add(miss_key)
     return empty

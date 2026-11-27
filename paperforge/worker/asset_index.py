@@ -314,6 +314,9 @@ def _build_entry(
     zotero_dir: Path,
     *,
     active_domain_keys: dict[str, set[str]] | None = None,
+    allow_journal_network: bool = True,
+    existing_workspaces: dict[str, dict[str, Path]] | None = None,
+    existing_stale_notes: dict[str, dict[str, list[Path]]] | None = None,
 ) -> dict:
     """Construct a single canonical index entry from a BBT export *item*.
 
@@ -387,28 +390,48 @@ def _build_entry(
     workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
     if not workspace_dir.exists():
         found_in_domain = False
-        for candidate in (paths["literature"] / domain).glob(f"{key} - *"):
-            if candidate.is_dir():
+        if existing_workspaces is not None:
+            candidate = existing_workspaces.get(domain, {}).get(key)
+            if candidate is not None and candidate.is_dir():
                 workspace_dir = candidate
                 title_slug = workspace_dir.name.split(" - ", 1)[1] if " - " in workspace_dir.name else title_slug
                 found_in_domain = True
-                break
+        else:
+            for candidate in (paths["literature"] / domain).glob(f"{key} - *"):
+                if candidate.is_dir():
+                    workspace_dir = candidate
+                    title_slug = workspace_dir.name.split(" - ", 1)[1] if " - " in workspace_dir.name else title_slug
+                    found_in_domain = True
+                    break
         if not found_in_domain and paths["literature"].exists():
-            moved_candidates: list[Path] = []
-            for other_dir in sorted(paths["literature"].iterdir()):
-                if not other_dir.is_dir() or other_dir.name == domain:
-                    continue
-                if active_domain_keys is not None and key in active_domain_keys.get(other_dir.name, set()):
-                    continue
-                for candidate in other_dir.glob(f"{key} - *"):
-                    if candidate.is_dir():
-                        moved_candidates.append(candidate)
+            moved_candidates: list[tuple[str, Path]] = []
+            if existing_workspaces is not None:
+                for other_name, ws_map in existing_workspaces.items():
+                    if other_name == domain:
+                        continue
+                    if active_domain_keys is not None and key in active_domain_keys.get(other_name, set()):
+                        continue
+                    candidate = ws_map.get(key)
+                    if candidate is not None and candidate.is_dir():
+                        moved_candidates.append((other_name, candidate))
+            else:
+                for other_dir in sorted(paths["literature"].iterdir()):
+                    if not other_dir.is_dir() or other_dir.name == domain:
+                        continue
+                    if active_domain_keys is not None and key in active_domain_keys.get(other_dir.name, set()):
+                        continue
+                    for candidate in other_dir.glob(f"{key} - *"):
+                        if candidate.is_dir():
+                            moved_candidates.append((other_dir.name, candidate))
             if len(moved_candidates) == 1:
-                old_ws = moved_candidates[0]
+                other_name, old_ws = moved_candidates[0]
                 target_ws = paths["literature"] / domain / old_ws.name
                 if not target_ws.exists():
                     target_ws.parent.mkdir(parents=True, exist_ok=True)
                     shutil.move(str(old_ws), str(target_ws))
+                    if existing_workspaces is not None:
+                        existing_workspaces.get(other_name, {}).pop(key, None)
+                        existing_workspaces.setdefault(domain, {})[key] = target_ws
                     workspace_dir = target_ws
                     title_slug = (
                         workspace_dir.name.split(" - ", 1)[1]
@@ -417,8 +440,13 @@ def _build_entry(
                     )
 
     if note_path.parent.exists():
-        for stale_note in note_path.parent.glob(f"{key} - *.md"):
-            if stale_note == note_path:
+        stale_candidates = (
+            existing_stale_notes.get(domain, {}).get(key, [])
+            if existing_stale_notes is not None
+            else list(note_path.parent.glob(f"{key} - *.md"))
+        )
+        for stale_note in stale_candidates:
+            if stale_note == note_path or not stale_note.exists():
                 continue
             try:
                 fm = read_frontmatter_dict(stale_note.read_text(encoding="utf-8"))
@@ -517,7 +545,7 @@ def _build_entry(
         vault,
         issn=str(item.get("issn", "") or ""),
         zotero_dir=zotero_dir,
-        allow_network=True,
+        allow_network=allow_journal_network,
     )
     impact_factor = _jm.get("impact_factor", "")
     impact_factor_source = _jm.get("impact_factor_source", "")
@@ -917,6 +945,26 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
             if item.get("key"):
                 keys_in_domain.add(str(item["key"]))
 
+    existing_workspaces: dict[str, dict[str, Path]] = {}
+    existing_stale_notes: dict[str, dict[str, list[Path]]] = {}
+    if paths["literature"].exists():
+        for dom_dir in sorted(paths["literature"].iterdir()):
+            if not dom_dir.is_dir():
+                continue
+            ws_map: dict[str, Path] = {}
+            stale_map: dict[str, list[Path]] = {}
+            for child in sorted(dom_dir.iterdir()):
+                name = child.name
+                if " - " not in name:
+                    continue
+                prefix = name.split(" - ", 1)[0]
+                if child.is_dir():
+                    ws_map.setdefault(prefix, child)
+                elif child.is_file() and child.suffix.lower() == ".md":
+                    stale_map.setdefault(prefix, []).append(child)
+            existing_workspaces[dom_dir.name] = ws_map
+            existing_stale_notes[dom_dir.name] = stale_map
+
     index_rows: list[dict] = []
     seen_keys: set[str] = set()
     for domain, export_rows in staged_exports:
@@ -938,6 +986,9 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
                 domain,
                 zotero_dir,
                 active_domain_keys=active_domain_keys,
+                allow_journal_network=False,
+                existing_workspaces=existing_workspaces,
+                existing_stale_notes=existing_stale_notes,
             )
             index_rows.append(entry)
 
