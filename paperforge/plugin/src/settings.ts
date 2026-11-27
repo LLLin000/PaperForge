@@ -4203,6 +4203,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           // now; consent-required work remains visible in the module card.
           void orchestrateFromSync(JSON.stringify(result), {
             runAction: (req) => client.runAction(req),
+            silentPending: true,
           });
         } else {
           const errMsg = (

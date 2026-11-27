@@ -4851,6 +4851,7 @@ export class PaperForgeStatusView extends ItemView {
         // still run (consent-required work stays pending in the read model).
         void orchestrateFromSync(JSON.stringify(result), {
           runAction: (req) => client.runAction(req),
+          silentPending: true,
         });
       } else {
         const failTitle = t("dash_sync_failed") || "Sync failed";

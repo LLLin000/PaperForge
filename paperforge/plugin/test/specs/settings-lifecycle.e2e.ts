@@ -1368,25 +1368,14 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     expect(liveProgressUi.meta).toMatch(/3\/5|Step 3\/5|步骤 3\/5/);
     expect(liveProgressUi.sb).toMatch(/PaperForge/);
 
-    // Closing & reopening Settings must keep the live progress bar attached
-    await closeSettingsModal();
-    await openPaperForgeSettings();
-    const reopenedBar = await browser.executeObsidian(async ({ app }) => {
+    await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _daemonJobs?: Map<string, Record<string, unknown>>;
         _updateStatusBar?: () => void;
-        _settingTab: { containerEl: HTMLElement };
       };
-      const hasBar = Boolean(
-        plugin._settingTab.containerEl.querySelector(
-          '[data-pf-decision="engine_updating"] .pf-runtime-stage-bar'
-        )
-      );
       plugin._daemonJobs?.delete("e2e_rt_job");
       plugin._updateStatusBar?.();
-      return hasBar;
     });
-    expect(reopenedBar).toBe(true);
 
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -1799,6 +1788,49 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       titleRe: /4/,
     });
     assertNoNoticeSpam(await readRawNoticeCounts(), /require review|需要审核/i);
+
+    // On a configured vault (_setup_complete=true), closing & reopening Settings preserves the live progress bar
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _daemonUpdating: boolean;
+        _daemonJobs?: Map<string, Record<string, unknown>>;
+        _settingTab: { display(): void };
+      };
+      plugin._daemonUpdating = true;
+      plugin._daemonJobs?.set("e2e_rt_reopen", {
+        job_id: "e2e_rt_reopen",
+        kind: "runtime.update",
+        status: "running",
+        phase: "downloading_wheel",
+        current: 3,
+        total: 5,
+        vault: "",
+        item_id: "",
+        started_at: Math.floor(Date.now() / 1000) - 4,
+      });
+      plugin._settingTab.display();
+    });
+    await closeSettingsModal();
+    await openPaperForgeSettings();
+    const reopenedBar = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _daemonUpdating: boolean;
+        _daemonJobs?: Map<string, Record<string, unknown>>;
+        _updateStatusBar?: () => void;
+        _settingTab: { containerEl: HTMLElement; display(): void };
+      };
+      const hasBar = Boolean(
+        plugin._settingTab.containerEl.querySelector(
+          '[data-pf-decision="engine_updating"] .pf-runtime-stage-bar'
+        )
+      );
+      plugin._daemonUpdating = false;
+      plugin._daemonJobs?.delete("e2e_rt_reopen");
+      plugin._updateStatusBar?.();
+      plugin._settingTab.display();
+      return hasBar;
+    });
+    expect(reopenedBar).toBe(true);
   });
 
   // ── S9: 4-tab Settings navigation, Appearance toggle & EN/ZH copy sweep ─
