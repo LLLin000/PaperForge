@@ -538,10 +538,12 @@ class SyncService:
                     index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
 
             try:
-                from paperforge.services.vault_engine import sync_workspace_registry
+                db_file = paths["paperforge"] / "indexes" / "paperforge.db"
+                if db_file.is_file():
+                    from paperforge.services.vault_engine import sync_workspace_registry
 
-                with timing.phase("sync.workspace_registry"):
-                    sync_workspace_registry(self.vault, lit_root=paths["literature"])
+                    with timing.phase("sync.workspace_registry"):
+                        sync_workspace_registry(self.vault, lit_root=paths["literature"])
             except Exception as exc:
                 logger.warning("workspace_registry sync skipped: %s", exc)
 

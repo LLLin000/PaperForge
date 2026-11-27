@@ -1168,6 +1168,16 @@ describe("PaperForgeBasesView (AsterLab native Base + multi-select header)", () 
     );
     expect(leafOpenFile).toHaveBeenCalledWith(realFile);
     expect(openLinkText).not.toHaveBeenCalled();
+
+    // Missing note (even if key is unknown) MUST NOT call openLinkText to create a 0B ghost file
+    leafOpenFile.mockClear();
+    (view as any)._openNote(
+      "Resources/Literature/Literature/MISSING99/MISSING99.md",
+      undefined,
+      "MISSING99"
+    );
+    expect(leafOpenFile).not.toHaveBeenCalled();
+    expect(openLinkText).not.toHaveBeenCalled();
     view.onunload();
   });
 });

@@ -433,8 +433,9 @@ fn query_paper_brief(conn: &Connection, engine_dir: &Path, identifier: &str) -> 
             [&zkey],
             |r| r.get::<_, String>(0),
         ) {
-            if !rel.is_empty() {
-                main_note_path = rel;
+            let norm = rel.replace('\\', "/");
+            if !norm.is_empty() && engine_dir.parent().map_or(true, |v| v.join(&norm).is_file()) {
+                main_note_path = norm;
             }
         }
     }

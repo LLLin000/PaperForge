@@ -233,3 +233,38 @@ def test_sync_fastpath_self_heals_stale_workspace_registry(tmp_path):
     assert row is not None
     assert row[0] == "Ortho"
     assert row[1] == "Resources/Literature/Ortho/GK000001 - Ortho Paper/GK000001.md"
+
+
+def test_sync_does_not_create_db_on_fresh_vault_and_dashboard_falls_back_when_papers_empty(tmp_path):
+    import json
+    from paperforge.commands.dashboard import _dashboard_from_db
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.services.sync_service import SyncService
+    from tests.conftest import canonical_test_config
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    svc = SyncService(vault)
+    paths = svc.resolve_paths()
+    paths["exports"].mkdir(parents=True, exist_ok=True)
+    (paths["exports"] / "Ortho.json").write_text(
+        json.dumps({"items": [{"key": "GK000002", "title": "Fresh Paper"}]}),
+        encoding="utf-8",
+    )
+
+    res = svc.run(json_output=True)
+    assert res.ok is True
+    db_path = get_memory_db_path(vault)
+    # sync on a fresh vault must NOT prematurely create paperforge.db with 0 papers
+    assert not db_path.exists()
+
+    # If paperforge.db exists with empty papers table while formal-library.json has items,
+    # _dashboard_from_db must return None so dashboard falls back to formal-library.json.
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = get_connection(db_path)
+    ensure_schema(conn)
+    conn.commit()
+    conn.close()
+    assert _dashboard_from_db(vault) is None

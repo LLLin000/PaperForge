@@ -616,4 +616,76 @@ describe("single-owner runtime installer & daemon UI progress", () => {
     expect(clickEvt.defaultPrevented).toBe(true);
     expect(openPaperPdf).toHaveBeenCalledWith("4M3K4W7C");
   });
+
+  it("intercepts truncated pdf_path Property pills via frontmatter and Live Preview .cm-hmd-internal-link clicks", () => {
+    // Case 1: truncated text inside .metadata-link-inner, full path in frontmatter.pdf_path
+    const prop = document.createElement("div");
+    prop.className = "metadata-property";
+    prop.setAttribute("data-property-key", "pdf_path");
+    const pill = document.createElement("div");
+    pill.className = "metadata-link-inner";
+    pill.textContent = "truncated-display...";
+    prop.appendChild(pill);
+    document.body.appendChild(prop);
+
+    const openPaperPdf = vi.fn();
+    const ev1 = new MouseEvent("click", { bubbles: true, cancelable: true });
+    Object.defineProperty(ev1, "target", { value: pill });
+    const handled1 = tryHandleExternalPdfLinkClick(ev1, {
+      app: {
+        vault: { getAbstractFileByPath: () => null },
+        workspace: {
+          getActiveFile: () => ({
+            path: "Resources/Literature/Ortho/2AGGSMVQ/2AGGSMVQ.md",
+            basename: "2AGGSMVQ",
+          }),
+        },
+        metadataCache: {
+          getFileCache: () => ({
+            frontmatter: {
+              zotero_key: "2AGGSMVQ",
+              pdf_path:
+                "[[C:/Users/Researcher/Zotero/storage/QU6JYQHK/paper.pdf]]",
+            },
+          }),
+        },
+      } as unknown as App,
+      baseSnapshot: null,
+      openPaperPdf,
+    });
+    prop.remove();
+    expect(handled1).toBe(true);
+    expect(openPaperPdf).toHaveBeenCalledWith("2AGGSMVQ");
+
+    // Case 2: Live Preview editor internal link (.cm-hmd-internal-link)
+    openPaperPdf.mockClear();
+    const cmLink = document.createElement("span");
+    cmLink.className = "cm-hmd-internal-link";
+    cmLink.setAttribute(
+      "data-href",
+      "C:/Users/Researcher/Zotero/storage/QU6JYQHK/paper.pdf"
+    );
+    document.body.appendChild(cmLink);
+    const ev2 = new MouseEvent("click", { bubbles: true, cancelable: true });
+    Object.defineProperty(ev2, "target", { value: cmLink });
+    const handled2 = tryHandleExternalPdfLinkClick(ev2, {
+      app: {
+        vault: { getAbstractFileByPath: () => null },
+        workspace: {
+          getActiveFile: () => ({
+            path: "Resources/Literature/Ortho/2AGGSMVQ/2AGGSMVQ.md",
+            basename: "2AGGSMVQ",
+          }),
+        },
+        metadataCache: {
+          getFileCache: () => ({ frontmatter: { zotero_key: "2AGGSMVQ" } }),
+        },
+      } as unknown as App,
+      baseSnapshot: null,
+      openPaperPdf,
+    });
+    cmLink.remove();
+    expect(handled2).toBe(true);
+    expect(openPaperPdf).toHaveBeenCalledWith("2AGGSMVQ");
+  });
 });

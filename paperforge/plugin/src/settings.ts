@@ -6224,7 +6224,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const settings = this.plugin.settings;
     const pointer = readRuntimePointer();
     const runtime = this._runtimeStatus;
-    const rtReady = runtime?.runtime_ready === true;
+    const ptrReady = Boolean(
+      pointer &&
+      fs.existsSync(pointer.pythonPath) &&
+      !this._runtimeStatusError &&
+      isEngineVersionCompatible(
+        pointer.paperforgeVersion,
+        String(this.plugin?.manifest?.version ?? ""),
+        this._minEngineVersion()
+      )
+    );
+    const rtReady =
+      runtime?.runtime_ready === true || (runtime === null && ptrReady);
     const action: RuntimeInstallerAction = !pointer
       ? "install"
       : runtime?.version_matches_expected === false

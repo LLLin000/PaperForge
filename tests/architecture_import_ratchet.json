@@ -71,7 +71,7 @@
     ],
     "paperforge.services.sync_service": [
       "497:paperforge.worker._domain",
-      "596:paperforge.worker._utils"
+      "598:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"

@@ -84,6 +84,7 @@ import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeBasesView } from "./views/paperforge-base-view";
 import { PaperForgeQuickSwitcherModal } from "./views/quick-switcher";
+import { openVaultFileSafely } from "./views/paper-interactions";
 import { PaperForgeGalleryView } from "./views/ui-gallery";
 import {
   PaperForgePdfView,
@@ -1620,42 +1621,11 @@ export default class PaperForgePlugin extends Plugin {
         // Ignore fallback lookup errors
       }
     }
-    if (!targetPath) return;
-    const splitLeaf = this.app.workspace.getLeaf("split", "vertical");
-    const normTarget = targetPath.replace(/\\/g, "/");
-    let file = this.app.vault.getAbstractFileByPath?.(normTarget) as
-      | (TFile & { stat?: { size?: number } })
-      | null;
-    const isNonEmptyFile =
-      Boolean(file) &&
-      "extension" in (file as any) &&
-      (file?.stat?.size ?? 1) > 0;
-    if (
-      !isNonEmptyFile &&
-      typeof this.app.vault.getMarkdownFiles === "function"
-    ) {
-      const matches = this.app.vault
-        .getMarkdownFiles()
-        .filter(
-          (f) =>
-            f.basename === paperKey ||
-            (typeof f.basename === "string" &&
-              f.basename.startsWith(`${paperKey} - `))
-        );
-      const fallback =
-        matches.find((f) => (f.stat?.size ?? 1) > 0) ?? matches[0] ?? null;
-      if (fallback) file = fallback;
-    }
-    if (file && "extension" in file && splitLeaf) {
-      await splitLeaf.openFile(file as any);
-      await this.app.workspace.revealLeaf(splitLeaf);
-      return;
-    }
-    if (typeof this.app.vault.getAbstractFileByPath === "function") {
-      new Notice(t("paper_note_missing") || "Note not found in vault.");
-      return;
-    }
-    await this.app.workspace.openLinkText?.(targetPath, "", "split");
+    await openVaultFileSafely(this.app, {
+      filePath: targetPath || null,
+      zoteroKey: paperKey,
+      mod: "split",
+    });
   }
 
   /** Open the 4-stage setup wizard inside a dedicated Obsidian modal. */
@@ -2271,6 +2241,16 @@ export default class PaperForgePlugin extends Plugin {
         ?.find((f) => f.name === "Literature Hub.base") ||
       null;
     if (targetFile) {
+      if (
+        "extension" in targetFile &&
+        typeof this.app.workspace?.getLeaf === "function"
+      ) {
+        const leaf = this.app.workspace.getLeaf(false);
+        if (typeof leaf?.openFile === "function") {
+          await leaf.openFile(targetFile as TFile);
+          return;
+        }
+      }
       await this.app.workspace.openLinkText(targetFile.path, "");
       return;
     }
@@ -3118,16 +3098,29 @@ export function tryHandleExternalPdfLinkClick(
   ) as HTMLElement | null;
   const internalLink = pdfPropLink
     ? null
-    : (target.closest(".internal-link") as HTMLElement | null);
+    : (target.closest(
+        ".internal-link, .cm-hmd-internal-link"
+      ) as HTMLElement | null);
   const linkEl = pdfPropLink ?? internalLink;
   if (!linkEl) return false;
 
-  const rawHref = (
+  const activeFile = ctx.app?.workspace?.getActiveFile?.();
+  const activeFm = activeFile
+    ? ctx.app?.metadataCache?.getFileCache?.(activeFile)?.frontmatter
+    : undefined;
+  let rawHref = (
     linkEl.getAttribute("data-href") ||
     linkEl.getAttribute("href") ||
     linkEl.textContent ||
     ""
   ).trim();
+  if (
+    pdfPropLink &&
+    typeof activeFm?.pdf_path === "string" &&
+    activeFm.pdf_path.trim()
+  ) {
+    rawHref = activeFm.pdf_path.trim();
+  }
   const cleanPath = rawHref
     .replace(/^\[\[/, "")
     .replace(/\]\]$/, "")
@@ -3159,9 +3152,8 @@ export function tryHandleExternalPdfLinkClick(
   }
 
   let zoteroKey = "";
-  const activeFile = ctx.app?.workspace?.getActiveFile?.();
   if (activeFile?.path) {
-    const fm = ctx.app?.metadataCache?.getFileCache?.(activeFile)?.frontmatter;
+    const fm = activeFm;
     if (typeof fm?.zotero_key === "string" && fm.zotero_key.trim()) {
       zoteroKey = fm.zotero_key.trim();
     }
