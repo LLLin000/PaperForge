@@ -337,6 +337,50 @@ fn dispatch_request(
             );
             return DispatchOutcome::Immediate(json_ok_resp(id, ntc), false);
         }
+        "vault.reconcile" => {
+            let Some(ref vp) = vault_path else {
+                return DispatchOutcome::Immediate(
+                    json_err_resp(id, "vault required", 2),
+                    false,
+                );
+            };
+            if let Some(barrier) = daemon.has_exclusive_barrier(vp) {
+                let err = pf_err(
+                    "vault.reconcile",
+                    "VAULT_UPGRADE_BARRIER_ACTIVE",
+                    &format!("Vault exclusive upgrade barrier is active ({barrier}); try again after upgrade completes."),
+                    json!({ "barrier": barrier }),
+                    &["Wait for the active vault upgrade/rollback operation to finish."],
+                );
+                return DispatchOutcome::Immediate(
+                    json!({
+                        "id": id,
+                        "exit_code": 1,
+                        "stdout": format!("{err}\n"),
+                        "stderr": format!("vault_upgrade_barrier_active: {barrier}"),
+                    }),
+                    false,
+                );
+            }
+            let force = req.get("force").and_then(|v| v.as_bool()).unwrap_or(false);
+            let mut argv = vec![
+                "doctor".to_string(),
+                "--reconcile".to_string(),
+                "--json".to_string(),
+            ];
+            if force {
+                argv.push("--force".to_string());
+            }
+            daemon.invalidate_vault(Some(vp));
+            let trace_id = daemon.next_trace_id(caller_trace);
+            return DispatchOutcome::DelegatePython {
+                id,
+                trace_id,
+                vault_path,
+                argv,
+                stdin_text: None,
+            };
+        }
         _ => {}
     }
 
@@ -2122,6 +2166,55 @@ mod tests {
         assert!(plan_json["data"]["census"]["pf_canonical"]["workspaces"].is_number());
         assert!(plan_json["data"]["provenance"]["needs_upgrade"].is_boolean());
         assert!(plan_json["data"]["target_version"].is_string());
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn vault_reconcile_delegates_and_respects_barrier() {
+        let tmp = std::env::temp_dir().join(format!("pf-reconcile-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+
+        let daemon = NativeControlDaemon::new(None, None);
+
+        // 1. Missing vault returns immediate error
+        match dispatch_request(&daemon, &json!({ "id": 10, "op": "vault.reconcile" }), None) {
+            DispatchOutcome::Immediate(resp, false) => {
+                assert_eq!(resp["ok"], false);
+                assert_eq!(resp["exit_code"], 2);
+            }
+            _ => panic!("expected immediate error when vault is missing"),
+        }
+
+        // 2. Active exclusive barrier rejects vault.reconcile cleanly
+        daemon.acquire_exclusive_barrier(&tmp, "upgrade.cutover");
+        match dispatch_request(
+            &daemon,
+            &json!({ "id": 11, "op": "vault.reconcile", "vault": tmp.to_string_lossy(), "force": true }),
+            None,
+        ) {
+            DispatchOutcome::Immediate(resp, false) => {
+                assert_eq!(resp["exit_code"], 1);
+                let payload: Value = serde_json::from_str(resp["stdout"].as_str().unwrap()).unwrap();
+                assert_eq!(payload["error"]["code"], "VAULT_UPGRADE_BARRIER_ACTIVE");
+            }
+            _ => panic!("expected barrier rejection"),
+        }
+        daemon.release_exclusive_barrier(&tmp);
+
+        // 3. Valid vault delegates cleanly to `doctor --reconcile --json [--force]`
+        match dispatch_request(
+            &daemon,
+            &json!({ "id": 12, "op": "vault.reconcile", "vault": tmp.to_string_lossy(), "force": true }),
+            None,
+        ) {
+            DispatchOutcome::DelegatePython { argv, vault_path, .. } => {
+                assert_eq!(vault_path.as_deref(), Some(tmp.as_path()));
+                assert_eq!(argv, vec!["doctor", "--reconcile", "--json", "--force"]);
+            }
+            _ => panic!("expected Python delegation for vault.reconcile"),
+        }
 
         let _ = fs::remove_dir_all(&tmp);
     }

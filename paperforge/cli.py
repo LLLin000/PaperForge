@@ -509,6 +509,21 @@ def build_parser() -> argparse.ArgumentParser:
     # doctor
     doctor_p = sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
     doctor_p.add_argument("--json", action="store_true", help="Output JSON")
+    doctor_p.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="Run non-destructive upgrade/derived-state reconciliation",
+    )
+    doctor_p.add_argument(
+        "--fix",
+        action="store_true",
+        help="Auto-heal derived vault state (includes --reconcile) before running checks",
+    )
+    doctor_p.add_argument(
+        "--force",
+        action="store_true",
+        help="Force reconciliation even when reconcile_epoch is current",
+    )
 
 
     # setup wizard
@@ -1477,6 +1492,12 @@ def _run_cli(argv: list[str] | None = None) -> int:
             kw["verbose"] = True
         if getattr(args, "json", False):
             kw["json_output"] = True
+        if getattr(args, "reconcile", False):
+            kw["reconcile"] = True
+        if getattr(args, "fix", False):
+            kw["fix"] = True
+        if getattr(args, "force", False):
+            kw["force"] = True
         return run_doctor(vault, **kw)
 
 

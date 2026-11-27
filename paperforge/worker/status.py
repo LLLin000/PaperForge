@@ -338,18 +338,100 @@ if sys.platform == "win32":
         pass
 
 
-def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) -> int:
+def run_doctor(
+    vault: Path,
+    verbose: bool = False,
+    json_output: bool = False,
+    reconcile: bool = False,
+    fix: bool = False,
+    force: bool = False,
+) -> int:
     """Validate PaperForge setup and report by category.
 
     Returns:
         0 if all checks pass, 1 otherwise.
     """
+    if reconcile and not fix:
+        from paperforge.core.errors import ErrorCode
+        from paperforge.core.result import PFError
+        from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
+
+        try:
+            rec = ensure_vault_reconciled(vault, force=force)
+        except Exception as exc:  # noqa: BLE001
+            if json_output:
+                err_res = PFResult(
+                    ok=False,
+                    command="doctor",
+                    version=__import__("paperforge").__version__,
+                    error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+                )
+                print(err_res.to_json())
+            else:
+                print(f"[FAIL] Upgrade Reconcile — {exc}")
+            return 1
+
+        msg = (
+            f"reconcile_epoch={rec.get('reconcile_epoch')} "
+            f"({rec.get('reason', 'ok')})"
+        )
+        if json_output:
+            payload = {
+                **rec,
+                "checks": [
+                    {
+                        "category": "Upgrade Reconcile",
+                        "status": "pass",
+                        "message": msg,
+                        "fix": "",
+                    }
+                ],
+                "summary": {"total": 1, "pass": 1, "warn": 0, "fail": 0, "info": 0},
+                "verdict": "OK",
+                "next_action": "",
+            }
+            print(
+                PFResult(
+                    ok=True,
+                    command="doctor",
+                    version=__import__("paperforge").__version__,
+                    data=payload,
+                ).to_json()
+            )
+        else:
+            print(f"[PASS] Upgrade Reconcile — {msg}")
+        return 0
+
+    reconcile_report: dict | None = None
+    reconcile_error: str | None = None
+    if fix or reconcile:
+        try:
+            from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
+
+            reconcile_report = ensure_vault_reconciled(vault, force=force)
+        except Exception as exc:  # noqa: BLE001
+            reconcile_error = str(exc)
+
     paths = pipeline_paths(vault)
     cfg = load_vault_config(vault)
     checks: list[tuple[str, str, str, str]] = []
 
     def add_check(category: str, status: str, message: str, fix: str = "") -> None:
         checks.append((category, status, message, fix))
+
+    if reconcile_error is not None:
+        add_check(
+            "Upgrade Reconcile",
+            "fail",
+            f"Derived-state reconciliation failed: {reconcile_error}",
+            "Run `paperforge doctor --reconcile --force` to retry",
+        )
+    elif reconcile_report is not None:
+        add_check(
+            "Upgrade Reconcile",
+            "pass",
+            f"reconcile_epoch={reconcile_report.get('reconcile_epoch')} ({reconcile_report.get('reason', 'ok')})",
+        )
 
     # --- Plugin execution interpreter: published pointer is the only target ---
     # read_pointer() is fail-soft by contract: absent/invalid JSON/wrong
@@ -949,6 +1031,8 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "verdict": _verdict,
             "next_action": _next_action,
         }
+        if reconcile_report is not None:
+            payload["reconcile"] = reconcile_report
         result = PFResult(
             ok=not _has_fail,
             command="doctor",

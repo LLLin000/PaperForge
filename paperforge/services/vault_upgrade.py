@@ -1831,6 +1831,14 @@ def heal_vault_progressive(
     reconcile_res = _reconcile_db_and_index_after_cutover(vault_root, final_scan, stale_prefixes)
     reg_res = sync_workspace_registry(vault_root, lit_root=lit_root)
     ocr_res = sync_ocr_catalog(vault_root)
+    epoch_reconcile: dict[str, Any] | None = None
+    if limit is None or limit <= 0:
+        try:
+            from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
+
+            epoch_reconcile = ensure_vault_reconciled(vault_root, force=True)
+        except Exception as exc:  # noqa: BLE001
+            skipped_isolated.append({"key": "_reconcile_epoch", "reason": str(exc)})
     verify_res = verify_vault_upgrade(
         vault_root, stale_prefixes=stale_prefixes, check_healed_paths=(limit is None or limit <= 0)
     )
@@ -1846,6 +1854,7 @@ def heal_vault_progressive(
         "workspace_registry_upserted": reg_res["upserted"],
         "ocr_catalog_total": ocr_res["total"],
         "skipped_isolated": skipped_isolated,
+        "reconcile_epoch": epoch_reconcile,
         "verification": verify_res,
     }
 
@@ -2153,6 +2162,16 @@ def execute_vault_upgrade(
         executed_steps.append({"step": "write_vault_manifest", "path": str(manifest_path)})
     except Exception as exc:  # noqa: BLE001
         errors.append({"step": "write_vault_manifest", "error": str(exc)})
+        settlement_status = "partial_success"
+
+    # 8. Stamp reconcile_epoch & heal any remaining derived paths non-destructively
+    try:
+        from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
+
+        rec_res = ensure_vault_reconciled(vault_root, force=True)
+        executed_steps.append({"step": "upgrade_reconcile", "result": rec_res})
+    except Exception as exc:  # noqa: BLE001
+        errors.append({"step": "upgrade_reconcile", "error": str(exc)})
         settlement_status = "partial_success"
 
     verification = verify_vault_upgrade(

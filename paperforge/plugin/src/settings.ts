@@ -1971,6 +1971,67 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         );
       }
+
+      const reconcileClient =
+        typeof this.plugin.getClient === "function"
+          ? this.getClient()
+          : null;
+      if (
+        reconcileClient &&
+        typeof reconcileClient.reconcileVault === "function"
+      ) {
+        const isZhReconcile = t("nav_close") === "关闭";
+        const reconcileSection = body.createDiv({
+          cls: "pf-upgrade-maint-section",
+          attr: { "data-pf-testid": "reconcile-local-cache-section" },
+        });
+        new Setting(reconcileSection)
+          .setName(
+            isZhReconcile
+              ? "重建本地索引与视图缓存"
+              : "Rebuild Local Index Cache"
+          )
+          .setDesc(
+            isZhReconcile
+              ? "非破坏性同步 workspace_registry、衍生索引路径与默认视图模板，绝不修改您的笔记正文、批注或阅读记录。"
+              : "Non-destructively reconcile workspace_registry, derived index paths, and canonical Base views without modifying note bodies, annotations, or reading logs."
+          )
+          .addButton((btn) =>
+            btn
+              .setButtonText(
+                isZhReconcile
+                  ? "重建本地索引与视图缓存"
+                  : "Rebuild Local Index Cache"
+              )
+              .onClick(() => {
+                void (async () => {
+                  btn.setDisabled(true);
+                  try {
+                    await reconcileClient.reconcileVault(true);
+                    new Notice(
+                      isZhReconcile
+                        ? "本地索引与视图缓存已重建完成"
+                        : "Local index & view cache rebuilt"
+                    );
+                    const pluginCtl = this.plugin as unknown as {
+                      refreshBaseSnapshot?: () => Promise<unknown>;
+                      refreshUpgradePlan?: () => Promise<unknown>;
+                    };
+                    await pluginCtl.refreshBaseSnapshot?.().catch(() => undefined);
+                    await pluginCtl.refreshUpgradePlan?.().catch(() => undefined);
+                  } catch (err: unknown) {
+                    new Notice(
+                      (isZhReconcile ? "重建本地索引失败：" : "Index rebuild failed: ") +
+                        formatHumanError(err),
+                      8000
+                    );
+                  } finally {
+                    btn.setDisabled(false);
+                  }
+                })();
+              })
+          );
+      }
     }
   }
 

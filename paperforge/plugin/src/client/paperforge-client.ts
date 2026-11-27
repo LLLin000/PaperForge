@@ -373,6 +373,24 @@ export interface VaultCleanupCandidateDto {
   reason: string;
 }
 
+export interface VaultReconcileResultDto {
+  reconciled: boolean;
+  skipped: boolean;
+  reason: string;
+  reconcile_epoch: number;
+  last_reconciled_version?: string;
+  last_reconciled_at?: string;
+  db_reconciled?: boolean;
+  workspace_registry_upserted?: number;
+  workspace_registry_removed?: number;
+  papers_paths_healed?: number;
+  index_normalized?: boolean;
+  index_entries_updated?: number;
+  bases_refreshed?: string[];
+  state_seq?: number;
+  [key: string]: unknown;
+}
+
 export interface VaultUpgradePlanDto {
   vault: string;
   provenance: VaultProvenanceDto;
@@ -2577,6 +2595,50 @@ export class PaperForgeClient {
         ["upgrade", "--rollback", "--json"],
         { timeoutMs: 120000 }
       );
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  /** Non-destructive derived-state reconciliation (`vault.reconcile` / `doctor --reconcile --json`). */
+  async reconcileVault(force = false): Promise<VaultReconcileResultDto> {
+    const argv = ["doctor", "--reconcile", "--json"];
+    if (force) argv.push("--force");
+    try {
+      if (this.hasDaemonRpc()) {
+        try {
+          const raw = await this._transport.rpc!(
+            { op: "vault.reconcile", force: Boolean(force) },
+            60000
+          );
+          const parsed = JSON.parse(raw) as {
+            ok?: boolean;
+            data?: VaultReconcileResultDto;
+            error?: { message?: string; code?: string };
+          };
+          if (parsed && typeof parsed === "object") {
+            if (parsed.ok === false) {
+              throw new Error(
+                parsed.error?.message ||
+                  parsed.error?.code ||
+                  "reconcile failed"
+              );
+            }
+            if ("data" in parsed && parsed.data) {
+              return parsed.data;
+            }
+          }
+          return parsed as unknown as VaultReconcileResultDto;
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (!msg.includes("requires string list 'argv'")) {
+            throw err;
+          }
+        }
+      }
+      return await this._executePfResult<VaultReconcileResultDto>(argv, {
+        timeoutMs: 60000,
+      });
     } finally {
       this.invalidateCache();
     }
