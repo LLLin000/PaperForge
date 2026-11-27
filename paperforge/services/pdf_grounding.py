@@ -439,9 +439,15 @@ def _resolve_native_caption_object(
     except Exception:
         pass
 
-    # Collect other text block rects on the page so we never merge a graphic across an intervening block
+    # Collect other text block rects on the matched page (NOT the last loop page)
+    # so we never merge a graphic across an intervening text block.
+    page_blks = (
+        ctx.get_native_page_blocks(page_no)
+        if ctx is not None
+        else list(page.get_text("blocks"))
+    )
     other_text_rects: list[Any] = []
-    for ob in blks:
+    for ob in page_blks:
         if len(ob) < 5 or (len(ob) >= 7 and int(ob[6] or 0) != 0):
             continue
         if ob is cap_blk or not str(ob[4] or "").strip():
@@ -463,7 +469,8 @@ def _resolve_native_caption_object(
                     return True
         return False
 
-    merged_graphic: Any = None
+    above_graphic: Any = None
+    below_graphic: Any = None
     max_gap = min(raw_h * 0.15, 90.0)
     for gr in graphic_rects:
         gw = float(gr.width)
@@ -486,7 +493,17 @@ def _resolve_native_caption_object(
             continue
         if _has_intervening_text(gr):
             continue
-        merged_graphic = gr if merged_graphic is None else (merged_graphic | gr)
+        if above:
+            above_graphic = gr if above_graphic is None else (above_graphic | gr)
+        elif below:
+            below_graphic = gr if below_graphic is None else (below_graphic | gr)
+
+    if obj_kind == "figure":
+        # Standard figure captions sit below their figure; never pull in a lower stacked figure
+        # when graphics above the caption already bound this figure.
+        merged_graphic = above_graphic if above_graphic is not None else below_graphic
+    else:
+        merged_graphic = below_graphic
 
     target_raw = cap_raw | merged_graphic if merged_graphic is not None else cap_raw
     target_vis = _to_visual_rect(target_raw, page)

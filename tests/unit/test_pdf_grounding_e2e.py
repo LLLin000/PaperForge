@@ -580,3 +580,81 @@ def test_batch_performance_single_open_sha_and_single_seq_bump(
     )
     assert single["author"] == "agent"
     _assert_rects_in_unit_bounds(single["rects"])
+
+
+def test_native_stacked_figures_do_not_bleed_across_caption_or_stale_pages(tmp_path: Path) -> None:
+    """Native caption object grounding must inspect the matched page's blocks and keep stacked figures isolated."""
+    import pymupdf
+
+    vault = tmp_path / "vault_stacked_figs"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir=".paperforge")
+    pf = vault / ".paperforge"
+    ws = vault / "Resources" / "Literature" / "Ortho" / "STACK01 - Stacked"
+    ws.mkdir(parents=True)
+    (ws / "STACK01.md").write_text('---\nzotero_key: "STACK01"\nocr_status: "pending"\n---\n', encoding="utf-8")
+
+    zot_st = pf / "Zotero" / "storage" / "STK1"
+    zot_st.mkdir(parents=True)
+    pdf_path = zot_st / "stacked.pdf"
+
+    with pymupdf.open() as doc:
+        p1 = doc.new_page(width=612, height=792)
+        p1.insert_text((60, 100), "Title page without figures.", fontsize=12)
+
+        # Page 2: Figure 2 chart -> Figure 2 caption -> intervening text -> Figure 3 chart -> Figure 3 caption
+        p2 = doc.new_page(width=612, height=792)
+        p2.draw_rect(pymupdf.Rect(310, 60, 560, 260), color=(0.1, 0.2, 0.8), fill=(0.9, 0.92, 1.0))
+        p2.insert_text(
+            (310, 285),
+            "Figure 2. Short-term NO release\nafter PEF and inhibitor treatments.",
+            fontsize=10,
+        )
+        p2.insert_text(
+            (310, 340),
+            "Intervening body paragraph measured cGMP generation independently.",
+            fontsize=10,
+        )
+        p2.draw_rect(pymupdf.Rect(310, 410, 560, 660), color=(0.2, 0.6, 0.2), fill=(0.9, 1.0, 0.92))
+        p2.insert_text(
+            (310, 685),
+            "Figure 3. Delayed cGMP levels measured in cell extracts.",
+            fontsize=10,
+        )
+
+        # Trailing pages without Figure 2 caption blocks (would poison stale loop variable `blks`)
+        p3 = doc.new_page(width=612, height=792)
+        p3.insert_text((60, 700), "References only page 3.", fontsize=10)
+        p4 = doc.new_page(width=612, height=792)
+        p4.insert_text((60, 700), "Appendix page 4.", fontsize=10)
+        doc.save(pdf_path)
+
+    atomic_write_index(
+        pf / "indexes" / "formal-library.json",
+        {
+            "version": 1,
+            "items": [
+                {
+                    "zotero_key": "STACK01",
+                    "title": "Stacked Figures Isolation Test",
+                    "domain": "Ortho",
+                    "has_pdf": True,
+                    "ocr_status": "pending",
+                    "pdf_path": "storage:STK1/stacked.pdf",
+                    "paper_root": "Resources/Literature/Ortho/STACK01 - Stacked/",
+                    "main_note_path": "Resources/Literature/Ortho/STACK01 - Stacked/STACK01.md",
+                    "note_path": "Resources/Literature/Ortho/STACK01 - Stacked/STACK01.md",
+                }
+            ],
+        },
+    )
+
+    grounded = ground_target_in_pdf(vault, "STACK01", pdf_path, figure_id="Figure 2")
+    assert grounded["page"] == 2
+    assert grounded["kind"] == "area"
+    assert grounded["grounding_tier"] == "exact_object"
+    x0, y0, x1, y1 = grounded["rects"][0]
+    assert x0 >= 0.45 and x1 <= 0.96
+    # Must cover Figure 2 graphic (y0 ~ 0.075) + caption (y ~ 0.36) and stop BEFORE intervening text (y ~ 0.43) / Fig 3 (y ~ 0.52)
+    assert y0 <= 0.12
+    assert 0.34 <= y1 <= 0.42, f"Figure 2 bled into lower text / Figure 3: y1={y1}"

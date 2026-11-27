@@ -9748,15 +9748,77 @@ input.pf-ocr-ws-search-input::placeholder {
 /* ── AsterLab Soft AI PDF Annotation Layer & Margin Bracket ── */
 .pf-pdf-ann-box.pf-pdf-hl-agent {
   outline: none;
-  background: rgba(212, 198, 255, 0.42);
-  border-bottom: 1.5px dotted rgba(109, 86, 216, 0.72);
+  background: rgba(212, 198, 255, 0.38);
+  border-bottom: 1.5px dotted rgba(109, 86, 216, 0.78);
   border-radius: 2px 2px 0 0;
 }
 .pf-pdf-ann-box.pf-pdf-hl-agent[data-ann-line-idx="0"] {
-  box-shadow: -3px 0 0 -0.5px rgba(109, 86, 216, 0.78);
+  box-shadow: -3px 0 0 -0.5px rgba(109, 86, 216, 0.82);
 }
 .pf-pdf-ann-box.pf-pdf-hl-agent.is-ann-hover {
-  background: rgba(196, 178, 255, 0.56);
+  background: rgba(196, 178, 255, 0.54);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--blue {
+  background: rgba(186, 230, 253, 0.36);
+  border-bottom-color: rgba(37, 99, 235, 0.78);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--blue[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(37, 99, 235, 0.82);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--blue.is-ann-hover {
+  background: rgba(147, 197, 253, 0.5);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--red {
+  background: rgba(254, 202, 202, 0.38);
+  border-bottom-color: rgba(214, 69, 69, 0.82);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--red[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(214, 69, 69, 0.85);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--red.is-ann-hover {
+  background: rgba(252, 165, 165, 0.52);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--green {
+  background: rgba(167, 243, 208, 0.36);
+  border-bottom-color: rgba(22, 163, 74, 0.8);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--green[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(22, 163, 74, 0.84);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--green.is-ann-hover {
+  background: rgba(134, 239, 172, 0.52);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--yellow {
+  background: rgba(254, 240, 138, 0.44);
+  border-bottom-color: rgba(202, 138, 4, 0.8);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--yellow[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(202, 138, 4, 0.84);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--yellow.is-ann-hover {
+  background: rgba(253, 224, 71, 0.58);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent {
+  border: 1.5px dashed rgba(109, 86, 216, 0.82);
+  border-radius: 4px;
+  background: rgba(109, 86, 216, 0.06);
+  box-shadow: none;
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--blue {
+  border-color: rgba(37, 99, 235, 0.82);
+  background: rgba(37, 99, 235, 0.06);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--red {
+  border-color: rgba(214, 69, 69, 0.85);
+  background: rgba(214, 69, 69, 0.06);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--green {
+  border-color: rgba(22, 163, 74, 0.82);
+  background: rgba(22, 163, 74, 0.06);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--yellow {
+  border-color: rgba(202, 138, 4, 0.82);
+  background: rgba(202, 138, 4, 0.07);
 }
 .pf-pdf-ann-box.pf-pdf-margin-bracket {
   border-left: 3.5px solid var(--pf-accent, #5b45c9);
