@@ -70,7 +70,7 @@ Options:
 | **Canvas peak pixel memory (100p scroll @ DPR=2.5, scale=1.8)** | `348.37 MB (91.32 Mpx)` | `114.40 MB (29.99 Mpx)` (`-67.2%`) | `<= 120.00 MB (<= 30 Mpx)` |
 | **Single-canvas max pixels (DPR=2.5, scale=2.0)** | `12.52 Mpx (47.78 MB)` | `6.00 Mpx (22.88 MB)` (`-52.1%`) | `<= 6.00 Mpx (<= 24.00 MB)` |
 | **Effective canvas DPR @ `devicePixelRatio=2.5`** | `2.50x` | `1.92x` | `<= 2.00x` |
-| **Visibility-hide (`document.hidden=true`) canvas release** | `8 -> 8 canvases (318.73 MB -> 318.73 MB)` | _Pending re-verify after `.delete(100)` + `_pageEls` fix_ | `<= 1 canvas retained` |
+| **Visibility-hide (`document.hidden=true`) canvas release** | `8 -> 8 canvases (318.73 MB -> 318.73 MB)` | `4 -> 1 canvases (91.52 MB -> 22.88 MB)` (`-75.0%`) | `<= 1 canvas retained` |
 | **Ctrl+wheel burst (15×/150ms): `page.render()` calls during burst** | `15 calls (16 total w/ settle)` | `0 during burst` | `<= 3 during burst` |
 | **Ctrl+wheel burst: peak concurrent uncancelled renders** | `9 concurrent (0 cancelled)` | `1 concurrent` | `<= 3 concurrent` |
 | **Ctrl+wheel burst: `.pf-pdf-page` layout writes (reflows)** | `1500 layout writes (0 CSS transform previews)` | `0 layout writes (15 CSS transform previews)` | `0 layout writes during burst` |
