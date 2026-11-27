@@ -1978,7 +1978,7 @@ export class PaperForgePdfView extends ItemView {
         this._renderingPages.delete(p);
       }
     }
-    for (const p of Array.from(this._renderedPages)) {
+    for (const p of Array.from(this._pageEls.keys())) {
       if (p !== keep) {
         this._evictPageCanvas(p);
       }

@@ -703,10 +703,13 @@ describe("PaperForgePdfView upgrade: Option B selection, CRUD closed-loop, and p
       }
       expect(view._renderedPages.size).toBeLessThanOrEqual(5);
 
-      // 5. visibilitychange hidden releases all non-current canvases
+      // 5. visibilitychange hidden releases all non-current canvases (even stale canvases cleared from _renderedPages)
       view._currentPage = 8;
       await view._ensurePageRendered(7);
       expect(view._renderedPages.size).toBeGreaterThan(1);
+      // Simulate _syncZoomAndRerender clearing _renderedPages while leaving a stale canvas on page 7
+      view._renderedPages.delete(7);
+      expect(view.contentEl.querySelectorAll(".pf-pdf-canvas").length).toBeGreaterThan(1);
       Object.defineProperty(dom.window.document, "hidden", {
         value: true,
         configurable: true,
@@ -715,6 +718,7 @@ describe("PaperForgePdfView upgrade: Option B selection, CRUD closed-loop, and p
         new dom.window.Event("visibilitychange")
       );
       expect(Array.from(view._renderedPages)).toEqual([8]);
+      expect(view.contentEl.querySelectorAll(".pf-pdf-canvas")).toHaveLength(1);
 
       // 6. Switching to Thumbs tab triggers async toBlob + createObjectURL, revoked on teardown
       const thumbsBtn = view.contentEl.querySelector(
