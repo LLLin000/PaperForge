@@ -603,13 +603,59 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  private _renderInitialLoadingPlaceholder(): void {
+    if (
+      !this._contentEl ||
+      this._currentMode ||
+      this._contentEl.childElementCount > 0
+    ) {
+      return;
+    }
+    if (this._modeContextEl && this._modeContextEl.childElementCount === 0) {
+      this._renderModeHeader("global");
+    }
+    const loading = this._contentEl.createEl("div", {
+      cls: "paperforge-empty-state paperforge-bootstrap-loading",
+      attr: { "data-pf-testid": "companion-loading" },
+    });
+    this._renderSkeleton(loading);
+    loading.createEl("div", {
+      cls: "paperforge-empty-title",
+      text: t("dash_bootstrap_loading") || "Loading Companion…",
+    });
+  }
+
   /** Production lifecycle: load the read model FIRST, then resolve the
    * active context against the loaded items (Step 5 corrective: the old
    * cold path never called dashboardStats at all, so every mode rendered
    * from an empty cache). */
   async _bootstrapDashboard() {
-    await this._loadDashboardData(false);
-    await this._detectAndSwitch();
+    this._renderInitialLoadingPlaceholder();
+    try {
+      await this._loadDashboardData(false);
+      await this._detectAndSwitch();
+    } catch (err) {
+      this._backendUnavailable = true;
+      this._setRecoveryError(
+        t("dash_doctor_issues") || "Companion failed to initialize",
+        formatHumanError(err),
+        [
+          {
+            label: t("dash_recovery_retry") || "Retry",
+            primary: true,
+            run: () => void this._bootstrapDashboard(),
+          },
+        ]
+      );
+      if (!this._currentMode && this._contentEl) {
+        this._currentMode = "global";
+        this._currentFilePath = null;
+        this._contentEl.empty();
+        this._renderModeHeader("global");
+        this._renderBackendBanner();
+        this._renderGlobalMode();
+      }
+    }
   }
 
   _normalizeDashboardData(data: any) {
