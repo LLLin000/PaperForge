@@ -135,13 +135,31 @@ async function startNoticeCapture(): Promise<void> {
     };
     const w = window as unknown as {
       __pfCapturedNotices?: string[];
+      __pfCapturedNoticeCounts?: Record<string, number>;
+      __pfCountedNoticeEls?: WeakSet<Element>;
       __pfNoticeObservers?: MutationObserver[];
     };
     for (const obs of w.__pfNoticeObservers ?? []) {
       obs.disconnect();
     }
     w.__pfCapturedNotices = [];
+    w.__pfCapturedNoticeCounts = {};
+    w.__pfCountedNoticeEls = new WeakSet<Element>();
     w.__pfNoticeObservers = [];
+
+    const recordNoticeEl = (el: Element) => {
+      if (w.__pfCountedNoticeEls?.has(el)) return;
+      const txt = (el.textContent ?? "").trim();
+      if (!txt) return;
+      w.__pfCountedNoticeEls?.add(el);
+      if (!w.__pfCapturedNotices?.includes(txt)) {
+        w.__pfCapturedNotices?.push(txt);
+      }
+      if (w.__pfCapturedNoticeCounts) {
+        w.__pfCapturedNoticeCounts[txt] =
+          (w.__pfCapturedNoticeCounts[txt] ?? 0) + 1;
+      }
+    };
 
     const docs = Array.from(
       new Set(
@@ -154,12 +172,7 @@ async function startNoticeCapture(): Promise<void> {
       )
     );
     const collectFrom = (node: ParentNode) => {
-      node.querySelectorAll?.(".notice").forEach((el) => {
-        const txt = (el.textContent ?? "").trim();
-        if (txt && !w.__pfCapturedNotices?.includes(txt)) {
-          w.__pfCapturedNotices?.push(txt);
-        }
-      });
+      node.querySelectorAll?.(".notice").forEach(recordNoticeEl);
     };
     for (const doc of docs) {
       collectFrom(doc);
@@ -169,12 +182,10 @@ async function startNoticeCapture(): Promise<void> {
           m.addedNodes.forEach((node) => {
             if (node instanceof HTMLElement) {
               if (node.classList?.contains("notice")) {
-                const txt = (node.textContent ?? "").trim();
-                if (txt && !w.__pfCapturedNotices?.includes(txt)) {
-                  w.__pfCapturedNotices?.push(txt);
-                }
+                recordNoticeEl(node);
+              } else {
+                collectFrom(node);
               }
-              collectFrom(node);
             }
           });
         }
@@ -200,6 +211,27 @@ async function readCapturedNotices(): Promise<string[]> {
     });
     return [...(w.__pfCapturedNotices ?? [])];
   });
+}
+
+async function readRawNoticeCounts(): Promise<Record<string, number>> {
+  return await browser.executeObsidian(async () => {
+    const w = window as unknown as {
+      __pfCapturedNoticeCounts?: Record<string, number>;
+    };
+    return { ...(w.__pfCapturedNoticeCounts ?? {}) };
+  });
+}
+
+function assertNoNoticeSpam(
+  counts: Record<string, number>,
+  forbiddenRe?: RegExp
+): void {
+  for (const [msg, n] of Object.entries(counts)) {
+    expect(n).toBeLessThanOrEqual(1);
+    if (forbiddenRe) {
+      expect(msg).not.toMatch(forbiddenRe);
+    }
+  }
 }
 
 /**
@@ -613,7 +645,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       ZOTERO_FIXTURE
     );
     expect(detected.found).toBe(true);
-    expect(detected.total_papers).toBe(2);
+    expect(detected.total_papers).toBe(4);
 
     const vaultPath = await sandboxBasePath();
     const dataJsonPath = path.join(
@@ -779,6 +811,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
 
     await browser.pause(600);
 
+    await startNoticeCapture();
     const preClick = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _settingTab: { containerEl: HTMLElement };
@@ -876,8 +909,9 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     await assertDecisionCard({
       id: "ready",
       badgeCls: "ready",
-      titleRe: /2/,
+      titleRe: /4/,
     });
+    assertNoNoticeSpam(await readRawNoticeCounts(), /require review|需要审核/i);
 
     const overviewWidgets = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -979,6 +1013,31 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     expect(panelState.hasSearchInput).toBe(true);
 
     // Live search before building Memory index shows the honest recovery card
+    // Also verify pre-memory.build Base snapshot preserves real has_pdf & shows zero false missing-PDF banner
+    const preBuildBaseCheck = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getClient(): {
+          baseSnapshot(): Promise<{
+            rows?: Record<string, { has_pdf?: boolean }>;
+          }>;
+        };
+      };
+      const snap = await plugin.getClient().baseSnapshot();
+      const doc =
+        typeof activeDocument !== "undefined" ? activeDocument : document;
+      const missingPdfBanner =
+        doc.querySelector('[data-pf-testid="base-missing-pdf-hint"]') ??
+        document.querySelector('[data-pf-testid="base-missing-pdf-hint"]');
+      return {
+        zot1HasPdf: snap?.rows?.["ZOTKEY01"]?.has_pdf === true,
+        zot4HasPdf: snap?.rows?.["ZOTKEY04"]?.has_pdf === true,
+        hasMissingPdfBanner: Boolean(missingPdfBanner),
+      };
+    });
+    expect(preBuildBaseCheck.zot1HasPdf).toBe(true);
+    expect(preBuildBaseCheck.zot4HasPdf).toBe(true);
+    expect(preBuildBaseCheck.hasMissingPdfBanner).toBe(false);
+
     await browser.executeObsidian(async () => {
       const doc =
         typeof activeDocument !== "undefined" ? activeDocument : document;
@@ -1263,13 +1322,27 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     });
     await waitForSettledDecision("zotero_not_configured");
 
-    // S6: updating & quarantine Hero cards + secondary Dismiss round-trip
+    // S6: updating (with live progress bar & reopen continuity) & quarantine Hero cards
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _daemonUpdating: boolean;
+        _daemonJobs?: Map<string, Record<string, unknown>>;
+        _updateStatusBar?: () => void;
         _settingTab: { display(): void };
       };
       plugin._daemonUpdating = true;
+      plugin._daemonJobs?.set("e2e_rt_job", {
+        job_id: "e2e_rt_job",
+        kind: "runtime.update",
+        status: "running",
+        phase: "downloading_wheel",
+        current: 3,
+        total: 5,
+        vault: "",
+        item_id: "",
+        started_at: Math.floor(Date.now() / 1000) - 4,
+      });
+      plugin._updateStatusBar?.();
       plugin._settingTab.display();
     });
     await assertDecisionCard({
@@ -1277,6 +1350,45 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
       badgeCls: "checking",
       noPrimary: true,
     });
+    const liveProgressUi = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { containerEl: HTMLElement };
+      };
+      const el = plugin._settingTab.containerEl;
+      const bar = el.querySelector(
+        '[data-pf-decision="engine_updating"] .pf-runtime-stage-bar'
+      );
+      const meta =
+        el.querySelector(
+          '[data-pf-decision="engine_updating"] .pf-cc-progress-meta'
+        )?.textContent ?? "";
+      const sb =
+        document.querySelector(".pf-status-bar-item")?.textContent ?? "";
+      return { hasBar: Boolean(bar), meta, sb };
+    });
+    expect(liveProgressUi.hasBar).toBe(true);
+    expect(liveProgressUi.meta).toMatch(/3\/5|Step 3\/5|步骤 3\/5/);
+    expect(liveProgressUi.sb).toMatch(/PaperForge/);
+
+    // Closing & reopening Settings must keep the live progress bar attached
+    await closeSettingsModal();
+    await openPaperForgeSettings();
+    const reopenedBar = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _daemonJobs?: Map<string, Record<string, unknown>>;
+        _updateStatusBar?: () => void;
+        _settingTab: { containerEl: HTMLElement };
+      };
+      const hasBar = Boolean(
+        plugin._settingTab.containerEl.querySelector(
+          '[data-pf-decision="engine_updating"] .pf-runtime-stage-bar'
+        )
+      );
+      plugin._daemonJobs?.delete("e2e_rt_job");
+      plugin._updateStatusBar?.();
+      return hasBar;
+    });
+    expect(reopenedBar).toBe(true);
 
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -1552,7 +1664,78 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     await assertDecisionCard({
       id: "ready",
       badgeCls: "ready",
-      titleRe: /2/,
+      titleRe: /4/,
+    });
+    assertNoNoticeSpam(await readRawNoticeCounts(), /require review|需要审核/i);
+
+    // Normal library.index_stale in ZH must surface library_sync_needed (never sync_error or raw English)
+    const idxJsonPath = path.join(
+      vaultPath,
+      ".paperforge",
+      "indexes",
+      "formal-library.json"
+    );
+    const idxData = JSON.parse(readFileSync(idxJsonPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    writeFileSync(
+      idxJsonPath,
+      JSON.stringify({ ...idxData, export_hash: "stale-e2e-hash" }),
+      "utf8"
+    );
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: Record<string, unknown>;
+        saveSettings(): Promise<void>;
+        getClient(): { invalidateCache?(): void };
+        _settingTab: { _refreshAllModules(): void };
+      };
+      plugin.settings.language = "zh";
+      await plugin.saveSettings();
+      plugin.getClient().invalidateCache?.();
+      plugin._settingTab._refreshAllModules();
+    });
+    await waitForSettledDecision("library_sync_needed");
+    await assertDecisionCard({
+      id: "library_sync_needed",
+      badgeCls: "attention",
+      primaryLabelRe: /立即同步/,
+    });
+    const staleBody = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { containerEl: HTMLElement };
+      };
+      return (
+        plugin._settingTab.containerEl.querySelector(
+          '[data-pf-decision="library_sync_needed"]'
+        )?.textContent ?? ""
+      );
+    });
+    expect(staleBody).not.toContain("Library index is stale");
+
+    await startNoticeCapture();
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { containerEl: HTMLElement };
+      };
+      const syncBtn = plugin._settingTab.containerEl.querySelector(
+        '[data-pf-decision="library_sync_needed"] .pf-cc-summary-actions button.pf-action-btn'
+      ) as HTMLButtonElement | null;
+      if (!syncBtn) throw new Error("library_sync_needed Sync CTA missing");
+      syncBtn.click();
+    });
+    await waitForSettledDecision("ready");
+    assertNoNoticeSpam(await readRawNoticeCounts(), /需要审核|require review/i);
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: Record<string, unknown>;
+        saveSettings(): Promise<void>;
+        _settingTab: { display(): void };
+      };
+      plugin.settings.language = "en";
+      await plugin.saveSettings();
+      plugin._settingTab.display();
     });
 
     // Break Zotero DB inside an existing dir so real sync() fails with rc!=0 -> library_sync_error + Notice
@@ -1615,8 +1798,9 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     await assertDecisionCard({
       id: "ready",
       badgeCls: "ready",
-      titleRe: /2/,
+      titleRe: /4/,
     });
+    assertNoNoticeSpam(await readRawNoticeCounts(), /require review|需要审核/i);
   });
 
   // ── S9: 4-tab Settings navigation, Appearance toggle & EN/ZH copy sweep ─
@@ -1862,7 +2046,8 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     await assertDecisionCard({
       id: "ready",
       badgeCls: "ready",
-      titleRe: /2/,
+      titleRe: /4/,
     });
+    assertNoNoticeSpam(await readRawNoticeCounts(), /require review|需要审核/i);
   });
 });
