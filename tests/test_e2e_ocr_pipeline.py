@@ -75,7 +75,7 @@ def _run_ocr_pipeline(vault: Path, key: str, payload: list[dict]) -> tuple[int, 
     from paperforge.worker.ocr import postprocess_ocr_result
 
     # Ensure ocr output directory exists
-    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / key
+    ocr_dir = vault / ".paperforge" / "ocr" / key
     ocr_dir.mkdir(parents=True, exist_ok=True)
 
     return postprocess_ocr_result(vault, key, payload)
@@ -85,8 +85,7 @@ def _load_structured_blocks(vault: Path, key: str) -> list[dict]:
     """Load structured blocks from the pipeline output."""
     structured_path = (
         vault
-        / "99_System"
-        / "PaperForge"
+        / ".paperforge"
         / "ocr"
         / key
         / "structure"
@@ -104,7 +103,7 @@ def _load_structured_blocks(vault: Path, key: str) -> list[dict]:
 def _load_health_report(vault: Path, key: str) -> dict:
     """Load the OCR health report from the pipeline output."""
     health_path = (
-        vault / "99_System" / "PaperForge" / "ocr" / key / "health" / "ocr_health.json"
+        vault / ".paperforge" / "ocr" / key / "health" / "ocr_health.json"
     )
     if not health_path.exists():
         return {}
@@ -123,7 +122,7 @@ def _setup_meta(vault: Path, key: str, pdf_dest: Path) -> None:
     from paperforge.core.io import write_json
 
     write_json(
-        vault / "99_System" / "PaperForge" / "ocr" / key / "meta.json",
+        vault / ".paperforge" / "ocr" / key / "meta.json",
         meta,
     )
 
@@ -175,8 +174,7 @@ class TestE2eOcrPipeline:
         """Pipeline produces raw and structured blocks with expected roles."""
         blocks_raw_path = (
             self._vault
-            / "99_System"
-            / "PaperForge"
+            / ".paperforge"
             / "ocr"
             / self._key
             / "canonical"

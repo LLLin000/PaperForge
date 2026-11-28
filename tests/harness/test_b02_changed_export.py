@@ -56,7 +56,7 @@ def test_only_the_changed_entry_moves(cli, vault, case) -> None:
     before = _note_digests(literature)
     case.check("baseline produced notes", len(before) >= 9, f"{len(before)} notes")
 
-    export = vault / "System" / "PaperForge" / "exports" / "orthopedic.json"
+    export = vault / ".paperforge" / "exports" / "orthopedic.json"
     _append_export_entry(export, NEW_KEY)
     storage = vault / "System" / "Zotero" / "storage" / NEW_KEY
     storage.mkdir(parents=True, exist_ok=True)
@@ -87,4 +87,4 @@ def test_only_the_changed_entry_moves(cli, vault, case) -> None:
     )
 
     case.artifact("notes", literature)
-    case.artifact("dashboard", vault / "System" / "PaperForge" / "indexes" / "formal-library.json")
+    case.artifact("dashboard", vault / ".paperforge" / "indexes" / "formal-library.json")

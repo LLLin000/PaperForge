@@ -47,7 +47,7 @@ class TestCliSync:
         assert result.returncode == 0, f"sync failed: {result.stderr[:500]}"
 
         # Index file should exist
-        idx = test_vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
+        idx = test_vault / ".paperforge" / "indexes" / "formal-library.json"
         assert idx.exists(), "index file should exist after sync"
         data = json.loads(idx.read_text(encoding="utf-8"))
         assert isinstance(data, dict)

@@ -26,7 +26,7 @@ PAPER = "TSTONE001"
 
 
 def test_staging_writes_nothing_and_promotion_commits(render_cli, render_vault, case) -> None:
-    ocr = render_vault / "System" / "PaperForge" / "ocr" / PAPER
+    ocr = render_vault / ".paperforge" / "ocr" / PAPER
     inventory = ocr / "structure" / "figure_inventory.json"
     report = ocr / "render" / "render.consistency.json"
 

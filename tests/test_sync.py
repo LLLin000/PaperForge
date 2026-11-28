@@ -132,7 +132,7 @@ def test_sync_fastpath_bypasses_when_index_export_hash_is_stale(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
-    canonical_test_config(vault)
+    canonical_test_config(vault, system_dir=".paperforge")
     svc = SyncService(vault)
     paths = svc.resolve_paths()
     paths["exports"].mkdir(parents=True, exist_ok=True)
@@ -177,7 +177,7 @@ def test_sync_fastpath_self_heals_stale_workspace_registry(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
-    canonical_test_config(vault)
+    canonical_test_config(vault, system_dir=".paperforge")
     svc = SyncService(vault)
     paths = svc.resolve_paths()
     paths["exports"].mkdir(parents=True, exist_ok=True)
@@ -245,7 +245,7 @@ def test_sync_does_not_create_db_on_fresh_vault_and_dashboard_falls_back_when_pa
 
     vault = tmp_path / "vault"
     vault.mkdir()
-    canonical_test_config(vault)
+    canonical_test_config(vault, system_dir=".paperforge")
     svc = SyncService(vault)
     paths = svc.resolve_paths()
     paths["exports"].mkdir(parents=True, exist_ok=True)

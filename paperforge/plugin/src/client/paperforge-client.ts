@@ -399,6 +399,10 @@ export interface VaultUpgradePlanDto {
   provenance: VaultProvenanceDto;
   census: Record<string, unknown>;
   manifest: Record<string, unknown> | null;
+  manifest_state?: {
+    heal_pending?: boolean;
+    post_upgrade_sync_pending?: boolean;
+  };
   rollback_available: boolean;
   category_a_auto: VaultUpgradeItemDto[];
   category_b_reconfig: VaultUpgradeItemDto[];
@@ -2888,6 +2892,9 @@ export class PaperForgeClient {
     quarantineResiduals?: boolean;
     quarantineIds?: string[];
     noRebuildDb?: boolean;
+    zoteroSourceMode?: "sqlite" | "bbt";
+    zoteroSelectedCollections?: string[];
+    zoteroDataDir?: string;
   }): Promise<VaultUpgradeApplyResultDto> {
     const argv = ["upgrade", "--apply", "--json"];
     if (opts?.fastCutover) argv.push("--fast-cutover");
@@ -2897,6 +2904,18 @@ export class PaperForgeClient {
       argv.push("--quarantine-ids", opts.quarantineIds.join(","));
     }
     if (opts?.noRebuildDb) argv.push("--no-rebuild-db");
+    if (opts?.zoteroSourceMode) {
+      argv.push("--zotero-source-mode", opts.zoteroSourceMode);
+    }
+    if (Array.isArray(opts?.zoteroSelectedCollections)) {
+      argv.push(
+        "--zotero-selected-collections",
+        JSON.stringify(opts.zoteroSelectedCollections)
+      );
+    }
+    if (opts?.zoteroDataDir && opts.zoteroDataDir.trim()) {
+      argv.push("--zotero-data-dir", opts.zoteroDataDir.trim());
+    }
     try {
       return await this._executePfResult<VaultUpgradeApplyResultDto>(argv, {
         timeoutMs: 180000,

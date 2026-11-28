@@ -2447,6 +2447,16 @@ fn self_heal_vault_in_place(daemon: &NativeControlDaemon, vault: &Path) -> bool 
     if load_canonical_config(vault).is_err() {
         return false;
     }
+    let manifest_exists = vault
+        .join(".paperforge")
+        .join("vault-manifest.json")
+        .is_file();
+    if !manifest_exists
+        && (vault.join("System").join("PaperForge").is_dir()
+            || vault.join("99_System").join("PaperForge").is_dir())
+    {
+        return false;
+    }
     let engine = resolve_engine_dir(vault);
     let logs_dir = engine.join("logs");
     if !logs_dir.is_dir() && (engine.is_dir() || vault.is_dir()) {

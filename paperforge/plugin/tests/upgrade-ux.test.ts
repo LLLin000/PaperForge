@@ -474,4 +474,195 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
       formatProviderConnectionError("NO_PYTHON runtime missing", "ocr", true)
     ).toContain("一键启用引擎");
   });
+
+  it("preselects matched legacy BBT folders in UpgradeModal, guards empty SQLite selection, and commits Zotero choice before cutover", async () => {
+    const callOrder: string[] = [];
+    const onCommitZoteroConfig = vi.fn(async () => {
+      callOrder.push("commitZotero");
+    });
+    const vaultUpgradeApply = vi.fn(async () => {
+      callOrder.push("vaultUpgradeApply");
+      return {
+        dry_run: false,
+        applied: true,
+        fast_cutover: true,
+        executed_steps: [{ step: "fast_storage_cutover" }],
+        errors: [],
+      };
+    });
+    const daemonSubmitJob = vi.fn().mockResolvedValue({ accepted: true });
+    const zoteroDetect = vi.fn().mockResolvedValue({
+      found: true,
+      zotero_dir: "/zotero",
+      total_papers: 500,
+      collections: [
+        { key: "C1", name: "骨科", item_count: 120, top_level: true },
+        { key: "C2", name: "运动医学", item_count: 80, top_level: true },
+        { key: "C3", name: "DEMO", item_count: 300, top_level: true },
+      ],
+    });
+    const onUpgraded = vi.fn();
+
+    const modal = new PaperForgeUpgradeModal(
+      {} as never,
+      {
+        zoteroDetect,
+        vaultUpgradeApply,
+        daemonSubmitJob,
+      } as never,
+      sampleVeteranPlan(),
+      {
+        onUpgraded,
+        zoteroContext: {
+          currentSourceMode: "sqlite",
+          currentSelectedCollections: [],
+          zoteroDataDir: "/zotero",
+          legacyDomainNames: ["骨科"],
+          hasManualBbtExports: true,
+          explicitSourceModeInConfig: false,
+          onCommitZoteroConfig,
+        },
+      }
+    );
+    modal.open();
+
+    await vi.waitFor(() => {
+      const cb1 = modal.contentEl.querySelector(
+        '[data-pf-testid="upgrade-zotero-col-C1"]'
+      ) as HTMLInputElement | null;
+      expect(cb1?.checked).toBe(true);
+    });
+    const cb3 = modal.contentEl.querySelector(
+      '[data-pf-testid="upgrade-zotero-col-C3"]'
+    ) as HTMLInputElement;
+    expect(cb3.checked).toBe(false);
+
+    // Clearing all folders must block cutover when SQLite mode has collections
+    const clearBtn = modal.contentEl.querySelector(
+      '[data-pf-testid="upgrade-zotero-clear"]'
+    ) as HTMLButtonElement;
+    clearBtn.click();
+    const applyBtn = modal.contentEl.querySelector(
+      '[data-pf-testid="upgrade-apply-btn"]'
+    ) as HTMLButtonElement;
+    applyBtn.click();
+    expect(vaultUpgradeApply).not.toHaveBeenCalled();
+    expect(
+      modal.contentEl.querySelector(
+        '[data-pf-testid="upgrade-zotero-guard-msg"]'
+      )
+    ).not.toBeNull();
+
+    // Selecting C2 and applying must commit Zotero config BEFORE vaultUpgradeApply
+    const cb2 = modal.contentEl.querySelector(
+      '[data-pf-testid="upgrade-zotero-col-C2"]'
+    ) as HTMLInputElement;
+    cb2.checked = true;
+    cb2.dispatchEvent(new Event("change"));
+    applyBtn.click();
+
+    await vi.waitFor(() => expect(onUpgraded).toHaveBeenCalledTimes(1));
+    expect(vaultUpgradeApply).toHaveBeenCalledWith({
+      fastCutover: true,
+      zoteroSourceMode: "sqlite",
+      zoteroSelectedCollections: ["C2"],
+      zoteroDataDir: "/zotero",
+    });
+    expect(callOrder).toEqual(["vaultUpgradeApply", "commitZotero"]);
+    expect(onCommitZoteroConfig).toHaveBeenCalledWith({
+      zoteroSourceMode: "sqlite",
+      zoteroSelectedCollections: ["C2"],
+      zoteroDataDir: "/zotero",
+    });
+
+    // If vaultUpgradeApply fails, Zotero config MUST NOT be mutated before snapshot/rollback
+    onCommitZoteroConfig.mockClear();
+    const failingApply = vi.fn().mockResolvedValue({
+      dry_run: false,
+      applied: false,
+      errors: [{ step: "wal_quiesce", error: "DB locked" }],
+    });
+    const modalFail = new PaperForgeUpgradeModal(
+      {} as never,
+      {
+        zoteroDetect,
+        vaultUpgradeApply: failingApply,
+        daemonSubmitJob,
+      } as never,
+      sampleVeteranPlan(),
+      {
+        zoteroContext: {
+          currentSourceMode: "sqlite",
+          currentSelectedCollections: [],
+          zoteroDataDir: "/zotero",
+          legacyDomainNames: ["骨科"],
+          hasManualBbtExports: true,
+          explicitSourceModeInConfig: false,
+          onCommitZoteroConfig,
+        },
+      }
+    );
+    modalFail.open();
+    await vi.waitFor(() => {
+      expect(
+        modalFail.contentEl.querySelector(
+          '[data-pf-testid="upgrade-zotero-col-C1"]'
+        )
+      ).not.toBeNull();
+    });
+    (
+      modalFail.contentEl.querySelector(
+        '[data-pf-testid="upgrade-apply-btn"]'
+      ) as HTMLButtonElement
+    ).click();
+    await vi.waitFor(() => expect(failingApply).toHaveBeenCalledTimes(1));
+    expect(onCommitZoteroConfig).not.toHaveBeenCalled();
+
+    // Legacy BBT option bypasses folder requirement
+    const modalBbt = new PaperForgeUpgradeModal(
+      {} as never,
+      {
+        zoteroDetect,
+        vaultUpgradeApply,
+        daemonSubmitJob,
+      } as never,
+      sampleVeteranPlan(),
+      {
+        zoteroContext: {
+          currentSourceMode: "sqlite",
+          currentSelectedCollections: [],
+          zoteroDataDir: "/zotero",
+          legacyDomainNames: [],
+          hasManualBbtExports: true,
+          explicitSourceModeInConfig: false,
+          onCommitZoteroConfig,
+        },
+      }
+    );
+    modalBbt.open();
+    await vi.waitFor(() => {
+      expect(
+        modalBbt.contentEl.querySelector(
+          '[data-pf-testid="upgrade-zotero-mode-bbt"]'
+        )
+      ).not.toBeNull();
+    });
+    const bbtRadio = modalBbt.contentEl.querySelector(
+      '[data-pf-testid="upgrade-zotero-mode-bbt"]'
+    ) as HTMLInputElement;
+    bbtRadio.checked = true;
+    bbtRadio.dispatchEvent(new Event("change"));
+    (
+      modalBbt.contentEl.querySelector(
+        '[data-pf-testid="upgrade-apply-btn"]'
+      ) as HTMLButtonElement
+    ).click();
+    await vi.waitFor(() =>
+      expect(onCommitZoteroConfig).toHaveBeenLastCalledWith({
+        zoteroSourceMode: "bbt",
+        zoteroSelectedCollections: [],
+        zoteroDataDir: "/zotero",
+      })
+    );
+  });
 });

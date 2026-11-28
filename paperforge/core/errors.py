@@ -19,6 +19,10 @@ class ErrorCode(str, Enum):
 
     # ── Config / Vault ──
     VAULT_NOT_FOUND = "VAULT_NOT_FOUND"
+    VAULT_UPGRADE_REQUIRED = "vault.upgrade_required"
+    VAULT_STATE_UNKNOWN = "vault.state_unknown"
+    VAULT_HEALING_IN_PROGRESS = "vault.healing_in_progress"
+    OPERATION_CONFLICT = "operation.conflict"
     CONFIG_NOT_FOUND = "CONFIG_NOT_FOUND"
     CONFIG_INVALID = "CONFIG_INVALID"
     PATH_NOT_FOUND = "PATH_NOT_FOUND"
@@ -28,6 +32,8 @@ class ErrorCode(str, Enum):
     BBT_EXPORT_INVALID = "BBT_EXPORT_INVALID"
     BBT_CITATION_KEY_MISSING = "BBT_CITATION_KEY_MISSING"
     ZOTERO_DATA_NOT_FOUND = "ZOTERO_DATA_NOT_FOUND"
+    ZOTERO_SCOPE_REQUIRED = "zotero.scope_required"
+    ZOTERO_SCOPE_INVALID = "zotero.scope_invalid"
     PDF_PATH_UNRESOLVED = "PDF_PATH_UNRESOLVED"
 
     # ── Credentials (#173 / C1) ──

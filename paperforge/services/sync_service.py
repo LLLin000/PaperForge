@@ -392,9 +392,13 @@ class SyncService:
                     pass
         return h.hexdigest()
 
-    def _materialize_sqlite_exports_if_enabled(self, paths: dict[str, Path]) -> None:
-        """Direct read-only sync from zotero.sqlite when enabled. Fails closed on DB errors."""
-        enabled, zdir, domain_mode, selected = self._validate_sqlite_source_if_enabled(paths)
+    def _materialize_sqlite_exports_if_enabled(
+        self, paths: dict[str, Path], *, all_collections: bool = False
+    ) -> None:
+        """Direct read-only sync from zotero.sqlite when enabled. Fails closed on DB/scope errors."""
+        enabled, zdir, domain_mode, selected = self._validate_sqlite_source_if_enabled(
+            paths, all_collections=all_collections
+        )
         if not enabled or zdir is None:
             return
         from paperforge.adapters.zotero_sqlite import materialize_zotero_sqlite_exports
@@ -405,17 +409,146 @@ class SyncService:
             zdir,
             selected_collections=selected,
             domain_mode=domain_mode,
+            allow_all=all_collections,
         )
 
-    def _check_fastpath_preflight(self) -> tuple[dict[str, Path] | None, PFResult | None]:
+    def _check_vault_sync_authorization(self) -> PFResult | None:
+        """Authoritative backend gate: refuse sync on unmigrated/unknown/healing vaults."""
+        try:
+            from paperforge.services.vault_engine import read_vault_manifest
+            from paperforge.services.vault_upgrade import detect_vault_provenance
+
+            dot_pf = self.vault / ".paperforge"
+            journal_path = dot_pf / ".migration-journal.json"
+            if journal_path.is_file():
+                jdata = _sync_progress_json.loads(journal_path.read_text(encoding="utf-8"))
+                if isinstance(jdata, dict) and jdata.get("state") == "in_progress":
+                    return PFResult(
+                        ok=False,
+                        command="sync",
+                        version=__version__,
+                        error=PFError(
+                            code=ErrorCode.VAULT_UPGRADE_REQUIRED,
+                            message="Vault migration is incomplete (.migration-journal.json in_progress). Complete upgrade or rollback before syncing.",
+                            details={"phase": "vault_auth", "reason": "migration_in_progress"},
+                        ),
+                    )
+
+            prov = detect_vault_provenance(self.vault)
+            if prov.get("needs_upgrade"):
+                return PFResult(
+                    ok=False,
+                    command="sync",
+                    version=__version__,
+                    error=PFError(
+                        code=ErrorCode.VAULT_UPGRADE_REQUIRED,
+                        message=f"Vault requires upgrade before syncing (state={prov.get('state')}). Run `paperforge upgrade --apply` first.",
+                        details={
+                            "phase": "vault_auth",
+                            "vault_state": prov.get("state"),
+                            "tier1_evidence": prov.get("tier1_evidence", []),
+                            "tier2_evidence": prov.get("tier2_evidence", []),
+                        },
+                    ),
+                )
+
+            manifest = read_vault_manifest(self.vault)
+            if isinstance(manifest, dict) and manifest.get("heal_pending") is True:
+                return PFResult(
+                    ok=False,
+                    command="sync",
+                    version=__version__,
+                    error=PFError(
+                        code=ErrorCode.VAULT_HEALING_IN_PROGRESS,
+                        message="Vault background healing is still pending after cutover. Complete `paperforge upgrade --heal` before syncing.",
+                        details={"phase": "vault_auth", "reason": "heal_pending"},
+                    ),
+                )
+        except Exception as exc:
+            return PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.VAULT_STATE_UNKNOWN,
+                    message=f"Unable to verify vault migration state before sync: {exc}",
+                    details={"phase": "vault_auth", "exception_type": type(exc).__name__},
+                ),
+            )
+        return None
+
+    def _clear_post_upgrade_sync_pending_if_set(self) -> None:
+        try:
+            from paperforge.services.vault_engine import read_vault_manifest, write_vault_manifest
+
+            mf = read_vault_manifest(self.vault)
+            if isinstance(mf, dict) and mf.get("post_upgrade_sync_pending") is True:
+                write_vault_manifest(self.vault, post_upgrade_sync_pending=False)
+        except Exception:
+            pass
+
+    def _check_fastpath_preflight(self, *, all_collections: bool = False) -> tuple[dict[str, Path] | None, PFResult | None]:
         """Delegate to bottom-defined helper."""
-        return self._check_fastpath_or_sqlite_preflight()
+        return self._check_fastpath_or_sqlite_preflight(all_collections=all_collections)
 
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
-        prune: bool = False, prune_force: bool = False, rebuild_index: bool = False,
+        prune: bool = False, prune_force: bool = False, rebuild_index: bool = False, all_collections: bool = False,
     ) -> PFResult:
         """Full sync orchestration. Returns PFResult contract."""
+        import json as _json
+        import os as _os
+
+        auth_err = self._check_vault_sync_authorization()
+        if auth_err is not None:
+            return auth_err
+
+        from paperforge.services.vault_engine import VaultOperationConflictError, VaultOperationLock
+
+        try:
+            lock_ctx = VaultOperationLock(self.vault, operation="sync", timeout=0.0, create_dir=False)
+            with lock_ctx:
+                reauth_err = self._check_vault_sync_authorization()
+                if reauth_err is not None:
+                    return reauth_err
+                res = self._run_locked(
+                    verbose=verbose,
+                    json_output=json_output,
+                    selection_only=selection_only,
+                    index_only=index_only,
+                    prune=prune,
+                    prune_force=prune_force,
+                    rebuild_index=rebuild_index,
+                    all_collections=all_collections,
+                )
+                if res.ok:
+                    self._clear_post_upgrade_sync_pending_if_set()
+                return res
+        except VaultOperationConflictError as exc:
+            err_code = (
+                ErrorCode.VAULT_HEALING_IN_PROGRESS
+                if exc.operation == "upgrade.heal"
+                else ErrorCode.OPERATION_CONFLICT
+            )
+            return PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=err_code,
+                    message=str(exc),
+                    details={
+                        "phase": "vault_lock",
+                        "conflicting_operation": exc.operation,
+                        "holder_pid": exc.holder_pid,
+                    },
+                ),
+            )
+
+    def _run_locked(
+        self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
+        prune: bool = False, prune_force: bool = False, rebuild_index: bool = False, all_collections: bool = False,
+    ) -> PFResult:
         import json as _json
         import os as _os
 
@@ -423,7 +556,9 @@ class SyncService:
         fastpath_paths: dict[str, Path] | None = None
         fastpath_digest = ""
         if fastpath_eligible:
-            fastpath_paths, fp_err_or_hit = self._check_fastpath_or_sqlite_preflight()
+            fastpath_paths, fp_err_or_hit = self._check_fastpath_or_sqlite_preflight(
+                all_collections=all_collections
+            )
             if fp_err_or_hit is not None:
                 return fp_err_or_hit
 
@@ -431,7 +566,7 @@ class SyncService:
         _emit_sync_progress("read_zotero", 1, 5)
         if fastpath_paths is None:
             fastpath_paths = self.resolve_paths()
-        mat_err = self._safe_materialize_sqlite_phase0(fastpath_paths)
+        mat_err = self._safe_materialize_sqlite_phase0(fastpath_paths, all_collections=all_collections)
         if mat_err is not None:
             return mat_err
 
@@ -753,8 +888,15 @@ class SyncService:
         """Alias for run(). Returns PFResult (not int|dict)."""
         return self.run(verbose=verbose, json_output=json_output)
 
-    def _validate_sqlite_source_if_enabled(self, paths: dict[str, Path]) -> tuple[bool, Path | None, str, list[str] | None]:
-        """Check Zotero SQLite configuration & readability; fail closed on missing/locked/corrupt DB."""
+    def _validate_sqlite_source_if_enabled(
+        self, paths: dict[str, Path], *, all_collections: bool = False
+    ) -> tuple[bool, Path | None, str, list[str] | None]:
+        """Check Zotero SQLite configuration & readability; fail closed on DB or scope errors."""
+        from paperforge.adapters.zotero_sqlite import (
+            ZoteroScopeInvalidError,
+            ZoteroScopeRequiredError,
+            list_zotero_collections,
+        )
         from paperforge.config import load_config
 
         snap = load_config(self.vault)
@@ -780,25 +922,70 @@ class SyncService:
             raise ValueError(f"Invalid or corrupt Zotero SQLite database header: {db_file}")
 
         domain_mode = str(snap.values["domain_mode"].value or "per_collection")
-        raw_sel = str(snap.values["zotero_selected_collections"].value or "").strip()
+        if all_collections:
+            return (True, zdir, domain_mode, ["*"])
+
+        raw_sel = snap.values["zotero_selected_collections"].value
+        if raw_sel is None:
+            raise ZoteroScopeRequiredError(
+                "Zotero sync scope is null/unset. Select folders or explicitly authorize full library ['*'] / --all-collections."
+            )
         selected: list[str] | None = None
-        if raw_sel:
-            if raw_sel.startswith("["):
+        if isinstance(raw_sel, list):
+            selected = [str(x).strip() for x in raw_sel if str(x).strip()]
+        else:
+            raw_str = str(raw_sel).strip()
+            if not raw_str or raw_str.lower() in ("null", "none"):
+                raise ZoteroScopeRequiredError(
+                    "Zotero sync scope is not configured. Select folders or explicitly authorize ['*'] / --all-collections."
+                )
+            if raw_str.startswith("["):
                 import json as _json
 
-                parsed = _json.loads(raw_sel)
-                if isinstance(parsed, list):
-                    selected = [str(x).strip() for x in parsed if str(x).strip()]
+                try:
+                    parsed = _json.loads(raw_str)
+                except ValueError as exc:
+                    raise ZoteroScopeInvalidError(f"Malformed zotero_selected_collections JSON: {exc}") from exc
+                if not isinstance(parsed, list):
+                    raise ZoteroScopeInvalidError("zotero_selected_collections must be a JSON array")
+                selected = [str(x).strip() for x in parsed if str(x).strip()]
             else:
-                selected = [s.strip() for s in raw_sel.split(",") if s.strip()]
+                selected = [s.strip() for s in raw_str.split(",") if s.strip()]
+
+        if not selected:
+            raise ZoteroScopeRequiredError(
+                "Zotero sync scope is empty []. Select at least one collection or explicitly authorize ['*'] / --all-collections."
+            )
+
+        if selected != ["*"]:
+            listed = list_zotero_collections(zdir)
+            if not listed.get("found"):
+                raise RuntimeError(f"Failed to probe Zotero collections in {zdir}: {listed.get('error', 'unknown')}")
+            valid_tokens: set[str] = set()
+            for col in listed.get("collections", []):
+                if col.get("key"):
+                    valid_tokens.add(str(col["key"]).strip())
+                if col.get("name"):
+                    valid_tokens.add(str(col["name"]).strip())
+                if col.get("path"):
+                    valid_tokens.add(str(col["path"]).strip())
+            invalid = [tok for tok in selected if tok not in valid_tokens]
+            if invalid:
+                raise ZoteroScopeInvalidError(
+                    f"Configured zotero_selected_collections key(s) not found or expired: {', '.join(invalid)}"
+                )
+
         return (True, zdir, domain_mode, selected)
 
-    def _check_fastpath_or_sqlite_preflight(self) -> tuple[dict[str, Path] | None, PFResult | None]:
+    def _check_fastpath_or_sqlite_preflight(
+        self, *, all_collections: bool = False
+    ) -> tuple[dict[str, Path] | None, PFResult | None]:
         import json as _json
+        from paperforge.adapters.zotero_sqlite import ZoteroScopeInvalidError, ZoteroScopeRequiredError
 
         try:
             fastpath_paths = self.resolve_paths()
-            self._validate_sqlite_source_if_enabled(fastpath_paths)
+            self._validate_sqlite_source_if_enabled(fastpath_paths, all_collections=all_collections)
             fp_file = fastpath_paths["paperforge"] / "indexes" / ".sync-fastpath.json"
             idx_file = fastpath_paths["index"]
             if fp_file.exists() and idx_file.exists():
@@ -815,7 +1002,29 @@ class SyncService:
                             ok=True, command="sync", version=__version__, data=cached["data"]
                         )
             return fastpath_paths, None
-        except (FileNotFoundError, PermissionError, OSError, ValueError) as exc:
+        except ZoteroScopeRequiredError as exc:
+            return None, PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.ZOTERO_SCOPE_REQUIRED,
+                    message=str(exc),
+                    details={"phase": "sqlite_preflight", "exception_type": type(exc).__name__},
+                ),
+            )
+        except ZoteroScopeInvalidError as exc:
+            return None, PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.ZOTERO_SCOPE_INVALID,
+                    message=str(exc),
+                    details={"phase": "sqlite_preflight", "exception_type": type(exc).__name__},
+                ),
+            )
+        except (FileNotFoundError, PermissionError, OSError, ValueError, RuntimeError) as exc:
             return None, PFResult(
                 ok=False,
                 command="sync",
@@ -864,10 +1073,36 @@ class SyncService:
             except Exception as exc:
                 logger.warning("workspace_registry self-heal skipped: %s", exc)
 
-    def _safe_materialize_sqlite_phase0(self, fastpath_paths: dict[str, Path]) -> PFResult | None:
+    def _safe_materialize_sqlite_phase0(
+        self, fastpath_paths: dict[str, Path], *, all_collections: bool = False
+    ) -> PFResult | None:
+        from paperforge.adapters.zotero_sqlite import ZoteroScopeInvalidError, ZoteroScopeRequiredError
+
         try:
-            self._materialize_sqlite_exports_if_enabled(fastpath_paths)
+            self._materialize_sqlite_exports_if_enabled(fastpath_paths, all_collections=all_collections)
             return None
+        except ZoteroScopeRequiredError as exc:
+            return PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.ZOTERO_SCOPE_REQUIRED,
+                    message=str(exc),
+                    details={"phase": "sqlite_materialization", "exception_type": type(exc).__name__},
+                ),
+            )
+        except ZoteroScopeInvalidError as exc:
+            return PFResult(
+                ok=False,
+                command="sync",
+                version=__version__,
+                error=PFError(
+                    code=ErrorCode.ZOTERO_SCOPE_INVALID,
+                    message=str(exc),
+                    details={"phase": "sqlite_materialization", "exception_type": type(exc).__name__},
+                ),
+            )
         except Exception as exc:
             return PFResult(
                 ok=False,

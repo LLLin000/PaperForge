@@ -12,10 +12,13 @@ Consolidates:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
+import os
 import shutil
 import sqlite3
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +30,137 @@ logger = logging.getLogger(__name__)
 
 VAULT_MANIFEST_FILENAME = "vault-manifest.json"
 CURRENT_LAYOUT_VERSION = 2
+
+
+class VaultOperationConflictError(RuntimeError):
+    """Raised when another PaperForge vault-level write operation holds the lock."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        operation: str = "unknown",
+        holder_pid: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.operation = operation
+        self.holder_pid = holder_pid
+
+
+class VaultOperationLock:
+    """Re-entrant cross-process lock coordinating sync, cutover, heal, and rollback.
+
+    Uses ``<vault>/.paperforge/.vault-op.lock`` (or configured engine dir when
+    ``.paperforge`` does not exist and ``create_dir=False``). Never creates
+    ``.paperforge/`` when ``create_dir=False`` so rejected sync attempts on
+    unmigrated veteran vaults remain zero-write.
+    """
+
+    _local = threading.local()
+
+    def __init__(
+        self,
+        vault: Path,
+        operation: str = "sync",
+        *,
+        timeout: float = 0.0,
+        create_dir: bool = False,
+    ) -> None:
+        from filelock import FileLock
+
+        self.vault_root = Path(vault).expanduser().resolve()
+        self.operation = str(operation or "unknown")
+        self.timeout = float(timeout)
+        self._acquired = False
+        self._noop = False
+
+        dot_pf = self.vault_root / ".paperforge"
+        if dot_pf.is_dir() or create_dir:
+            lock_dir = dot_pf
+            lock_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            eng_dir = _engine_root(self.vault_root)
+            if eng_dir.is_dir():
+                lock_dir = eng_dir
+            else:
+                self._noop = True
+                self._key = ""
+                self._lock = None
+                self._holder_path = None
+                return
+
+        lock_path = lock_dir / ".vault-op.lock"
+        self._holder_path = lock_dir / ".vault-op.holder.json"
+        self._key = str(lock_path.resolve())
+        self._lock = FileLock(str(lock_path), timeout=self.timeout)
+
+    def _read_holder_info(self) -> tuple[str, int | None]:
+        if self._holder_path is None or not self._holder_path.is_file():
+            return "unknown", None
+        with contextlib.suppress(OSError, json.JSONDecodeError, UnicodeDecodeError):
+            data = json.loads(self._holder_path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                op = str(data.get("operation") or "unknown")
+                pid_raw = data.get("pid")
+                pid = int(pid_raw) if isinstance(pid_raw, int) else None
+                return op, pid
+        return "unknown", None
+
+    def __enter__(self) -> "VaultOperationLock":
+        if self._noop or self._lock is None:
+            return self
+        from filelock import Timeout
+
+        depths: dict[str, int] = getattr(self._local, "depths", {})
+        depth = depths.get(self._key, 0)
+        if depth > 0:
+            depths[self._key] = depth + 1
+            self._local.depths = depths
+            return self
+
+        try:
+            self._lock.acquire()
+        except Timeout as exc:
+            holder_op, holder_pid = self._read_holder_info()
+            pid_note = f" (pid {holder_pid})" if holder_pid is not None else ""
+            raise VaultOperationConflictError(
+                f"Vault operation '{self.operation}' blocked by active '{holder_op}'{pid_note}",
+                operation=holder_op,
+                holder_pid=holder_pid,
+            ) from exc
+
+        self._acquired = True
+        depths[self._key] = 1
+        self._local.depths = depths
+        if self._holder_path is not None:
+            with contextlib.suppress(OSError):
+                write_json_atomic(
+                    self._holder_path,
+                    {
+                        "operation": self.operation,
+                        "pid": os.getpid(),
+                        "started_at": _utcnow_iso(),
+                    },
+                )
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if self._noop or self._lock is None:
+            return
+        depths: dict[str, int] = getattr(self._local, "depths", {})
+        depth = depths.get(self._key, 0)
+        if depth > 1:
+            depths[self._key] = depth - 1
+            self._local.depths = depths
+            return
+        depths.pop(self._key, None)
+        self._local.depths = depths
+        if self._acquired:
+            if self._holder_path is not None:
+                with contextlib.suppress(OSError):
+                    self._holder_path.unlink(missing_ok=True)
+            self._lock.release()
+            self._acquired = False
 
 
 def _utcnow_iso() -> str:
@@ -128,6 +262,8 @@ def write_vault_manifest(
     *,
     migration_entry: dict[str, Any] | None = None,
     layout_version: int = CURRENT_LAYOUT_VERSION,
+    heal_pending: bool | None = None,
+    post_upgrade_sync_pending: bool | None = None,
 ) -> Path:
     """Create or update ``.paperforge/vault-manifest.json`` atomically."""
     from paperforge import __version__ as pf_version
@@ -138,17 +274,24 @@ def write_vault_manifest(
     history = list(existing.get("migration_history") or [])
     if migration_entry is not None:
         history.append(migration_entry)
-    payload: dict[str, Any] = {
-        "schema_version": 1,
-        "layout_version": int(layout_version),
-        "paperforge_version": pf_version,
-        "engine_ssot": "sqlite",
-        "db_schema_version": CURRENT_SCHEMA_VERSION,
-        "default_system_dir": ".paperforge",
-        "created_at": existing.get("created_at") or _utcnow_iso(),
-        "updated_at": _utcnow_iso(),
-        "migration_history": history[-50:],
-    }
+    payload: dict[str, Any] = dict(existing)
+    payload.update(
+        {
+            "schema_version": 1,
+            "layout_version": int(layout_version),
+            "paperforge_version": pf_version,
+            "engine_ssot": "sqlite",
+            "db_schema_version": CURRENT_SCHEMA_VERSION,
+            "default_system_dir": ".paperforge",
+            "created_at": existing.get("created_at") or _utcnow_iso(),
+            "updated_at": _utcnow_iso(),
+            "migration_history": history[-50:],
+        }
+    )
+    if heal_pending is not None:
+        payload["heal_pending"] = bool(heal_pending)
+    if post_upgrade_sync_pending is not None:
+        payload["post_upgrade_sync_pending"] = bool(post_upgrade_sync_pending)
     target = vault_manifest_path(vault_root)
     target.parent.mkdir(parents=True, exist_ok=True)
     write_json_atomic(target, payload)

@@ -36,7 +36,13 @@ const PLUGIN_DIR = process.cwd();
 const REPO_ROOT = path.resolve(PLUGIN_DIR, "..", "..");
 const SIMPLE_VAULT = path.resolve(PLUGIN_DIR, "test", "vaults", "simple");
 /** A committed Zotero export, enough for `sync` to give the vault library state. */
-const EXPORT_FIXTURE = path.resolve(REPO_ROOT, "tests", "sandbox", "exports", "骨科.json");
+const EXPORT_FIXTURE = path.resolve(
+  REPO_ROOT,
+  "tests",
+  "sandbox",
+  "exports",
+  "骨科.json"
+);
 
 // The CLI is spawned from the plugin directory, where `import paperforge`
 // only resolves if the package is installed — locally it is not (the repo is
@@ -179,7 +185,6 @@ afterAll(() => {
   else process.env.USERPROFILE = originalUserProfile;
 });
 
-
 // Each case spawns the real CLI (some of them several times), so the default
 // 5s budget is not enough once the rest of the suite runs in parallel.
 describe(
@@ -262,12 +267,17 @@ describe(
     });
 
     it("preserves a real backend scope rejection through runAction without changing the vault", async () => {
-      const isolatedVault = mkdtempSync(path.join(tmpdir(), "pf-action-rejection-"));
+      const isolatedVault = mkdtempSync(
+        path.join(tmpdir(), "pf-action-rejection-")
+      );
       try {
         cpSync(SIMPLE_VAULT, isolatedVault, { recursive: true });
-        const exports = path.join(isolatedVault, "System", "PaperForge", "exports");
+        const exports = path.join(isolatedVault, ".paperforge", "exports");
         mkdirSync(exports, { recursive: true });
-        cpSync(EXPORT_FIXTURE, path.join(exports, path.basename(EXPORT_FIXTURE)));
+        cpSync(
+          EXPORT_FIXTURE,
+          path.join(exports, path.basename(EXPORT_FIXTURE))
+        );
         const isolatedTransport = new NodeProcessTransport({
           vaultPath: isolatedVault,
           resolveRuntime: async () => ({ path: PYTHON, args: [] }),
@@ -405,7 +415,7 @@ describe(
       // vault has library state, so this seeds the committed export and syncs first;
       // the assertion is on the *shape*, so a producer rename or reshuffle fails
       // here instead of the modal silently never opening again (#222).
-      const exports = path.join(vault, "System", "PaperForge", "exports");
+      const exports = path.join(vault, ".paperforge", "exports");
       mkdirSync(exports, { recursive: true });
       cpSync(EXPORT_FIXTURE, path.join(exports, path.basename(EXPORT_FIXTURE)));
 

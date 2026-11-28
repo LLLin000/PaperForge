@@ -33,7 +33,7 @@ HOST_SPEC_CASE = "restores the memory database from its backup after corruption"
 
 def test_restore_swaps_in_the_backup(retrieval, case) -> None:
     cli = retrieval.cli
-    indexes = cli.vault / "System" / "PaperForge" / "indexes"
+    indexes = cli.vault / ".paperforge" / "indexes"
     db = indexes / "paperforge.db"
     backup = indexes / "paperforge.db.backup"
 

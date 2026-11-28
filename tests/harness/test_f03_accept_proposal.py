@@ -55,7 +55,7 @@ def _stage(render_cli) -> dict:
 
 
 def test_acceptance_needs_evidence_and_binds_the_reviewed_plan(render_cli, render_vault, case) -> None:
-    ocr = render_vault / "System" / "PaperForge" / "ocr" / PAPER
+    ocr = render_vault / ".paperforge" / "ocr" / PAPER
     inventory = ocr / "structure" / "figure_inventory.json"
     report = ocr / "render" / "reconciliation.proposals.json"
     inventory_before = digest(inventory)

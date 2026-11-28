@@ -245,7 +245,7 @@ class TestSyncPipelineConsistency:
         _invoker, vault_path = golden_vault
 
         # Check canonical index file exists
-        index_path = vault_path / "System" / "PaperForge" / "indexes" / "formal-library.json"
+        index_path = vault_path / ".paperforge" / "indexes" / "formal-library.json"
         assert index_path.exists(), f"Canonical index not found at {index_path}"
 
         index_data = json.loads(index_path.read_text(encoding="utf-8"))

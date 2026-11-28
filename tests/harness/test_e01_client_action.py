@@ -57,7 +57,7 @@ def test_action_round_trip(cli, vault, case) -> None:
         detail = f"mode=result rc={ran.returncode} {(ran.stdout or ran.stderr)[-200:]}"
     case.check("the action settles with a result", settled, detail)
 
-    db = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    db = vault / ".paperforge" / "indexes" / "paperforge.db"
     case.check("the action wrote the database it owns", db.is_file(), str(db))
     status = cli.json("memory", "status")
     data = status.data if isinstance(status.data, dict) else {}
@@ -68,4 +68,4 @@ def test_action_round_trip(cli, vault, case) -> None:
         str(data.get("paper_count_db")),
     )
 
-    case.artifact("indexes", vault / "System" / "PaperForge" / "indexes")
+    case.artifact("indexes", vault / ".paperforge" / "indexes")

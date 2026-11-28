@@ -103,6 +103,7 @@ import {
   readPathConfig,
   resolveVaultPaths,
 } from "./services/runtime-paths";
+import { collectLegacyDomainNames } from "./services/zotero-import-scope";
 import {
   PaperForgeClient,
   NodeProcessTransport,
@@ -159,6 +160,10 @@ export default class PaperForgePlugin extends Plugin {
   private _daemonJobs = new Map<string, DaemonJobDto>();
   private _unsubscribeDaemon: (() => void) | null = null;
   private _upgradePlanCache: VaultUpgradePlanDto | null = null;
+  private _upgradePlanLoaded = false;
+  private _syncAfterHealVault: string | null = null;
+  private _healResumeAttempted = false;
+  private _postUpgradeSyncAttempted = false;
   private _upgradeBannerDismissedForSession = false;
   private _quarantinedBinDir: string | null = null;
   private _lastAutoSyncError: { message: string; at: number } | null = null;
@@ -211,6 +216,7 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   isRuntimeUpdating(): boolean {
+    if (!this._daemonJobs) return false;
     for (const dj of this._daemonJobs.values()) {
       if (
         dj.kind === "runtime.install" ||
@@ -225,8 +231,17 @@ export default class PaperForgePlugin extends Plugin {
 
   isSyncing(): boolean {
     if (this._autoSyncRunning) return true;
+    if (!this._daemonJobs) return false;
     for (const dj of this._daemonJobs.values()) {
       if (dj.kind === "sync") return true;
+    }
+    return false;
+  }
+
+  isHealing(): boolean {
+    if (!this._daemonJobs) return false;
+    for (const dj of this._daemonJobs.values()) {
+      if (dj.kind === "upgrade.heal") return true;
     }
     return false;
   }
@@ -390,7 +405,18 @@ export default class PaperForgePlugin extends Plugin {
     event: string;
     data?: Record<string, unknown>;
   }): void {
+    if (ev.event === "daemon.disconnected") {
+      if (this._daemonJobs && this._daemonJobs.size > 0) {
+        this._daemonJobs.clear();
+        this._emitStateChanged?.();
+        this._refreshSettingTabIfOpen?.();
+      }
+      return;
+    }
     if (ev.event === "task.updated" && ev.data) {
+      if (!this._daemonJobs) {
+        this._daemonJobs = new Map();
+      }
       const job = ev.data as unknown as DaemonJobDto;
       if (job.job_id) {
         const isActive =
@@ -427,7 +453,20 @@ export default class PaperForgePlugin extends Plugin {
               String(job.error ?? "")
             );
             if (job.status === "succeeded") {
-              void this.refreshBaseSnapshot().catch(() => undefined);
+              void this.refreshBaseSnapshot?.().catch(() => undefined);
+              void this.refreshUpgradePlan?.()
+                .then(() => {
+                  if (!this._unloaded) this._refreshSettingTabIfOpen?.();
+                })
+                .catch(() => undefined);
+              const vb = (
+                this.app?.vault?.adapter as unknown as
+                  | { basePath?: string }
+                  | undefined
+              )?.basePath;
+              if (vb && !isConfigHydrated()) {
+                void this._hydrateConfigMirrors(vb).catch(() => undefined);
+              }
             }
             this._settingTab?._refreshAllReadModels({ background: true });
             this._refreshSettingTabIfOpen();
@@ -439,6 +478,36 @@ export default class PaperForgePlugin extends Plugin {
             this._scheduleThrottledSettingsRefresh();
           } else {
             this._refreshSettingTabIfOpen();
+          }
+        } else if (job.kind === "upgrade.heal") {
+          const currentVault = (
+            this.app?.vault?.adapter as unknown as
+              | { basePath?: string }
+              | undefined
+          )?.basePath;
+          if (
+            job.vault &&
+            currentVault &&
+            !this._sameVaultPath(job.vault, currentVault)
+          ) {
+            this._refreshSettingTabIfOpen();
+            return;
+          }
+          if (isActive) {
+            this._scheduleThrottledSettingsRefresh();
+          } else {
+            const nextVault = this._syncAfterHealVault;
+            this._syncAfterHealVault = null;
+            void this.refreshUpgradePlan?.();
+            this._refreshSettingTabIfOpen();
+            if (
+              nextVault &&
+              job.status === "succeeded" &&
+              !this._autoSyncRunning &&
+              (!currentVault || this._sameVaultPath(nextVault, currentVault))
+            ) {
+              this._autoSync(nextVault);
+            }
           }
         }
       }
@@ -505,29 +574,329 @@ export default class PaperForgePlugin extends Plugin {
     this._emitStateChanged();
   }
 
+  private _sameVaultPath(a?: string, b?: string): boolean {
+    if (!a || !b) return false;
+    const norm = (p: string): string => {
+      const resolved = path.resolve(p).replace(/[\\/]+$/, "");
+      return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+    };
+    return norm(a) === norm(b);
+  }
+
   async refreshUpgradePlan(): Promise<VaultUpgradePlanDto | null> {
     try {
       const plan = await this.getClient().vaultUpgradePlan();
       this._upgradePlanCache = plan;
+      this._upgradePlanLoaded = true;
       this._emitStateChanged();
+      const vaultBase = (
+        this.app?.vault?.adapter as unknown as { basePath?: string } | undefined
+      )?.basePath;
+      if (
+        plan?.provenance?.needs_upgrade === false &&
+        vaultBase &&
+        !this._unloaded
+      ) {
+        if (
+          plan.manifest_state?.heal_pending === true &&
+          !this.isHealing() &&
+          !this._healResumeAttempted
+        ) {
+          this._healResumeAttempted = true;
+          this._syncAfterHealVault = vaultBase;
+          void this.getClient()
+            .daemonSubmitJob("upgrade.heal", { backfillOcr: true })
+            .then((sub) => {
+              if (!sub?.accepted) {
+                this._syncAfterHealVault = null;
+              }
+            })
+            .catch(() => {
+              this._syncAfterHealVault = null;
+            });
+        } else if (
+          plan.manifest_state?.heal_pending !== true &&
+          plan.manifest_state?.post_upgrade_sync_pending === true &&
+          !this.isHealing() &&
+          !this._autoSyncRunning &&
+          !this._postUpgradeSyncAttempted &&
+          this.settings?.autoSyncEnabled !== false
+        ) {
+          this._postUpgradeSyncAttempted = true;
+          this._maybeAutoSync(vaultBase);
+        }
+      }
       return plan;
     } catch {
       return this._upgradePlanCache;
     }
   }
 
+  /** Bidirectionally reconcile cached daemon jobs against live daemon.health (prune zombies + restore live backend jobs after reconnect). */
+  async reconcileDaemonJobs(): Promise<void> {
+    if (this._daemonUpdating) {
+      return;
+    }
+    if (!this._daemonJobs) {
+      this._daemonJobs = new Map();
+    }
+    const client =
+      this._client ??
+      (typeof this.getClient === "function" ? this.getClient() : null);
+    if (!client || typeof client.daemonHealth !== "function") {
+      return;
+    }
+    try {
+      const health = await client.daemonHealth().catch(() => null);
+      const activeList = Array.isArray(health?.active_jobs)
+        ? (health.active_jobs as DaemonJobDto[])
+        : null;
+      if (!activeList) return;
+      const liveById = new Map<string, DaemonJobDto>();
+      for (const j of activeList) {
+        const jid = String(j?.job_id ?? "");
+        const st = String(j?.status ?? "");
+        if (
+          jid &&
+          (st === "queued" || st === "running" || st === "cancelling")
+        ) {
+          liveById.set(jid, j);
+        }
+      }
+      let changed = false;
+      for (const [jid, job] of Array.from(this._daemonJobs.entries())) {
+        if (liveById.has(jid)) continue;
+        if (
+          job.kind === "sync" &&
+          jid.startsWith("cli_sync_") &&
+          this._autoSyncRunning
+        ) {
+          continue;
+        }
+        this._daemonJobs.delete(jid);
+        changed = true;
+      }
+      for (const [jid, liveJob] of liveById.entries()) {
+        if (!this._daemonJobs.has(jid)) {
+          this._daemonJobs.set(jid, liveJob);
+          changed = true;
+        }
+      }
+      if (changed) {
+        this._emitStateChanged();
+        this._refreshSettingTabIfOpen();
+      }
+    } catch {
+      // Best-effort reconciliation
+    }
+  }
+
+  private _hasUnmigratedLegacyLayoutSync(vaultPath: string): boolean {
+    try {
+      if (!vaultPath) return false;
+      const manifestPath = path.join(
+        vaultPath,
+        ".paperforge",
+        "vault-manifest.json"
+      );
+      if (fs.existsSync(manifestPath)) return false;
+      return (
+        fs.existsSync(path.join(vaultPath, "System", "PaperForge")) ||
+        fs.existsSync(path.join(vaultPath, "99_System", "PaperForge"))
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private _buildUpgradeZoteroContext(
+    vaultBase: string,
+    legacyEngineRelDir?: string | null
+  ) {
+    let sysDir = "System";
+    let resDir = "Resources";
+    let litDir = "Literature";
+    let cfgZoteroDir = "";
+    let explicitSourceModeInConfig = false;
+    let cfgRaw: Record<string, unknown> = {};
+    try {
+      const rawText = fs.readFileSync(
+        path.join(vaultBase, "paperforge.json"),
+        "utf-8"
+      );
+      const parsed = JSON.parse(rawText);
+      if (parsed && typeof parsed === "object") {
+        cfgRaw = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Ignore missing or unreadable paperforge.json
+    }
+    const vc =
+      cfgRaw.vault_config && typeof cfgRaw.vault_config === "object"
+        ? (cfgRaw.vault_config as Record<string, unknown>)
+        : {};
+    sysDir = String(vc.system_dir || cfgRaw.system_dir || sysDir);
+    resDir = String(vc.resources_dir || cfgRaw.resources_dir || resDir);
+    litDir = String(vc.literature_dir || cfgRaw.literature_dir || litDir);
+    cfgZoteroDir = String(cfgRaw.zotero_data_dir || "").trim();
+    explicitSourceModeInConfig =
+      typeof cfgRaw.zotero_source_mode === "string" &&
+      cfgRaw.zotero_source_mode.trim().length > 0;
+
+    const exportCandidateDirs = Array.from(
+      new Set(
+        [
+          legacyEngineRelDir
+            ? path.join(vaultBase, legacyEngineRelDir, "exports")
+            : "",
+          sysDir && sysDir !== ".paperforge"
+            ? path.join(vaultBase, sysDir, "PaperForge", "exports")
+            : "",
+          path.join(vaultBase, ".paperforge", "exports"),
+          path.join(vaultBase, "System", "PaperForge", "exports"),
+        ].filter(Boolean)
+      )
+    );
+    const exportFiles: Array<{ stem: string; managedBySqlite: boolean }> = [];
+    for (const expDir of exportCandidateDirs) {
+      if (!fs.existsSync(expDir)) continue;
+      try {
+        for (const ent of fs.readdirSync(expDir, { withFileTypes: true })) {
+          if (!ent.isFile() || !ent.name.endsWith(".json")) continue;
+          let managedBySqlite = false;
+          try {
+            const fd = fs.openSync(path.join(expDir, ent.name), "r");
+            try {
+              const buf = Buffer.alloc(512);
+              const bytesRead = fs.readSync(fd, buf, 0, buf.length, 0);
+              const head = buf.toString("utf-8", 0, bytesRead);
+              managedBySqlite =
+                head.includes('"__managed_by"') &&
+                head.includes('"zotero_sqlite"');
+            } finally {
+              fs.closeSync(fd);
+            }
+          } catch {
+            // Default to false when unreadable
+          }
+          exportFiles.push({
+            stem: ent.name.slice(0, -5),
+            managedBySqlite,
+          });
+        }
+      } catch {
+        // Ignore directory read error
+      }
+      if (exportFiles.length > 0) break;
+    }
+
+    const literatureFolders: string[] = [];
+    const litRoot = path.join(vaultBase, resDir, litDir);
+    if (fs.existsSync(litRoot)) {
+      try {
+        for (const ent of fs.readdirSync(litRoot, { withFileTypes: true })) {
+          if (ent.isDirectory()) literatureFolders.push(ent.name);
+        }
+      } catch {
+        // Ignore directory read error
+      }
+    }
+
+    const { legacyDomainNames, hasManualBbtExports } = collectLegacyDomainNames(
+      { exportFiles, literatureFolders }
+    );
+    const currentSourceMode: "sqlite" | "bbt" =
+      (cfgRaw.zotero_source_mode ?? this.settings.zotero_source_mode) === "bbt"
+        ? "bbt"
+        : "sqlite";
+    const currentSelectedCollections = Array.isArray(
+      this.settings.zotero_selected_collections
+    )
+      ? [...this.settings.zotero_selected_collections]
+      : [];
+
+    return {
+      currentSourceMode,
+      currentSelectedCollections,
+      zoteroDataDir:
+        (this.settings.zotero_data_dir || "").trim() || cfgZoteroDir,
+      legacyDomainNames,
+      hasManualBbtExports,
+      explicitSourceModeInConfig,
+      onCommitZoteroConfig: async (choice: {
+        zoteroSourceMode: "sqlite" | "bbt";
+        zoteroSelectedCollections: string[];
+        zoteroDataDir?: string;
+      }) => {
+        this.settings.zotero_source_mode = choice.zoteroSourceMode;
+        this.settings.zotero_selected_collections = [
+          ...choice.zoteroSelectedCollections,
+        ];
+        if (choice.zoteroDataDir && choice.zoteroDataDir.trim()) {
+          this.settings.zotero_data_dir = choice.zoteroDataDir.trim();
+        }
+        await this.saveSettings();
+        const client = this.getClient();
+        await client.configSet("zotero_source_mode", choice.zoteroSourceMode);
+        await client.configSet(
+          "zotero_selected_collections",
+          JSON.stringify(choice.zoteroSelectedCollections)
+        );
+        if (choice.zoteroDataDir && choice.zoteroDataDir.trim()) {
+          await client.configSet(
+            "zotero_data_dir",
+            choice.zoteroDataDir.trim()
+          );
+        }
+      },
+    };
+  }
+
   async openUpgradeModal(): Promise<void> {
-    const plan = this._upgradePlanCache ?? (await this.refreshUpgradePlan());
+    const cachedWorkspaces = Number(
+      (
+        this._upgradePlanCache?.census as
+          | { pf_canonical?: { workspaces?: number } }
+          | undefined
+      )?.pf_canonical?.workspaces ?? 0
+    );
+    const cachedCleanupCount =
+      this._upgradePlanCache?.cleanup_candidates?.length ?? 0;
+    const needsFullRefresh =
+      !this._upgradePlanCache ||
+      (readRuntimePointer() !== null &&
+        cachedWorkspaces === 0 &&
+        cachedCleanupCount === 0);
+    const plan = needsFullRefresh
+      ? await this.refreshUpgradePlan()
+      : this._upgradePlanCache;
     if (!plan) {
       new Notice(t("main_upgrade_plan_unavailable"));
       return;
     }
+    const vaultBase = (
+      this.app.vault.adapter as unknown as { basePath?: string }
+    )?.basePath;
+    const zoteroContext = vaultBase
+      ? this._buildUpgradeZoteroContext(
+          vaultBase,
+          plan.provenance?.legacy_engine_dir
+        )
+      : undefined;
     new PaperForgeUpgradeModal(this.app, this.getClient(), plan, {
       onDismissForSession: () => this.dismissUpgradeBannerForSession(),
-      onUpgraded: async () => {
-        await this.refreshUpgradePlan();
+      zoteroContext,
+      onUpgraded: async (meta) => {
+        const refreshed = await this.refreshUpgradePlan();
         await this.refreshBaseSnapshot().catch(() => undefined);
         this._settingTab?.display();
+        if (vaultBase && refreshed?.provenance?.needs_upgrade !== true) {
+          if (meta?.healSubmitted || this.isHealing()) {
+            this._syncAfterHealVault = vaultBase;
+          } else {
+            this._autoSync(vaultBase);
+          }
+        }
       },
     }).open();
   }
@@ -1214,7 +1583,10 @@ export default class PaperForgePlugin extends Plugin {
             typeof requestUrl === "function"
               ? createObsidianRequestFetcher(requestUrl)
               : undefined,
-          onBeforeReplace: () => this._client?.shutdownTransportAsync(),
+          onBeforeReplace: () => {
+            this._daemonJobs.clear();
+            return this._client?.shutdownTransportAsync();
+          },
           onReplace: (swapFn) =>
             this._client
               ? this._client.runWithTransportSwap(swapFn)
@@ -1239,6 +1611,7 @@ export default class PaperForgePlugin extends Plugin {
             if (needsDaemonSwap) {
               this._lastAutoSyncError = null;
               runStartupHydration();
+              void this.reconcileDaemonJobs().catch(() => undefined);
               this._settingTab?._refreshAllReadModels({ background: true });
               this._refreshSettingTabIfOpen();
             } else if (swapped && vaultBase) {
@@ -1248,6 +1621,7 @@ export default class PaperForgePlugin extends Plugin {
                   if (!this._unloaded) this._refreshSettingTabIfOpen();
                 })
                 .catch(() => undefined);
+              void this.reconcileDaemonJobs().catch(() => undefined);
               void this.refreshBaseSnapshot().catch(() => undefined);
               this._settingTab?._refreshAllReadModels({ background: true });
               this._refreshSettingTabIfOpen();
@@ -1439,8 +1813,26 @@ export default class PaperForgePlugin extends Plugin {
 
   /** Periodic convergence check: skips Python sync completely if Zotero DB hasn't changed. */
   private _maybeAutoSync(vaultPath: string): void {
-    if (this._autoSyncRunning) return;
+    if (
+      this._autoSyncRunning ||
+      this._daemonUpdating ||
+      this.isRuntimeUpdating() ||
+      this.isHealing()
+    ) {
+      return;
+    }
     if (this.settings?._setup_complete === false) return;
+    if (this._hasUnmigratedLegacyLayoutSync(vaultPath)) return;
+    if (
+      this._upgradePlanCache?.provenance?.needs_upgrade === true ||
+      this._upgradePlanCache?.manifest_state?.heal_pending === true
+    ) {
+      return;
+    }
+    if (this._upgradePlanLoaded === false) {
+      void this.refreshUpgradePlan();
+      return;
+    }
     const libCap = this.settings?.capabilityState?.library;
     if (
       libCap?.reason?.code === "library.zotero_missing" ||
@@ -1486,9 +1878,21 @@ export default class PaperForgePlugin extends Plugin {
   // T8: mtime scanner deleted — the convergence tick fires sync directly.
 
   private _autoSync(vaultPath: string, expectedZoteroSig?: string) {
-    if (this._autoSyncRunning) return;
+    if (
+      this._autoSyncRunning ||
+      this._daemonUpdating ||
+      this.isRuntimeUpdating() ||
+      this.isHealing()
+    ) {
+      return;
+    }
     if (this.settings?._setup_complete === false) return;
-    if (this._upgradePlanCache?.provenance?.needs_upgrade === true) {
+    if (this._hasUnmigratedLegacyLayoutSync(vaultPath)) return;
+    if (
+      this._upgradePlanLoaded === false ||
+      this._upgradePlanCache?.provenance?.needs_upgrade === true ||
+      this._upgradePlanCache?.manifest_state?.heal_pending === true
+    ) {
       return;
     }
     this._autoSyncRunning = true;
@@ -2514,14 +2918,11 @@ export default class PaperForgePlugin extends Plugin {
       if (this._unloaded || this._agentSessionsWatcher) return;
       if (!fs.existsSync(stateDir)) return;
       try {
-        this._agentSessionsWatcher = fs.watch(
-          stateDir,
-          (_event, filename) => {
-            if (!filename || filename === "agent-sessions.json") {
-              schedulePresenceRefresh();
-            }
+        this._agentSessionsWatcher = fs.watch(stateDir, (_event, filename) => {
+          if (!filename || filename === "agent-sessions.json") {
+            schedulePresenceRefresh();
           }
-        );
+        });
       } catch {
         this._agentSessionsWatcher = null;
       }
@@ -2534,24 +2935,18 @@ export default class PaperForgePlugin extends Plugin {
 
     if (fs.existsSync(pfHome) && !this._agentSessionsDirWatcher) {
       try {
-        this._agentSessionsDirWatcher = fs.watch(
-          pfHome,
-          (_event, filename) => {
-            if (
-              (!filename || filename === "state") &&
-              fs.existsSync(stateDir)
-            ) {
-              try {
-                this._agentSessionsDirWatcher?.close?.();
-              } catch {
-                // ignore watcher close errors
-              }
-              this._agentSessionsDirWatcher = null;
-              attachStateWatcher();
-              schedulePresenceRefresh();
+        this._agentSessionsDirWatcher = fs.watch(pfHome, (_event, filename) => {
+          if ((!filename || filename === "state") && fs.existsSync(stateDir)) {
+            try {
+              this._agentSessionsDirWatcher?.close?.();
+            } catch {
+              // ignore watcher close errors
             }
+            this._agentSessionsDirWatcher = null;
+            attachStateWatcher();
+            schedulePresenceRefresh();
           }
-        );
+        });
       } catch {
         this._agentSessionsDirWatcher = null;
       }

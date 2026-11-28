@@ -31,7 +31,7 @@ PAPER = "TSTONE001"
 
 def test_provider_requests_follow_canonical_config(retrieval, case) -> None:
     cli, stub = retrieval.cli, retrieval.stub
-    indexes = cli.vault / "System" / "PaperForge" / "indexes"
+    indexes = cli.vault / ".paperforge" / "indexes"
 
     built = cli.json("memory", "build")
     case.check("memory build exits 0", built.returncode == 0, built.tail())

@@ -130,10 +130,10 @@ def test_sync_service_materializes_sqlite_without_manual_bbt_json(tmp_path: Path
     assert doc["__managed_by"] == "zotero_sqlite"
     assert doc["items"][0]["key"] == "ZOTKEY01"
 
-    # Second run with narrower collection updates and keeps manual exports untouched
+    # Second run with explicit full-library authorization updates and keeps manual exports untouched
     manual_file = paths["exports"] / "ManualLegacy.json"
     manual_file.write_text(json.dumps({"collections": {}, "items": []}), encoding="utf-8")
-    materialize_zotero_sqlite_exports(vault, paths["exports"], zdir, selected_collections=[], domain_mode="unified")
+    materialize_zotero_sqlite_exports(vault, paths["exports"], zdir, selected_collections=["*"], domain_mode="unified")
     assert (paths["exports"] / "Literature.json").is_file()
     assert not mat_file.exists()
     assert manual_file.is_file()
@@ -198,6 +198,8 @@ def test_sync_fails_closed_on_corrupt_locked_or_missing_zotero_sqlite(tmp_path: 
     import os
     from paperforge.core.errors import ErrorCode
 
+    from paperforge.services.vault_engine import ensure_current_vault_manifest
+
     zdir = _create_mock_zotero_dir(tmp_path)
     vault = tmp_path / "vault"
     vault.mkdir()
@@ -207,7 +209,9 @@ def test_sync_fails_closed_on_corrupt_locked_or_missing_zotero_sqlite(tmp_path: 
         zotero_data_dir=str(zdir),
         zotero_source_mode="sqlite",
         domain_mode="per_collection",
+        zotero_selected_collections='["*"]',
     )
+    ensure_current_vault_manifest(vault)
 
     # First run healthy sync so workspace + fastpath + exports exist
     svc = SyncService(vault)
@@ -262,7 +266,7 @@ def test_deleted_collections_excluded_and_missing_selection_fails_closed(tmp_pat
     conn.commit()
     conn.close()
 
-    docs = build_bbt_export_documents_from_sqlite(zdir, domain_mode="unified")
+    docs = build_bbt_export_documents_from_sqlite(zdir, selected_collections=["*"], domain_mode="unified")
     assert "COL_DEL1" not in docs["Literature"]["collections"]
 
     with pytest.raises(ValueError, match="matched no active Zotero collections"):
@@ -308,7 +312,7 @@ def test_zotero_detect_without_deleted_collections_and_per_collection_no_collaps
     assert listed["total_papers"] == 2
     assert {c["name"] for c in listed["collections"]} == {"Orthopedics", "AI_Radiology"}
 
-    docs = build_bbt_export_documents_from_sqlite(zdir, selected_collections=[], domain_mode="per_collection")
+    docs = build_bbt_export_documents_from_sqlite(zdir, selected_collections=["*"], domain_mode="per_collection")
     assert set(docs.keys()) == {"Orthopedics", "AI_Radiology"}
     assert "Literature" not in docs
 

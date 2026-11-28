@@ -172,9 +172,9 @@ def _prepare(tmp_path: Path, source: Path, state: str) -> tuple[Path, Path]:
                 base.read_text(encoding="utf-8") + "\n# user edit (X13)\n", encoding="utf-8"
             )
     elif state == "no_logs":
-        shutil.rmtree(vault / "System" / "PaperForge" / "logs", ignore_errors=True)
+        shutil.rmtree(vault / ".paperforge" / "logs", ignore_errors=True)
     elif state == "no_memory_db":
-        dbs = list((vault / "System" / "PaperForge" / "indexes").glob("paperforge.db*"))
+        dbs = list((vault / ".paperforge" / "indexes").glob("paperforge.db*"))
         assert dbs, "fixture guard: sync must have built the memory DB"
         for db in dbs:
             db.unlink()
@@ -216,7 +216,7 @@ def test_read_entries_do_not_repair_edge_states(prepare, state: str) -> None:
 @pytest.mark.timeout(300)
 def test_render_audit_writes_only_its_declared_report(prepare) -> None:
     vault, home = prepare("steady")
-    report = f"System/PaperForge/ocr/{KEY}/render/render.consistency.json"
+    report = f".paperforge/ocr/{KEY}/render/render.consistency.json"
     (vault / report).unlink(missing_ok=True)
     before = _snapshot(vault)
     result = _pf(vault, home, "render", "audit", KEY, "--json")

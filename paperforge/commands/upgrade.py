@@ -27,6 +27,9 @@ def run(args: argparse.Namespace) -> int:
     rebuild_db = not bool(getattr(args, "no_rebuild_db", False))
     priority_key = str(getattr(args, "priority_key", "") or "").strip() or None
     heal_limit = getattr(args, "limit", None)
+    zotero_source_mode = getattr(args, "zotero_source_mode", None)
+    zotero_selected_collections = getattr(args, "zotero_selected_collections", None)
+    zotero_data_dir = getattr(args, "zotero_data_dir", None)
 
     if fast_cutover and not raw_apply and not raw_dry_run and not raw_plan and not do_rollback and not do_heal:
         msg = "--fast-cutover requires --apply. Use --apply --fast-cutover to execute cutover."
@@ -39,6 +42,7 @@ def run(args: argparse.Namespace) -> int:
         print(err_result.to_json() if json_output else f"upgrade error: {msg}")
         return 2
 
+    from paperforge.services.vault_engine import VaultOperationConflictError
     from paperforge.services.vault_upgrade import (
         execute_vault_upgrade,
         heal_vault_progressive,
@@ -67,8 +71,24 @@ def run(args: argparse.Namespace) -> int:
                 quarantine_residuals=quarantine_residuals,
                 quarantine_ids=quarantine_ids,
                 rebuild_db=rebuild_db,
+                zotero_source_mode=zotero_source_mode,
+                zotero_selected_collections=zotero_selected_collections,
+                zotero_data_dir=zotero_data_dir,
             )
         result = PFResult(ok=True, command="upgrade", version=__version__, data=data)
+    except VaultOperationConflictError as exc:
+        err_result = PFResult(
+            ok=False,
+            command="upgrade",
+            version=__version__,
+            error=PFError(
+                code=ErrorCode.OPERATION_CONFLICT,
+                message=str(exc),
+                details={"conflicting_operation": exc.operation, "holder_pid": exc.holder_pid},
+            ),
+        )
+        print(err_result.to_json() if json_output else f"upgrade busy: {exc}")
+        return 1
     except Exception as exc:  # noqa: BLE001
         err_result = PFResult(
             ok=False,

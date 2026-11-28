@@ -53,10 +53,11 @@ class VaultBuilder:
     def _create_config(self, vault: Path) -> None:
         """Create canonical paperforge.json through the #142 seam."""
         from paperforge.config import bootstrap_config, set_config
+        from paperforge.services.vault_engine import ensure_current_vault_manifest
 
         bootstrap_config(vault)
         for _key, _value in {
-            "system_dir": "System",
+            "system_dir": ".paperforge",
             "resources_dir": "Resources",
             "literature_dir": "Literature",
             "control_dir": "LiteratureControl",
@@ -64,14 +65,15 @@ class VaultBuilder:
             "skill_dir": ".opencode/skills",
         }.items():
             set_config(vault, _key, _value)
+        ensure_current_vault_manifest(vault)
 
     def _create_dirs(self, vault: Path) -> None:
         """Create all required vault directories."""
         dirs = [
-            "System/PaperForge/exports",
-            "System/PaperForge/ocr",
-            "System/PaperForge/indexes",
-            "System/PaperForge/config",
+            ".paperforge/exports",
+            ".paperforge/ocr",
+            ".paperforge/indexes",
+            ".paperforge/config",
             "System/Zotero/storage",
             "Resources/Literature",
             "Resources/LiteratureControl",
@@ -87,11 +89,11 @@ class VaultBuilder:
             "PADDLEOCR_API_TOKEN=mock_test_token\n"
             "PADDLEOCR_JOB_URL=https://paddleocr.mock/api/v2/ocr/jobs\n"
         )
-        (vault / "System/PaperForge/.env").write_text(env_content, encoding="utf-8")
+        (vault / ".paperforge/.env").write_text(env_content, encoding="utf-8")
 
     def _copy_exports(self, vault: Path) -> None:
         """Copy Zotero JSON fixtures into vault exports/."""
-        exports_dir = vault / "System/PaperForge/exports"
+        exports_dir = vault / ".paperforge/exports"
         zotero_dir = self.fixtures_root / "zotero"
         if zotero_dir.exists():
             for f in zotero_dir.glob("*.json"):
@@ -120,7 +122,7 @@ class VaultBuilder:
 
     def _copy_ocr_fixtures(self, vault: Path) -> None:
         """Copy OCR fixture data into vault OCR directory."""
-        target = vault / "System/PaperForge/ocr/FIXT0001"
+        target = vault / ".paperforge/ocr/FIXT0001"
         target.mkdir(parents=True, exist_ok=True)
         # Copy expected outputs
         ocr_dir = self.fixtures_root / "ocr"

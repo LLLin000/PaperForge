@@ -33,7 +33,7 @@ PAPER = "TSTONE001"
 
 def test_display_restore_does_not_replace_the_canonical_text(render_cli, render_vault, case) -> None:
     cli = render_cli
-    ocr = render_vault / "System" / "PaperForge" / "ocr" / PAPER
+    ocr = render_vault / ".paperforge" / "ocr" / PAPER
     canonical = ocr / "fulltext.md"
     display = ocr / "render" / "fulltext.md"
     meta = ocr / "meta.json"

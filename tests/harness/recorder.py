@@ -423,7 +423,7 @@ class CliHost:
         note.write_text("---".join(parts), encoding="utf-8")
 
     def ocr_meta(self, key: str) -> dict[str, Any]:
-        path = self.vault / "System" / "PaperForge" / "ocr" / key / "meta.json"
+        path = self.vault / ".paperforge" / "ocr" / key / "meta.json"
         if not path.is_file():
             return {}
         try:

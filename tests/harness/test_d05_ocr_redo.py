@@ -84,7 +84,7 @@ def test_redo_submits_a_fresh_job(ocr_cli, case, ocr_stub) -> None:
     )
     case.check(
         "the redo re-published the paper's artifacts",
-        (cli.vault / "System" / "PaperForge" / "ocr" / PAPER / "fulltext.md").is_file(),
+        (cli.vault / ".paperforge" / "ocr" / PAPER / "fulltext.md").is_file(),
         "fulltext.md missing after redo",
     )
 
@@ -100,4 +100,4 @@ def test_redo_submits_a_fresh_job(ocr_cli, case, ocr_stub) -> None:
         json.dumps(stub.counts),
     )
 
-    case.artifact("ocr-dir", cli.vault / "System" / "PaperForge" / "ocr" / PAPER)
+    case.artifact("ocr-dir", cli.vault / ".paperforge" / "ocr" / PAPER)

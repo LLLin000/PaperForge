@@ -4,6 +4,7 @@ import argparse
 import contextlib
 import inspect
 import logging
+import sys
 
 from paperforge import __version__
 from paperforge.core.errors import ErrorCode
@@ -60,6 +61,7 @@ def run(args: argparse.Namespace) -> int:
         "prune": prune_flag,
         "prune_force": prune_force,
         "rebuild_index": getattr(args, "rebuild_index", False),
+        "all_collections": bool(getattr(args, "all_collections", False)),
     }
     try:
         sig = inspect.signature(svc.run)
@@ -85,10 +87,11 @@ def run(args: argparse.Namespace) -> int:
             ),
         )
 
-    with timing.phase("sync.orphan_state"):
-        _write_orphan_state(vault, result)
-    with timing.phase("sync.cleanup_legacy"):
-        _cleanup_legacy_snapshot_files(vault)
+    if result.ok:
+        with timing.phase("sync.orphan_state"):
+            _write_orphan_state(vault, result)
+        with timing.phase("sync.cleanup_legacy"):
+            _cleanup_legacy_snapshot_files(vault)
 
     if result.warnings and not json_output:
         for w in result.warnings:
@@ -123,6 +126,8 @@ def run(args: argparse.Namespace) -> int:
         return 0 if result.ok else 1
 
     if not result.ok:
+        if result.error:
+            print(f"Error [{result.error.code.value}]: {result.error.message}", file=sys.stderr)
         return 1
 
     return 0

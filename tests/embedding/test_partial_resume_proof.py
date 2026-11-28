@@ -59,14 +59,16 @@ class _EmbHandler(http.server.BaseHTTPRequestHandler):
 
 
 def _make_vault(tmp_path: Path) -> Path:
+    from paperforge.services.vault_engine import ensure_current_vault_manifest
+
     vault = tmp_path / "resume_vault"
     vault.mkdir(parents=True)
-    (vault / "99_System" / "PaperForge" / "exports").mkdir(parents=True)
-    (vault / "99_System" / "PaperForge" / "ocr").mkdir(parents=True)
+    (vault / ".paperforge" / "exports").mkdir(parents=True)
+    (vault / ".paperforge" / "ocr").mkdir(parents=True)
     (vault / "03_Resources" / "Literature").mkdir(parents=True)
     bootstrap_config(vault)
     for key, value in {
-        "system_dir": "99_System",
+        "system_dir": ".paperforge",
         "resources_dir": "03_Resources",
         "literature_dir": "Literature",
         "control_dir": "LiteratureControl",
@@ -74,12 +76,13 @@ def _make_vault(tmp_path: Path) -> Path:
         "skill_dir": ".opencode/skills",
     }.items():
         set_config(vault, key, value)
+    ensure_current_vault_manifest(vault)
 
     base_export = json.loads(EXPORT_FIXTURE.read_text(encoding="utf-8"))
     items = []
     for i in range(1, N + 1):
         key = f"TSTONE{i:03d}"
-        dst = vault / "99_System" / "PaperForge" / "ocr" / key
+        dst = vault / ".paperforge" / "ocr" / key
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(OCR_FIXTURE, dst)
@@ -88,7 +91,7 @@ def _make_vault(tmp_path: Path) -> Path:
         item["itemKey"] = key
         items.append(item)
     base_export["items"] = items
-    (vault / "99_System" / "PaperForge" / "exports" / "骨科.json").write_text(
+    (vault / ".paperforge" / "exports" / "骨科.json").write_text(
         json.dumps(base_export, ensure_ascii=False), encoding="utf-8"
     )
     return vault

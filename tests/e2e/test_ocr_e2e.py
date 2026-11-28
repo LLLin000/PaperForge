@@ -15,7 +15,7 @@ pytestmark = pytest.mark.e2e
 
 def test_ocr_fixtures_present(full_vault: Path) -> None:
     """Verify OCR fixture files exist in the full vault level."""
-    ocr_dir = full_vault / "System" / "PaperForge" / "ocr" / "FIXT0001"
+    ocr_dir = full_vault / ".paperforge" / "ocr" / "FIXT0001"
     assert ocr_dir.exists(), f"OCR directory not found: {ocr_dir}"
 
     # meta.json exists with ocr_status: done

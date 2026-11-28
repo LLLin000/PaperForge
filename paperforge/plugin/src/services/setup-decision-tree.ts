@@ -27,11 +27,13 @@ export type SetupDecisionId =
   | "engine_updating"
   | "engine_quarantined"
   | "legacy_vault_upgrade"
+  | "legacy_vault_deferred"
   | "checking"
   | "engine_not_installed"
   | "engine_version_mismatch"
   | "engine_probe_failed"
   | "zotero_not_configured"
+  | "zotero_scope_required"
   | "library_syncing"
   | "library_sync_needed"
   | "library_sync_error"
@@ -90,6 +92,7 @@ export interface SetupDecisionInput {
   isProbing: boolean;
   zoteroDataDir: string;
   zoteroDetectedPapers: number | null;
+  zoteroScopeRequired?: boolean;
   lastAutoSyncError: string | null;
   paperCount: number | null;
   librarySyncing?: boolean;
@@ -344,6 +347,22 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
     };
   }
 
+  // 6b. Veteran vault upgrade deferred for this session — stay in calm compat read mode,
+  // never falsely advertise "ready" or "sync now" while auto-sync remains paused.
+  if (needsVaultUpgrade) {
+    return {
+      id: "legacy_vault_deferred",
+      badgeCls: "checking",
+      badgeText: t("dt_badge_compat_mode"),
+      title: t("dt_legacy_deferred_title"),
+      body: t("dt_legacy_deferred_body"),
+      primaryAction: {
+        kind: "open_vault_upgrade",
+        label: t("upgrade_banner_open"),
+      },
+    };
+  }
+
   // 7. Engine ready, Zotero not configured yet (trust backend authority over stale settings)
   const hasZoteroDir = Boolean(input.zoteroDataDir.trim());
   const backendReportsZoteroMissing =
@@ -368,6 +387,26 @@ export function resolveSetupDecision(input: SetupDecisionInput): SetupDecision {
       primaryAction: {
         kind: "connect_zotero",
         label: t("dt_btn_connect_zotero"),
+      },
+    };
+  }
+
+  // 7b. Zotero directory connected, but user has not yet chosen which folders to import
+  if (
+    libState !== "ready" &&
+    hasZoteroDir &&
+    !backendReportsZoteroMissing &&
+    input.zoteroScopeRequired === true
+  ) {
+    return {
+      id: "zotero_scope_required",
+      badgeCls: "attention",
+      badgeText: t("dt_badge_step2"),
+      title: t("dt_zotero_scope_title"),
+      body: t("dt_zotero_scope_body"),
+      primaryAction: {
+        kind: "connect_zotero",
+        label: t("dt_btn_choose_folders"),
       },
     };
   }

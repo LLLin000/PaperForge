@@ -5603,6 +5603,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           formatElapsedDuration(activeStartedAt)
         )
       : null;
+    const zoteroScopeRequired =
+      this.plugin.settings.zotero_source_mode !== "bbt" &&
+      Boolean(this._zoteroDetectData?.found) &&
+      Array.isArray(this._zoteroDetectData?.collections) &&
+      this._zoteroDetectData.collections.length > 0 &&
+      evaluateZoteroImportScope({
+        totalPapers: this._zoteroDetectData.total_papers,
+        collections: this._zoteroDetectData.collections,
+        selected: this.plugin.settings.zotero_selected_collections,
+      }).requiresFolderChoice;
+
     const decision = resolveSetupDecision({
       daemonUpdating: Boolean(pfState.isDaemonUpdating?.()),
       runtimeUpdating: runtimeActive,
@@ -5620,6 +5631,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       zoteroDetectedPapers: this._zoteroDetectData?.found
         ? this._zoteroDetectData.total_papers
         : null,
+      zoteroScopeRequired,
       lastAutoSyncError: pfState.getLastAutoSyncError?.()?.message ?? null,
       paperCount: typeof paperCountRaw === "number" ? paperCountRaw : null,
       librarySyncing: syncActive,
@@ -6416,6 +6428,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** #85: Refresh all operational modules. */
   _refreshAllModules(): void {
+    void (
+      this.plugin as unknown as {
+        reconcileDaemonJobs?: () => Promise<void>;
+      }
+    ).reconcileDaemonJobs?.();
     this._refreshAllReadModels();
   }
 

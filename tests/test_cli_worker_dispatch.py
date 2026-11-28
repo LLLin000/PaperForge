@@ -58,7 +58,7 @@ def mock_vault(tmp_path):
     tmp_path.mkdir(parents=True, exist_ok=True)
     canonical_test_config(
         tmp_path,
-        system_dir="99_System",
+        system_dir=".paperforge",
         resources_dir="03_Resources",
         literature_dir="Literature",
         control_dir="LiteratureControl",

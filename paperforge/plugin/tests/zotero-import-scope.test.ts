@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   LARGE_LIBRARY_FOLDER_GUARD_THRESHOLD,
+  collectLegacyDomainNames,
+  computeVeteranZoteroPreselection,
   evaluateZoteroImportScope,
   type ZoteroCollectionCandidate,
 } from "../src/services/zotero-import-scope";
@@ -91,5 +93,61 @@ describe("evaluateZoteroImportScope (Folder-First Import Guardrail)", () => {
     expect(res.requiresFolderChoice).toBe(false);
     expect(res.selectedKeys).toEqual(["COL_A", "COL_B"]);
     expect(res.estimatedPapers).toBe(120);
+  });
+});
+
+describe("Veteran Zotero BBT → SQLite Preselection Helpers", () => {
+  it("collectLegacyDomainNames distinguishes manual BBT exports from sqlite-managed slices and ignores Unfiled", () => {
+    const res = collectLegacyDomainNames({
+      exportFiles: [
+        { stem: "Rotator Cuff", managedBySqlite: false },
+        { stem: "Unfiled", managedBySqlite: true },
+      ],
+      literatureFolders: ["Rotator Cuff", "Cartilage Repair", "ai", ".tmp"],
+    });
+    expect(res.hasManualBbtExports).toBe(true);
+    expect(res.legacyDomainNames).toEqual(["Rotator Cuff", "Cartilage Repair"]);
+  });
+
+  it("preserves explicit wildcard or valid selected keys first", () => {
+    expect(
+      computeVeteranZoteroPreselection({
+        collections: SAMPLE_COLS,
+        existingSelected: ["*"],
+        legacyDomainNames: ["Rotator Cuff"],
+      })
+    ).toEqual({ mode: "preserved", selectedKeys: ["*"], matchedNames: [] });
+
+    expect(
+      computeVeteranZoteroPreselection({
+        collections: SAMPLE_COLS,
+        existingSelected: ["COL_C", "GONE"],
+        legacyDomainNames: ["Rotator Cuff"],
+      })
+    ).toEqual({ mode: "preserved", selectedKeys: ["COL_C"], matchedNames: [] });
+  });
+
+  it("matches legacy BBT domain names case-insensitively and leaves new Zotero folders unchecked", () => {
+    const res = computeVeteranZoteroPreselection({
+      collections: SAMPLE_COLS,
+      existingSelected: [],
+      legacyDomainNames: ["rotator cuff", "Unrelated"],
+    });
+    expect(res.mode).toBe("matched_legacy");
+    expect(res.selectedKeys).toEqual(["COL_A"]);
+    expect(res.matchedNames).toEqual(["Rotator Cuff"]);
+  });
+
+  it("falls back to unselected when no legacy topics match any collection", () => {
+    const res = computeVeteranZoteroPreselection({
+      collections: SAMPLE_COLS,
+      existingSelected: [],
+      legacyDomainNames: ["Nonexistent"],
+    });
+    expect(res).toEqual({
+      mode: "unselected",
+      selectedKeys: [],
+      matchedNames: [],
+    });
   });
 });

@@ -53,7 +53,7 @@ class TestPrepareRollback:
         module = _import_ld_deep()
         prepare_deep_reading = module.prepare_deep_reading
 
-        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "TSTONE001"
+        ocr_dir = vault / ".paperforge" / "ocr" / "TSTONE001"
         figure_map_path = ocr_dir / "figure-map.json"
         chart_type_map_path = ocr_dir / "chart-type-map.json"
         formal_note = (
@@ -87,7 +87,7 @@ class TestPrepareRollback:
         module = _import_ld_deep()
         prepare_deep_reading = module.prepare_deep_reading
 
-        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "TSTONE001"
+        ocr_dir = vault / ".paperforge" / "ocr" / "TSTONE001"
         figure_map_path = ocr_dir / "figure-map.json"
         chart_type_map_path = ocr_dir / "chart-type-map.json"
         formal_note = (
@@ -121,7 +121,7 @@ class TestPrepareRollback:
         module = _import_ld_deep()
         prepare_deep_reading = module.prepare_deep_reading
 
-        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "TSTONE001"
+        ocr_dir = vault / ".paperforge" / "ocr" / "TSTONE001"
         figure_map_path = ocr_dir / "figure-map.json"
         chart_type_map_path = ocr_dir / "chart-type-map.json"
         formal_note = (

@@ -69,12 +69,12 @@ class TestSyncServiceRunPrune:
         vault.mkdir(parents=True, exist_ok=True)
         canonical_test_config(
             vault,
-            system_dir="System",
+            system_dir=".paperforge",
             resources_dir="Resources",
             literature_dir="Resources/Literature",
         )
-        (vault / "System" / "PaperForge" / "exports").mkdir(parents=True)
-        (vault / "System" / "PaperForge" / "indexes").mkdir(parents=True)
+        (vault / ".paperforge" / "exports").mkdir(parents=True)
+        (vault / ".paperforge" / "indexes").mkdir(parents=True)
         (vault / "Resources" / "Literature").mkdir(parents=True)
         return SyncService(vault)
 
@@ -82,9 +82,9 @@ class TestSyncServiceRunPrune:
         svc = self._make_svc(tmp_path)
         svc.paths = {
             "literature": tmp_path / "Resources" / "Literature",
-            "exports": tmp_path / "System" / "PaperForge" / "exports",
-            "index": tmp_path / "System" / "PaperForge" / "indexes",
-            "system_dir": tmp_path / "System",
+            "exports": tmp_path / ".paperforge" / "exports",
+            "index": tmp_path / ".paperforge" / "indexes",
+            "system_dir": tmp_path / ".paperforge",
         }
 
         with patch.object(svc, "prune") as mock_prune:
@@ -109,9 +109,9 @@ class TestSyncServiceRunPrune:
         svc = self._make_svc(tmp_path)
         svc.paths = {
             "literature": tmp_path / "Resources" / "Literature",
-            "exports": tmp_path / "System" / "PaperForge" / "exports",
-            "index": tmp_path / "System" / "PaperForge" / "indexes",
-            "system_dir": tmp_path / "System",
+            "exports": tmp_path / ".paperforge" / "exports",
+            "index": tmp_path / ".paperforge" / "indexes",
+            "system_dir": tmp_path / ".paperforge",
         }
 
         with patch.object(svc, "prune") as mock_prune:

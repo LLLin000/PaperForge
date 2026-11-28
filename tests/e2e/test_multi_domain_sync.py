@@ -31,7 +31,7 @@ def test_multi_domain_sync(e2e_cli_invoker: tuple) -> None:
     assert len(sports_notes) >= 1, f"No formal notes in sports_medicine: {sports_dir}"
 
     # Canonical index has items from both domains
-    index_path = vault / "System" / "PaperForge" / "indexes" / "formal-library.json"
+    index_path = vault / ".paperforge" / "indexes" / "formal-library.json"
     assert index_path.exists(), f"Canonical index not found: {index_path}"
 
     index = json.loads(index_path.read_text(encoding="utf-8"))

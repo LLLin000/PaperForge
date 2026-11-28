@@ -4,6 +4,16 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.13] - 2026-11-28
+
+### Lifecycle Contract Final Closure: Backend Sync Authorization, Atomic Veteran Cutover & Recovery
+
+- **Authoritative Backend Sync & Zotero Scope Gates (`errors.py`, `zotero_sqlite.py`, `sync_service.py`, `commands/sync.py`, `cli.py`, `probes/library.py`, `mcp.rs`)**: Eliminated implicit full-library sync on empty/unset `zotero_selected_collections` (`["*"]` or `--all-collections` is now required; `""`/`[]`/`null` fails closed with `zotero.scope_required`, unknown/expired keys fail closed with `zotero.scope_invalid`), enforced zero-write veteran vault rejection (`vault.upgrade_required` / `vault.state_unknown` / `vault.healing_in_progress` / `operation.conflict`) at `SyncService` and native MCP in-place self-heal boundaries, and coordinated concurrent sync/cutover/heal/rollback via re-entrant cross-process `VaultOperationLock`.
+- **Atomic Veteran Cutover + Pre-Snapshot Zotero Commit + Restart Recovery (`vault_upgrade.py`, `vault_engine.py`, `commands/upgrade.py`, `upgrade-modal.ts`, `paperforge-client.ts`)**: Captured untouched pre-upgrade `paperforge.json` and `data.json` snapshots before writing `--zotero-source-mode` / `--zotero-selected-collections` / `--zotero-data-dir` atomically inside `execute_vault_upgrade()` prior to stamping `.paperforge/vault-manifest.json` (`heal_pending`, `post_upgrade_sync_pending`), prevented crash-before-manifest runs from running `ensure_vault_reconciled`, and preserved all post-cutover user note edits and `annotations.jsonl` across `--rollback`.
+- **Veteran Upgrade UX, BBT→SQLite Folder Picker, Daemon Disconnect & Settings Layout (`main.ts`, `settings.ts`, `setup-decision-tree.ts`, `node-transport.ts`, `zotero-import-scope.ts`, `styles.css`, `i18n.ts`)**: Added `daemon.disconnected` handling and bidirectional `reconcileDaemonJobs()` (eliminating stale sync progress cards after daemon hot-swap), added fail-closed `_autoSync` guards for unmigrated legacy layouts and `heal_pending`, isolated `upgrade.heal` completion events by vault path, added `legacy_vault_deferred` and `zotero_scope_required` decision tree states plus in-modal BBT→SQLite folder preselection, and fixed cramped `.vertical-tab-content.pf-settings-scope` layout width in Obsidian Settings.
+
+---
+
 ## [2.0.12] - 2026-11-28
 
 ### PBAF v2.1 Hardening, Selective FTS5 Integrity, Cross-OS Desktop CI & Release Gates (#438)

@@ -260,6 +260,51 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
     expect(legacy.id).toBe("legacy_vault_upgrade");
     expect(legacy.primaryAction?.kind).toBe("open_vault_upgrade");
 
+    // 2a-deferred. Dismissing the veteran banner enters calm compat mode (NEVER ready or sync_needed!)
+    const legacyDeferred = resolveSetupDecision({
+      ...base,
+      libraryEnv: {
+        ...actionLib,
+        user_state: "action_required",
+        reason: { code: "library.index_stale", text: "stale" },
+      },
+      upgradeBannerDismissed: true,
+      upgradePlan: {
+        vault: "/v",
+        provenance: {
+          state: "veteran_legacy",
+          needs_upgrade: true,
+          confidence: "high",
+          signals: ["legacy_engine_dir:System/PaperForge"],
+        },
+        census: {},
+        manifest: null,
+        rollback_available: false,
+        category_a_auto: [],
+        category_b_reconfig: [],
+        category_c_tamper: [],
+        cleanup_candidates: [],
+        summary: {
+          auto_count: 1,
+          fast_cutover_count: 1,
+          progressive_heal_count: 0,
+          reconfig_critical_count: 0,
+          reconfig_minor_count: 0,
+          tamper_count: 0,
+          cleanup_candidate_count: 0,
+          ocr_atoms: {
+            total: 0,
+            current: 0,
+            rebuild_derived_local: 0,
+            backfill_from_result_json: 0,
+            re_ocr_needed: 0,
+          },
+        },
+      },
+    });
+    expect(legacyDeferred.id).toBe("legacy_vault_deferred");
+    expect(legacyDeferred.primaryAction?.kind).toBe("open_vault_upgrade");
+
     // 2b. Veteran vault with missing/mismatched engine asks to align engine FIRST
     const legacyNoEngine = resolveSetupDecision({
       ...base,
@@ -360,6 +405,20 @@ describe("Deterministic Setup & Readiness Decision Tree", () => {
     });
     expect(zoteroMissingOverride.id).toBe("zotero_not_configured");
     expect(zoteroMissingOverride.primaryAction?.kind).toBe("connect_zotero");
+
+    // 7c. Zotero directory exists, but user has not chosen folders yet -> zotero_scope_required
+    const scopeRequired = resolveSetupDecision({
+      ...base,
+      libraryEnv: {
+        ...actionLib,
+        user_state: "action_required",
+        capability_state: "needs_action",
+        reason: { code: "library.index_missing", text: "index missing" },
+      },
+      zoteroScopeRequired: true,
+    });
+    expect(scopeRequired.id).toBe("zotero_scope_required");
+    expect(scopeRequired.primaryAction?.kind).toBe("connect_zotero");
 
     // 7.5 Library syncing shows active progress card without raw error
     const syncing = resolveSetupDecision({

@@ -46,13 +46,17 @@ def canonical_test_config(vault: Path, **overrides: str) -> None:
 
     The fail-closed config authority rejects legacy/missing configs, so every
     test vault that reaches ``paperforge_paths`` / the seam must be bootstrapped
-    here.
+    here. When ``system_dir=".paperforge"`` is explicitly requested, also stamp
+    ``.paperforge/vault-manifest.json`` so the vault represents a modern v2 setup.
     """
     from paperforge.config import bootstrap_config, set_config
+    from paperforge.services.vault_engine import ensure_current_vault_manifest
 
     bootstrap_config(vault)
     for key, value in overrides.items():
         set_config(vault, key, value)
+    if overrides.get("system_dir") == ".paperforge":
+        ensure_current_vault_manifest(vault)
 
 
 def create_test_vault() -> Path:
@@ -64,7 +68,7 @@ def create_test_vault() -> Path:
 
     # Create directory structure
     system_dir = vault / "99_System"
-    pf_dir = system_dir / "PaperForge"
+    pf_dir = vault / ".paperforge"
     exports_dir = pf_dir / "exports"
     ocr_dir = pf_dir / "ocr"
     resources_dir = vault / "03_Resources"
@@ -79,10 +83,11 @@ def create_test_vault() -> Path:
 
     # Create canonical paperforge.json through the #142 seam (single writer)
     from paperforge.config import bootstrap_config, set_config
+    from paperforge.services.vault_engine import ensure_current_vault_manifest
 
     bootstrap_config(vault)
     for _key, _value in {
-        "system_dir": "99_System",
+        "system_dir": ".paperforge",
         "resources_dir": "03_Resources",
         "literature_dir": "Literature",
         "control_dir": "LiteratureControl",
@@ -90,6 +95,7 @@ def create_test_vault() -> Path:
         "skill_dir": ".opencode/skills",
     }.items():
         set_config(vault, _key, _value)
+    ensure_current_vault_manifest(vault)
 
     # Create .env with PADDLEOCR_API_TOKEN
     env_path = pf_dir / ".env"
@@ -122,7 +128,7 @@ def create_test_vault() -> Path:
         'collection_path: ""\n'
         "has_pdf: true\n"
         'pdf_path: "[[99_System/Zotero/storage/TSTONE001/TSTONE001.pdf]]"\n'
-        'fulltext_md_path: "[[99_System/PaperForge/ocr/TSTONE001/fulltext.md]]"\n'
+        'fulltext_md_path: "[[.paperforge/ocr/TSTONE001/fulltext.md]]"\n'
         "recommend_analyze: true\n"
         "analyze: true\n"
         "do_ocr: true\n"
