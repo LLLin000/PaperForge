@@ -12,8 +12,12 @@ permissions:
 
 jobs:
   chaos-tests:
-    name: Chaos / Destructive Tests
-    runs-on: ubuntu-latest
+    name: Chaos / Destructive Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -27,14 +31,18 @@ jobs:
           pip install -e ".[test]"
           pip install pytest pytest-timeout responses PyYAML
 
+      - name: Run PBAF v2.1 static audit & privacy gate
+        run: |
+          python scripts/backend_audit.py --strict
+          python scripts/check_machine_paths.py
+
       - name: Run chaos tests
         run: |
-          python -m pytest tests/chaos/ -m chaos -v --tb=long --timeout=120 \
-            --junit-xml=chaos-results.xml
+          python -m pytest tests/chaos/ -m chaos -v --tb=long --timeout=120 --junit-xml=chaos-results-${{ matrix.os }}.xml
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: chaos-test-results
-          path: chaos-results.xml
+          name: chaos-test-results-${{ matrix.os }}
+          path: chaos-results-${{ matrix.os }}.xml
