@@ -5,7 +5,7 @@
   "data": {
     "version": "<VERSION>",
     "vault": "<VAULT>",
-    "system_dir": "System",
+    "system_dir": ".paperforge",
     "resources_dir": "Resources",
     "exports": 0,
     "domains": 0,

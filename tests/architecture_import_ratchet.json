@@ -43,8 +43,8 @@
       "45:paperforge.worker._utils"
     ],
     "paperforge.commands.sync": [
-      "177:paperforge.worker._utils",
-      "189:paperforge.worker._utils"
+      "182:paperforge.worker._utils",
+      "194:paperforge.worker._utils"
     ],
     "paperforge.figure_reconciliation": [
       "1580:paperforge.worker.ocr_figures:_collect_same_page_multicolumn_legend_pairs",
@@ -67,8 +67,8 @@
       "743:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
-      "498:paperforge.worker._domain",
-      "599:paperforge.worker._utils"
+      "633:paperforge.worker._domain",
+      "734:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"

@@ -66,7 +66,7 @@ class TestStatusJson:
         assert_json_shape(data, self.REQUIRED_KEYS, self.OPTIONAL_KEYS)
         total = data.get("total_papers", -1)
         assert isinstance(total, int) and total >= 0, f"total_papers should be non-negative int, got {total}"
-        assert data.get("system_dir", "") == "System", f"system_dir should be 'System', got {data.get('system_dir')}"
+        assert data.get("system_dir", "") == ".paperforge", f"system_dir should be '.paperforge', got {data.get('system_dir')}"
         assert data.get("resources_dir", "") == "Resources", f"resources_dir should be 'Resources', got {data.get('resources_dir')}"
         if "ocr" in data:
             ocr = data["ocr"]

@@ -1658,6 +1658,9 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
         modular: true,
       }).outcome;
       await plugin.getClient().configSet("zotero_source_mode", "sqlite");
+      await plugin
+        .getClient()
+        .configSet("zotero_selected_collections", JSON.stringify(["*"]));
       await plugin.getClient().sync();
       await plugin.refreshUpgradePlan?.();
       plugin.settings.language = "en";

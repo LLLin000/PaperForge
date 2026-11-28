@@ -1563,7 +1563,7 @@ const LANG: Record<string, Record<string, string>> = {
     upgrade_banner_title:
       "Legacy PaperForge vault detected — review upgrade & sync scope",
     upgrade_banner_desc:
-      "Auto-sync and folder layout updates stay paused until you confirm. Review lossless cutover, BBT → SQLite migration, and Zotero folders (~3s).",
+      "Auto-sync and folder layout updates stay paused until you confirm. Review lossless cutover, direct Zotero database migration, and import folders (~3s).",
     upgrade_banner_open: "Review & Upgrade",
     upgrade_banner_dismiss: "Dismiss for this session",
     upgrade_zotero_heading: "Zotero Import Source & Sync Scope",
@@ -3387,7 +3387,7 @@ const LANG: Record<string, Record<string, string>> = {
       "PaperForge：文献库已完成无损切流，后台正在静默整理细节。",
     upgrade_banner_title: "检测到旧版文献库，请确认升级与同步范围",
     upgrade_banner_desc:
-      "在你确认前，不会自动重组目录或同步 Zotero。可一键核对无损切流、BBT 迁移 SQLite 与同步文件夹范围（约 3 秒完成）。",
+      "在你确认前，不会自动重组目录或同步 Zotero。可一键核对无损切流、Zotero 数据库直连迁移与同步文件夹范围（约 3 秒完成）。",
     upgrade_banner_open: "查看并升级",
     upgrade_banner_dismiss: "本次会话暂不提示",
     upgrade_zotero_heading: "Zotero 导入方式与同步范围",
