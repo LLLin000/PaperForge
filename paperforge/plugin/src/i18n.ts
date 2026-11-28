@@ -1554,6 +1554,21 @@ const LANG: Record<string, Record<string, string>> = {
     upgrade_btn_applying: "Applying atomic cutover…",
     upgrade_status_applying:
       "Backing up config and consolidating internal folders into .paperforge/…",
+    upgrade_progress_phase1:
+      "1/3 Backing up config and moving internal folders into .paperforge/…",
+    upgrade_progress_phase2:
+      "2/3 Saving Zotero import source and selected folders…",
+    upgrade_progress_phase3:
+      "3/3 Handing background workspace organization to daemon…",
+    upgrade_progress_wait_hint:
+      "Usually finishes in a few seconds; this window will close automatically once ready.",
+    upgrade_maint_open_upgrade_btn: "Review & Upgrade Vault",
+    upgrade_maint_pending_upgrade_desc:
+      "Complete the unified lossless vault upgrade before cleaning legacy residual files or restoring snapshots.",
+    library_veteran_upgrade_title:
+      "Upgrade legacy vault before changing Zotero settings",
+    library_veteran_upgrade_desc:
+      "To keep your existing notes, OCR outputs, and PDF annotations intact, confirm directory cutover and Zotero migration in the unified Upgrade modal.",
     upgrade_err_incomplete: "Upgrade cutover did not complete",
     upgrade_btn_retry: "Retry Upgrade",
     upgrade_status_done:
@@ -3380,6 +3395,17 @@ const LANG: Record<string, Record<string, string>> = {
     upgrade_btn_apply: "立即无损升级",
     upgrade_btn_applying: "正在执行原子切流…",
     upgrade_status_applying: "正在备份配置并归拢底层目录至 .paperforge/…",
+    upgrade_progress_phase1: "1/3 正在备份旧配置并原子切流目录至 .paperforge/…",
+    upgrade_progress_phase2: "2/3 正在写入 Zotero 导入方式与同步分组范围…",
+    upgrade_progress_phase3: "3/3 正在移交后台守护进程静默整理工作区…",
+    upgrade_progress_wait_hint:
+      "通常仅需数秒；完成后将自动关闭弹窗，后台整理进度可在设置首页查看。",
+    upgrade_maint_open_upgrade_btn: "查看并升级文献库",
+    upgrade_maint_pending_upgrade_desc:
+      "检测到当前为未升级的旧版文献库，请先完成统一无损升级后再执行历史残余清理或快照还原。",
+    library_veteran_upgrade_title: "请先完成旧版文献库无损升级，再修改同步配置",
+    library_veteran_upgrade_desc:
+      "为保护已有笔记、OCR 与 PDF 批注不被重复建库或误全库导入，请点击下方按钮在统一的「无损升级」弹窗中核对目录切流与 Zotero 分组。",
     upgrade_err_incomplete: "升级切流未完成",
     upgrade_btn_retry: "重试升级",
     upgrade_status_done: "核心目录已完成切流，剩余文献整理已在后台静默接管。",

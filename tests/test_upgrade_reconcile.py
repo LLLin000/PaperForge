@@ -371,11 +371,17 @@ def test_cli_doctor_reconcile_and_upgrade_integration(tmp_path: Path, capsys) ->
     assert payload_fix["data"]["reconcile"]["reconciled"] is True
     assert payload_fix["data"]["reconcile"]["reason"] == "forced"
 
-    # execute_vault_upgrade stamps reconcile_epoch automatically
+    # execute_vault_upgrade (full pass or fast_cutover + progressive heal) stamps reconcile_epoch
+    from paperforge.services.vault_upgrade import heal_vault_progressive
+
     upg_vault = tmp_path / "upg_vault"
     _seed_legacy_broken_vault(upg_vault, with_db=True, with_manifest=False)
     upg_res = execute_vault_upgrade(upg_vault, dry_run=False, fast_cutover=True)
     assert upg_res["applied"] is True
+    manifest_pre = read_vault_manifest(upg_vault)
+    assert manifest_pre is not None and manifest_pre.get("heal_pending") is True
+    heal_res = heal_vault_progressive(upg_vault)
+    assert heal_res["reconcile_epoch"]["reconcile_epoch"] == CURRENT_RECONCILE_EPOCH
     manifest = read_vault_manifest(upg_vault)
     assert manifest is not None
     assert manifest.get("reconcile_epoch") == CURRENT_RECONCILE_EPOCH

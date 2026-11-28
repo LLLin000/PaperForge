@@ -717,6 +717,29 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return this._client!;
   }
 
+  private _isVeteranUpgradePending(): boolean {
+    const getter = (
+      this.plugin as unknown as {
+        getUpgradePlanCache?: () => {
+          provenance?: { needs_upgrade?: boolean };
+        } | null;
+      }
+    )?.getUpgradePlanCache;
+    return Boolean(
+      typeof getter === "function" &&
+      getter.call(this.plugin)?.provenance?.needs_upgrade
+    );
+  }
+
+  private _openVeteranUpgradeModal(): boolean {
+    const opener = (
+      this.plugin as unknown as { openUpgradeModal?: () => Promise<void> }
+    )?.openUpgradeModal;
+    if (typeof opener !== "function") return false;
+    void opener.call(this.plugin);
+    return true;
+  }
+
   /** Start stage 1 from a plugin-owned recovery entry point. */
   openSetupJourney(): void {
     this._startSetupJourney(1);
@@ -726,6 +749,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     stage: 1 | 2 | 3 | 4 = 1,
     reinstall = false
   ): void {
+    if (stage === 2 && this._isVeteranUpgradePending()) {
+      if (this._openVeteranUpgradeModal()) {
+        return;
+      }
+    }
     this._setupStage = stage;
     this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
@@ -2012,6 +2040,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               await this.plugin.refreshUpgradePlan?.();
               this.display();
             })();
+          },
+          () => {
+            this._openVeteranUpgradeModal();
           }
         );
       }
@@ -2310,6 +2341,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const env =
       this._capabilityState?.library ?? createUnknownEnvelope("library");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
+    if (this._isVeteranUpgradePending()) {
+      const gate = body.createDiv({
+        cls: "pf-library-upgrade-gate",
+        attr: { "data-pf-testid": "library-veteran-upgrade-gate" },
+      });
+      gate.createEl("div", {
+        cls: "pf-library-upgrade-gate-title",
+        text: t("library_veteran_upgrade_title"),
+      });
+      gate.createEl("div", {
+        cls: "pf-library-upgrade-gate-desc",
+        text: t("library_veteran_upgrade_desc"),
+      });
+      renderActionButton(gate, {
+        label: t("upgrade_maint_open_upgrade_btn"),
+        variant: "primary",
+        onClick: () => {
+          this._openVeteranUpgradeModal();
+        },
+      });
+    }
     body.createEl("h3", { text: t("md_library_connection") });
     if (env.user_state === "ready") {
       body.createEl("p", {
@@ -2380,7 +2432,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       configuredLabel: t("config_configured"),
       notConfiguredLabel: t("config_not_configured"),
       onChangeLabel: t("config_change"),
-      onChange: () => this._startSetupJourney(2),
+      onChange: () => {
+        if (
+          this._isVeteranUpgradePending() &&
+          this._openVeteranUpgradeModal()
+        ) {
+          return;
+        }
+        this._startSetupJourney(2);
+      },
     });
   }
 
@@ -6524,58 +6584,83 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     }
     // Older runtimes accept expected-version on the installation probe but
-    // ignore it in probe all. Keep Python's versioned verdict authoritative.
+    // ignore it in probe all. Keep `probe("installation")` strictly authoritative
+    // and decoupled from slow full-vault `probeAll()`.
     const minEngine = this._minEngineVersion();
     const engineOpt = minEngine ? { minEngineVersion: minEngine } : {};
-    void Promise.all([
-      client.probeAll({
+
+    const applyModuleEnvelope = (
+      mod: CapabilityModule,
+      env: ProbeEnvelope
+    ): boolean => {
+      if (!isValidEnvelope(env, mod)) return false;
+      if (silent) {
+        this._capabilityState = this._capabilityState ?? {};
+        const prevMod = this._capabilityState[mod];
+        if (
+          prevMod?.user_state === "ready" &&
+          env.user_state === "detection_failed"
+        ) {
+          return false;
+        }
+        this._capabilityState[mod] = env;
+        return true;
+      }
+      this._updateCapabilityEnvelope(mod, env);
+      return true;
+    };
+
+    void client
+      .probe("installation", {
         expectedVersion: this.plugin.manifest?.version,
         ...engineOpt,
-      }),
-      client
-        .probe("installation", {
-          expectedVersion: this.plugin.manifest?.version,
-          ...engineOpt,
-        })
-        .catch(() => createInvalidEnvelope("installation")),
-    ])
-      .then(([data, installation]) => {
+      })
+      .then((installation) => {
+        this._probing.delete("installation");
+        const valid = isValidEnvelope(installation, "installation");
+        const env = valid
+          ? installation
+          : createInvalidEnvelope("installation");
+        const beforeFp = silent ? fingerprintState(this._capabilityState) : "";
+        applyModuleEnvelope("installation", env);
+        if (silent && fingerprintState(this._capabilityState) !== beforeFp) {
+          this._persistCapabilityState();
+          if (!this._displayInProgress) {
+            this.display();
+          }
+        }
+      })
+      .catch(() => {
+        this._probing.delete("installation");
+        if (!silent) {
+          this._updateCapabilityEnvelope(
+            "installation",
+            createInvalidEnvelope("installation")
+          );
+        }
+      });
+
+    void client
+      .probeAll({
+        expectedVersion: this.plugin.manifest?.version,
+        ...engineOpt,
+      })
+      .then((data) => {
         this._probing.clear();
         this._silentRevalidating = false;
-        const modules = {
-          ...data.modules,
-          installation: isValidEnvelope(installation, "installation")
-            ? installation
-            : createInvalidEnvelope("installation"),
-        };
-        if (silent) {
-          this._capabilityState = this._capabilityState ?? {};
-          for (const [mod, env] of Object.entries(modules)) {
-            if (!isValidEnvelope(env, mod as CapabilityModule)) continue;
-            const prevMod = this._capabilityState[mod];
-            // Never let a transient silent probe error overwrite a healthy "ready" module in Settings
-            if (
-              prevMod?.user_state === "ready" &&
-              (env as ProbeEnvelope).user_state === "detection_failed"
-            ) {
-              continue;
-            }
-            this._capabilityState[mod] = env as ProbeEnvelope;
+        const modules = data.modules ?? {};
+        for (const [mod, env] of Object.entries(modules)) {
+          if (mod === "installation") {
+            continue;
           }
+          applyModuleEnvelope(mod as CapabilityModule, env as ProbeEnvelope);
+        }
+        if (silent) {
           this._persistCapabilityState();
           const changed =
             fingerprintState(this._capabilityState) !== prevFingerprint;
           if (changed && !this._displayInProgress) {
             this.display();
-          }
-        } else {
-          for (const [mod, env] of Object.entries(modules)) {
-            if (isValidEnvelope(env, mod as CapabilityModule)) {
-              this._updateCapabilityEnvelope(
-                mod as CapabilityModule,
-                env as ProbeEnvelope
-              );
-            }
           }
         }
         // #78: the library sync-failure exit code is forwarded into the
@@ -6602,15 +6687,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
       })
       .catch(() => {
-        this._probing.clear();
-        this._silentRevalidating = false;
-        if (!silent) {
-          this._updateCapabilityEnvelope(
-            "installation",
-            createInvalidEnvelope("installation")
-          );
-          this.display();
+        for (const mod of CAPABILITY_MODULES) {
+          if (mod !== "installation") {
+            this._probing.delete(mod);
+          }
         }
+        this._silentRevalidating = false;
       });
   }
 

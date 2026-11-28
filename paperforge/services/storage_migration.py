@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import gc
 import hashlib
 import json
 import logging
@@ -231,6 +232,41 @@ def rewrite_visual_embeds_for_key(
     return updated, replacements
 
 
+def _files_same_content(src: Path, dst: Path, *, chunk_bytes: int = 1024 * 1024) -> bool:
+    """Compare two files by size + chunked SHA-256 without loading GB files into RAM."""
+    try:
+        if src.stat().st_size != dst.stat().st_size:
+            return False
+        ha = hashlib.sha256()
+        hb = hashlib.sha256()
+        with src.open("rb") as fa, dst.open("rb") as fb:
+            while True:
+                ba = fa.read(chunk_bytes)
+                bb = fb.read(chunk_bytes)
+                if not ba and not bb:
+                    break
+                if len(ba) != len(bb):
+                    return False
+                ha.update(ba)
+                hb.update(bb)
+        return ha.digest() == hb.digest()
+    except OSError:
+        return False
+
+
+def _move_with_windows_retry(src: Path, dst: Path, *, retries: int = 8, delay_sec: float = 0.25) -> None:
+    """Move a file or directory, retrying transient Windows WinError 32 handle locks."""
+    for attempt in range(max(1, retries)):
+        try:
+            shutil.move(str(src), str(dst))
+            return
+        except PermissionError:
+            if attempt + 1 >= max(1, retries):
+                raise
+            gc.collect()
+            time.sleep(delay_sec)
+
+
 def _move_tree_entries(
     src_dir: Path,
     dst_dir: Path,
@@ -293,7 +329,7 @@ def _move_tree_entries(
         target = dst_dir / child.name
         if not target.exists():
             if not dry_run:
-                shutil.move(str(child), str(target))
+                _move_with_windows_retry(child, target)
                 if moved_pairs is not None:
                     moved_pairs.append((child, target))
                 if on_progress is not None:
@@ -334,8 +370,8 @@ def _move_tree_entries(
                         loser_dir = conflict_backup_dir / "rich_wins_loser"
                         loser_dir.mkdir(parents=True, exist_ok=True)
                         archived_loser = _unique_dest_path(loser_dir, f"{target.parent.name}__{target.name}")
-                        shutil.move(str(target), str(archived_loser))
-                        shutil.move(str(child), str(target))
+                        _move_with_windows_retry(target, archived_loser)
+                        _move_with_windows_retry(child, target)
                         if moved_pairs is not None:
                             moved_pairs.append((target, archived_loser))
                             moved_pairs.append((child, target))
@@ -351,8 +387,8 @@ def _move_tree_entries(
                         loser_dir = conflict_backup_dir / "rich_wins_loser"
                         loser_dir.mkdir(parents=True, exist_ok=True)
                         archived_loser = _unique_dest_path(loser_dir, f"{target.parent.name}__{target.name}")
-                        shutil.move(str(target), str(archived_loser))
-                        shutil.move(str(child), str(target))
+                        _move_with_windows_retry(target, archived_loser)
+                        _move_with_windows_retry(child, target)
                         if moved_pairs is not None:
                             moved_pairs.append((target, archived_loser))
                             moved_pairs.append((child, target))
@@ -361,18 +397,13 @@ def _move_tree_entries(
                     counts["conflicts_quarantined"] += 1
                     continue
 
-            same_content = False
-            with contextlib.suppress(OSError):
-                same_content = (
-                    hashlib.sha256(child.read_bytes()).hexdigest()
-                    == hashlib.sha256(target.read_bytes()).hexdigest()
-                )
+            same_content = _files_same_content(child, target)
             sub_dir = "duplicates" if same_content else "conflicts"
             if not dry_run:
                 dest_dir = conflict_backup_dir / sub_dir
                 dest_dir.mkdir(parents=True, exist_ok=True)
                 dest = _unique_dest_path(dest_dir, f"{child.parent.name}__{child.name}")
-                shutil.move(str(child), str(dest))
+                _move_with_windows_retry(child, dest)
                 if moved_pairs is not None:
                     moved_pairs.append((child, dest))
                 if on_progress is not None:

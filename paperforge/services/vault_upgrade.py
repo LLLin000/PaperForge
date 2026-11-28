@@ -1399,7 +1399,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
         },
         "category_a_auto": auto_items,
         "category_b_reconfig": reconfig_items,
-        "category_c_tamper": tamper_items,
+        "category_c_tamper": tamper_items[:25] if (fast_summary and len(tamper_items) > 25) else tamper_items,
         "cleanup_candidates": dedup_cleanup,
     }
 
@@ -2092,6 +2092,69 @@ def _heal_vault_progressive_locked(
     }
 
 
+def _quarantine_residuals_only(
+    vault_root: Path,
+    *,
+    plan: dict[str, Any],
+    quarantine_residuals: bool,
+    quarantine_ids: list[str] | None,
+) -> dict[str, Any]:
+    """Move only selected residual cleanup candidates into ``.paperforge/trash/`` without running storage cutover."""
+    from paperforge.config import ConfigError, load_config
+    from paperforge.services.vault_engine import quarantine_move
+
+    selected_ids: set[str] | None = None
+    if quarantine_ids is not None:
+        selected_ids = set(quarantine_ids)
+    elif quarantine_residuals:
+        selected_ids = {str(c["id"]) for c in plan.get("cleanup_candidates", [])}
+
+    cfg_sys = "System"
+    try:
+        cfg_sys = str(load_config(vault_root).values["system_dir"].value or "System")
+    except ConfigError as exc:
+        logger.debug("quarantine_only using default system_dir: %s", exc)
+    legacy_pf = _detect_legacy_engine_root(vault_root, cfg_sys)
+    legacy_pf_abs = Path(os.path.abspath(str(legacy_pf))) if legacy_pf is not None else None
+    dot_pf_root = vault_root / ".paperforge"
+
+    quarantined_count = 0
+    errors: list[dict[str, Any]] = []
+    if selected_ids:
+        for cand in plan.get("cleanup_candidates", []):
+            if cand["id"] not in selected_ids:
+                continue
+            target_p = Path(cand["path"])
+            if not target_p.exists() and legacy_pf_abs is not None:
+                cand_abs = Path(os.path.abspath(str(target_p)))
+                if cand_abs.is_relative_to(legacy_pf_abs):
+                    remapped = dot_pf_root / cand_abs.relative_to(legacy_pf_abs)
+                    if remapped.exists():
+                        target_p = remapped
+            if not target_p.exists():
+                continue
+            try:
+                rec = quarantine_move(
+                    target_p,
+                    vault=vault_root,
+                    allowed_root=vault_root,
+                    operation=f"upgrade_quarantine:{cand['id']}",
+                )
+                if rec is not None:
+                    quarantined_count += 1
+            except Exception as exc:  # noqa: BLE001
+                errors.append({"step": f"quarantine:{cand['id']}", "error": str(exc)})
+
+    return {
+        "dry_run": False,
+        "applied": True,
+        "status": "partial_success" if errors else "completed",
+        "mode": "quarantine_only",
+        "executed_steps": [{"step": "quarantine_residuals", "quarantined": quarantined_count}],
+        "errors": errors,
+    }
+
+
 def execute_vault_upgrade(
     vault: Path,
     *,
@@ -2100,6 +2163,7 @@ def execute_vault_upgrade(
     backfill_ocr: bool = False,
     quarantine_residuals: bool = False,
     quarantine_ids: list[str] | None = None,
+    quarantine_only: bool = False,
     rebuild_db: bool = True,
     zotero_source_mode: str | None = None,
     zotero_selected_collections: str | None = None,
@@ -2132,6 +2196,15 @@ def execute_vault_upgrade(
             "errors": [],
             "fsm": fsm.to_dict(),
         }
+
+    if quarantine_only:
+        with VaultOperationLock(vault_root, operation="upgrade.quarantine", timeout=0.0, create_dir=False):
+            return _quarantine_residuals_only(
+                vault_root,
+                plan=plan,
+                quarantine_residuals=quarantine_residuals,
+                quarantine_ids=quarantine_ids,
+            )
 
     with VaultOperationLock(vault_root, operation="upgrade.cutover", timeout=0.0, create_dir=True):
         return _execute_vault_upgrade_locked(
@@ -2556,18 +2629,9 @@ def _execute_vault_upgrade_locked(
         except Exception as exc:  # noqa: BLE001
             errors.append({"step": "write_vault_manifest", "error": str(exc)})
 
-    # 9. Stamp reconcile_epoch once (in fast_cutover here; in full mode inside progressive_heal on final workspaces)
+    # 9. Stamp reconcile_epoch during full/background heal (deferred from fast_cutover for <3s UI cutover)
     heal_scan_box: list[Any] = []
-    if fast_cutover:
-        if manifest_written and not cutover_failed and not zotero_commit_failed:
-            try:
-                from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
-
-                rec_res = ensure_vault_reconciled(vault_root, force=True)
-                executed_steps.append({"step": "upgrade_reconcile", "result": rec_res})
-            except Exception as exc:  # noqa: BLE001
-                errors.append({"step": "upgrade_reconcile", "error": str(exc)})
-    else:
+    if not fast_cutover:
         # 4. Progressive healing (immediate in full mode; deferred to background daemon in fast_cutover mode)
         fsm.transition(UpgradePhase.PER_WORKSPACE_PROGRESSIVE_HEAL, gate="G3_progressive_heal")
         step_name = "progressive_heal" if rebuild_db else "workspace_normalize"

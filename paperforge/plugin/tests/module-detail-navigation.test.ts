@@ -2187,4 +2187,50 @@ describe("settings robustness fixes (Commit 1C)", () => {
     expect(paths.systemDir).toBe("/vault/.paperforge");
     expect(paths.ocrDir).toBe("/vault/.paperforge/ocr");
   });
+
+  it("decouples installation probe from slow/failing probeAll and redirects veteran Library/Stage-2 actions to openUpgradeModal", async () => {
+    const tab = makeTab();
+    const openUpgradeModal = vi.fn().mockResolvedValue(undefined);
+    (tab as any).plugin.getUpgradePlanCache = () => ({
+      provenance: { state: "veteran_legacy", needs_upgrade: true },
+    });
+    (tab as any).plugin.openUpgradeModal = openUpgradeModal;
+
+    // 1. Stage-2 setup & Library detail CTA must redirect to Upgrade Modal when needs_upgrade=true
+    (tab as any)._startSetupJourney(2);
+    expect(openUpgradeModal).toHaveBeenCalledTimes(1);
+
+    const libEl = dom.window.document.createElement("div");
+    (tab as any)._renderLibraryDetail(libEl);
+    expect(
+      libEl.querySelector('[data-pf-testid="library-veteran-upgrade-gate"]')
+    ).not.toBeNull();
+    const changeBtn = libEl.querySelector(
+      ".pf-module-facts + button, .pf-config-row button, .pf-library-upgrade-gate button"
+    ) as HTMLButtonElement | null;
+    changeBtn?.click();
+    expect(openUpgradeModal).toHaveBeenCalledTimes(2);
+
+    // 2. Decoupled _refreshAllModules keeps installation ready even if probeAll rejects
+    const client = (tab as any).getClient();
+    client.probe = vi.fn().mockResolvedValue({
+      ...createUnknownEnvelope("installation"),
+      capability_state: "ready",
+      severity: "ok",
+      user_state: "ready",
+      reason: { code: "installation.ready", text: "ok" },
+      action: { primary: null },
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 3600,
+    });
+    client.probeAll = vi
+      .fn()
+      .mockRejectedValue(new Error("probeAll timed out"));
+
+    (tab as any)._refreshAllModules();
+    await new Promise((r) => setTimeout(r, 20));
+    expect((tab as any)._capabilityState.installation.user_state).toBe("ready");
+    expect((tab as any)._probing.has("installation")).toBe(false);
+    expect((tab as any)._probing.has("library")).toBe(false);
+  });
 });

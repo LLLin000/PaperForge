@@ -928,6 +928,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_upgrade.add_argument("--backfill-ocr", action="store_true", help="Locally rebuild derived OCR layers from intact result.json")
     p_upgrade.add_argument("--quarantine-residuals", action="store_true", help="Move all confirmed leftover candidates into .paperforge/trash/")
     p_upgrade.add_argument("--quarantine-ids", metavar="IDS", help="Comma-separated cleanup candidate IDs to quarantine")
+    p_upgrade.add_argument("--quarantine-only", action="store_true", help="Quarantine selected residual items only without running storage cutover")
     p_upgrade.add_argument("--no-rebuild-db", action="store_true", help="Skip SQLite workspace_registry/ocr_catalog sync")
     p_upgrade.add_argument(
         "--zotero-source-mode",
