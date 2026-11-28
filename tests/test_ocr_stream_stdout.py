@@ -19,7 +19,9 @@ def _mark_pending(vault: Path, key: str) -> None:
     """The synthetic vault's paper ships settled; mark it pending so the run
     picks it up.  Its PDF is absent and the keyring is hermetic, so the run
     settles through a human diagnostic without any network call."""
-    meta_path = vault / "99_System" / "PaperForge" / "ocr" / key / "meta.json"
+    from paperforge.config import paperforge_paths
+
+    meta_path = paperforge_paths(vault)["ocr"] / key / "meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     meta["ocr_status"] = "pending"
     meta["ocr_job_id"] = ""

@@ -21,7 +21,7 @@ from paperforge.core.result import PFResult
 def test_sync_attaches_phase_timing_to_json_data(tmp_path: Path, monkeypatch) -> None:
     from paperforge.commands import sync as sync_cmd
 
-    canonical_test_config(tmp_path)
+    canonical_test_config(tmp_path, system_dir=".paperforge")
 
     class FakeService:
         def __init__(self, vault: Path) -> None:
@@ -72,7 +72,7 @@ def test_sync_json_returns_pfresult_when_phase2_export_reload_fails(
     from paperforge.config import paperforge_paths
     from paperforge.core.errors import ErrorCode
 
-    canonical_test_config(tmp_path)
+    canonical_test_config(tmp_path, system_dir=".paperforge")
     export_path = paperforge_paths(tmp_path)["exports"] / "test.json"
     export_path.parent.mkdir(parents=True, exist_ok=True)
     export_path.write_text(

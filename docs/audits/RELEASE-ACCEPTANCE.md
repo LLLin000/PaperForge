@@ -1,7 +1,7 @@
 # PaperForge 2.0 Release Acceptance Gate (RAGate) & Audit Ledger
 
 > **Target Candidate**: Release `2.0.13` (`release/2.0.13-lifecycle-contract` -> `master`) — see the live GitHub Checks attached to the PR HEAD commit and the release tag run at publish time.
-> **Current Verdict**: **CONDITIONAL GO (Pre-release `2.0.13`)** — Automated Python, Rust daemon, Obsidian Plugin, PBAF v2.1 `--strict`, and Real-Clone Veteran Rehearsal Gate (`D:\L\OB\Literature-hub` isolated clone, 1,358 papers / 971 OCR dirs) all pass cleanly; Multi-OS CI & Draft-first Release Gate run on PR/tag while live paid OCR/LLM key smoke & subjective desktop UI walk-through remain for Owner pre-Stable sign-off.
+> **Current Verdict**: **CONDITIONAL GO (Pre-release `2.0.13`)** — Automated Python, Rust daemon, Obsidian Plugin, PBAF v2.1 `--strict`, and Real-Clone Veteran Rehearsal Gate (isolated clone of real 1,358-paper / 971-OCR veteran vault) all pass cleanly; Multi-OS CI & Draft-first Release Gate run on PR/tag while live paid OCR/LLM key smoke & subjective desktop UI walk-through remain for Owner pre-Stable sign-off.
 
 ---
 
@@ -10,7 +10,7 @@
 | Tier | Status | Notes |
 | --- | --- | --- |
 | **Engineering Ready** | **PASS** | Plugin (`57/58` files, `777/778` tests, 1 skipped, `npm run build` + `typecheck`), Rust daemon (`22/22`), PBAF v2.1 `--strict` (`14/14` gates, `0 FAIL, 0 WARN`), Python sync/upgrade/auth/probe/e2e/chaos/journey/audit/harness (`270` + `25` + `158` passed, `0 FAIL`), and Real-Clone Veteran Rehearsal Gate (1,358-paper veteran vault clone: pre-upgrade `vault.upgrade_required` zero-write block -> atomic cutover + Zotero commit -> `vault.healing_in_progress` lock -> progressive heal -> controlled first sync -> rollback preserving post-cutover note edits + `annotations.jsonl`). |
-| **Product Ready** | **CONDITIONAL PASS** | Veteran cutover, BBT→SQLite folder scope guardrails, daemon hot-swap reconnect cleanup, Settings container width fix (`styles.css`), and multi-vault isolation verified in Vitest + real CLI rehearsal. Subjective real Obsidian desktop visual UX walk-through and live paid OCR/LLM keys await Owner `2.0.13` Pre-release sign-off on clean test vault `D:\L\OB\Literature-hub-test-2.0.13`. |
+| **Product Ready** | **CONDITIONAL PASS** | Veteran cutover, BBT→SQLite folder scope guardrails, daemon hot-swap reconnect cleanup, Settings container width fix (`styles.css`), and multi-vault isolation verified in Vitest + real CLI rehearsal. Subjective real Obsidian desktop visual UX walk-through and live paid OCR/LLM keys await Owner `2.0.13` Pre-release sign-off on clean isolated 2.0.13 test vault. |
 | **Distribution Ready** | **PASS (Pending PR Merge & Tag `2.0.13`)** | Chaos 4-cell gate, Cross-OS Desktop gate (`ci-cross-os-desktop.yml`), and Draft-first unified SHA-256 verification (`publish.yml`) govern `2.0.13` Pre-release publication. |
 
 ---
@@ -41,7 +41,7 @@
 | **G5** | Obsidian Plugin Unit, Protocol Conformance, Typecheck, Build & PDF Runtime Budgets (`PF-R05`) | `npm run build && npm test && npm run typecheck` (`57/58` files, `777/778` local), `ci.yml` (`L3`), `publish.yml` (`Gate 2`) | **AUTOMATED PASS** |
 | **G6** | Real Obsidian App Integration (`H1` E2E, `H2` Settings/Migration, `P` CLI Acceptance + POSIX Stop) | `ci.yml` (`H1`/`H2`/`P` Windows) + `ci-cross-os-desktop.yml` (`H1`/`H2`/POSIX `P` macOS & Linux) | **CI GATE ON PR / TAG** |
 | **G7** | Unified Draft-First Atomic Release Packaging & Remote SHA-256 Byte Verification (`PF-R03`) | `.github/workflows/publish.yml` (`Gate 4`) | **GOVERNED AT `2.0.13` PUBLISH** |
-| **G8** | Manual Large-Library Ergonomic & Visual Walk-Through + Small-Scale Paid OCR/LLM End-to-End Check | Real-Clone Veteran Rehearsal passed (`1,358` papers / `971` OCR dirs); Owner Obsidian Settings/UX sign-off on clean `D:\L\OB\Literature-hub-test-2.0.13` | **REHEARSAL PASS / MANUAL UI PENDING OWNER** |
+| **G8** | Manual Large-Library Ergonomic & Visual Walk-Through + Small-Scale Paid OCR/LLM End-to-End Check | Real-Clone Veteran Rehearsal passed (`1,358` papers / `971` OCR dirs); Owner Obsidian Settings/UX sign-off on clean isolated 2.0.13 test vault | **REHEARSAL PASS / MANUAL UI PENDING OWNER** |
 | **G9** | Clean Version Bump (`2.0.13`) & Pre-release Cut | Branch `release/2.0.13-lifecycle-contract` PR -> `master` merge -> `2.0.13` Pre-release | **IN PROGRESS** |
 
 ---
