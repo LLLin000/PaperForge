@@ -16,6 +16,15 @@ from paperforge.config import (
     paperforge_paths,
     validate_config,
 )
+from paperforge.core.fs_safe import (
+    DEFAULT_SKIP_DIRS,
+    LITERATURE_SKIP_DIRS,
+    adaptive_io_workers,
+    chunked_io_map,
+    safe_is_dir,
+    safe_is_file,
+    safe_rglob,
+)
 from paperforge.core.result import PFResult
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
@@ -56,6 +65,13 @@ def _detect_zotero_data_dir() -> str | None:
     return None
 
 
+def _zotero_link_remediation(zotero_link: Path, target: str) -> str:
+    """Return an OS-appropriate symlink/junction remediation command."""
+    if os.name == "nt":
+        return f'mklink /J "{zotero_link}" "{target}"'
+    return f'ln -s "{target}" "{zotero_link}"'
+
+
 def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
     """Detect if Zotero data directory is inside vault, configured for sqlite direct mode, or linked via junction."""
     system_dir = vault / cfg["system_dir"]
@@ -76,7 +92,7 @@ def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
                         "Path Resolution",
                         "warn",
                         f"Zotero junction target missing: {target}",
-                        f'Recreate junction: mklink /J "{zotero_link}" "<Zotero数据目录>"',
+                        f"Recreate link: {_zotero_link_remediation(zotero_link, '<Zotero数据目录>')}",
                     )
             except Exception:
                 add_check(
@@ -130,16 +146,36 @@ def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
             add_check(
                 "Path Resolution",
                 "warn",
-                "Zotero outside vault -- junction recommended",
-                f'Run as Administrator: mklink /J "{zotero_link}" "{zotero_data_dir}"',
+                "Zotero outside vault -- link recommended",
+                f"Run: {_zotero_link_remediation(zotero_link, zotero_data_dir)}",
             )
         else:
             add_check(
                 "Path Resolution",
                 "fail",
                 "Zotero directory not found",
-                f'Run as Administrator: mklink /J "{zotero_link}" "<Zotero数据目录>"',
+                f"Run: {_zotero_link_remediation(zotero_link, '<Zotero数据目录>')}",
             )
+
+
+_LITERATURE_SKIP_DIRS = DEFAULT_SKIP_DIRS | frozenset({"assets", "ai", "render", "figures", "tables"})
+_NON_FORMAL_MD = frozenset({"fulltext.md", "deep-reading.md", "discussion.md"})
+_NOTE_HEAD_BYTES = 8192
+
+
+def _read_note_head(path: Path, max_bytes: int = _NOTE_HEAD_BYTES) -> str:
+    """Read only the leading bytes covering YAML frontmatter (never entire huge bodies)."""
+    with open(path, "rb") as fh:
+        return fh.read(max_bytes).decode("utf-8", errors="replace")
+
+
+def _scan_literature_notes(lit_dir: Path | None) -> tuple[list[Path], list[Path]]:
+    """Single-pass scan of literature markdown files, skipping asset/render dirs."""
+    if lit_dir is None or not safe_is_dir(lit_dir):
+        return [], []
+    all_md = safe_rglob(lit_dir, suffix=".md", skip_dirs=_LITERATURE_SKIP_DIRS)
+    formal_md = [p for p in all_md if p.name not in _NON_FORMAL_MD]
+    return all_md, formal_md
 
 
 def _summarize_errors(errors: list[str]) -> str:
@@ -150,9 +186,16 @@ def _summarize_errors(errors: list[str]) -> str:
     return ", ".join(f"{count} {err}" for err, count in sorted(counts.items()))
 
 
-def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
+def check_pdf_paths(
+    vault: Path,
+    paths: dict,
+    add_check,
+    *,
+    record_paths: list[Path] | None = None,
+) -> None:
     """Sample up to 5 formal notes and validate their pdf_path wikilinks."""
-    record_paths = list(paths["literature"].rglob("*.md"))
+    if record_paths is None:
+        _, record_paths = _scan_literature_notes(paths.get("literature"))
     if not record_paths:
         add_check("Path Resolution", "pass", "No formal notes to check")
         return
@@ -163,7 +206,7 @@ def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
     errors: list[str] = []
     for record_path in sample:
         try:
-            text = record_path.read_text(encoding="utf-8")
+            text = _read_note_head(record_path)
         except Exception:
             continue
         pdf_match = re.search(r'^pdf_path:\s*"(.*?)"\s*$', text, re.MULTILINE)
@@ -192,23 +235,39 @@ def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
         )
 
 
-def check_wikilink_format(vault: Path, paths: dict, add_check) -> None:
+def _check_single_wikilink(record_path: Path, vault: Path) -> str | None:
+    try:
+        text = _read_note_head(record_path)
+    except Exception:
+        return None
+    pdf_match = re.search(r'^pdf_path:\s*"(.*?)"\s*$', text, re.MULTILINE)
+    if not pdf_match:
+        return None
+    pdf_path = pdf_match.group(1).strip()
+    if not pdf_path:
+        return None
+    if not (pdf_path.startswith("[[") and pdf_path.endswith("]]")):
+        return str(record_path.relative_to(vault))
+    return None
+
+
+def check_wikilink_format(
+    vault: Path,
+    paths: dict,
+    add_check,
+    *,
+    record_paths: list[Path] | None = None,
+) -> None:
     """Verify all pdf_path values in formal notes use [[...]] format."""
-    record_paths = list(paths["literature"].rglob("*.md"))
-    bad_paths: list[str] = []
-    for record_path in record_paths:
-        try:
-            text = record_path.read_text(encoding="utf-8")
-        except Exception:
-            continue
-        pdf_match = re.search(r'^pdf_path:\s*"(.*?)"\s*$', text, re.MULTILINE)
-        if not pdf_match:
-            continue
-        pdf_path = pdf_match.group(1).strip()
-        if not pdf_path:
-            continue
-        if not (pdf_path.startswith("[[") and pdf_path.endswith("]]")):
-            bad_paths.append(str(record_path.relative_to(vault)))
+    if record_paths is None:
+        _, record_paths = _scan_literature_notes(paths.get("literature"))
+    results = chunked_io_map(
+        lambda p: _check_single_wikilink(p, vault),
+        record_paths,
+        chunk_size=64,
+        min_parallel=64,
+    )
+    bad_paths = [r for r in results if r]
     if bad_paths:
         add_check(
             "Path Resolution",
@@ -321,6 +380,46 @@ def _query_resolved_module(interp: str, extra_args: list[str], module_name: str)
         return json.loads(output) if output else None
     except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError, json.JSONDecodeError):
         return None
+
+
+def _query_resolved_environment(
+    interp: str, extra_args: list[str], module_names: list[str]
+) -> dict | None:
+    """Batch-query Python version, paperforge distribution metadata, and module imports in one subprocess."""
+    script = (
+        "import importlib, importlib.metadata as _md, json, sys; "
+        "ver = [sys.version_info.major, sys.version_info.minor, sys.version_info.micro]; "
+        "pkg = None\n"
+        "try:\n"
+        "    _d = _md.distribution('paperforge')\n"
+        "    pkg = {'Name': _d.metadata.get('Name'), 'Version': _d.version, "
+        "'Location': str(_d._path.parent) if getattr(_d, '_path', None) else None}\n"
+        "except Exception:\n"
+        "    pkg = None\n"
+        "mods = {}\n"
+        f"for _name in {list(module_names)!r}:\n"
+        "    try:\n"
+        "        _m = importlib.import_module(_name)\n"
+        "        mods[_name] = {'version': getattr(_m, '__version__', None), 'file': getattr(_m, '__file__', None)}\n"
+        "    except Exception:\n"
+        "        mods[_name] = None\n"
+        "print(json.dumps({'version_str': f'Python {ver[0]}.{ver[1]}.{ver[2]}', 'version_tuple': ver, 'paperforge_pkg': pkg, 'modules': mods}))"
+    )
+    try:
+        cmd = [interp] + extra_args + ["-c", script]
+        result = run_readonly_probe(cmd, timeout=20)
+        if result.returncode != 0:
+            return None
+        output = (result.stdout or "").strip()
+        parsed = json.loads(output) if output else None
+        return parsed if isinstance(parsed, dict) else None
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError, json.JSONDecodeError):
+        return None
+
+
+_DEFAULT_QUERY_VERSION = _query_resolved_version
+_DEFAULT_QUERY_PACKAGE = _query_resolved_package
+_DEFAULT_QUERY_MODULE = _query_resolved_module
 
 
 if sys.platform == "win32":
@@ -480,7 +579,31 @@ def run_doctor(
     )
 
     if interp is not None:
-        version_str, version_tuple = _query_resolved_version(interp, [])
+        _use_batched_env = (
+            _query_resolved_version is _DEFAULT_QUERY_VERSION
+            and _query_resolved_package is _DEFAULT_QUERY_PACKAGE
+            and _query_resolved_module is _DEFAULT_QUERY_MODULE
+        )
+        _batched_env = (
+            _query_resolved_environment(
+                interp, [], ["paperforge", *[m["import"] for m in _MODULE_MANIFEST]]
+            )
+            if _use_batched_env
+            else None
+        )
+        if _use_batched_env:
+            if _batched_env is not None:
+                version_str = str(_batched_env.get("version_str") or "") or None
+                raw_vt = _batched_env.get("version_tuple")
+                version_tuple = (
+                    (int(raw_vt[0]), int(raw_vt[1]), int(raw_vt[2]))
+                    if isinstance(raw_vt, list) and len(raw_vt) == 3
+                    else None
+                )
+            else:
+                version_str, version_tuple = None, None
+        else:
+            version_str, version_tuple = _query_resolved_version(interp, [])
         if version_tuple is not None and version_tuple >= (3, 11, 0):
             add_check("Python 环境 (插件)", "pass", f"Python {version_str}")
         elif version_tuple is not None:
@@ -498,7 +621,10 @@ def run_doctor(
                 _PTR_REPAIR_FIX,
             )
 
-        pf_pkg_info = _query_resolved_package(interp, [], "paperforge")
+        if _use_batched_env:
+            pf_pkg_info = _batched_env.get("paperforge_pkg") if isinstance(_batched_env, dict) else None
+        else:
+            pf_pkg_info = _query_resolved_package(interp, [], "paperforge")
         if pf_pkg_info is None:
             add_check(
                 "PaperForge 包",
@@ -519,7 +645,11 @@ def run_doctor(
                     _PTR_UPDATE_FIX,
                 )
 
-        resolved_pf_module = _query_resolved_module(interp, [], "paperforge")
+        if _use_batched_env:
+            _mods_map = _batched_env.get("modules") if isinstance(_batched_env, dict) else {}
+            resolved_pf_module = _mods_map.get("paperforge") if isinstance(_mods_map, dict) else None
+        else:
+            resolved_pf_module = _query_resolved_module(interp, [], "paperforge")
         current_package_file = os.path.normcase(os.path.abspath(__import__("paperforge").__file__))
         resolved_package_file = None
         if resolved_pf_module and resolved_pf_module.get("file"):
@@ -535,7 +665,11 @@ def run_doctor(
         # --- Per-module dependency checks on the verified runtime only ---
         for mod_info in _MODULE_MANIFEST:
             mod_name = mod_info["import"]
-            mod_info_resolved = _query_resolved_module(interp, [], mod_name)
+            if _use_batched_env:
+                _mods_map = _batched_env.get("modules") if isinstance(_batched_env, dict) else {}
+                mod_info_resolved = _mods_map.get(mod_name) if isinstance(_mods_map, dict) else None
+            else:
+                mod_info_resolved = _query_resolved_module(interp, [], mod_name)
             if mod_info_resolved is None:
                 add_check("Python 环境", "fail", f"{mod_info['label']} 缺失", _PTR_REPAIR_FIX)
                 continue
@@ -607,7 +741,7 @@ def run_doctor(
                 add_check("Zotero 链接", "warn", "Zotero 目录存在但不是 junction，建议使用 junction")
         else:
             add_check(
-                "Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>"
+                "Zotero 链接", "fail", "Zotero 目录不存在", f"创建链接: {_zotero_link_remediation(zotero_link, '<Zotero数据目录>')}"
             )
 
         exports_dir = resolved["exports"]
@@ -703,10 +837,12 @@ def run_doctor(
     except ImportError as e:
         add_check("Worker 脚本", "fail", f"worker 函数导入失败: {e}", "运行 `paperforge repair --runtime` 重建已验证运行时")
 
-    # Path Resolution checks
+    # Path Resolution checks (single directory scan reused across validator checks)
+    _lit_dir_doc = paths.get("literature")
+    _all_lit_md, _formal_lit_md = _scan_literature_notes(_lit_dir_doc)
     check_zotero_location(vault, cfg, add_check)
-    check_pdf_paths(vault, paths, add_check)
-    check_wikilink_format(vault, paths, add_check)
+    check_pdf_paths(vault, paths, add_check, record_paths=_formal_lit_md)
+    check_wikilink_format(vault, paths, add_check, record_paths=_formal_lit_md)
 
     # --- Field registry validation (Phase 59) ---
     try:
@@ -717,28 +853,75 @@ def run_doctor(
     except Exception:
         registry = {}
     if registry:
-        literature_dir = paths.get("literature")
-        if literature_dir and literature_dir.exists():
-            note_files = sorted(literature_dir.rglob("*.md"))
+        if _lit_dir_doc and safe_is_dir(_lit_dir_doc):
+            target_notes = _formal_lit_md
+            all_issues_list = chunked_io_map(
+                lambda p: validate_frontmatter_from_file(p, registry),
+                target_notes,
+                chunk_size=64,
+                min_parallel=64,
+            )
+
             total_issues = 0
-            for note_file in note_files:
-                if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
-                    continue
-                issues = validate_frontmatter_from_file(note_file, registry)
+            grouped_issues: dict[tuple[str, str, str], dict] = {}
+            for note_file, issues in zip(target_notes, all_issues_list):
                 for issue in issues:
                     total_issues += 1
-                    add_check(
-                        "字段注册表",
-                        "fail"
-                        if issue["severity"] == "error"
-                        else "warn"
-                        if issue["severity"] == "warning"
-                        else "pass",
-                        issue["message"],
-                        issue.get("suggestion", ""),
+                    gkey = (
+                        str(issue.get("severity") or "info"),
+                        str(issue.get("code") or ""),
+                        str(issue.get("field") or ""),
                     )
+                    grp = grouped_issues.get(gkey)
+                    if grp is None:
+                        grouped_issues[gkey] = {
+                            "count": 1,
+                            "samples": [note_file.stem],
+                            "message": str(issue.get("message") or ""),
+                            "suggestion": str(issue.get("suggestion") or ""),
+                        }
+                    else:
+                        grp["count"] += 1
+                        if len(grp["samples"]) < 3 and note_file.stem not in grp["samples"]:
+                            grp["samples"].append(note_file.stem)
+                        if not grp["suggestion"] and issue.get("suggestion"):
+                            grp["suggestion"] = str(issue["suggestion"])
+
             if total_issues == 0:
                 add_check("字段注册表", "pass", "所有 formal note frontmatter 与字段注册表一致")
+            else:
+                _sev_rank = {"error": 0, "warning": 1, "info": 2}
+                sorted_groups = sorted(
+                    grouped_issues.items(),
+                    key=lambda kv: (_sev_rank.get(kv[0][0], 3), -kv[1]["count"], kv[0][1], kv[0][2]),
+                )
+                for (sev, _code, _field), grp in sorted_groups[:15]:
+                    count = grp["count"]
+                    msg = grp["message"]
+                    if count > 1:
+                        msg = f"{msg} ({count} notes, e.g. {', '.join(grp['samples'])})"
+                    add_check(
+                        "字段注册表",
+                        "fail" if sev == "error" else "warn" if sev == "warning" else "pass",
+                        msg,
+                        grp["suggestion"],
+                    )
+                if len(sorted_groups) > 15:
+                    overflow = sorted_groups[15:]
+                    overflow_sevs = {gkey[0] for gkey, _ in overflow}
+                    overflow_status = (
+                        "fail"
+                        if "error" in overflow_sevs
+                        else "warn"
+                        if "warning" in overflow_sevs
+                        else "info"
+                    )
+                    overflow_notes = sum(grp["count"] for _, grp in overflow)
+                    add_check(
+                        "字段注册表",
+                        overflow_status,
+                        f"... and {len(overflow)} more field issue group(s) ({overflow_notes} issue(s))",
+                    )
 
     pf_deep_script = paths.get("pf_deep_script")
     skill_dir = None
@@ -822,8 +1005,10 @@ def run_doctor(
             if not isinstance(_dim, dict):
                 _dim = {"healthy": 0, "unhealthy": 0}
             if _dim_key == "pdf_health" and _idx_items:
-                from paperforge.pdf_resolver import resolve_source_pdf
+                from paperforge.core.fs_safe import safe_is_file
+                from paperforge.pdf_resolver import resolve_pdf_path
 
+                _zot_dir = resolved.get("zotero_dir")
                 _disk_ok = 0
                 _disk_bad = 0
                 for _it in _idx_items:
@@ -832,7 +1017,19 @@ def run_doctor(
                     if not _pdf_loc and not _has_pdf_flag:
                         _disk_bad += 1
                         continue
-                    if _pdf_loc and resolve_source_pdf(vault, _pdf_loc) is not None:
+                    _found = False
+                    if _pdf_loc:
+                        if resolve_pdf_path(_pdf_loc, True, vault, _zot_dir):
+                            _found = True
+                        else:
+                            _raw = _pdf_loc.strip()
+                            if _raw.startswith("[[") and _raw.endswith("]]"):
+                                _raw = _raw[2:-2].strip()
+                            if _raw.startswith("absolute:"):
+                                _raw = _raw[len("absolute:") :].strip()
+                            if _raw and safe_is_file(Path(_raw)):
+                                _found = True
+                    if _found:
                         _disk_ok += 1
                     else:
                         _disk_bad += 1
@@ -895,31 +1092,45 @@ def run_doctor(
                     "Re-run `paperforge ocr` on affected items",
                 )
 
-        # WS-05: Workspace integrity checks
+        # WS-05: Workspace integrity checks (reusing _idx_data already loaded above)
         try:
-            from paperforge.worker.asset_index import read_index as _ws_read_idx
+            from paperforge.worker._utils import slugify_filename
 
-            _idx_content = _ws_read_idx(vault)
-            _items = _idx_content.get("items", []) if isinstance(_idx_content, dict) else []
+            _items = _idx_data.get("items", []) if isinstance(_idx_data, dict) else []
             _missing_workspace = 0
             _missing_fulltext = 0
             _ws_literature = paths.get("literature")
+            _ws_ocr_root = paths.get("ocr")
             for _e in _items:
-                _key = _e.get("zotero_key", "")
-                _dom = _e.get("domain", "")
-                _title = _e.get("title", "")
-                if not _key or not _dom:
+                _key = str(_e.get("zotero_key") or "").strip()
+                _dom = str(_e.get("domain") or "").strip()
+                _title = str(_e.get("title") or "").strip()
+                _paper_root = str(_e.get("paper_root") or "").strip()
+                if not _key or (not _dom and not _paper_root):
                     continue
-                from paperforge.worker._utils import slugify_filename
-
-                _slug = slugify_filename(_title or _key)
-                _ws_dir = _ws_literature / _dom / f"{_key} - {_slug}"
-                if not _ws_dir.exists():
+                if _paper_root:
+                    _ws_dir = vault / _paper_root
+                else:
+                    _slug = slugify_filename(_title or _key)
+                    _ws_dir = _ws_literature / _dom / f"{_key} - {_slug}"
+                if not safe_is_dir(_ws_dir):
                     _missing_workspace += 1
                     continue
                 if _e.get("ocr_status") in ("done", "done_degraded"):
-                    _ft = _ws_dir / "fulltext.md"
-                    if not _ft.exists():
+                    _has_fulltext = False
+                    if _ws_ocr_root is not None and safe_is_file(_ws_ocr_root / _key / "fulltext.md"):
+                        _has_fulltext = True
+                    if not _has_fulltext:
+                        _ft_rel = str(_e.get("fulltext_path") or "").strip()
+                        if _ft_rel and safe_is_file(vault / _ft_rel):
+                            _has_fulltext = True
+                    if not _has_fulltext:
+                        _ocr_rel = str(_e.get("ocr_md_path") or "").strip()
+                        if _ocr_rel and safe_is_file(vault / _ocr_rel):
+                            _has_fulltext = True
+                    if not _has_fulltext and safe_is_file(_ws_dir / "fulltext.md"):
+                        _has_fulltext = True
+                    if not _has_fulltext:
                         _missing_fulltext += 1
             if _missing_workspace > 0:
                 add_check(
@@ -932,7 +1143,7 @@ def run_doctor(
                 add_check(
                     "Index Health",
                     "warn",
-                    f"{_missing_fulltext} paper(s) missing fulltext.md in workspace",
+                    f"{_missing_fulltext} paper(s) missing OCR fulltext.md",
                     "Re-run OCR or run `paperforge sync` to bridge fulltext",
                 )
             if _missing_workspace == 0 and _missing_fulltext == 0 and _items:
@@ -943,32 +1154,63 @@ def run_doctor(
     else:
         add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
 
-    # Vector index integrity — FULL orphan scan (meta ⋈ vec0 LEFT JOIN).
-    # Deliberately slow (48–117 s at library scale on sqlite-vec rowid
-    # lookups) so it lives ONLY here as a manual maintenance command; the
-    # hot paths (status/probe/verify) use the O(1) MAX(rowid) boundary
-    # check in inspect_vector_layout instead.
+    # Vector index integrity — O(1) COUNT(*)+MAX(rowid) check by default (<50ms),
+    # or full meta ⋈ vec0 LEFT JOIN orphan scan when verbose=True.
     try:
-        from paperforge.memory.db import get_memory_db_path, open_live_reader
+        from paperforge.memory.db import (
+            ensure_vec_extension,
+            get_memory_db_path,
+            open_live_reader,
+        )
 
         _vdb = get_memory_db_path(vault)
         if _vdb.exists():
+            _vtotal = 0
+            _vorphans = 0
+            _vec_unavailable = False
             with open_live_reader(vault, _vdb) as _vconn:
-                _vtotal = 0
-                _vorphans = 0
+                ensure_vec_extension(_vconn)
                 for _vvec, _vmeta in (
                     ("vec_fulltext", "vec_fulltext_meta"),
                     ("vec_body", "vec_body_meta"),
                     ("vec_objects", "vec_objects_meta"),
                 ):
-                    _vtotal += _vconn.execute(
-                        f"SELECT COUNT(*) FROM {_vmeta}"
-                    ).fetchone()[0]
-                    _vorphans += _vconn.execute(
-                        f"SELECT COUNT(*) FROM {_vmeta} m "
-                        f"LEFT JOIN {_vvec} v ON v.rowid = m.rowid "
-                        f"WHERE v.rowid IS NULL"
-                    ).fetchone()[0]
+                    try:
+                        _meta_row = _vconn.execute(
+                            f"SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM {_vmeta}"
+                        ).fetchone()
+                        _meta_cnt = int(_meta_row[0])
+                        _meta_max = int(_meta_row[1])
+                    except Exception:
+                        continue
+                    _vtotal += _meta_cnt
+                    try:
+                        if verbose:
+                            _vorphans += int(
+                                _vconn.execute(
+                                    f"SELECT COUNT(*) FROM {_vmeta} m "
+                                    f"LEFT JOIN {_vvec} v ON v.rowid = m.rowid "
+                                    f"WHERE v.rowid IS NULL"
+                                ).fetchone()[0]
+                            )
+                        else:
+                            _vec_row = _vconn.execute(
+                                f"SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM {_vvec}"
+                            ).fetchone()
+                            _vec_cnt = int(_vec_row[0])
+                            _vec_max = int(_vec_row[1])
+                            if _meta_max > _vec_max:
+                                _beyond = int(
+                                    _vconn.execute(
+                                        f"SELECT COUNT(*) FROM {_vmeta} WHERE rowid > ?",
+                                        (_vec_max,),
+                                    ).fetchone()[0]
+                                )
+                                _vorphans += max(_beyond, max(0, _meta_cnt - _vec_cnt))
+                            elif _meta_cnt > _vec_cnt:
+                                _vorphans += _meta_cnt - _vec_cnt
+                    except Exception:
+                        _vec_unavailable = True
             if _vorphans:
                 add_check(
                     "Index Health",
@@ -976,11 +1218,18 @@ def run_doctor(
                     f"{_vorphans} orphan vector row(s) across {_vtotal} total",
                     "Run `paperforge embed build --force` to rebuild the vector index",
                 )
+            elif _vec_unavailable and _vtotal:
+                add_check(
+                    "Index Health",
+                    "info",
+                    f"Vector index check skipped ({_vtotal} meta rows; sqlite-vec unavailable)",
+                )
             elif _vtotal:
+                _scan_mode = "full scan" if verbose else "fast check"
                 add_check(
                     "Index Health",
                     "pass",
-                    f"Vector index integrity: {_vtotal} rows, 0 orphans (full scan)",
+                    f"Vector index integrity: {_vtotal} rows, 0 orphans ({_scan_mode})",
                 )
     except Exception:
         pass
@@ -1170,36 +1419,44 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     # rewrite user-facing files, which is a query side effect by the
     # architecture contract's definition.
     export_files = sorted(paths["exports"].glob("*.json"))
-    record_count = (
-        sum(
-            1
-            for p in paths["literature"].rglob("*.md")
-            if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md")
-        )
-        if paths["literature"].exists()
-        else 0
-    )
-    note_count = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
+    all_lit_md, formal_lit_md = _scan_literature_notes(paths.get("literature"))
+    record_count = len(formal_lit_md)
+    note_count = len(all_lit_md)
     base_count = sum(1 for _ in paths["bases"].glob("*.base")) if paths["bases"].exists() else 0
     ocr_done = 0
     ocr_total = 0
     ocr_pending = 0
     ocr_processing = 0
     ocr_failed = 0
-    # Count from formal notes — picks up do_ocr:true items before meta.json exists
+
+    def _inspect_formal_note_head(note_path: Path) -> tuple[str | None, bool]:
+        try:
+            text = _read_note_head(note_path)
+        except Exception:
+            return None, False
+        do_ocr_key: str | None = None
+        if re.search(r"^do_ocr:\s*true\s*$", text, re.MULTILINE):
+            m = re.search(r"^zotero_key:\s*(\S+)", text, re.MULTILINE)
+            if m:
+                do_ocr_key = m.group(1)
+        has_path_err = bool(re.search(r'^path_error:\s*"(.+?)"\s*$', text, re.MULTILINE))
+        return do_ocr_key, has_path_err
+
+    # Single-pass head read for both do_ocr keys and path_error count
     do_ocr_keys: set[str] = set()
-    if paths["literature"].exists():
-        for note_path in paths["literature"].rglob("*.md"):
-            if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
-                continue
-            try:
-                text = note_path.read_text(encoding="utf-8")
-                if re.search(r"^do_ocr:\s*true\s*$", text, re.MULTILINE):
-                    m = re.search(r"^zotero_key:\s*(\S+)", text, re.MULTILINE)
-                    if m:
-                        do_ocr_keys.add(m.group(1))
-            except Exception:
-                continue
+    path_error_count = 0
+    if formal_lit_md:
+        head_results = chunked_io_map(
+            _inspect_formal_note_head,
+            formal_lit_md,
+            chunk_size=64,
+            min_parallel=64,
+        )
+        for ok_key, has_perr in head_results:
+            if ok_key:
+                do_ocr_keys.add(ok_key)
+            if has_perr:
+                path_error_count += 1
     ocr_total += len(do_ocr_keys)
     # Check meta.json for each do_ocr key
     for key in do_ocr_keys:
@@ -1243,19 +1500,6 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 ocr_failed += 1
     env_paths = [vault / ".env", paths["pipeline"] / ".env"]
     env_found = [str(path.relative_to(vault)).replace("\\", "/") for path in env_paths if path.exists()]
-
-    # Count path errors from formal notes
-    path_error_count = 0
-    if paths["literature"].exists():
-        for note_path in paths["literature"].rglob("*.md"):
-            if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
-                continue
-            try:
-                text = note_path.read_text(encoding="utf-8")
-                if re.search(r'^path_error:\s*"(.+?)"\s*$', text, re.MULTILINE):
-                    path_error_count += 1
-            except Exception:
-                continue
 
     # Phase 25: index-derived aggregates (empty dict when index unavailable)
     lifecycle_level_counts = {}

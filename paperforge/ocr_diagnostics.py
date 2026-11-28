@@ -6,12 +6,16 @@ and optional live PDF round-trip before queueing real OCR jobs.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import logging
 import os
 import time
 from pathlib import Path
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 def _find_live_fixture_pdf() -> Path | None:
@@ -30,12 +34,20 @@ def _find_live_fixture_pdf() -> Path | None:
     return None
 
 
-def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
+def ocr_doctor(
+    config: dict[str, str] | None,
+    live: bool = False,
+    *,
+    cache_path: Path | None = None,
+    cache_ttl_seconds: float = 120.0,
+) -> dict:
     """Run tiered OCR diagnostics.
 
     Args:
         config: Optional configuration dict (reserved for future use).
         live: If True, run L4 live PDF round-trip test.
+        cache_path: Optional JSON file path used to cache non-live L2/L3 results.
+        cache_ttl_seconds: Cache TTL in seconds (default 120s; ignored when live=True).
 
     Returns:
         Dict with keys: level, passed, error, fix, raw_response (optional).
@@ -66,43 +78,89 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
         str(cfg.get("paddleocr_model") or "").strip()
         or os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6").strip()
     )
+
+    use_cache = (
+        not live
+        and cache_path is not None
+        and cache_ttl_seconds > 0
+        and not os.environ.get("PAPERFORGE_OCR_DOCTOR_NOCACHE")
+    )
+    cache_fp = hashlib.sha256(
+        f"{job_url}|{ocr_model}|{hashlib.sha256(token.encode('utf-8')).hexdigest()[:16]}".encode("utf-8")
+    ).hexdigest()[:24]
+
+    if use_cache and cache_path is not None and cache_path.is_file():
+        try:
+            cached_payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            if (
+                isinstance(cached_payload, dict)
+                and cached_payload.get("fingerprint") == cache_fp
+                and (time.time() - float(cached_payload.get("cached_at", 0.0))) <= cache_ttl_seconds
+                and isinstance(cached_payload.get("result"), dict)
+            ):
+                return dict(cached_payload["result"])
+        except (OSError, ValueError, TypeError) as exc:
+            logger.debug("ignoring stale/unreadable ocr_doctor cache %s: %s", cache_path, exc)
+
+    def _cache_and_return(res: dict) -> dict:
+        if use_cache and cache_path is not None:
+            try:
+                from paperforge.core.io import write_json_atomic
+
+                write_json_atomic(
+                    cache_path,
+                    {
+                        "fingerprint": cache_fp,
+                        "cached_at": time.time(),
+                        "result": res,
+                    },
+                )
+            except (OSError, TypeError) as exc:
+                logger.debug("best-effort ocr_doctor cache write skipped: %s", exc)
+        return res
+
     try:
         resp = requests.post(
             job_url,
             headers={"Authorization": f"bearer {token}"},
             json={"model": ocr_model},
-            timeout=30,
+            timeout=10,
         )
         if resp.status_code == 401:
-            return {
+            return _cache_and_return({
                 "level": 2,
                 "passed": False,
                 "error": "URL returned 401 Unauthorized",
                 "fix": "PaddleOCR API token is invalid. Update OCR API Key in PaperForge Settings or run `paperforge auth set ocr --stdin --replace`",
-            }
+            })
         if resp.status_code >= 500:
-            return {
+            return _cache_and_return({
                 "level": 2,
                 "passed": False,
                 "error": f"URL returned {resp.status_code}",
                 "fix": "OCR provider is experiencing issues. Retry later with `paperforge ocr --diagnose`",
-            }
-        # 200 = happy path, 400 = reachable but request incomplete
-        # Both prove URL is live and token is valid (else 401)
+            })
+        # 200 = happy path, 400 = reachable + auth valid (missing multipart file)
+        if resp.status_code == 400 and not live:
+            return _cache_and_return({
+                "level": 3,
+                "passed": True,
+                "message": "Skipped (requires file upload). Use `paperforge ocr --diagnose --live` for full validation.",
+            })
         if resp.status_code not in (200, 400):
-            return {
+            return _cache_and_return({
                 "level": 2,
                 "passed": False,
                 "error": f"URL returned {resp.status_code}",
                 "fix": "Check PaddleOCR Job URL in PaperForge Settings (or run `paperforge config set paddleocr_job_url <URL>`)",
-            }
+            })
     except requests.RequestException as e:
-        return {
+        return _cache_and_return({
             "level": 2,
             "passed": False,
             "error": f"Failed to reach OCR URL: {e}",
             "fix": "Check network connection and PaddleOCR Job URL in PaperForge Settings",
-        }
+        })
 
     # L3 — API response structure
     try:
@@ -114,18 +172,18 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
             job_url,
             headers={"Authorization": f"bearer {token}"},
             data=minimal_payload,
-            timeout=30,
+            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()
         if "data" not in data or "jobId" not in data.get("data", {}):
-            return {
+            return _cache_and_return({
                 "level": 3,
                 "passed": False,
                 "error": "API response missing expected fields (data.jobId)",
                 "fix": "PaddleOCR API schema may have changed. Check provider documentation.",
                 "raw_response": resp.text[:500],
-            }
+            })
         job_id = data["data"]["jobId"]
         # Cancel the test job immediately to avoid wasting resources
         try:
@@ -140,18 +198,18 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
         # Without a real file upload the API will reject the request (4xx/5xx).
         # This is expected — L2 already confirmed connectivity + token validity.
         # Run `--live` for a full upload round-trip test.
-        return {
+        return _cache_and_return({
             "level": 3,
             "passed": True,
             "message": "Skipped (requires file upload). Use `paperforge ocr --diagnose --live` for full validation.",
-        }
+        })
     except (json.JSONDecodeError, KeyError) as e:
-        return {
+        return _cache_and_return({
             "level": 3,
             "passed": False,
             "error": f"API response parsing failed: {e}",
             "fix": "PaddleOCR API schema may have changed. Check provider documentation.",
-        }
+        })
 
     # L4 — Live PDF test (only if live=True)
     if live:

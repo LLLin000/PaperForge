@@ -8,6 +8,7 @@ from json import JSONDecodeError
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
+from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
 
 logger = logging.getLogger(__name__)
 
@@ -183,11 +184,14 @@ def _resolve_formal_note_path(vault: Path, zotero_key: str, domain: str) -> Path
     if not domain_dir.exists():
         return None
     frontmatter_pattern = re.compile(rf'^\s*zotero_key:\s*"?{re.escape(zotero_key)}"?\s*$', re.MULTILINE)
-    for note_path in domain_dir.rglob("*.md"):
+    for note_path in safe_rglob(domain_dir, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
+        if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
         try:
-            text = note_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            text = note_path.read_text(encoding="utf-8", errors="ignore")
+            with open(note_path, "rb") as fh:
+                text = fh.read(8192).decode("utf-8", errors="ignore")
+        except OSError:
+            continue
         if frontmatter_pattern.search(text):
             return note_path
     return None
@@ -220,7 +224,7 @@ def get_analyze_queue(vault: Path) -> list[dict]:
         return []
 
     results = []
-    for note_file in lit_root.rglob("*.md"):
+    for note_file in safe_rglob(lit_root, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
         if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
         try:

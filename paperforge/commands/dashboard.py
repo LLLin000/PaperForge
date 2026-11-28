@@ -13,6 +13,7 @@ from pathlib import Path
 from paperforge import __version__
 from paperforge.config import load_vault_config, paperforge_paths, resolve_vault
 from paperforge.core.errors import ErrorCode
+from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
 from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
@@ -148,19 +149,7 @@ def _dashboard_from_files(vault: Path) -> dict:
 
     _skip_names = {"fulltext.md", "deep-reading.md", "discussion.md"}
     record_count = 0
-    if paths["literature"].exists():
-        for p in paths["literature"].rglob("*.md"):
-            if p.name not in _skip_names:
-                record_count += 1
-
     domain_counts: dict[str, int] = {}
-    if paths["literature"].exists():
-        for domain_dir in sorted(paths["literature"].iterdir()):
-            if domain_dir.is_dir():
-                count = sum(1 for p in domain_dir.rglob("*.md") if p.name not in _skip_names)
-                if count > 0:
-                    domain_counts[domain_dir.name] = count
-
     pdf_healthy = 0
     pdf_broken = 0
     pdf_missing = 0
@@ -173,12 +162,22 @@ def _dashboard_from_files(vault: Path) -> dict:
     _ocr_status_pat = re.compile(r"^ocr_status:\s*(\S+)", re.MULTILINE)
     _do_ocr_pat = re.compile(r"^do_ocr:\s*true\s*$", re.MULTILINE)
 
-    if paths["literature"].exists():
-        for note_path in paths["literature"].rglob("*.md"):
+    lit_root = paths["literature"]
+    if lit_root.exists():
+        lit_resolved = lit_root.resolve()
+        for note_path in safe_rglob(lit_root, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
             if note_path.name in _skip_names:
                 continue
+            record_count += 1
             try:
-                text = note_path.read_text(encoding="utf-8")
+                rel_parts = note_path.resolve().relative_to(lit_resolved).parts
+                if len(rel_parts) >= 2:
+                    domain_counts[rel_parts[0]] = domain_counts.get(rel_parts[0], 0) + 1
+            except ValueError:
+                pass
+            try:
+                with open(note_path, "rb") as fh:
+                    text = fh.read(8192).decode("utf-8", errors="replace")
             except Exception:
                 continue
 

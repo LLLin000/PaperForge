@@ -6,7 +6,6 @@ from pathlib import Path
 
 from paperforge.embedding._config import get_api_model
 from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
-from paperforge.embedding.dim_detect import detect_embedding_dim
 from paperforge.memory.schema import ensure_schema
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+_HEAD_READ_BYTES = 16384
+_FRONTMATTER_RE = re.compile(
+    r"^(?:\ufeff)?---[ \t]*\r?\n(.*?\r?\n)?---(?=[ \t]*(?:\r?\n|$))",
+    re.DOTALL,
+)
+_TOP_LEVEL_KEY_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def validate_entry_fields(
@@ -142,14 +150,34 @@ def validate_frontmatter_from_file(
 ) -> list[dict]:
     """Read a single formal note and validate its frontmatter against registry."""
     try:
-        text = file_path.read_text(encoding="utf-8")
+        with file_path.open("rb") as fh:
+            raw_head = fh.read(_HEAD_READ_BYTES)
+        text: str | None = None
+        if len(raw_head) < _HEAD_READ_BYTES:
+            text = raw_head.decode("utf-8")
+        else:
+            for trim in range(4):
+                try:
+                    candidate = raw_head if trim == 0 else raw_head[:-trim]
+                    text = candidate.decode("utf-8")
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if text is None:
+                text = file_path.read_text(encoding="utf-8")
     except Exception:
         return [{"severity": "error", "code": "READ_ERROR", "field": "", "message": f"Cannot read {file_path}"}]
 
-    # Parse frontmatter
-    import re
+    fm_match = _FRONTMATTER_RE.match(text)
+    if fm_match is None and len(raw_head) >= _HEAD_READ_BYTES:
+        stripped = text.lstrip("\ufeff")
+        if stripped.startswith("---"):
+            try:
+                text = file_path.read_text(encoding="utf-8")
+            except Exception:
+                return [{"severity": "error", "code": "READ_ERROR", "field": "", "message": f"Cannot read {file_path}"}]
+            fm_match = _FRONTMATTER_RE.match(text)
 
-    fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not fm_match:
         return [
             {
@@ -161,10 +189,18 @@ def validate_frontmatter_from_file(
         ]
 
     frontmatter = {}
-    for line in fm_match.group(1).splitlines():
-        line = line.strip()
-        if ":" in line:
-            key, _, val = line.partition(":")
-            frontmatter[key.strip()] = val.strip()
+    fm_block = fm_match.group(1) or ""
+    for raw_line in fm_block.splitlines():
+        if not raw_line or not raw_line.strip():
+            continue
+        if raw_line[0] in (" ", "\t", "#", "-"):
+            continue
+        if ":" not in raw_line:
+            continue
+        key, _, val = raw_line.partition(":")
+        key_clean = key.strip()
+        if not _TOP_LEVEL_KEY_RE.match(key_clean):
+            continue
+        frontmatter[key_clean] = val.strip()
 
     return validate_entry_fields(frontmatter, "frontmatter", registry, file_path.stem)

@@ -148,7 +148,15 @@ def effective_vector_db(vault: Path) -> Path:
     return live
 
 
-def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> VectorSubstrate:
+_FAST_QUICK_CHECK_MAX_BYTES = 50 * 1024 * 1024
+
+
+def assess_vector_substrate(
+    vault: Path,
+    *,
+    db_path: Path | None = None,
+    deep_check: bool = False,
+) -> VectorSubstrate:
     """Pure observation of desired-vs-published embedding substrate.
 
     Fail-closed: an unreadable DB/layout is treated as incompatible (routes
@@ -179,9 +187,18 @@ def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> Vect
     if db_exists:
         conn: sqlite3.Connection | None = None
         try:
+            try:
+                db_size = db_path.stat().st_size
+            except OSError:
+                db_size = 0
             conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
-            qc = conn.execute("PRAGMA quick_check(1)").fetchone()
-            if not qc or str(qc[0]).lower() != "ok":
+            if deep_check or db_size <= _FAST_QUICK_CHECK_MAX_BYTES:
+                qc = conn.execute("PRAGMA quick_check(1)").fetchone()
+                qc_ok = bool(qc and str(qc[0]).lower() == "ok")
+            else:
+                conn.execute("SELECT COUNT(*) FROM sqlite_master").fetchone()
+                qc_ok = True
+            if not qc_ok:
                 layout_incompatible = True
                 reason_codes.append("vector.db_corrupt")
             else:

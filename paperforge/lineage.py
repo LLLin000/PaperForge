@@ -175,15 +175,19 @@ def write_vector_lineage(
     eligible_paper_ids = _papers_with_vectors(conn)
     if paper_ids is not None:
         eligible_paper_ids = [p for p in eligible_paper_ids if p in paper_ids]
-    written = 0
+    if not eligible_paper_ids:
+        return 0
+    raw_manifests = {
+        str(k).removeprefix("manifest:"): val
+        for k, val in conn.execute("SELECT key, value FROM meta WHERE key LIKE 'manifest:%'").fetchall()
+    }
+    batch_rows: list[tuple[str, str, str, str, str, str]] = []
     for paper_id in eligible_paper_ids:
-        row = conn.execute(
-            "SELECT value FROM meta WHERE key = ?", (f"manifest:{paper_id}",)
-        ).fetchone()
-        if not row:
+        raw_val = raw_manifests.get(paper_id)
+        if not raw_val:
             continue
         try:
-            manifest = json.loads(row[0])
+            manifest = json.loads(raw_val)
         except (TypeError, ValueError):
             continue
         retrieval_identity = manifest.get("retrieval_identity")
@@ -194,10 +198,7 @@ def write_vector_lineage(
             retrieval_identity=retrieval_identity,
             embedding_identity=embedding_identity,
         )
-        conn.execute(
-            "INSERT OR REPLACE INTO lineage "
-            "(paper_id, layer, identity, derived_from, embedding_identity, updated_at) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+        batch_rows.append(
             (
                 paper_id,
                 LINEAGE_LAYER_VECTOR,
@@ -205,10 +206,16 @@ def write_vector_lineage(
                 retrieval_identity,
                 embedding_identity,
                 stamp,
-            ),
+            )
         )
-        written += 1
-    return written
+    if batch_rows:
+        conn.executemany(
+            "INSERT OR REPLACE INTO lineage "
+            "(paper_id, layer, identity, derived_from, embedding_identity, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            batch_rows,
+        )
+    return len(batch_rows)
 
 
 def write_legacy_fulltext_lineage(
@@ -252,22 +259,24 @@ def write_legacy_fulltext_lineage(
         return 0
     if paper_ids is not None:
         candidates = [p for p in candidates if p in paper_ids]
-    written = 0
+    if not candidates:
+        return 0
+    existing_rows = {
+        str(r[0])
+        for r in conn.execute(
+            "SELECT paper_id FROM lineage WHERE layer = ?",
+            (LINEAGE_LAYER_VECTOR,),
+        ).fetchall()
+    }
+    batch_rows: list[tuple[str, str, str, str, str, str]] = []
     for paper_id in candidates:
-        row = conn.execute(
-            "SELECT 1 FROM lineage WHERE paper_id = ? AND layer = ?",
-            (paper_id, LINEAGE_LAYER_VECTOR),
-        ).fetchone()
-        if row:
+        if paper_id in existing_rows:
             continue  # a real chain exists — never downgrade it
         identity = compute_vector_identity(
             retrieval_identity=LEGACY_FULLTEXT_RETRIEVAL_ID,
             embedding_identity=embedding_identity,
         )
-        conn.execute(
-            "INSERT OR REPLACE INTO lineage "
-            "(paper_id, layer, identity, derived_from, embedding_identity, updated_at) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+        batch_rows.append(
             (
                 paper_id,
                 LINEAGE_LAYER_VECTOR,
@@ -275,10 +284,16 @@ def write_legacy_fulltext_lineage(
                 LEGACY_FULLTEXT_RETRIEVAL_ID,
                 embedding_identity,
                 stamp,
-            ),
+            )
         )
-        written += 1
-    return written
+    if batch_rows:
+        conn.executemany(
+            "INSERT OR REPLACE INTO lineage "
+            "(paper_id, layer, identity, derived_from, embedding_identity, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            batch_rows,
+        )
+    return len(batch_rows)
 
 
 def _papers_with_vectors(conn: sqlite3.Connection) -> list[str]:
@@ -300,7 +315,10 @@ def _papers_with_vectors(conn: sqlite3.Connection) -> list[str]:
 # ── probe read model ──────────────────────────────────────────────────────
 
 def _canonical_pdf_map(
-    vault: Path, keys: Collection[str] | None = None
+    vault: Path,
+    keys: Collection[str] | None = None,
+    *,
+    zotero_dir: Path | None = None,
 ) -> dict[str, Path]:
     """Resolve canonical PDFs once for a lineage observation.
 
@@ -323,12 +341,95 @@ def _canonical_pdf_map(
             pdf = str(item.get("pdf_path", "") or "")
             if not pdf:
                 continue
-            path = resolve_pdf_path(pdf, True, vault)
+            path = resolve_pdf_path(pdf, True, vault, zotero_dir)
             if path:
                 resolved[key] = Path(path)
         return resolved
     except Exception:  # noqa: BLE001 — unreadable index → no evidence
         return {}
+
+
+def _load_lineage_bulk_caches(
+    conn: sqlite3.Connection,
+    keys: list[str],
+    has_lineage_table: bool,
+) -> dict[str, Any]:
+    """Preload SQLite tables once per ``_probe_lineage`` call to avoid N+1 per-paper round-trips."""
+    manifest_map: dict[str, dict[str, Any] | None] = {}
+    for k, val in conn.execute("SELECT key, value FROM meta WHERE key LIKE 'manifest:%'").fetchall():
+        pid = str(k).removeprefix("manifest:")
+        try:
+            parsed = json.loads(val)
+            manifest_map[pid] = parsed if isinstance(parsed, dict) else None
+        except (TypeError, ValueError):
+            manifest_map[pid] = None
+
+    vec_lineage_map: dict[str, tuple[Any, Any, Any]] = {}
+    if has_lineage_table:
+        try:
+            for pid, ident, df, emb_id in conn.execute(
+                "SELECT paper_id, identity, derived_from, embedding_identity "
+                "FROM lineage WHERE layer = ?",
+                (LINEAGE_LAYER_VECTOR,),
+            ).fetchall():
+                vec_lineage_map[str(pid)] = (ident, df, emb_id)
+        except sqlite3.Error:
+            vec_lineage_map = {}
+
+    vec_meta_tables = {
+        str(r[0])
+        for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN "
+            "('vec_fulltext_meta', 'vec_body_meta', 'vec_objects_meta')"
+        ).fetchall()
+    }
+    has_vec_tables = bool(vec_meta_tables)
+    papers_with_vec: set[str] = set()
+    for tbl in vec_meta_tables:
+        try:
+            for (pid,) in conn.execute(f"SELECT DISTINCT paper_id FROM {tbl}").fetchall():
+                papers_with_vec.add(str(pid))
+        except sqlite3.OperationalError:
+            pass
+
+    unit_counts_map: dict[str, int] | None = None
+    body_units_map: dict[str, list[dict[str, Any]]] | None = None
+    object_units_map: dict[str, list[dict[str, Any]]] | None = None
+    if len(keys) > 20:
+        unit_counts_map = {}
+        for tbl in ("body_units", "object_units"):
+            try:
+                for pid, cnt in conn.execute(
+                    f"SELECT paper_id, COUNT(*) FROM {tbl} GROUP BY paper_id"
+                ).fetchall():
+                    s_pid = str(pid)
+                    unit_counts_map[s_pid] = unit_counts_map.get(s_pid, 0) + int(cnt)
+            except sqlite3.OperationalError:
+                pass
+        try:
+            body_units_map = {}
+            for row in conn.execute("SELECT * FROM body_units"):
+                d = dict(row)
+                body_units_map.setdefault(str(d.get("paper_id") or ""), []).append(d)
+        except sqlite3.OperationalError:
+            body_units_map = None
+        try:
+            object_units_map = {}
+            for row in conn.execute("SELECT * FROM object_units"):
+                d = dict(row)
+                object_units_map.setdefault(str(d.get("paper_id") or ""), []).append(d)
+        except sqlite3.OperationalError:
+            object_units_map = None
+
+    return {
+        "manifest_map": manifest_map,
+        "vec_lineage_map": vec_lineage_map,
+        "has_vec_tables": has_vec_tables,
+        "papers_with_vec": papers_with_vec,
+        "unit_counts_map": unit_counts_map,
+        "body_units_map": body_units_map,
+        "object_units_map": object_units_map,
+    }
 
 
 def _probe_lineage(
@@ -371,7 +472,7 @@ def _probe_lineage(
             key for key in dict.fromkeys(str(key) for key in requested_keys)
             if key in authority
         ]
-    canonical_pdfs = _canonical_pdf_map(vault, keys)
+    canonical_pdfs = _canonical_pdf_map(vault, keys, zotero_dir=paths.get("zotero_dir"))
 
     papers: dict[str, dict[str, str]] = {}
     identities: dict[str, dict[str, str | None]] = {}
@@ -387,18 +488,17 @@ def _probe_lineage(
             is not None
         )
         embedding_identity = _current_embedding_identity(conn, vault)
-        # Batch the lineage vector identities ONCE per observation — the
-        # per-paper single-row query is 964 round-trips for the same table.
-        _vec_identity_map: dict[str, str | None] = {}
-        if has_lineage_table:
-            try:
-                for _row in conn.execute(
-                    "SELECT paper_id, identity FROM lineage WHERE layer = ?",
-                    (LINEAGE_LAYER_VECTOR,),
-                ):
-                    _vec_identity_map[_row[0]] = _row[1]
-            except sqlite3.Error:
-                _vec_identity_map = {}
+        bulk = _load_lineage_bulk_caches(conn, keys, has_lineage_table)
+        manifest_map = bulk["manifest_map"]
+        vec_lineage_map = bulk["vec_lineage_map"]
+        has_vec_tables = bulk["has_vec_tables"]
+        papers_with_vec = bulk["papers_with_vec"]
+        unit_counts_map = bulk["unit_counts_map"]
+        body_units_map = bulk["body_units_map"]
+        object_units_map = bulk["object_units_map"]
+        integrity_cache: dict[str, dict[str, str]] = {}
+        from paperforge.materialization.ocr import META_MISSING, read_meta
+
         for key in keys:
             # #162 corrective: each layer observes (state, identity) so the
             # NEXT layer can detect a freshly published upstream identity —
@@ -407,17 +507,20 @@ def _probe_lineage(
             _canonical_pdf = canonical_pdfs.get(key)
             # meta.json is read ONCE per paper for the whole observation —
             # lifecycle, detail, version, and execution all consume it.
-            if _ocr_dir is not None:
-                from paperforge.materialization.ocr import read_meta
-
-                _meta = read_meta(_ocr_dir)
-            else:
-                _meta = None
+            _raw_meta = read_meta(_ocr_dir) if _ocr_dir is not None else None
+            _meta = _raw_meta if _raw_meta is not None else META_MISSING
             ocr_state, ocr_identity = _probe_ocr_state(
                 _ocr_dir, canonical_pdf=_canonical_pdf, meta=_meta
             )
             retrieval_state, retrieval_identity = _probe_retrieval_state(
-                conn, key, ocr_state, ocr_identity
+                conn,
+                key,
+                ocr_state,
+                ocr_identity,
+                _manifest_map=manifest_map,
+                _body_units_map=body_units_map,
+                _object_units_map=object_units_map,
+                _integrity_cache=integrity_cache,
             )
             vector_state = _probe_vector_state(
                 conn,
@@ -426,6 +529,8 @@ def _probe_lineage(
                 retrieval_identity,
                 embedding_identity,
                 has_lineage_table,
+                _papers_with_vec=papers_with_vec,
+                _vec_lineage_map=vec_lineage_map,
             )
             # A `current` paper's fine-grained WHY is provably None: current
             # requires a verified provenance, and detail() returns exactly
@@ -436,6 +541,20 @@ def _probe_lineage(
                 None
                 if ocr_state == "current"
                 else _ocr_detail(_ocr_dir, canonical_pdf=_canonical_pdf, meta=_meta)
+            )
+            integrity_facts = (
+                integrity_cache[key]
+                if key in integrity_cache
+                else _retrieval_integrity_facts(
+                    conn,
+                    key,
+                    retrieval_state,
+                    ocr_state,
+                    retrieval_identity,
+                    _manifest_map=manifest_map,
+                    _body_units_map=body_units_map,
+                    _object_units_map=object_units_map,
+                )
             )
             state = {
                 "ocr": ocr_state,
@@ -453,16 +572,25 @@ def _probe_lineage(
                         and ocr_state == "current"
                         else None
                     ),
-                    "vector": _vector_detail(conn, key, retrieval_state),
+                    "vector": (
+                        None
+                        if vector_state == "current"
+                        else _vector_detail(
+                            conn,
+                            key,
+                            retrieval_state,
+                            _has_vec_tables=has_vec_tables,
+                            _papers_with_vec=papers_with_vec,
+                            _unit_counts_map=unit_counts_map,
+                        )
+                    ),
                     "render_consistency": _render_consistency_detail(_ocr_dir),
                     "render_reconciliation": _render_reconciliation_detail(_ocr_dir),
                 },
                 # P1-D: orthogonal facts per carrier — snapshot integrity,
                 # policy currency, lineage trust (ADR-0002 §6).  A verified
                 # old snapshot is NOT corrupt.
-                "integrity": _retrieval_integrity_facts(
-                    conn, key, retrieval_state, ocr_state, retrieval_identity
-                ),
+                "integrity": integrity_facts,
                 # Flags are non-failure facts (ADR-0002): a pipeline version
                 # difference is not a materialization defect.
                 "flags": {
@@ -479,11 +607,11 @@ def _probe_lineage(
             identities[key] = {
                 "ocr": ocr_identity,
                 "retrieval": retrieval_identity,
-                "vector": _vec_identity_map.get(key),
+                "vector": vec_lineage_map[key][0] if key in vec_lineage_map else None,
             }
         if include_library:
-            _orphan = _detect_orphans(vault)
             _residuals = _detect_residuals(vault)
+            _orphan = _orphans_from_residuals(_residuals)
     finally:
         conn.close()
 
@@ -532,18 +660,22 @@ def observe_lineage_papers(
     return _probe_lineage(vault, requested_keys=keys, include_library=False)
 
 
-def _detect_orphans(vault: Path) -> dict[str, Any]:
-    """Legacy workspace-orphan view — kept for compatibility.
-
-    Returns the workspace-carrier subset of the unified residual report
-    (papers with a workspace directory but absent from Zotero)."""
-    res = _detect_residuals(vault)
-    ws = [p for p in res["papers"] if p["workspace"]]
+def _orphans_from_residuals(res: dict[str, Any]) -> dict[str, Any]:
+    """Extract legacy workspace-orphan projection from an already-computed residual report."""
+    ws = [p for p in res.get("papers", []) if p.get("workspace")]
     return {
         "count": len(ws),
         "keys": [p["key"] for p in ws],
         "orphans": [{"key": p["key"], "title": p["title"]} for p in ws],
     }
+
+
+def _detect_orphans(vault: Path) -> dict[str, Any]:
+    """Legacy workspace-orphan view — kept for compatibility.
+
+    Returns the workspace-carrier subset of the unified residual report
+    (papers with a workspace directory but absent from Zotero)."""
+    return _orphans_from_residuals(_detect_residuals(vault))
 
 def detect_orphans(vault: Path) -> dict[str, Any]:
     """Public read-only seam for the maintenance probe — delegates to the canonical orphan view."""
@@ -864,11 +996,13 @@ def _ocr_execution_detail(
     per-paper read (never re-read inside)."""
     if paper_dir is None or not paper_dir.exists():
         return None
-    if meta is None:
-        from paperforge.materialization.ocr import read_meta
+    from paperforge.materialization.ocr import META_MISSING, read_meta
 
+    if meta is META_MISSING:
+        return None
+    if meta is None:
         meta = read_meta(paper_dir)
-    if not meta:
+    if not meta or not isinstance(meta, dict):
         return None
     status = str(meta.get("ocr_status", "") or "").strip().lower()
     if status not in ("queued", "running", "pending"):
@@ -1048,6 +1182,10 @@ def _retrieval_integrity_facts(
     retrieval_state: str,
     ocr_state: str,
     retrieval_identity: str | None = None,
+    *,
+    _manifest_map: dict[str, dict[str, Any] | None] | None = None,
+    _body_units_map: dict[str, list[dict[str, Any]]] | None = None,
+    _object_units_map: dict[str, list[dict[str, Any]]] | None = None,
 ) -> dict[str, str]:
     """P1-D orthogonal retrieval facts: snapshot integrity, policy
     currency, lineage trust — independent of the flat current/stale state.
@@ -1068,26 +1206,35 @@ def _retrieval_integrity_facts(
     if ocr_state not in ("current",):
         return facts  # upstream not current — integrity of an old carrier
         # is still worth reporting, but the caller gates on OCR currency.
-    row = conn.execute(
-        "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
-    ).fetchone()
-    manifest = None
-    if row:
-        try:
-            manifest = json.loads(row[0])
-        except (TypeError, ValueError):
-            manifest = None
+    if _manifest_map is not None:
+        manifest = _manifest_map.get(key)
+    else:
+        row = conn.execute(
+            "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
+        ).fetchone()
+        manifest = None
+        if row:
+            try:
+                manifest = json.loads(row[0])
+            except (TypeError, ValueError):
+                manifest = None
     try:
-        body_units = [
-            dict(r) for r in conn.execute(
-                "SELECT * FROM body_units WHERE paper_id = ?", (key,)
-            )
-        ]
-        object_units = [
-            dict(r) for r in conn.execute(
-                "SELECT * FROM object_units WHERE paper_id = ?", (key,)
-            )
-        ]
+        if _body_units_map is not None:
+            body_units = _body_units_map.get(key, [])
+        else:
+            body_units = [
+                dict(r) for r in conn.execute(
+                    "SELECT * FROM body_units WHERE paper_id = ?", (key,)
+                )
+            ]
+        if _object_units_map is not None:
+            object_units = _object_units_map.get(key, [])
+        else:
+            object_units = [
+                dict(r) for r in conn.execute(
+                    "SELECT * FROM object_units WHERE paper_id = ?", (key,)
+                )
+            ]
         body_count = len(body_units)
         object_count = len(object_units)
     except Exception:  # noqa: BLE001
@@ -1108,6 +1255,11 @@ def _probe_retrieval_state(
     key: str,
     ocr_state: str,
     current_ocr_identity: str | None,
+    *,
+    _manifest_map: dict[str, dict[str, Any] | None] | None = None,
+    _body_units_map: dict[str, list[dict[str, Any]]] | None = None,
+    _object_units_map: dict[str, list[dict[str, Any]]] | None = None,
+    _integrity_cache: dict[str, dict[str, str]] | None = None,
 ) -> tuple[str, str | None]:
     """(state, current_retrieval_identity) — current | stale | missing | unknown.
 
@@ -1130,15 +1282,22 @@ def _probe_retrieval_state(
         # Artifacts changed since the last publish — the published identity
         # is no longer materialized; the retrieval built on it is stale too.
         return "stale", None
-    row = conn.execute(
-        "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
-    ).fetchone()
-    if not row:
-        return "missing", None
-    try:
-        manifest = json.loads(row[0])
-    except (TypeError, ValueError):
-        return "unknown", None
+    if _manifest_map is not None:
+        if key not in _manifest_map:
+            return "missing", None
+        manifest = _manifest_map.get(key)
+        if manifest is None:
+            return "unknown", None
+    else:
+        row = conn.execute(
+            "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
+        ).fetchone()
+        if not row:
+            return "missing", None
+        try:
+            manifest = json.loads(row[0])
+        except (TypeError, ValueError):
+            return "unknown", None
     stored = manifest.get("retrieval_identity")
     recomputed = retrieval_identity_from_manifest(manifest)
     if not stored or not recomputed:
@@ -1160,9 +1319,19 @@ def _probe_retrieval_state(
     # Identity agreement is necessary but not sufficient: the carrier can
     # be mutated after publication.  A corrupt snapshot is actionable stale;
     # an unverifiable one fails closed as unknown.
-    integrity = _retrieval_integrity_facts(
-        conn, key, "current", ocr_state, recomputed
-    )["snapshot_integrity"]
+    facts = _retrieval_integrity_facts(
+        conn,
+        key,
+        "current",
+        ocr_state,
+        recomputed,
+        _manifest_map=_manifest_map,
+        _body_units_map=_body_units_map,
+        _object_units_map=_object_units_map,
+    )
+    if _integrity_cache is not None:
+        _integrity_cache[key] = facts
+    integrity = facts["snapshot_integrity"]
     if integrity == "corrupt":
         return "stale", recomputed
     if integrity != "verified":
@@ -1220,43 +1389,60 @@ def _current_embedding_identity(
     )
 
 
-def _vector_detail(conn: sqlite3.Connection, key: str, retrieval_state: str) -> str | None:
+def _vector_detail(
+    conn: sqlite3.Connection,
+    key: str,
+    retrieval_state: str,
+    *,
+    _has_vec_tables: bool | None = None,
+    _papers_with_vec: set[str] | None = None,
+    _unit_counts_map: dict[str, int] | None = None,
+) -> str | None:
     """Why a paper has no usable vectors (owner: vector 'missing' conflates
     distinct semantics — never built / no indexable content / not yet
     embedded).  Layer detail only; the top-level enum stays
     current/stale/missing/unknown."""
-    try:
-        rows = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name IN "
-            "('vec_fulltext_meta', 'vec_body_meta', 'vec_objects_meta')"
-        ).fetchall()
-        has_vec_tables = bool(rows)
-    except sqlite3.OperationalError:
-        has_vec_tables = False
+    if _has_vec_tables is not None:
+        has_vec_tables = _has_vec_tables
+    else:
+        try:
+            rows = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name IN "
+                "('vec_fulltext_meta', 'vec_body_meta', 'vec_objects_meta')"
+            ).fetchall()
+            has_vec_tables = bool(rows)
+        except sqlite3.OperationalError:
+            has_vec_tables = False
     if not has_vec_tables:
         return "vector_never_built"  # substrate absent — full embed.build
-    has_vectors = (
-        conn.execute(
-            "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? "
-            "UNION SELECT 1 FROM vec_body_meta WHERE paper_id = ? "
-            "UNION SELECT 1 FROM vec_objects_meta WHERE paper_id = ? "
-            "LIMIT 1",
-            (key, key, key),
-        ).fetchone()
-        is not None
-    )
+    if _papers_with_vec is not None:
+        has_vectors = key in _papers_with_vec
+    else:
+        has_vectors = (
+            conn.execute(
+                "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? "
+                "UNION SELECT 1 FROM vec_body_meta WHERE paper_id = ? "
+                "UNION SELECT 1 FROM vec_objects_meta WHERE paper_id = ? "
+                "LIMIT 1",
+                (key, key, key),
+            ).fetchone()
+            is not None
+        )
     if has_vectors:
         return None  # top-level current/stale/unknown already explains it
     # No vectors — distinguish no-content (legal terminal) from
     # not-yet-embedded (actionable).
-    try:
-        units = conn.execute(
-            "SELECT (SELECT COUNT(*) FROM body_units WHERE paper_id=?) "
-            "+ (SELECT COUNT(*) FROM object_units WHERE paper_id=?)",
-            (key, key),
-        ).fetchone()[0]
-    except sqlite3.OperationalError:
-        units = 0
+    if _unit_counts_map is not None:
+        units = int(_unit_counts_map.get(key, 0))
+    else:
+        try:
+            units = conn.execute(
+                "SELECT (SELECT COUNT(*) FROM body_units WHERE paper_id=?) "
+                "+ (SELECT COUNT(*) FROM object_units WHERE paper_id=?)",
+                (key, key),
+            ).fetchone()[0]
+        except sqlite3.OperationalError:
+            units = 0
     if units == 0:
         return "vector_no_content"  # pure image/table PDF — cannot embed
     return "vector_not_embedded"  # has content, needs embed.resume
@@ -1269,22 +1455,28 @@ def _probe_vector_state(
     current_retrieval_identity: str | None,
     embedding_identity: str | None,
     has_lineage_table: bool,
+    *,
+    _papers_with_vec: set[str] | None = None,
+    _vec_lineage_map: dict[str, tuple[Any, Any, Any]] | None = None,
 ) -> str:
     """Vector: current | stale | missing | unknown."""
-    try:
-        has_vectors = (
-            conn.execute(
-                "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? "
-                "UNION SELECT 1 FROM vec_body_meta WHERE paper_id = ? "
-                "UNION SELECT 1 FROM vec_objects_meta WHERE paper_id = ? "
-                "LIMIT 1",
-                (key, key, key),
-            ).fetchone()
-            is not None
-        )
-    except sqlite3.OperationalError:
-        # No vec tables yet (DB exists, vectors never built) → missing.
-        return "missing"
+    if _papers_with_vec is not None:
+        has_vectors = key in _papers_with_vec
+    else:
+        try:
+            has_vectors = (
+                conn.execute(
+                    "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? "
+                    "UNION SELECT 1 FROM vec_body_meta WHERE paper_id = ? "
+                    "UNION SELECT 1 FROM vec_objects_meta WHERE paper_id = ? "
+                    "LIMIT 1",
+                    (key, key, key),
+                ).fetchone()
+                is not None
+            )
+        except sqlite3.OperationalError:
+            # No vec tables yet (DB exists, vectors never built) → missing.
+            return "missing"
     if not has_vectors:
         return "missing"
     if not has_lineage_table:
@@ -1294,11 +1486,14 @@ def _probe_vector_state(
         # tree): any vectors that exist are part of that incomplete
         # materialization — report incomplete, regardless of a lineage row.
         return "incomplete"
-    row = conn.execute(
-        "SELECT identity, derived_from, embedding_identity FROM lineage "
-        "WHERE paper_id = ? AND layer = ?",
-        (key, LINEAGE_LAYER_VECTOR),
-    ).fetchone()
+    if _vec_lineage_map is not None:
+        row = _vec_lineage_map.get(key)
+    else:
+        row = conn.execute(
+            "SELECT identity, derived_from, embedding_identity FROM lineage "
+            "WHERE paper_id = ? AND layer = ?",
+            (key, LINEAGE_LAYER_VECTOR),
+        ).fetchone()
     if not row:
         # Vectors exist but no lineage row (legacy build) → unknown.
         return "unknown"

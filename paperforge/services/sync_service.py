@@ -16,6 +16,7 @@ from paperforge.adapters.obsidian_frontmatter import (
 )
 from paperforge.core import timing
 from paperforge.core.errors import ErrorCode
+from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
 from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
@@ -192,7 +193,7 @@ class SyncService:
             records_by_title: dict[str, list[str]] = {}
             records_info: dict[str, dict] = {}
 
-            for record_file in domain_dir.rglob("*.md"):
+            for record_file in safe_rglob(domain_dir, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
                 if record_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
                     continue
                 try:
@@ -588,7 +589,7 @@ class SyncService:
 
             if not json_output:
                 print(f"index-refresh: {index_count} entries in index")
-                total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
+                total = len(safe_rglob(paths["literature"], suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS)) if paths["literature"].exists() else 0
                 print(f"index-refresh: {total} formal note(s) in literature")
 
             # ── Phase 5: OCR version scan ──

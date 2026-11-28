@@ -115,16 +115,6 @@ def run(args: argparse.Namespace) -> int:
         status = get_embed_status(vault, probe=getattr(args, "probe", False))
         status["build_state"] = read_vector_build_state(vault)
 
-        _dep_missing = []
-        try:
-            import openai  # noqa: F401
-        except ImportError:
-            _dep_missing.append("openai")
-        try:
-            import sqlite_vec  # noqa: F401
-        except ImportError:
-            _dep_missing.append("sqlite_vec")
-
         result = PFResult(ok=True, command="embed status", version=PF_VERSION, data=status)
         if args.json:
             print(result.to_json())
