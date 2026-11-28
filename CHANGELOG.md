@@ -4,6 +4,17 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.12] - 2026-11-28
+
+### PBAF v2.1 Hardening, Selective FTS5 Integrity, Cross-OS Desktop CI & Release Gates (#438)
+
+- **Selective `body_units_fts` Contract & Same-Rowid Content Parity (`db.py`, `schema.py`, `prune.py`, `gateway.py`, `search.py`, `backend_audit.py`)**: Replaced unsafe native FTS5 `'rebuild'` on selective external-content `body_units_fts` with `delete-all` + `WHERE indexable = 1` rebuilds, added `bu.indexable = 1` defense-in-depth guards on retrieval queries, upgraded PBAF `D5` to inspect `body_units_fts_docsize`, orphaned rowids, and boundary rowid-bound `MATCH` probes, and healed silent same-rowid text drift without schema bumps.
+- **macOS & Linux Active `PATH` Precedence (`node-transport.ts`)**: Appended system/fallback Python and toolchain directories after the host `PATH` (with deduplication) instead of shadowing active virtualenvs / CI / Homebrew toolchains on macOS and Linux.
+- **Zotero Folder-First Scope Guardrail & PDF Runtime Budgets (`zotero-import-scope.ts`, `perf-pdf-runtime.test.ts`, `ci.yml`, `publish.yml`)**: Prompted folder selection before importing collections, capped overlapping collection `item_count` sums cleanly against `totalPapers`, and enforced `PF_PERF_ENFORCE_BUDGETS=1` in both CI (`L3`) and Release Gate 2.
+- **Atomic Draft-First Publishing & Cross-OS Release Verification (`ci-chaos.yml`, `ci-cross-os-desktop.yml`, `publish.yml`)**: Gated release publishing on 4-cell L6 Chaos (Windows/macOS/Linux py3.11 + Ubuntu py3.12) and macOS/Linux real Obsidian `H1`/`H2` + POSIX CLI signal-stop verification, and switched GitHub Release uploads to `--draft` with unified exact-asset-set and remote SHA-256 byte verification before publishing.
+
+---
+
 ## [2.0.11] - 2026-11-27
 
 ### Express Setup Auto-Chain, Safe Base Note Opening & External PDF Property Fix
