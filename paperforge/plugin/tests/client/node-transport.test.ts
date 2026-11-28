@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { EventEmitter } from "events";
+import * as path from "path";
 const runtimeState = vi.hoisted(() => ({ pythonPath: "C:/py/python.exe" }));
 vi.mock("../../src/services/managed-runtime", () => ({
   readRuntimePointer: () =>
@@ -20,7 +21,10 @@ vi.mock("../../src/services/managed-runtime", () => ({
   resolveRuntimeCommand: (pointer: { pythonPath: string } | null) =>
     pointer ? { command: pointer.pythonPath, args: [] } : null,
 }));
-import { NodeProcessTransport } from "../../src/client/node-transport";
+import {
+  NodeProcessTransport,
+  paperforgeEnrichedEnv,
+} from "../../src/client/node-transport";
 
 class MockStream extends EventEmitter {
   public setEncoding = vi.fn();
@@ -135,6 +139,33 @@ describe("NodeProcessTransport", () => {
       await expect(execPromise).rejects.toThrow(
         /PaperForge command failed \(exit code 1\)/
       );
+    });
+  });
+
+  describe("paperforgeEnrichedEnv", () => {
+    it("preserves active PATH ahead of fallback system directories", () => {
+      const prevPath = process.env.PATH;
+      const customBin = "/custom/priority-python/bin";
+      process.env.PATH = prevPath
+        ? `${customBin}${path.delimiter}${prevPath}`
+        : customBin;
+      try {
+        const enriched = paperforgeEnrichedEnv();
+        const parts = (enriched.PATH ?? "").split(path.delimiter);
+        expect(parts[0]).toBe(customBin);
+        for (const fallback of [
+          "/usr/bin",
+          "/usr/local/bin",
+          "/opt/homebrew/bin",
+        ]) {
+          const idx = parts.indexOf(fallback);
+          if (idx !== -1) {
+            expect(idx).toBeGreaterThan(0);
+          }
+        }
+      } finally {
+        process.env.PATH = prevPath;
+      }
     });
   });
 });

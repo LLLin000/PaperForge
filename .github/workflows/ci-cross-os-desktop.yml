@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -45,6 +45,7 @@ jobs:
           PF_PYTHON_BIN="$RUNNER_TEMP/pf-python-bin"
           mkdir -p "$PF_PYTHON_BIN"
           ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python"
+          ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python3"
           ln -sf "$(brew --prefix python@3.11)/bin/pip3.11" "$PF_PYTHON_BIN/pip"
           echo "$PF_PYTHON_BIN" >> "$GITHUB_PATH"
           "$PF_PYTHON_BIN/python" -c "import sqlite3; assert hasattr(sqlite3.connect(':memory:'), 'enable_load_extension')"
@@ -217,6 +218,7 @@ jobs:
           PF_PYTHON_BIN="$RUNNER_TEMP/pf-python-bin"
           mkdir -p "$PF_PYTHON_BIN"
           ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python"
+          ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python3"
           ln -sf "$(brew --prefix python@3.11)/bin/pip3.11" "$PF_PYTHON_BIN/pip"
           echo "$PF_PYTHON_BIN" >> "$GITHUB_PATH"
           "$PF_PYTHON_BIN/python" -c "import sqlite3; assert hasattr(sqlite3.connect(':memory:'), 'enable_load_extension')"
@@ -291,6 +293,7 @@ jobs:
           PF_PYTHON_BIN="$RUNNER_TEMP/pf-python-bin"
           mkdir -p "$PF_PYTHON_BIN"
           ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python"
+          ln -sf "$(brew --prefix python@3.11)/bin/python3.11" "$PF_PYTHON_BIN/python3"
           ln -sf "$(brew --prefix python@3.11)/bin/pip3.11" "$PF_PYTHON_BIN/pip"
           echo "$PF_PYTHON_BIN" >> "$GITHUB_PATH"
           "$PF_PYTHON_BIN/python" -c "import sqlite3; assert hasattr(sqlite3.connect(':memory:'), 'enable_load_extension')"

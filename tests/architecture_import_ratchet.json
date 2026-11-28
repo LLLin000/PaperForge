@@ -54,7 +54,7 @@
       "1369:paperforge.embedding._config"
     ],
     "paperforge.plugin.test.fixtures.build_e2e_vault": [
-      "197:paperforge.lineage:_resolve_canonical_pdf"
+      "204:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.services.embedding": [
       "1171:paperforge.embedding.substrate:_has_any_rows",

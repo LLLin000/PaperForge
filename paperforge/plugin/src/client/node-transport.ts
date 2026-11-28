@@ -376,12 +376,11 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   }
   const plat = process.platform;
   const home = os.homedir();
-  const extras: string[] = [];
   const tailExtras: string[] = [];
   const gitDir = resolveGitDir();
-  if (gitDir) extras.push(gitDir);
+  if (gitDir) tailExtras.push(gitDir);
   if (plat === "darwin") {
-    extras.push(
+    tailExtras.push(
       "/opt/homebrew/bin",
       "/usr/local/bin",
       "/usr/bin",
@@ -392,7 +391,7 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
       `${home}/miniconda3/bin`
     );
   } else if (plat === "linux") {
-    extras.push(
+    tailExtras.push(
       "/usr/local/bin",
       "/usr/bin",
       "/snap/bin",
@@ -423,15 +422,24 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   // Children resolve binaries through PATH only. A GUI host can start with a
   // PATH that is empty or stripped to nothing usable (menu-launched apps on
   // macOS/Linux, some sandboxes); the installer then fails with "not
-  // recognized" even though probing from this process worked. Keep a floor.
+  // recognized" even though probing from this process worked. Keep a floor,
+  // and always append fallback system directories AFTER active process PATH so
+  // virtualenv/pyenv/conda/CI toolchains are never shadowed.
   const floor =
     plat === "win32"
       ? "C:\\Windows\\System32;C:\\Windows"
       : "/usr/local/bin:/usr/bin:/bin";
   const cur = env.PATH || process.env.PATH || floor;
-  env.PATH = [...extras, cur, ...tailExtras]
-    .filter(Boolean)
-    .join(path.delimiter);
+  const seenPath = new Set<string>();
+  const mergedPath: string[] = [];
+  for (const part of [cur, ...tailExtras]
+    .join(path.delimiter)
+    .split(path.delimiter)) {
+    if (!part || seenPath.has(part)) continue;
+    seenPath.add(part);
+    mergedPath.push(part);
+  }
+  env.PATH = mergedPath.join(path.delimiter);
   return stripCredentialEnv(env) as Record<string, string | undefined>;
 }
 
