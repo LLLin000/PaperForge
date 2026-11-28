@@ -1290,9 +1290,16 @@ def gate_d5_cross_carrier_coherence(vault: Path) -> GateResult:
         con = sqlite3.connect(f"file:{db_p.as_posix()}?mode=ro", uri=True)
         try:
             tbls = {str(r[0]) for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
-            for t in ("papers", "workspace_registry", "body_units", "body_units_fts"):
+            for t in ("papers", "workspace_registry", "body_units", "body_units_fts_docsize", "paper_fts_docsize"):
                 if t in tbls:
                     metrics[t] = con.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0]
+            if "body_units" in tbls:
+                metrics["body_units_indexable"] = con.execute(
+                    "SELECT COUNT(*) FROM body_units WHERE indexable = 1"
+                ).fetchone()[0]
+                metrics["body_units_excluded"] = con.execute(
+                    "SELECT COUNT(*) FROM body_units WHERE indexable = 0"
+                ).fetchone()[0]
             if "papers" in metrics and "index_items" in metrics and metrics["papers"] != metrics["index_items"]:
                 findings.append(
                     AuditFinding(
@@ -1317,7 +1324,7 @@ def gate_d5_cross_carrier_coherence(vault: Path) -> GateResult:
                         f"Carrier mismatch: papers={metrics['papers']} vs workspace_registry={metrics['workspace_registry']}",
                     )
                 )
-            if "body_units" in metrics and "body_units_fts" in metrics and metrics["body_units"] != metrics["body_units_fts"]:
+            if "paper_fts_docsize" in metrics and "papers" in metrics and metrics["paper_fts_docsize"] != metrics["papers"]:
                 findings.append(
                     AuditFinding(
                         "D5",
@@ -1325,12 +1332,90 @@ def gate_d5_cross_carrier_coherence(vault: Path) -> GateResult:
                         "P0",
                         "paperforge.db",
                         1,
-                        "body_units_fts",
-                        f"FTS5 drift: body_units={metrics['body_units']} vs body_units_fts={metrics['body_units_fts']}",
+                        "paper_fts_docsize",
+                        f"FTS5 drift: papers={metrics['papers']} vs paper_fts_docsize={metrics['paper_fts_docsize']}",
                     )
                 )
+            if (
+                "body_units_indexable" in metrics
+                and "body_units_fts_docsize" in metrics
+                and metrics["body_units_indexable"] != metrics["body_units_fts_docsize"]
+            ):
+                findings.append(
+                    AuditFinding(
+                        "D5",
+                        "P2/P11",
+                        "P0",
+                        "paperforge.db",
+                        1,
+                        "body_units_fts_docsize",
+                        (
+                            f"FTS5 drift: body_units(indexable=1)={metrics['body_units_indexable']} "
+                            f"vs body_units_fts_docsize={metrics['body_units_fts_docsize']}"
+                        ),
+                    )
+                )
+            if "body_units_fts_docsize" in tbls and "body_units" in tbls:
+                orphan_cnt = con.execute(
+                    """SELECT COUNT(*) FROM body_units_fts_docsize d
+                       LEFT JOIN body_units b ON b.rowid = d.id
+                       WHERE b.rowid IS NULL OR b.indexable != 1"""
+                ).fetchone()[0]
+                metrics["body_units_fts_orphans"] = orphan_cnt
+                if orphan_cnt > 0:
+                    findings.append(
+                        AuditFinding(
+                            "D5",
+                            "P2/P11",
+                            "P0",
+                            "paperforge.db",
+                            1,
+                            "body_units_fts_orphans",
+                            f"FTS5 membership drift: {orphan_cnt} indexed docsize row(s) missing or indexable!=1",
+                        )
+                    )
+            if metrics.get("body_units_indexable", 0) > 0 and "body_units_fts" in tbls:
+                sample_rows = con.execute(
+                    "SELECT unit_text FROM body_units WHERE indexable = 1 LIMIT 20"
+                ).fetchall()
+                probe_tok = None
+                for sr in sample_rows:
+                    m = re.search(r"[A-Za-z]{5,}", str(sr[0] or ""))
+                    if m:
+                        probe_tok = m.group(0)
+                        break
+                if probe_tok:
+                    hit = con.execute(
+                        "SELECT 1 FROM body_units_fts WHERE body_units_fts MATCH ? LIMIT 1",
+                        (probe_tok,),
+                    ).fetchone()
+                    metrics["body_units_fts_match_probe"] = 1 if hit is not None else 0
+                    if hit is None:
+                        findings.append(
+                            AuditFinding(
+                                "D5",
+                                "P2/P11",
+                                "P0",
+                                "paperforge.db",
+                                1,
+                                "body_units_fts MATCH",
+                                f"FTS5 MATCH probe returned 0 hits for indexed token {probe_tok!r}",
+                            )
+                        )
         finally:
             con.close()
+    if not metrics and not findings:
+        findings.append(
+            AuditFinding(
+                "D5",
+                "P11",
+                "P1",
+                str(vault),
+                1,
+                "no carriers",
+                "No index/DB carriers found in target vault — D5 check not applicable",
+            )
+        )
     has_p0 = any(f.severity == "P0" for f in findings)
     return GateResult(
         gate_id="D5_cross_carrier_coherence",

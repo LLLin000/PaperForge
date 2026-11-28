@@ -1393,3 +1393,153 @@ def test_inspect_vault_upgrade_fast_ocr_and_large_db_probe(tmp_path: Path, monke
     assert not any(t.get("id") == "db.integrity_failed" for t in plan["category_c_tamper"])
 
 
+def test_pf_r01_selective_body_units_fts_contract_heal_retrieval_and_d5(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """PF-R01: body_units_fts never leaks indexable=0 across rebuild/heal/search/prune and D5 catches drift."""
+    import scripts.backend_audit as ba
+    import paperforge.reader_gate as rg
+    from paperforge.embedding.search import _bm25_search
+    from paperforge.retrieval.gateway import _run_body_unit_discovery
+
+    vault = _make_v2_vault(tmp_path, "pfr01_fts")
+    _write_index(vault, [{"zotero_key": "R01KEY01", "title": "R01 Selective Study", "domain": "Ortho"}])
+    db_path = get_memory_db_path(vault)
+
+    conn = get_connection(db_path)
+    try:
+        ensure_schema(conn)
+        conn.execute(
+            "INSERT INTO papers(zotero_key, citation_key, title, domain) VALUES (?, ?, ?, ?)",
+            ("R01KEY01", "r01study", "R01 Selective Study", "Ortho"),
+        )
+        conn.execute(
+            "INSERT INTO workspace_registry(zotero_key, domain, workspace_relpath, verified_at) VALUES (?, ?, ?, ?)",
+            ("R01KEY01", "Ortho", "Resources/Literature/Ortho/R01KEY01", "2026-11-28T00:00:00Z"),
+        )
+        _seed_tier0_rows(conn, "R01KEY01")
+        _upsert_body_units(
+            conn,
+            [
+                {
+                    "unit_id": "R01KEY01:body:m:1",
+                    "paper_id": "R01KEY01",
+                    "node_id": "m:1",
+                    "section_path": "Methods",
+                    "section_path_json": '["Methods"]',
+                    "section_level": 1,
+                    "section_title": "Methods",
+                    "unit_text": "alphaIndexableToken clinical endpoint measurement",
+                    "unit_kind": "body",
+                    "part_ordinal": 0,
+                    "page_span": [1, 1],
+                    "block_span": ["b1"],
+                    "token_estimate": 6,
+                    "indexable": True,
+                    "veto_reason": "",
+                    "quality_hints": [],
+                },
+                {
+                    "unit_id": "R01KEY01:body:r:2",
+                    "paper_id": "R01KEY01",
+                    "node_id": "r:2",
+                    "section_path": "References",
+                    "section_path_json": '["References"]',
+                    "section_level": 1,
+                    "section_title": "References",
+                    "unit_text": "betaVetoedToken bibliography boiler plate citation",
+                    "unit_kind": "body",
+                    "part_ordinal": 1,
+                    "page_span": [9, 9],
+                    "block_span": ["b99"],
+                    "token_estimate": 6,
+                    "indexable": False,
+                    "veto_reason": "references_vetoed",
+                    "quality_hints": [],
+                },
+            ],
+        )
+        conn.commit()
+
+        # 1. rebuild_fts_indexes must strictly enforce indexable = 1
+        rebuild_fts_indexes(conn)
+        conn.commit()
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts_docsize").fetchone()[0] == 1
+        assert (
+            conn.execute(
+                "SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'betaVetoedToken'"
+            ).fetchone()[0]
+            == 0
+        )
+        assert (
+            conn.execute(
+                "SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'alphaIndexableToken'"
+            ).fetchone()[0]
+            == 1
+        )
+        d5_ok = ba.gate_d5_cross_carrier_coherence(vault)
+        assert d5_ok.status == "PASS", d5_ok.findings
+
+        # 2. Simulate legacy native 'rebuild' corrupting selective indexing (leaks indexable=0)
+        conn.execute("INSERT INTO body_units_fts(body_units_fts) VALUES('rebuild')")
+        conn.commit()
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts_docsize").fetchone()[0] == 2
+        assert (
+            conn.execute(
+                "SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'betaVetoedToken'"
+            ).fetchone()[0]
+            == 1
+        )
+
+        # Defense-in-depth: BOTH retrieval APIs still filter out indexable=0 even while FTS is poisoned
+        monkeypatch.setattr(rg, "filter_readable", lambda _v, hits, **_kw: hits)
+        gw_vetoed = _run_body_unit_discovery(vault, "betaVetoedToken", limit=5)
+        assert gw_vetoed.ok and gw_vetoed.data["results"] == []
+        gw_valid = _run_body_unit_discovery(vault, "alphaIndexableToken", limit=5)
+        assert gw_valid.ok and len(gw_valid.data["results"]) == 1
+
+        bm25_vetoed = _bm25_search(conn, ["betaVetoedToken"], limit=5)
+        assert bm25_vetoed == []
+        bm25_valid = _bm25_search(conn, ["alphaIndexableToken"], limit=5)
+        assert len(bm25_valid) == 1
+
+        # PBAF D5 catches docsize / membership drift as FAIL (P0), never false green
+        d5_poison = ba.gate_d5_cross_carrier_coherence(vault)
+        assert d5_poison.status == "FAIL"
+
+        # 3. check_and_heal_fts detects parity mismatch, heals selectively, and preserves Tier-0
+        heal_res = check_and_heal_fts(conn)
+        conn.commit()
+        assert "body_units_fts" in heal_res["repaired"]
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts_docsize").fetchone()[0] == 1
+        assert (
+            conn.execute(
+                "SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'betaVetoedToken'"
+            ).fetchone()[0]
+            == 0
+        )
+        assert (
+            conn.execute(
+                "SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'alphaIndexableToken'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert conn.execute("SELECT COUNT(*) FROM reading_log WHERE paper_id='R01KEY01'").fetchone()[0] == 1
+        assert ba.gate_d5_cross_carrier_coherence(vault).status == "PASS"
+
+        # 4. safe_delete_body_units_fts cleans FTS completely leaving 0 orphaned docsize rows
+        assert safe_delete_body_units_fts(conn, "R01KEY01") is True
+        conn.execute("DELETE FROM body_units WHERE paper_id = 'R01KEY01'")
+        conn.commit()
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts_docsize").fetchone()[0] == 0
+    finally:
+        conn.close()
+
+    # 5. D5 on an empty dir never silently PASSes
+    empty_dir = tmp_path / "empty_no_carriers"
+    empty_dir.mkdir()
+    d5_empty = ba.gate_d5_cross_carrier_coherence(empty_dir)
+    assert d5_empty.status == "WARN"
+
+
+

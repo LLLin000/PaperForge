@@ -172,6 +172,52 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
         logger.debug("sqlite_vec not installed: %s", exc)
 
 
+def _rebuild_body_units_fts(conn: sqlite3.Connection) -> None:
+    """Rebuild ``body_units_fts`` strictly from ``indexable = 1`` rows."""
+    conn.execute("INSERT INTO body_units_fts(body_units_fts) VALUES('delete-all')")
+    conn.execute(
+        """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
+           SELECT rowid, unit_id, paper_id, section_path, unit_text
+           FROM body_units
+           WHERE indexable = 1"""
+    )
+
+
+def _rebuild_single_fts(conn: sqlite3.Connection, tbl: str) -> None:
+    """Rebuild one external-content FTS5 table according to its indexing contract."""
+    if tbl == "body_units_fts":
+        _rebuild_body_units_fts(conn)
+    else:
+        conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+
+
+def _fts_integrity_needs_heal(conn: sqlite3.Connection, tbl: str) -> bool:
+    """Return True when an external-content FTS5 table fails structural or parity checks."""
+    try:
+        if tbl == "paper_fts":
+            conn.execute("INSERT INTO paper_fts(paper_fts, rank) VALUES('integrity-check', 1)")
+            papers_cnt = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+            doc_cnt = conn.execute("SELECT COUNT(*) FROM paper_fts_docsize").fetchone()[0]
+            return doc_cnt != papers_cnt
+        if tbl == "body_units_fts":
+            conn.execute("INSERT INTO body_units_fts(body_units_fts) VALUES('integrity-check')")
+            idx_cnt = conn.execute("SELECT COUNT(*) FROM body_units WHERE indexable = 1").fetchone()[0]
+            doc_cnt = conn.execute("SELECT COUNT(*) FROM body_units_fts_docsize").fetchone()[0]
+            if doc_cnt != idx_cnt:
+                return True
+            drift = conn.execute(
+                """SELECT 1 FROM body_units_fts_docsize d
+                   LEFT JOIN body_units b ON b.rowid = d.id
+                   WHERE b.rowid IS NULL OR b.indexable != 1
+                   LIMIT 1"""
+            ).fetchone()
+            return drift is not None
+        conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('integrity-check')")
+        return False
+    except sqlite3.DatabaseError:
+        return True
+
+
 def rebuild_fts_indexes(
     conn: sqlite3.Connection,
     tables: tuple[str, ...] = ("paper_fts", "body_units_fts"),
@@ -185,7 +231,7 @@ def rebuild_fts_indexes(
     for tbl in tables:
         if tbl not in existing:
             continue
-        conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+        _rebuild_single_fts(conn, tbl)
         rebuilt.append(tbl)
     return rebuilt
 
@@ -241,14 +287,12 @@ def check_and_heal_fts(
         if tbl not in existing:
             continue
         checked.append(tbl)
-        try:
-            conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('integrity-check')")
-        except sqlite3.DatabaseError:
+        if _fts_integrity_needs_heal(conn, tbl):
             try:
-                conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+                _rebuild_single_fts(conn, tbl)
             except sqlite3.DatabaseError:
                 _recreate_external_fts_table(conn, tbl)
-                conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+                _rebuild_single_fts(conn, tbl)
             repaired.append(tbl)
     return {"checked": checked, "repaired": repaired}
 

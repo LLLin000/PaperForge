@@ -389,7 +389,8 @@ def _bm25_search(
                    FROM body_units_fts bu_fts
                    JOIN body_units bu ON bu_fts.unit_id = bu.unit_id
                    JOIN papers p ON bu.paper_id = p.zotero_key
-                   WHERE body_units_fts MATCH ?"""
+                   WHERE body_units_fts MATCH ?
+                     AND bu.indexable = 1"""
             if paper_id:
                 sql += " AND bu.paper_id = ?"
                 params.append(paper_id)
