@@ -6,12 +6,34 @@ Supports absolute, vault-relative, junction/symlink, and Zotero storage-relative
 from __future__ import annotations
 
 import ctypes
+import functools
 import logging
 import os
 import re
+import stat
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+_WIN_ABS_PATH_RE = re.compile(r"^[A-Za-z]:[/\\]")
+_POSIX_USER_PREFIXES = ("/Users/", "/home/", "/Volumes/", "/mnt/")
+
+
+def _is_foreign_os_absolute(raw: str) -> bool:
+    """Return True if *raw* looks like an absolute path from a different host OS."""
+    if os.name == "nt":
+        return raw.startswith(_POSIX_USER_PREFIXES)
+    return bool(_WIN_ABS_PATH_RE.match(raw))
+
+
+@functools.lru_cache(maxsize=1)
+def _cached_local_zotero_dir() -> Path | None:
+    try:
+        from paperforge.adapters.zotero_sqlite import detect_zotero_data_dir
+
+        detected = detect_zotero_data_dir()
+        return Path(detected) if detected else None
+    except Exception:
+        return None
 
 
 def first_pdf_in_storage_dir(storage_key: str, zotero_dir: Path | None) -> str:
@@ -29,7 +51,7 @@ _first_pdf_in_storage_dir = first_pdf_in_storage_dir
 
 
 def _candidate_zotero_dirs(vault_root: Path, zotero_dir: Path | None) -> list[Path]:
-    """Candidate Zotero roots including explicit zotero_dir and in-vault junctions."""
+    """Candidate Zotero roots including explicit zotero_dir, in-vault junctions, and local default."""
     candidates: list[Path] = []
     if zotero_dir is not None:
         candidates.append(zotero_dir)
@@ -37,6 +59,10 @@ def _candidate_zotero_dirs(vault_root: Path, zotero_dir: Path | None) -> list[Pa
         cand = vault_root / sub / "Zotero"
         if cand not in candidates:
             candidates.append(cand)
+    if zotero_dir is None:
+        local_z = _cached_local_zotero_dir()
+        if local_z is not None and local_z not in candidates:
+            candidates.append(local_z)
     return candidates
 
 
@@ -185,19 +211,19 @@ def resolve_pdf_path(
                 if fallback:
                     return fallback
 
-    # Try vault-relative
-    vault_candidate = (vault_root / raw.replace("\\", "/").replace("/", os.sep)).resolve()
-    if is_valid_pdf(vault_candidate):
-        return str(vault_candidate)
+    # Skip pointless vault_root/<abs> joins when syncing a vault across Windows <-> macOS/Linux
+    if not _is_foreign_os_absolute(raw):
+        # Try vault-relative
+        vault_candidate = (vault_root / raw.replace("\\", "/").replace("/", os.sep)).resolve()
+        if is_valid_pdf(vault_candidate):
+            return str(vault_candidate)
 
-    # Try junction resolution on vault-relative
-    vault_resolved = resolve_junction(vault_candidate)
-    if is_valid_pdf(vault_resolved):
-        return str(vault_resolved)
+        # Try junction resolution on vault-relative
+        vault_resolved = resolve_junction(vault_candidate)
+        if is_valid_pdf(vault_resolved):
+            return str(vault_resolved)
 
-    # vault-relative exact-name miss → the storage KEY directory may hold
-    # the PDF under a renamed/restore-shuffled filename (the storage key is
-    # the identity anchor, the filename is only a label).
+    # Fallback: extract Zotero 8-char storage key across host OS path boundaries
     m = re.search(r"storage[/\\]([A-Za-z0-9]{8})", raw, re.IGNORECASE)
     if m:
         for zcand in _candidate_zotero_dirs(vault_root, zotero_dir):
@@ -247,8 +273,9 @@ def resolve_junction(path: Path) -> Path:
 
 
 def is_valid_pdf(path: Path) -> bool:
-    """Check if path points to an existing, non-empty, readable file."""
+    """Check if path points to an existing, non-empty, regular file in one syscall."""
     try:
-        return path.is_file() and path.stat().st_size > 0
+        st = path.stat()
+        return stat.S_ISREG(st.st_mode) and st.st_size > 0
     except (OSError, PermissionError):
         return False

@@ -12,9 +12,22 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
+
+
+def assert_vault_in_temp(vault: Path) -> None:
+    resolved = vault.resolve()
+    tmp_root = Path(tempfile.gettempdir()).resolve()
+    vault_lower = str(resolved).lower()
+    assert resolved.is_relative_to(tmp_root) or any(x in vault_lower for x in ("tmp", "temp")), (
+        f"Isolation VIOLATION: vault path {vault} does not reside under temp dir {tmp_root}"
+    )
+
+
+_assert_vault_in_temp = assert_vault_in_temp
 
 
 # ---------------------------------------------------------------------------
@@ -99,11 +112,7 @@ def chaos_vault(tmp_path: Path) -> Path:
 
     builder = VaultBuilder()
     vault = Path(builder.build("minimal"))
-
-    vault_lower = str(vault).lower()
-    assert any(x in vault_lower for x in ("tmp", "temp")), (
-        f"Isolation VIOLATION: vault path {vault} does not contain 'tmp' or 'Temp'"
-    )
+    _assert_vault_in_temp(vault)
 
     yield vault
 
@@ -121,11 +130,7 @@ def chaos_vault_standard(tmp_path: Path) -> Path:
 
     builder = VaultBuilder()
     vault = Path(builder.build("standard"))
-
-    vault_lower = str(vault).lower()
-    assert any(x in vault_lower for x in ("tmp", "temp")), (
-        f"Isolation VIOLATION: vault path {vault} does not contain 'tmp' or 'Temp'"
-    )
+    _assert_vault_in_temp(vault)
 
     yield vault
 

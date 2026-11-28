@@ -60,10 +60,11 @@ PROVENANCE_DEFECTS = frozenset({
 })
 
 PUBLISH_PENDING_RECENT = "publish_pending_recent"  # publishing → wait
+META_MISSING: Any = object()  # caller already tried read_meta() and file was absent/unreadable
 
 
 def provenance_state(
-    paper_dir: Path, canonical_pdf: Path | None, meta: dict | None = None
+    paper_dir: Path, canonical_pdf: Path | None, meta: Any = None
 ) -> str | None:
     """[2] OCR ownership / source provenance — is this raw OCR actually
     this paper's, from THIS PDF?
@@ -88,6 +89,8 @@ def provenance_state(
     ``meta`` may be injected by a caller that already read meta.json once
     for the same observation (probe reads it a single time per paper).
     """
+    if meta is META_MISSING:
+        return PROVENANCE_UNKNOWN
     if meta is None:
         meta = read_meta(paper_dir)
     if not meta:
@@ -175,7 +178,7 @@ def queued_is_zombie(paper_dir: Path, meta: dict | None) -> bool:
         return False
 
 
-def meta_lifecycle(paper_dir: Path, meta: dict | None = None) -> tuple[str | None, str | None]:
+def meta_lifecycle(paper_dir: Path, meta: Any = None) -> tuple[str | None, str | None]:
     """[1] meta.json ocr_status → (detail, top-level state).
 
     Covers the REAL worker lifecycle enum, not a subset: none/pending,
@@ -188,6 +191,8 @@ def meta_lifecycle(paper_dir: Path, meta: dict | None = None) -> tuple[str | Non
     ``meta`` may be injected by a caller that already read meta.json once
     (probe reads it a single time per paper).
     """
+    if meta is META_MISSING:
+        return None, None
     if meta is None:
         meta = read_meta(paper_dir)
     if not meta:
@@ -231,13 +236,15 @@ def publish_marker_state(paper_dir: Path) -> tuple[str | None, str | None]:
     return PUBLISH_PENDING_STALE, "incomplete"
 
 
-def is_old_pipeline(paper_dir: Path, meta: dict | None = None) -> bool:
+def is_old_pipeline(paper_dir: Path, meta: Any = None) -> bool:
     """True when the paper was produced by an older OCR pipeline version
     than the current one — the product may be structurally fine (current)
     or incomplete, but the version fact is part of the state machine."""
     try:
         from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
     except Exception:  # noqa: BLE001
+        return False
+    if meta is META_MISSING:
         return False
     if meta is None:
         meta = read_meta(paper_dir)
@@ -247,7 +254,7 @@ def is_old_pipeline(paper_dir: Path, meta: dict | None = None) -> bool:
     return bool(v) and v != OCR_PIPELINE_VERSION
 
 
-def top_state(paper_dir: Path | None, meta: dict | None = None) -> str | None:
+def top_state(paper_dir: Path | None, meta: Any = None) -> str | None:
     """The top-level OCR state (judging only, no hash identity):
     not_started / running / failed / blocked / missing / incomplete —
     or None when the chain is fully materialized (caller does the hash
@@ -262,6 +269,10 @@ def top_state(paper_dir: Path | None, meta: dict | None = None) -> str | None:
     """
     if paper_dir is None or not paper_dir.exists():
         return "missing"
+    if meta is None:
+        meta = read_meta(paper_dir)
+        if meta is None:
+            meta = META_MISSING
     _lc_detail, lc_state = meta_lifecycle(paper_dir, meta)
     if lc_state is not None:
         return lc_state
@@ -282,7 +293,7 @@ def top_state(paper_dir: Path | None, meta: dict | None = None) -> str | None:
 def detail(
     paper_dir: Path | None,
     canonical_pdf: Path | None = None,
-    meta: dict | None = None,
+    meta: Any = None,
 ) -> str | None:
     """Fine-grained WHY for the ocr state — one namespace, each value one
     meaning (see the constants).  A version fact is a FLAG, never a
@@ -293,6 +304,10 @@ def detail(
     """
     if paper_dir is None or not paper_dir.exists():
         return NOT_STARTED
+    if meta is None:
+        meta = read_meta(paper_dir)
+        if meta is None:
+            meta = META_MISSING
     lc_detail, _ = meta_lifecycle(paper_dir, meta)
     if lc_detail is not None:
         return lc_detail
@@ -640,13 +655,105 @@ def identity_state(paper_dir: Path) -> tuple[str | None, str | None]:
     return "current", recomputed
 
 
-def validate_result_json(paper_dir: Path) -> tuple[bool, str, int]:
+def _decode_utf8_head(raw: bytes) -> str:
+    """Decode bounded head bytes cleanly even if sliced mid-UTF-8 codepoint."""
+    for trim in range(4):
+        try:
+            end = len(raw) - trim if trim else len(raw)
+            return raw[:end].decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8")
+
+
+def _decode_utf8_tail(raw: bytes) -> str:
+    """Decode bounded tail bytes cleanly even if sliced mid-UTF-8 codepoint."""
+    for skip in range(4):
+        try:
+            return raw[skip:].decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8")
+
+
+def _fast_json_head_tail_valid(path: Path, *, allow_array: bool = False) -> tuple[bool, str]:
+    """Validate bounded head/tail bytes of a >16KB JSON/JSONL file without full deserialization."""
+    try:
+        st_size = path.stat().st_size
+        with path.open("rb") as fh:
+            head_b = fh.read(4096)
+            if st_size > 4096:
+                fh.seek(max(0, st_size - 512))
+                tail_b = fh.read(512)
+            else:
+                tail_b = head_b
+    except PermissionError:
+        return False, "permission"
+    except OSError:
+        return False, "permission"
+
+    if b"\x00" in head_b or b"\x00" in tail_b:
+        return False, "invalid"
+    try:
+        head_s = _decode_utf8_head(head_b).lstrip()
+        tail_s = _decode_utf8_tail(tail_b).rstrip()
+    except UnicodeDecodeError:
+        return False, "unreadable"
+
+    if not head_s or not tail_s:
+        return False, "empty"
+    first_c, last_c = head_s[0], tail_s[-1]
+    if first_c == "{" and last_c == "}":
+        return True, "ok"
+    if allow_array and first_c == "[" and last_c == "]":
+        return True, "ok"
+    return False, "invalid"
+
+
+def _fast_artifact_state(
+    path: Path,
+    full_fn,
+    paper_dir: Path,
+    *,
+    missing_code: str,
+    not_file_code: str,
+    empty_code: str,
+    invalid_code: str,
+    unreadable_code: str,
+    permission_code: str,
+) -> str | None:
+    """Fast structural artifact check for large JSON/JSONL files during bulk census."""
+    if not path.exists():
+        return missing_code
+    if path.is_dir():
+        return not_file_code
+    try:
+        st_size = path.stat().st_size
+    except OSError:
+        return permission_code
+    if st_size == 0:
+        return empty_code
+    if st_size <= 16384:
+        return full_fn(paper_dir)
+    ok, reason = _fast_json_head_tail_valid(path, allow_array=False)
+    if ok:
+        return None
+    return {
+        "empty": empty_code,
+        "unreadable": unreadable_code,
+        "permission": permission_code,
+    }.get(reason, invalid_code)
+
+
+def validate_result_json(paper_dir: Path, *, fast: bool = False) -> tuple[bool, str, int]:
     """Validate Tier-0 paid OCR truth ``json/result.json`` atomically.
 
     Returns ``(is_valid, reason, page_count)``.  Legacy vaults may store a
     list of page payloads or ``{"pages": [...]}``; any readable, non-empty,
     structurally valid payload is sufficient to regenerate all downstream
     artifacts locally via ``backfill_from_result`` without paying OCR APIs.
+    When *fast* is True and the file exceeds 64 KB, uses O(1) head/tail byte
+    framing & UTF-8 checks instead of deserializing multi-megabyte JSON.
     """
     result_path = paper_dir / "json" / "result.json"
     if not result_path.exists():
@@ -654,8 +761,12 @@ def validate_result_json(paper_dir: Path) -> tuple[bool, str, int]:
     if result_path.is_dir():
         return False, "not_file", 0
     try:
-        if result_path.stat().st_size == 0:
+        st_size = result_path.stat().st_size
+        if st_size == 0:
             return False, "empty", 0
+        if fast and st_size > 65536:
+            ok, reason = _fast_json_head_tail_valid(result_path, allow_array=True)
+            return (True, "ok", 1) if ok else (False, reason, 0)
         raw = json.loads(result_path.read_text(encoding="utf-8"))
     except UnicodeDecodeError:
         return False, "unreadable", 0
@@ -674,16 +785,18 @@ def validate_result_json(paper_dir: Path) -> tuple[bool, str, int]:
     return False, "invalid_shape", 0
 
 
-def assess_ocr_bundle_atoms(paper_dir: Path) -> dict[str, Any]:
+def assess_ocr_bundle_atoms(paper_dir: Path, *, fast: bool = False) -> dict[str, Any]:
     """Perform atom-level validation separating Tier-0 OCR truth from Tier-1 derived files.
 
     Guarantees that derived-layer or partial corruption never masks an intact
     ``json/result.json`` source of truth that can be rebuilt locally at zero cost.
+    When *fast* is True, skips full-file SHA-256 and uses O(1) structural checks
+    for large JSON/JSONL files.
     """
-    tier0_ok, tier0_reason, page_count = validate_result_json(paper_dir)
+    tier0_ok, tier0_reason, page_count = validate_result_json(paper_dir, fast=fast)
     result_path = paper_dir / "json" / "result.json"
     tier0_sha256 = ""
-    if tier0_ok:
+    if tier0_ok and not fast:
         try:
             from paperforge.core.stat_cache import cached_sha256_hex
 
@@ -691,10 +804,56 @@ def assess_ocr_bundle_atoms(paper_dir: Path) -> dict[str, Any]:
         except Exception:  # noqa: BLE001
             tier0_sha256 = hashlib.sha256(result_path.read_bytes()).hexdigest()
 
-    raw_cond = raw_state(paper_dir)
-    blocks_cond = _blocks_state(paper_dir)
-    tree_cond = _tree_state(paper_dir)
-    role_cond = _role_index_state(paper_dir)
+    if fast:
+        raw_cond = _fast_artifact_state(
+            paper_dir / "canonical" / "blocks.raw.jsonl",
+            raw_state,
+            paper_dir,
+            missing_code=RAW_MISSING,
+            not_file_code=RAW_NOT_FILE,
+            empty_code=RAW_EMPTY,
+            invalid_code=RAW_INVALID,
+            unreadable_code=RAW_UNREADABLE,
+            permission_code=RAW_PERMISSION,
+        )
+        blocks_cond = _fast_artifact_state(
+            paper_dir / "structure" / "blocks.structured.jsonl",
+            _blocks_state,
+            paper_dir,
+            missing_code=BLOCKS_MISSING,
+            not_file_code=BLOCKS_NOT_FILE,
+            empty_code=BLOCKS_EMPTY,
+            invalid_code=BLOCKS_INVALID,
+            unreadable_code=BLOCKS_UNREADABLE,
+            permission_code=BLOCKS_PERMISSION,
+        )
+        tree_cond = _fast_artifact_state(
+            paper_dir / "index" / "structure-tree.json",
+            _tree_state,
+            paper_dir,
+            missing_code=TREE_MISSING,
+            not_file_code=TREE_NOT_FILE,
+            empty_code=TREE_EMPTY,
+            invalid_code=TREE_INVALID,
+            unreadable_code=TREE_UNREADABLE,
+            permission_code=TREE_PERMISSION,
+        )
+        role_cond = _fast_artifact_state(
+            paper_dir / "index" / "role-index.json",
+            _role_index_state,
+            paper_dir,
+            missing_code=ROLE_INDEX_MISSING,
+            not_file_code=ROLE_INDEX_NOT_FILE,
+            empty_code=ROLE_INDEX_INVALID,
+            invalid_code=ROLE_INDEX_INVALID,
+            unreadable_code=ROLE_INDEX_UNREADABLE,
+            permission_code=ROLE_INDEX_PERMISSION,
+        )
+    else:
+        raw_cond = raw_state(paper_dir)
+        blocks_cond = _blocks_state(paper_dir)
+        tree_cond = _tree_state(paper_dir)
+        role_cond = _role_index_state(paper_dir)
     pub_cond = _published_state(paper_dir)
     fulltext_ok = (paper_dir / "fulltext.md").is_file() and (paper_dir / "fulltext.md").stat().st_size > 0
     meta_dict = read_meta(paper_dir)

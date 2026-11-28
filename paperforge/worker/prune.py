@@ -253,6 +253,8 @@ def _prune_orphan_papers_locked(
                     ensure_vec_extension,
                     get_connection,
                     get_memory_db_path,
+                    rebuild_fts_indexes,
+                    safe_delete_body_units_fts,
                 )
 
                 db_path = get_memory_db_path(vault)
@@ -261,23 +263,12 @@ def _prune_orphan_papers_locked(
                     ensure_vec_extension(conn)
                     try:
                         # external-content FTS5: body_units_fts has NO
-                        # trigger — sync the delete manually before removing
-                        # the content rows.  Production only indexes
-                        # indexable=1 rows (see _upsert_body_units), so only
-                        # those have FTS rows; deleting an absent FTS row
-                        # raises SQLITE_CORRUPT_VTAB.
-                        body_rows = conn.execute(
-                            "SELECT rowid, unit_id FROM body_units "
-                            "WHERE paper_id = ? AND indexable = 1",
-                            (key,),
-                        ).fetchall()
-                        for br in body_rows:
-                            conn.execute(
-                                "INSERT INTO body_units_fts(body_units_fts, rowid, unit_id) "
-                                "VALUES('delete', ?, ?)",
-                                (br["rowid"], br["unit_id"]),
-                            )
+                        # trigger — sync the delete via safe_delete_body_units_fts
+                        # so every indexed column is removed cleanly.
+                        fts_ok = safe_delete_body_units_fts(conn, key)
                         conn.execute("DELETE FROM body_units WHERE paper_id = ?", (key,))
+                        if not fts_ok:
+                            rebuild_fts_indexes(conn, ("body_units_fts",))
                         conn.execute("DELETE FROM object_units WHERE paper_id = ?", (key,))
                         for table in ("lineage", "paper_aliases", "paper_assets", "paper_events"):
                             conn.execute(f"DELETE FROM {table} WHERE paper_id = ?", (key,))

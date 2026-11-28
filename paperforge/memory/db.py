@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import logging
+import re
 import sqlite3
 import threading
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
+
+logger = logging.getLogger(__name__)
 
 
 def get_memory_db_path(vault: Path) -> Path:
@@ -158,18 +162,227 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
         conn.enable_load_extension(True)
         try:
             sqlite_vec.load(conn)
-        except Exception:
-            pass  # extension not available
+        except Exception as exc:
+            logger.debug("sqlite_vec load skipped: %s", exc)
         finally:
             try:
                 conn.enable_load_extension(False)
             except AttributeError:
                 pass
-    except ImportError:
-        pass  # sqlite_vec not installed
+    except ImportError as exc:
+        logger.debug("sqlite_vec not installed: %s", exc)
+
+
+def _rebuild_body_units_fts(conn: sqlite3.Connection) -> None:
+    """Rebuild ``body_units_fts`` strictly from ``indexable = 1`` rows."""
+    conn.execute("INSERT INTO body_units_fts(body_units_fts) VALUES('delete-all')")
+    conn.execute(
+        """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
+           SELECT rowid, unit_id, paper_id, section_path, unit_text
+           FROM body_units
+           WHERE indexable = 1"""
+    )
+
+
+def _rebuild_single_fts(conn: sqlite3.Connection, tbl: str) -> None:
+    """Rebuild one external-content FTS5 table according to its indexing contract."""
+    if tbl == "body_units_fts":
+        _rebuild_body_units_fts(conn)
+    else:
+        conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+
+
+_FTS5_OPERATORS = frozenset({"AND", "OR", "NOT", "NEAR"})
+
+
+def _extract_fts5_probe_token(text: str) -> str | None:
+    """Return a single safe ASCII alphanumeric FTS5 token from *text*, or None."""
+    for match in re.finditer(r"[A-Za-z][A-Za-z0-9]{4,}", text or ""):
+        tok = match.group(0)
+        if tok.upper() not in _FTS5_OPERATORS:
+            return tok
+    return None
+
+
+def _body_units_fts_content_drifted(conn: sqlite3.Connection, sample_limit: int = 8) -> bool:
+    """Sample boundary ``indexable = 1`` rows to catch same-rowid text drift."""
+    head = conn.execute(
+        "SELECT rowid, unit_text FROM body_units WHERE indexable = 1 ORDER BY rowid ASC LIMIT ?",
+        (sample_limit,),
+    ).fetchall()
+    tail = conn.execute(
+        "SELECT rowid, unit_text FROM body_units WHERE indexable = 1 ORDER BY rowid DESC LIMIT ?",
+        (sample_limit,),
+    ).fetchall()
+    sampled: dict[int, str] = {}
+    for row in (*head, *tail):
+        rid = int(row[0])
+        if rid not in sampled:
+            sampled[rid] = str(row[1] or "")
+    for rid, text in sampled.items():
+        tok = _extract_fts5_probe_token(text)
+        if not tok:
+            continue
+        hit = conn.execute(
+            "SELECT 1 FROM body_units_fts WHERE rowid = ? AND body_units_fts MATCH ? LIMIT 1",
+            (rid, f'"{tok}"'),
+        ).fetchone()
+        if hit is None:
+            return True
+    return False
+
+
+def _fts_integrity_needs_heal(conn: sqlite3.Connection, tbl: str) -> bool:
+    """Return True when an external-content FTS5 table fails structural or parity checks."""
+    try:
+        if tbl == "paper_fts":
+            conn.execute("INSERT INTO paper_fts(paper_fts, rank) VALUES('integrity-check', 1)")
+            papers_cnt = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+            doc_cnt = conn.execute("SELECT COUNT(*) FROM paper_fts_docsize").fetchone()[0]
+            return doc_cnt != papers_cnt
+        if tbl == "body_units_fts":
+            conn.execute("INSERT INTO body_units_fts(body_units_fts) VALUES('integrity-check')")
+            idx_cnt = conn.execute("SELECT COUNT(*) FROM body_units WHERE indexable = 1").fetchone()[0]
+            doc_cnt = conn.execute("SELECT COUNT(*) FROM body_units_fts_docsize").fetchone()[0]
+            if doc_cnt != idx_cnt:
+                return True
+            drift = conn.execute(
+                """SELECT 1 FROM body_units_fts_docsize d
+                   LEFT JOIN body_units b ON b.rowid = d.id
+                   WHERE b.rowid IS NULL OR b.indexable != 1
+                   LIMIT 1"""
+            ).fetchone()
+            if drift is not None:
+                return True
+            return _body_units_fts_content_drifted(conn)
+        conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('integrity-check')")
+        return False
+    except sqlite3.DatabaseError:
+        return True
+
+
+def rebuild_fts_indexes(
+    conn: sqlite3.Connection,
+    tables: tuple[str, ...] = ("paper_fts", "body_units_fts"),
+) -> list[str]:
+    """Rebuild existing external-content FTS5 virtual tables non-destructively."""
+    existing = {
+        str(r[0])
+        for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    }
+    rebuilt: list[str] = []
+    for tbl in tables:
+        if tbl not in existing:
+            continue
+        _rebuild_single_fts(conn, tbl)
+        rebuilt.append(tbl)
+    return rebuilt
+
+
+def _recreate_external_fts_table(conn: sqlite3.Connection, tbl: str) -> None:
+    """Recover an external-content FTS5 virtual table whose shadow metadata is corrupt."""
+    from paperforge.memory.schema import (
+        CREATE_BODY_UNITS_FTS,
+        CREATE_PAPER_FTS,
+        FTS_TRIGGERS,
+    )
+
+    try:
+        conn.execute(f"DROP TABLE IF EXISTS {tbl}")
+    except sqlite3.DatabaseError:
+        for suffix in ("_data", "_idx", "_docsize", "_config", "_content"):
+            try:
+                conn.execute(f"DROP TABLE IF EXISTS {tbl}{suffix}")
+            except sqlite3.DatabaseError as exc:
+                logger.debug("ignoring shadow drop error for %s%s: %s", tbl, suffix, exc)
+        conn.execute("PRAGMA writable_schema=ON")
+        try:
+            conn.execute("DELETE FROM sqlite_master WHERE type='table' AND name=?", (tbl,))
+        finally:
+            conn.execute("PRAGMA writable_schema=RESET")
+
+    if tbl == "paper_fts":
+        conn.execute(CREATE_PAPER_FTS)
+        for trig_sql in FTS_TRIGGERS:
+            conn.execute(trig_sql)
+    elif tbl == "body_units_fts":
+        conn.execute(CREATE_BODY_UNITS_FTS)
+    else:
+        raise ValueError(f"Unsupported FTS5 virtual table for recreation: {tbl}")
+
+
+def check_and_heal_fts(
+    conn: sqlite3.Connection,
+    tables: tuple[str, ...] = ("paper_fts", "body_units_fts"),
+) -> dict[str, list[str]]:
+    """Verify FTS5 integrity and non-destructively rebuild any desynced FTS5 table.
+
+    Distinguishes logical external-content FTS5 index desync from physical DB
+    corruption so Tier-0 vectors, annotations, and logs are never quarantined.
+    """
+    existing = {
+        str(r[0])
+        for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    }
+    checked: list[str] = []
+    repaired: list[str] = []
+    for tbl in tables:
+        if tbl not in existing:
+            continue
+        checked.append(tbl)
+        if _fts_integrity_needs_heal(conn, tbl):
+            try:
+                _rebuild_single_fts(conn, tbl)
+            except sqlite3.DatabaseError:
+                _recreate_external_fts_table(conn, tbl)
+                _rebuild_single_fts(conn, tbl)
+            repaired.append(tbl)
+    return {"checked": checked, "repaired": repaired}
+
+
+def safe_delete_body_units_fts(conn: sqlite3.Connection, paper_id: str) -> bool:
+    """Safely remove *paper_id* rows from ``body_units_fts`` before mutating ``body_units``.
+
+    Returns True if the targeted external-content delete succeeded, or False if
+    ``body_units_fts`` raised a ``DatabaseError`` (desynced index) and requires
+    ``rebuild_fts_indexes(conn, ("body_units_fts",))`` after the mutation.
+    """
+    try:
+        conn.execute(
+            """INSERT INTO body_units_fts(body_units_fts, rowid, unit_id, paper_id, section_path, unit_text)
+               SELECT 'delete', rowid, unit_id, paper_id, section_path, unit_text
+               FROM body_units WHERE paper_id = ? AND indexable = 1""",
+            (paper_id,),
+        )
+        return True
+    except sqlite3.DatabaseError:
+        return False
 
 
 _reader_lock_depths = threading.local()
+
+
+def _recover_hot_journal_if_present(path: Path) -> bool:
+    """Roll back an orphaned SQLite hot journal so ``?mode=ro`` readers never fail."""
+    journal = Path(str(path) + "-journal")
+    try:
+        if not journal.is_file() or journal.stat().st_size == 0:
+            return False
+    except OSError:
+        return False
+    conn: sqlite3.Connection | None = None
+    try:
+        conn = sqlite3.connect(str(path), timeout=2.0)
+        conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+        return True
+    except sqlite3.Error:
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def open_live_reader(vault: Path, db_path: Path | None = None):
@@ -211,8 +424,18 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
         depths[key] = depth + 1
         _reader_lock_depths.depths = depths
         try:
+            _recover_hot_journal_if_present(path)
             conn = get_connection(path, read_only=True)
             try:
+                try:
+                    conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+                except sqlite3.OperationalError as exc:
+                    if "readonly database" in str(exc).lower():
+                        conn.close()
+                        _recover_hot_journal_if_present(path)
+                        conn = get_connection(path, read_only=True)
+                    else:
+                        raise
                 yield conn
             finally:
                 conn.close()

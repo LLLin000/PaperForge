@@ -30,12 +30,13 @@ def _failure(args: argparse.Namespace, message: str) -> int:
 
 def _find_note(vault: Path, key: str) -> tuple[Path, str] | None:
     from paperforge.adapters.obsidian_frontmatter import read_frontmatter_dict
+    from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
     from paperforge.worker._utils import pipeline_paths
 
     literature = pipeline_paths(vault)["literature"]
     if not literature.exists():
         return None
-    for note_path in sorted(literature.rglob("*.md")):
+    for note_path in safe_rglob(literature, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
         if note_path.name in _SKIP_NOTE_NAMES:
             continue
         try:

@@ -272,10 +272,12 @@ def _run_body_unit_discovery(
             else:
                 fts_query = _tokenize_for_fts(query)
                 rows = conn.execute(
-                    """SELECT unit_id, paper_id, section_path, unit_text, rank
-                       FROM body_units_fts
+                    """SELECT bu_fts.unit_id, bu_fts.paper_id, bu_fts.section_path, bu_fts.unit_text, bu_fts.rank
+                       FROM body_units_fts bu_fts
+                       JOIN body_units bu ON bu_fts.rowid = bu.rowid
                        WHERE body_units_fts MATCH ?
-                       ORDER BY rank
+                         AND bu.indexable = 1
+                       ORDER BY bu_fts.rank
                        LIMIT ?""",
                     (fts_query, limit),
                 ).fetchall()

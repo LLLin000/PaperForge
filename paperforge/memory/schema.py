@@ -503,8 +503,8 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     for vec_sql in [CREATE_VEC_FULLTEXT, CREATE_VEC_BODY, CREATE_VEC_OBJECTS]:
         try:
             conn.execute(vec_sql)
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as exc:
+            logger.debug("optional vec0 table skipped: %s", exc)
 
     for idx_sql in EVENT_INDEX_SQL:
         conn.execute(idx_sql)
@@ -513,6 +513,64 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
 
     _set_schema_version(conn, CURRENT_SCHEMA_VERSION)
     conn.commit()
+
+
+_TIER0_PRESERVED_TABLES = (
+    "reading_log",
+    "project_log",
+    "paper_annotations",
+    "paper_memory_cards",
+)
+
+
+def _snapshot_tier0_rows(
+    conn: sqlite3.Connection,
+) -> dict[str, tuple[list[str], list[tuple[object, ...]]]]:
+    """Capture Tier-0 user tables before a pre-v3 destructive schema reset."""
+    existing = {
+        str(r[0])
+        for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    }
+    snapshot: dict[str, tuple[list[str], list[tuple[object, ...]]]] = {}
+    for tbl in _TIER0_PRESERVED_TABLES:
+        if tbl not in existing:
+            continue
+        try:
+            cols = [str(r[1]) for r in conn.execute(f"PRAGMA table_info({tbl})").fetchall()]
+            rows = [tuple(r) for r in conn.execute(f"SELECT * FROM {tbl}").fetchall()]
+        except sqlite3.Error:
+            continue
+        if cols and rows:
+            snapshot[tbl] = (cols, rows)
+    return snapshot
+
+
+def _restore_tier0_rows(
+    conn: sqlite3.Connection,
+    snapshot: dict[str, tuple[list[str], list[tuple[object, ...]]]],
+) -> None:
+    """Restore snapshotted Tier-0 user rows after schema recreation with FK checks paused."""
+    if not snapshot:
+        return
+    fk_row = conn.execute("PRAGMA foreign_keys").fetchone()
+    prev_fk = int(fk_row[0]) if fk_row else 0
+    conn.execute("PRAGMA foreign_keys=OFF")
+    try:
+        for tbl, (old_cols, rows) in snapshot.items():
+            new_cols = {str(r[1]) for r in conn.execute(f"PRAGMA table_info({tbl})").fetchall()}
+            col_pairs = [(idx, col) for idx, col in enumerate(old_cols) if col in new_cols]
+            if not col_pairs:
+                continue
+            col_list = ", ".join(col for _, col in col_pairs)
+            placeholders = ", ".join("?" for _ in col_pairs)
+            projected = [tuple(row[idx] for idx, _ in col_pairs) for row in rows]
+            conn.executemany(
+                f"INSERT OR IGNORE INTO {tbl} ({col_list}) VALUES ({placeholders})",
+                projected,
+            )
+        conn.commit()
+    finally:
+        conn.execute(f"PRAGMA foreign_keys={prev_fk}")
 
 
 def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version: int) -> str:
@@ -535,8 +593,10 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
     current_version = stored_version
     if current_version < 3:
         logger.info("Migrating schema v%s: destructive rebuild (pre-v3) → v7", current_version)
+        tier0_snapshot = _snapshot_tier0_rows(conn)
         drop_all_tables(conn)
         ensure_schema(conn)
+        _restore_tier0_rows(conn, tier0_snapshot)
         logger.info("Destructive migration complete, schema is now v%s", target_version)
         return "destructive"
     if current_version < 4:
@@ -549,8 +609,8 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
         ]:
             try:
                 conn.execute(col_sql)
-            except Exception:
-                pass  # column may already exist
+            except Exception as exc:
+                logger.debug("optional v4 column add skipped: %s", exc)
         current_version = 4
     if current_version < 5:
         logger.info(
@@ -615,8 +675,8 @@ def drop_all_tables(conn: sqlite3.Connection) -> None:
 
 def clear_fts(conn: sqlite3.Connection) -> None:
     """Delete all FTS index entries (before rebuild).  No commit — caller owns tx."""
-    conn.execute("DELETE FROM paper_fts;")
-    conn.execute("DELETE FROM body_units_fts;")
+    conn.execute("INSERT INTO paper_fts(paper_fts) VALUES('delete-all');")
+    conn.execute("INSERT INTO body_units_fts(body_units_fts) VALUES('delete-all');")
 
 
 def get_schema_version(conn: sqlite3.Connection) -> int:

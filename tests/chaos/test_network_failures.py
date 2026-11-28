@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.chaos.conftest import assert_vault_in_temp
+
 pytestmark = pytest.mark.chaos
 
 # Short timeout for network tests — the OCR module has retry+backoff logic
@@ -90,7 +92,7 @@ def test_ocr_api_401(chaos_vault_standard: Path, chaos_cli_invoker: callable) ->
     the HTTP response is 401 or connection refused — both are network errors.
     """
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     _ensure_ocr_trigger_note(chaos_vault_standard)
 
@@ -119,7 +121,7 @@ def test_ocr_api_401(chaos_vault_standard: Path, chaos_cli_invoker: callable) ->
 def test_ocr_api_500(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """NF-02: OCR API returns HTTP 500 on submit -> graceful server error, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     _ensure_ocr_trigger_note(chaos_vault_standard)
 
@@ -152,7 +154,7 @@ def test_ocr_api_timeout(chaos_vault_standard: Path, chaos_cli_invoker: callable
     in the partial output.
     """
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     _ensure_ocr_trigger_note(chaos_vault_standard)
 
@@ -180,7 +182,7 @@ def test_ocr_api_timeout(chaos_vault_standard: Path, chaos_cli_invoker: callable
 def test_ocr_dns_unreachable(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """NF-04: DNS unreachable / connection refused -> graceful network error, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     _ensure_ocr_trigger_note(chaos_vault_standard)
 

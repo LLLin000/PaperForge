@@ -9204,6 +9204,14 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-pdf-scroll.is-note-mode .pf-pdf-page {
   cursor: crosshair;
 }
+.pf-pdf-pages-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  transform-origin: center top;
+  will-change: transform;
+}
 .pf-pdf-page {
   position: relative;
   isolation: isolate;
@@ -9218,18 +9226,21 @@ input.pf-ocr-ws-search-input::placeholder {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  user-select: text;
+  cursor: text;
+  user-select: none;
 }
-.pf-pdf-text-layer span {
+.pf-pdf-sel-rect {
   position: absolute;
-  color: transparent;
-  white-space: pre;
-  line-height: 1;
+  pointer-events: none;
+  background: rgba(59, 130, 246, 0.28);
+  border-radius: 2px;
 }
 .pf-pdf-overlay-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  isolation: isolate;
+  contain: layout style;
 }
 .pf-pdf-svg-layer,
 .pf-pdf-svg-draft {
@@ -9238,6 +9249,17 @@ input.pf-ocr-ws-search-input::placeholder {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.pf-pdf-svg-layer > polyline,
+.pf-pdf-svg-layer > line,
+.pf-pdf-svg-layer > rect,
+.pf-pdf-svg-layer > ellipse {
+  cursor: pointer;
+  pointer-events: stroke;
+  transition: opacity 120ms ease-out;
+}
+.pf-pdf-svg-layer > .is-ann-hover {
+  opacity: 0.72;
 }
 .pf-pdf-ann-box {
   position: absolute;
@@ -9487,6 +9509,20 @@ input.pf-ocr-ws-search-input::placeholder {
   padding-left: 8px;
   border-left: 2px solid var(--pf-border, var(--background-modifier-border));
 }
+.pf-pdf-popover-agent-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pf-pdf-popover-grounding {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--background-secondary);
+  color: var(--pf-text-muted, var(--text-muted));
+  border: 1px solid var(--pf-border, var(--background-modifier-border));
+}
 .pf-pdf-swatch-row,
 .pf-pdf-popover-actions {
   display: flex;
@@ -9496,6 +9532,29 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 .pf-pdf-popover-actions {
   justify-content: flex-end;
+}
+.pf-pdf-popover-del-btn {
+  margin-right: auto;
+  color: var(--text-error, #d64545);
+}
+.pf-pdf-clear-ai-btn.is-confirming {
+  color: var(--text-error, #d64545);
+  border-color: rgba(214, 69, 69, 0.4);
+  background: rgba(214, 69, 69, 0.08);
+}
+.pf-pdf-undo-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf-pdf-undo-btn {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--pf-border, var(--background-modifier-border));
+  background: var(--pf-surface, var(--background-primary));
+  color: var(--pf-accent, var(--interactive-accent));
+  font-weight: 600;
+  cursor: pointer;
 }
 .pf-pdf-swatch {
   width: 18px;
@@ -9689,15 +9748,77 @@ input.pf-ocr-ws-search-input::placeholder {
 /* ── AsterLab Soft AI PDF Annotation Layer & Margin Bracket ── */
 .pf-pdf-ann-box.pf-pdf-hl-agent {
   outline: none;
-  background: rgba(212, 198, 255, 0.42);
-  border-bottom: 1.5px dotted rgba(109, 86, 216, 0.72);
+  background: rgba(212, 198, 255, 0.38);
+  border-bottom: 1.5px dotted rgba(109, 86, 216, 0.78);
   border-radius: 2px 2px 0 0;
 }
 .pf-pdf-ann-box.pf-pdf-hl-agent[data-ann-line-idx="0"] {
-  box-shadow: -3px 0 0 -0.5px rgba(109, 86, 216, 0.78);
+  box-shadow: -3px 0 0 -0.5px rgba(109, 86, 216, 0.82);
 }
 .pf-pdf-ann-box.pf-pdf-hl-agent.is-ann-hover {
-  background: rgba(196, 178, 255, 0.56);
+  background: rgba(196, 178, 255, 0.54);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--blue {
+  background: rgba(186, 230, 253, 0.36);
+  border-bottom-color: rgba(37, 99, 235, 0.78);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--blue[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(37, 99, 235, 0.82);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--blue.is-ann-hover {
+  background: rgba(147, 197, 253, 0.5);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--red {
+  background: rgba(254, 202, 202, 0.38);
+  border-bottom-color: rgba(214, 69, 69, 0.82);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--red[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(214, 69, 69, 0.85);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--red.is-ann-hover {
+  background: rgba(252, 165, 165, 0.52);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--green {
+  background: rgba(167, 243, 208, 0.36);
+  border-bottom-color: rgba(22, 163, 74, 0.8);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--green[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(22, 163, 74, 0.84);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--green.is-ann-hover {
+  background: rgba(134, 239, 172, 0.52);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--yellow {
+  background: rgba(254, 240, 138, 0.44);
+  border-bottom-color: rgba(202, 138, 4, 0.8);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--yellow[data-ann-line-idx="0"] {
+  box-shadow: -3px 0 0 -0.5px rgba(202, 138, 4, 0.84);
+}
+.pf-pdf-ann-box.pf-pdf-hl-agent.pf-pdf-ann--yellow.is-ann-hover {
+  background: rgba(253, 224, 71, 0.58);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent {
+  border: 1.5px dashed rgba(109, 86, 216, 0.82);
+  border-radius: 4px;
+  background: rgba(109, 86, 216, 0.06);
+  box-shadow: none;
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--blue {
+  border-color: rgba(37, 99, 235, 0.82);
+  background: rgba(37, 99, 235, 0.06);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--red {
+  border-color: rgba(214, 69, 69, 0.85);
+  background: rgba(214, 69, 69, 0.06);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--green {
+  border-color: rgba(22, 163, 74, 0.82);
+  background: rgba(22, 163, 74, 0.06);
+}
+.pf-pdf-ann-box.pf-pdf-ann-kind--area.pf-pdf-hl-agent.pf-pdf-ann--yellow {
+  border-color: rgba(202, 138, 4, 0.82);
+  background: rgba(202, 138, 4, 0.07);
 }
 .pf-pdf-ann-box.pf-pdf-margin-bracket {
   border-left: 3.5px solid var(--pf-accent, #5b45c9);
@@ -13305,6 +13426,57 @@ body.pf-no-glass
   font-size: 11px;
   color: var(--pf-text-subtle, var(--pf-text-muted));
   font-variant-numeric: tabular-nums;
+}
+
+.pf-zotero-scope-box {
+  margin: 8px 0 6px;
+  padding: 10px 12px;
+  border-radius: var(--pf-radius-card, 8px);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface-elevated, var(--pf-surface));
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.pf-zotero-scope-box.is-attention {
+  border-color: var(--pf-accent);
+}
+
+.pf-zotero-scope-box.pf-zotero-scope-pulse {
+  box-shadow: 0 0 0 2px var(--pf-accent);
+}
+
+.pf-zotero-scope-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pf-zotero-scope-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.pf-zotero-scope-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-zotero-scope-all-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+  margin-top: 2px;
 }
 
 .pf-mode-choice-grid {
@@ -17646,4 +17818,267 @@ body.theme-dark.pf-theme-obsidian,
   .pf-gallery-grid-4 {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ── Real-Time Poki Agent Presence & 4-State Onboarding UI ── */
+@keyframes pf-agent-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+.pf-agent-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.pf-agent-badge--unconnected {
+  background: color-mix(in srgb, var(--text-warning, #c47f17) 14%, transparent);
+  color: var(--text-warning, #b5720d);
+  border: 1px solid
+    color-mix(in srgb, var(--text-warning, #c47f17) 32%, transparent);
+}
+
+.pf-agent-badge--configured-idle {
+  background: color-mix(
+    in srgb,
+    var(--interactive-accent, #5b45c9) 14%,
+    transparent
+  );
+  color: var(--interactive-accent, #5b45c9);
+  border: 1px solid
+    color-mix(in srgb, var(--interactive-accent, #5b45c9) 34%, transparent);
+}
+
+.pf-agent-badge--connected,
+.pf-agent-badge--ready {
+  background: color-mix(in srgb, var(--text-success, #2f7a4f) 15%, transparent);
+  color: var(--text-success, #2f7a4f);
+  border: 1px solid
+    color-mix(in srgb, var(--text-success, #2f7a4f) 35%, transparent);
+}
+
+.pf-agent-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--text-success, #2f7a4f);
+  animation: pf-agent-pulse 1.8s ease-in-out infinite;
+}
+
+.pf-reduce-motion .pf-agent-pulse-dot,
+.pf-reduce-motion .pf-status-agent-dot {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-agent-pulse-dot,
+  .pf-status-agent-dot {
+    animation: none !important;
+  }
+}
+
+.pf-agent-presence-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.pf-agent-presence-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pf-agent-presence-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pf-agent-presence-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pf-agent-tool-activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-success, #2f7a4f);
+  background: color-mix(
+    in srgb,
+    var(--text-success, #2f7a4f) 10%,
+    var(--background-primary)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--text-success, #2f7a4f) 26%, transparent);
+}
+
+.pf-agent-sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+
+.pf-agent-sessions-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pf-agent-session-row {
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.pf-agent-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.pf-agent-checklist-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 2px;
+}
+
+.pf-agent-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.pf-agent-check-item--done .pf-agent-check-icon {
+  color: var(--text-success, #2f7a4f);
+  font-weight: 700;
+}
+
+.pf-agent-check-item--pending .pf-agent-check-icon {
+  color: var(--text-faint);
+}
+
+.pf-agent-check-item--done .pf-agent-check-label {
+  color: var(--text-normal);
+}
+
+.pf-agent-check-item--pending .pf-agent-check-label {
+  color: var(--text-muted);
+}
+
+.pf-agent-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pf-agent-check-detail {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.pf-agent-onboarding-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.pf-agent-onboarding-hint {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.pf-agent-prompt-preview {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-monospace);
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  resize: vertical;
+}
+
+.pf-setup-optional-state--neutral {
+  color: var(--text-warning, #b5720d);
+}
+
+.pf-setup-optional-state--info {
+  color: var(--interactive-accent, #5b45c9);
+}
+
+.pf-status-agent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-success, #2f7a4f);
+  background: color-mix(in srgb, var(--text-success, #2f7a4f) 12%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--text-success, #2f7a4f) 28%, transparent);
+  cursor: pointer;
+}
+
+.pf-status-agent-pill:hover {
+  background: color-mix(in srgb, var(--text-success, #2f7a4f) 18%, transparent);
+}
+
+.pf-status-agent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--text-success, #2f7a4f);
+  animation: pf-agent-pulse 1.8s ease-in-out infinite;
 }

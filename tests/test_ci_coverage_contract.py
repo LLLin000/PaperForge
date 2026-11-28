@@ -69,6 +69,7 @@ KNOWN_LIMIT_HOST_CELLS: dict[tuple[str, str], str] = {
 EXCLUDED_UNGATED: dict[str, str] = {
     # Destructive by design; a weekly scheduled workflow owns them so a PR is
     # never the thing that eats a filesystem or a network quota.
+    "tests/chaos/test_backend_chaos_and_recovery.py": "destructive/fault-injection; runs in the 3-OS Chaos workflow (ci-chaos.yml), not on PRs",
     "tests/chaos/test_corrupted_inputs.py": "destructive; runs in the weekly Chaos workflow (ci-chaos.yml), not on PRs",
     "tests/chaos/test_filesystem_errors.py": "destructive; runs in the weekly Chaos workflow (ci-chaos.yml), not on PRs",
     "tests/chaos/test_network_failures.py": "destructive; runs in the weekly Chaos workflow (ci-chaos.yml), not on PRs",
@@ -231,7 +232,7 @@ class TestCITestCoverage:
         """A renamed or deleted test must break CI loudly, not silently shrink it."""
         missing = sorted(
             t
-            for name in ("ci.yml", "ci-chaos.yml", "publish.yml", "pages.yml")
+            for name in ("ci.yml", "ci-chaos.yml", "ci-cross-os-desktop.yml", "publish.yml", "pages.yml")
             if (WORKFLOW_DIR / name).exists()
             for t in _pytest_targets(name)
             if not (REPO_ROOT / t).exists()

@@ -534,15 +534,56 @@ def run(args: argparse.Namespace) -> int:
                 print("Failed.")
         return 0 if ok else 1
 
-    if args.paper_id and args.excerpt:
+    if args.paper_id and (args.excerpt or getattr(args, "input", None)):
+        import sys as _sys
+
+        section = args.section or ""
+        excerpt = args.excerpt or ""
+        usage = args.usage or ""
+        context = args.context or ""
+        note = args.note or ""
+        project = args.project or ""
         tags_list = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else None
+        source = None
+
+        input_arg = str(getattr(args, "input", "") or "").strip()
+        if input_arg:
+            try:
+                raw_in = _sys.stdin.read() if input_arg == "-" else Path(input_arg).read_text(encoding="utf-8-sig")
+                parsed = json.loads(raw_in)
+                if not isinstance(parsed, dict):
+                    raise ValueError("--input JSON must be an object")
+                section = str(parsed.get("section") or section or "")
+                excerpt = str(parsed.get("excerpt") or excerpt or "")
+                usage = str(parsed.get("usage") or usage or "")
+                context = str(parsed.get("context") or context or "")
+                note = str(parsed.get("note") or note or "")
+                project = str(parsed.get("project") or project or "")
+                if parsed.get("tags") is not None and tags_list is None:
+                    raw_tags = parsed["tags"]
+                    if isinstance(raw_tags, list):
+                        tags_list = [str(t).strip() for t in raw_tags if str(t).strip()]
+                    elif isinstance(raw_tags, str):
+                        tags_list = [t.strip() for t in raw_tags.split(",") if t.strip()]
+                if parsed.get("source") is not None:
+                    source = parsed["source"]
+            except (ValueError, OSError, UnicodeError) as exc:
+                result = PFResult(
+                    ok=False,
+                    command="reading-log",
+                    version=PF_VERSION,
+                    error=PFError(code=ErrorCode.VALIDATION_ERROR, message=f"Invalid --input: {exc}"),
+                )
+                print(result.to_json() if args.json else f"Failed: {exc}")
+                return 1
 
         try:
-            source = json.loads(args.source_json) if getattr(args, "source_json", None) is not None else None
+            if source is None and getattr(args, "source_json", None) is not None:
+                source = json.loads(args.source_json)
             jsonl_result = append_reading_note(
-                vault, args.paper_id, args.section or "",
-                args.excerpt, args.usage or "", args.context or "",
-                args.note or "", args.project or "", tags_list, source=source,
+                vault, args.paper_id, section,
+                excerpt, usage, context,
+                note, project, tags_list, source=source,
             )
         except (ValueError, OSError, UnicodeError) as exc:
             jsonl_result = {"ok": False, "error": str(exc)}

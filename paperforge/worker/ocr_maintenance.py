@@ -49,6 +49,9 @@ class OCRMaintenanceRow:
     # when it does not exist. The OCR workspace Preview opens exactly this.
     fulltext_path: str = ""
     show_in_base: bool = True
+    pipeline_version: str = ""
+    has_meta: bool = False
+    meta_unreadable: bool = False
     def __post_init__(self) -> None:
         df = self.compute_display_fields(
             status=self.status, health_overall=self.health,
@@ -385,7 +388,11 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
     return manifest
 
 
-def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
+def collect_maintenance_rows(
+    vault: Path,
+    *,
+    include_drift: bool = True,
+) -> list[OCRMaintenanceRow]:
     """Read canonical papers plus existing OCR evidence without creating artifacts."""
     from paperforge.pdf_resolver import resolve_pdf_path
     from paperforge.worker._utils import pipeline_paths
@@ -398,6 +405,7 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
     items = index.get("items", []) if isinstance(index, dict) else (index or [])
     canonical = {item["zotero_key"]: item for item in items if item.get("zotero_key")}
     existing = {p.name for p in ocr_root.iterdir() if p.is_dir()} if ocr_root.is_dir() else set()
+    vault_resolved = Path(vault).resolve()
     rows: list[OCRMaintenanceRow] = []
 
     for key in sorted(existing | canonical.keys()):
@@ -407,11 +415,14 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         health_path = artifacts.paper_root / "health" / "ocr_health.json"
 
         meta: dict = {}
-        if meta_path.exists():
+        meta_exists = meta_path.exists()
+        meta_unreadable = False
+        if meta_exists:
             try:
                 meta = read_json(meta_path)
             except Exception:  # noqa: BLE001 — restore-damaged meta is unreadable, not a crash
                 meta = {}  # row renders with empty state; OCR recovery re-creates it
+                meta_unreadable = True
 
         health: dict = {}
         if health_path.exists():
@@ -501,22 +512,28 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         row.display_group = df["display_group"]
         row.display_severity = df["display_severity"]
         row.visible_in_maintenance = df["visible_in_maintenance"]
-        drift_state = get_fulltext_drift_state(artifacts.compat_fulltext, meta.get("machine_fulltext_hash"))
-        if drift_state != "DRIFTED" and _restore_drift_override(meta):
-            drift_state = "DRIFTED"
-        row.fulltext_drift_state = drift_state
-        row.fulltext_drift_reason = {
-            "MATCHED": "fulltext.md matches the latest machine write.",
-            "DRIFTED": "fulltext.md has changed since the last machine write.",
-            "UNKNOWN": "No machine baseline is available.",
-        }[drift_state]
-        if artifacts.compat_fulltext.is_file():
-            try:
-                row.fulltext_path = artifacts.compat_fulltext.resolve().relative_to(
-                    Path(vault).resolve()
-                ).as_posix()
-            except ValueError:  # OCR root outside the vault: nothing to open
-                row.fulltext_path = ""
+        row.pipeline_version = str(meta.get("ocr_pipeline_version") or "")
+        row.has_meta = meta_exists
+        row.meta_unreadable = meta_unreadable
+        if include_drift:
+            drift_state = get_fulltext_drift_state(
+                artifacts.compat_fulltext, meta.get("machine_fulltext_hash")
+            )
+            if drift_state != "DRIFTED" and _restore_drift_override(meta):
+                drift_state = "DRIFTED"
+            row.fulltext_drift_state = drift_state
+            row.fulltext_drift_reason = {
+                "MATCHED": "fulltext.md matches the latest machine write.",
+                "DRIFTED": "fulltext.md has changed since the last machine write.",
+                "UNKNOWN": "No machine baseline is available.",
+            }[drift_state]
+            if artifacts.compat_fulltext.is_file():
+                try:
+                    row.fulltext_path = artifacts.compat_fulltext.resolve().relative_to(
+                        vault_resolved
+                    ).as_posix()
+                except ValueError:  # OCR root outside the vault: nothing to open
+                    row.fulltext_path = ""
         rows.append(row)
 
     return rows

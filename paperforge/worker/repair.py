@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from paperforge.config import resolve_paths
+from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
 from paperforge.core.io import write_text_atomic
 from paperforge.worker._utils import (
     read_json,
@@ -40,7 +41,7 @@ def _detect_path_errors(paths: dict[str, Path], verbose: bool = False) -> dict:
     result: dict = {"total": 0, "by_type": {}, "records": []}
     if not paths["literature"].exists():
         return result
-    for record_path in paths["literature"].rglob("*.md"):
+    for record_path in safe_rglob(paths["literature"], suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
         if record_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
         try:
@@ -195,7 +196,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
     result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "rebuilt": 0}
     record_paths = [
         p
-        for p in paths["literature"].rglob("*.md")
+        for p in safe_rglob(paths["literature"], suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS)
         if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md")
     ]
     for record_path in record_paths:

@@ -21,11 +21,81 @@ from paperforge.adapters.obsidian_frontmatter import (
     read_frontmatter_dict,
     split_frontmatter_block,
 )
+from paperforge.core.fs_safe import (
+    adaptive_io_workers,
+    is_windows_reserved_name,
+    safe_is_file,
+    safe_iterdir,
+)
 from paperforge.worker.paper_meta import META_FILENAME, read_paper_meta
 
 logger = logging.getLogger(__name__)
 
 _NON_MAIN_FILENAMES = frozenset({"fulltext.md", "deep-reading.md", "discussion.md"})
+_TOP_LEVEL_YAML_KV_RE = re.compile(r"^([A-Za-z0-9_-]+)\s*:\s*(.*)$")
+
+
+def _parse_fast_scalar(raw_val: str) -> Any:
+    val = raw_val.strip()
+    if not val:
+        return ""
+    if (val.startswith('"') and val.endswith('"') and "\\" not in val and len(val) >= 2) or (
+        val.startswith("'") and val.endswith("'") and len(val) >= 2
+    ):
+        return val[1:-1].strip()
+    low = val.lower()
+    if low == "true":
+        return True
+    if low == "false":
+        return False
+    if low in ("null", "~"):
+        return None
+    return val
+
+
+def _fast_parse_identity_frontmatter(text: str) -> dict[str, Any] | None:
+    """Fast line-based parser for top-level YAML frontmatter identity keys.
+
+    Avoids ``yaml.safe_load`` overhead across thousands of notes while falling
+    back cleanly whenever frontmatter is missing, ambiguous, or lacks a valid
+    ``zotero_key`` scalar.
+    """
+    stripped = text.lstrip("\ufeff")
+    if not stripped.startswith("---"):
+        return None
+    first_nl = stripped.find("\n")
+    if first_nl < 0:
+        return None
+    end_idx = stripped.find("\n---", first_nl)
+    if end_idx < 0:
+        end_idx = stripped.find("\r\n---", first_nl)
+    if end_idx < 0:
+        return None
+    fm_block = stripped[first_nl + 1 : end_idx]
+    fm: dict[str, Any] = {}
+    for raw_line in fm_block.splitlines():
+        if not raw_line or not raw_line.strip():
+            continue
+        first_ch = raw_line[0]
+        if first_ch in (" ", "\t", "#", "-"):
+            continue
+        m = _TOP_LEVEL_YAML_KV_RE.match(raw_line)
+        if m is None:
+            return None
+        key = m.group(1)
+        raw_val = m.group(2).strip()
+        if key == "zotero_key":
+            if raw_val.startswith(("|", ">", "[", "{", "&", "*")):
+                return None
+            parsed_key = str(_parse_fast_scalar(raw_val) or "").strip()
+            if not parsed_key:
+                return None
+            fm[key] = parsed_key
+        else:
+            fm[key] = _parse_fast_scalar(raw_val)
+    if not fm.get("zotero_key"):
+        return None
+    return fm
 
 
 def _nfc(text: str) -> str:
@@ -187,7 +257,9 @@ def _read_note_identity(
             cache[note_path] = res
         return res
 
-    fm = read_frontmatter_dict(text)
+    fm = _fast_parse_identity_frontmatter(text)
+    if fm is None:
+        fm = read_frontmatter_dict(text)
     key = str(fm.get("zotero_key") or "").strip()
     if not key:
         # Fallback regex when hand-edited YAML has minor syntax errors
@@ -280,8 +352,8 @@ def _is_workspace_candidate(
     try:
         rel = directory.relative_to(lit_root)
         if len(rel.parts) >= 2:
-            for child in directory.iterdir():
-                if not child.is_file() or is_sync_conflict_artifact(child):
+            for child in safe_iterdir(directory):
+                if not safe_is_file(child) or is_sync_conflict_artifact(child):
                     continue
                 if child.suffix.lower() == ".md" and child.name.lower() not in _NON_MAIN_FILENAMES:
                     note_key, fm, _ = _read_note_identity(child, cache=note_cache)
@@ -311,12 +383,13 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
     note_cache: dict[Path, tuple[str, dict[str, Any], str]] = {}
     candidate_dirs: list[Path] = []
     walked_md_dirs: list[tuple[Path, list[Path]]] = []
+    walked_entries: list[tuple[Path, list[str], set[str], list[Path]]] = []
     # Single safe os.walk with followlinks=False + explicit junction guard
     for dirpath_str, dirnames, filenames in os.walk(str(root), followlinks=False):
         cur_dir = Path(dirpath_str)
         kept_dirs: list[str] = []
         for dname in sorted(dirnames):
-            if dname in (".obsidian", ".trash", ".git", "node_modules"):
+            if dname in (".obsidian", ".trash", ".git", "node_modules") or is_windows_reserved_name(dname):
                 continue
             sub_p = cur_dir / dname
             if is_reparse_or_symlink(sub_p):
@@ -326,21 +399,62 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
                 scan.sync_conflicts.append(sub_p)
                 continue
             kept_dirs.append(dname)
-            if dname not in ("ai", "assets") and _is_workspace_candidate(
-                sub_p, root, note_cache=note_cache
-            ):
-                candidate_dirs.append(sub_p)
         dirnames[:] = kept_dirs
         md_files: list[Path] = []
+        valid_filenames: set[str] = set()
         for fname in sorted(filenames):
+            if is_windows_reserved_name(fname):
+                continue
             fp = cur_dir / fname
             if is_sync_conflict_artifact(fp):
                 scan.sync_conflicts.append(fp)
                 continue
+            valid_filenames.add(fname)
             if fname.lower().endswith(".md") and fname.lower() not in _NON_MAIN_FILENAMES:
                 md_files.append(fp)
         if md_files:
             walked_md_dirs.append((cur_dir, md_files))
+        walked_entries.append((cur_dir, list(kept_dirs), valid_filenames, md_files))
+
+    # Parallelize cold NTFS/Defender file opens across chunked bounded worker threads
+    all_md_paths = [fp for _, _, _, mds in walked_entries for fp in mds]
+    if all_md_paths:
+        from paperforge.core.fs_safe import chunked_io_map
+
+        for fp, parsed in zip(
+            all_md_paths,
+            chunked_io_map(_read_note_identity, all_md_paths, chunk_size=64, min_parallel=64),
+        ):
+            note_cache[fp] = parsed
+
+    # Evaluate workspace candidacy deterministically using pre-warmed note_cache
+    for cur_dir, kept_dirs, valid_filenames, md_files in walked_entries:
+        if cur_dir != root and cur_dir.name not in ("ai", "assets"):
+            is_ws = False
+            if META_FILENAME in valid_filenames or "annotations.jsonl" in valid_filenames:
+                is_ws = True
+            elif "ai" in kept_dirs and (
+                " - " in cur_dir.name or (cur_dir / "ai" / "memory-card.json").is_file()
+            ):
+                is_ws = True
+            elif md_files:
+                try:
+                    rel_parts = cur_dir.relative_to(root).parts
+                except ValueError:
+                    rel_parts = ()
+                if len(rel_parts) >= 2:
+                    d_name = _nfc(cur_dir.name)
+                    for fp in md_files:
+                        note_key, fm, _ = _read_note_identity(fp, cache=note_cache)
+                        c_stem = _nfc(fp.stem)
+                        if note_key and (
+                            c_stem == note_key
+                            or (d_name == c_stem and _has_paperforge_note_signature(fm))
+                        ):
+                            is_ws = True
+                            break
+            if is_ws:
+                candidate_dirs.append(cur_dir)
 
     # O(N * depth) deepest-workspace selection (replaces O(N^2) nested pair scan)
     norm_candidates = {d: _norm_abs_path(d) for d in candidate_dirs}
@@ -358,8 +472,8 @@ def scan_vault_identities(lit_root: Path | None) -> VaultIdentityScan:
         meta_key = str(meta.get("zotero_key") or "").strip()
 
         note_records: list[tuple[Path, str, dict[str, Any]]] = []
-        for child in sorted(ws_dir.iterdir()):
-            if not child.is_file() or child.suffix.lower() != ".md" or is_sync_conflict_artifact(child):
+        for child in safe_iterdir(ws_dir):
+            if not safe_is_file(child) or child.suffix.lower() != ".md" or is_sync_conflict_artifact(child):
                 continue
             seen_ws_files.add(_norm_abs_path(child))
             if child.name.lower() in _NON_MAIN_FILENAMES:

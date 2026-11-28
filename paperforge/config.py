@@ -33,6 +33,8 @@ from typing import Any, Literal
 
 from filelock import FileLock, Timeout
 
+from paperforge.core.io import write_bytes_atomic
+
 SCHEMA_VERSION = 2
 CONFIG_FILE = "paperforge.json"
 LOCK_FILE = "paperforge.json.lock"
@@ -620,7 +622,7 @@ def _transaction(vault: Path, mutator, *, allow_missing: bool = False,
             if err2 is not None:
                 if prior is not None:
                     try:
-                        path.write_bytes(prior)
+                        write_bytes_atomic(path, prior)
                     except OSError:
                         pass
                 raise ConfigError("config.write_failed",

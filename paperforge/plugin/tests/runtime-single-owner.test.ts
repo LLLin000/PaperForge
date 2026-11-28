@@ -435,6 +435,7 @@ describe("single-owner runtime installer & daemon UI progress", () => {
   });
 
   it("suppresses false 'cancelled' failure during daemon hot-swap and resumes Express auto-chain", () => {
+    vi.spyOn(managedRuntime, "readRuntimePointer").mockReturnValue(null);
     let daemonSwap = true;
     const daemonSubmitRuntimeJob = vi.fn(async () => ({
       accepted: true,
@@ -473,6 +474,7 @@ describe("single-owner runtime installer & daemon UI progress", () => {
   });
 
   it("shows calm localized message on genuine runtime cancel and clears prior failure on retry", () => {
+    vi.spyOn(managedRuntime, "readRuntimePointer").mockReturnValue(null);
     const { tab } = makeTab({ hasDaemonRpc: true });
     (tab as any)._daemonDrivenRuntimeInstall = true;
     (tab as any)._setupOperation = "running";

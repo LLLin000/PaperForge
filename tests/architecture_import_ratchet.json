@@ -18,25 +18,22 @@
       "54:paperforge.worker._utils"
     ],
     "paperforge.commands.embed": [
-      "140:paperforge.embedding._chroma",
+      "130:paperforge.embedding._chroma",
       "21:paperforge.embedding._chroma",
       "34:paperforge.embedding.preflight:_preflight_check",
       "38:paperforge.worker._progress"
     ],
     "paperforge.commands.finalize": [
-      "33:paperforge.worker._utils"
+      "34:paperforge.worker._utils"
     ],
     "paperforge.commands.ocr": [
       "111:paperforge.worker._utils",
       "17:paperforge.worker.ocr_maintenance:_can_rebuild",
       "30:paperforge.worker._utils",
-      "455:paperforge.worker._utils",
-      "456:paperforge.worker.ocr:_resolve_paddleocr_token",
-      "608:paperforge.worker._utils",
-      "797:paperforge.worker._progress"
-    ],
-    "paperforge.commands.paper_context": [
-      "116:paperforge.worker._utils"
+      "572:paperforge.worker._utils",
+      "573:paperforge.worker.ocr:_resolve_paddleocr_token",
+      "727:paperforge.worker._utils",
+      "916:paperforge.worker._progress"
     ],
     "paperforge.commands.prune": [
       "61:paperforge.lineage:_detect_residuals"
@@ -54,10 +51,10 @@
       "430:paperforge.lineage:_canonical_pdf_map"
     ],
     "paperforge.lineage": [
-      "1200:paperforge.embedding._config"
+      "1369:paperforge.embedding._config"
     ],
     "paperforge.plugin.test.fixtures.build_e2e_vault": [
-      "197:paperforge.lineage:_resolve_canonical_pdf"
+      "204:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.services.embedding": [
       "1171:paperforge.embedding.substrate:_has_any_rows",
@@ -70,8 +67,8 @@
       "743:paperforge.embedding.build_state:_dict_to_build_state"
     ],
     "paperforge.services.sync_service": [
-      "497:paperforge.worker._domain",
-      "598:paperforge.worker._utils"
+      "498:paperforge.worker._domain",
+      "599:paperforge.worker._utils"
     ],
     "paperforge.skills.paperforge.scripts.pf_deep": [
       "15:paperforge.worker._utils"
@@ -82,14 +79,14 @@
       "705:paperforge.embedding._config:_read_plugin_settings"
     ],
     "paperforge.worker.ocr": [
-      "3053:paperforge.lineage:_resolve_canonical_pdf"
+      "3054:paperforge.lineage:_resolve_canonical_pdf"
     ],
     "paperforge.worker.prune": [
       "235:paperforge.embedding.vectors:_delete_paper_vectors_locked"
     ],
     "paperforge.worker.sync": [
-      "27:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
-      "27:paperforge.adapters.obsidian_frontmatter:_read_frontmatter_optional_bool_from_text"
+      "28:paperforge.adapters.obsidian_frontmatter:_legacy_control_flags",
+      "28:paperforge.adapters.obsidian_frontmatter:_read_frontmatter_optional_bool_from_text"
     ],
     "paperforge.worker.vector_db": [
       "6:paperforge.embedding.preflight:_preflight_check"

@@ -234,6 +234,19 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="KEY",
         help="Process specific Zotero key",
     )
+    p_ocr.add_argument(
+        "--keys",
+        nargs="+",
+        dest="opt_keys",
+        default=None,
+        metavar="KEY",
+        help="Process specific Zotero keys",
+    )
+    p_ocr.add_argument("--collection", default="", metavar="PATH", help="Filter OCR targets by collection substring")
+    p_ocr.add_argument("--domain", default="", metavar="DOMAIN", help="Filter OCR targets by domain")
+    p_ocr.add_argument("--limit", type=int, default=None, metavar="N", help="Max number of papers to queue")
+    p_ocr.add_argument("--force", action="store_true", help="Re-run OCR even for already-done papers")
+    p_ocr.add_argument("--dry-run", action="store_true", help="Preview matched OCR targets without running")
     ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
     p_ocr_versions = ocr_sub.add_parser(
         "pipeline-versions", help="Per-paper OCR pipeline versions (detail surface, #148)"
@@ -242,13 +255,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_ocr_status = ocr_sub.add_parser("status", help="Live provider status of active OCR jobs (no OCR loop)")
     p_ocr_status.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     p_ocr_status.add_argument("--batch", default=None, metavar="ID", help="Only show this batch (filter)")
+    p_ocr_status.add_argument("--keys", nargs="+", dest="opt_keys", default=None, metavar="KEY", help="Filter status by keys")
     p_ocr_resume = ocr_sub.add_parser("resume", help="Re-attach an existing OCR execution (settle done / poll / retry)")
     p_ocr_resume.add_argument("--batch", required=True, metavar="ID", help="Batch id to re-attach (from ocr run / status)")
     p_ocr_resume.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     run_parser = ocr_sub.add_parser("run", help="Run OCR queue")
     run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
+    run_parser.add_argument("--keys", nargs="+", dest="opt_keys", default=None, metavar="KEY", help="Paper keys to process")
     run_parser.add_argument("--keys-file", default=None, metavar="PATH",
                             help="File of paper keys (CRLF/BOM tolerated, deduped — P0-4)")
+    run_parser.add_argument("--collection", default="", metavar="PATH", help="Filter OCR targets by collection substring")
+    run_parser.add_argument("--domain", default="", metavar="DOMAIN", help="Filter OCR targets by domain")
+    run_parser.add_argument("--limit", type=int, default=None, metavar="N", help="Max number of papers to queue")
+    run_parser.add_argument("--force", action="store_true", help="Re-run OCR even for already-done papers")
+    run_parser.add_argument("--dry-run", action="store_true", help="Preview matched OCR targets without running")
     run_parser.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream")
     run_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output JSON")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
@@ -316,6 +336,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_embed = sub.add_parser("embed", help="Vector embedding operations")
     p_embed_sp = p_embed.add_subparsers(dest="embed_subcommand", required=True)
     p_embed_build = p_embed_sp.add_parser("build", help="Build vector index from OCR fulltext")
+    p_embed_build.add_argument("--keys", nargs="+", default=None, metavar="KEY", help="Optional paper keys to embed")
     p_embed_build.add_argument("--json", action="store_true")
     p_embed_build.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream even with --json")
     # P0-2: --force and --resume are mutually exclusive — a force rebuild
@@ -324,6 +345,10 @@ def build_parser() -> argparse.ArgumentParser:
     _rebuild_mode = p_embed_build.add_mutually_exclusive_group()
     _rebuild_mode.add_argument("--force", action="store_true")
     _rebuild_mode.add_argument("--resume", action="store_true", help="Skip papers already in vector index")
+    p_embed_rebuild = p_embed_sp.add_parser("rebuild", help="Rebuild vector index from scratch (--force alias)")
+    p_embed_rebuild.add_argument("--keys", nargs="+", default=None, metavar="KEY", help="Optional paper keys to rebuild")
+    p_embed_rebuild.add_argument("--json", action="store_true")
+    p_embed_rebuild.add_argument("--stream", action="store_true", help="Emit #137 NDJSON progress stream even with --json")
     p_embed_status = p_embed_sp.add_parser("status", help="Check vector DB status")
     p_embed_status.add_argument("--json", action="store_true")
     p_embed_status.add_argument(
@@ -420,7 +445,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_memory_restore.add_argument("--json", action="store_true", help="Output as JSON (PFResult envelope)")
 
     p_paper_status = sub.add_parser("paper-status", help="Look up a paper's status")
-    p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
+    p_paper_status.add_argument("query", nargs="?", default=None, help="Paper identifier (zotero_key, DOI, title, alias)")
+    p_paper_status.add_argument("--keys", nargs="+", default=None, metavar="KEY", help="One or more canonical paper keys")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
 
     p_inspect = sub.add_parser("inspect", help="Inspect end-to-end pipeline state and bottlenecks for one paper")
@@ -432,15 +458,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_pc.add_argument("--json", action="store_true", help="Output as JSON")
     p_pc.add_argument("--structure", action="store_true", help="Include compact document tree from OCR structure")
 
-    p_read = sub.add_parser("read", help="Canonical local literal read of a paper (fulltext/PDF, no path handling)")
+    p_read = sub.add_parser("read", help="Canonical local read of a paper (fulltext/PDF, search or page range)")
     p_read.add_argument("key", help="Paper identifier (zotero key, DOI, or citation key)")
-    p_read.add_argument("--find", required=True, help="Literal term to search (case-insensitive substring, not regex)")
+    p_read.add_argument("--find", default="", help="Literal term to search (case-insensitive substring, not regex)")
+    p_read.add_argument("--pages", default="", help="Page range to read when --find is omitted (e.g. '1-3', '2')")
+    p_read.add_argument("--section", default="", help="Optional section heading filter")
+    p_read.add_argument("--max-chars", type=int, default=40000, help="Max characters to return (0 for unlimited)")
     p_read.add_argument("--source", choices=("auto", "fulltext", "pdf"), default="auto",
-                        help="Source to search (default auto = fulltext + canonical PDF)")
+                        help="Source to read (default auto = fulltext + canonical PDF)")
     p_read.add_argument("--json", action="store_true", help="Output as JSON")
 
     p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
     p_rl.add_argument("--write", dest="paper_id", help="Write note for this zotero_key")
+    p_rl.add_argument("--input", default="", metavar="PATH", help="JSON file path or '-' for stdin when writing a reading note")
     p_rl.add_argument("--section", help="Section (e.g. Discussion P12)")
     p_rl.add_argument("--excerpt", help="Quoted excerpt")
     p_rl.add_argument("--usage", help="How this supports the current writing")
@@ -467,10 +497,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_pl = sub.add_parser("project-log", help="Record or render project work logs")
     p_pl.add_argument("--write", action="store_true", help="Write a new project log entry")
+    p_pl.add_argument("--write-methodology", action="store_true", help="Write a reusable methodology card")
+    p_pl.add_argument("--input", default="", metavar="PATH", help="JSON file path or '-' for stdin")
     p_pl.add_argument("--payload", help="JSON payload for the entry")
     p_pl.add_argument("--project", help="Project name (required for write/list/render)")
+    p_pl.add_argument("--title", default="", help="Title for methodology card")
     p_pl.add_argument("--list", action="store_true", help="List all entries for a project")
     p_pl.add_argument("--render", action="store_true", help="Render project-log.md")
+    p_pl.add_argument("--limit", type=int, default=50, help="Max entries for --list")
+    p_pl.add_argument("--json", action="store_true", help="Output as JSON")
     p_qp = sub.add_parser("query-plan", help="Classify a literature query and recommend the first retrieval command")
     p_qp.add_argument("query", help="User query to classify")
     p_qp.add_argument("--intent", choices=["discover", "locate", "content", "known-paper"], required=True, help="Retrieval intent (known-paper is an alias for locate)")
@@ -509,6 +544,21 @@ def build_parser() -> argparse.ArgumentParser:
     # doctor
     doctor_p = sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
     doctor_p.add_argument("--json", action="store_true", help="Output JSON")
+    doctor_p.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="Run non-destructive upgrade/derived-state reconciliation",
+    )
+    doctor_p.add_argument(
+        "--fix",
+        action="store_true",
+        help="Auto-heal derived vault state (includes --reconcile) before running checks",
+    )
+    doctor_p.add_argument(
+        "--force",
+        action="store_true",
+        help="Force reconciliation even when reconcile_epoch is current",
+    )
 
 
     # setup wizard
@@ -993,8 +1043,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_mc_ref = p_mc_sub.add_parser("refine", help="Synthesize/update one cognitive facet of a paper")
     p_mc_ref.add_argument("key", help="Canonical Zotero paper key")
-    p_mc_ref.add_argument("--facet", required=True, help="Facet slug (e.g. idea_logic, methods_params, research_craft, critique_limits, my_connection)")
-    p_mc_ref.add_argument("--content", required=True, help="Synthesized refined memory text")
+    p_mc_ref.add_argument("--facet", default="", help="Facet slug (e.g. idea_logic, methods_params, research_craft, critique_limits, my_connection)")
+    p_mc_ref.add_argument("--content", default="", help="Synthesized refined memory text")
+    p_mc_ref.add_argument("--input", default="", metavar="PATH", help="Read content or JSON {facet, content} from file path or '-' for stdin")
     p_mc_ref.add_argument("--json", action="store_true", help="Output JSON")
 
     p_mc_hist = p_mc_sub.add_parser("history", help="Inspect revision snapshots for a paper memory card")
@@ -1477,6 +1528,12 @@ def _run_cli(argv: list[str] | None = None) -> int:
             kw["verbose"] = True
         if getattr(args, "json", False):
             kw["json_output"] = True
+        if getattr(args, "reconcile", False):
+            kw["reconcile"] = True
+        if getattr(args, "fix", False):
+            kw["fix"] = True
+        if getattr(args, "force", False):
+            kw["force"] = True
         return run_doctor(vault, **kw)
 
 

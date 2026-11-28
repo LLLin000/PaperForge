@@ -130,8 +130,18 @@ jobs:
           name: native-daemon-${{ matrix.target }}
           path: dist-daemon/${{ matrix.asset }}
 
+  chaos-gate:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-chaos.yml
+
+  cross-os-desktop-gate:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-cross-os-desktop.yml
+
   publish:
-    needs: [build-native-daemon]
+    needs: [build-native-daemon, chaos-gate, cross-os-desktop-gate]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -285,6 +295,8 @@ jobs:
 
       - name: Run plugin tests
         working-directory: paperforge/plugin
+        env:
+          PF_PERF_ENFORCE_BUDGETS: "1"
         run: npx vitest run --reporter=verbose
 
       - name: Typecheck plugin
@@ -435,31 +447,27 @@ jobs:
           if [ "$PRERELEASE" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
 
           if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            # Create as Draft first so users never observe partial uploads before
+            # all binaries, plugin files, and checksums.txt are verified.
             gh release create "$RELEASE_TAG" \
               --target "${{ github.sha }}" \
               --title "$RELEASE_TAG" \
               --generate-notes \
+              --draft \
               $PRERELEASE_FLAG
-            # Upload checksums.txt FIRST so partial upload failures always leave a
-            # verifiable manifest on the release.
             gh release upload "$RELEASE_TAG" checksums.txt
             gh release upload "$RELEASE_TAG" "${ASSETS[@]}"
-            exit 0
-          fi
+          else
+            EXISTING_ASSETS_JSON=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+            EXISTING_COUNT=$(printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -c . || true)
 
-          # Existing release: explicitly align prerelease/stable channel state.
-          gh release edit "$RELEASE_TAG" --prerelease="$PRERELEASE"
-
-          EXISTING_ASSETS_JSON=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
-          EXISTING_COUNT=$(printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -c . || true)
-
-          if [ "$EXISTING_COUNT" -gt 0 ]; then
-            if ! printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx 'checksums.txt'; then
-              echo "::error::Fail-closed: existing release '$RELEASE_TAG' has $EXISTING_COUNT asset(s) but is missing checksums.txt. Refusing to overwrite or append unverified assets."
-              exit 1
-            fi
-            gh release download "$RELEASE_TAG" -p checksums.txt -O /tmp/existing-checksums.txt
-            python - /tmp/existing-checksums.txt checksums.txt <<'PY'
+            if [ "$EXISTING_COUNT" -gt 0 ]; then
+              if ! printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx 'checksums.txt'; then
+                echo "::error::Fail-closed: existing release '$RELEASE_TAG' has $EXISTING_COUNT asset(s) but is missing checksums.txt. Refusing to overwrite or append unverified assets."
+                exit 1
+              fi
+              gh release download "$RELEASE_TAG" -p checksums.txt -O /tmp/existing-checksums.txt
+              python - /tmp/existing-checksums.txt checksums.txt <<'PY'
           import os, sys
           def parse(p):
               out = {}
@@ -484,26 +492,80 @@ jobs:
               )
           print("Release Asset Immutability Gate passed (idempotent same-SHA retry verified).")
           PY
-          else
-            # Release existed with 0 assets: upload checksums.txt first.
-            gh release upload "$RELEASE_TAG" checksums.txt
-            EXISTING_ASSETS_JSON="checksums.txt"
+            else
+              # Release existed with 0 assets: upload checksums.txt first.
+              gh release upload "$RELEASE_TAG" checksums.txt
+              EXISTING_ASSETS_JSON="checksums.txt"
+            fi
+
+            # Upload ONLY missing assets (never --clobber over published immutable assets).
+            MISSING_ASSETS=()
+            for asset in "${ASSETS[@]}"; do
+              base=$(basename "$asset")
+              if ! printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx "$base"; then
+                MISSING_ASSETS+=("$asset")
+              fi
+            done
+            if [ "${#MISSING_ASSETS[@]}" -gt 0 ]; then
+              echo "Uploading ${#MISSING_ASSETS[@]} missing release asset(s)..."
+              gh release upload "$RELEASE_TAG" "${MISSING_ASSETS[@]}"
+            else
+              echo "All staged release assets already present."
+            fi
           fi
 
-          # Upload ONLY missing assets (never --clobber over published immutable assets).
-          MISSING_ASSETS=()
+          # Unified Final Remote Verification Gate (both fresh Draft uploads and retries):
+          # assert exact remote asset set equality, remote checksums.txt parity, and
+          # actual downloaded SHA-256 bytes for every asset BEFORE leaving Draft.
+          TMP_VERIFY_DIR=$(mktemp -d)
+          trap 'rm -rf "$TMP_VERIFY_DIR"' EXIT
+
+          FINAL_ASSETS_JSON="$TMP_VERIFY_DIR/final-assets.txt"
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > "$FINAL_ASSETS_JSON"
+
+          EXPECTED_BASENAMES=()
           for asset in "${ASSETS[@]}"; do
-            base=$(basename "$asset")
-            if ! printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx "$base"; then
-              MISSING_ASSETS+=("$asset")
-            fi
+            EXPECTED_BASENAMES+=("$(basename "$asset")")
           done
-          if [ "${#MISSING_ASSETS[@]}" -gt 0 ]; then
-            echo "Uploading ${#MISSING_ASSETS[@]} missing release asset(s)..."
-            gh release upload "$RELEASE_TAG" "${MISSING_ASSETS[@]}"
-          else
-            echo "All release assets and checksums.txt already present and verified."
+          python - "$FINAL_ASSETS_JSON" "${EXPECTED_BASENAMES[@]}" <<'PY'
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as fh:
+              remote_names = [line.strip() for line in fh if line.strip()]
+          expected = sorted(["checksums.txt", *sys.argv[2:]])
+          remote_sorted = sorted(remote_names)
+          if len(remote_names) != len(set(remote_names)):
+              raise SystemExit(f"::error::Duplicate remote assets reported: {remote_sorted}")
+          missing = sorted(set(expected) - set(remote_sorted))
+          extra = sorted(set(remote_sorted) - set(expected))
+          if missing or extra:
+              raise SystemExit(
+                  f"::error::Remote release asset set mismatch: missing={missing} extra={extra}"
+              )
+          print(f"Exact remote release asset set verified ({len(expected)} items).")
+          PY
+
+          gh release download "$RELEASE_TAG" -p checksums.txt -O "$TMP_VERIFY_DIR/remote-checksums.txt"
+          if ! cmp -s checksums.txt "$TMP_VERIFY_DIR/remote-checksums.txt"; then
+            echo "::error::Remote checksums.txt differs byte-for-byte from staged checksums.txt — keeping Draft."
+            exit 1
           fi
+
+          for base in "${EXPECTED_BASENAMES[@]}"; do
+            gh release download "$RELEASE_TAG" -p "$base" -D "$TMP_VERIFY_DIR"
+            ACTUAL_SHA=$(sha256sum "$TMP_VERIFY_DIR/$base" | awk '{print tolower($1)}')
+            EXPECTED_SHA=$(awk -v f="$base" '$2 == f || $2 == "*"f {print tolower($1); exit}' checksums.txt)
+            if [ -z "$ACTUAL_SHA" ] || [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "::error::Remote asset byte mismatch for '$base': remote=$ACTUAL_SHA expected=$EXPECTED_SHA — keeping Draft."
+              exit 1
+            fi
+            rm -f "$TMP_VERIFY_DIR/$base"
+          done
+          echo "Verified remote SHA-256 bytes for all ${#EXPECTED_BASENAMES[@]} assets + checksums.txt."
+
+          # Atomically publish (and align prerelease/stable channel state) only after
+          # exact asset set + byte SHA-256 verification succeed.
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$PRERELEASE"
 
       # ── Gate 5: Optional PyPI mirror via OIDC Trusted Publishing (runs AFTER
       # GitHub Release succeeds so PyPI never publishes ahead of GitHub).

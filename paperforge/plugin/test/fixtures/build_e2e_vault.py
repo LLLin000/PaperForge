@@ -141,6 +141,13 @@ def _restamp_provenance() -> None:
             json.dumps(raw_meta, ensure_ascii=False, indent=1), encoding="utf-8"
         )
 
+    # Checked-in result-hash.txt reflects the author's line endings; restamp
+    # against this vault's actual checkout bytes so identity_state() verifies
+    # across Windows (CRLF), Linux (LF), and macOS (LF).
+    from paperforge.worker.ocr_hash import publish_ocr_result_hash  # noqa: PLC0415
+
+    publish_ocr_result_hash(paper_root)
+
 
 def _assert_ocr_invariant() -> None:
     """The fixture must ship a VALID completed OCR state, not an assumed one.

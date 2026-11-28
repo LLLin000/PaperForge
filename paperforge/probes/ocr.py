@@ -37,8 +37,17 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
     notices: list[dict[str, Any]] = []
     provider_reachable = True
     try:
+        from paperforge.config import paperforge_paths
         from paperforge.ocr_diagnostics import ocr_doctor
-        diag = ocr_doctor(config=None, live=False)
+
+        ocr_cache_path: Path | None = None
+        pf_dir = paperforge_paths(vault).get("paperforge")
+        if pf_dir is not None and pf_dir.exists():
+            ocr_cache_path = pf_dir / "state" / "ocr-doctor-cache.json"
+        try:
+            diag = ocr_doctor(config=None, live=False, cache_path=ocr_cache_path)
+        except TypeError:
+            diag = ocr_doctor(config=None, live=False)
         provider_reachable = diag.get("passed", False)
         if not provider_reachable:
             notices.append({"level": "warning",
@@ -50,7 +59,11 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
     # ── Canonical maintenance rows ──
     try:
         from paperforge.worker.ocr_maintenance import collect_maintenance_rows
-        rows = collect_maintenance_rows(vault)
+
+        try:
+            rows = collect_maintenance_rows(vault, include_drift=False)
+        except TypeError:
+            rows = collect_maintenance_rows(vault)
     except Exception:
         return build_envelope(module="ocr", capability_state="unknown", severity="unknown",
         reason_code="ocr.probe_failed", reason_text="OCR maintenance check failed — probe to retry",
@@ -377,6 +390,21 @@ def ocr_pipeline_version_summary(vault: Path, rows) -> tuple[int, int]:
     ocr_root = paperforge_paths(vault).get("ocr")
     if ocr_root and ocr_root.exists():
         for r in rows:
+            has_meta_attr = getattr(r, "has_meta", None)
+            if has_meta_attr is not None:
+                if not has_meta_attr:
+                    continue
+                if getattr(r, "meta_unreadable", False):
+                    logger.warning("unreadable OCR meta for %s; counted as stale", r.key)
+                    papers_stale += 1
+                    continue
+                paper_version = getattr(r, "pipeline_version", None) or None
+                if paper_version == OCR_PIPELINE_VERSION:
+                    papers_on_current += 1
+                else:
+                    papers_stale += 1
+                continue
+
             meta_path = ocr_root / r.key / "meta.json"
             if meta_path.exists():
                 try:

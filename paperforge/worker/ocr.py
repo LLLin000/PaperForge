@@ -17,6 +17,7 @@ import requests
 
 from paperforge.adapters.bbt import load_export_rows
 from paperforge.config import paperforge_paths
+from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
 from paperforge.worker import sync as _sync
 from paperforge.worker._progress import progress_bar
 
@@ -2527,7 +2528,7 @@ def _find_notes_by_key(lit_root: Path | None) -> dict[str, Path]:
     notes: dict[str, Path] = {}
     if not lit_root or not lit_root.exists():
         return notes
-    for note_file in sorted(lit_root.rglob("*.md")):
+    for note_file in safe_rglob(lit_root, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
         if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
         try:
@@ -2807,7 +2808,7 @@ def discover_redo_keys(vault: Path, *, verbose: bool = False) -> list[tuple[str,
         return []
 
     redo_entry_map: dict[str, tuple[Path, str]] = {}
-    for note_file in sorted(lit_root.rglob("*.md")):
+    for note_file in safe_rglob(lit_root, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
         if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
         try:

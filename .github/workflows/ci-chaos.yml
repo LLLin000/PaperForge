@@ -6,35 +6,53 @@ on:
     - cron: "0 6 * * 0"
   workflow_dispatch:
     # Manual trigger from GitHub UI
+  workflow_call:
+    # Callable by publish.yml so every release SHA runs 3-OS L6 Chaos + PBAF v2.1
 
 permissions:
   contents: read
 
 jobs:
   chaos-tests:
-    name: Chaos / Destructive Tests
-    runs-on: ubuntu-latest
+    name: Chaos / Destructive Tests (${{ matrix.os }}, py${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.11"
+          - os: macos-latest
+            python-version: "3.11"
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install package with test dependencies
         run: |
           pip install -e ".[test]"
           pip install pytest pytest-timeout responses PyYAML
 
+      - name: Run PBAF v2.1 static audit & privacy gate
+        run: |
+          python scripts/backend_audit.py --strict
+          python scripts/check_machine_paths.py
+
       - name: Run chaos tests
         run: |
-          python -m pytest tests/chaos/ -m chaos -v --tb=long --timeout=120 \
-            --junit-xml=chaos-results.xml
+          python -m pytest tests/chaos/ -m chaos -v --tb=long --timeout=120 --junit-xml=chaos-results-${{ matrix.os }}-py${{ matrix.python-version }}.xml
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: chaos-test-results
-          path: chaos-results.xml
+          name: chaos-test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: chaos-results-${{ matrix.os }}-py${{ matrix.python-version }}.xml

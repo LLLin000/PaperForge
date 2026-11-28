@@ -20,6 +20,7 @@ from xml.etree import ElementTree as ET
 import requests
 
 import paperforge.worker.asset_index as asset_index
+from paperforge.core.fs_safe import LITERATURE_SKIP_DIRS, safe_rglob
 from paperforge.adapters.bbt import (
     collection_fields,
     load_export_rows,
@@ -180,7 +181,7 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
     lit_root = paths.get("literature")
     if not lit_root or not lit_root.exists():
         return actions
-    for note_file in lit_root.rglob("*.md"):
+    for note_file in safe_rglob(lit_root, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
         if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
         try:
@@ -1108,7 +1109,7 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
             except OSError:
                 return False
 
-        for note_path in lit_root.rglob("*.md"):
+        for note_path in safe_rglob(lit_root, suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS):
             if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
                 continue
             if _is_reparse(note_path) or _is_reparse(note_path.parent) or _conflict_re.search(note_path.name):
@@ -1268,7 +1269,7 @@ def run_index_refresh(
     count = asset_index.build_index(vault, verbose)
 
     if paths["literature"].exists() and not json_output:
-        total = sum(1 for _ in paths["literature"].rglob("*.md"))
+        total = len(safe_rglob(paths["literature"], suffix=".md", skip_dirs=LITERATURE_SKIP_DIRS))
         print(f"index-refresh: {total} formal note(s) in literature")
 
     return {"updated": count, "failed": 0, "errors": []}

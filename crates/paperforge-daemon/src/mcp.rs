@@ -1,9 +1,10 @@
 //! Native MCP stdio server (`paperforge-daemon --mcp`), stable binary routing,
+//! Poki-style live Agent session presence, handshake auto-injection,
 //! and safe vault-local Agent MCP installer / self-check commands.
 //!
 //! Zero external dependencies beyond `serde_json` + `rusqlite`:
 //! - Dual-framing JSON-RPC 2.0 on stdin/stdout (`NDJSON` + `Content-Length` LSP framing)
-//! - Exposes 7 tightly scoped high-signal tools backed by Rust `<5ms` queries and
+//! - Exposes 11 high-signal tools backed by Rust `<5ms` queries and
 //!   on-demand Python worker delegation
 //! - Non-destructive vault-local MCP config installation (`.mcp.json`,
 //!   `.cursor/mcp.json`, `opencode.json`) that never clobbers unrelated servers
@@ -11,7 +12,8 @@
 use crate::brief::{build_agent_brief, discover_vault_from_cwd, query_library_filtered};
 use crate::config_ops::{load_canonical_config, pf_err, pf_ok, strip_verbatim_prefix, PF_VERSION};
 use crate::platform::{
-    atomic_write_bytes, attach_child_to_job, is_pid_alive, kill_process_tree, now_unix_secs,
+    acquire_advisory_lock, atomic_write_bytes, attach_child_to_job, is_pid_alive,
+    kill_process_tree, now_unix_secs,
 };
 use crate::query_ops::{resolve_engine_dir, try_handle_search_cli};
 use crate::supervisor::NativeControlDaemon;
@@ -23,7 +25,7 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FramingMode {
@@ -40,23 +42,118 @@ fn user_home_dir() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
+/// Resolve `~/.paperforge` honoring `PAPERFORGE_HOME` (if set and non-empty),
+/// otherwise falling back to `HOME` / `USERPROFILE` + `.paperforge`.
+pub fn paperforge_home_dir() -> Option<PathBuf> {
+    if let Ok(pf) = env::var("PAPERFORGE_HOME") {
+        let trimmed = pf.trim();
+        if !trimmed.is_empty() {
+            return Some(PathBuf::from(trimmed));
+        }
+    }
+    Some(user_home_dir()?.join(".paperforge"))
+}
+
+pub fn agent_sessions_path() -> Option<PathBuf> {
+    Some(paperforge_home_dir()?.join("state").join("agent-sessions.json"))
+}
+
+fn civil_from_days(z: i64) -> (i64, u32, u32) {
+    let z = z + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = (yoe as i64) + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let yr = y + if m <= 2 { 1 } else { 0 };
+    (yr, m as u32, d as u32)
+}
+
+pub fn format_unix_iso_utc(secs_u64: u64) -> String {
+    let days = (secs_u64 / 86_400) as i64;
+    let rem = secs_u64 % 86_400;
+    let hh = rem / 3600;
+    let mm = (rem % 3600) / 60;
+    let ss = rem % 60;
+    let (yr, mo, dy) = civil_from_days(days);
+    format!("{yr:04}-{mo:02}-{dy:02}T{hh:02}:{mm:02}:{ss:02}Z")
+}
+
+fn utc_iso8601_now() -> String {
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format_unix_iso_utc(secs)
+}
+
+fn utc_date_today() -> String {
+    let days = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| (d.as_secs() / 86_400) as i64)
+        .unwrap_or(0);
+    let (yr, mo, dy) = civil_from_days(days);
+    format!("{yr:04}-{mo:02}-{dy:02}")
+}
+
+/// Atomically bump `<engine_dir>/indexes/.state-seq.json` so Obsidian refreshes live.
+pub fn bump_vault_state_seq(vault: &Path, reason: &str, changed_keys: &[&str]) -> i64 {
+    let engine = resolve_engine_dir(vault);
+    if load_canonical_config(vault).is_err() && !engine.is_dir() {
+        return 0;
+    }
+    let idx_dir = engine.join("indexes");
+    if fs::create_dir_all(&idx_dir).is_err() {
+        return 0;
+    }
+    let seq_path = idx_dir.join(".state-seq.json");
+    let lock_path = idx_dir.join(".state-seq.json.lock");
+    let _guard = acquire_advisory_lock(&lock_path, 3000).ok();
+
+    let prev_seq = fs::read_to_string(&seq_path)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+        .and_then(|v| v.get("seq").and_then(|s| s.as_i64()))
+        .unwrap_or(0);
+    let next_seq = prev_seq + 1;
+
+    let mut dedup: Vec<String> = Vec::new();
+    for k in changed_keys {
+        let s = k.trim();
+        if !s.is_empty() && !dedup.iter().any(|x| x == s) {
+            dedup.push(s.to_string());
+        }
+    }
+    dedup.truncate(50);
+
+    let payload = json!({
+        "seq": next_seq,
+        "updated_at": utc_iso8601_now(),
+        "reason": reason.trim(),
+        "changed_keys": dedup,
+    });
+    if let Ok(bytes) = serde_json::to_vec(&payload) {
+        let _ = atomic_write_bytes(&seq_path, &bytes);
+    }
+    next_seq
+}
+
 pub fn stable_daemon_bin_path() -> Option<PathBuf> {
-    let home = user_home_dir()?;
+    let pf_home = paperforge_home_dir()?;
     let exe = if cfg!(windows) {
         "paperforge-daemon.exe"
     } else {
         "paperforge-daemon"
     };
-    Some(home.join(".paperforge").join("bin").join(exe))
+    Some(pf_home.join("bin").join(exe))
 }
 
 fn daemon_meta_file_path() -> Option<PathBuf> {
-    let home = user_home_dir()?;
-    Some(
-        home.join(".paperforge")
-            .join("bin")
-            .join(".daemon-meta.json"),
-    )
+    let pf_home = paperforge_home_dir()?;
+    Some(pf_home.join("bin").join(".daemon-meta.json"))
 }
 
 /// Resolve the binary path to write into Agent MCP configurations.
@@ -497,16 +594,11 @@ fn platform_skill_relpath(platform: &str) -> &'static str {
 }
 
 pub fn machine_skill_hub_dir() -> Option<PathBuf> {
-    Some(
-        user_home_dir()?
-            .join(".paperforge")
-            .join("skills")
-            .join("paperforge"),
-    )
+    Some(paperforge_home_dir()?.join("skills").join("paperforge"))
 }
 
 pub fn agent_installs_registry_path() -> Option<PathBuf> {
-    Some(user_home_dir()?.join(".paperforge").join("agent-installs.json"))
+    Some(paperforge_home_dir()?.join("agent-installs.json"))
 }
 
 pub fn resolve_skill_source_dir() -> Option<PathBuf> {
@@ -515,8 +607,8 @@ pub fn resolve_skill_source_dir() -> Option<PathBuf> {
             return Some(strip_verbatim_prefix(&hub));
         }
     }
-    let home = user_home_dir()?;
-    let ptr_path = home.join(".paperforge").join("runtime").join("pointer.json");
+    let pf_home = paperforge_home_dir()?;
+    let ptr_path = pf_home.join("runtime").join("pointer.json");
     let raw = fs::read_to_string(&ptr_path).ok()?;
     let val: Value = serde_json::from_str(&raw).ok()?;
     let env_root = PathBuf::from(val.get("environment_root")?.as_str()?.trim());
@@ -906,60 +998,38 @@ pub fn handle_agent_onboarding(
     let is_zh = lang.trim().to_ascii_lowercase().starts_with("zh");
     let mcp_args = json!(["--mcp", "--vault", vault_str]);
     let self_check_tpl = format!(
-        "\"{bin_str}\" mcp-check --vault \"{vault_str}\" --skill-dir \"<SKILL_DIR>\" --mcp-config \"<MCP_CONFIG_PATH>\" --register --probe-mcp --json"
+        "\"{bin_str}\" mcp-check --vault \"{vault_str}\" --mcp-config \"<MCP_CONFIG_PATH>\" --probe-mcp --json"
     );
-
-    let skill_source_exists = skill_src_opt.is_some();
-    let prereq_zh = if skill_source_exists {
-        String::new()
-    } else {
-        format!(
-            "\n> **前置提示（官方 Skill 源目录尚未生成）**：`{skill_src_str}` 当前不存在（`skill_source_exists: false`）。请勿直接对不存在的目录创建符号链接/Junction；请先运行 `\"{bin_str}\" install-runtime`（或先在 Obsidian 设置中完成运行环境安装）以自动释放官方 Skill 源目录，再执行下方第 2 步。\n"
-        )
-    };
-    let prereq_en = if skill_source_exists {
-        String::new()
-    } else {
-        format!(
-            "\n> **Prerequisite (`skill_source_exists: false`)**: `{skill_src_str}` does not exist yet. Do NOT create a symlink/Junction to a missing target; first run `\"{bin_str}\" install-runtime` (or complete runtime setup in Obsidian Settings) to populate the canonical Skill Hub before executing Step 2.\n"
-        )
-    };
 
     let prompt = if is_zh {
         format!(
-            "请为当前 Agent 环境配置 PaperForge 研究记忆配套设施（**不要往用户的 Obsidian Vault 根目录写入 `.agents/` 或 `.mcp.json` 等杂项文件**，优先安装到你自身平台的原生全局/工作区目录）：\n\n\
-### 本机真实路径（禁止猜测或自行拼接）\n\
+            "请为当前 Agent 环境接入 PaperForge 全局轻量 MCP 服务（**推荐写入你自身平台的全局 MCP 配置**以便在任意科研/实验代码项目中随时调用；连接后在无关编程/闲聊中保持完全静默，**不要往用户的 Obsidian Vault 根目录写入 `.agents/` 或 `.mcp.json` 等杂项文件**）：\n\n\
+### 本机真实路径（禁止猜测）\n\
 - Vault 路径：`{vault_str}`\n\
-- MCP 稳定入口：`{bin_str}`\n\
-- MCP 启动参数：`[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\
-- 官方 Skill 源目录：`{skill_src_str}`{prereq_zh}\n\n\
-### 请按以下 3 步完成安装并做端到端自检\n\
-1. **接入 `paperforge` MCP 服务**：按你自身平台的原生配置格式（如 Claude/Cursor/Antigravity 的 `mcpServers` JSON、OpenCode 的 `mcp` JSON、Codex 的 `[mcp_servers.paperforge]` TOML 等），非破坏性地合并添加名为 `paperforge` 的 stdio 服务，严禁覆盖用户已有其他 MCP 服务。\n\
-2. **安装 PaperForge Skill**：将上方 `官方 Skill 源目录` 链接或复制到你自身原生识别的全局 skills 目录（优先用符号链接/Windows NTFS Junction `New-Item -ItemType Junction -Path \"<你的skills目录>\\paperforge\" -Target \"{skill_src_str}\"`，无需管理员权限即可随软件升级自动同步；若复制完整目录也支持自动更新）。\n\
-3. **运行端到端自检并登记自动更新**：\n\
-   执行以下命令（替换为你实际安装的路径）：\n\
+- MCP 可执行文件：`{bin_str}`\n\
+- MCP 启动参数：`[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\n\
+### 操作步骤\n\
+1. **非破坏性合并注册 `paperforge` 全局 stdio MCP 服务**（如 Claude/Cursor/Antigravity 的 `mcpServers` JSON、OpenCode 的 `mcp` JSON、Codex 的 `[mcp_servers.paperforge]` TOML），保留用户已有其他服务。连接后服务端会在握手时自动注入全部操作规程、11 个 MCP 工具与提示模板（无需额外安装本地 Skill）。\n\
+2. **运行握手自检**：\n\
    ```bash\n\
    {self_check_tpl}\n\
    ```\n\
-   确认输出 `data.status == \"ready\"` 且 `data.mcp_handshake_ok == true`。如当前会话支持热加载，顺便调用一次 `paperforge_brief` 验证实时握手；若需重启会话生效，请在汇报末尾明确提醒用户新开/重载会话。\n\
-   最后用清晰清单向用户汇报：MCP 注册、Skill 安装（链接/复制）、Vault 库状态、实时握手四项结果。"
+   确认 `data.mcp_handshake_ok == true`；如当前会话支持热加载，立即调用 `paperforge_brief` 完成实时握手验证（Obsidian 设置页将同步显示实时在线状态）。"
         )
     } else {
         format!(
-            "Set up the PaperForge Research Memory integration for your own Agent harness (**do NOT write `.agents/` or `.mcp.json` clutter into the user's Obsidian Vault root**; install into your platform's native config/skills locations instead):\n\n\
-### Verified Local Paths (do not guess paths)\n\
+            "Connect your Agent harness to the PaperForge MCP server (**recommended: register in your harness's global MCP config** so it is available across projects while staying silent on unrelated coding chats; **do NOT write `.agents/` or `.mcp.json` clutter into the user's Obsidian Vault root**):\n\n\
+### Verified Local Paths\n\
 - Vault path: `{vault_str}`\n\
-- Stable MCP binary: `{bin_str}`\n\
-- MCP args: `[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\
-- Canonical Skill source: `{skill_src_str}`{prereq_en}\n\n\
-### Execute these 3 steps and verify\n\
-1. **Register the `paperforge` stdio MCP server** in your harness's native config (`mcpServers` JSON, OpenCode `mcp` JSON, or Codex `[mcp_servers.paperforge]` TOML) without overwriting existing servers.\n\
-2. **Install the PaperForge Skill** from the Canonical Skill source above into your native skills directory (prefer symlink or Windows NTFS Junction `New-Item -ItemType Junction -Path \"<skills_dir>\\paperforge\" -Target \"{skill_src_str}\"` for zero-touch live updates; full directory copy is also auto-synced).\n\
-3. **Run self-check & register for auto-updates**:\n\
+- MCP binary: `{bin_str}`\n\
+- MCP args: `[\"--mcp\", \"--vault\", \"{vault_str}\"]`\n\n\
+### Steps\n\
+1. **Register the `paperforge` stdio MCP server globally** and non-destructively in your native config (`mcpServers` JSON, OpenCode `mcp` JSON, or Codex `[mcp_servers.paperforge]` TOML). On handshake, PaperForge auto-injects concise instructions, resources, prompts, and all 11 tools (local Skill install is optional).\n\
+2. **Verify MCP handshake**:\n\
    ```bash\n\
    {self_check_tpl}\n\
    ```\n\
-   Verify `data.status == \"ready\"` and `data.mcp_handshake_ok == true`. Report the 4-item checklist (MCP config, Skill install, Vault readiness, Live MCP handshake) and let the user know if a session reload is needed to activate new MCP tools."
+   Confirm `data.mcp_handshake_ok == true`, then call `paperforge_brief` if hot-reload is active (or reload your session so Obsidian shows live connected status)."
         )
     };
 
@@ -1297,7 +1367,10 @@ fn probe_configured_mcp_binary(cmd_path: &Path, vault: &Path) -> (bool, usize) {
             "jsonrpc": "2.0",
             "id": 1,
             "method": "initialize",
-            "params": { "protocolVersion": "2025-03-26" }
+            "params": {
+                "protocolVersion": "2025-03-26",
+                "clientInfo": { "name": "paperforge-mcp-probe", "version": PF_VERSION }
+            }
         })
         .to_string();
         let tools_line = json!({
@@ -1344,10 +1417,15 @@ fn probe_configured_mcp_binary(cmd_path: &Path, vault: &Path) -> (bool, usize) {
         let _ = tx.send((init_ok, tool_len));
     });
 
+    let expected_tools = mcp_tools_list()
+        .get("tools")
+        .and_then(|t| t.as_array())
+        .map(|a| a.len())
+        .unwrap_or(11);
     let res = match rx.recv_timeout(Duration::from_secs(5)) {
         Ok((init_ok, tool_len)) => {
             let _ = child.wait();
-            (init_ok && tool_len == 7, tool_len)
+            (init_ok && tool_len >= expected_tools, tool_len)
         }
         Err(_) => {
             kill_process_tree(&mut child);
@@ -1488,8 +1566,13 @@ pub fn handle_mcp_check_with_options(
                 .and_then(|t| t.as_array())
                 .map(|a| a.len())
                 .unwrap_or(0);
+            let expected_tools = mcp_tools_list()
+                .get("tools")
+                .and_then(|t| t.as_array())
+                .map(|a| a.len())
+                .unwrap_or(11);
             mcp_tool_count = Some(tool_len);
-            mcp_handshake_ok = Some(init_r.is_some() && tool_len == 7);
+            mcp_handshake_ok = Some(init_r.is_some() && tool_len >= expected_tools);
         }
     }
 
@@ -1617,7 +1700,7 @@ pub fn mcp_tools_list() -> Value {
         "tools": [
             {
                 "name": "paperforge_brief",
-                "description": "Fast (<5ms) session handoff returning vault paths, runtime health, live Obsidian daemon jobs/barriers, library stats, collection hierarchy, capabilities, blocked actions, actionable hints, and optional single-paper snapshot.",
+                "description": "Fast (<5ms) session handoff returning vault paths, runtime health, live Obsidian daemon jobs/barriers, library stats, collection hierarchy, capabilities, blocked actions, actionable hints, and optional single-paper snapshot. Automatically heals missing logs/ or unbuilt SQLite index in-place.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1678,6 +1761,22 @@ pub fn mcp_tools_list() -> Value {
                 }
             },
             {
+                "name": "paperforge_read_paper",
+                "description": "Read paper fulltext cleanly from OCR fulltext.md OR directly from native PDF pages when OCR is pending/incomplete. Supports page ranges (e.g. '1-3' or '2'), section filtering, and character budgets.",
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["paper_key"],
+                    "properties": {
+                        "paper_key": { "type": "string", "description": "Canonical Zotero key, citation_key, or DOI." },
+                        "pages": { "type": "string", "description": "Optional 1-based page or page range, e.g. '1-3' or '2'." },
+                        "section": { "type": "string", "description": "Optional section title substring filter." },
+                        "max_chars": { "type": "integer", "minimum": 500, "maximum": 200000 },
+                        "source": { "type": "string", "enum": ["auto", "fulltext", "pdf"], "default": "auto" },
+                        "vault": { "type": "string" }
+                    }
+                }
+            },
+            {
                 "name": "paperforge_retrieve",
                 "description": "Fulltext evidence retrieval across OCR body units and vector embeddings (use deep=true to force FTS5 BM25 when vectors are disabled/building).",
                 "inputSchema": {
@@ -1694,7 +1793,7 @@ pub fn mcp_tools_list() -> Value {
             },
             {
                 "name": "paperforge_annotate_batch",
-                "description": "Atomically ground and save a batch of AI review annotations onto the PDF sidecar layer (validates OCR readiness, enforces batch limit, rejects pure paraphrases, deduplicates existing marks, optional replace_lens).",
+                "description": "Atomically ground and save a batch of AI review annotations onto the PDF sidecar layer (works with or without OCR by grounding against OCR blocks or native PDF text layers, enforces batch limit, rejects pure paraphrases, deduplicates existing marks, optional replace_lens).",
                 "inputSchema": {
                     "type": "object",
                     "required": ["paper_key", "items"],
@@ -1712,8 +1811,8 @@ pub fn mcp_tools_list() -> Value {
                                 "type": "object",
                                 "required": ["comment"],
                                 "properties": {
-                                    "quote": { "type": "string", "description": "Verbatim substring copied from fulltext.md." },
-                                    "figure_id": { "type": "string", "description": "Figure/table ID such as figure_001 or table_001." },
+                                    "quote": { "type": "string", "description": "Verbatim substring copied from fulltext.md or the PDF text layer." },
+                                    "figure_id": { "type": "string", "description": "Figure/table ID such as figure_001 or table_001 (resolved via OCR inventory or native PDF caption fallback)." },
                                     "comment": { "type": "string", "description": "Non-paraphrase analytical/review insight (>=8 chars)." },
                                     "color": { "type": "string", "enum": ["yellow", "green", "blue", "red", "purple"] },
                                     "lens": { "type": "string", "enum": ["skeleton", "methods", "critique", "custom"] },
@@ -1723,6 +1822,21 @@ pub fn mcp_tools_list() -> Value {
                                 }
                             }
                         }
+                    }
+                }
+            },
+            {
+                "name": "paperforge_annotations",
+                "description": "Inspect or manage PDF sidecar annotations for a paper: list user/AI annotations, adopt an AI mark as permanent user highlight, clear AI marks by lens, or delete a specific annotation.",
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["paper_key", "action"],
+                    "properties": {
+                        "paper_key": { "type": "string" },
+                        "action": { "type": "string", "enum": ["list", "adopt", "clear_agent", "delete"] },
+                        "ann_id": { "type": "string", "description": "Annotation ID (required for adopt and delete)." },
+                        "lens": { "type": "string", "enum": ["skeleton", "methods", "critique", "custom"], "description": "Optional lens filter for clear_agent." },
+                        "vault": { "type": "string" }
                     }
                 }
             },
@@ -1739,8 +1853,647 @@ pub fn mcp_tools_list() -> Value {
                         "vault": { "type": "string" }
                     }
                 }
+            },
+            {
+                "name": "paperforge_log_write",
+                "description": "Persist structured research records without shell escaping: reading_log entries (verified excerpt + usage), project_log entries (decisions/detours/reusable insights), or reusable methodology cards.",
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["kind"],
+                    "properties": {
+                        "kind": { "type": "string", "enum": ["reading_log", "project_log", "methodology"] },
+                        "paper_key": { "type": "string" },
+                        "section": { "type": "string" },
+                        "excerpt": { "type": "string" },
+                        "note": { "type": "string" },
+                        "usage": { "type": "string" },
+                        "project": { "type": "string" },
+                        "title": { "type": "string" },
+                        "content": { "type": "string" },
+                        "tags": { "type": "array", "items": { "type": "string" } },
+                        "vault": { "type": "string" }
+                    }
+                }
+            },
+            {
+                "name": "paperforge_job",
+                "description": "Inspect or control PaperForge background pipeline jobs: check live daemon/OCR/embedding/per-paper status, trigger targeted or collection OCR, build/rebuild vector embeddings, sync Zotero, reconcile vault state, or cancel an active job.",
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["action"],
+                    "properties": {
+                        "action": { "type": "string", "enum": ["status", "ocr", "embed", "sync", "reconcile", "cancel"] },
+                        "paper_keys": { "type": "array", "items": { "type": "string" } },
+                        "collection": { "type": "string" },
+                        "domain": { "type": "string" },
+                        "limit": { "type": "integer", "minimum": 1, "maximum": 500 },
+                        "force": { "type": "boolean" },
+                        "embed_mode": { "type": "string", "enum": ["incremental", "rebuild"], "default": "incremental" },
+                        "job_id": { "type": "string" },
+                        "dry_run": { "type": "boolean" },
+                        "vault": { "type": "string" }
+                    }
+                }
             }
         ]
+    })
+}
+
+fn parse_iso_utc_unix(raw: &str) -> Option<f64> {
+    let s = raw.trim();
+    if s.len() < 19 {
+        return None;
+    }
+    let bytes = s.as_bytes();
+    if bytes[4] != b'-'
+        || bytes[7] != b'-'
+        || (bytes[10] != b'T' && bytes[10] != b' ')
+        || bytes[13] != b':'
+        || bytes[16] != b':'
+    {
+        return None;
+    }
+    let yr: i64 = s[0..4].parse().ok()?;
+    let mo: i64 = s[5..7].parse().ok()?;
+    let dy: i64 = s[8..10].parse().ok()?;
+    let hh: i64 = s[11..13].parse().ok()?;
+    let mm: i64 = s[14..16].parse().ok()?;
+    let ss: i64 = s[17..19].parse().ok()?;
+    if !(1..=12).contains(&mo) || !(1..=31).contains(&dy) {
+        return None;
+    }
+    let y = yr - if mo <= 2 { 1 } else { 0 };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let doy = (153 * (mo + if mo > 2 { -3 } else { 9 }) + 2) / 5 + dy - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146_097 + doe - 719_468;
+    Some((days * 86_400 + hh * 3600 + mm * 60 + ss) as f64)
+}
+
+const SESSION_STALE_SECS: f64 = 300.0;
+
+fn vault_paths_equal(a: &str, b: &str) -> bool {
+    let ta = a.trim();
+    let tb = b.trim();
+    if ta.is_empty() || tb.is_empty() {
+        return false;
+    }
+    let ca = strip_verbatim_prefix(&fs::canonicalize(ta).unwrap_or_else(|_| PathBuf::from(ta)))
+        .to_string_lossy()
+        .into_owned();
+    let cb = strip_verbatim_prefix(&fs::canonicalize(tb).unwrap_or_else(|_| PathBuf::from(tb)))
+        .to_string_lossy()
+        .into_owned();
+    if cfg!(windows) {
+        ca.eq_ignore_ascii_case(&cb)
+    } else {
+        ca == cb
+    }
+}
+
+fn check_vault_reconciled(vault: &Path) -> bool {
+    if load_canonical_config(vault).is_err() {
+        return false;
+    }
+    let engine = resolve_engine_dir(vault);
+    engine.join("indexes").join("paperforge.db").is_file() && engine.join("logs").is_dir()
+}
+
+fn check_skill_ready(vault: Option<&Path>) -> bool {
+    if let Some(hub) = machine_skill_hub_dir() {
+        if hub.join("SKILL.md").is_file() {
+            return true;
+        }
+    }
+    if let Some(reg_path) = agent_installs_registry_path() {
+        for entry in read_agent_installs_file(&reg_path) {
+            if let Some(sd) = entry.get("skill_dir").and_then(|v| v.as_str()) {
+                if normalize_installed_skill_dir(Path::new(sd)).is_some() {
+                    return true;
+                }
+            }
+        }
+    }
+    if let Some(vp) = vault {
+        for cand in [
+            vp.join(".agents").join("skills"),
+            vp.join(".claude").join("skills"),
+            vp.join(".cursor").join("skills"),
+            vp.join(".opencode").join("skills"),
+        ] {
+            if normalize_installed_skill_dir(&cand).is_some() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn is_session_entry_alive(entry: &Value, now_unix: f64) -> bool {
+    let pid = entry.get("pid").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    if pid == 0 || !is_pid_alive(pid, None) {
+        return false;
+    }
+    if let Some(ts) = entry.get("last_seen_unix").and_then(|v| v.as_f64()) {
+        return (now_unix - ts) <= SESSION_STALE_SECS;
+    }
+    if let Some(iso) = entry.get("last_seen_at").and_then(|v| v.as_str()) {
+        if let Some(ts) = parse_iso_utc_unix(iso) {
+            return (now_unix - ts) <= SESSION_STALE_SECS;
+        }
+    }
+    false
+}
+
+fn load_sessions_doc(path: &Path) -> (Vec<Value>, Vec<Value>) {
+    let Ok(raw) = fs::read_to_string(path) else {
+        return (Vec::new(), Vec::new());
+    };
+    let Ok(val) = serde_json::from_str::<Value>(&raw) else {
+        return (Vec::new(), Vec::new());
+    };
+    let active = val
+        .get("active_sessions")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let hist = val
+        .get("historical_clients")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    (active, hist)
+}
+
+fn save_sessions_doc(path: &Path, active: &[Value], hist: &[Value]) {
+    let doc = json!({
+        "schema_version": 1,
+        "active_sessions": active,
+        "historical_clients": hist,
+        "updated_at": utc_iso8601_now(),
+    });
+    if let Ok(mut bytes) = serde_json::to_vec_pretty(&doc) {
+        bytes.push(b'\n');
+        let _ = atomic_write_bytes(path, &bytes);
+    }
+}
+
+fn upsert_historical_client(
+    hist: &mut Vec<Value>,
+    client_name: &str,
+    client_version: &str,
+    vault_str: &str,
+    last_seen_at: &str,
+) {
+    hist.retain(|h| h.get("client_name").and_then(|v| v.as_str()) != Some(client_name));
+    hist.insert(
+        0,
+        json!({
+            "client_name": client_name,
+            "client_version": client_version,
+            "vault": vault_str,
+            "last_seen_at": last_seen_at,
+        }),
+    );
+    hist.truncate(20);
+}
+
+#[derive(Clone, Debug)]
+pub struct McpSessionTracker {
+    pub session_id: String,
+    pub client_name: String,
+    pub client_version: String,
+    pub vault: Option<PathBuf>,
+    pub connected_at: String,
+    pub vault_reconciled: bool,
+    pub skill_ready: bool,
+    pub is_probe: bool,
+    closed: bool,
+}
+
+impl McpSessionTracker {
+    pub fn start(default_vault: Option<&Path>, params: &Value) -> Self {
+        let client_info = params.get("clientInfo");
+        let client_name = client_info
+            .and_then(|c| c.get("name"))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("mcp-client")
+            .to_string();
+        let client_version = client_info
+            .and_then(|c| c.get("version"))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .unwrap_or("")
+            .to_string();
+        let is_probe = client_name == "paperforge-mcp-probe";
+
+        let vault = default_vault
+            .map(|p| strip_verbatim_prefix(&fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf())))
+            .or_else(|| discover_vault_from_cwd(None));
+
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let session_id = format!("mcp_{}_{}", std::process::id(), nanos);
+        let connected_at = utc_iso8601_now();
+        let vault_reconciled = vault.as_deref().is_some_and(check_vault_reconciled);
+        let skill_ready = check_skill_ready(vault.as_deref());
+
+        let tracker = Self {
+            session_id,
+            client_name,
+            client_version,
+            vault,
+            connected_at,
+            vault_reconciled,
+            skill_ready,
+            is_probe,
+            closed: false,
+        };
+        if !tracker.is_probe {
+            tracker.persist_upsert(None);
+            if let Some(ref vp) = tracker.vault {
+                bump_vault_state_seq(vp, "agent.connected", &[]);
+            }
+        }
+        tracker
+    }
+
+    fn build_entry(&self, current_tool: Option<&str>) -> Value {
+        let now_unix = now_unix_secs();
+        let now_iso = utc_iso8601_now();
+        let vault_str = self
+            .vault
+            .as_ref()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let status = if self.vault_reconciled {
+            "ready"
+        } else {
+            "connected"
+        };
+        json!({
+            "session_id": self.session_id,
+            "client_name": self.client_name,
+            "client_version": self.client_version,
+            "vault": vault_str,
+            "pid": std::process::id(),
+            "connected_at": self.connected_at,
+            "last_seen_at": now_iso,
+            "last_seen_unix": now_unix,
+            "current_tool": current_tool.map(Value::from).unwrap_or(Value::Null),
+            "setup_steps": {
+                "connected": true,
+                "instructions_injected": true,
+                "vault_reconciled": self.vault_reconciled,
+                "skill_ready": self.skill_ready,
+            },
+            "status": status,
+        })
+    }
+
+    fn persist_upsert(&self, current_tool: Option<&str>) {
+        if self.is_probe || self.closed {
+            return;
+        }
+        let Some(sess_path) = agent_sessions_path() else {
+            return;
+        };
+        let lock_path = sess_path.with_file_name("agent-sessions.json.lock");
+        let _guard = acquire_advisory_lock(&lock_path, 3000).ok();
+        let now_unix = now_unix_secs();
+        let (mut active, mut hist) = load_sessions_doc(&sess_path);
+        active.retain(|e| {
+            e.get("session_id").and_then(|v| v.as_str()) != Some(self.session_id.as_str())
+                && is_session_entry_alive(e, now_unix)
+        });
+        let entry = self.build_entry(current_tool);
+        let vault_str = entry
+            .get("vault")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let last_seen = entry
+            .get("last_seen_at")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        active.push(entry);
+        upsert_historical_client(
+            &mut hist,
+            &self.client_name,
+            &self.client_version,
+            &vault_str,
+            &last_seen,
+        );
+        save_sessions_doc(&sess_path, &active, &hist);
+    }
+
+    pub fn update_activity(
+        &mut self,
+        current_tool: Option<&str>,
+        resolved_vault: Option<&Path>,
+        reconciled_now: Option<bool>,
+    ) {
+        let mut newly_bound_vault: Option<PathBuf> = None;
+        if self.vault.is_none() {
+            if let Some(vp) = resolved_vault {
+                let clean =
+                    strip_verbatim_prefix(&fs::canonicalize(vp).unwrap_or_else(|_| vp.to_path_buf()));
+                self.vault_reconciled = check_vault_reconciled(&clean);
+                self.skill_ready = check_skill_ready(Some(&clean));
+                self.vault = Some(clean.clone());
+                newly_bound_vault = Some(clean);
+            }
+        }
+        if let Some(true) = reconciled_now {
+            self.vault_reconciled = true;
+        } else if !self.vault_reconciled {
+            if let Some(ref vp) = self.vault {
+                if check_vault_reconciled(vp) {
+                    self.vault_reconciled = true;
+                }
+            }
+        }
+        if !self.is_probe {
+            self.persist_upsert(current_tool);
+            if let Some(ref vp) = newly_bound_vault {
+                bump_vault_state_seq(vp, "agent.connected", &[]);
+            }
+        }
+    }
+
+    pub fn close(&mut self) {
+        if self.closed {
+            return;
+        }
+        self.closed = true;
+        if self.is_probe {
+            return;
+        }
+        if let Some(sess_path) = agent_sessions_path() {
+            let lock_path = sess_path.with_file_name("agent-sessions.json.lock");
+            let _guard = acquire_advisory_lock(&lock_path, 3000).ok();
+            let now_unix = now_unix_secs();
+            let (mut active, mut hist) = load_sessions_doc(&sess_path);
+            active.retain(|e| {
+                e.get("session_id").and_then(|v| v.as_str()) != Some(self.session_id.as_str())
+                    && is_session_entry_alive(e, now_unix)
+            });
+            let vault_str = self
+                .vault
+                .as_ref()
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            upsert_historical_client(
+                &mut hist,
+                &self.client_name,
+                &self.client_version,
+                &vault_str,
+                &utc_iso8601_now(),
+            );
+            save_sessions_doc(&sess_path, &active, &hist);
+        }
+        if let Some(ref vp) = self.vault {
+            bump_vault_state_seq(vp, "agent.disconnected", &[]);
+        }
+    }
+}
+
+impl Drop for McpSessionTracker {
+    fn drop(&mut self) {
+        self.close();
+    }
+}
+
+fn detect_configured_platforms(vault: Option<&Path>) -> Vec<String> {
+    let mut plats: Vec<String> = Vec::new();
+    if let Some(vp) = vault {
+        for (plat, rel) in [
+            ("claude", ".mcp.json"),
+            ("cursor", ".cursor/mcp.json"),
+            ("opencode", "opencode.json"),
+        ] {
+            let check = inspect_mcp_config_file(&vp.join(rel));
+            if check.configured {
+                plats.push(plat.to_string());
+            }
+        }
+    }
+    if let Some(reg_path) = agent_installs_registry_path() {
+        for item in read_agent_installs_file(&reg_path) {
+            let iv = item.get("vault").and_then(|v| v.as_str()).unwrap_or("");
+            let matches_vault = match vault {
+                Some(vp) => iv.is_empty() || vault_paths_equal(iv, &vp.to_string_lossy()),
+                None => true,
+            };
+            if matches_vault {
+                if let Some(mc) = item.get("mcp_config").and_then(|v| v.as_str()) {
+                    let p = Path::new(mc);
+                    if p.is_file() && inspect_mcp_config_file(p).configured {
+                        let lower = mc.to_ascii_lowercase();
+                        let label = if lower.contains("cursor") {
+                            "cursor"
+                        } else if lower.contains("opencode") {
+                            "opencode"
+                        } else if lower.contains("codex") {
+                            "codex"
+                        } else {
+                            "claude"
+                        };
+                        if !plats.iter().any(|x| x == label) {
+                            plats.push(label.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    plats
+}
+
+/// Fast `<2ms` Poki-style live Agent session status for CLI (`agent-sessions`) & daemon RPC (`agent.sessions`).
+pub fn handle_agent_sessions(vault: Option<&Path>) -> Value {
+    let clean_vault = vault.map(|vp| {
+        strip_verbatim_prefix(&fs::canonicalize(vp).unwrap_or_else(|_| vp.to_path_buf()))
+    });
+    let vault_str = clean_vault
+        .as_ref()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    let (active_all, hist) = if let Some(sess_path) = agent_sessions_path() {
+        if sess_path.is_file() {
+            let lock_path = sess_path.with_file_name("agent-sessions.json.lock");
+            let _guard = acquire_advisory_lock(&lock_path, 3000).ok();
+            let now_unix = now_unix_secs();
+            let (raw_active, hist) = load_sessions_doc(&sess_path);
+            let before_len = raw_active.len();
+            let pruned: Vec<Value> = raw_active
+                .into_iter()
+                .filter(|e| is_session_entry_alive(e, now_unix))
+                .collect();
+            if pruned.len() != before_len {
+                save_sessions_doc(&sess_path, &pruned, &hist);
+            }
+            (pruned, hist)
+        } else {
+            (Vec::new(), Vec::new())
+        }
+    } else {
+        (Vec::new(), Vec::new())
+    };
+
+    let active_sessions: Vec<Value> = active_all
+        .into_iter()
+        .filter(|entry| {
+            if vault_str.is_empty() {
+                return true;
+            }
+            let ev = entry.get("vault").and_then(|v| v.as_str()).unwrap_or("");
+            ev.is_empty() || vault_paths_equal(ev, &vault_str)
+        })
+        .collect();
+
+    let matching_history: Vec<Value> = hist
+        .into_iter()
+        .filter(|entry| {
+            if vault_str.is_empty() {
+                return true;
+            }
+            let ev = entry.get("vault").and_then(|v| v.as_str()).unwrap_or("");
+            ev.is_empty() || vault_paths_equal(ev, &vault_str)
+        })
+        .collect();
+
+    let configured_platforms = detect_configured_platforms(clean_vault.as_deref());
+    let total_active = active_sessions.len();
+
+    let any_ready = active_sessions.iter().any(|s| {
+        s.get("status").and_then(|v| v.as_str()) == Some("ready")
+            || (s.pointer("/setup_steps/connected").and_then(|v| v.as_bool()) == Some(true)
+                && s.pointer("/setup_steps/instructions_injected")
+                    .and_then(|v| v.as_bool())
+                    == Some(true)
+                && s.pointer("/setup_steps/vault_reconciled")
+                    .and_then(|v| v.as_bool())
+                    == Some(true))
+    });
+
+    let state = if total_active > 0 {
+        if any_ready {
+            "ready"
+        } else {
+            "connected"
+        }
+    } else if !configured_platforms.is_empty() || !matching_history.is_empty() {
+        "configured_idle"
+    } else {
+        "unconnected"
+    };
+
+    let connected = total_active > 0;
+    let instructions_injected = active_sessions.iter().any(|s| {
+        s.pointer("/setup_steps/instructions_injected")
+            .and_then(|v| v.as_bool())
+            == Some(true)
+    });
+    let vault_reconciled = active_sessions.iter().any(|s| {
+        s.pointer("/setup_steps/vault_reconciled")
+            .and_then(|v| v.as_bool())
+            == Some(true)
+    }) || clean_vault.as_deref().is_some_and(check_vault_reconciled);
+    let tools_ready = connected;
+
+    let has_connected_before = !matching_history.is_empty();
+    let last_client_name = matching_history
+        .iter()
+        .max_by_key(|e| {
+            e.get("last_seen_at")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+        })
+        .and_then(|e| e.get("client_name").and_then(|v| v.as_str()))
+        .unwrap_or("")
+        .to_string();
+
+    pf_ok(
+        "agent-sessions",
+        json!({
+            "state": state,
+            "active_sessions": active_sessions,
+            "total_active": total_active,
+            "historical_clients": matching_history,
+            "has_connected_before": has_connected_before,
+            "last_client_name": last_client_name,
+            "configured_platforms": configured_platforms,
+            "setup_checklist": {
+                "connected": connected,
+                "instructions_injected": instructions_injected,
+                "vault_reconciled": vault_reconciled,
+                "tools_ready": tools_ready,
+            },
+        }),
+    )
+}
+
+/// Transparently heal missing `logs/` directory and unbuilt `paperforge.db` (when
+/// `formal-library.json` already contains items) in-place without destroying data.
+fn self_heal_vault_in_place(daemon: &NativeControlDaemon, vault: &Path) -> bool {
+    if load_canonical_config(vault).is_err() {
+        return false;
+    }
+    let engine = resolve_engine_dir(vault);
+    let logs_dir = engine.join("logs");
+    if !logs_dir.is_dir() && (engine.is_dir() || vault.is_dir()) {
+        let _ = fs::create_dir_all(&logs_dir);
+    }
+
+    let idx_dir = engine.join("indexes");
+    let db_path = idx_dir.join("paperforge.db");
+    let formal_path = idx_dir.join("formal-library.json");
+    if !db_path.is_file() && formal_path.is_file() {
+        let has_items = fs::read_to_string(&formal_path)
+            .ok()
+            .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+            .map(|val| {
+                if let Some(arr) = val.as_array() {
+                    !arr.is_empty()
+                } else {
+                    val.get("items")
+                        .and_then(|v| v.as_array())
+                        .is_some_and(|arr| !arr.is_empty())
+                }
+            })
+            .unwrap_or(false);
+        if has_items
+            && active_exclusive_barrier(daemon, vault).is_none()
+            && NativeControlDaemon::resolve_python_exe().is_some()
+        {
+            let argv = vec!["memory".into(), "build".into(), "--json".into()];
+            let _ = daemon.delegate_to_python(Some(vault), &argv, None);
+            daemon.invalidate_vault(Some(vault));
+        }
+    }
+
+    db_path.is_file() && logs_dir.is_dir()
+}
+
+fn call_python_json_value(daemon: &NativeControlDaemon, vault: &Path, argv: &[String]) -> Value {
+    let (rc, out, err) = daemon.delegate_to_python(Some(vault), argv, None);
+    let trimmed = out.trim();
+    if let Ok(parsed) = serde_json::from_str::<Value>(trimmed) {
+        return parsed;
+    }
+    json!({
+        "ok": rc == 0,
+        "exit_code": rc,
+        "stdout": trimmed,
+        "stderr": err.trim(),
     })
 }
 
@@ -1872,19 +2625,21 @@ fn call_python_tool(
     }
 }
 
-fn execute_mcp_tool(
+fn execute_mcp_tool_with_meta(
     daemon: &NativeControlDaemon,
     default_vault: Option<&Path>,
     name: &str,
     args: &Value,
-) -> Result<Value, (i32, String)> {
+) -> (Result<Value, (i32, String)>, Option<PathBuf>, Option<bool>) {
     let vault = match resolve_tool_vault(args, default_vault) {
         Ok(v) => v,
-        Err(e) => return Ok(tool_err(&e)),
+        Err(e) => return (Ok(tool_err(&e)), None, None),
     };
+    let mut reconciled_now: Option<bool> = None;
 
-    match name {
+    let res = match name {
         "paperforge_brief" => {
+            reconciled_now = Some(self_heal_vault_in_place(daemon, &vault));
             let pk = args.get("paper_key").and_then(|v| v.as_str());
             Ok(tool_ok(build_agent_brief(&vault, pk)))
         }
@@ -1896,10 +2651,10 @@ fn execute_mcp_tool(
                 .map(str::trim)
                 .unwrap_or("");
             if query.is_empty() {
-                return Ok(tool_err("`query` is required and cannot be empty."));
+                return (Ok(tool_err("`query` is required and cannot be empty.")), Some(vault), None);
             }
             if let Err(e) = validate_no_nul(query, "query") {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), None);
             }
             let mut argv = vec!["search".to_string(), "--json".to_string()];
             if let Some(dom) = args
@@ -1909,7 +2664,7 @@ fn execute_mcp_tool(
                 .filter(|s| !s.is_empty())
             {
                 if let Err(e) = validate_no_nul(dom, "domain") {
-                    return Ok(tool_err(&e));
+                    return (Ok(tool_err(&e)), Some(vault), None);
                 }
                 argv.push(format!("--domain={dom}"));
             }
@@ -1924,7 +2679,7 @@ fn execute_mcp_tool(
                     &["done", "pending", "failed", "processing", "done_incomplete"],
                     "ocr",
                 ) {
-                    return Ok(tool_err(&e));
+                    return (Ok(tool_err(&e)), Some(vault), None);
                 }
                 argv.push("--ocr".into());
                 argv.push(ocr.into());
@@ -1936,7 +2691,7 @@ fn execute_mcp_tool(
                 .filter(|s| !s.is_empty())
             {
                 if let Err(e) = validate_enum(deep, &["done", "pending"], "deep") {
-                    return Ok(tool_err(&e));
+                    return (Ok(tool_err(&e)), Some(vault), None);
                 }
                 argv.push("--deep".into());
                 argv.push(deep.into());
@@ -1963,13 +2718,17 @@ fn execute_mcp_tool(
             let python_available = NativeControlDaemon::resolve_python_exe().is_some();
             if let Some((rc, out, err)) = try_handle_search_cli(&vault, &argv, python_available) {
                 if let Ok(parsed) = serde_json::from_str::<Value>(out.trim()) {
-                    return Ok(tool_ok(parsed));
+                    return (Ok(tool_ok(parsed)), Some(vault), None);
                 }
-                return Ok(if rc == 0 {
-                    tool_err(&out)
-                } else {
-                    tool_err(if err.trim().is_empty() { &out } else { &err })
-                });
+                return (
+                    Ok(if rc == 0 {
+                        tool_err(&out)
+                    } else {
+                        tool_err(if err.trim().is_empty() { &out } else { &err })
+                    }),
+                    Some(vault),
+                    None,
+                );
             }
             Ok(call_python_tool(daemon, &vault, &argv, None))
         }
@@ -1980,10 +2739,10 @@ fn execute_mcp_tool(
                 .map(str::trim)
                 .unwrap_or("");
             if key.is_empty() {
-                return Ok(tool_err("`key` is required."));
+                return (Ok(tool_err("`key` is required.")), Some(vault), None);
             }
             if let Err(e) = validate_no_nul(key, "key") {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), None);
             }
             let mut argv = vec!["paper-context".to_string()];
             if args
@@ -1998,6 +2757,64 @@ fn execute_mcp_tool(
             argv.push(key.to_string());
             Ok(call_python_tool(daemon, &vault, &argv, None))
         }
+        "paperforge_read_paper" => {
+            let key = args
+                .get("paper_key")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .unwrap_or("");
+            if key.is_empty() {
+                return (Ok(tool_err("`paper_key` is required.")), Some(vault), None);
+            }
+            if let Err(e) = validate_no_nul(key, "paper_key") {
+                return (Ok(tool_err(&e)), Some(vault), None);
+            }
+            let mut argv = vec!["read".to_string()];
+            if let Some(pages) = args
+                .get("pages")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                if let Err(e) = validate_no_nul(pages, "pages") {
+                    return (Ok(tool_err(&e)), Some(vault), None);
+                }
+                argv.push("--pages".into());
+                argv.push(pages.into());
+            }
+            if let Some(sec) = args
+                .get("section")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                if let Err(e) = validate_no_nul(sec, "section") {
+                    return (Ok(tool_err(&e)), Some(vault), None);
+                }
+                argv.push("--section".into());
+                argv.push(sec.into());
+            }
+            if let Some(mc) = args.get("max_chars").and_then(|v| v.as_i64()) {
+                argv.push("--max-chars".into());
+                argv.push(mc.clamp(500, 200_000).to_string());
+            }
+            if let Some(src) = args
+                .get("source")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                if let Err(e) = validate_enum(src, &["auto", "fulltext", "pdf"], "source") {
+                    return (Ok(tool_err(&e)), Some(vault), None);
+                }
+                argv.push("--source".into());
+                argv.push(src.into());
+            }
+            argv.push("--json".into());
+            argv.push("--".into());
+            argv.push(key.into());
+            Ok(call_python_tool(daemon, &vault, &argv, None))
+        }
         "paperforge_retrieve" => {
             let query = args
                 .get("query")
@@ -2005,10 +2822,10 @@ fn execute_mcp_tool(
                 .map(str::trim)
                 .unwrap_or("");
             if query.is_empty() {
-                return Ok(tool_err("`query` is required."));
+                return (Ok(tool_err("`query` is required.")), Some(vault), None);
             }
             if let Err(e) = validate_no_nul(query, "query") {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), None);
             }
             let mut argv = vec!["retrieve".to_string(), "--json".to_string()];
             if let Some(lim) = args.get("limit").and_then(|v| v.as_i64()) {
@@ -2025,7 +2842,7 @@ fn execute_mcp_tool(
                 .filter(|s| !s.is_empty())
             {
                 if let Err(e) = validate_no_nul(dom, "domain") {
-                    return Ok(tool_err(&e));
+                    return (Ok(tool_err(&e)), Some(vault), None);
                 }
                 argv.push(format!("--domain={dom}"));
             }
@@ -2035,26 +2852,31 @@ fn execute_mcp_tool(
         }
         "paperforge_annotate_batch" => {
             if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
-                return Ok(tool_err(&format!(
-                    "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
-                )));
+                return (
+                    Ok(tool_err(&format!(
+                        "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
+                    ))),
+                    Some(vault),
+                    None,
+                );
             }
+            reconciled_now = Some(self_heal_vault_in_place(daemon, &vault));
             let key = args
                 .get("paper_key")
                 .and_then(|v| v.as_str())
                 .map(str::trim)
                 .unwrap_or("");
             if key.is_empty() {
-                return Ok(tool_err("`paper_key` is required."));
+                return (Ok(tool_err("`paper_key` is required.")), Some(vault), reconciled_now);
             }
             if let Err(e) = validate_no_nul(key, "paper_key") {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), reconciled_now);
             }
             let Some(items) = args.get("items").and_then(|v| v.as_array()) else {
-                return Ok(tool_err("`items` must be a non-empty array."));
+                return (Ok(tool_err("`items` must be a non-empty array.")), Some(vault), reconciled_now);
             };
             if items.is_empty() {
-                return Ok(tool_err("`items` must contain at least 1 annotation."));
+                return (Ok(tool_err("`items` must contain at least 1 annotation.")), Some(vault), reconciled_now);
             }
             let lens = args
                 .get("lens")
@@ -2062,21 +2884,21 @@ fn execute_mcp_tool(
                 .unwrap_or("skeleton");
             if let Err(e) = validate_enum(lens, &["skeleton", "methods", "critique", "custom"], "lens")
             {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), reconciled_now);
             }
             for item in items {
                 if let Some(c) = item.get("color").and_then(|v| v.as_str()) {
                     if let Err(e) =
                         validate_enum(c, &["yellow", "green", "blue", "red", "purple"], "items[].color")
                     {
-                        return Ok(tool_err(&e));
+                        return (Ok(tool_err(&e)), Some(vault), reconciled_now);
                     }
                 }
                 if let Some(il) = item.get("lens").and_then(|v| v.as_str()) {
                     if let Err(e) =
                         validate_enum(il, &["skeleton", "methods", "critique", "custom"], "items[].lens")
                     {
-                        return Ok(tool_err(&e));
+                        return (Ok(tool_err(&e)), Some(vault), reconciled_now);
                     }
                 }
             }
@@ -2115,12 +2937,122 @@ fn execute_mcp_tool(
             .to_string();
             Ok(call_python_tool(daemon, &vault, &argv, Some(&stdin_payload)))
         }
+        "paperforge_annotations" => {
+            let key = args
+                .get("paper_key")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .unwrap_or("");
+            let action = args
+                .get("action")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .unwrap_or("");
+            if key.is_empty() || action.is_empty() {
+                return (Ok(tool_err("`paper_key` and `action` are required.")), Some(vault), None);
+            }
+            if let Err(e) = validate_no_nul(key, "paper_key") {
+                return (Ok(tool_err(&e)), Some(vault), None);
+            }
+            if let Err(e) = validate_enum(action, &["list", "adopt", "clear_agent", "delete"], "action") {
+                return (Ok(tool_err(&e)), Some(vault), None);
+            }
+            if action != "list" {
+                if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
+                    return (
+                        Ok(tool_err(&format!(
+                            "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
+                        ))),
+                        Some(vault),
+                        None,
+                    );
+                }
+                reconciled_now = Some(self_heal_vault_in_place(daemon, &vault));
+            }
+            let argv = match action {
+                "list" => vec![
+                    "annotations".into(),
+                    "list".into(),
+                    "--json".into(),
+                    "--".into(),
+                    key.into(),
+                ],
+                "adopt" => {
+                    let ann_id = args
+                        .get("ann_id")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if ann_id.is_empty() {
+                        return (Ok(tool_err("`ann_id` is required for `adopt`.")), Some(vault), reconciled_now);
+                    }
+                    if let Err(e) = validate_no_nul(ann_id, "ann_id") {
+                        return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+                    }
+                    vec![
+                        "annotations".into(),
+                        "adopt".into(),
+                        "--json".into(),
+                        "--".into(),
+                        key.into(),
+                        ann_id.into(),
+                    ]
+                }
+                "delete" => {
+                    let ann_id = args
+                        .get("ann_id")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if ann_id.is_empty() {
+                        return (Ok(tool_err("`ann_id` is required for `delete`.")), Some(vault), reconciled_now);
+                    }
+                    if let Err(e) = validate_no_nul(ann_id, "ann_id") {
+                        return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+                    }
+                    vec![
+                        "annotations".into(),
+                        "delete".into(),
+                        "--json".into(),
+                        "--".into(),
+                        key.into(),
+                        ann_id.into(),
+                    ]
+                }
+                "clear_agent" => {
+                    let mut v = vec!["annotations".into(), "clear-agent".into()];
+                    if let Some(lens) = args
+                        .get("lens")
+                        .and_then(|x| x.as_str())
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                    {
+                        if let Err(e) = validate_enum(lens, &["skeleton", "methods", "critique", "custom"], "lens") {
+                            return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+                        }
+                        v.push("--lens".into());
+                        v.push(lens.into());
+                    }
+                    v.push("--json".into());
+                    v.push("--".into());
+                    v.push(key.into());
+                    v
+                }
+                _ => unreachable!(),
+            };
+            Ok(call_python_tool(daemon, &vault, &argv, None))
+        }
         "paperforge_memory_refine" => {
             if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
-                return Ok(tool_err(&format!(
-                    "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
-                )));
+                return (
+                    Ok(tool_err(&format!(
+                        "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
+                    ))),
+                    Some(vault),
+                    None,
+                );
             }
+            reconciled_now = Some(self_heal_vault_in_place(daemon, &vault));
             let key = args
                 .get("paper_key")
                 .and_then(|v| v.as_str())
@@ -2137,10 +3069,10 @@ fn execute_mcp_tool(
                 .map(str::trim)
                 .unwrap_or("");
             if key.is_empty() || facet.is_empty() || content.is_empty() {
-                return Ok(tool_err("`paper_key`, `facet`, and `content` are required."));
+                return (Ok(tool_err("`paper_key`, `facet`, and `content` are required.")), Some(vault), reconciled_now);
             }
             if let Err(e) = validate_no_nul(key, "paper_key") {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), reconciled_now);
             }
             if let Err(e) = validate_enum(
                 facet,
@@ -2153,30 +3085,655 @@ fn execute_mcp_tool(
                 ],
                 "facet",
             ) {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), reconciled_now);
             }
             if let Err(e) = validate_no_nul(content, "content") {
-                return Ok(tool_err(&e));
+                return (Ok(tool_err(&e)), Some(vault), reconciled_now);
             }
             let argv = vec![
                 "memory-card".into(),
                 "refine".into(),
-                format!("--facet={facet}"),
-                format!("--content={content}"),
+                "--input".into(),
+                "-".into(),
                 "--json".into(),
                 "--".into(),
                 key.into(),
             ];
-            Ok(call_python_tool(daemon, &vault, &argv, None))
+            let stdin_payload = json!({
+                "facet": facet,
+                "content": content,
+            })
+            .to_string();
+            Ok(call_python_tool(daemon, &vault, &argv, Some(&stdin_payload)))
+        }
+        "paperforge_log_write" => {
+            if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
+                return (
+                    Ok(tool_err(&format!(
+                        "Vault exclusive upgrade barrier active ({barrier}); write operations are temporarily locked."
+                    ))),
+                    Some(vault),
+                    None,
+                );
+            }
+            reconciled_now = Some(self_heal_vault_in_place(daemon, &vault));
+            let kind = args
+                .get("kind")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .unwrap_or("");
+            if let Err(e) = validate_enum(kind, &["reading_log", "project_log", "methodology"], "kind") {
+                return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+            }
+            let tags: Vec<String> = args
+                .get("tags")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|x| x.as_str().map(str::trim))
+                        .filter(|s| !s.is_empty())
+                        .map(String::from)
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            match kind {
+                "reading_log" => {
+                    let key = args
+                        .get("paper_key")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    let excerpt = args
+                        .get("excerpt")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if key.is_empty() || excerpt.is_empty() {
+                        return (
+                            Ok(tool_err("`paper_key` and `excerpt` are required for `reading_log`.")),
+                            Some(vault),
+                            reconciled_now,
+                        );
+                    }
+                    if let Err(e) = validate_no_nul(key, "paper_key") {
+                        return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+                    }
+                    let mut payload = Map::new();
+                    payload.insert("excerpt".into(), json!(excerpt));
+                    if let Some(sec) = args.get("section").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        payload.insert("section".into(), json!(sec));
+                    }
+                    if let Some(usg) = args.get("usage").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        payload.insert("usage".into(), json!(usg));
+                    }
+                    if let Some(nt) = args.get("note").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        payload.insert("note".into(), json!(nt));
+                    }
+                    if let Some(proj) = args.get("project").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        payload.insert("project".into(), json!(proj));
+                    }
+                    if !tags.is_empty() {
+                        payload.insert("tags".into(), json!(tags));
+                    }
+                    let argv = vec![
+                        "reading-log".into(),
+                        "--write".into(),
+                        key.into(),
+                        "--input".into(),
+                        "-".into(),
+                        "--json".into(),
+                    ];
+                    let stdin_str = Value::Object(payload).to_string();
+                    Ok(call_python_tool(daemon, &vault, &argv, Some(&stdin_str)))
+                }
+                "project_log" => {
+                    let project = args
+                        .get("project")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    let title = args
+                        .get("title")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    let content = args
+                        .get("content")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if project.is_empty() || (title.is_empty() && content.is_empty()) {
+                        return (
+                            Ok(tool_err("`project` and (`title` or `content`) are required for `project_log`.")),
+                            Some(vault),
+                            reconciled_now,
+                        );
+                    }
+                    if let Err(e) = validate_no_nul(project, "project") {
+                        return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+                    }
+                    let mut entry = Map::new();
+                    entry.insert("type".into(), json!("note"));
+                    entry.insert("date".into(), json!(utc_date_today()));
+                    entry.insert(
+                        "title".into(),
+                        json!(if title.is_empty() { "Session note" } else { title }),
+                    );
+                    if !content.is_empty() {
+                        if let Ok(Value::Object(parsed_obj)) = serde_json::from_str::<Value>(content) {
+                            for (k, v) in parsed_obj {
+                                entry.insert(k, v);
+                            }
+                        } else {
+                            entry.insert("decisions".into(), json!([content]));
+                        }
+                    }
+                    if let Some(nt) = args.get("note").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        entry.insert("reusable".into(), json!([nt]));
+                    }
+                    if let Some(pk) = args.get("paper_key").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        entry.insert("related_papers".into(), json!([pk]));
+                    }
+                    if !tags.is_empty() {
+                        entry.insert("tags".into(), json!(tags));
+                    }
+                    let argv = vec![
+                        "project-log".into(),
+                        "--write".into(),
+                        "--project".into(),
+                        project.into(),
+                        "--input".into(),
+                        "-".into(),
+                        "--json".into(),
+                    ];
+                    let stdin_str = Value::Object(entry).to_string();
+                    Ok(call_python_tool(daemon, &vault, &argv, Some(&stdin_str)))
+                }
+                "methodology" => {
+                    let title = args
+                        .get("title")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    let content = args
+                        .get("content")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if title.is_empty() || content.is_empty() {
+                        return (
+                            Ok(tool_err("`title` and `content` are required for `methodology`.")),
+                            Some(vault),
+                            reconciled_now,
+                        );
+                    }
+                    let mut payload = Map::new();
+                    payload.insert("title".into(), json!(title));
+                    payload.insert("content".into(), json!(content));
+                    if let Some(sec) = args.get("section").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        payload.insert("use_when".into(), json!(sec));
+                    }
+                    if let Some(proj) = args.get("project").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        payload.insert("project".into(), json!(proj));
+                    }
+                    if !tags.is_empty() {
+                        payload.insert("tags".into(), json!(tags));
+                    }
+                    let mut argv = vec!["project-log".into(), "--write-methodology".into()];
+                    if let Some(proj) = args.get("project").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        if let Err(e) = validate_no_nul(proj, "project") {
+                            return (Ok(tool_err(&e)), Some(vault), reconciled_now);
+                        }
+                        argv.push("--project".into());
+                        argv.push(proj.into());
+                    }
+                    argv.push("--input".into());
+                    argv.push("-".into());
+                    argv.push("--json".into());
+                    let stdin_str = Value::Object(payload).to_string();
+                    Ok(call_python_tool(daemon, &vault, &argv, Some(&stdin_str)))
+                }
+                _ => unreachable!(),
+            }
+        }
+        "paperforge_job" => {
+            let action = args
+                .get("action")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .unwrap_or("");
+            if let Err(e) = validate_enum(
+                action,
+                &["status", "ocr", "embed", "sync", "reconcile", "cancel"],
+                "action",
+            ) {
+                return (Ok(tool_err(&e)), Some(vault), None);
+            }
+            let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(false);
+            let force = args.get("force").and_then(|v| v.as_bool()).unwrap_or(false);
+            let paper_keys: Vec<String> = args
+                .get("paper_keys")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|x| x.as_str().map(str::trim))
+                        .filter(|s| !s.is_empty())
+                        .map(String::from)
+                        .collect()
+                })
+                .unwrap_or_default();
+            for pk in &paper_keys {
+                if let Err(e) = validate_no_nul(pk, "paper_keys[]") {
+                    return (Ok(tool_err(&e)), Some(vault), None);
+                }
+            }
+
+            if action != "status" && action != "cancel" && !dry_run {
+                if let Some(barrier) = active_exclusive_barrier(daemon, &vault) {
+                    return (
+                        Ok(tool_err(&format!(
+                            "Vault exclusive upgrade barrier active ({barrier}); write/job operations are temporarily locked."
+                        ))),
+                        Some(vault),
+                        None,
+                    );
+                }
+            }
+
+            match action {
+                "status" => {
+                    let daemon_jobs = daemon.list_jobs(Some(&vault), true);
+                    let py_avail = NativeControlDaemon::resolve_python_exe().is_some();
+                    if !py_avail {
+                        return (
+                            Ok(tool_ok(pf_ok(
+                                "job",
+                                json!({
+                                    "action": "status",
+                                    "python_worker_available": false,
+                                    "daemon_jobs": daemon_jobs,
+                                }),
+                            ))),
+                            Some(vault),
+                            None,
+                        );
+                    }
+                    let vault_status = call_python_json_value(
+                        daemon,
+                        &vault,
+                        &["status".into(), "--json".into()],
+                    );
+                    let embed_status = call_python_json_value(
+                        daemon,
+                        &vault,
+                        &["embed".into(), "status".into(), "--json".into()],
+                    );
+                    let ocr_provider_status = call_python_json_value(
+                        daemon,
+                        &vault,
+                        &["ocr".into(), "status".into(), "--json".into()],
+                    );
+                    let papers_status = if !paper_keys.is_empty() {
+                        let mut argv = vec!["paper-status".into(), "--keys".into()];
+                        argv.extend(paper_keys.clone());
+                        argv.push("--json".into());
+                        Some(call_python_json_value(daemon, &vault, &argv))
+                    } else {
+                        None
+                    };
+                    Ok(tool_ok(pf_ok(
+                        "job",
+                        json!({
+                            "action": "status",
+                            "python_worker_available": true,
+                            "daemon_jobs": daemon_jobs,
+                            "vault_status": vault_status,
+                            "embed_status": embed_status,
+                            "ocr_provider_status": ocr_provider_status,
+                            "papers_status": papers_status,
+                        }),
+                    )))
+                }
+                "ocr" => {
+                    let mut argv = vec!["ocr".into(), "run".into()];
+                    if !paper_keys.is_empty() {
+                        argv.push("--keys".into());
+                        argv.extend(paper_keys.clone());
+                    }
+                    if let Some(col) = args.get("collection").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        if let Err(e) = validate_no_nul(col, "collection") {
+                            return (Ok(tool_err(&e)), Some(vault), None);
+                        }
+                        argv.push("--collection".into());
+                        argv.push(col.into());
+                    }
+                    if let Some(dom) = args.get("domain").and_then(|v| v.as_str()).map(str::trim).filter(|s| !s.is_empty()) {
+                        if let Err(e) = validate_no_nul(dom, "domain") {
+                            return (Ok(tool_err(&e)), Some(vault), None);
+                        }
+                        argv.push("--domain".into());
+                        argv.push(dom.into());
+                    }
+                    if let Some(lim) = args.get("limit").and_then(|v| v.as_i64()) {
+                        argv.push("--limit".into());
+                        argv.push(lim.clamp(1, 500).to_string());
+                    }
+                    if force {
+                        argv.push("--force".into());
+                    }
+                    if dry_run {
+                        argv.push("--dry-run".into());
+                        argv.push("--json".into());
+                        Ok(call_python_tool(daemon, &vault, &argv, None))
+                    } else {
+                        argv.push("--stream".into());
+                        let prio = if paper_keys.len() == 1 {
+                            Some(paper_keys[0].clone())
+                        } else {
+                            None
+                        };
+                        let res = daemon.submit_job(&vault, "ocr", Some(argv), prio, false);
+                        if res.get("accepted").and_then(|v| v.as_bool()) == Some(true) {
+                            Ok(tool_ok(pf_ok("job", res)))
+                        } else {
+                            Ok(tool_err(res.get("error").and_then(|v| v.as_str()).unwrap_or("Failed to submit OCR job")))
+                        }
+                    }
+                }
+                "embed" => {
+                    let mode = args
+                        .get("embed_mode")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or("incremental");
+                    if let Err(e) = validate_enum(mode, &["incremental", "rebuild"], "embed_mode") {
+                        return (Ok(tool_err(&e)), Some(vault), None);
+                    }
+                    if dry_run {
+                        let status_val = call_python_json_value(
+                            daemon,
+                            &vault,
+                            &["embed".into(), "status".into(), "--json".into()],
+                        );
+                        return (
+                            Ok(tool_ok(pf_ok(
+                                "job",
+                                json!({
+                                    "dry_run": true,
+                                    "action": "embed",
+                                    "embed_mode": mode,
+                                    "paper_keys": paper_keys,
+                                    "embed_status": status_val,
+                                }),
+                            ))),
+                            Some(vault),
+                            None,
+                        );
+                    }
+                    let mut argv = if mode == "rebuild" {
+                        vec!["embed".into(), "rebuild".into()]
+                    } else {
+                        vec!["embed".into(), "build".into(), "--resume".into()]
+                    };
+                    if !paper_keys.is_empty() {
+                        argv.push("--keys".into());
+                        argv.extend(paper_keys.clone());
+                    }
+                    if mode == "rebuild" {
+                        argv.push("--json".into());
+                    } else {
+                        argv.push("--stream".into());
+                    }
+                    let res = daemon.submit_job(&vault, "embed", Some(argv), None, false);
+                    if res.get("accepted").and_then(|v| v.as_bool()) == Some(true) {
+                        Ok(tool_ok(pf_ok("job", res)))
+                    } else {
+                        Ok(tool_err(res.get("error").and_then(|v| v.as_str()).unwrap_or("Failed to submit embed job")))
+                    }
+                }
+                "sync" => {
+                    if dry_run {
+                        Ok(call_python_tool(
+                            daemon,
+                            &vault,
+                            &["sync".into(), "--dry-run".into(), "--json".into()],
+                            None,
+                        ))
+                    } else {
+                        let mut argv = vec!["sync".into(), "--json".into()];
+                        if force {
+                            argv.insert(1, "--rebuild-index".into());
+                        }
+                        let res = daemon.submit_job(&vault, "sync", Some(argv), None, false);
+                        if res.get("accepted").and_then(|v| v.as_bool()) == Some(true) {
+                            Ok(tool_ok(pf_ok("job", res)))
+                        } else {
+                            Ok(tool_err(res.get("error").and_then(|v| v.as_str()).unwrap_or("Failed to submit sync job")))
+                        }
+                    }
+                }
+                "reconcile" => {
+                    if dry_run {
+                        let mut argv = vec!["reconcile".into()];
+                        if !paper_keys.is_empty() {
+                            argv.push("--scope".into());
+                            argv.push("papers".into());
+                            for pk in &paper_keys {
+                                argv.push("--key".into());
+                                argv.push(pk.clone());
+                            }
+                        }
+                        argv.push("--json".into());
+                        Ok(call_python_tool(daemon, &vault, &argv, None))
+                    } else {
+                        let mut argv = vec!["doctor".into(), "--reconcile".into(), "--json".into()];
+                        if force {
+                            argv.push("--force".into());
+                        }
+                        let out = call_python_tool(daemon, &vault, &argv, None);
+                        daemon.invalidate_vault(Some(&vault));
+                        reconciled_now = Some(check_vault_reconciled(&vault));
+                        Ok(out)
+                    }
+                }
+                "cancel" => {
+                    let jid = args
+                        .get("job_id")
+                        .and_then(|v| v.as_str())
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if jid.is_empty() {
+                        return (Ok(tool_err("`job_id` is required for `cancel`.")), Some(vault), None);
+                    }
+                    let res = daemon.cancel_job(jid, 3000, false);
+                    if res.get("ok").and_then(|v| v.as_bool()) == Some(true) {
+                        Ok(tool_ok(pf_ok("job", res)))
+                    } else {
+                        Ok(tool_err(res.get("reason").and_then(|v| v.as_str()).unwrap_or("Job not found or already finished")))
+                    }
+                }
+                _ => unreachable!(),
+            }
         }
         _ => Err((-32602, format!("Unknown tool: {name}"))),
+    };
+    (res, Some(vault), reconciled_now)
+}
+
+pub fn mcp_instructions() -> &'static str {
+    "PaperForge Research Memory MCP Contract (Global Mode):\n\
+- SILENCE: Ignore during unrelated coding/general chats. Use `paperforge_*` ONLY for papers, literature search, PDF annotations, OCR/embeddings, or research notes.\n\
+- TOOLS: Call `paperforge_brief` first (auto-heals vault). Use `paperforge_read_paper` (OCR or native PDF), `paperforge_annotate_batch`, `paperforge_job`, `paperforge_memory_refine`, `paperforge_log_write`, and `paperforge://guide/*` on demand.\n\
+- TRUTH: Never invent quotes/citations; copy verbatim from `paperforge_read_paper`."
+}
+
+fn mcp_resources_list() -> Value {
+    json!({
+        "resources": [
+            {
+                "uri": "paperforge://brief",
+                "name": "PaperForge Vault Brief",
+                "description": "Live vault runtime health, library stats, active daemon jobs, and actionable agent hints.",
+                "mimeType": "application/json"
+            },
+            {
+                "uri": "paperforge://guide/annotate-pdf",
+                "name": "PDF Annotation Guide",
+                "description": "3-tier PDF grounding workflow, lens selection (skeleton/methods/critique/custom), color conventions, and anti-paraphrase rules.",
+                "mimeType": "text/markdown"
+            },
+            {
+                "uri": "paperforge://guide/deep-read",
+                "name": "Deep Reading & Memory Guide",
+                "description": "Keshav 3-pass deep reading workflow using paperforge_read_paper, paperforge_memory_refine, and paperforge_log_write.",
+                "mimeType": "text/markdown"
+            },
+            {
+                "uri": "paperforge://guide/pipeline-jobs",
+                "name": "Pipeline Job Control Guide",
+                "description": "Using paperforge_job for status inspection, targeted/collection OCR, incremental/rebuild embeddings, sync, reconcile, and cancellation.",
+                "mimeType": "text/markdown"
+            }
+        ]
+    })
+}
+
+fn mcp_read_resource(uri: &str, default_vault: Option<&Path>) -> Result<Value, (i32, String)> {
+    match uri {
+        "paperforge://brief" => {
+            let vp = resolve_tool_vault(&json!({}), default_vault).map_err(|e| (-32603, e))?;
+            let brief = build_agent_brief(&vp, None);
+            let text = serde_json::to_string_pretty(&brief).unwrap_or_else(|_| brief.to_string());
+            Ok(json!({
+                "contents": [{
+                    "uri": uri,
+                    "mimeType": "application/json",
+                    "text": text
+                }]
+            }))
+        }
+        "paperforge://guide/annotate-pdf" => Ok(json!({
+            "contents": [{
+                "uri": uri,
+                "mimeType": "text/markdown",
+                "text": "# PaperForge PDF Annotation Guide\n\n1. Call `paperforge_brief(paper_key)` and `paperforge_paper_context(key)` first.\n2. Read the paper with `paperforge_read_paper(paper_key, pages=...)` (works for both OCR and non-OCR native PDFs).\n3. Choose a review lens: `skeleton` (purple), `methods` (blue), `critique` (red), or `custom` (yellow/green).\n4. Call `paperforge_annotate_batch` with 8-15 verbatim quotes or `figure_id` anchors and analytical non-paraphrase comments.\n5. Use `paperforge_annotations` (`list`/`adopt`/`clear_agent`/`delete`) to inspect or clean up marks, then update `paperforge_memory_refine`.\n"
+            }]
+        })),
+        "paperforge://guide/deep-read" => Ok(json!({
+            "contents": [{
+                "uri": uri,
+                "mimeType": "text/markdown",
+                "text": "# PaperForge Deep Reading & Living Memory Guide\n\n1. Preflight: `paperforge_brief(paper_key)` -> `paperforge_paper_context(key)`.\n2. Pass 1-3 Reading: `paperforge_read_paper` by `pages` or `section` (never fabricate quotes or statistics).\n3. Evolve facets via `paperforge_memory_refine`: `idea_logic`, `methods_params`, `research_craft`, `critique_limits`, `my_connection`.\n4. Persist verified quotes via `paperforge_log_write(kind=\"reading_log\", ...)` and session takeaways via `kind=\"project_log\"` or `kind=\"methodology\"`.\n"
+            }]
+        })),
+        "paperforge://guide/pipeline-jobs" => Ok(json!({
+            "contents": [{
+                "uri": uri,
+                "mimeType": "text/markdown",
+                "text": "# PaperForge Pipeline Job Control Guide\n\nUse `paperforge_job` to inspect and control background pipelines:\n- `action=\"status\"`: inspects daemon active/recent jobs, vault OCR counts, embedding status, and optional per-paper `paper_keys` status.\n- `action=\"ocr\"`: queue targeted `paper_keys`, `collection`, or `domain` OCR (supports `dry_run: true`, `limit`, `force`).\n- `action=\"embed\"`: run `embed_mode=\"incremental\"` or `\"rebuild\"`.\n- `action=\"sync\"` / `\"reconcile\"` / `\"cancel\"`: sync Zotero, reconcile derived state, or cancel an active `job_id`.\n"
+            }]
+        })),
+        _ => Err((-32602, format!("Unknown resource URI: {uri}"))),
     }
 }
 
-/// Process a single decoded MCP JSON-RPC message; returns `None` for notifications.
-pub fn process_mcp_message(
+fn mcp_prompts_list() -> Value {
+    json!({
+        "prompts": [
+            {
+                "name": "annotate_pdf",
+                "description": "Perform grounded, non-paraphrase PDF review annotations on a paper (works with or without OCR) and update its Living Paper Memory Card.",
+                "arguments": [
+                    { "name": "paper_key", "description": "Canonical Zotero key, citation_key, or DOI.", "required": true },
+                    { "name": "lens", "description": "Review lens: skeleton | methods | critique | custom.", "required": false }
+                ]
+            },
+            {
+                "name": "deep_read",
+                "description": "Execute a structured Keshav 3-pass deep read of a paper and record verified facets and reading logs.",
+                "arguments": [
+                    { "name": "paper_key", "description": "Canonical Zotero key, citation_key, or DOI.", "required": true }
+                ]
+            },
+            {
+                "name": "pipeline_control",
+                "description": "Inspect PaperForge OCR/embedding/sync pipeline health and run safe targeted jobs.",
+                "arguments": [
+                    { "name": "action", "description": "Target action: status | ocr | embed | sync | reconcile.", "required": false }
+                ]
+            }
+        ]
+    })
+}
+
+fn mcp_prompt_get(name: &str, args: &Value) -> Result<Value, (i32, String)> {
+    match name {
+        "annotate_pdf" => {
+            let pk = args.get("paper_key").and_then(|v| v.as_str()).unwrap_or("<PAPER_KEY>");
+            let lens = args.get("lens").and_then(|v| v.as_str()).unwrap_or("skeleton");
+            Ok(json!({
+                "description": "Grounded PDF review annotation workflow",
+                "messages": [{
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": format!(
+                            "Annotate paper `{pk}` using lens `{lens}`:\n\
+1. Call `paperforge_brief(paper_key=\"{pk}\")` and `paperforge_paper_context(key=\"{pk}\")`.\n\
+2. Read the paper via `paperforge_read_paper(paper_key=\"{pk}\", pages=\"1-3\")` (continue page-by-page as needed; works even when OCR is pending).\n\
+3. Call `paperforge_annotate_batch(paper_key=\"{pk}\", lens=\"{lens}\", items=[...])` with verbatim quotes and analytical comments (never paraphrases).\n\
+4. Summarize key takeaways via `paperforge_memory_refine`."
+                        )
+                    }
+                }]
+            }))
+        }
+        "deep_read" => {
+            let pk = args.get("paper_key").and_then(|v| v.as_str()).unwrap_or("<PAPER_KEY>");
+            Ok(json!({
+                "description": "Structured 3-pass deep reading workflow",
+                "messages": [{
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": format!(
+                            "Perform a structured 3-pass deep read of paper `{pk}`:\n\
+1. Run `paperforge_brief(paper_key=\"{pk}\")` and `paperforge_paper_context(key=\"{pk}\")`.\n\
+2. Read fulltext/PDF via `paperforge_read_paper` across sections/pages; check any existing `user_question_count` highlights.\n\
+3. Update relevant Living Paper Memory facets via `paperforge_memory_refine` and record verified quotes with `paperforge_log_write(kind=\"reading_log\", ...)`."
+                        )
+                    }
+                }]
+            }))
+        }
+        "pipeline_control" => {
+            let act = args.get("action").and_then(|v| v.as_str()).unwrap_or("status");
+            Ok(json!({
+                "description": "Pipeline status & job control workflow",
+                "messages": [{
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": format!(
+                            "Inspect and manage the PaperForge pipeline (requested action: `{act}`):\n\
+1. Call `paperforge_brief()` and `paperforge_job(action=\"status\")`.\n\
+2. If triggering OCR/embed/sync/reconcile, preview first with `dry_run: true` when scope is uncertain, then invoke `paperforge_job(action=\"{act}\", ...)`."
+                        )
+                    }
+                }]
+            }))
+        }
+        _ => Err((-32602, format!("Unknown prompt: {name}"))),
+    }
+}
+
+/// Process a single decoded MCP JSON-RPC message with optional live Poki session tracking.
+pub fn process_mcp_message_with_session(
     daemon: &NativeControlDaemon,
     default_vault: Option<&Path>,
+    session: &mut Option<McpSessionTracker>,
     req: &Value,
 ) -> Option<Value> {
     let id_opt = req.get("id").filter(|v| !v.is_null()).cloned();
@@ -2214,16 +3771,24 @@ pub fn process_mcp_message(
                 "2025-03-26" | "2024-11-05" => client_ver,
                 _ => "2024-11-05",
             };
+            if let Some(prev) = session.take() {
+                drop(prev);
+            }
+            let tracker = McpSessionTracker::start(default_vault, &params);
+            *session = Some(tracker);
+
             ok_resp(json!({
                 "protocolVersion": negotiated,
                 "capabilities": {
                     "tools": { "listChanged": false },
-                    "resources": { "listChanged": false }
+                    "resources": { "listChanged": false },
+                    "prompts": { "listChanged": false }
                 },
                 "serverInfo": {
                     "name": "paperforge",
                     "version": PF_VERSION
-                }
+                },
+                "instructions": mcp_instructions()
             }))
         }
         "ping" => ok_resp(json!({})),
@@ -2231,41 +3796,75 @@ pub fn process_mcp_message(
         "tools/call" => {
             let name = params.get("name").and_then(|v| v.as_str()).unwrap_or("");
             let args = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
-            match execute_mcp_tool(daemon, default_vault, name, &args) {
+            if let Some(ref mut s) = session {
+                s.update_activity(Some(name), None, None);
+            }
+            let (outcome, resolved_vp, reconciled_now) =
+                execute_mcp_tool_with_meta(daemon, default_vault, name, &args);
+            if let Some(ref mut s) = session {
+                s.update_activity(None, resolved_vp.as_deref(), reconciled_now);
+            }
+            match outcome {
                 Ok(res) => ok_resp(res),
                 Err((code, msg)) => err_resp(code, msg),
             }
         }
-        "resources/list" => ok_resp(json!({
-            "resources": [{
-                "uri": "paperforge://brief",
-                "name": "PaperForge Vault Brief",
-                "description": "Live vault runtime health, library stats, active daemon jobs, and actionable agent hints.",
-                "mimeType": "application/json"
-            }]
-        })),
+        "resources/list" => ok_resp(mcp_resources_list()),
         "resources/read" => {
             let uri = params.get("uri").and_then(|v| v.as_str()).unwrap_or("");
-            if uri != "paperforge://brief" {
-                return err_resp(-32602, format!("Unknown resource URI: {uri}"));
+            match mcp_read_resource(uri, default_vault) {
+                Ok(res) => ok_resp(res),
+                Err((code, msg)) => err_resp(code, msg),
             }
-            match resolve_tool_vault(&json!({}), default_vault) {
-                Ok(vp) => {
-                    let brief = build_agent_brief(&vp, None);
-                    let text = serde_json::to_string_pretty(&brief).unwrap_or_else(|_| brief.to_string());
-                    ok_resp(json!({
-                        "contents": [{
-                            "uri": "paperforge://brief",
-                            "mimeType": "application/json",
-                            "text": text
-                        }]
-                    }))
-                }
-                Err(e) => err_resp(-32603, e),
+        }
+        "prompts/list" => ok_resp(mcp_prompts_list()),
+        "prompts/get" => {
+            let pname = params.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let pargs = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+            match mcp_prompt_get(pname, &pargs) {
+                Ok(res) => ok_resp(res),
+                Err((code, msg)) => err_resp(code, msg),
             }
         }
         _ => err_resp(-32601, format!("Method not found: {method}")),
     }
+}
+
+/// Process a single stateless MCP JSON-RPC message (without persisting a live session).
+pub fn process_mcp_message(
+    daemon: &NativeControlDaemon,
+    default_vault: Option<&Path>,
+    req: &Value,
+) -> Option<Value> {
+    let mut tracker: Option<McpSessionTracker> = None;
+    let is_init = req.get("method").and_then(|v| v.as_str()) == Some("initialize");
+    if is_init {
+        // Stateless caller (e.g., unit test or in-process probe): skip writing session file
+        let mut params = req.get("params").cloned().unwrap_or_else(|| json!({}));
+        if params.get("clientInfo").is_none() {
+            if let Some(obj) = params.as_object_mut() {
+                obj.insert(
+                    "clientInfo".into(),
+                    json!({ "name": "paperforge-mcp-probe", "version": PF_VERSION }),
+                );
+            }
+        } else if let Some(obj) = params.as_object_mut() {
+            obj.insert(
+                "clientInfo".into(),
+                json!({ "name": "paperforge-mcp-probe", "version": PF_VERSION }),
+            );
+        }
+        let mut mod_req = req.clone();
+        if let Some(mobj) = mod_req.as_object_mut() {
+            mobj.insert("params".into(), params);
+        }
+        let out = process_mcp_message_with_session(daemon, default_vault, &mut tracker, &mod_req);
+        if let Some(mut s) = tracker {
+            s.closed = true;
+        }
+        return out;
+    }
+    process_mcp_message_with_session(daemon, default_vault, &mut tracker, req)
 }
 
 pub fn read_next_mcp_message<R: BufRead>(reader: &mut R) -> io::Result<Option<(Value, FramingMode)>> {
@@ -2327,20 +3926,34 @@ pub fn write_mcp_message<W: Write>(writer: &mut W, msg: &Value, mode: FramingMod
     writer.flush()
 }
 
-/// Serve Model Context Protocol (MCP) JSON-RPC 2.0 over stdio until EOF.
-pub fn serve_mcp(default_vault: Option<PathBuf>) {
+pub fn serve_mcp_with_io<R: BufRead, W: Write>(
+    default_vault: Option<PathBuf>,
+    reader: &mut R,
+    writer: &mut W,
+) {
     let daemon = NativeControlDaemon::new(None, None);
-    let stdin = io::stdin();
-    let stdout = io::stdout();
-    let mut reader = BufReader::new(stdin.lock());
-    let mut writer = io::BufWriter::new(stdout.lock());
+    let mut session: Option<McpSessionTracker> = None;
 
-    while let Ok(Some((req, mode))) = read_next_mcp_message(&mut reader) {
-        if let Some(resp) = process_mcp_message(&daemon, default_vault.as_deref(), &req) {
-            if write_mcp_message(&mut writer, &resp, mode).is_err() {
+    while let Ok(Some((req, mode))) = read_next_mcp_message(reader) {
+        if let Some(resp) =
+            process_mcp_message_with_session(&daemon, default_vault.as_deref(), &mut session, &req)
+        {
+            if write_mcp_message(writer, &resp, mode).is_err() {
                 break;
             }
         }
     }
+    if let Some(mut s) = session.take() {
+        s.close();
+    }
     daemon.cancel_all_jobs(1000);
+}
+
+/// Serve Model Context Protocol (MCP) JSON-RPC 2.0 over stdio until EOF.
+pub fn serve_mcp(default_vault: Option<PathBuf>) {
+    let stdin = io::stdin();
+    let stdout = io::stdout();
+    let mut reader = BufReader::new(stdin.lock());
+    let mut writer = io::BufWriter::new(stdout.lock());
+    serve_mcp_with_io(default_vault, &mut reader, &mut writer);
 }

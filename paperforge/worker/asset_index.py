@@ -791,52 +791,86 @@ def cleanup_or_preserve_workspace_fulltext(
     lit_root: Path,
     paper_key: str,
     dry_run: bool = False,
+    ws_bytes: bytes | None = None,
+    out_trash_path: list[Path] | None = None,
+    out_matched_path: list[Path] | None = None,
 ) -> str:
     """Remove workspace fulltext.md only if it matches OCR output; else quarantine to trash."""
     ws_ft = ws_dir / "fulltext.md"
     if not ws_ft.exists() or not ws_ft.is_file():
         return "none"
-    try:
-        ws_bytes = ws_ft.read_bytes()
-    except OSError:
-        return "none"
+    if ws_bytes is None:
+        try:
+            ws_bytes = ws_ft.read_bytes()
+        except OSError:
+            return "none"
     ws_sha = hashlib.sha256(ws_bytes).hexdigest()
     ws_lf_sha = hashlib.sha256(ws_bytes.replace(b"\r\n", b"\n")).hexdigest()
 
-    known_digests: set[str] = set()
+    matched = False
+    exact_source: Path | None = None
     if ocr_paper_dir is not None and ocr_paper_dir.exists():
-        candidates: list[Path] = [
+        # Fast path: check canonical OCR fulltext.md / render/fulltext.md first
+        primary_candidates: list[Path] = [
             ocr_paper_dir / "fulltext.md",
             ocr_paper_dir / "render" / "fulltext.md",
         ]
-        versions_dir = ocr_paper_dir / "versions"
-        if versions_dir.is_dir():
-            candidates.extend(versions_dir.glob("*/fulltext.md"))
-        backups_dir = ocr_paper_dir / "backups"
-        if backups_dir.is_dir():
-            candidates.extend(backups_dir.glob("fulltext.pre-rebuild.*.md"))
-        for cand in candidates:
+        for cand in primary_candidates:
             if not cand.is_file():
                 continue
             try:
                 raw_bytes = cand.read_bytes()
             except OSError:
                 continue
-            known_digests.add(hashlib.sha256(raw_bytes).hexdigest())
-            known_digests.add(hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest())
-        meta_path = ocr_paper_dir / "meta.json"
-        if meta_path.is_file():
-            try:
-                meta_obj = json.loads(meta_path.read_text(encoding="utf-8"))
-                mhash = str(meta_obj.get("machine_fulltext_hash") or "").strip()
-                if mhash.startswith("sha256:"):
-                    mhash = mhash[len("sha256:") :]
-                if mhash:
-                    known_digests.add(mhash)
-            except (OSError, json.JSONDecodeError, AttributeError):
-                pass
+            c_sha = hashlib.sha256(raw_bytes).hexdigest()
+            if c_sha == ws_sha:
+                matched = True
+                exact_source = cand
+                break
+            if hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest() == ws_lf_sha:
+                matched = True
+                break
 
-    if ws_sha in known_digests or ws_lf_sha in known_digests:
+        if not matched:
+            extra_candidates: list[Path] = []
+            versions_dir = ocr_paper_dir / "versions"
+            if versions_dir.is_dir():
+                extra_candidates.extend(versions_dir.glob("*/fulltext.md"))
+            backups_dir = ocr_paper_dir / "backups"
+            if backups_dir.is_dir():
+                extra_candidates.extend(backups_dir.glob("fulltext.pre-rebuild.*.md"))
+            for cand in extra_candidates:
+                if not cand.is_file():
+                    continue
+                try:
+                    raw_bytes = cand.read_bytes()
+                except OSError:
+                    continue
+                c_sha = hashlib.sha256(raw_bytes).hexdigest()
+                if c_sha == ws_sha:
+                    matched = True
+                    exact_source = cand
+                    break
+                if hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest() == ws_lf_sha:
+                    matched = True
+                    break
+
+        if not matched:
+            meta_path = ocr_paper_dir / "meta.json"
+            if meta_path.is_file():
+                try:
+                    meta_obj = json.loads(meta_path.read_text(encoding="utf-8"))
+                    mhash = str(meta_obj.get("machine_fulltext_hash") or "").strip()
+                    if mhash.startswith("sha256:"):
+                        mhash = mhash[len("sha256:") :]
+                    if mhash and mhash in (ws_sha, ws_lf_sha):
+                        matched = True
+                except (OSError, json.JSONDecodeError, AttributeError):
+                    pass
+
+    if matched:
+        if exact_source is not None and out_matched_path is not None:
+            out_matched_path.append(exact_source)
         if not dry_run:
             ws_ft.unlink()
         return "removed_verified_mirror"
@@ -844,13 +878,15 @@ def cleanup_or_preserve_workspace_fulltext(
     if not dry_run:
         from paperforge.worker.trash import trash_remove
 
-        trash_remove(
+        rec = trash_remove(
             ws_ft,
             vault=vault,
             allowed_root=lit_root,
             operation="workspace_fulltext_preserve",
             paper_key=paper_key,
         )
+        if rec and rec.get("trash_path") and out_trash_path is not None:
+            out_trash_path.append(Path(str(rec["trash_path"])))
     return "preserved_to_trash"
 
 

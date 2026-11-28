@@ -25,6 +25,10 @@ import {
   matchEmbeddingPresetId,
   renderDomainModePreview,
 } from "./views/domain-preview";
+import {
+  evaluateZoteroImportScope,
+  type ZoteroScopeEvaluation,
+} from "./services/zotero-import-scope";
 
 interface InlineRenderOpts {
   inline?: boolean;
@@ -99,7 +103,14 @@ export function formatProviderConnectionError(
         : "Embedding probe failed";
   return compact ? `${fallback}：${compact.slice(0, 72)}` : fallback;
 }
-import type { ZoteroDetectDto } from "./client/paperforge-client";
+import type {
+  AgentPresenceSnapshotDto,
+  ZoteroDetectDto,
+} from "./client/paperforge-client";
+import {
+  formatAgentClientName,
+  normalizeAgentPresenceSnapshot,
+} from "./client/paperforge-client";
 import {
   PaperForgeSettings,
   ProbeEnvelope,
@@ -360,6 +371,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _lastRenderedTab: string = "overview";
   _detailReturn: { tab: string; selector: string } | null = null;
   private _agentPlatformDraft: string | null = null;
+  private _agentPresenceCache: AgentPresenceSnapshotDto | null = null;
+  private _agentPresenceProbedThisSession = false;
+  private _agentPresenceWsRef: unknown = null;
 
   /** #86: Five operational modules in display order with user-facing names. */
   private _getOverviewModules(): { id: string; label: string }[] {
@@ -437,6 +451,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   display() {
     this._isOpen = true;
     this._displayInProgress = true;
+    const wsPresence = (
+      this.app as unknown as {
+        workspace?: {
+          on?: (ev: string, cb: (payload?: unknown) => void) => unknown;
+        };
+      }
+    )?.workspace;
+    if (!this._agentPresenceWsRef && typeof wsPresence?.on === "function") {
+      this._agentPresenceWsRef = wsPresence.on(
+        "paperforge:agent-presence-changed",
+        (payload?: unknown) => {
+          const next = (
+            payload as { presence?: AgentPresenceSnapshotDto } | undefined
+          )?.presence;
+          if (next && typeof next === "object") {
+            this._agentPresenceCache = normalizeAgentPresenceSnapshot(
+              next,
+              this._getVaultBasePath() || undefined
+            );
+          } else if (typeof this.plugin.getAgentPresence === "function") {
+            const cached = this.plugin.getAgentPresence();
+            if (cached) {
+              this._agentPresenceCache = cached;
+            }
+          }
+          this.refreshIfOpen();
+        }
+      );
+    }
+    this._refreshAgentPresenceOnce();
     if (this.plugin?.settings?.language) {
       setLanguage(this.app, this.plugin.settings.language);
     }
@@ -1971,6 +2015,70 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         );
       }
+
+      const reconcileClient =
+        typeof this.plugin.getClient === "function" ? this.getClient() : null;
+      if (
+        reconcileClient &&
+        typeof reconcileClient.reconcileVault === "function"
+      ) {
+        const isZhReconcile = t("nav_close") === "关闭";
+        const reconcileSection = body.createDiv({
+          cls: "pf-upgrade-maint-section",
+          attr: { "data-pf-testid": "reconcile-local-cache-section" },
+        });
+        new Setting(reconcileSection)
+          .setName(
+            isZhReconcile
+              ? "重建本地索引与视图缓存"
+              : "Rebuild Local Index Cache"
+          )
+          .setDesc(
+            isZhReconcile
+              ? "非破坏性同步 workspace_registry、衍生索引路径与默认视图模板，绝不修改您的笔记正文、批注或阅读记录。"
+              : "Non-destructively reconcile workspace_registry, derived index paths, and canonical Base views without modifying note bodies, annotations, or reading logs."
+          )
+          .addButton((btn) =>
+            btn
+              .setButtonText(
+                isZhReconcile
+                  ? "重建本地索引与视图缓存"
+                  : "Rebuild Local Index Cache"
+              )
+              .onClick(() => {
+                void (async () => {
+                  btn.setDisabled(true);
+                  try {
+                    await reconcileClient.reconcileVault(true);
+                    new Notice(
+                      isZhReconcile
+                        ? "本地索引与视图缓存已重建完成"
+                        : "Local index & view cache rebuilt"
+                    );
+                    const pluginCtl = this.plugin as unknown as {
+                      refreshBaseSnapshot?: () => Promise<unknown>;
+                      refreshUpgradePlan?: () => Promise<unknown>;
+                    };
+                    await pluginCtl
+                      .refreshBaseSnapshot?.()
+                      .catch(() => undefined);
+                    await pluginCtl
+                      .refreshUpgradePlan?.()
+                      .catch(() => undefined);
+                  } catch (err: unknown) {
+                    new Notice(
+                      (isZhReconcile
+                        ? "重建本地索引失败："
+                        : "Index rebuild failed: ") + formatHumanError(err),
+                      8000
+                    );
+                  } finally {
+                    btn.setDisabled(false);
+                  }
+                })();
+              })
+          );
+      }
     }
   }
 
@@ -2641,107 +2749,311 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     skillHubDir: string,
     isZh: boolean
   ): string {
-    const checkCmd = `"${binPath}" mcp-check --vault "${vaultBase}" --skill-dir "<SKILL_DIR>" --mcp-config "<MCP_CONFIG_PATH>" --register --probe-mcp --json`;
+    const checkCmd = `"${binPath}" mcp-check --vault "${vaultBase}" --mcp-config "<MCP_CONFIG_PATH>" --probe-mcp --json`;
     if (isZh) {
       return (
-        `请为当前 Agent 环境配置 PaperForge 研究记忆配套设施（**不要往用户的 Obsidian Vault 根目录写入 \`.agents/\` 或 \`.mcp.json\` 等杂项文件**，优先安装到你自身平台的原生全局/工作区目录）：\n\n` +
+        `请为当前 Agent 环境接入 PaperForge 全局轻量 MCP 服务（**推荐写入你自身平台的全局 MCP 配置**以便跨项目随时调用；在无关编程/闲聊中保持完全静默，**不要往用户的 Obsidian Vault 根目录写入 \`.agents/\` 或 \`.mcp.json\` 等杂项文件**）：\n\n` +
         `### 本机真实路径（禁止猜测或自行拼接）\n` +
         `- Vault 路径：\`${vaultBase}\`\n` +
         `- MCP 稳定入口：\`${binPath}\`\n` +
         `- MCP 启动参数：\`["--mcp", "--vault", "${vaultBase}"]\`\n` +
-        `- 官方 Skill 源目录：\`${skillHubDir}\`\n\n` +
-        `### 请按以下 3 步完成安装并做端到端自检\n` +
-        `1. **接入 \`paperforge\` MCP 服务**：按你自身平台的原生配置格式，非破坏性地合并添加名为 \`paperforge\` 的 stdio 服务，严禁覆盖用户已有其他 MCP 服务。\n` +
-        `2. **安装 PaperForge Skill**：将上方 \`官方 Skill 源目录\` 链接或复制到你自身原生识别的全局 skills 目录（Windows 推荐 \`New-Item -ItemType Junction -Path "<你的skills目录>\\\\paperforge" -Target "${skillHubDir}"\`，macOS/Linux 推荐 \`ln -s\`）。\n` +
-        `3. **运行端到端自检并登记自动更新**：\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
-        `   确认 \`data.status == "ready"\` 且 \`data.mcp_handshake_ok == true\`，并汇报 4 项自检清单。`
+        `- 可选 Skill 源目录：\`${skillHubDir}\`\n\n` +
+        `### 请按以下 2 步接入并验证\n` +
+        `1. **注册 \`paperforge\` 全局 stdio MCP 服务**：按你自身平台的原生全局配置格式，非破坏性地合并添加名为 \`paperforge\` 的 stdio 服务，严禁覆盖用户已有其他 MCP 服务。连接后服务端会在握手时自动注入精简操作规程与 11 个 MCP 工具。\n` +
+        `2. **运行握手自检**：\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
+        `   确认 \`data.mcp_handshake_ok == true\`；如当前会话支持热加载，立即调用 \`paperforge_brief\` 完成实时握手。`
       );
     }
     return (
-      `Set up the PaperForge Research Memory integration for your own Agent harness (**do NOT write \`.agents/\` or \`.mcp.json\` clutter into the user's Obsidian Vault root**; install into your platform's native global/harness directories):\n\n` +
+      `Connect your Agent harness to the PaperForge global lightweight MCP server (**recommended: register in your harness's global MCP config** so it works across projects while staying silent on unrelated coding chats; **do NOT write \`.agents/\` or \`.mcp.json\` clutter into the user's Obsidian Vault root**):\n\n` +
       `### Verified Local Paths\n` +
       `- Vault path: \`${vaultBase}\`\n` +
       `- Stable MCP binary: \`${binPath}\`\n` +
       `- MCP args: \`["--mcp", "--vault", "${vaultBase}"]\`\n` +
-      `- Canonical Skill source: \`${skillHubDir}\`\n\n` +
-      `### Execute these 3 steps and verify\n` +
-      `1. **Register \`paperforge\` stdio MCP server** in your native config without overwriting existing servers.\n` +
-      `2. **Install the PaperForge Skill** from the Canonical Skill source above (prefer symlink or Windows NTFS Junction for zero-touch live updates).\n` +
-      `3. **Run self-check & register for auto-updates**:\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
-      `   Confirm \`data.status == "ready"\` and \`data.mcp_handshake_ok == true\`, then report the 4-item checklist.`
+      `- Optional Skill source: \`${skillHubDir}\`\n\n` +
+      `### Execute these 2 steps and verify\n` +
+      `1. **Register \`paperforge\` stdio MCP server globally** and non-destructively in your native config without overwriting existing servers. PaperForge auto-injects concise instructions and all 11 tools on handshake.\n` +
+      `2. **Run handshake check**:\n   \`\`\`bash\n   ${checkCmd}\n   \`\`\`\n` +
+      `   Confirm \`data.mcp_handshake_ok == true\`, then call \`paperforge_brief\` if hot-reload is active.`
     );
   }
 
-  _renderAgentDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
-    if (!opts?.inline) {
-      this._renderModuleDetailShell(containerEl, "agent");
+  private _detectLocalVaultConfiguredPlatforms(vaultBase: string): string[] {
+    if (!vaultBase) return [];
+    const found: string[] = [];
+    for (const [plat, rel] of [
+      ["claude", ".mcp.json"],
+      ["cursor", ".cursor/mcp.json"],
+      ["opencode", "opencode.json"],
+    ] as const) {
+      if (this._getVaultMcpConfigStatus(vaultBase, plat) === "ready") {
+        found.push(plat);
+      } else {
+        void rel;
+      }
     }
-    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    return found;
+  }
 
-    const current = this.plugin.settings.agent_platform || "opencode";
-    const vaultBase = this._getVaultBasePath();
-    const installedBin = this._resolvePreferredDaemonBin(vaultBase);
-    const binReady = fs.existsSync(installedBin);
+  private _getEffectiveAgentPresence(): AgentPresenceSnapshotDto {
+    const vaultBase = this._getVaultBasePath() || undefined;
+    if (this._agentPresenceCache) {
+      return this._agentPresenceCache;
+    }
+    if (typeof this.plugin.getAgentPresence === "function") {
+      const fromPlugin = this.plugin.getAgentPresence() as
+        | AgentPresenceSnapshotDto
+        | null
+        | undefined;
+      if (fromPlugin && typeof fromPlugin === "object") {
+        return fromPlugin;
+      }
+    }
+    const localPlatforms = this._detectLocalVaultConfiguredPlatforms(
+      vaultBase ?? ""
+    );
+    return normalizeAgentPresenceSnapshot({}, vaultBase, localPlatforms);
+  }
+
+  private _tryGetClient(): PaperForgeClient | null {
+    try {
+      return this.getClient();
+    } catch {
+      return null;
+    }
+  }
+
+  private _refreshAgentPresenceOnce(): void {
+    if (this._agentPresenceProbedThisSession) return;
+    this._agentPresenceProbedThisSession = true;
+    if (typeof this.plugin.refreshAgentPresence === "function") {
+      void (
+        this.plugin.refreshAgentPresence() as Promise<AgentPresenceSnapshotDto | null>
+      )
+        .then((next) => {
+          if (next && typeof next === "object") {
+            const prevSig = this._agentPresenceCache
+              ? JSON.stringify(this._agentPresenceCache)
+              : null;
+            this._agentPresenceCache = next;
+            if (prevSig !== JSON.stringify(next)) {
+              this.refreshIfOpen();
+            }
+          }
+        })
+        .catch(() => undefined);
+      return;
+    }
+    const client = this._tryGetClient();
+    if (!client || typeof client.getAgentSessions !== "function") return;
+    const vaultBase = this._getVaultBasePath() || undefined;
+    void client
+      .getAgentSessions(vaultBase)
+      .then((next) => {
+        if (!next || typeof next !== "object") return;
+        const prevSig = this._agentPresenceCache
+          ? JSON.stringify(this._agentPresenceCache)
+          : null;
+        this._agentPresenceCache = next;
+        if (prevSig !== JSON.stringify(next)) {
+          this.refreshIfOpen();
+        }
+      })
+      .catch(() => undefined);
+  }
+
+  private _formatAgentPresenceBadgeText(
+    presence: AgentPresenceSnapshotDto,
+    includeTool = false
+  ): string {
+    const primary = presence.active_sessions[0];
+    const clientName = primary
+      ? formatAgentClientName(primary.client_name)
+      : "";
+    if (presence.state === "ready" && clientName) {
+      const base = `${clientName} ${t("agent_state_ready")}`;
+      if (includeTool && primary?.current_tool) {
+        return `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`;
+      }
+      return base;
+    }
+    if (presence.state === "connected" && clientName) {
+      const base = `${clientName} ${t("agent_state_connected")}`;
+      if (includeTool && primary?.current_tool) {
+        return `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`;
+      }
+      return base;
+    }
+    if (presence.state === "configured_idle") {
+      if (presence.has_connected_before) {
+        const lastRaw =
+          presence.last_client_name || presence.historical_clients?.[0] || "";
+        const lastLabel = lastRaw ? formatAgentClientName(lastRaw) : "AI Agent";
+        return t("agent_state_standby").replace("{client}", lastLabel);
+      }
+      return t("agent_state_configured_idle");
+    }
+    return t("agent_state_unconnected");
+  }
+
+  private _renderAgentPresenceBadge(
+    parent: HTMLElement,
+    presence: AgentPresenceSnapshotDto,
+    includeTool = false
+  ): HTMLElement {
+    const clsMap: Record<AgentPresenceSnapshotDto["state"], string> = {
+      unconnected: "pf-agent-badge pf-agent-badge--unconnected",
+      configured_idle: "pf-agent-badge pf-agent-badge--configured-idle",
+      connected: "pf-agent-badge pf-agent-badge--connected",
+      ready: "pf-agent-badge pf-agent-badge--ready",
+    };
+    const badge = parent.createEl("span", {
+      cls: clsMap[presence.state],
+      attr: {
+        role: "status",
+        "data-pf-testid": "agent-status-badge",
+        "data-agent-state": presence.state,
+      },
+    });
+    if (presence.state === "connected" || presence.state === "ready") {
+      badge.createEl("span", {
+        cls: "pf-agent-pulse-dot",
+        attr: { "aria-hidden": "true" },
+      });
+    }
+    badge.createEl("span", {
+      cls: "pf-agent-badge-text",
+      text: this._formatAgentPresenceBadgeText(presence, includeTool),
+    });
+    return badge;
+  }
+
+  private _getAgentPresenceSentence(
+    presence: AgentPresenceSnapshotDto
+  ): string {
+    const primary = presence.active_sessions[0];
+    if (presence.state === "ready" && primary) {
+      const client = formatAgentClientName(primary.client_name);
+      const base = t("agent_overview_ready_sentence").replace(
+        "{client}",
+        client
+      );
+      return primary.current_tool
+        ? `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`
+        : base;
+    }
+    if (presence.state === "connected" && primary) {
+      const client = formatAgentClientName(primary.client_name);
+      const base = t("agent_overview_connected_sentence").replace(
+        "{client}",
+        client
+      );
+      return primary.current_tool
+        ? `${base} · ${t("agent_running_tool").replace("{tool}", primary.current_tool)}`
+        : base;
+    }
+    if (presence.state === "configured_idle") {
+      if (presence.has_connected_before) {
+        const lastRaw =
+          presence.last_client_name || presence.historical_clients?.[0] || "";
+        const lastLabel = lastRaw ? formatAgentClientName(lastRaw) : "AI Agent";
+        return t("agent_overview_standby_sentence").replace(
+          "{client}",
+          lastLabel
+        );
+      }
+      const platforms =
+        presence.configured_platforms &&
+        presence.configured_platforms.length > 0
+          ? presence.configured_platforms
+              .map((p) => AGENT_PLATFORM_LABELS[p] ?? formatAgentClientName(p))
+              .join(", ")
+          : "MCP";
+      return t("agent_overview_configured_idle_sentence").replace(
+        "{platforms}",
+        platforms
+      );
+    }
+    return t("agent_overview_unconnected_sentence");
+  }
+
+  private _renderAgentOnboardingBox(
+    parent: HTMLElement,
+    vaultBase: string,
+    currentPlatform: string,
+    isZh: boolean
+  ): void {
+    const binPath = this._resolvePreferredDaemonBin(vaultBase);
     const hubInfo = this._readSkillHubAndInstallCount();
+    const fallbackPrompt = this._buildLocalOnboardingPrompt(
+      vaultBase,
+      binPath,
+      hubInfo.hubDir,
+      isZh
+    );
 
-    const facts = body.createDiv({ cls: "pf-module-facts" });
-    const binFact = facts.createDiv({ cls: "pf-module-fact" });
-    binFact.createEl("span", { text: t("agent_mcp_bin_label") });
-    binFact.createEl("span", {
-      text: binReady ? t("agent_mcp_bin_ready") : t("agent_mcp_bin_missing"),
+    const box = parent.createDiv({
+      cls: "pf-agent-onboarding-box",
+      attr: { "data-pf-testid": "agent-onboarding-box" },
     });
-
-    const hubFact = facts.createDiv({ cls: "pf-module-fact" });
-    hubFact.createEl("span", { text: t("agent_skill_hub_label") });
-    hubFact.createEl("span", {
-      text:
-        hubInfo.installCount > 0
-          ? t("agent_skill_hub_ready").replace(
-              "{count}",
-              String(hubInfo.installCount)
-            )
-          : hubInfo.hubReady
-            ? t("agent_skill_hub_unconnected")
-            : t("agent_skill_hub_pending"),
+    box.createEl("p", {
+      cls: "pf-agent-onboarding-hint",
+      text: t("agent_onboarding_preview_hint"),
     });
+    const preview = box.createEl("textarea", {
+      cls: "pf-agent-prompt-preview",
+      attr: {
+        readonly: "true",
+        rows: "7",
+        "aria-label": t("agent_copy_onboarding_primary"),
+        "data-pf-testid": "agent-onboarding-prompt-preview",
+      },
+    }) as HTMLTextAreaElement;
+    preview.value = fallbackPrompt;
 
-    body.createEl("p", {
-      cls: "caption",
-      text: t("agent_external_cli_hint"),
+    const liveDaemon = resolveNativeDaemonBinary({
+      vaultPath: vaultBase,
     });
+    const client = this._tryGetClient();
+    if (liveDaemon && client && typeof client.agentOnboarding === "function") {
+      const langCode = isZh ? "zh" : "en";
+      void client
+        .agentOnboarding(langCode, binPath)
+        .then((res) => {
+          if (res?.prompt && preview.isConnected) {
+            preview.value = res.prompt;
+          }
+        })
+        .catch(() => undefined);
+    }
 
-    const primaryActions = body.createDiv({ cls: "pf-agent-config-actions" });
-    renderActionButton(primaryActions, {
-      label: t("agent_copy_onboarding_btn"),
+    const primaryActions = box.createDiv({ cls: "pf-agent-config-actions" });
+    const copyOnboardingBtn = renderActionButton(primaryActions, {
+      label: t("agent_copy_onboarding_primary"),
       variant: "primary",
       onClick: () => {
         void (async () => {
-          const client = this.getClient();
-          const binPath = this._resolvePreferredDaemonBin(vaultBase);
-          const isZh = (
-            this.plugin.settings.language || langFromApp(this.app)
-          ).startsWith("zh");
+          const cli = this.getClient();
+          const curBinPath = this._resolvePreferredDaemonBin(vaultBase);
           const langCode = isZh ? "zh" : "en";
-          if (!hubInfo.hubReady && typeof client.skillSyncHub === "function") {
+          if (!hubInfo.hubReady && typeof cli.skillSyncHub === "function") {
             try {
-              await client.skillSyncHub();
+              await cli.skillSyncHub();
             } catch {
               // Best-effort Skill Hub hydration before generating onboarding prompt
             }
           }
-          let promptText = this._buildLocalOnboardingPrompt(
-            vaultBase,
-            binPath,
-            this._readSkillHubAndInstallCount().hubDir,
-            isZh
-          );
-          const liveDaemon = resolveNativeDaemonBinary({
+          let promptText = preview.value || fallbackPrompt;
+          const daemonBin = resolveNativeDaemonBinary({
             vaultPath: vaultBase,
           });
-          if (liveDaemon && typeof client.agentOnboarding === "function") {
+          if (daemonBin && typeof cli.agentOnboarding === "function") {
             try {
-              const res = await client.agentOnboarding(langCode, binPath);
-              if (res?.prompt) promptText = res.prompt;
+              const res = await cli.agentOnboarding(langCode, curBinPath);
+              if (res?.prompt) {
+                promptText = res.prompt;
+                if (preview.isConnected) preview.value = promptText;
+              }
             } catch {
               // Keep deterministic local prompt fallback
             }
@@ -2752,29 +3064,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           } catch {
             new Notice(promptText, 8000);
           }
-          this.display();
         })();
       },
     });
+    copyOnboardingBtn.setAttribute(
+      "data-pf-testid",
+      "agent-copy-onboarding-btn"
+    );
     renderActionButton(primaryActions, {
       label: t("agent_copy_mcp"),
       variant: "secondary",
       onClick: () => {
         void (async () => {
-          const binPath = this._resolvePreferredDaemonBin(vaultBase);
+          const curBinPath = this._resolvePreferredDaemonBin(vaultBase);
           const fallback = this._buildLocalMcpConfig(
             vaultBase,
-            current,
-            binPath
+            currentPlatform,
+            curBinPath
           );
           let copyText = fallback.text;
           let fileLabel = fallback.targetRel;
-          const liveDaemon = resolveNativeDaemonBinary({
+          const daemonBin = resolveNativeDaemonBinary({
             vaultPath: vaultBase,
           });
-          if (liveDaemon && typeof this.getClient().mcpConfig === "function") {
+          if (daemonBin && typeof this.getClient().mcpConfig === "function") {
             try {
-              const res = await this.getClient().mcpConfig(current, binPath);
+              const res = await this.getClient().mcpConfig(
+                currentPlatform,
+                curBinPath
+              );
               copyText =
                 res.toml_snippet || JSON.stringify(res.config_snippet, null, 2);
               fileLabel = res.target_relpath || fallback.targetRel;
@@ -2790,6 +3108,241 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         })();
       },
+    });
+  }
+
+  _renderAgentDetail(containerEl: HTMLElement, opts?: InlineRenderOpts): void {
+    if (!opts?.inline) {
+      this._renderModuleDetailShell(containerEl, "agent");
+    }
+    this._refreshAgentPresenceOnce();
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+
+    const current = this.plugin.settings.agent_platform || "opencode";
+    const vaultBase = this._getVaultBasePath();
+    const installedBin = this._resolvePreferredDaemonBin(vaultBase);
+    const binReady = fs.existsSync(installedBin);
+    const hubInfo = this._readSkillHubAndInstallCount();
+    const isZh = (
+      this.plugin.settings.language || langFromApp(this.app)
+    ).startsWith("zh");
+    const presence = this._getEffectiveAgentPresence();
+    const primarySession = presence.active_sessions[0];
+
+    // ── Live 4-State Poki Presence Card ──
+    const presenceCard = body.createDiv({
+      cls: "pf-agent-presence-card",
+      attr: {
+        "data-pf-testid": "agent-presence-card",
+        "data-agent-state": presence.state,
+      },
+    });
+    const presenceHead = presenceCard.createDiv({
+      cls: "pf-agent-presence-head",
+    });
+    this._renderAgentPresenceBadge(presenceHead, presence, false);
+
+    if (
+      (presence.state === "connected" || presence.state === "ready") &&
+      primarySession
+    ) {
+      const clientLabel = formatAgentClientName(primarySession.client_name);
+      const metaParts = [clientLabel];
+      if (primarySession.client_version) {
+        metaParts.push(`v${primarySession.client_version}`);
+      }
+      if (presence.total_active > 1) {
+        metaParts.push(
+          isZh
+            ? `共 ${presence.total_active} 个在线会话`
+            : `${presence.total_active} active sessions`
+        );
+      }
+      presenceHead.createEl("span", {
+        cls: "pf-agent-presence-meta",
+        text: metaParts.join(" · "),
+      });
+      if (primarySession.current_tool) {
+        const toolEl = presenceCard.createDiv({
+          cls: "pf-agent-tool-activity",
+          attr: { "data-pf-testid": "agent-live-tool" },
+        });
+        toolEl.createEl("span", {
+          cls: "pf-agent-pulse-dot",
+          attr: { "aria-hidden": "true" },
+        });
+        toolEl.createEl("span", {
+          text: t("agent_running_tool").replace(
+            "{tool}",
+            primarySession.current_tool
+          ),
+        });
+      }
+      if (presence.active_sessions.length > 1) {
+        const sessionList = presenceCard.createDiv({
+          cls: "pf-agent-sessions-list",
+        });
+        sessionList.createEl("div", {
+          cls: "pf-agent-sessions-title",
+          text: t("agent_active_sessions_title"),
+        });
+        for (const sess of presence.active_sessions) {
+          const row = sessionList.createDiv({ cls: "pf-agent-session-row" });
+          const name = formatAgentClientName(sess.client_name);
+          const ver = sess.client_version ? ` v${sess.client_version}` : "";
+          const tool = sess.current_tool
+            ? ` · ${t("agent_running_tool").replace("{tool}", sess.current_tool)}`
+            : "";
+          row.createEl("span", { text: `● ${name}${ver}${tool}` });
+        }
+      }
+    } else if (presence.state === "configured_idle") {
+      const platforms =
+        presence.configured_platforms &&
+        presence.configured_platforms.length > 0
+          ? presence.configured_platforms
+              .map((p) => AGENT_PLATFORM_LABELS[p] ?? formatAgentClientName(p))
+              .join(", ")
+          : "MCP";
+      presenceCard.createEl("p", {
+        cls: "pf-agent-presence-sub",
+        text: t("agent_configured_waiting_hint").replace(
+          "{platforms}",
+          platforms
+        ),
+      });
+    } else {
+      presenceCard.createEl("p", {
+        cls: "pf-agent-presence-sub",
+        text: this._getAgentPresenceSentence(presence),
+      });
+    }
+
+    // ── Live Auto-Setup Progress Checklist (4 rows) ──
+    const checklistState = presence.setup_checklist ?? {
+      connected: false,
+      instructions_injected: false,
+      vault_reconciled: false,
+      tools_ready: false,
+    };
+    const checklistCard = body.createDiv({
+      cls: "pf-agent-checklist",
+      attr: { "data-pf-testid": "agent-setup-checklist" },
+    });
+    checklistCard.createEl("div", {
+      cls: "pf-agent-checklist-title",
+      text: t("agent_checklist_title"),
+    });
+    const handshakeDetail =
+      checklistState.connected && primarySession
+        ? `${formatAgentClientName(primarySession.client_name)}${
+            primarySession.client_version
+              ? ` v${primarySession.client_version}`
+              : ""
+          }`
+        : t("agent_check_1_waiting");
+    const checklistRows: Array<{
+      id: string;
+      done: boolean;
+      label: string;
+      detail?: string;
+    }> = [
+      {
+        id: "agent-check-1",
+        done: Boolean(checklistState.connected),
+        label: t("agent_check_1_handshake"),
+        detail: handshakeDetail,
+      },
+      {
+        id: "agent-check-2",
+        done: Boolean(checklistState.instructions_injected),
+        label: t("agent_check_2_instructions"),
+      },
+      {
+        id: "agent-check-3",
+        done: Boolean(checklistState.vault_reconciled),
+        label: t("agent_check_3_reconciled"),
+      },
+      {
+        id: "agent-check-4",
+        done: Boolean(checklistState.tools_ready),
+        label: t("agent_check_4_tools"),
+      },
+    ];
+    for (const item of checklistRows) {
+      const row = checklistCard.createDiv({
+        cls: `pf-agent-check-item ${
+          item.done
+            ? "pf-agent-check-item--done"
+            : "pf-agent-check-item--pending"
+        }`,
+        attr: {
+          "data-pf-testid": item.id,
+          "data-checked": item.done ? "true" : "false",
+        },
+      });
+      row.createEl("span", {
+        cls: "pf-agent-check-icon",
+        text: item.done ? "✓" : "○",
+        attr: { "aria-hidden": "true" },
+      });
+      const textWrap = row.createDiv({ cls: "pf-agent-check-text" });
+      textWrap.createEl("span", {
+        cls: "pf-agent-check-label",
+        text: item.label,
+      });
+      if (item.detail) {
+        textWrap.createEl("span", {
+          cls: "pf-agent-check-detail",
+          text: item.detail,
+        });
+      }
+    }
+
+    body.createEl("p", {
+      cls: "caption",
+      text: t("agent_external_cli_hint"),
+    });
+
+    if (presence.state === "connected" || presence.state === "ready") {
+      const connectMoreDetails = body.createEl("details", {
+        cls: "pf-adv-details",
+      });
+      connectMoreDetails.createEl("summary", {
+        text: t("agent_connect_another"),
+      });
+      const connectMoreBody = connectMoreDetails.createDiv({
+        cls: "pf-adv-body",
+      });
+      this._renderAgentOnboardingBox(connectMoreBody, vaultBase, current, isZh);
+    } else {
+      this._renderAgentOnboardingBox(body, vaultBase, current, isZh);
+    }
+
+    const facts = body.createDiv({ cls: "pf-module-facts" });
+    const binFact = facts.createDiv({ cls: "pf-module-fact" });
+    binFact.createEl("span", { text: t("agent_mcp_bin_label") });
+    binFact.createEl("span", {
+      text: binReady ? t("agent_mcp_bin_ready") : t("agent_mcp_bin_missing"),
+    });
+
+    const hubFact = facts.createDiv({ cls: "pf-module-fact" });
+    hubFact.createEl("span", { text: t("agent_skill_hub_label") });
+    hubFact.createEl("span", {
+      text:
+        presence.total_active > 0
+          ? t("agent_skill_hub_ready").replace(
+              "{count}",
+              String(presence.total_active)
+            )
+          : hubInfo.installCount > 0
+            ? t("agent_skill_hub_ready").replace(
+                "{count}",
+                String(hubInfo.installCount)
+              )
+            : hubInfo.hubReady
+              ? t("agent_skill_hub_unconnected")
+              : t("agent_skill_hub_pending"),
     });
 
     const vaultSkillDirs = [
@@ -3993,11 +4546,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: this._getUserModuleName(mod),
       attr: { id: "pf-" + mod + "-detail-heading", tabindex: "-1" },
     });
-    renderStatusBadge(header, userState, this._getUserStateLabel(userState));
-    summary.createEl("p", {
-      cls: "pf-module-summary-consequence",
-      text: this._getModuleConsequence(mod, env),
-    });
+    if (mod === "agent") {
+      const presence = this._getEffectiveAgentPresence();
+      this._renderAgentPresenceBadge(header, presence, true);
+      summary.createEl("p", {
+        cls: "pf-module-summary-consequence",
+        text: this._getAgentPresenceSentence(presence),
+      });
+    } else {
+      renderStatusBadge(header, userState, this._getUserStateLabel(userState));
+      summary.createEl("p", {
+        cls: "pf-module-summary-consequence",
+        text: this._getModuleConsequence(mod, env),
+      });
+    }
 
     if (env.activity_state === "running") {
       renderActivityRow(summary, {
@@ -5329,14 +5891,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
 
     const agentEnv = this._getAgentPlaceholderEnvelope();
+    const agentPresence = this._getEffectiveAgentPresence();
     this._renderOverviewNavRow(
       optList,
       "agent",
       t("cc_module_agent") || "AI Agent 技能",
       agentEnv,
-      AGENT_PLATFORM_LABELS[
-        this.plugin.settings.agent_platform || "opencode"
-      ] ?? this.plugin.settings.agent_platform
+      this._getAgentPresenceSentence(agentPresence)
     );
 
     // ── VS Code Walkthrough-style Dismissible Exploration Checklist (when core is ready) ──
@@ -5436,21 +5997,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     env: ProbeEnvelope,
     sentenceOverride?: string
   ): void {
+    const agentPresence =
+      mod === "agent" ? this._getEffectiveAgentPresence() : null;
     const row = listEl.createEl("div", {
       cls: "pf-cc-module-card pf-open-module-btn pf-cc-nav-row",
       attr: {
         "data-module": mod,
-        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+        "aria-label":
+          label +
+          " — " +
+          (agentPresence
+            ? this._formatAgentPresenceBadgeText(agentPresence, false)
+            : this._getUserStateLabel(env.user_state)),
         role: "button",
         tabindex: "0",
       },
     });
     row.createEl("span", { cls: "pf-cc-card-name", text: label });
-    renderStatusBadge(
-      row,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
+    if (agentPresence) {
+      this._renderAgentPresenceBadge(row, agentPresence, false);
+    } else {
+      renderStatusBadge(
+        row,
+        env.user_state,
+        this._getUserStateLabel(env.user_state)
+      );
+    }
     row.createEl("span", {
       cls: "pf-cc-card-sentence",
       text: sentenceOverride ?? this._getModuleConsequence(mod, env),
@@ -5693,41 +6265,41 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
-  /** Derive Agent availability from the shared .agents/skills or legacy per-platform skill dir. */
+  /** Derive Agent availability from live MCP session presence (never fake-green). */
   _getAgentPlaceholderEnvelope(): ProbeEnvelope {
-    const vaultBase = this._getVaultBasePath();
-    const platform = this.plugin.settings.agent_platform || "opencode";
-    const configuredSkillDir = String(
-      this._pfConfig?.skill_dir ||
-        this.plugin.settings.skill_dir ||
-        ".agents/skills"
-    );
-    const legacyDir =
-      AGENT_PLATFORM_SKILL_DIRS[platform] ?? AGENT_PLATFORM_SKILL_DIRS.opencode;
-    const candidateDirs =
-      configuredSkillDir === legacyDir
-        ? [configuredSkillDir]
-        : [configuredSkillDir, legacyDir];
-    const deployed = candidateDirs.some((dir) =>
-      fs.existsSync(path.join(vaultBase, dir, "paperforge", "SKILL.md"))
-    );
+    const presence = this._getEffectiveAgentPresence();
+    const isLive = presence.state === "connected" || presence.state === "ready";
+    const isIdle = presence.state === "configured_idle";
+    const isStandby = isIdle && Boolean(presence.has_connected_before);
+    const isHealthy = isLive || isStandby;
     return {
       schema_version: 2,
       module: "agent",
-      capability_state: deployed ? "ready" : "needs_action",
+      capability_state: isHealthy ? "ready" : "needs_action",
       activity_state: "idle",
       activity_label: null,
       activity_progress: null,
-      severity: deployed ? "ok" : "warning",
+      severity: isHealthy ? "ok" : isIdle ? "unknown" : "warning",
       reason: {
-        code: deployed ? "agent.skills_deployed" : "agent.skills_not_deployed",
-        text: deployed
-          ? "PaperForge Skills are deployed for the selected platform."
-          : "PaperForge Skills have not been deployed for the selected platform.",
+        code:
+          presence.state === "ready"
+            ? "agent.ready"
+            : presence.state === "connected"
+              ? "agent.connected"
+              : isStandby
+                ? "agent.standby"
+                : isIdle
+                  ? "agent.configured_idle"
+                  : "agent.unconnected",
+        text: this._getAgentPresenceSentence(presence),
       },
       action: { primary: null },
       notices: [],
-      user_state: deployed ? "ready" : "not_enabled",
+      user_state: isHealthy
+        ? "ready"
+        : isIdle
+          ? "action_required"
+          : "not_enabled",
       capability_kind: "optional",
       maintenance_eligible: false,
       user_visible_failure: false,
@@ -6216,6 +6788,157 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return (raw || "Literature").replace(/\/+$/, "");
   }
 
+  private _renderZoteroFolderScopeBox(
+    parentEl: HTMLElement,
+    opts: {
+      isZh: boolean;
+      totalPapers: number;
+      collections: Array<{
+        key: string;
+        name: string;
+        item_count: number;
+        top_level?: boolean;
+      }>;
+      settings: PaperForgeSettings;
+      onScopeChange: () => void;
+    }
+  ): { boxEl: HTMLElement } {
+    const { isZh, totalPapers, collections, settings, onScopeChange } = opts;
+    const boxEl = parentEl.createDiv({ cls: "pf-zotero-scope-box" });
+    boxEl.dataset.pfTestid = "zotero-folder-scope-box";
+
+    const headRow = boxEl.createDiv({ cls: "pf-zotero-scope-head" });
+    const titleRow = headRow.createDiv({ cls: "pf-zotero-scope-title-row" });
+    titleRow.createEl("strong", {
+      text: isZh
+        ? "选择要导入的 Zotero 文件夹"
+        : "Choose Zotero Folders to Import",
+    });
+    const pillEl = titleRow.createEl("span", { cls: "pf-express-pill" });
+
+    const actRow = headRow.createDiv({ cls: "pf-zotero-scope-actions" });
+    const selectAllBtn = actRow.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: isZh ? "全选文件夹" : "Select All",
+      attr: { type: "button", "data-pf-testid": "zotero-scope-select-all" },
+    });
+    const clearBtn = actRow.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: isZh ? "清空" : "Clear",
+      attr: { type: "button", "data-pf-testid": "zotero-scope-clear" },
+    });
+
+    const isLarge = totalPapers > 200;
+    const warnEl = boxEl.createEl("p", {
+      cls: "pf-setup-warn",
+      text: isZh
+        ? isLarge
+          ? `你的 Zotero 共有 ${totalPapers} 篇文献。建议先勾选 1–3 个常用课题文件夹分批导入，体验更流畅；随时可在设置中追加其他文件夹。`
+          : `你的 Zotero 共有 ${totalPapers} 篇文献。请先勾选要导入的课题文件夹（或勾选下方「导入整个 Zotero 文库」），随时可在设置中增减。`
+        : isLarge
+          ? `Your Zotero library has ${totalPapers} papers. Starting with 1–3 active folders is faster and safer; you can add more anytime in Settings.`
+          : `Your Zotero library has ${totalPapers} papers. Choose which folders to import below (or check "Import entire library"); you can change this anytime in Settings.`,
+    });
+
+    const colGrid = boxEl.createDiv({ cls: "pf-zotero-col-grid" });
+    const colInputs: Array<{ key: string; cb: HTMLInputElement }> = [];
+    for (const col of collections) {
+      const label = colGrid.createEl("label", { cls: "pf-zotero-col-item" });
+      const cb = label.createEl("input", {
+        attr: { type: "checkbox" },
+      }) as HTMLInputElement;
+      colInputs.push({ key: col.key, cb });
+      label.createSpan({ text: col.name });
+      label.createEl("span", {
+        cls: "pf-zotero-col-cnt",
+        text: `${col.item_count}`,
+      });
+    }
+
+    const allLabel = boxEl.createEl("label", {
+      cls: "pf-zotero-scope-all-toggle",
+    });
+    const allCb = allLabel.createEl("input", {
+      attr: { type: "checkbox", "data-pf-testid": "zotero-scope-import-all" },
+    }) as HTMLInputElement;
+    allLabel.createSpan({
+      text: isZh
+        ? `导入整个 Zotero 文库（含未归类条目${totalPapers > 0 ? `，共 ${totalPapers} 篇` : ""}）`
+        : `Import entire Zotero library (including unfiled items${totalPapers > 0 ? `, ${totalPapers} total` : ""})`,
+    });
+
+    const syncUi = () => {
+      const sc = evaluateZoteroImportScope({
+        totalPapers,
+        collections,
+        selected: settings.zotero_selected_collections,
+      });
+      const pickedSet = new Set(sc.selectedKeys);
+      for (const item of colInputs) {
+        item.cb.checked = pickedSet.has(item.key);
+        item.cb.disabled = sc.explicitAll;
+      }
+      allCb.checked = sc.explicitAll;
+      boxEl.classList.toggle("is-attention", sc.requiresFolderChoice);
+      warnEl.style.display = sc.requiresFolderChoice ? "" : "none";
+
+      if (sc.explicitAll) {
+        pillEl.className = "pf-express-pill is-ok";
+        pillEl.textContent = isZh
+          ? `全部文库 · 共 ${sc.estimatedPapers} 篇`
+          : `All · ${sc.estimatedPapers}`;
+      } else if (sc.selectedKeys.length > 0) {
+        pillEl.className = "pf-express-pill is-ok";
+        pillEl.textContent = isZh
+          ? `已选 ${sc.selectedKeys.length} 个文件夹 · 约 ${sc.estimatedPapers} 篇`
+          : `${sc.selectedKeys.length} folders · ~${sc.estimatedPapers}`;
+      } else if (sc.requiresFolderChoice) {
+        pillEl.className = "pf-express-pill is-warn";
+        pillEl.textContent = isZh ? "请勾选文件夹" : "Pick folders";
+      } else {
+        pillEl.className = "pf-express-pill is-ok";
+        pillEl.textContent = isZh
+          ? `全部文库 · 共 ${sc.estimatedPapers} 篇`
+          : `All · ${sc.estimatedPapers}`;
+      }
+    };
+
+    const commitSelection = (next: string[]) => {
+      settings.zotero_selected_collections = next;
+      void this.plugin.saveSettings();
+      syncUi();
+      onScopeChange();
+    };
+
+    for (const item of colInputs) {
+      item.cb.addEventListener("change", () => {
+        const cur = new Set(
+          Array.isArray(settings.zotero_selected_collections)
+            ? settings.zotero_selected_collections.filter((k) => k !== "*")
+            : []
+        );
+        if (item.cb.checked) cur.add(item.key);
+        else cur.delete(item.key);
+        commitSelection(Array.from(cur));
+      });
+    }
+
+    allCb.addEventListener("change", () => {
+      commitSelection(allCb.checked ? ["*"] : []);
+    });
+
+    selectAllBtn.addEventListener("click", () => {
+      commitSelection(collections.map((c) => c.key));
+    });
+
+    clearBtn.addEventListener("click", () => {
+      commitSelection([]);
+    });
+
+    syncUi();
+    return { boxEl };
+  }
+
   /** Express 1-page beginner flow inspired by Linear / Cherry Studio / VS Code Walkthrough. */
   private _renderExpressSetup(wrapper: HTMLElement, isZh: boolean): void {
     this._refreshRuntimeStatus();
@@ -6426,46 +7149,178 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const curMode =
       settings.domain_mode === "unified" ? "unified" : "per_collection";
     const litTargetDir = this._resolveSetupLiteratureDir();
-    const paperCnt = this._zoteroDetectData?.total_papers;
+    const paperCnt = this._zoteroDetectData?.total_papers ?? 0;
+    const allCols = this._zoteroDetectData?.collections ?? [];
+    const topCols = allCols.filter((c) => c.top_level !== false);
+    const listCols = topCols.length > 0 ? topCols : allCols;
     const summaryEl = c1.createEl("div", {
       cls: "pf-express-default-summary",
     });
+    const computeScope = (): ZoteroScopeEvaluation =>
+      evaluateZoteroImportScope({
+        totalPapers: paperCnt,
+        collections: listCols,
+        selected: settings.zotero_selected_collections,
+      });
+
+    let footerSummaryEl: HTMLElement | null = null;
+    let primaryBtnEl: HTMLElement | null = null;
+    let ctaBusy = false;
+    let expressRuntimeInProgress = false;
+    let daemonUpdating = false;
+    let rtChecking = false;
+    let isImporting = false;
+    let rtStepTag = "";
+    let syncStepTag = "";
+
+    const formatScopeCtaLabel = (sc: ZoteroScopeEvaluation): string => {
+      if (sc.requiresFolderChoice) {
+        if (!rtReady) {
+          return action === "update"
+            ? isZh
+              ? "更新引擎并挑选要导入的文件夹"
+              : "Update Engine & Pick Folders"
+            : isZh
+              ? "安装引擎并挑选要导入的文件夹"
+              : "Install Engine & Pick Folders";
+        }
+        return isZh
+          ? "请先在上方勾选要导入的文件夹"
+          : "Select Folders Above First";
+      }
+      const scopeNoun =
+        sc.selectedKeys.length > 0
+          ? isZh
+            ? `已选 ${sc.selectedKeys.length} 个文件夹（约 ${sc.estimatedPapers} 篇）`
+            : `${sc.selectedKeys.length} Folders (~${sc.estimatedPapers})`
+          : sc.estimatedPapers > 0
+            ? isZh
+              ? ` ${sc.estimatedPapers} 篇文献`
+              : ` ${sc.estimatedPapers} Papers`
+            : isZh
+              ? "文献"
+              : " Papers";
+      if (!rtReady) {
+        return action === "update"
+          ? isZh
+            ? `更新引擎并导入${scopeNoun}`
+            : `Update Engine & Import${scopeNoun}`
+          : isZh
+            ? `安装引擎并导入${scopeNoun}`
+            : `Install Engine & Import${scopeNoun}`;
+      }
+      return isZh
+        ? `立即导入${scopeNoun}并开始使用`
+        : `Import${scopeNoun} & Start`;
+    };
+
     const updateReadySummary = () => {
       const targetDir = this._resolveSetupLiteratureDir();
       const activeMode =
         settings.domain_mode === "unified" ? "unified" : "per_collection";
-      summaryEl.textContent = zoteroReady
-        ? isZh
-          ? `✓ 已自动就绪：只读读取 Zotero 原库，并在 Vault 的 ${targetDir}/ 目录生成${paperCnt ? ` ${paperCnt} 篇` : ""}文献笔记（${activeMode === "unified" ? "全部统一放进目录并在总表筛选" : "按 Zotero 顶级文件夹分专题归类"}）。`
-          : `✓ Ready: reads your Zotero DB read-only and creates${paperCnt ? ` ${paperCnt}` : ""} notes inside ${targetDir}/ (${activeMode === "unified" ? "unified folder + Base filters" : "grouped by your top Zotero folders"}).`
-        : isZh
+      const sc = computeScope();
+      if (!zoteroReady) {
+        summaryEl.textContent = isZh
           ? `未自动找到 Zotero 默认目录，请在下方选择或粘贴你的 Zotero 数据目录（导入后将写入 Vault 的 ${targetDir}/）。`
           : `Zotero default folder was not detected automatically. Browse or paste your Zotero directory below (notes will be created in ${targetDir}/).`;
+      } else if (sc.requiresFolderChoice) {
+        summaryEl.textContent = isZh
+          ? sc.isLargeLibrary
+            ? `✓ 已读取 Zotero（共 ${sc.estimatedPapers} 篇）。文库较大，请在下方勾选需要导入的课题文件夹（建议先选 1–3 个），将写入 ${targetDir}/。`
+            : `✓ 已读取 Zotero（共 ${sc.estimatedPapers} 篇）。请在下方勾选需要导入的课题文件夹（或勾选导入整个文库），将写入 ${targetDir}/。`
+          : sc.isLargeLibrary
+            ? `✓ Detected Zotero (${sc.estimatedPapers} papers). Large library: pick the specific folders below to import into ${targetDir}/.`
+            : `✓ Detected Zotero (${sc.estimatedPapers} papers). Pick the folders below (or choose entire library) to import into ${targetDir}/.`;
+      } else {
+        const countStr =
+          sc.selectedKeys.length > 0
+            ? isZh
+              ? `已选 ${sc.selectedKeys.length} 个文件夹 · 约 ${sc.estimatedPapers} 篇`
+              : `${sc.selectedKeys.length} selected folders · ~${sc.estimatedPapers}`
+            : sc.estimatedPapers > 0
+              ? ` ${sc.estimatedPapers} 篇`
+              : "";
+        summaryEl.textContent = isZh
+          ? `✓ 已自动就绪：只读读取 Zotero 原库，并在 Vault 的 ${targetDir}/ 目录生成${countStr}文献笔记（${activeMode === "unified" ? "全部统一放进目录并在总表筛选" : "按 Zotero 顶级文件夹分专题归类"}）。`
+          : `✓ Ready: reads your Zotero DB read-only and creates${countStr ? ` ${countStr}` : ""} notes inside ${targetDir}/ (${activeMode === "unified" ? "unified folder + Base filters" : "grouped by your top Zotero folders"}).`;
+      }
+      if (footerSummaryEl) {
+        if (!zoteroReady) {
+          footerSummaryEl.textContent = isZh
+            ? "先在上一步确认 Zotero 目录即可开始导入"
+            : "Confirm your Zotero folder above to start importing";
+        } else if (sc.requiresFolderChoice) {
+          footerSummaryEl.textContent = isZh
+            ? `请先勾选要导入的 Zotero 文件夹 → ${targetDir}/`
+            : `Select folders to import → ${targetDir}/`;
+        } else {
+          const tail =
+            sc.selectedKeys.length > 0
+              ? isZh
+                ? `已选 ${sc.selectedKeys.length} 个文件夹（约 ${sc.estimatedPapers} 篇）`
+                : `${sc.selectedKeys.length} folders (~${sc.estimatedPapers} papers)`
+              : sc.estimatedPapers > 0
+                ? isZh
+                  ? `全部 ${sc.estimatedPapers} 篇文献`
+                  : `all ${sc.estimatedPapers} papers`
+                : isZh
+                  ? "文献"
+                  : "papers";
+          footerSummaryEl.textContent = isZh
+            ? `只读导入${tail} → ${targetDir}/ · 免费功能立即生效`
+            : `Read-only import (${tail}) → ${targetDir}/ · Free features ready right away`;
+        }
+      }
+      if (
+        primaryBtnEl &&
+        !daemonUpdating &&
+        !rtChecking &&
+        !expressRuntimeInProgress &&
+        !isImporting
+      ) {
+        primaryBtnEl.textContent = formatScopeCtaLabel(sc);
+      }
     };
     updateReadySummary();
 
+    let scopeBoxEl: HTMLElement | null = null;
+    let redrawPreviewRef: (() => void) | null = null;
+    if (zoteroReady && listCols.length > 0) {
+      const picker = this._renderZoteroFolderScopeBox(c1, {
+        isZh,
+        totalPapers: paperCnt,
+        collections: listCols,
+        settings,
+        onScopeChange: () => {
+          updateReadySummary();
+          redrawPreviewRef?.();
+        },
+      });
+      scopeBoxEl = picker.boxEl;
+    }
+
     // Seamless Engine Auto-Pipeline notice/progress inside Card 1
-    const daemonUpdating = Boolean(this.plugin?.isDaemonUpdating?.());
+    daemonUpdating = Boolean(this.plugin?.isDaemonUpdating?.());
     const liveRuntime = this.plugin?.getLiveTaskSummary?.("runtime") ?? null;
     const liveSync = this.plugin?.getLiveTaskSummary?.("sync") ?? null;
-    const expressRuntimeInProgress =
+    expressRuntimeInProgress =
       !rtReady &&
       (this._syncRuntimePollFromBackground() ||
         Boolean(this._runtimePollTimer) ||
         Boolean(this.plugin?.isRuntimeUpdating?.()) ||
         Boolean(this._pendingRuntimeRestartAfterDaemonSwap));
-    const rtChecking =
+    rtChecking =
       !rtReady &&
       !this._runtimeStatusError &&
       !daemonUpdating &&
       !expressRuntimeInProgress &&
       (this._runtimeStatusLoading ||
         (Boolean(pointer) && this._runtimeStatus === null));
-    const isImporting =
+    isImporting =
       this._setupOperation === "running" &&
       !expressRuntimeInProgress &&
       !daemonUpdating;
-    const ctaBusy =
+    ctaBusy =
       daemonUpdating || rtChecking || expressRuntimeInProgress || isImporting;
 
     if (daemonUpdating) {
@@ -6570,8 +7425,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     customizeDet.createEl("summary", {
       text: isZh
-        ? "调整 Zotero 位置、目录归档方式或筛选特定文件夹 ▾"
-        : "Customize Zotero path, folder layout or collections ▾",
+        ? "调整 Zotero 位置或 Vault 写入目录 ▾"
+        : "Customize Zotero path or output folder ▾",
       attr: { "data-pf-testid": "express-customize-toggle" },
     });
     const customBody = customizeDet.createDiv({
@@ -6636,22 +7491,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     targetDirIn.value = litTargetDir;
 
     const previewHost = customBody.createDiv();
-    const allCols = this._zoteroDetectData?.collections ?? [];
-    const topCols = allCols.filter((c) => c.top_level !== false);
-    const curSel = new Set(
-      Array.isArray(settings.zotero_selected_collections)
-        ? settings.zotero_selected_collections
-        : []
-    );
     const redrawPreview = () => {
+      const sc = computeScope();
       const pickedCols =
-        curSel.size > 0
-          ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
-              curSel.has(c.key)
-            )
-          : topCols.length > 0
-            ? topCols
-            : allCols;
+        sc.selectedKeys.length > 0
+          ? listCols.filter((c) => sc.selectedKeys.includes(c.key))
+          : listCols;
       renderDomainModePreview(previewHost, {
         domainMode:
           settings.domain_mode === "unified" ? "unified" : "per_collection",
@@ -6661,6 +7506,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       updateReadySummary();
     };
+    redrawPreviewRef = redrawPreview;
     targetDirIn.addEventListener("change", () => {
       const cleaned =
         targetDirIn.value.trim().replace(/^\/+|\/+$/g, "") || "Literature";
@@ -6709,37 +7555,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
     redrawPreview();
-
-    if (allCols.length > 0) {
-      const colDet = customBody.createEl("details", {
-        cls: "pf-adv-inline-details",
-      });
-      colDet.createEl("summary", {
-        text: isZh
-          ? `挑选只同步哪些 Zotero 文件夹（当前：${curSel.size > 0 ? `已选 ${curSel.size} 个` : "全部文库"}）`
-          : `Filter specific Zotero folders (${curSel.size > 0 ? `${curSel.size} selected` : "All papers"})`,
-      });
-      const colGrid = colDet.createDiv({ cls: "pf-zotero-col-grid" });
-      for (const col of topCols.length > 0 ? topCols : allCols) {
-        const label = colGrid.createEl("label", { cls: "pf-zotero-col-item" });
-        const cb = label.createEl("input", {
-          attr: { type: "checkbox" },
-        }) as HTMLInputElement;
-        cb.checked = curSel.has(col.key);
-        cb.addEventListener("change", () => {
-          if (cb.checked) curSel.add(col.key);
-          else curSel.delete(col.key);
-          settings.zotero_selected_collections = Array.from(curSel);
-          void this.plugin.saveSettings();
-          redrawPreview();
-        });
-        label.createEl("span", { text: col.name });
-        label.createEl("span", {
-          cls: "pf-zotero-col-cnt",
-          text: `${col.item_count}`,
-        });
-      }
-    }
 
     // ── Section C: Card 2 — 进阶功能（全部可选，以后用到再开） ──
     const c2 = wrapper.createDiv({
@@ -7409,15 +8224,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── Sticky Action Bar (Linear / Raycast style) ──
     const footer = wrapper.createDiv({ cls: "pf-express-footer" });
-    footer.createEl("span", {
+    footerSummaryEl = footer.createEl("span", {
       cls: "pf-express-footer-summary",
-      text: zoteroReady
-        ? isZh
-          ? `只读导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献 → ${litTargetDir}/ · 免费功能立即生效`
-          : `Read-only import → ${litTargetDir}/ · Free features ready right away`
-        : isZh
-          ? "先在上一步确认 Zotero 目录即可开始导入"
-          : "Confirm your Zotero folder above to start importing",
+      text: "",
     });
     const fActions = footer.createDiv({ cls: "pf-express-footer-actions" });
     renderActionButton(fActions, {
@@ -7429,11 +8238,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         isImporting,
       onClick: () => this._goHome(),
     });
-    const rtStepTag =
+    rtStepTag =
       liveRuntime && liveRuntime.total > 0 && liveRuntime.current > 0
         ? ` (${liveRuntime.current}/${liveRuntime.total})`
         : "";
-    const syncStepTag =
+    syncStepTag =
       liveSync && liveSync.total > 0 && liveSync.current > 0
         ? ` (${liveSync.current}/${liveSync.total})`
         : "";
@@ -7459,26 +8268,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : isZh
             ? `正在导入文献库${syncStepTag}…`
             : `Importing library${syncStepTag}…`;
-    } else if (!rtReady) {
-      if (action === "update") {
-        primaryLabel = isZh
-          ? `更新引擎并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
-          : `Update Engine & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`;
-      } else {
-        primaryLabel = isZh
-          ? `安装引擎并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
-          : `Install Engine & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`;
-      }
     } else {
-      primaryLabel = isZh
-        ? `立即导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献并开始使用`
-        : `Import${paperCnt ? ` ${paperCnt}` : ""} Papers & Start`;
+      primaryLabel = formatScopeCtaLabel(computeScope());
     }
-    renderActionButton(fActions, {
+    primaryBtnEl = renderActionButton(fActions, {
       label: primaryLabel,
       disabled: ctaBusy,
       onClick: () => {
         if (ctaBusy) return;
+        const sc = computeScope();
+        if (sc.requiresFolderChoice) {
+          if (scopeBoxEl) {
+            scopeBoxEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            scopeBoxEl.classList.add("pf-zotero-scope-pulse");
+            window.setTimeout(
+              () => scopeBoxEl?.classList.remove("pf-zotero-scope-pulse"),
+              1500
+            );
+          }
+          new Notice(
+            isZh
+              ? sc.isLargeLibrary
+                ? `你的 Zotero 共有 ${paperCnt} 篇文献：请先勾选要导入的文件夹（或勾选“导入整个 Zotero 文库”）`
+                : `请先勾选要导入的 Zotero 文件夹（或勾选“导入整个 Zotero 文库”）`
+              : sc.isLargeLibrary
+                ? `Large library (${paperCnt} papers): please select at least one Zotero folder above (or check "Import entire library").`
+                : `Please select at least one Zotero folder above (or check "Import entire library").`,
+            4500
+          );
+          return;
+        }
         if (!rtReady) {
           void this.plugin.saveSettings();
           this._launchRuntimeInstaller(action, { autoContinueSetup: true });
@@ -7487,6 +8306,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._applyLibraryConfiguration({ autoCompleteOnSuccess: true });
       },
     });
+    updateReadySummary();
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {
@@ -7915,23 +8735,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const previewHost = body.createDiv();
         const allCols = this._zoteroDetectData?.collections ?? [];
         const topCols = allCols.filter((c) => c.top_level !== false);
-        const curSel = new Set(
-          Array.isArray(settings.zotero_selected_collections)
-            ? settings.zotero_selected_collections
-            : []
-        );
+        const listToShow = topCols.length > 0 ? topCols : allCols;
+        const paperCnt = this._zoteroDetectData?.total_papers ?? 0;
         const curMode =
           settings.domain_mode === "unified" ? "unified" : "per_collection";
 
         const redrawPreview = () => {
+          const sc = evaluateZoteroImportScope({
+            totalPapers: paperCnt,
+            collections: listToShow,
+            selected: settings.zotero_selected_collections,
+          });
           const pickedCols =
-            curSel.size > 0
-              ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
-                  curSel.has(c.key)
-                )
-              : topCols.length > 0
-                ? topCols
-                : allCols;
+            sc.selectedKeys.length > 0
+              ? listToShow.filter((c) => sc.selectedKeys.includes(c.key))
+              : listToShow;
           renderDomainModePreview(previewHost, {
             domainMode:
               settings.domain_mode === "unified" ? "unified" : "per_collection",
@@ -7945,33 +8763,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           body.createEl("p", {
             cls: "caption",
             text: isZh
-              ? "1) 选择需要同步到 Obsidian 的 Zotero 文件夹（不勾选则默认同步整个 Zotero 文库）："
-              : "1) Check Zotero collections to sync (leave unchecked to sync your entire Zotero library):",
+              ? "1) 选择需要导入到 Obsidian 的 Zotero 文件夹（也可在底部勾选「导入整个 Zotero 文库」）："
+              : '1) Choose Zotero folders to import (or check "Import entire library" at the bottom):',
           });
-          if (allCols.length > 0) {
-            const colGrid = body.createDiv({ cls: "pf-zotero-col-grid" });
-            const listToShow = topCols.length > 0 ? topCols : allCols;
-            for (const col of listToShow) {
-              const label = colGrid.createEl("label", {
-                cls: "pf-zotero-col-item",
-              });
-              const cb = label.createEl("input", {
-                attr: { type: "checkbox" },
-              }) as HTMLInputElement;
-              cb.checked = curSel.has(col.key);
-              cb.addEventListener("change", () => {
-                if (cb.checked) curSel.add(col.key);
-                else curSel.delete(col.key);
-                settings.zotero_selected_collections = Array.from(curSel);
-                void this.plugin.saveSettings();
-                redrawPreview();
-              });
-              label.createSpan({ text: col.name });
-              label.createEl("span", {
-                cls: "pf-zotero-col-cnt",
-                text: `${col.item_count}`,
-              });
-            }
+          if (listToShow.length > 0) {
+            this._renderZoteroFolderScopeBox(body, {
+              isZh,
+              totalPapers: paperCnt,
+              collections: listToShow,
+              settings,
+              onScopeChange: redrawPreview,
+            });
           } else {
             body.createEl("p", {
               cls: "setting-item-description",
@@ -8441,34 +9243,48 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupOptionals[opt.id] = checkbox.checked;
         this.display();
       });
+      const agentPresence =
+        opt.id === "agent" ? this._getEffectiveAgentPresence() : null;
       const configured =
         opt.id === "ocr"
           ? !!this.plugin.settings._paddleocr_configured
           : opt.id === "memory"
             ? !!this.plugin.settings._vector_db_configured
-            : true;
+            : agentPresence?.state === "connected" ||
+              agentPresence?.state === "ready";
       // The chip states what the user must do next, not just "configured":
       // a green "not configured" reads as done and is why people skip it.
       const needsSecret = opt.id === "ocr" || opt.id === "memory";
+      const agentStateCls =
+        agentPresence?.state === "ready" ||
+        agentPresence?.state === "connected" ||
+        (agentPresence?.state === "configured_idle" &&
+          Boolean(agentPresence?.has_connected_before))
+          ? "pf-setup-optional-state--ok"
+          : agentPresence?.state === "configured_idle"
+            ? "pf-setup-optional-state--info"
+            : "pf-setup-optional-state--neutral";
       const status = copy.createEl("span", {
         cls:
           "pf-setup-optional-state " +
-          (needsSecret && !configured
-            ? "pf-setup-optional-state--warn"
-            : "pf-setup-optional-state--ok"),
+          (opt.id === "agent"
+            ? agentStateCls
+            : needsSecret && !configured
+              ? "pf-setup-optional-state--warn"
+              : "pf-setup-optional-state--ok"),
         text:
-          opt.id === "agent"
-            ? t("setup_optional_platform").replace(
-                "{platform}",
-                AGENT_PLATFORM_LABELS[
-                  this.plugin.settings.agent_platform || "opencode"
-                ] ??
-                  this.plugin.settings.agent_platform ??
-                  "opencode"
-              )
+          opt.id === "agent" && agentPresence
+            ? this._formatAgentPresenceBadgeText(agentPresence, false)
             : configured
               ? t("config_configured")
               : t("setup_optional_needs_key"),
+        attr:
+          opt.id === "agent" && agentPresence
+            ? {
+                "data-pf-testid": "setup-optional-agent-state",
+                "data-agent-state": agentPresence.state,
+              }
+            : undefined,
       });
       if (!checkbox.checked) continue;
 
@@ -8748,6 +9564,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             });
         });
       } else {
+        const isZhOpt = (
+          this.plugin.settings.language || langFromApp(this.app)
+        ).startsWith("zh");
+        const vaultBase = this._getVaultBasePath();
+        const curPlatform = this.plugin.settings.agent_platform || "opencode";
+        this._renderAgentOnboardingBox(config, vaultBase, curPlatform, isZhOpt);
         config.createEl("label", { text: t("feat_agent_platform") });
         config.createEl("p", {
           cls: "caption",
@@ -8930,6 +9752,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * resume the Setup Journey at the stage the user left. */
   hide(): void {
     this._isOpen = false;
+    this._agentPresenceProbedThisSession = false;
+    if (this._agentPresenceWsRef) {
+      const ws = (
+        this.app as unknown as {
+          workspace?: {
+            offref?: (ref: unknown) => void;
+            off?: (ev: string, ref: unknown) => void;
+          };
+        }
+      )?.workspace;
+      if (typeof ws?.offref === "function") {
+        ws.offref(this._agentPresenceWsRef);
+      } else if (typeof ws?.off === "function") {
+        ws.off("paperforge:agent-presence-changed", this._agentPresenceWsRef);
+      }
+      this._agentPresenceWsRef = null;
+    }
     this._setupJourneyDismissedForSession = false;
     this._attemptedProbes.delete("help");
     if (this._saveTimeout) {

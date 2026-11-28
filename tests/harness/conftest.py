@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import shutil
 import stat
+import tempfile
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -77,7 +78,12 @@ def vault(case: CaseEvidence) -> Iterator[Path]:
     from fixtures.vault_builder import VaultBuilder
 
     built = Path(VaultBuilder().build("standard"))
-    if not any(marker in str(built).lower() for marker in ("tmp", "temp")):
+    resolved = built.resolve()
+    tmp_root = Path(tempfile.gettempdir()).resolve()
+    if not (
+        resolved.is_relative_to(tmp_root)
+        or any(marker in str(built).lower() for marker in ("tmp", "temp"))
+    ):
         raise AssertionError(f"isolation violation: {built} is not a disposable path")
     yield built
     if built.exists():
