@@ -21,9 +21,15 @@ import type {
   PaperForgeClient,
   VaultUpgradePlanDto,
   VaultCleanupCandidateDto,
+  ZoteroDetectDto,
 } from "../client";
 import { t } from "../i18n";
 import { formatHumanError } from "../services/feedback";
+import {
+  computeVeteranZoteroPreselection,
+  evaluateZoteroImportScope,
+  type VeteranZoteroPreselection,
+} from "../services/zotero-import-scope";
 import { createPfIconBtn, setPfIcon } from "./icons";
 import { PaperForgeConfirmModal } from "./modals";
 
@@ -34,9 +40,24 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+export interface UpgradeZoteroContext {
+  currentSourceMode: "sqlite" | "bbt";
+  currentSelectedCollections: string[];
+  zoteroDataDir: string;
+  legacyDomainNames: string[];
+  hasManualBbtExports: boolean;
+  explicitSourceModeInConfig: boolean;
+  onCommitZoteroConfig: (choice: {
+    zoteroSourceMode: "sqlite" | "bbt";
+    zoteroSelectedCollections: string[];
+    zoteroDataDir?: string;
+  }) => Promise<void>;
+}
+
 export interface UpgradeModalCallbacks {
-  onUpgraded?: () => Promise<void> | void;
+  onUpgraded?: (meta?: { healSubmitted?: boolean }) => Promise<void> | void;
   onDismissForSession?: () => void;
+  zoteroContext?: UpgradeZoteroContext;
 }
 
 export class PaperForgeUpgradeModal extends Modal {
@@ -45,6 +66,14 @@ export class PaperForgeUpgradeModal extends Modal {
   private readonly _callbacks: UpgradeModalCallbacks;
   private _expanded = false;
   private _busy = false;
+  private _zoteroMode: "sqlite" | "bbt";
+  private _zoteroSelected: string[];
+  private _zoteroDetectData: ZoteroDetectDto | null = null;
+  private _zoteroDetectLoading = false;
+  private _zoteroPreselection: VeteranZoteroPreselection | null = null;
+  private _zoteroSectionEl: HTMLElement | null = null;
+  private _statusSlotEl: HTMLElement | null = null;
+  private _closed = false;
 
   constructor(
     app: App,
@@ -56,14 +85,61 @@ export class PaperForgeUpgradeModal extends Modal {
     this._client = client;
     this._plan = plan;
     this._callbacks = callbacks;
+    const zctx = callbacks.zoteroContext;
+    this._zoteroMode =
+      zctx &&
+      zctx.explicitSourceModeInConfig &&
+      zctx.currentSourceMode === "bbt"
+        ? "bbt"
+        : "sqlite";
+    this._zoteroSelected = Array.isArray(zctx?.currentSelectedCollections)
+      ? [...zctx.currentSelectedCollections]
+      : [];
   }
 
   onOpen(): void {
+    this._closed = false;
     this._render();
+    if (this._callbacks.zoteroContext) {
+      void this._loadZoteroCollections();
+    }
   }
 
   onClose(): void {
+    this._closed = true;
+    this._zoteroSectionEl = null;
+    this._statusSlotEl = null;
     this.contentEl.empty();
+  }
+
+  private async _loadZoteroCollections(): Promise<void> {
+    const zctx = this._callbacks.zoteroContext;
+    if (!zctx || typeof this._client?.zoteroDetect !== "function") return;
+    this._zoteroDetectLoading = true;
+    this._renderZoteroSection();
+    try {
+      const detected = await this._client.zoteroDetect(
+        zctx.zoteroDataDir || undefined
+      );
+      if (this._closed) return;
+      this._zoteroDetectData = detected;
+      if (detected.found && Array.isArray(detected.collections)) {
+        const pre = computeVeteranZoteroPreselection({
+          collections: detected.collections,
+          existingSelected: this._zoteroSelected,
+          legacyDomainNames: zctx.legacyDomainNames,
+        });
+        this._zoteroPreselection = pre;
+        this._zoteroSelected = [...pre.selectedKeys];
+      }
+    } catch {
+      // Leave Zotero library optional if local DB probe is unavailable
+    } finally {
+      this._zoteroDetectLoading = false;
+      if (!this._closed) {
+        this._renderZoteroSection();
+      }
+    }
   }
 
   private _blockingIssues(): Array<{
@@ -283,11 +359,23 @@ export class PaperForgeUpgradeModal extends Modal {
       }
     }
 
+    // ── Veteran Zotero Source Mode & Folder Scope Confirmation ──
+    if (this._callbacks.zoteroContext) {
+      this._zoteroSectionEl = contentEl.createDiv({
+        cls: "pf-upgrade-zotero-section",
+        attr: { "data-pf-testid": "upgrade-zotero-section" },
+      });
+      this._renderZoteroSection();
+    } else {
+      this._zoteroSectionEl = null;
+    }
+
     // ── Status Feedback Slot ──
     const statusSlot = contentEl.createDiv({
       cls: "pf-upgrade-status-slot",
       attr: { "aria-live": "polite", "data-pf-testid": "upgrade-status-slot" },
     });
+    this._statusSlotEl = statusSlot;
 
     // ── Footer Actions (Single Primary CTA discipline) ──
     const footer = contentEl.createDiv({ cls: "pf-upgrade-modal-footer" });
@@ -322,11 +410,249 @@ export class PaperForgeUpgradeModal extends Modal {
     });
   }
 
+  private _renderZoteroSection(): void {
+    const el = this._zoteroSectionEl;
+    const zctx = this._callbacks.zoteroContext;
+    if (!el || !zctx) return;
+    el.empty();
+
+    el.createDiv({
+      cls: "pf-upgrade-zotero-heading",
+      text: t("upgrade_zotero_heading"),
+    });
+
+    if (zctx.hasManualBbtExports || zctx.currentSourceMode === "bbt") {
+      el.createEl("p", {
+        cls: "pf-upgrade-zotero-desc",
+        text: t("upgrade_zotero_bbt_hint"),
+      });
+    }
+
+    const modesEl = el.createDiv({ cls: "pf-upgrade-zotero-modes" });
+    const addModeCard = (
+      mode: "sqlite" | "bbt",
+      title: string,
+      desc: string,
+      testid: string
+    ) => {
+      const card = modesEl.createEl("label", {
+        cls:
+          this._zoteroMode === mode
+            ? "pf-upgrade-zotero-mode-card is-selected"
+            : "pf-upgrade-zotero-mode-card",
+      });
+      const radio = card.createEl("input", {
+        type: "radio",
+        attr: {
+          name: "pf-upgrade-zotero-mode",
+          value: mode,
+          "data-pf-testid": testid,
+        },
+      }) as HTMLInputElement;
+      radio.checked = this._zoteroMode === mode;
+      radio.addEventListener("change", () => {
+        if (!radio.checked || this._busy) return;
+        this._zoteroMode = mode;
+        this._statusSlotEl?.empty();
+        this._renderZoteroSection();
+      });
+      const copy = card.createDiv({ cls: "pf-upgrade-zotero-mode-copy" });
+      copy.createSpan({ cls: "pf-upgrade-zotero-mode-title", text: title });
+      copy.createSpan({ cls: "pf-upgrade-zotero-mode-sub", text: desc });
+    };
+
+    addModeCard(
+      "sqlite",
+      t("upgrade_zotero_sqlite_title"),
+      t("upgrade_zotero_sqlite_desc"),
+      "upgrade-zotero-mode-sqlite"
+    );
+    addModeCard(
+      "bbt",
+      t("upgrade_zotero_bbt_title"),
+      t("upgrade_zotero_bbt_desc"),
+      "upgrade-zotero-mode-bbt"
+    );
+
+    if (this._zoteroMode === "bbt") {
+      el.createDiv({
+        cls: "pf-upgrade-zotero-hint",
+        text: t("upgrade_zotero_bbt_active_hint"),
+      });
+      return;
+    }
+
+    if (this._zoteroDetectLoading) {
+      el.createDiv({
+        cls: "pf-upgrade-zotero-hint",
+        text: t("upgrade_zotero_detecting"),
+      });
+      return;
+    }
+
+    const detected = this._zoteroDetectData;
+    const cols = Array.isArray(detected?.collections)
+      ? detected.collections
+      : [];
+    if (!detected?.found || cols.length === 0) {
+      if (detected !== null) {
+        el.createDiv({
+          cls: "pf-upgrade-zotero-hint",
+          text: t("upgrade_zotero_not_found_hint"),
+        });
+      }
+      return;
+    }
+
+    const topCols = cols.filter((c) => c.top_level !== false);
+    const displayCols = topCols.length > 0 ? topCols : cols;
+    const scopeEval = evaluateZoteroImportScope({
+      totalPapers: detected.total_papers,
+      collections: cols,
+      selected: this._zoteroSelected,
+    });
+
+    if (
+      this._zoteroPreselection?.mode === "matched_legacy" &&
+      !scopeEval.requiresFolderChoice
+    ) {
+      el.createDiv({
+        cls: "pf-upgrade-zotero-hint is-ok",
+        text: t("upgrade_zotero_matched_hint").replace(
+          "{names}",
+          this._zoteroPreselection.matchedNames.join("、")
+        ),
+      });
+    } else if (scopeEval.requiresFolderChoice) {
+      el.createDiv({
+        cls: "pf-upgrade-zotero-hint is-warn",
+        text: t("upgrade_zotero_pick_hint"),
+      });
+    }
+
+    const toolbar = el.createDiv({ cls: "pf-upgrade-zotero-toolbar" });
+    const summaryText = scopeEval.explicitAll
+      ? t("upgrade_zotero_scope_all").replace(
+          "{count}",
+          String(scopeEval.estimatedPapers)
+        )
+      : scopeEval.selectedKeys.length > 0
+        ? t("upgrade_zotero_scope_cols")
+            .replace("{folders}", String(scopeEval.selectedKeys.length))
+            .replace("{count}", String(scopeEval.estimatedPapers))
+        : t("upgrade_zotero_scope_pick");
+    toolbar.createSpan({
+      cls: scopeEval.requiresFolderChoice
+        ? "pf-upgrade-zotero-hint is-warn"
+        : "pf-upgrade-zotero-hint is-ok",
+      text: summaryText,
+    });
+
+    const btns = toolbar.createDiv({ cls: "pf-upgrade-zotero-toolbar-btns" });
+    const selectAllBtn = btns.createEl("button", {
+      cls: "pf-action-btn pf-upgrade-zotero-mini-btn",
+      type: "button",
+      text: t("upgrade_zotero_select_all"),
+      attr: { "data-pf-testid": "upgrade-zotero-select-all" },
+    });
+    selectAllBtn.addEventListener("click", () => {
+      if (this._busy) return;
+      this._zoteroSelected = displayCols.map((c) => c.key);
+      this._statusSlotEl?.empty();
+      this._renderZoteroSection();
+    });
+    const clearBtn = btns.createEl("button", {
+      cls: "pf-action-btn pf-upgrade-zotero-mini-btn",
+      type: "button",
+      text: t("upgrade_zotero_clear"),
+      attr: { "data-pf-testid": "upgrade-zotero-clear" },
+    });
+    clearBtn.addEventListener("click", () => {
+      if (this._busy) return;
+      this._zoteroSelected = [];
+      this._statusSlotEl?.empty();
+      this._renderZoteroSection();
+    });
+
+    const listEl = el.createDiv({ cls: "pf-upgrade-zotero-list" });
+    const pickedSet = new Set(scopeEval.selectedKeys);
+    for (const col of displayCols) {
+      const row = listEl.createEl("label", {
+        cls: "pf-upgrade-zotero-col-row",
+      });
+      const cb = row.createEl("input", {
+        type: "checkbox",
+        attr: { "data-pf-testid": `upgrade-zotero-col-${col.key}` },
+      }) as HTMLInputElement;
+      cb.checked = pickedSet.has(col.key);
+      cb.disabled = scopeEval.explicitAll;
+      cb.addEventListener("change", () => {
+        if (this._busy) return;
+        const cur = new Set(this._zoteroSelected.filter((k) => k !== "*"));
+        if (cb.checked) cur.add(col.key);
+        else cur.delete(col.key);
+        this._zoteroSelected = Array.from(cur);
+        this._statusSlotEl?.empty();
+        this._renderZoteroSection();
+      });
+      row.createSpan({ text: col.name });
+      if (typeof col.item_count === "number") {
+        row.createSpan({
+          cls: "pf-upgrade-zotero-col-count",
+          text: String(col.item_count),
+        });
+      }
+    }
+
+    const allRow = el.createEl("label", { cls: "pf-upgrade-zotero-all-row" });
+    const allCb = allRow.createEl("input", {
+      type: "checkbox",
+      attr: { "data-pf-testid": "upgrade-zotero-all" },
+    }) as HTMLInputElement;
+    allCb.checked = scopeEval.explicitAll;
+    allCb.addEventListener("change", () => {
+      if (this._busy) return;
+      this._zoteroSelected = allCb.checked ? ["*"] : [];
+      this._statusSlotEl?.empty();
+      this._renderZoteroSection();
+    });
+    allRow.createSpan({
+      text: t("upgrade_zotero_all_label").replace(
+        "{count}",
+        String(detected.total_papers)
+      ),
+    });
+  }
+
   private async _executeFastCutover(
     applyBtn: HTMLButtonElement,
     deferBtn: HTMLButtonElement,
     statusSlot: HTMLElement
   ): Promise<void> {
+    const zctx = this._callbacks.zoteroContext;
+    if (
+      zctx &&
+      this._zoteroMode === "sqlite" &&
+      this._zoteroDetectData?.found &&
+      Array.isArray(this._zoteroDetectData.collections) &&
+      this._zoteroDetectData.collections.length > 0
+    ) {
+      const scopeCheck = evaluateZoteroImportScope({
+        totalPapers: this._zoteroDetectData.total_papers,
+        collections: this._zoteroDetectData.collections,
+        selected: this._zoteroSelected,
+      });
+      if (scopeCheck.requiresFolderChoice) {
+        statusSlot.empty();
+        statusSlot.createDiv({
+          cls: "pf-upgrade-error-msg",
+          attr: { "data-pf-testid": "upgrade-zotero-guard-msg" },
+          text: t("upgrade_zotero_pick_required"),
+        });
+        return;
+      }
+    }
+
     this._busy = true;
     applyBtn.disabled = true;
     deferBtn.disabled = true;
@@ -338,7 +664,26 @@ export class PaperForgeUpgradeModal extends Modal {
     });
 
     try {
-      const res = await this._client.vaultUpgradeApply({ fastCutover: true });
+      const applyOpts: {
+        fastCutover: true;
+        zoteroSourceMode?: "sqlite" | "bbt";
+        zoteroSelectedCollections?: string[];
+        zoteroDataDir?: string;
+      } = { fastCutover: true };
+      if (zctx) {
+        applyOpts.zoteroSourceMode = this._zoteroMode;
+        applyOpts.zoteroSelectedCollections =
+          this._zoteroMode === "sqlite" ? [...this._zoteroSelected] : [];
+        const zDir = (
+          this._zoteroDetectData?.zotero_dir ||
+          zctx.zoteroDataDir ||
+          ""
+        ).trim();
+        if (zDir) {
+          applyOpts.zoteroDataDir = zDir;
+        }
+      }
+      const res = await this._client.vaultUpgradeApply(applyOpts);
       if (!res.applied || (res.errors && res.errors.length > 0)) {
         const msg =
           res.errors?.map((e) => formatHumanError(e.error)).join("; ") ||
@@ -353,6 +698,16 @@ export class PaperForgeUpgradeModal extends Modal {
         applyBtn.setText(t("upgrade_btn_retry"));
         this._busy = false;
         return;
+      }
+
+      if (zctx?.onCommitZoteroConfig) {
+        await zctx.onCommitZoteroConfig({
+          zoteroSourceMode: this._zoteroMode,
+          zoteroSelectedCollections:
+            this._zoteroMode === "sqlite" ? [...this._zoteroSelected] : [],
+          zoteroDataDir:
+            this._zoteroDetectData?.zotero_dir || zctx.zoteroDataDir,
+        });
       }
 
       // Hand off progressive workspace normalization & zero-cost OCR salvage to ControlDaemon
@@ -376,7 +731,9 @@ export class PaperForgeUpgradeModal extends Modal {
         text: t("upgrade_status_done"),
       });
 
-      await this._callbacks.onUpgraded?.();
+      await this._callbacks.onUpgraded?.({
+        healSubmitted: Boolean(sub.accepted),
+      });
       new Notice(t("upgrade_notice_done"));
       this.close();
     } catch (err: unknown) {

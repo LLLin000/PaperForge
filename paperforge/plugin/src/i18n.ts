@@ -1561,11 +1561,38 @@ const LANG: Record<string, Record<string, string>> = {
     upgrade_notice_done:
       "PaperForge: lossless cutover complete; background organization is running.",
     upgrade_banner_title:
-      "Legacy PaperForge folder layout detected — 1-click lossless upgrade available",
+      "Legacy PaperForge vault detected — review upgrade & sync scope",
     upgrade_banner_desc:
-      "Reading, personal notes, and links are unaffected. Cutover finishes in ~3 seconds.",
+      "Auto-sync and folder layout updates stay paused until you confirm. Review lossless cutover, BBT → SQLite migration, and Zotero folders (~3s).",
     upgrade_banner_open: "Review & Upgrade",
     upgrade_banner_dismiss: "Dismiss for this session",
+    upgrade_zotero_heading: "Zotero Import Source & Sync Scope",
+    upgrade_zotero_bbt_hint:
+      "Legacy BBT JSON exports detected. Switching to direct Zotero SQLite requires zero Zotero add-ons and preserves all existing notes, OCR outputs, and PDF annotations by Zotero key.",
+    upgrade_zotero_sqlite_title: "Direct Zotero SQLite (Recommended)",
+    upgrade_zotero_sqlite_desc:
+      "Read-only snapshot from your local Zotero database; no Better BibTeX export needed.",
+    upgrade_zotero_bbt_title: "Keep legacy BBT JSON mode",
+    upgrade_zotero_bbt_desc:
+      "Continue syncing only from manually exported JSON files in exports/.",
+    upgrade_zotero_detecting: "Detecting local Zotero library & folders…",
+    upgrade_zotero_matched_hint:
+      "Matched your existing vault topics ({names}). Other Zotero folders stay unchecked by default.",
+    upgrade_zotero_pick_hint:
+      "Select the Zotero folders to sync, or check full-library import below.",
+    upgrade_zotero_pick_required:
+      "Please select at least one Zotero folder, check full-library import, or choose legacy BBT JSON mode.",
+    upgrade_zotero_select_all: "Select all folders",
+    upgrade_zotero_clear: "Clear",
+    upgrade_zotero_all_label:
+      "Import entire Zotero library (including unfiled items, {count} total)",
+    upgrade_zotero_scope_all: "All library · {count} papers",
+    upgrade_zotero_scope_cols: "{folders} folder(s) · ~{count} papers",
+    upgrade_zotero_scope_pick: "Pick folders",
+    upgrade_zotero_not_found_hint:
+      "Local Zotero database was not auto-detected. You can still finish upgrading the vault layout now and connect Zotero later in Settings → Library.",
+    upgrade_zotero_bbt_active_hint:
+      "Legacy BBT JSON mode selected: PaperForge will continue reading exports/*.json without pulling extra Zotero folders.",
     upgrade_maint_heading: "Storage & Migration Maintenance",
     upgrade_maint_desc:
       "Manage residual legacy files (moved safely to .paperforge/trash, never hard-deleted) or roll back to the pre-upgrade layout.",
@@ -1581,7 +1608,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Need to revert to the pre-upgrade folder layout? Restore losslessly from the upgrade snapshot:",
     upgrade_maint_rollback_btn: "Restore Pre-Upgrade Layout",
     upgrade_maint_rollback_body:
-      "Restores the pre-upgrade folder structure, config, and Base views from .paperforge/backups/. None of your personal notes or annotations will be lost.",
+      "Restores the pre-upgrade folder structure, paperforge.json, Zotero source settings, and Base views from .paperforge/backups/. None of your personal notes or PDF annotations will be lost.",
     upgrade_maint_rollback_confirm: "Confirm Restore",
     upgrade_maint_rollback_done:
       "Restored pre-upgrade directory layout losslessly.",
@@ -1769,6 +1796,15 @@ const LANG: Record<string, Record<string, string>> = {
     topbar_whats_new: "What's New",
     dt_badge_updating: "Updating",
     dt_badge_upgrade: "Upgrade Available",
+    dt_badge_compat_mode: "Compat Mode",
+    dt_legacy_deferred_title:
+      "Legacy vault compatibility mode (auto-sync paused)",
+    dt_legacy_deferred_body:
+      "Your existing notes, PDFs, and annotations remain readable and editable. Complete the lossless upgrade anytime to enable v2 sync.",
+    dt_zotero_scope_title: "Zotero connected — choose folders to sync",
+    dt_zotero_scope_body:
+      "PaperForge found your Zotero library (read-only). Pick the folders you want to import before the first sync runs.",
+    dt_btn_choose_folders: "Choose folders",
     dt_badge_update_needed: "Update Needed",
     dt_badge_step1: "Step 1 of 2",
     dt_badge_step2: "Step 2 of 2",
@@ -3349,11 +3385,37 @@ const LANG: Record<string, Record<string, string>> = {
     upgrade_status_done: "核心目录已完成切流，剩余文献整理已在后台静默接管。",
     upgrade_notice_done:
       "PaperForge：文献库已完成无损切流，后台正在静默整理细节。",
-    upgrade_banner_title: "检测到旧版 PaperForge 目录布局，可一键无损升级",
+    upgrade_banner_title: "检测到旧版文献库，请确认升级与同步范围",
     upgrade_banner_desc:
-      "升级不影响当前阅读、个人笔记与双链引用，约 3 秒完成切流。",
+      "在你确认前，不会自动重组目录或同步 Zotero。可一键核对无损切流、BBT 迁移 SQLite 与同步文件夹范围（约 3 秒完成）。",
     upgrade_banner_open: "查看并升级",
     upgrade_banner_dismiss: "本次会话暂不提示",
+    upgrade_zotero_heading: "Zotero 导入方式与同步范围",
+    upgrade_zotero_bbt_hint:
+      "检测到旧库曾通过 BBT JSON 导出同步。切换为 Zotero SQLite 直连无需 Better BibTeX 插件，且会按 zotero_key 原位继承所有已有笔记、OCR 与 PDF 批注，不会重复建库。",
+    upgrade_zotero_sqlite_title: "Zotero SQLite 直连（推荐）",
+    upgrade_zotero_sqlite_desc:
+      "直接只读读取本地 Zotero 数据库快照，无需再手动或自动导出 BBT JSON。",
+    upgrade_zotero_bbt_title: "保留旧版 BBT JSON 模式",
+    upgrade_zotero_bbt_desc: "继续仅同步 exports/ 目录中已导出的 JSON 文件。",
+    upgrade_zotero_detecting: "正在读取本地 Zotero 文库与分组列表…",
+    upgrade_zotero_matched_hint:
+      "已自动匹配旧库已有分组（{names}）；其余未导入过的分组默认不勾选，可按需增删。",
+    upgrade_zotero_pick_hint:
+      "请勾选本次要同步的 Zotero 分组，或勾选下方“导入整个 Zotero 文库”。",
+    upgrade_zotero_pick_required:
+      "请至少勾选 1 个 Zotero 分组、勾选导入整个文库，或改选保留旧版 BBT JSON 模式。",
+    upgrade_zotero_select_all: "全选分组",
+    upgrade_zotero_clear: "清空",
+    upgrade_zotero_all_label:
+      "导入整个 Zotero 文库（含未归类条目，共 {count} 篇）",
+    upgrade_zotero_scope_all: "全部文库 · 共 {count} 篇",
+    upgrade_zotero_scope_cols: "已选 {folders} 个分组 · 约 {count} 篇",
+    upgrade_zotero_scope_pick: "请勾选文件夹",
+    upgrade_zotero_not_found_hint:
+      "暂未自动检测到本地 Zotero 数据库。你仍可先完成目录无损切流，稍后在「设置 → 文献库」中再指定 Zotero 目录。",
+    upgrade_zotero_bbt_active_hint:
+      "已选择保留旧版 BBT JSON 模式：升级后仍仅读取 exports/*.json，不会拉取额外 Zotero 分组。",
     upgrade_maint_heading: "存储与迁移维护",
     upgrade_maint_desc:
       "管理升级后的历史残余文件（仅移入 .paperforge/trash 安全回收站，绝不直接物理删除）或还原升级前的目录布局。",
@@ -3369,7 +3431,7 @@ const LANG: Record<string, Record<string, string>> = {
       "如需切回升级前的旧目录结构，可使用升级快照无损还原：",
     upgrade_maint_rollback_btn: "还原至升级前目录结构",
     upgrade_maint_rollback_body:
-      "将从 .paperforge/backups/ 快照恢复升级前的目录布局、配置文件与 Base 视图，您的任何个人笔记与批注均不会丢失。",
+      "将从 .paperforge/backups/ 快照还原升级前的目录布局、paperforge.json 与 Zotero 范围设置，以及 Base 视图；您的个人笔记与 PDF 批注均不会丢失。",
     upgrade_maint_rollback_confirm: "确认还原",
     upgrade_maint_rollback_done: "已无损还原至升级前目录结构。",
     upgrade_maint_rollback_missing: "未找到快照",
@@ -3550,6 +3612,14 @@ const LANG: Record<string, Record<string, string>> = {
     topbar_whats_new: "更新说明",
     dt_badge_updating: "正在更新",
     dt_badge_upgrade: "可无损升级",
+    dt_badge_compat_mode: "兼容阅读模式",
+    dt_legacy_deferred_title: "旧库兼容阅读中（自动同步已暂停）",
+    dt_legacy_deferred_body:
+      "你已有的文献笔记、PDF 与批注均可正常浏览和编辑；随时可点击完成无损升级以恢复新版同步。",
+    dt_zotero_scope_title: "已连接 Zotero，请选择同步文件夹",
+    dt_zotero_scope_body:
+      "PaperForge 已只读定位到你的 Zotero 文库。首次同步前，请先选择要导入的文件夹范围。",
+    dt_btn_choose_folders: "选择同步文件夹",
     dt_badge_update_needed: "待同步更新",
     dt_badge_step1: "第 1 步 / 共 2 步",
     dt_badge_step2: "第 2 步 / 共 2 步",

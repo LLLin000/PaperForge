@@ -13233,6 +13233,143 @@ body.pf-no-glass
   border-color: var(--pf-warning, var(--pf-border));
 }
 
+.pf-upgrade-zotero-section {
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-panel);
+  background: var(--pf-elevated);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-upgrade-zotero-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-zotero-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--pf-text-muted);
+}
+
+.pf-upgrade-zotero-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pf-upgrade-zotero-mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: var(--pf-radius-control, 6px);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  cursor: pointer;
+}
+
+.pf-upgrade-zotero-mode-card.is-selected {
+  border-color: var(--pf-accent);
+  background: color-mix(in srgb, var(--pf-accent) 6%, var(--pf-surface));
+}
+
+.pf-upgrade-zotero-mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pf-upgrade-zotero-mode-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-zotero-mode-sub {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--pf-text-subtle);
+}
+
+.pf-upgrade-zotero-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pf-text-muted);
+}
+
+.pf-upgrade-zotero-hint.is-ok {
+  color: var(--pf-success);
+}
+
+.pf-upgrade-zotero-hint.is-warn {
+  color: var(--pf-warning);
+}
+
+.pf-upgrade-zotero-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pf-upgrade-zotero-toolbar-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-upgrade-zotero-mini-btn {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 11.5px;
+}
+
+.pf-upgrade-zotero-list {
+  max-height: 170px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-control, 6px);
+  background: var(--pf-surface);
+}
+
+.pf-upgrade-zotero-col-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+  font-size: 12.5px;
+  color: var(--pf-text);
+  cursor: pointer;
+}
+
+.pf-upgrade-zotero-col-count {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--pf-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-upgrade-zotero-all-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--pf-text-muted);
+  cursor: pointer;
+}
+
 .pf-upgrade-status-slot {
   min-height: 4px;
   font-size: 12.5px;
@@ -14552,6 +14689,7 @@ body.pf-no-glass
 
 .pf-settings-scope .pf-cc-quick-filter {
   width: 168px;
+  max-width: 100%;
   height: 28px;
   padding: 0 10px;
   border-radius: var(--pf-radius-control, 6px);
@@ -14568,11 +14706,22 @@ body.pf-no-glass
 }
 
 /* 2. Settings Multi-Page Serenity, CJK Typography & Balanced Rhythm */
+.vertical-tab-content.pf-settings-scope,
 .pf-settings-scope {
-  max-width: 780px;
+  max-width: none !important;
+  width: 100%;
+  padding: 24px 32px 44px !important;
+  border-radius: 0;
   font-size: 13.5px;
   line-height: 1.62;
   color: var(--pf-text);
+}
+
+.pf-settings-scope > * {
+  max-width: 840px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pf-settings-scope .pf-cc-topbar {
@@ -14580,7 +14729,7 @@ body.pf-no-glass
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px 14px;
   padding: 2px 0 14px;
   margin-bottom: 18px;
   border-bottom: 1px solid var(--pf-border);
@@ -14769,7 +14918,7 @@ body.pf-no-glass
 }
 
 .pf-control-center .pf-cc-nav-row {
-  grid-template-columns: minmax(128px, 168px) auto minmax(0, 1fr) auto 14px !important;
+  grid-template-columns: minmax(96px, 128px) auto minmax(0, 1fr) auto 14px !important;
   gap: 12px !important;
   padding: 13px 16px !important;
   min-height: 48px !important;

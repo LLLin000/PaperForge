@@ -999,13 +999,7 @@ export class NodeProcessTransport implements Transport {
                 ? (msg.data as Record<string, unknown>)
                 : {},
           };
-          for (const listener of this._daemonListeners) {
-            try {
-              listener(pushEv);
-            } catch {
-              // Isolate UI listener errors from transport event loop
-            }
-          }
+          this._emitDaemonEvent(pushEv);
           continue;
         }
         const rpcId = typeof msg.id === "number" ? msg.id : Number(msg.id);
@@ -1064,6 +1058,10 @@ export class NodeProcessTransport implements Transport {
           stderr: reason,
         });
       }
+      this._emitDaemonEvent({
+        event: "daemon.disconnected",
+        data: { reason },
+      });
     };
 
     child.on("close", (code: number | null) => {
@@ -1074,6 +1072,16 @@ export class NodeProcessTransport implements Transport {
     });
 
     return session;
+  }
+
+  private _emitDaemonEvent(event: DaemonPushEvent): void {
+    for (const listener of this._daemonListeners) {
+      try {
+        listener(event);
+      } catch {
+        // Isolate UI listener errors from transport event loop
+      }
+    }
   }
 
   onDaemonEvent(listener: (event: DaemonPushEvent) => void): () => void {
@@ -1196,6 +1204,10 @@ export class NodeProcessTransport implements Transport {
         stderr: "PaperForge daemon shut down",
       });
     }
+    this._emitDaemonEvent({
+      event: "daemon.disconnected",
+      data: { reason: "PaperForge daemon shut down" },
+    });
     if (active.child.exitCode == null && active.child.signalCode == null) {
       const canGraceful =
         !force &&
