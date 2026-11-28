@@ -232,7 +232,7 @@ class TestCITestCoverage:
         """A renamed or deleted test must break CI loudly, not silently shrink it."""
         missing = sorted(
             t
-            for name in ("ci.yml", "ci-chaos.yml", "publish.yml", "pages.yml")
+            for name in ("ci.yml", "ci-chaos.yml", "ci-cross-os-desktop.yml", "publish.yml", "pages.yml")
             if (WORKFLOW_DIR / name).exists()
             for t in _pytest_targets(name)
             if not (REPO_ROOT / t).exists()

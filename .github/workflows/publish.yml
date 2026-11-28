@@ -135,8 +135,13 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci-chaos.yml
 
+  cross-os-desktop-gate:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-cross-os-desktop.yml
+
   publish:
-    needs: [build-native-daemon, chaos-gate]
+    needs: [build-native-daemon, chaos-gate, cross-os-desktop-gate]
     runs-on: ubuntu-latest
     permissions:
       contents: write
