@@ -6,6 +6,8 @@ on:
     - cron: "0 6 * * 0"
   workflow_dispatch:
     # Manual trigger from GitHub UI
+  workflow_call:
+    # Callable by publish.yml so every release SHA runs 3-OS L6 Chaos + PBAF v2.1
 
 permissions:
   contents: read

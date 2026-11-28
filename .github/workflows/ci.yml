@@ -239,6 +239,8 @@ jobs:
         working-directory: paperforge/plugin
       - run: npx vitest run --reporter=junit --outputFile="$RUNNER_TEMP/paperforge-plugin-tests.xml"
         working-directory: paperforge/plugin
+        env:
+          PF_PERF_ENFORCE_BUDGETS: "1"
       # #121 (P0-6): a TypeScript compile failure or broken bundle must block
       # merge — tests alone are not a build gate.
       - run: npm run typecheck
