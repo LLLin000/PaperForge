@@ -1375,33 +1375,50 @@ def gate_d5_cross_carrier_coherence(vault: Path) -> GateResult:
                         )
                     )
             if metrics.get("body_units_indexable", 0) > 0 and "body_units_fts" in tbls:
-                sample_rows = con.execute(
-                    "SELECT unit_text FROM body_units WHERE indexable = 1 LIMIT 20"
+                head_rows = con.execute(
+                    "SELECT rowid, unit_text FROM body_units WHERE indexable = 1 ORDER BY rowid ASC LIMIT 8"
                 ).fetchall()
-                probe_tok = None
-                for sr in sample_rows:
-                    m = re.search(r"[A-Za-z]{5,}", str(sr[0] or ""))
-                    if m:
-                        probe_tok = m.group(0)
-                        break
-                if probe_tok:
+                tail_rows = con.execute(
+                    "SELECT rowid, unit_text FROM body_units WHERE indexable = 1 ORDER BY rowid DESC LIMIT 8"
+                ).fetchall()
+                sampled: dict[int, str] = {}
+                for sr in (*head_rows, *tail_rows):
+                    rid = int(sr[0])
+                    if rid not in sampled:
+                        sampled[rid] = str(sr[1] or "")
+                content_mismatches = 0
+                probed = 0
+                for rid, text in sampled.items():
+                    probe_tok = None
+                    for m in re.finditer(r"[A-Za-z][A-Za-z0-9]{4,}", text):
+                        tok = m.group(0)
+                        if tok.upper() not in {"AND", "OR", "NOT", "NEAR"}:
+                            probe_tok = tok
+                            break
+                    if not probe_tok:
+                        continue
+                    probed += 1
                     hit = con.execute(
-                        "SELECT 1 FROM body_units_fts WHERE body_units_fts MATCH ? LIMIT 1",
-                        (probe_tok,),
+                        "SELECT 1 FROM body_units_fts WHERE rowid = ? AND body_units_fts MATCH ? LIMIT 1",
+                        (rid, f'"{probe_tok}"'),
                     ).fetchone()
-                    metrics["body_units_fts_match_probe"] = 1 if hit is not None else 0
                     if hit is None:
-                        findings.append(
-                            AuditFinding(
-                                "D5",
-                                "P2/P11",
-                                "P0",
-                                "paperforge.db",
-                                1,
-                                "body_units_fts MATCH",
-                                f"FTS5 MATCH probe returned 0 hits for indexed token {probe_tok!r}",
-                            )
+                        content_mismatches += 1
+                metrics["body_units_fts_content_probed"] = probed
+                metrics["body_units_fts_content_mismatches"] = content_mismatches
+                metrics["body_units_fts_match_probe"] = 1 if (probed > 0 and content_mismatches == 0) else 0
+                if content_mismatches > 0:
+                    findings.append(
+                        AuditFinding(
+                            "D5",
+                            "P2/P11",
+                            "P0",
+                            "paperforge.db",
+                            1,
+                            "body_units_fts content",
+                            f"FTS5 content drift: {content_mismatches}/{probed} sampled indexable row(s) failed rowid-bound MATCH",
                         )
+                    )
         finally:
             con.close()
     if not metrics and not findings:

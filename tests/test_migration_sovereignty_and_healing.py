@@ -1542,4 +1542,73 @@ def test_pf_r01_selective_body_units_fts_contract_heal_retrieval_and_d5(
     assert d5_empty.status == "WARN"
 
 
+def test_pf_r01_same_rowid_content_drift_detected_healed_and_upsert_atomic(tmp_path: Path) -> None:
+    """PF-R01 follow-up: normal upsert keeps FTS in sync; same-rowid text drift is caught & healed."""
+    import scripts.backend_audit as ba
+
+    vault = _make_v2_vault(tmp_path, "pfr01_content_drift")
+    _write_index(vault, [{"zotero_key": "R01CONT1", "title": "Content Parity", "domain": "Ortho"}])
+    db_path = get_memory_db_path(vault)
+
+    def _unit(text: str) -> dict:
+        return {
+            "unit_id": "R01CONT1:body:m:1",
+            "paper_id": "R01CONT1",
+            "node_id": "m:1",
+            "section_path": "Methods",
+            "section_path_json": '["Methods"]',
+            "section_level": 1,
+            "section_title": "Methods",
+            "unit_text": text,
+            "unit_kind": "body",
+            "part_ordinal": 0,
+            "page_span": [1, 1],
+            "block_span": ["b1"],
+            "token_estimate": 5,
+            "indexable": True,
+            "veto_reason": "",
+            "quality_hints": [],
+        }
+
+    conn = get_connection(db_path)
+    try:
+        ensure_schema(conn)
+        conn.execute(
+            "INSERT INTO papers(zotero_key, citation_key, title, domain) VALUES (?, ?, ?, ?)",
+            ("R01CONT1", "r01cont", "Content Parity", "Ortho"),
+        )
+        conn.execute(
+            "INSERT INTO workspace_registry(zotero_key, domain, workspace_relpath, verified_at) VALUES (?, ?, ?, ?)",
+            ("R01CONT1", "Ortho", "Resources/Literature/Ortho/R01CONT1", "2026-11-28T00:00:00Z"),
+        )
+        _upsert_body_units(conn, [_unit("oldtokenBaseline measurement one")])
+        conn.commit()
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'oldtokenBaseline'").fetchone()[0] == 1
+
+        # Normal production upsert for the same unit_id must replace FTS tokens atomically
+        _upsert_body_units(conn, [_unit("midtokenAtomic measurement two")])
+        conn.commit()
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'oldtokenBaseline'").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'midtokenAtomic'").fetchone()[0] == 1
+        assert ba.gate_d5_cross_carrier_coherence(vault).status == "PASS"
+
+        # Simulate silent same-rowid text drift without FTS update (docsize & integrity-check still pass)
+        rid = conn.execute("SELECT rowid FROM body_units WHERE unit_id = 'R01CONT1:body:m:1'").fetchone()[0]
+        conn.execute("UPDATE body_units SET unit_text = 'newtokenDrifted replacement three' WHERE rowid = ?", (rid,))
+        conn.commit()
+
+        d5_drifted = ba.gate_d5_cross_carrier_coherence(vault)
+        assert d5_drifted.status == "FAIL"
+        assert d5_drifted.metrics.get("body_units_fts_content_mismatches", 0) >= 1
+
+        heal_res = check_and_heal_fts(conn)
+        conn.commit()
+        assert "body_units_fts" in heal_res["repaired"]
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'midtokenAtomic'").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM body_units_fts WHERE body_units_fts MATCH 'newtokenDrifted'").fetchone()[0] == 1
+        assert ba.gate_d5_cross_carrier_coherence(vault).status == "PASS"
+    finally:
+        conn.close()
+
+
 

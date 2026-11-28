@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import sqlite3
 import threading
 from pathlib import Path
@@ -191,6 +192,46 @@ def _rebuild_single_fts(conn: sqlite3.Connection, tbl: str) -> None:
         conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
 
 
+_FTS5_OPERATORS = frozenset({"AND", "OR", "NOT", "NEAR"})
+
+
+def _extract_fts5_probe_token(text: str) -> str | None:
+    """Return a single safe ASCII alphanumeric FTS5 token from *text*, or None."""
+    for match in re.finditer(r"[A-Za-z][A-Za-z0-9]{4,}", text or ""):
+        tok = match.group(0)
+        if tok.upper() not in _FTS5_OPERATORS:
+            return tok
+    return None
+
+
+def _body_units_fts_content_drifted(conn: sqlite3.Connection, sample_limit: int = 8) -> bool:
+    """Sample boundary ``indexable = 1`` rows to catch same-rowid text drift."""
+    head = conn.execute(
+        "SELECT rowid, unit_text FROM body_units WHERE indexable = 1 ORDER BY rowid ASC LIMIT ?",
+        (sample_limit,),
+    ).fetchall()
+    tail = conn.execute(
+        "SELECT rowid, unit_text FROM body_units WHERE indexable = 1 ORDER BY rowid DESC LIMIT ?",
+        (sample_limit,),
+    ).fetchall()
+    sampled: dict[int, str] = {}
+    for row in (*head, *tail):
+        rid = int(row[0])
+        if rid not in sampled:
+            sampled[rid] = str(row[1] or "")
+    for rid, text in sampled.items():
+        tok = _extract_fts5_probe_token(text)
+        if not tok:
+            continue
+        hit = conn.execute(
+            "SELECT 1 FROM body_units_fts WHERE rowid = ? AND body_units_fts MATCH ? LIMIT 1",
+            (rid, f'"{tok}"'),
+        ).fetchone()
+        if hit is None:
+            return True
+    return False
+
+
 def _fts_integrity_needs_heal(conn: sqlite3.Connection, tbl: str) -> bool:
     """Return True when an external-content FTS5 table fails structural or parity checks."""
     try:
@@ -211,7 +252,9 @@ def _fts_integrity_needs_heal(conn: sqlite3.Connection, tbl: str) -> bool:
                    WHERE b.rowid IS NULL OR b.indexable != 1
                    LIMIT 1"""
             ).fetchone()
-            return drift is not None
+            if drift is not None:
+                return True
+            return _body_units_fts_content_drifted(conn)
         conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('integrity-check')")
         return False
     except sqlite3.DatabaseError:

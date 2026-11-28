@@ -492,22 +492,6 @@ jobs:
               )
           print("Release Asset Immutability Gate passed (idempotent same-SHA retry verified).")
           PY
-
-              TMP_VERIFY_DIR=$(mktemp -d)
-              trap 'rm -rf "$TMP_VERIFY_DIR"' EXIT
-              for asset in "${ASSETS[@]}"; do
-                base=$(basename "$asset")
-                if printf '%s\n' "$EXISTING_ASSETS_JSON" | grep -qx "$base"; then
-                  gh release download "$RELEASE_TAG" -p "$base" -D "$TMP_VERIFY_DIR"
-                  ACTUAL_SHA=$(sha256sum "$TMP_VERIFY_DIR/$base" | awk '{print tolower($1)}')
-                  EXPECTED_SHA=$(awk -v f="$base" '$2 == f || $2 == "*"f {print tolower($1); exit}' checksums.txt)
-                  if [ -z "$ACTUAL_SHA" ] || [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-                    echo "::error::Remote asset byte mismatch for '$base': remote=$ACTUAL_SHA expected=$EXPECTED_SHA"
-                    exit 1
-                  fi
-                  rm -f "$TMP_VERIFY_DIR/$base"
-                fi
-              done
             else
               # Release existed with 0 assets: upload checksums.txt first.
               gh release upload "$RELEASE_TAG" checksums.txt
@@ -526,26 +510,61 @@ jobs:
               echo "Uploading ${#MISSING_ASSETS[@]} missing release asset(s)..."
               gh release upload "$RELEASE_TAG" "${MISSING_ASSETS[@]}"
             else
-              echo "All release assets and checksums.txt already present and verified."
+              echo "All staged release assets already present."
             fi
           fi
 
-          # Verify full asset set is present on the release BEFORE leaving Draft.
-          FINAL_ASSETS=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
-          if ! printf '%s\n' "$FINAL_ASSETS" | grep -qx 'checksums.txt'; then
-            echo "::error::Release '$RELEASE_TAG' missing checksums.txt after upload — keeping Draft."
+          # Unified Final Remote Verification Gate (both fresh Draft uploads and retries):
+          # assert exact remote asset set equality, remote checksums.txt parity, and
+          # actual downloaded SHA-256 bytes for every asset BEFORE leaving Draft.
+          TMP_VERIFY_DIR=$(mktemp -d)
+          trap 'rm -rf "$TMP_VERIFY_DIR"' EXIT
+
+          FINAL_ASSETS_JSON="$TMP_VERIFY_DIR/final-assets.txt"
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > "$FINAL_ASSETS_JSON"
+
+          EXPECTED_BASENAMES=()
+          for asset in "${ASSETS[@]}"; do
+            EXPECTED_BASENAMES+=("$(basename "$asset")")
+          done
+          python - "$FINAL_ASSETS_JSON" "${EXPECTED_BASENAMES[@]}" <<'PY'
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as fh:
+              remote_names = [line.strip() for line in fh if line.strip()]
+          expected = sorted(["checksums.txt", *sys.argv[2:]])
+          remote_sorted = sorted(remote_names)
+          if len(remote_names) != len(set(remote_names)):
+              raise SystemExit(f"::error::Duplicate remote assets reported: {remote_sorted}")
+          missing = sorted(set(expected) - set(remote_sorted))
+          extra = sorted(set(remote_sorted) - set(expected))
+          if missing or extra:
+              raise SystemExit(
+                  f"::error::Remote release asset set mismatch: missing={missing} extra={extra}"
+              )
+          print(f"Exact remote release asset set verified ({len(expected)} items).")
+          PY
+
+          gh release download "$RELEASE_TAG" -p checksums.txt -O "$TMP_VERIFY_DIR/remote-checksums.txt"
+          if ! cmp -s checksums.txt "$TMP_VERIFY_DIR/remote-checksums.txt"; then
+            echo "::error::Remote checksums.txt differs byte-for-byte from staged checksums.txt — keeping Draft."
             exit 1
           fi
-          for asset in "${ASSETS[@]}"; do
-            base=$(basename "$asset")
-            if ! printf '%s\n' "$FINAL_ASSETS" | grep -qx "$base"; then
-              echo "::error::Release '$RELEASE_TAG' missing asset '$base' after upload — keeping Draft."
+
+          for base in "${EXPECTED_BASENAMES[@]}"; do
+            gh release download "$RELEASE_TAG" -p "$base" -D "$TMP_VERIFY_DIR"
+            ACTUAL_SHA=$(sha256sum "$TMP_VERIFY_DIR/$base" | awk '{print tolower($1)}')
+            EXPECTED_SHA=$(awk -v f="$base" '$2 == f || $2 == "*"f {print tolower($1); exit}' checksums.txt)
+            if [ -z "$ACTUAL_SHA" ] || [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "::error::Remote asset byte mismatch for '$base': remote=$ACTUAL_SHA expected=$EXPECTED_SHA — keeping Draft."
               exit 1
             fi
+            rm -f "$TMP_VERIFY_DIR/$base"
           done
+          echo "Verified remote SHA-256 bytes for all ${#EXPECTED_BASENAMES[@]} assets + checksums.txt."
 
           # Atomically publish (and align prerelease/stable channel state) only after
-          # all uploads and SHA-256 checks succeed.
+          # exact asset set + byte SHA-256 verification succeed.
           gh release edit "$RELEASE_TAG" --draft=false --prerelease="$PRERELEASE"
 
       # ── Gate 5: Optional PyPI mirror via OIDC Trusted Publishing (runs AFTER
