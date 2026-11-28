@@ -5,6 +5,7 @@ import json
 import os
 import sqlite3
 import sys
+import tempfile
 import threading
 import time
 import unicodedata
@@ -19,8 +20,12 @@ pytestmark = pytest.mark.chaos
 
 
 def _assert_isolated(vault: Path) -> None:
-    low = str(vault).lower()
-    assert any(tok in low for tok in ("tmp", "temp")), f"Vault must reside in tmp: {vault}"
+    resolved = vault.resolve()
+    tmp_root = Path(tempfile.gettempdir()).resolve()
+    low = str(resolved).lower()
+    assert resolved.is_relative_to(tmp_root) or any(tok in low for tok in ("tmp", "temp")), (
+        f"Vault must reside in system temp dir ({tmp_root}): {resolved}"
+    )
 
 
 def test_p12_upgrade_mid_cutover_failure_triggers_full_rollback_and_diff(

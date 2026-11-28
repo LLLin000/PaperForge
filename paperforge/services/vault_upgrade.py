@@ -279,7 +279,7 @@ def _dir_or_file_bytes(path: Path) -> int:
     return total
 
 
-def _find_legacy_engine_dirs(vault_root: Path, configured_sys_dir: str = "") -> list[Path]:
+def find_legacy_engine_dirs(vault_root: Path, configured_sys_dir: str = "") -> list[Path]:
     """Locate legacy ``<system_dir>/PaperForge`` directories case-insensitively.
 
     Supports both Windows/macOS case-insensitive mounts and Linux ext4 vaults
@@ -318,6 +318,9 @@ def _find_legacy_engine_dirs(vault_root: Path, configured_sys_dir: str = "") -> 
                 seen_resolved.add(resolved)
                 found.append(child)
     return sorted(found, key=lambda p: p.as_posix())
+
+
+_find_legacy_engine_dirs = find_legacy_engine_dirs
 
 
 def detect_vault_provenance(vault: Path) -> dict[str, Any]:

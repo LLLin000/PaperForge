@@ -62,9 +62,9 @@ def _has_vault_init_markers(vault_root: Path) -> bool:
         return True
     if (vault_root / ".paperforge").is_dir():
         return True
-    if (vault_root / "System" / "PaperForge").is_dir():
-        return True
-    if (vault_root / "99_System" / "PaperForge").is_dir():
+    from paperforge.services.vault_upgrade import find_legacy_engine_dirs
+
+    if find_legacy_engine_dirs(vault_root):
         return True
     return False
 
@@ -127,12 +127,11 @@ def _resolve_reconcile_layout(vault_root: Path) -> dict[str, Path]:
         engine_root = dot_pf
     elif sys_dir and sys_dir != ".paperforge" and (vault_root / sys_dir / "PaperForge").is_dir():
         engine_root = vault_root / sys_dir / "PaperForge"
-    elif (vault_root / "System" / "PaperForge").is_dir():
-        engine_root = vault_root / "System" / "PaperForge"
-    elif (vault_root / "99_System" / "PaperForge").is_dir():
-        engine_root = vault_root / "99_System" / "PaperForge"
     else:
-        engine_root = dot_pf
+        from paperforge.services.vault_upgrade import find_legacy_engine_dirs
+
+        legacy_dirs = find_legacy_engine_dirs(vault_root, configured_sys_dir=sys_dir)
+        engine_root = legacy_dirs[0] if legacy_dirs else dot_pf
 
     if res_dir:
         lit_root = vault_root / res_dir / lit_sub
@@ -804,9 +803,9 @@ def _persist_reconcile_manifest(
             if isinstance(parsed, dict):
                 existing = parsed
 
-    has_legacy_engine = (vault_root / "System" / "PaperForge").is_dir() or (
-        vault_root / "99_System" / "PaperForge"
-    ).is_dir()
+    from paperforge.services.vault_upgrade import find_legacy_engine_dirs
+
+    has_legacy_engine = bool(find_legacy_engine_dirs(vault_root))
     default_layout = 1 if (has_legacy_engine and engine_root != vault_root / ".paperforge") else CURRENT_LAYOUT_VERSION
 
     payload: dict[str, Any] = dict(existing)

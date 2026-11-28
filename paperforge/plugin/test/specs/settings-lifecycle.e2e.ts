@@ -101,6 +101,32 @@ async function closeSettingsModal(): Promise<void> {
   await dismissModals();
 }
 
+async function selectEntireZoteroImportScopeIfPrompted(): Promise<void> {
+  await browser.waitUntil(
+    async () => {
+      return await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          _settingTab?: { containerEl: HTMLElement };
+        };
+        const tabEl = plugin._settingTab?.containerEl;
+        if (!tabEl) return false;
+        const cb = tabEl.querySelector(
+          '[data-pf-testid="zotero-scope-import-all"]'
+        ) as HTMLInputElement | null;
+        if (!cb) return false;
+        if (!cb.checked) cb.click();
+        return cb.checked;
+      });
+    },
+    {
+      timeout: 8000,
+      interval: 150,
+      timeoutMsg:
+        "Expected zotero-scope-import-all checkbox to appear and be checked before Express import",
+    }
+  );
+}
+
 async function openVaultFile(
   filePath: string,
   leafMode: "tab" | "split" = "tab"
@@ -810,6 +836,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     }, ZOTERO_FIXTURE);
 
     await browser.pause(600);
+    await selectEntireZoteroImportScopeIfPrompted();
 
     await startNoticeCapture();
     const preClick = await browser.executeObsidian(async ({ app }) => {
@@ -1999,6 +2026,7 @@ describe("PaperForge real-host Settings, Migration & Operational Matrix (H2)", f
     expect(collisionCheck.resourcesDir).toBe("PaperForge/Resources");
 
     await browser.pause(600);
+    await selectEntireZoteroImportScopeIfPrompted();
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _settingTab: { containerEl: HTMLElement };
