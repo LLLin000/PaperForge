@@ -17,17 +17,18 @@ import re
 import sqlite3
 import tempfile
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import filelock
 
+from paperforge.core.fs_safe import safe_is_dir, safe_is_file, safe_iterdir
 from paperforge.core.io import write_json_atomic, write_text_atomic
 
 logger = logging.getLogger(__name__)
 
-CURRENT_RECONCILE_EPOCH = 1
+CURRENT_RECONCILE_EPOCH = 2
 
 _LEGACY_ENGINE_PREFIXES = ("System/PaperForge/", "99_System/PaperForge/")
 _INDEX_PATH_FIELDS = (
@@ -47,9 +48,10 @@ def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _rel_posix(path: Path, root: Path) -> str:
+def _rel_posix(path: Path, root: Path, *, root_resolved: Path | None = None) -> str:
     try:
-        return path.resolve().relative_to(root.resolve()).as_posix()
+        r_base = root_resolved if root_resolved is not None else root.resolve()
+        return path.resolve().relative_to(r_base).as_posix()
     except ValueError:
         return path.as_posix().replace("\\", "/")
 
@@ -102,8 +104,8 @@ def _resolve_reconcile_layout(vault_root: Path) -> dict[str, Path]:
             "config": Path(paths["config"]),
             "control": Path(paths.get("control") or (vault_root / "Resources" / "LiteratureControl")),
         }
-    except (ConfigError, KeyError, TypeError, ValueError):
-        pass
+    except (ConfigError, KeyError, TypeError, ValueError) as exc:
+        logger.debug("fallback path resolution in upgrade_reconcile: %s", exc)
 
     raw_cfg: dict[str, Any] = {}
     cfg_path = vault_root / "paperforge.json"
@@ -206,6 +208,93 @@ def _normalize_relpath_value(
     return f"[[{norm}]]" if is_wikilink else norm
 
 
+def _is_pid_alive(pid: int) -> bool:
+    """Return True if OS process *pid* still exists."""
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            k32 = ctypes.windll.kernel32
+            h = k32.OpenProcess(0x1000, False, int(pid))  # PROCESS_QUERY_LIMITED_INFORMATION
+            if not h:
+                return False
+            try:
+                code = ctypes.c_ulong()
+                if k32.GetExitCodeProcess(h, ctypes.byref(code)):
+                    return code.value == 259  # STILL_ACTIVE
+                return True
+            finally:
+                k32.CloseHandle(h)
+        except Exception:
+            return True
+    try:
+        os.kill(int(pid), 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+
+
+def _has_active_ocr_job(conn: sqlite3.Connection, engine_root: Path | None = None) -> bool:
+    """Return True if ``engine_jobs`` has a running OCR job (verified by live PID or <30m heartbeat)."""
+    del engine_root
+    try:
+        cols = {str(r[1]) for r in conn.execute("PRAGMA table_info(engine_jobs)").fetchall()}
+        if not cols:
+            return False
+        has_pid = "pid" in cols
+        sel = "updated_at, pid" if has_pid else "updated_at"
+        rows = conn.execute(
+            f"""
+            SELECT {sel} FROM engine_jobs
+            WHERE lower(trim(coalesce(status, ''))) = 'running'
+              AND lower(coalesce(job_type, '')) LIKE '%ocr%'
+            """
+        ).fetchall()
+    except sqlite3.DatabaseError:
+        return False
+
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+    for row in rows:
+        if has_pid and row[1] is not None:
+            try:
+                pid_val = int(row[1])
+                if pid_val > 0 and not _is_pid_alive(pid_val):
+                    continue
+                if pid_val > 0 and _is_pid_alive(pid_val):
+                    return True
+            except (TypeError, ValueError) as exc:
+                logger.debug("ignoring non-integer ocr job pid %r: %s", row[1], exc)
+        raw_ts = str(row[0] or "").strip()
+        if not raw_ts:
+            continue
+        if raw_ts.endswith("Z"):
+            raw_ts = raw_ts[:-1] + "+00:00"
+        try:
+            dt = datetime.fromisoformat(raw_ts)
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        if dt >= cutoff:
+            return True
+    return False
+
+
+def _resolve_ocr_status_from_disk(ocr_root: Path, key: str) -> str:
+    """Resolve a stale ``running`` OCR status using canonical disk artifacts."""
+    if safe_is_file(ocr_root / key / "fulltext.md") and safe_is_file(
+        ocr_root / key / "json" / "result.json"
+    ):
+        return "done"
+    return "interrupted"
+
+
 def _reconcile_sqlite_if_present(
     vault_root: Path,
     db_path: Path,
@@ -213,42 +302,50 @@ def _reconcile_sqlite_if_present(
     *,
     lit_rel: str,
     rewrite_legacy_engine: bool,
+    engine_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Reconcile ``workspace_registry`` and stale ``papers`` paths ONLY when ``paperforge.db`` exists."""
-    if not db_path.is_file():
+    """Reconcile ``workspace_registry``, FTS5, and stale ``papers`` rows ONLY when ``paperforge.db`` exists."""
+    if not safe_is_file(db_path):
         return {
             "db_reconciled": False,
             "workspace_registry_upserted": 0,
             "workspace_registry_removed": 0,
             "papers_paths_healed": 0,
+            "fts_repaired": [],
+            "zombie_running_healed": 0,
+            "zombie_healed_map": {},
+            "has_active_ocr": False,
         }
 
-    from paperforge.memory.db import WriterLock, get_connection
+    from paperforge.memory.db import WriterLock, check_and_heal_fts, get_connection
     from paperforge.memory.schema import ensure_schema
 
     now_iso = _utcnow_iso()
     upserted = 0
     removed = 0
     papers_healed = 0
+    fts_repaired: list[str] = []
+    zombie_healed_map: dict[str, str] = {}
+    has_active_ocr = False
+    ocr_root = (Path(engine_root) if engine_root is not None else db_path.parent.parent) / "ocr"
 
     with WriterLock(vault_root):
         conn = get_connection(db_path)
         try:
             ensure_schema(conn)
+            fts_res = check_and_heal_fts(conn)
+            fts_repaired = list(fts_res.get("repaired") or [])
+
+            vault_resolved = vault_root.resolve()
+            reg_rows: list[tuple[Any, ...]] = []
             for key, ws in scan.workspaces.items():
                 try:
                     mtime_ns = int(ws.workspace_dir.stat().st_mtime_ns)
                 except OSError:
                     mtime_ns = 0
-                ws_rel = _rel_posix(ws.workspace_dir, vault_root)
-                note_rel = _rel_posix(ws.main_note_path, vault_root) if ws.main_note_path else ""
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO workspace_registry (
-                        zotero_key, domain, workspace_relpath, main_note_relpath,
-                        dir_mtime_ns, identity_source, status, verified_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
+                ws_rel = _rel_posix(ws.workspace_dir, vault_root, root_resolved=vault_resolved)
+                note_rel = _rel_posix(ws.main_note_path, vault_root, root_resolved=vault_resolved) if ws.main_note_path else ""
+                reg_rows.append(
                     (
                         key,
                         ws.domain,
@@ -258,16 +355,27 @@ def _reconcile_sqlite_if_present(
                         ",".join(ws.identity_sources),
                         "duplicate" if key in scan.duplicate_workspaces else "active",
                         now_iso,
-                    ),
+                    )
                 )
-                upserted += 1
+            if reg_rows:
+                conn.executemany(
+                    """
+                    INSERT OR REPLACE INTO workspace_registry (
+                        zotero_key, domain, workspace_relpath, main_note_relpath,
+                        dir_mtime_ns, identity_source, status, verified_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    reg_rows,
+                )
+                upserted = len(reg_rows)
 
             existing_keys = {
                 str(r[0]) for r in conn.execute("SELECT zotero_key FROM workspace_registry").fetchall()
             }
-            for stale_key in existing_keys - set(scan.workspaces.keys()):
-                conn.execute("DELETE FROM workspace_registry WHERE zotero_key = ?", (stale_key,))
-                removed += 1
+            stale_reg_keys = [(k,) for k in (existing_keys - set(scan.workspaces.keys()))]
+            if stale_reg_keys:
+                conn.executemany("DELETE FROM workspace_registry WHERE zotero_key = ?", stale_reg_keys)
+                removed = len(stale_reg_keys)
 
             # Heal stale path columns inside `papers` when DB points to missing/malformed paths
             paper_cols = {
@@ -291,6 +399,7 @@ def _reconcile_sqlite_if_present(
                 ]
                 rows = conn.execute(f"SELECT {', '.join(sel_cols)} FROM papers").fetchall()
                 lit_leaf = lit_rel.strip("/").rsplit("/", 1)[-1]
+                col_updates: dict[tuple[str, ...], list[tuple[Any, ...]]] = {}
                 for row in rows:
                     zk = str(row["zotero_key"] or "").strip()
                     if not zk:
@@ -298,19 +407,19 @@ def _reconcile_sqlite_if_present(
                     updates: dict[str, str] = {}
                     ws = scan.workspaces.get(zk)
                     if ws is not None:
-                        ws_rel = _rel_posix(ws.workspace_dir, vault_root)
+                        ws_rel = _rel_posix(ws.workspace_dir, vault_root, root_resolved=vault_resolved)
                         if "paper_root" in sel_cols:
                             cur_root = str(row["paper_root"] or "")
-                            if cur_root != ws_rel and (not cur_root or not (vault_root / cur_root).is_dir()):
+                            if cur_root != ws_rel and (not cur_root or not safe_is_dir(vault_root / cur_root)):
                                 updates["paper_root"] = ws_rel
-                        if ws.main_note_path is not None and ws.main_note_path.is_file():
-                            new_note_rel = _rel_posix(ws.main_note_path, vault_root)
+                        if ws.main_note_path is not None and safe_is_file(ws.main_note_path):
+                            new_note_rel = _rel_posix(ws.main_note_path, vault_root, root_resolved=vault_resolved)
                             cur_main = str(row["main_note_path"] or "")
-                            if cur_main != new_note_rel and (not cur_main or not (vault_root / cur_main).is_file()):
+                            if cur_main != new_note_rel and (not cur_main or not safe_is_file(vault_root / cur_main)):
                                 updates["main_note_path"] = new_note_rel
                             if "note_path" in sel_cols:
                                 cur_np = str(row["note_path"] or "")
-                                if cur_np and cur_np != new_note_rel and not (vault_root / cur_np).is_file():
+                                if cur_np and cur_np != new_note_rel and not safe_is_file(vault_root / cur_np):
                                     updates["note_path"] = new_note_rel
                         if "domain" in sel_cols and ws.domain:
                             cur_dom = str(row["domain"] or "").strip()
@@ -332,12 +441,30 @@ def _reconcile_sqlite_if_present(
                             updates[col] = norm_val
 
                     if updates:
-                        set_clause = ", ".join(f"{col} = ?" for col in updates)
-                        conn.execute(
-                            f"UPDATE papers SET {set_clause} WHERE zotero_key = ?",
-                            (*updates.values(), zk),
-                        )
+                        ukeys = tuple(updates.keys())
+                        col_updates.setdefault(ukeys, []).append((*updates.values(), zk))
                         papers_healed += len(updates)
+
+                for ukeys, params_list in col_updates.items():
+                    set_clause = ", ".join(f"{col} = ?" for col in ukeys)
+                    conn.executemany(f"UPDATE papers SET {set_clause} WHERE zotero_key = ?", params_list)
+
+            # Heal zombie `ocr_status = 'running'` rows when no live OCR job is active
+            has_active_ocr = _has_active_ocr_job(conn, engine_root)
+            if not has_active_ocr and {"zotero_key", "ocr_status"}.issubset(paper_cols):
+                running_rows = conn.execute(
+                    "SELECT zotero_key FROM papers WHERE lower(trim(coalesce(ocr_status, ''))) = 'running'"
+                ).fetchall()
+                zombie_params: list[tuple[str, str]] = []
+                for row in running_rows:
+                    zk = str(row[0] or "").strip()
+                    if not zk:
+                        continue
+                    resolved_status = _resolve_ocr_status_from_disk(ocr_root, zk)
+                    zombie_params.append((resolved_status, zk))
+                    zombie_healed_map[zk] = resolved_status
+                if zombie_params:
+                    conn.executemany("UPDATE papers SET ocr_status = ? WHERE zotero_key = ?", zombie_params)
 
             conn.commit()
         finally:
@@ -348,6 +475,10 @@ def _reconcile_sqlite_if_present(
         "workspace_registry_upserted": upserted,
         "workspace_registry_removed": removed,
         "papers_paths_healed": papers_healed,
+        "fts_repaired": fts_repaired,
+        "zombie_running_healed": len(zombie_healed_map),
+        "zombie_healed_map": zombie_healed_map,
+        "has_active_ocr": has_active_ocr,
     }
 
 
@@ -358,15 +489,20 @@ def _reconcile_formal_index(
     *,
     lit_rel: str,
     rewrite_legacy_engine: bool,
+    engine_root: Path | None = None,
+    zombie_healed_map: dict[str, str] | None = None,
+    has_active_ocr: bool = False,
 ) -> dict[str, Any]:
     """Normalize derived path fields in ``formal-library.json`` while preserving canonical fields."""
-    if not index_path.is_file():
-        return {"index_normalized": False, "index_entries_updated": 0}
+    if not safe_is_file(index_path):
+        return {"index_normalized": False, "index_entries_updated": 0, "zombie_healed_keys": []}
 
     lock_path = index_path.with_suffix(".json.lock")
     updated_entries = 0
     wrote_file = False
     lit_leaf = lit_rel.strip("/").rsplit("/", 1)[-1]
+    ocr_root = (Path(engine_root) if engine_root is not None else index_path.parent.parent) / "ocr"
+    idx_zombie_healed: list[str] = []
 
     with filelock.FileLock(str(lock_path), timeout=10.0):
         raw_text = index_path.read_text(encoding="utf-8")
@@ -376,7 +512,7 @@ def _reconcile_formal_index(
         elif isinstance(raw_idx, dict) and isinstance(raw_idx.get("items"), list):
             items_list = raw_idx["items"]
         else:
-            return {"index_normalized": False, "index_entries_updated": 0}
+            return {"index_normalized": False, "index_entries_updated": 0, "zombie_healed_keys": []}
 
         for entry in items_list:
             if not isinstance(entry, dict):
@@ -401,18 +537,18 @@ def _reconcile_formal_index(
             if ws is not None:
                 ws_rel = _rel_posix(ws.workspace_dir, vault_root)
                 cur_root = str(entry.get("paper_root") or "")
-                if cur_root != ws_rel and (not cur_root or not (vault_root / cur_root).is_dir()):
+                if cur_root != ws_rel and (not cur_root or not safe_is_dir(vault_root / cur_root)):
                     entry["paper_root"] = ws_rel
                     entry_changed = True
 
-                if ws.main_note_path is not None and ws.main_note_path.is_file():
+                if ws.main_note_path is not None and safe_is_file(ws.main_note_path):
                     new_note_rel = _rel_posix(ws.main_note_path, vault_root)
                     cur_main = str(entry.get("main_note_path") or "")
-                    if cur_main != new_note_rel and (not cur_main or not (vault_root / cur_main).is_file()):
+                    if cur_main != new_note_rel and (not cur_main or not safe_is_file(vault_root / cur_main)):
                         entry["main_note_path"] = new_note_rel
                         entry_changed = True
                     cur_np = str(entry.get("note_path") or "")
-                    if cur_np and cur_np != new_note_rel and not (vault_root / cur_np).is_file():
+                    if cur_np and cur_np != new_note_rel and not safe_is_file(vault_root / cur_np):
                         entry["note_path"] = new_note_rel
                         entry_changed = True
 
@@ -421,6 +557,15 @@ def _reconcile_formal_index(
                     if not cur_dom or (lit_leaf and cur_dom == lit_leaf and ws.domain != lit_leaf):
                         entry["domain"] = ws.domain
                         entry_changed = True
+
+            if not has_active_ocr and ek and str(entry.get("ocr_status") or "").strip().lower() == "running":
+                if zombie_healed_map and ek in zombie_healed_map:
+                    resolved_status = zombie_healed_map[ek]
+                else:
+                    resolved_status = _resolve_ocr_status_from_disk(ocr_root, ek)
+                entry["ocr_status"] = resolved_status
+                idx_zombie_healed.append(ek)
+                entry_changed = True
 
             if entry_changed:
                 updated_entries += 1
@@ -439,7 +584,11 @@ def _reconcile_formal_index(
                     os.unlink(tmp_name)
                 raise
 
-    return {"index_normalized": wrote_file, "index_entries_updated": updated_entries}
+    return {
+        "index_normalized": wrote_file,
+        "index_entries_updated": updated_entries,
+        "zombie_healed_keys": idx_zombie_healed,
+    }
 
 
 def _is_pf_managed_base_file(txt: str, base_file: Path, known_domains: set[str]) -> bool:
@@ -484,8 +633,8 @@ def _base_needs_refresh(txt: str, lit_rel: str) -> bool:
         parsed = yaml.safe_load(txt)
         if not isinstance(parsed, dict) or "views" not in parsed:
             return True
-    except ImportError:
-        pass
+    except ImportError as exc:
+        logger.debug("PyYAML unavailable for .base validation: %s", exc)
     except Exception:
         return True
     return False
@@ -511,8 +660,10 @@ def _reconcile_base_views(
     known_domains: set[str] = {ws.domain for ws in scan.workspaces.values() if ws.domain}
     domain_cfg: dict[str, Any] = {"schema_version": 1, "domains": []}
 
-    if exports_dir.is_dir():
-        for exp in sorted(exports_dir.glob("*.json")):
+    if safe_is_dir(exports_dir):
+        for exp in safe_iterdir(exports_dir):
+            if exp.suffix.lower() != ".json" or not safe_is_file(exp):
+                continue
             known_domains.add(exp.stem)
             domain_cfg["domains"].append(
                 {"domain": exp.stem, "export_file": exp.name, "allowed_collections": []}
@@ -527,8 +678,10 @@ def _reconcile_base_views(
             existing_domains.add(dom)
 
     pf_owned_bases: list[tuple[Path, str]] = []
-    if base_root.is_dir():
-        for bf in sorted(base_root.glob("*.base")):
+    if safe_is_dir(base_root):
+        for bf in safe_iterdir(base_root):
+            if bf.suffix.lower() != ".base" or not safe_is_file(bf):
+                continue
             txt = bf.read_text(encoding="utf-8", errors="ignore")
             if not _is_pf_managed_base_file(txt, bf, known_domains):
                 continue
@@ -566,8 +719,10 @@ def _reconcile_base_views(
         yaml = None  # type: ignore[assignment]
 
     refreshed: list[str] = []
-    if base_root.is_dir():
-        for bf in sorted(base_root.glob("*.base")):
+    if safe_is_dir(base_root):
+        for bf in safe_iterdir(base_root):
+            if bf.suffix.lower() != ".base" or not safe_is_file(bf):
+                continue
             if bf not in before_contents and bf.name != "Literature Hub.base":
                 continue
             cur_txt = bf.read_text(encoding="utf-8", errors="ignore")
@@ -673,7 +828,12 @@ def _persist_reconcile_manifest(
     return manifest_path
 
 
-def ensure_vault_reconciled(vault: Path, *, force: bool = False) -> dict[str, Any]:
+def ensure_vault_reconciled(
+    vault: Path,
+    *,
+    force: bool = False,
+    scan: Any | None = None,
+) -> dict[str, Any]:
     """Run non-destructive derived-state reconciliation if ``reconcile_epoch`` is behind.
 
     Fast-paths in O(1) (< 1 ms) when ``not force`` and the vault manifest
@@ -719,11 +879,12 @@ def ensure_vault_reconciled(vault: Path, *, force: bool = False) -> dict[str, An
     from paperforge.services.identity_resolver import scan_vault_identities
     from paperforge.services.state_signal import bump_state_seq_in_dir
 
-    scan = scan_vault_identities(lit_root)
+    if scan is None:
+        scan = scan_vault_identities(lit_root)
     lit_rel = _rel_posix(lit_root, vault_root)
     rewrite_legacy_engine = engine_root == (vault_root / ".paperforge")
 
-    # (a) Reconcile workspace_registry & stale paper paths ONLY if paperforge.db already exists
+    # (a) Reconcile workspace_registry, FTS5, & stale paper rows ONLY if paperforge.db already exists
     db_path = engine_root / "indexes" / "paperforge.db"
     db_res = _reconcile_sqlite_if_present(
         vault_root,
@@ -731,6 +892,7 @@ def ensure_vault_reconciled(vault: Path, *, force: bool = False) -> dict[str, An
         scan,
         lit_rel=lit_rel,
         rewrite_legacy_engine=rewrite_legacy_engine,
+        engine_root=engine_root,
     )
 
     # (b) Reconcile/normalize derived formal-library.json metadata fields
@@ -741,6 +903,13 @@ def ensure_vault_reconciled(vault: Path, *, force: bool = False) -> dict[str, An
         scan,
         lit_rel=lit_rel,
         rewrite_legacy_engine=rewrite_legacy_engine,
+        engine_root=engine_root,
+        zombie_healed_map=db_res["zombie_healed_map"],
+        has_active_ocr=db_res["has_active_ocr"],
+    )
+
+    all_zombie_healed_keys = set(db_res["zombie_healed_map"].keys()) | set(
+        idx_res.get("zombie_healed_keys") or ()
     )
 
     # (c) Reconcile/refresh outdated/broken PaperForge Base view templates
@@ -767,6 +936,8 @@ def ensure_vault_reconciled(vault: Path, *, force: bool = False) -> dict[str, An
         "workspace_registry_upserted": db_res["workspace_registry_upserted"],
         "workspace_registry_removed": db_res["workspace_registry_removed"],
         "papers_paths_healed": db_res["papers_paths_healed"],
+        "fts_repaired": db_res["fts_repaired"],
+        "zombie_running_healed": len(all_zombie_healed_keys),
         "index_normalized": idx_res["index_normalized"],
         "index_entries_updated": idx_res["index_entries_updated"],
         "bases_refreshed": refreshed_bases,

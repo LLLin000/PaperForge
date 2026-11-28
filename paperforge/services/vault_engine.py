@@ -193,6 +193,7 @@ def sync_workspace_registry(
     *,
     lit_root: Path | None = None,
     prune_missing: bool = True,
+    scan: Any | None = None,
 ) -> dict[str, Any]:
     """Scan structured identity anchors and upsert ``workspace_registry`` inside ``paperforge.db``."""
     from paperforge.memory.db import WriterLock, get_connection, get_memory_db_path
@@ -209,7 +210,7 @@ def sync_workspace_registry(
         except Exception:  # noqa: BLE001
             lit_root = vault_root / "Resources" / "Literature"
 
-    scan = scan_vault_identities(lit_root)
+    scan = scan if scan is not None else scan_vault_identities(lit_root)
     db_path = get_memory_db_path(vault_root)
     now = _utcnow_iso()
     upserted = 0
@@ -287,7 +288,7 @@ def sync_ocr_catalog(
             else sorted(d for d in ocr_root.iterdir() if d.is_dir())
         )
         for pdir in target_dirs:
-            reports.append(assess_ocr_bundle_atoms(pdir))
+            reports.append(assess_ocr_bundle_atoms(pdir, fast=(keys is None)))
 
     db_path = get_memory_db_path(vault_root)
     now = _utcnow_iso()
@@ -422,3 +423,78 @@ def rebuild_db_from_truth(vault: Path, *, backup_existing: bool = True) -> dict[
     if quarantined_path is not None:
         out["quarantined_corrupt_db"] = str(quarantined_path)
     return out
+
+
+def prune_old_backups(
+    vault: Path,
+    *,
+    keep_latest: int = 5,
+    max_age_days: int | None = 30,
+) -> int:
+    """Prune expired backup directories under ``.paperforge/backups/`` fail-closed.
+
+    Retains at least *keep_latest* newest backup entries per bucket (such as
+    ``vault-upgrade`` / ``storage-migration`` or root-level ``db-rebuild-*``)
+    and removes only non-symlink directories inside the resolved backups root
+    that exceed *max_age_days* (or all excess entries when ``max_age_days=0``).
+    """
+    from paperforge.core.fs_safe import is_windows_reserved_name
+
+    vault_root = Path(vault).expanduser().resolve()
+    backups_root = (_engine_root(vault_root) / "backups").resolve()
+    if not backups_root.is_dir() or backups_root.is_symlink():
+        return 0
+    if not backups_root.is_relative_to(vault_root):
+        logger.warning("prune_old_backups: refusing root outside vault: %s", backups_root)
+        return 0
+
+    buckets: list[list[Path]] = []
+    root_entries: list[Path] = []
+    category_names = frozenset({"vault-upgrade", "storage-migration"})
+    for child in sorted(backups_root.iterdir()):
+        if child.is_symlink() or is_windows_reserved_name(child.name) or not child.is_dir():
+            continue
+        resolved = child.resolve()
+        if resolved == backups_root or not resolved.is_relative_to(backups_root):
+            continue
+        is_bucket = child.name in category_names or (
+            not (child / "paperforge.db").exists()
+            and not (child / "manifest.json").exists()
+            and any(sub.is_dir() and not sub.is_symlink() for sub in child.iterdir())
+        )
+        if is_bucket:
+            sub_entries = [
+                sub
+                for sub in child.iterdir()
+                if sub.is_dir()
+                and not sub.is_symlink()
+                and not is_windows_reserved_name(sub.name)
+                and sub.resolve().is_relative_to(backups_root)
+                and sub.resolve() != backups_root
+            ]
+            if sub_entries:
+                buckets.append(sub_entries)
+        else:
+            root_entries.append(child)
+    if root_entries:
+        buckets.append(root_entries)
+
+    now_ts = datetime.now(timezone.utc).timestamp()
+    keep_n = max(0, int(keep_latest))
+    removed = 0
+    for entries in buckets:
+        ordered = sorted(entries, key=lambda p: p.stat().st_mtime_ns, reverse=True)
+        for cand in ordered[keep_n:]:
+            resolved = cand.resolve()
+            if cand.is_symlink() or resolved == backups_root or not resolved.is_relative_to(backups_root):
+                continue
+            if max_age_days is not None and max_age_days > 0:
+                age_days = (now_ts - cand.stat().st_mtime) / 86400.0
+                if age_days < max_age_days:
+                    continue
+            try:
+                shutil.rmtree(resolved)
+                removed += 1
+            except OSError as exc:
+                logger.warning("prune_old_backups: failed to remove %s: %s", resolved, exc)
+    return removed

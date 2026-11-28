@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -26,7 +27,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from paperforge.core.fs_safe import is_windows_reserved_name, safe_is_dir, safe_is_file, safe_iterdir
 from paperforge.core.io import write_json_atomic, write_text_atomic
+
+logger = logging.getLogger(__name__)
 
 _PLUGIN_DEV_LEFTOVERS = (
     ".lintstagedrc",
@@ -110,47 +114,87 @@ def _rewrite_stale_engine_str(val: str, engine_prefixes: tuple[str, ...]) -> tup
     return updated, changed
 
 
+_DB_TIER0_TABLE_MAP: tuple[tuple[str, str], ...] = (
+    ("db_vec_body_rows", "vec_body_meta"),
+    ("db_vec_objects_rows", "vec_objects_meta"),
+    ("db_vec_fulltext_rows", "vec_fulltext_meta"),
+    ("db_reading_log_rows", "reading_log"),
+    ("db_project_log_rows", "project_log"),
+    ("db_annotations_rows", "paper_annotations"),
+    ("db_memory_cards_rows", "paper_memory_cards"),
+)
+
+
+def _capture_db_tier0_counts(db_path: Path) -> dict[str, int]:
+    """Capture Tier-0 vector metadata and user log/annotation row counts from ``paperforge.db``."""
+    counts = {key: 0 for key, _ in _DB_TIER0_TABLE_MAP}
+    if not safe_is_file(db_path):
+        return counts
+    conn: sqlite3.Connection | None = None
+    try:
+        conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+        existing = {
+            str(r[0])
+            for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+        for key, tbl in _DB_TIER0_TABLE_MAP:
+            if tbl not in existing:
+                continue
+            row = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()
+            counts[key] = int(row[0]) if row else 0
+    except sqlite3.Error:
+        return counts
+    finally:
+        if conn is not None:
+            with contextlib.suppress(sqlite3.Error):
+                conn.close()
+    return counts
+
+
 def _capture_pre_upgrade_counts(
     vault_root: Path,
     engine_root: Path,
     lit_root: Path | None,
     *,
     fast_mode: bool = False,
+    scan: Any | None = None,
+    skip_workspace_scan: bool = False,
 ) -> dict[str, int]:
     """Capture non-zero lossless data invariants before any upgrade mutation."""
+    candidate_db = engine_root / "indexes" / "paperforge.db"
+    if not safe_is_file(candidate_db):
+        candidate_db = vault_root / ".paperforge" / "indexes" / "paperforge.db"
+    db_counts = _capture_db_tier0_counts(candidate_db)
+
     if fast_mode:
         tier0_valid = 0
         seen_ocr_keys: set[str] = set()
         for ocr_parent in (engine_root / "ocr", vault_root / ".paperforge" / "ocr"):
-            if not ocr_parent.is_dir():
+            if not safe_is_dir(ocr_parent):
                 continue
-            with contextlib.suppress(OSError):
-                with os.scandir(ocr_parent) as it:
-                    for entry in it:
-                        if not entry.is_dir() or entry.name in seen_ocr_keys:
-                            continue
-                        rj = Path(entry.path) / "json" / "result.json"
-                        if rj.is_file():
-                            with contextlib.suppress(OSError):
-                                if rj.stat().st_size > 2:
-                                    tier0_valid += 1
-                                    seen_ocr_keys.add(entry.name)
+            for pdir in safe_iterdir(ocr_parent):
+                if not safe_is_dir(pdir) or pdir.name in seen_ocr_keys:
+                    continue
+                rj = pdir / "json" / "result.json"
+                if safe_is_file(rj):
+                    with contextlib.suppress(OSError):
+                        if rj.stat().st_size > 2:
+                            tier0_valid += 1
+                            seen_ocr_keys.add(pdir.name)
         ws_count = 0
-        if lit_root and lit_root.is_dir():
-            with contextlib.suppress(OSError):
-                with os.scandir(lit_root) as d_it:
-                    for dom in d_it:
-                        if not dom.is_dir() or dom.name.startswith("."):
-                            continue
-                        with os.scandir(dom.path) as w_it:
-                            for ws in w_it:
-                                if ws.is_dir() and ws.name not in ("ai", "assets"):
-                                    ws_count += 1
+        if not skip_workspace_scan and lit_root and safe_is_dir(lit_root):
+            for dom in safe_iterdir(lit_root):
+                if not safe_is_dir(dom) or dom.name.startswith("."):
+                    continue
+                for ws in safe_iterdir(dom):
+                    if safe_is_dir(ws) and ws.name not in ("ai", "assets"):
+                        ws_count += 1
         return {
             "tier0_ocr_valid": tier0_valid,
             "workspaces": ws_count,
             "annotations_files": 0,
             "memory_card_files": 0,
+            **db_counts,
         }
 
     from paperforge.materialization.ocr import validate_result_json
@@ -158,25 +202,39 @@ def _capture_pre_upgrade_counts(
 
     tier0_valid = 0
     seen_ocr_keys = set()
+    ocr_pdirs: list[Path] = []
     for ocr_parent in (engine_root / "ocr", vault_root / ".paperforge" / "ocr"):
-        if not ocr_parent.is_dir():
+        if not safe_is_dir(ocr_parent):
             continue
-        for pdir in sorted(d for d in ocr_parent.iterdir() if d.is_dir()):
-            if pdir.name in seen_ocr_keys:
+        for pdir in safe_iterdir(ocr_parent):
+            if not safe_is_dir(pdir) or pdir.name in seen_ocr_keys:
                 continue
-            ok, _reason, _pages = validate_result_json(pdir)
-            if ok:
-                tier0_valid += 1
-                seen_ocr_keys.add(pdir.name)
+            seen_ocr_keys.add(pdir.name)
+            ocr_pdirs.append(pdir)
+    if ocr_pdirs:
+        from paperforge.core.fs_safe import chunked_io_map
 
-    scan = scan_vault_identities(lit_root)
-    ann_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "annotations.jsonl").is_file())
-    card_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "ai" / "memory-card.json").is_file())
+        res_list = chunked_io_map(lambda d: validate_result_json(d, fast=True), ocr_pdirs, chunk_size=64, min_parallel=32)
+        tier0_valid = sum(1 for ok, _r, _p in res_list if ok)
+
+    if skip_workspace_scan:
+        return {
+            "tier0_ocr_valid": tier0_valid,
+            "workspaces": 0,
+            "annotations_files": 0,
+            "memory_card_files": 0,
+            **db_counts,
+        }
+
+    scan = scan if scan is not None else scan_vault_identities(lit_root)
+    ann_files = sum(1 for ws in scan.workspaces.values() if safe_is_file(ws.workspace_dir / "annotations.jsonl"))
+    card_files = sum(1 for ws in scan.workspaces.values() if safe_is_file(ws.workspace_dir / "ai" / "memory-card.json"))
     return {
         "tier0_ocr_valid": tier0_valid,
         "workspaces": len(scan.workspaces),
         "annotations_files": ann_files,
         "memory_card_files": card_files,
+        **db_counts,
     }
 _PF_CONFIG_PROVENANCE_KEYS = frozenset(
     {
@@ -221,6 +279,47 @@ def _dir_or_file_bytes(path: Path) -> int:
     return total
 
 
+def _find_legacy_engine_dirs(vault_root: Path, configured_sys_dir: str = "") -> list[Path]:
+    """Locate legacy ``<system_dir>/PaperForge`` directories case-insensitively.
+
+    Supports both Windows/macOS case-insensitive mounts and Linux ext4 vaults
+    where users or older configs created lowercase ``system/paperforge`` or
+    ``99_system/paperforge`` folders.
+    """
+    from paperforge.services.identity_resolver import is_reparse_or_symlink
+
+    target_names = {"system", "99_system"}
+    cfg_clean = configured_sys_dir.strip().strip("/\\")
+    if cfg_clean and cfg_clean != ".paperforge" and "/" not in cfg_clean and "\\" not in cfg_clean:
+        target_names.add(cfg_clean.lower())
+
+    candidate_parents: list[Path] = []
+    for entry in safe_iterdir(vault_root):
+        if is_reparse_or_symlink(entry) or not safe_is_dir(entry):
+            continue
+        if entry.name.lower() in target_names:
+            candidate_parents.append(entry)
+
+    if cfg_clean and cfg_clean != ".paperforge" and ("/" in cfg_clean or "\\" in cfg_clean):
+        nested_parent = vault_root / cfg_clean.replace("\\", "/")
+        if safe_is_dir(nested_parent) and not is_reparse_or_symlink(nested_parent):
+            candidate_parents.append(nested_parent)
+
+    found: list[Path] = []
+    seen_resolved: set[Path] = set()
+    for parent in candidate_parents:
+        for child in safe_iterdir(parent):
+            if is_reparse_or_symlink(child) or not safe_is_dir(child):
+                continue
+            if child.name.lower() != "paperforge":
+                continue
+            resolved = child.resolve()
+            if resolved not in seen_resolved:
+                seen_resolved.add(resolved)
+                found.append(child)
+    return sorted(found, key=lambda p: p.as_posix())
+
+
 def detect_vault_provenance(vault: Path) -> dict[str, Any]:
     """Classify *vault* into ``standard_current`` | ``veteran_legacy`` | ``veteran_rescue`` | ``fresh_or_foreign``."""
     from paperforge.services.vault_engine import CURRENT_LAYOUT_VERSION, read_vault_manifest
@@ -231,11 +330,14 @@ def detect_vault_provenance(vault: Path) -> dict[str, Any]:
     tier2_evidence: list[str] = []
 
     has_legacy_engine = False
+    seen_legacy_resolved: set[Path] = set()
     for legacy_cand in (vault_root / "System" / "PaperForge", vault_root / "99_System" / "PaperForge"):
         if legacy_cand.is_dir():
             has_legacy_engine = True
+            seen_legacy_resolved.add(legacy_cand.resolve())
             tier1_evidence.append(f"legacy_engine_dir:{legacy_cand.relative_to(vault_root).as_posix()}")
 
+    sys_d = ""
     cfg_path = vault_root / "paperforge.json"
     if cfg_path.is_file():
         try:
@@ -246,9 +348,17 @@ def detect_vault_provenance(vault: Path) -> dict[str, Any]:
                 sys_d = str(vc.get("system_dir") or raw_cfg.get("system_dir") or "")
                 if sys_d and sys_d != ".paperforge" and (vault_root / sys_d / "PaperForge").is_dir():
                     has_legacy_engine = True
+                    seen_legacy_resolved.add((vault_root / sys_d / "PaperForge").resolve())
                     tier1_evidence.append(f"configured_legacy_engine:{sys_d}/PaperForge")
         except (OSError, json.JSONDecodeError, UnicodeDecodeError):
             tier1_evidence.append("paperforge.json:corrupt")
+
+    for case_cand in _find_legacy_engine_dirs(vault_root, configured_sys_dir=sys_d):
+        resolved = case_cand.resolve()
+        if resolved not in seen_legacy_resolved:
+            seen_legacy_resolved.add(resolved)
+            has_legacy_engine = True
+            tier1_evidence.append(f"legacy_engine_dir:{case_cand.relative_to(vault_root).as_posix()}")
 
     dot_pf = vault_root / ".paperforge"
     if dot_pf.is_dir() and any((dot_pf / sub).exists() for sub in ("indexes", "ocr", "trash", ".migration-journal.json")):
@@ -352,20 +462,31 @@ def _is_paperforge_owned_base_file(txt: str, base_file: Path, known_domains: set
 
 
 def _check_sqlite_movable(db_path: Path) -> tuple[bool, str]:
-    """Non-destructively verify *db_path* is not exclusively locked by another OS process."""
+    """Non-destructively verify *db_path* is not write-locked on Windows OR POSIX."""
     if not db_path.is_file():
         return True, ""
+    if os.name == "nt":
+        try:
+            with open(db_path, "r+b"):
+                pass
+        except OSError as exc:
+            return False, str(exc)
+    conn: sqlite3.Connection | None = None
     try:
-        # On Windows, opening r+b catches exclusive OS file locks before moving trees
-        with open(db_path, "r+b"):
-            pass
+        conn = sqlite3.connect(str(db_path), timeout=0.25, isolation_level=None)
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("ROLLBACK")
         return True, ""
-    except OSError as exc:
-        return False, str(exc)
+    except sqlite3.Error as exc:
+        return False, f"SQLite write lock active: {exc}"
+    finally:
+        if conn is not None:
+            with contextlib.suppress(sqlite3.Error):
+                conn.close()
 
 
 def _check_disk_headroom(vault_root: Path, required_bytes: int) -> tuple[bool, int]:
-    """Verify at least 2x required_bytes + 64 MB free disk headroom."""
+    """Verify sufficient free disk headroom for snapshots, backups, and moves."""
     try:
         free_b = int(shutil.disk_usage(str(vault_root)).free)
     except OSError:
@@ -585,11 +706,17 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
     from paperforge.materialization.ocr import assess_ocr_bundle_atoms
     from paperforge.runtime_pointer import read_pointer
     from paperforge.services.identity_resolver import scan_vault_identities
+    from paperforge.services.migration_contract import (
+        PER_FILE_ACTION_CONTRACT,
+        audit_file_action_conflicts,
+    )
     from paperforge.services.vault_engine import read_vault_manifest
     from paperforge.worker.base_views import RETIRED_PF_VIEWS
 
     vault_root = Path(vault).expanduser().resolve()
     provenance = detect_vault_provenance(vault_root)
+    contract_conflicts = audit_file_action_conflicts()
+    contract_count = len(PER_FILE_ACTION_CONTRACT)
     auto_items: list[dict[str, Any]] = []
     reconfig_items: list[dict[str, Any]] = []
     tamper_items: list[dict[str, Any]] = []
@@ -602,6 +729,8 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
             "target_version": PF_VERSION,
             "provenance": provenance,
             "manifest_present": False,
+            "file_contract_conflicts": contract_conflicts,
+            "file_contract_count": contract_count,
             "census": {
                 "pf_machine_pure": 0,
                 "pf_user_enriched": 0,
@@ -858,17 +987,14 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
         scan = VaultIdentityScan(lit_root=lit_root)
         fast_ws_count = 0
         fast_domains: set[str] = set()
-        if lit_root.is_dir():
-            with contextlib.suppress(OSError):
-                with os.scandir(lit_root) as d_it:
-                    for dom in d_it:
-                        if not dom.is_dir() or dom.name.startswith("."):
-                            continue
-                        fast_domains.add(dom.name)
-                        with os.scandir(dom.path) as w_it:
-                            for ws_e in w_it:
-                                if ws_e.is_dir() and ws_e.name not in ("ai", "assets"):
-                                    fast_ws_count += 1
+        if safe_is_dir(lit_root):
+            for dom in safe_iterdir(lit_root):
+                if not safe_is_dir(dom) or dom.name.startswith("."):
+                    continue
+                fast_domains.add(dom.name)
+                for ws_e in safe_iterdir(dom):
+                    if safe_is_dir(ws_e) and ws_e.name not in ("ai", "assets"):
+                        fast_ws_count += 1
     else:
         scan = scan_vault_identities(lit_root)
         fast_ws_count = len(scan.workspaces)
@@ -935,16 +1061,17 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
     ocr_counts = {"total": 0, "current": 0, "rebuild_derived_local": 0, "backfill_from_result_json": 0, "re_ocr_needed": 0}
     backfill_keys: list[str] = []
     reocr_keys: list[str] = []
-    if ocr_dir.is_dir():
+    if safe_is_dir(ocr_dir):
         if fast_summary:
-            with contextlib.suppress(OSError):
-                with os.scandir(ocr_dir) as o_it:
-                    for oe in o_it:
-                        if oe.is_dir():
-                            ocr_counts["total"] += 1
+            for oe in safe_iterdir(ocr_dir):
+                if safe_is_dir(oe):
+                    ocr_counts["total"] += 1
         else:
-            for pdir in sorted(d for d in ocr_dir.iterdir() if d.is_dir()):
-                atom = assess_ocr_bundle_atoms(pdir)
+            ocr_subdirs = [pdir for pdir in safe_iterdir(ocr_dir) if safe_is_dir(pdir)]
+            from paperforge.core.fs_safe import chunked_io_map
+
+            atoms = chunked_io_map(lambda d: assess_ocr_bundle_atoms(d, fast=True), ocr_subdirs, chunk_size=64, min_parallel=32)
+            for atom in atoms:
                 ocr_counts["total"] += 1
                 act = atom["salvage_action"]
                 ocr_counts[act] = ocr_counts.get(act, 0) + 1
@@ -1059,7 +1186,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
         )
 
     lib_records_dir = control_root / "library-records"
-    if lib_records_dir.is_dir() and any(lib_records_dir.iterdir()):
+    if safe_is_dir(lib_records_dir) and safe_iterdir(lib_records_dir):
         reconfig_items.append(
             {
                 "id": "legacy.library_records_present",
@@ -1073,7 +1200,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
 
     # Database & cleanup candidates
     db_path = engine_root / "indexes" / "paperforge.db"
-    if db_path.is_file():
+    if safe_is_file(db_path):
         movable, lock_err = _check_sqlite_movable(db_path)
         if not movable and legacy_pf is not None:
             tamper_items.append(
@@ -1086,19 +1213,28 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
                 }
             )
         try:
+            db_size = db_path.stat().st_size
             con = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
             try:
-                qc = con.execute("PRAGMA quick_check").fetchone()
-                if not qc or str(qc[0]).lower() != "ok":
-                    tamper_items.append(
-                        {
-                            "id": "db.integrity_failed",
-                            "area": "database",
-                            "title": "索引数据库自检发现坏块，需从本地文献重建",
-                            "detail": str(qc[0] if qc else "unknown"),
-                            "remediation": "自动备份旧库后从单篇笔记与 OCR 原件无损重建。",
-                        }
-                    )
+                if db_size < 64 * 1024 * 1024:
+                    qc = con.execute("PRAGMA quick_check(1)").fetchone()
+                    if not qc or str(qc[0]).lower() != "ok":
+                        tamper_items.append(
+                            {
+                                "id": "db.integrity_failed",
+                                "area": "database",
+                                "title": "索引数据库自检发现坏块，需从本地文献重建",
+                                "detail": str(qc[0] if qc else "unknown"),
+                                "remediation": "自动备份旧库后从单篇笔记与 OCR 原件无损重建。",
+                            }
+                        )
+                else:
+                    con.execute("SELECT COUNT(*) FROM sqlite_master").fetchone()
+                    con.execute("PRAGMA schema_version").fetchone()
+                    if con.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='papers'"
+                    ).fetchone():
+                        con.execute("SELECT COUNT(*) FROM papers").fetchone()
                 tbls = {str(r[0]) for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
                 if "workspace_registry" not in tbls or "ocr_catalog" not in tbls:
                     auto_items.append(
@@ -1175,7 +1311,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
                 }
             )
         legacy_vec = idx_root / "vectors"
-        if legacy_vec.is_dir() and any(legacy_vec.iterdir()):
+        if safe_is_dir(legacy_vec) and safe_iterdir(legacy_vec):
             legacy_chroma_detected = True
             cleanup_candidates.append(
                 {
@@ -1227,7 +1363,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
     }
 
     backups_root = vault_root / ".paperforge" / "backups"
-    rollback_available = backups_root.is_dir() and any(backups_root.glob("upgrade-*"))
+    rollback_available = safe_is_dir(backups_root) and any(backups_root.glob("upgrade-*"))
 
     return {
         "schema_version": 2,
@@ -1236,6 +1372,8 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
         "provenance": provenance,
         "manifest_present": manifest is not None,
         "rollback_available": rollback_available,
+        "file_contract_conflicts": contract_conflicts,
+        "file_contract_count": contract_count,
         "census": census,
         "summary": {
             "auto_count": len(auto_items),
@@ -1297,7 +1435,7 @@ def _reconcile_db_and_index_after_cutover(
         import_project_log,
         import_reading_log,
     )
-    from paperforge.memory.db import WriterLock, get_connection, get_memory_db_path
+    from paperforge.memory.db import WriterLock, check_and_heal_fts, get_connection, get_memory_db_path
     from paperforge.memory.schema import ensure_schema
     from paperforge.services.vault_engine import rebuild_db_from_truth
 
@@ -1373,6 +1511,7 @@ def _reconcile_db_and_index_after_cutover(
                     conn_init = get_connection(db_path)
                     try:
                         ensure_schema(conn_init)
+                        check_and_heal_fts(conn_init)
                         conn_init.commit()
                     finally:
                         conn_init.close()
@@ -1386,6 +1525,7 @@ def _reconcile_db_and_index_after_cutover(
                 conn = get_connection(db_path)
                 try:
                     ensure_schema(conn)
+                    check_and_heal_fts(conn)
                     paper_rows = conn.execute(
                         "SELECT zotero_key, ocr_md_path, ocr_json_path, fulltext_path, ai_path, main_note_path, note_path FROM papers"
                     ).fetchall()
@@ -1480,6 +1620,7 @@ def verify_vault_upgrade(
     stale_prefixes: tuple[str, ...] = (),
     check_healed_paths: bool = False,
     fast_mode: bool = False,
+    scan: Any | None = None,
 ) -> dict[str, Any]:
     """Post-upgrade & post-heal hard reconciliation checks (Zero Silent Data Loss gate)."""
     from paperforge.config import ConfigError, resolve_paths, validate_config
@@ -1528,30 +1669,35 @@ def verify_vault_upgrade(
 
         scan = VaultIdentityScan(lit_root=lit_root or (vault_root / "Resources" / "Literature"))
         known_domains: set[str] = set()
-        if lit_root and lit_root.is_dir():
-            with contextlib.suppress(OSError):
-                with os.scandir(lit_root) as d_it:
-                    known_domains = {d.name for d in d_it if d.is_dir() and not d.name.startswith(".")}
+        if lit_root and safe_is_dir(lit_root):
+            known_domains = {
+                d.name
+                for d in safe_iterdir(lit_root)
+                if safe_is_dir(d) and not d.name.startswith(".")
+            }
     else:
         tier0_valid = 0
-        if ocr_root.is_dir():
-            for pdir in ocr_root.iterdir():
-                if pdir.is_dir():
-                    ok, _r, _p = validate_result_json(pdir)
-                    if ok:
-                        tier0_valid += 1
+        if safe_is_dir(ocr_root):
+            ocr_pdirs = [pdir for pdir in safe_iterdir(ocr_root) if safe_is_dir(pdir)]
+            from paperforge.core.fs_safe import chunked_io_map
 
-        scan = scan_vault_identities(lit_root)
+            res_list = chunked_io_map(lambda d: validate_result_json(d, fast=True), ocr_pdirs, chunk_size=64, min_parallel=32)
+            tier0_valid = sum(1 for ok, _r, _p in res_list if ok)
+
+        scan = scan if scan is not None else scan_vault_identities(lit_root)
         ws_count = len(scan.workspaces)
-        ann_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "annotations.jsonl").is_file())
-        card_files = sum(1 for ws in scan.workspaces.values() if (ws.workspace_dir / "ai" / "memory-card.json").is_file())
+        ann_files = sum(1 for ws in scan.workspaces.values() if safe_is_file(ws.workspace_dir / "annotations.jsonl"))
+        card_files = sum(1 for ws in scan.workspaces.values() if safe_is_file(ws.workspace_dir / "ai" / "memory-card.json"))
         known_domains = {ws.domain for ws in scan.workspaces.values() if ws.domain}
 
+    db_path = vault_root / ".paperforge" / "indexes" / "paperforge.db"
+    db_tier0_post = _capture_db_tier0_counts(db_path)
     post_counts = {
         "tier0_ocr_valid": tier0_valid,
         "workspaces": ws_count,
         "annotations_files": ann_files,
         "memory_card_files": card_files,
+        **db_tier0_post,
     }
 
     if pre_counts is not None:
@@ -1572,7 +1718,15 @@ def verify_vault_upgrade(
             if not sidecar_ok:
                 failures.append("workspace annotation or memory-card files missing after upgrade")
 
-    db_path = vault_root / ".paperforge" / "indexes" / "paperforge.db"
+        db_sovereignty_ok = True
+        for db_key in db_tier0_post:
+            pre_val = int(pre_counts.get(db_key, 0))
+            post_val = int(db_tier0_post.get(db_key, 0))
+            if post_val < pre_val:
+                db_sovereignty_ok = False
+                failures.append(f"{db_key} dropped: {pre_val} -> {post_val}")
+        checks["tier0_db_sovereignty_preserved"] = db_sovereignty_ok
+
     sqlite_ok = True
     stale_db_rows = 0
     check_prefixes = stale_prefixes or _stale_path_prefixes_for_vault(vault_root)
@@ -1581,7 +1735,7 @@ def verify_vault_upgrade(
         try:
             con = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
             try:
-                qc = con.execute("PRAGMA quick_check").fetchone()
+                qc = con.execute("PRAGMA quick_check(1)").fetchone()
                 sqlite_ok = bool(qc and str(qc[0]).lower() == "ok")
                 if sqlite_ok and check_healed_paths:
                     has_papers = con.execute(
@@ -1655,6 +1809,10 @@ def heal_vault_progressive(
     limit: int | None = None,
     priority_key: str | None = None,
     backfill_ocr: bool = False,
+    scan: Any | None = None,
+    run_reconcile: bool = True,
+    run_verify: bool = True,
+    out_scan: list[Any] | None = None,
 ) -> dict[str, Any]:
     """Non-blocking background / JIT healing pass with Skip-and-Isolate error tolerance.
 
@@ -1711,22 +1869,22 @@ def heal_vault_progressive(
 
     # 1. Run local zero-cost OCR backfill BEFORE workspace fulltext cleanup so
     # unmodified workspace mirrors still match the rebuilt OCR fulltext hash.
-    if backfill_ocr and ocr_root.is_dir():
+    if backfill_ocr and safe_is_dir(ocr_root):
         from paperforge.worker.ocr_rebuild import backfill_from_result
 
-        ocr_dirs = sorted(d for d in ocr_root.iterdir() if d.is_dir())
-        if priority_key and (ocr_root / priority_key).is_dir():
+        ocr_dirs = [d for d in safe_iterdir(ocr_root) if safe_is_dir(d)]
+        if priority_key and safe_is_dir(ocr_root / priority_key):
             ocr_dirs = [ocr_root / priority_key] + [d for d in ocr_dirs if d.name != priority_key]
         if limit is not None and limit > 0:
             ocr_dirs = ocr_dirs[:limit]
         for pdir in ocr_dirs:
-            atom = assess_ocr_bundle_atoms(pdir)
+            atom = assess_ocr_bundle_atoms(pdir, fast=True)
             if atom["salvage_action"] not in ("backfill_from_result_json", "rebuild_derived_local"):
                 continue
             bk = atom["zotero_key"]
             try:
                 res_json = pdir / "json" / "result.json"
-                if res_json.is_file():
+                if safe_is_file(res_json):
                     bak = pdir / "json" / "result.json.pre-backfill.bak"
                     if not bak.exists():
                         shutil.copy2(str(res_json), str(bak))
@@ -1738,8 +1896,8 @@ def heal_vault_progressive(
             except Exception as exc:  # noqa: BLE001
                 skipped_isolated.append({"key": bk, "reason": str(exc)})
 
-    scan = scan_vault_identities(lit_root)
-    if lit_root and lit_root.is_dir():
+    scan = scan if scan is not None else scan_vault_identities(lit_root)
+    if lit_root and safe_is_dir(lit_root):
         ordered_keys = sorted(scan.workspaces.keys())
         if priority_key and priority_key in scan.workspaces:
             ordered_keys = [priority_key] + [k for k in ordered_keys if k != priority_key]
@@ -1765,7 +1923,7 @@ def heal_vault_progressive(
                         old_note = ws.main_note_path
                     elif len(ws.legacy_named_notes) == 1:
                         old_note = ws.legacy_named_notes[0]
-                if old_note is not None and old_note.is_file():
+                if old_note is not None and safe_is_file(old_note):
                     old_stem = unicodedata.normalize("NFC", old_note.stem)
                     shutil.move(str(old_note), str(canonical_note))
                     _inject_backlink_alias(canonical_note, old_stem)
@@ -1773,23 +1931,27 @@ def heal_vault_progressive(
                     notes_renamed += 1
 
                 p_ocr = ocr_root / key
-                if p_ocr.is_dir():
+                if safe_is_dir(p_ocr):
                     copied = sync_workspace_visual_assets(p_ocr, ws.workspace_dir, key)
                     assets_synced += len(copied)
-                    note_target = canonical_note if canonical_note.is_file() else ws.main_note_path
-                    if note_target and note_target.is_file():
+                    note_target = canonical_note if safe_is_file(canonical_note) else ws.main_note_path
+                    if note_target and safe_is_file(note_target):
                         orig_txt = note_target.read_text(encoding="utf-8")
                         ws_assets = ws.workspace_dir / "assets"
                         avail_assets: set[str] | None = None
-                        if ws_assets.is_dir():
-                            avail_assets = {p.name for p in ws_assets.glob("*.jpg")}
-                        elif (p_ocr / "assets").is_dir():
+                        if safe_is_dir(ws_assets):
+                            avail_assets = {
+                                p.name
+                                for p in safe_iterdir(ws_assets)
+                                if safe_is_file(p) and p.suffix.lower() == ".jpg"
+                            }
+                        elif safe_is_dir(p_ocr / "assets"):
                             avail_assets = set()
                         updated_txt, r_cnt = rewrite_visual_embeds_for_key(
                             orig_txt, key, available_assets=avail_assets
                         )
                         if r_cnt > 0 and (
-                            "render/" in orig_txt or (ws_assets.is_dir() and any(ws_assets.iterdir()))
+                            "render/" in orig_txt or (safe_is_dir(ws_assets) and safe_iterdir(ws_assets))
                         ):
                             write_text_atomic(note_target, updated_txt)
                     if ws.has_workspace_fulltext:
@@ -1828,19 +1990,29 @@ def heal_vault_progressive(
 
     # Re-scan after renames / flat cleanup when reconciling DB
     final_scan = scan_vault_identities(lit_root) if (notes_renamed or flat_notes_quarantined) else scan
+    if out_scan is not None:
+        out_scan.clear()
+        out_scan.append(final_scan)
     reconcile_res = _reconcile_db_and_index_after_cutover(vault_root, final_scan, stale_prefixes)
-    reg_res = sync_workspace_registry(vault_root, lit_root=lit_root)
+    reg_res = sync_workspace_registry(vault_root, lit_root=lit_root, scan=final_scan)
     ocr_res = sync_ocr_catalog(vault_root)
     epoch_reconcile: dict[str, Any] | None = None
-    if limit is None or limit <= 0:
+    if run_reconcile and (limit is None or limit <= 0):
         try:
             from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
 
-            epoch_reconcile = ensure_vault_reconciled(vault_root, force=True)
+            epoch_reconcile = ensure_vault_reconciled(vault_root, force=True, scan=final_scan)
         except Exception as exc:  # noqa: BLE001
             skipped_isolated.append({"key": "_reconcile_epoch", "reason": str(exc)})
-    verify_res = verify_vault_upgrade(
-        vault_root, stale_prefixes=stale_prefixes, check_healed_paths=(limit is None or limit <= 0)
+    verify_res = (
+        verify_vault_upgrade(
+            vault_root,
+            stale_prefixes=stale_prefixes,
+            check_healed_paths=(limit is None or limit <= 0),
+            scan=final_scan,
+        )
+        if run_verify
+        else None
     )
     return {
         "processed_workspaces": processed,
@@ -1871,13 +2043,22 @@ def execute_vault_upgrade(
 ) -> dict[str, Any]:
     """Execute safe vault upgrade (`fast_cutover=True` for <3s UI cutover, or full pass)."""
     from paperforge.config import ConfigError, load_config, migrate_config, resolve_paths, set_config, validate_config
-    from paperforge.services.storage_migration import _move_tree_entries, migrate_vault_storage
+    from paperforge.services.migration_contract import UpgradePhase, UpgradeStateMachine
+    from paperforge.services.storage_migration import (
+        _move_tree_entries,
+        migrate_vault_storage,
+        quiesce_sqlite_wal,
+    )
     from paperforge.services.vault_engine import quarantine_move, write_vault_manifest
     from paperforge.worker import load_domain_config
     from paperforge.worker.base_views import ensure_base_views
 
     vault_root = Path(vault).expanduser().resolve()
-    plan = inspect_vault_upgrade(vault_root, fast_summary=fast_cutover and not dry_run)
+    fsm = UpgradeStateMachine()
+    plan = inspect_vault_upgrade(
+        vault_root,
+        fast_summary=(not dry_run and not quarantine_residuals and quarantine_ids is None),
+    )
     if dry_run:
         return {
             "dry_run": True,
@@ -1885,11 +2066,18 @@ def execute_vault_upgrade(
             "plan": plan,
             "executed_steps": [],
             "errors": [],
+            "fsm": fsm.to_dict(),
         }
 
+    fsm.transition(UpgradePhase.PREFLIGHT_AUDIT, gate="G0_preflight")
     blocking_ids = {"config.corrupt_json", "db.file_locked"}
     blockers = [t for t in plan["category_c_tamper"] if t["id"] in blocking_ids]
     if blockers:
+        fsm.transition(
+            UpgradePhase.ABORTED_CLEAN,
+            gate="G0_preflight_blocker",
+            detail=[b["id"] for b in blockers],
+        )
         return {
             "dry_run": False,
             "applied": False,
@@ -1897,6 +2085,7 @@ def execute_vault_upgrade(
             "plan": plan,
             "executed_steps": [],
             "errors": [{"step": "preflight_blocker", "error": b["title"]} for b in blockers],
+            "fsm": fsm.to_dict(),
         }
 
     # Resolve configured system_dir & base_dir accurately (including 99_System & custom base_dir!)
@@ -1927,8 +2116,21 @@ def execute_vault_upgrade(
         else legacy_pf or (vault_root / ".paperforge")
     )
 
-    ok_space, free_bytes = _check_disk_headroom(vault_root, 32 * 1024 * 1024)
+    req_headroom = 32 * 1024 * 1024
+    db_sz = 0
+    for db_probe in (engine_root / "indexes" / "paperforge.db", vault_root / ".paperforge" / "indexes" / "paperforge.db"):
+        if safe_is_file(db_probe):
+            with contextlib.suppress(OSError):
+                db_sz = max(db_sz, int(db_probe.stat().st_size))
+    req_headroom = max(req_headroom, db_sz // 2 + 32 * 1024 * 1024)
+    if legacy_pf is not None:
+        with contextlib.suppress(OSError):
+            if legacy_pf.stat().st_dev != vault_root.stat().st_dev:
+                req_headroom = max(req_headroom, _dir_or_file_bytes(legacy_pf))
+
+    ok_space, free_bytes = _check_disk_headroom(vault_root, req_headroom)
     if not ok_space:
+        fsm.transition(UpgradePhase.ABORTED_CLEAN, gate="G0_disk_space", detail={"free_bytes": free_bytes, "required_bytes": req_headroom})
         return {
             "dry_run": False,
             "applied": False,
@@ -1936,15 +2138,46 @@ def execute_vault_upgrade(
             "plan": plan,
             "executed_steps": [],
             "errors": [{"step": "disk_space", "error": f"Insufficient disk space ({free_bytes} bytes free)"}],
+            "fsm": fsm.to_dict(),
         }
 
+    for db_cand in (engine_root / "indexes" / "paperforge.db", vault_root / ".paperforge" / "indexes" / "paperforge.db"):
+        if safe_is_file(db_cand):
+            ok_q = quiesce_sqlite_wal(db_cand)
+            if not ok_q:
+                wal_cand = Path(f"{db_cand}-wal")
+                has_dirty_wal = False
+                if safe_is_file(wal_cand):
+                    with contextlib.suppress(OSError):
+                        has_dirty_wal = wal_cand.stat().st_size > 0
+                if has_dirty_wal:
+                    fsm.transition(UpgradePhase.ABORTED_CLEAN, gate="G1_wal_quiesce", detail={"db": str(db_cand)})
+                    return {
+                        "dry_run": False,
+                        "applied": False,
+                        "status": "failed",
+                        "plan": plan,
+                        "executed_steps": [],
+                        "errors": [{"step": "wal_quiesce", "error": f"Cannot quiesce active WAL before upgrade: {db_cand.name}"}],
+                        "fsm": fsm.to_dict(),
+                    }
+
+    fsm.transition(UpgradePhase.SNAPSHOT_AND_QUIESCE, gate="G1_snapshot")
     backup_dir = _snapshot_preflight_backups(vault_root, engine_root, cfg_sys, configured_base_dir=cfg_base)
     stale_prefixes = _stale_path_prefixes_for_vault(vault_root, cfg_sys)
+    pre_scan = None
+    if not fast_cutover:
+        from paperforge.services.identity_resolver import scan_vault_identities
+
+        pre_scan = scan_vault_identities(pre_lit_root)
     pre_counts = _capture_pre_upgrade_counts(
-        vault_root, engine_root, pre_lit_root, fast_mode=fast_cutover
+        vault_root, engine_root, pre_lit_root, fast_mode=fast_cutover, scan=pre_scan
     )
+
     executed_steps: list[dict[str, Any]] = [{"step": "preflight_backup", "backup_dir": str(backup_dir)}]
     errors: list[dict[str, str]] = []
+
+    fsm.transition(UpgradePhase.ENGINE_CUTOVER, gate="G1_cutover_start")
 
     # 1. Config schema v2 migration (or bootstrap rescue vault missing paperforge.json)
     cfg_path = vault_root / "paperforge.json"
@@ -1953,11 +2186,11 @@ def execute_vault_upgrade(
             from paperforge.config import bootstrap_config
 
             bootstrap_config(vault_root)
-            if (vault_root / "03_Resources" / "Literature").is_dir() and not (
+            if safe_is_dir(vault_root / "03_Resources" / "Literature") and not safe_is_dir(
                 vault_root / "Resources" / "Literature"
-            ).is_dir():
+            ):
                 set_config(vault_root, "resources_dir", "03_Resources")
-            if (vault_root / "05_Bases").is_dir() and not (vault_root / "Bases").is_dir():
+            if safe_is_dir(vault_root / "05_Bases") and not safe_is_dir(vault_root / "Bases"):
                 set_config(vault_root, "base_dir", "05_Bases")
             set_config(vault_root, "system_dir", ".paperforge")
             executed_steps.append({"step": "config_rescue_bootstrap", "ok": True})
@@ -1997,21 +2230,26 @@ def execute_vault_upgrade(
                     )
 
                 _flush_fast_journal("in_progress")
-                t_counts = _move_tree_entries(
-                    legacy_pf,
-                    target_pf,
-                    dry_run=False,
-                    moved_pairs=moved_pairs,
-                    conflict_backup_dir=conflict_dir,
-                    on_progress=lambda: _flush_fast_journal("in_progress"),
-                )
-                if (vault_root / "paperforge.json").is_file():
-                    set_config(vault_root, "system_dir", ".paperforge")
+                try:
+                    t_counts = _move_tree_entries(
+                        legacy_pf,
+                        target_pf,
+                        dry_run=False,
+                        moved_pairs=moved_pairs,
+                        conflict_backup_dir=conflict_dir,
+                        on_progress=lambda: _flush_fast_journal("in_progress"),
+                    )
+                    if (vault_root / "paperforge.json").is_file():
+                        set_config(vault_root, "system_dir", ".paperforge")
+                except Exception:
+                    with contextlib.suppress(OSError):
+                        _flush_fast_journal("in_progress")
+                    raise
                 _flush_fast_journal("completed")
                 with contextlib.suppress(OSError):
-                    if legacy_pf.exists() and not any(legacy_pf.iterdir()):
+                    if safe_is_dir(legacy_pf) and not safe_iterdir(legacy_pf):
                         legacy_pf.rmdir()
-                    if legacy_pf.parent.exists() and legacy_pf.parent != vault_root and not any(legacy_pf.parent.iterdir()):
+                    if safe_is_dir(legacy_pf.parent) and legacy_pf.parent != vault_root and not safe_iterdir(legacy_pf.parent):
                         legacy_pf.parent.rmdir()
                 executed_steps.append({"step": "fast_storage_cutover", "result": t_counts})
             else:
@@ -2020,6 +2258,7 @@ def execute_vault_upgrade(
                     dry_run=False,
                     isolate_paper_errors=True,
                     backup_dir=backup_dir,
+                    scan=pre_scan,
                 )
                 executed_steps.append({"step": "storage_migration", "result": sres})
                 for pe in sres.get("paper_errors") or []:
@@ -2034,6 +2273,50 @@ def execute_vault_upgrade(
     elif (vault_root / "paperforge.json").is_file() and cfg_sys != ".paperforge":
         with contextlib.suppress(Exception):
             set_config(vault_root, "system_dir", ".paperforge")
+
+    # G2 mid-flight DB / OCR sovereignty check (skip workspace rescan — G2 only checks OCR & SQLite invariants)
+    cutover_failed = any(e.get("step") == "storage_migration" for e in errors)
+    if not cutover_failed:
+        post_cutover_counts = _capture_pre_upgrade_counts(
+            vault_root,
+            vault_root / ".paperforge",
+            pre_lit_root,
+            fast_mode=fast_cutover,
+            skip_workspace_scan=True,
+        )
+        g2_failures: list[str] = []
+        if post_cutover_counts["tier0_ocr_valid"] < pre_counts["tier0_ocr_valid"]:
+            g2_failures.append(
+                f"tier0_ocr_valid dropped at G2: {pre_counts['tier0_ocr_valid']} -> {post_cutover_counts['tier0_ocr_valid']}"
+            )
+        for db_key, _ in _DB_TIER0_TABLE_MAP:
+            pre_v = int(pre_counts.get(db_key, 0))
+            post_v = int(post_cutover_counts.get(db_key, 0))
+            if post_v < pre_v:
+                g2_failures.append(f"{db_key} dropped at G2: {pre_v} -> {post_v}")
+        if g2_failures:
+            fsm.transition(UpgradePhase.SOVEREIGNTY_VIOLATION, gate="G2_mid_flight_sovereignty", detail=g2_failures)
+            fsm.transition(UpgradePhase.ROLLING_BACK, gate="G2_auto_rollback")
+            rb_res = rollback_vault_upgrade(vault_root, backup_dir=backup_dir)
+            fsm.transition(
+                UpgradePhase.ROLLED_BACK,
+                gate="G2_rolled_back",
+                detail={"rolled_back": bool(rb_res.get("rolled_back"))},
+            )
+            fsm.persist(backup_dir / "fsm-trace.json")
+            return {
+                "dry_run": False,
+                "applied": False,
+                "status": "rolled_back",
+                "mode": "fast_cutover" if fast_cutover else "full",
+                "backup_dir": str(backup_dir),
+                "executed_steps": executed_steps,
+                "errors": errors + [{"step": "g2_sovereignty", "error": "; ".join(g2_failures)}],
+                "rollback": rb_res,
+                "fsm": fsm.to_dict(),
+            }
+
+    fsm.transition(UpgradePhase.DERIVED_VIEW_AND_INDEX_RECONCILE, gate="G2_passed")
 
     # 3. Resolve post-cutover paths & upgrade ONLY PaperForge-owned Base views
     try:
@@ -2051,52 +2334,24 @@ def execute_vault_upgrade(
 
     try:
         exports_dir = paths.get("exports") or (vault_root / ".paperforge" / "exports")
-        domain_cfg = load_domain_config(paths) if exports_dir.is_dir() else {"schema_version": 1, "domains": []}
+        domain_cfg = load_domain_config(paths) if safe_is_dir(exports_dir) else {"schema_version": 1, "domains": []}
         # Also include any PaperForge-owned `.base` files already present in `Bases/`
         existing_domains = {d.get("domain") for d in domain_cfg.get("domains", [])}
         base_dir = paths.get("bases")
-        if base_dir and base_dir.is_dir():
-            for bf in sorted(base_dir.glob("*.base")):
-                if bf.name == "Literature Hub.base":
+        if base_dir and safe_is_dir(base_dir):
+            for bf in safe_iterdir(base_dir):
+                if bf.suffix.lower() != ".base" or bf.name == "Literature Hub.base":
                     continue
                 txt = bf.read_text(encoding="utf-8", errors="ignore")
                 if _is_paperforge_owned_base_file(txt, bf, set()) and bf.stem not in existing_domains:
                     domain_cfg.setdefault("domains", []).append(
                         {"domain": bf.stem, "export_file": f"{bf.stem}.json", "allowed_collections": []}
                     )
-        if domain_cfg.get("domains") or (base_dir and (base_dir / "Literature Hub.base").exists()):
+        if domain_cfg.get("domains") or (base_dir and safe_is_file(base_dir / "Literature Hub.base")):
             ensure_base_views(vault_root, paths, domain_cfg)
         executed_steps.append({"step": "base_views_upgrade", "ok": True})
     except Exception as exc:  # noqa: BLE001
         errors.append({"step": "base_views_upgrade", "error": str(exc)})
-
-    # 4. Progressive healing (immediate in full mode; deferred to background daemon in fast_cutover mode)
-    if not fast_cutover and rebuild_db:
-        try:
-            heal_res = heal_vault_progressive(vault_root, backfill_ocr=backfill_ocr)
-            executed_steps.append({"step": "progressive_heal", "result": heal_res})
-            for si in heal_res.get("skipped_isolated") or []:
-                errors.append(
-                    {
-                        "step": f"progressive_heal:{si.get('key', 'unknown')}",
-                        "error": str(si.get("reason") or "workspace heal skipped"),
-                    }
-                )
-        except Exception as exc:  # noqa: BLE001
-            errors.append({"step": "progressive_heal", "error": str(exc)})
-    elif not fast_cutover:
-        try:
-            heal_res = heal_vault_progressive(vault_root, limit=None, backfill_ocr=backfill_ocr)
-            executed_steps.append({"step": "workspace_normalize", "result": heal_res})
-            for si in heal_res.get("skipped_isolated") or []:
-                errors.append(
-                    {
-                        "step": f"workspace_normalize:{si.get('key', 'unknown')}",
-                        "error": str(si.get("reason") or "workspace normalize skipped"),
-                    }
-                )
-        except Exception as exc:  # noqa: BLE001
-            errors.append({"step": "workspace_normalize", "error": str(exc)})
 
     # 5. Confirmed residual quarantine (supports selective `quarantine_ids`)
     selected_ids: set[str] | None = None
@@ -2134,8 +2389,6 @@ def execute_vault_upgrade(
                 errors.append({"step": f"quarantine:{cand['id']}", "error": str(exc)})
         executed_steps.append({"step": "quarantine_residuals", "quarantined": quarantined_count})
 
-    settlement_status = "partial_success" if errors else "completed"
-
     # 6. Best-effort sync of machine Skill Hub & registered agent installs (Zero Vault Pollution)
     try:
         from paperforge.services.skill_deploy import sync_machine_skill_hub, sync_registered_agent_skills
@@ -2143,8 +2396,8 @@ def execute_vault_upgrade(
         sync_machine_skill_hub()
         sync_registered_agent_skills()
         executed_steps.append({"step": "skill_hub_sync", "ok": True})
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("best-effort skill sync skipped: %s", exc)
 
     # 7. Stamp `.paperforge/vault-manifest.json` with rollback reference
     try:
@@ -2153,7 +2406,7 @@ def execute_vault_upgrade(
             migration_entry={
                 "timestamp": _utcnow_compact(),
                 "mode": "fast_cutover" if fast_cutover else "full",
-                "status": settlement_status,
+                "status": "partial_success" if errors else "completed",
                 "backup_dir": str(backup_dir),
                 "steps": [s["step"] for s in executed_steps],
                 "error_count": len(errors),
@@ -2162,17 +2415,44 @@ def execute_vault_upgrade(
         executed_steps.append({"step": "write_vault_manifest", "path": str(manifest_path)})
     except Exception as exc:  # noqa: BLE001
         errors.append({"step": "write_vault_manifest", "error": str(exc)})
-        settlement_status = "partial_success"
 
-    # 8. Stamp reconcile_epoch & heal any remaining derived paths non-destructively
-    try:
-        from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
+    # 8. Stamp reconcile_epoch once (in fast_cutover here; in full mode inside progressive_heal on final workspaces)
+    heal_scan_box: list[Any] = []
+    if fast_cutover:
+        try:
+            from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
 
-        rec_res = ensure_vault_reconciled(vault_root, force=True)
-        executed_steps.append({"step": "upgrade_reconcile", "result": rec_res})
-    except Exception as exc:  # noqa: BLE001
-        errors.append({"step": "upgrade_reconcile", "error": str(exc)})
-        settlement_status = "partial_success"
+            rec_res = ensure_vault_reconciled(vault_root, force=True)
+            executed_steps.append({"step": "upgrade_reconcile", "result": rec_res})
+        except Exception as exc:  # noqa: BLE001
+            errors.append({"step": "upgrade_reconcile", "error": str(exc)})
+    else:
+        # 4. Progressive healing (immediate in full mode; deferred to background daemon in fast_cutover mode)
+        fsm.transition(UpgradePhase.PER_WORKSPACE_PROGRESSIVE_HEAL, gate="G3_progressive_heal")
+        step_name = "progressive_heal" if rebuild_db else "workspace_normalize"
+        try:
+            heal_res = heal_vault_progressive(
+                vault_root,
+                backfill_ocr=backfill_ocr,
+                scan=pre_scan,
+                run_reconcile=True,
+                run_verify=False,
+                out_scan=heal_scan_box,
+            )
+            executed_steps.append({"step": step_name, "result": heal_res})
+            if heal_res.get("reconcile_epoch") is not None:
+                executed_steps.append({"step": "upgrade_reconcile", "result": heal_res["reconcile_epoch"]})
+            for si in heal_res.get("skipped_isolated") or []:
+                errors.append(
+                    {
+                        "step": f"{step_name}:{si.get('key', 'unknown')}",
+                        "error": str(si.get("reason") or "workspace heal skipped"),
+                    }
+                )
+        except Exception as exc:  # noqa: BLE001
+            errors.append({"step": step_name, "error": str(exc)})
+
+    settlement_status = "partial_success" if errors else "completed"
 
     verification = verify_vault_upgrade(
         vault_root,
@@ -2180,7 +2460,43 @@ def execute_vault_upgrade(
         stale_prefixes=stale_prefixes,
         check_healed_paths=not fast_cutover,
         fast_mode=fast_cutover,
+        scan=heal_scan_box[0] if heal_scan_box else None,
     )
+
+    if not cutover_failed and (
+        verification["checks"].get("tier0_ocr_preserved") is False
+        or verification["checks"].get("tier0_db_sovereignty_preserved") is False
+        or verification["checks"].get("sidecars_preserved") is False
+    ):
+        fsm.transition(
+            UpgradePhase.SOVEREIGNTY_VIOLATION,
+            gate="G4_final_verify",
+            detail=verification["failures"],
+        )
+        fsm.transition(UpgradePhase.ROLLING_BACK, gate="G4_auto_rollback")
+        rb_res = rollback_vault_upgrade(vault_root, backup_dir=backup_dir)
+        fsm.transition(
+            UpgradePhase.ROLLED_BACK,
+            gate="G4_rolled_back",
+            detail={"rolled_back": bool(rb_res.get("rolled_back"))},
+        )
+        fsm.persist(backup_dir / "fsm-trace.json")
+        return {
+            "dry_run": False,
+            "applied": False,
+            "status": "rolled_back",
+            "mode": "fast_cutover" if fast_cutover else "full",
+            "backup_dir": str(backup_dir),
+            "executed_steps": executed_steps,
+            "errors": errors + [{"step": "g4_sovereignty", "error": "; ".join(verification["failures"])}],
+            "rollback": rb_res,
+            "verification": verification,
+            "fsm": fsm.to_dict(),
+        }
+
+    terminal_phase = UpgradePhase.COMPLETED_FAST_CUTOVER if fast_cutover else UpgradePhase.COMPLETED
+    fsm.transition(terminal_phase, gate="G4_final_verify", detail={"ok": verification["ok"]})
+    fsm.persist(backup_dir / "fsm-trace.json")
 
     return {
         "dry_run": False,
@@ -2192,13 +2508,15 @@ def execute_vault_upgrade(
         "executed_steps": executed_steps,
         "errors": errors,
         "verification": verification,
-        "post_check": inspect_vault_upgrade(vault_root, fast_summary=fast_cutover),
+        "fsm": fsm.to_dict(),
+        "post_check": inspect_vault_upgrade(vault_root, fast_summary=True),
     }
 
 
 def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> dict[str, Any]:
     """One-Click Time-Machine rollback restoring directory structure, `paperforge.json`, and `.base` files."""
     from paperforge.services.storage_migration import (
+        _load_rewritten_notes_for_rollback,
         _move_tree_entries,
         _rollback_mutations,
         _validate_vault_contained_path,
@@ -2278,14 +2596,12 @@ def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> di
             mut_data = json.loads(mut_file.read_text(encoding="utf-8"))
             if isinstance(mut_data, dict):
                 dot_pf_root = (vault_root / ".paperforge").resolve()
-                rev_notes = [
-                    (
-                        _validate_vault_contained_path(it["path"], allowed_root=vault_root, label="rollback.note"),
-                        str(it["original_text"]),
-                    )
-                    for it in (mut_data.get("rewritten_notes") or [])
-                    if isinstance(it, dict) and it.get("path") and "original_text" in it
-                ]
+                rev_notes = _load_rewritten_notes_for_rollback(
+                    list(mut_data.get("rewritten_notes") or []),
+                    vault_root=vault_root,
+                    dot_pf_root=dot_pf_root,
+                    label_prefix="rollback.note",
+                )
                 rev_assets = [
                     _validate_vault_contained_path(p, allowed_root=vault_root, label="rollback.asset")
                     for p in (mut_data.get("created_assets") or [])
@@ -2317,6 +2633,26 @@ def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> di
             dst_f.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(snap_f), str(dst_f))
             restored_files += 1
+
+    # Restore pre-merge permanent JSONL logs if _merge_jsonl_by_id touched them
+    jsonl_bak_dir = vault_root / ".paperforge" / "backups" / "storage-migration" / "jsonl_merge"
+    if jsonl_bak_dir.is_dir():
+        for dst_bak in sorted(jsonl_bak_dir.glob("dst__*")):
+            orig_name = dst_bak.name[len("dst__"):]
+            if not orig_name or orig_name.startswith("."):
+                continue
+            prev_sys = str(cutover_meta.get("previous_system_dir") or "").strip()
+            target_log = (
+                vault_root / prev_sys / "PaperForge" / "logs" / orig_name
+                if prev_sys and prev_sys != ".paperforge"
+                else vault_root / ".paperforge" / "logs" / orig_name
+            )
+            cand_dot = vault_root / ".paperforge" / "logs" / orig_name
+            log_dst = target_log if target_log.parent.is_dir() else cand_dot
+            if log_dst.parent.is_dir():
+                with contextlib.suppress(OSError):
+                    shutil.copy2(str(dst_bak), str(log_dst))
+                    restored_files += 1
 
     base_subs: list[str] = ["Bases", "05_Bases"]
     for cand_b in list(cutover_meta.get("snapshotted_base_dirs") or []) + [

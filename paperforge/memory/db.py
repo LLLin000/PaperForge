@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import sqlite3
 import threading
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
+
+logger = logging.getLogger(__name__)
 
 
 def get_memory_db_path(vault: Path) -> Path:
@@ -158,18 +161,105 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
         conn.enable_load_extension(True)
         try:
             sqlite_vec.load(conn)
-        except Exception:
-            pass  # extension not available
+        except Exception as exc:
+            logger.debug("sqlite_vec load skipped: %s", exc)
         finally:
             try:
                 conn.enable_load_extension(False)
             except AttributeError:
                 pass
-    except ImportError:
-        pass  # sqlite_vec not installed
+    except ImportError as exc:
+        logger.debug("sqlite_vec not installed: %s", exc)
+
+
+def rebuild_fts_indexes(
+    conn: sqlite3.Connection,
+    tables: tuple[str, ...] = ("paper_fts", "body_units_fts"),
+) -> list[str]:
+    """Rebuild existing external-content FTS5 virtual tables non-destructively."""
+    existing = {
+        str(r[0])
+        for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    }
+    rebuilt: list[str] = []
+    for tbl in tables:
+        if tbl not in existing:
+            continue
+        conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+        rebuilt.append(tbl)
+    return rebuilt
+
+
+def check_and_heal_fts(
+    conn: sqlite3.Connection,
+    tables: tuple[str, ...] = ("paper_fts", "body_units_fts"),
+) -> dict[str, list[str]]:
+    """Verify FTS5 integrity and non-destructively rebuild any desynced FTS5 table.
+
+    Distinguishes logical external-content FTS5 index desync from physical DB
+    corruption so Tier-0 vectors, annotations, and logs are never quarantined.
+    """
+    existing = {
+        str(r[0])
+        for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    }
+    checked: list[str] = []
+    repaired: list[str] = []
+    for tbl in tables:
+        if tbl not in existing:
+            continue
+        checked.append(tbl)
+        try:
+            conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('integrity-check')")
+        except sqlite3.DatabaseError:
+            conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+            repaired.append(tbl)
+    return {"checked": checked, "repaired": repaired}
+
+
+def safe_delete_body_units_fts(conn: sqlite3.Connection, paper_id: str) -> bool:
+    """Safely remove *paper_id* rows from ``body_units_fts`` before mutating ``body_units``.
+
+    Returns True if the targeted external-content delete succeeded, or False if
+    ``body_units_fts`` raised a ``DatabaseError`` (desynced index) and requires
+    ``rebuild_fts_indexes(conn, ("body_units_fts",))`` after the mutation.
+    """
+    try:
+        conn.execute(
+            """INSERT INTO body_units_fts(body_units_fts, rowid, unit_id, paper_id, section_path, unit_text)
+               SELECT 'delete', rowid, unit_id, paper_id, section_path, unit_text
+               FROM body_units WHERE paper_id = ? AND indexable = 1""",
+            (paper_id,),
+        )
+        return True
+    except sqlite3.DatabaseError:
+        return False
 
 
 _reader_lock_depths = threading.local()
+
+
+def _recover_hot_journal_if_present(path: Path) -> bool:
+    """Roll back an orphaned SQLite hot journal so ``?mode=ro`` readers never fail."""
+    journal = Path(str(path) + "-journal")
+    try:
+        if not journal.is_file() or journal.stat().st_size == 0:
+            return False
+    except OSError:
+        return False
+    conn: sqlite3.Connection | None = None
+    try:
+        conn = sqlite3.connect(str(path), timeout=2.0)
+        conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+        return True
+    except sqlite3.Error:
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def open_live_reader(vault: Path, db_path: Path | None = None):
@@ -211,8 +301,18 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
         depths[key] = depth + 1
         _reader_lock_depths.depths = depths
         try:
+            _recover_hot_journal_if_present(path)
             conn = get_connection(path, read_only=True)
             try:
+                try:
+                    conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+                except sqlite3.OperationalError as exc:
+                    if "readonly database" in str(exc).lower():
+                        conn.close()
+                        _recover_hot_journal_if_present(path)
+                        conn = get_connection(path, read_only=True)
+                    else:
+                        raise
                 yield conn
             finally:
                 conn.close()

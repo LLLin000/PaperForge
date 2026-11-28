@@ -11,7 +11,14 @@ from paperforge.config import paperforge_paths
 from paperforge.core.io import read_json, read_jsonl
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
-from paperforge.memory.db import get_connection, get_memory_db_path, quarantine_corrupt_db
+from paperforge.memory.db import (
+    check_and_heal_fts,
+    get_connection,
+    get_memory_db_path,
+    quarantine_corrupt_db,
+    rebuild_fts_indexes,
+    safe_delete_body_units_fts,
+)
 from paperforge.memory.paper_state import ASSET_FIELDS, ALIAS_TYPES, _paper_state_hash, upsert_paper_state
 from paperforge.memory.schema import (
     CURRENT_SCHEMA_VERSION,
@@ -403,9 +410,11 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
         for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
             conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
 
-    # 1. FK-referencing and paper-scoped tables
-    conn.execute("DELETE FROM body_units_fts WHERE paper_id=?", (key,))
+    # 1. FK-referencing and paper-scoped tables (external-content FTS before content delete)
+    fts_ok = safe_delete_body_units_fts(conn, key)
     conn.execute("DELETE FROM body_units WHERE paper_id=?", (key,))
+    if not fts_ok:
+        rebuild_fts_indexes(conn, ("body_units_fts",))
     conn.execute("DELETE FROM object_units WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM paper_events WHERE paper_id=?", (key,))
     conn.execute("DELETE FROM reading_log WHERE paper_id=?", (key,))
@@ -503,6 +512,8 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         # ── 1. Schema migration ──────────────────────────────────────────
         migration_action = migrate_schema(conn, stored_version, CURRENT_SCHEMA_VERSION)
         ensure_schema(conn)
+        if migration_action in ("none", "additive"):
+            check_and_heal_fts(conn)
 
         ocr_root = paperforge_paths(vault)["ocr"]
 
@@ -529,8 +540,8 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
                 from paperforge.services.state_signal import bump_state_seq
 
                 bump_state_seq(vault, reason="memory.build")
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001 — best-effort UI notification signal
+                logger.debug("state_seq bump after full rebuild skipped: %s", exc)
             return result
 
         # ── 3. Global hash unchanged + no schema change → fast path ──────
@@ -542,7 +553,7 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             except Exception:
                 cached = None
             if cached and cached[0] == canonical_hash:
-                _incremental_units_only(conn, items, ocr_root, vault=vault)
+                _incremental_units_only(conn, items, ocr_root, vault=vault, scoped=(keys is not None))
                 conn.commit()
                 papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
                 conn.close()
@@ -586,8 +597,8 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
                     try:
                         conn.execute("ROLLBACK TO pf_paper")
                         conn.execute("RELEASE pf_paper")
-                    except Exception:  # noqa: BLE001
-                        pass
+                    except Exception as rb_exc:  # noqa: BLE001
+                        logger.debug("savepoint rollback cleanup skipped for %s: %s", key, rb_exc)
                     failed_keys.append(key)
                     logger.warning("paper %s build failed and was rolled back: %s", key, exc)
 
@@ -623,7 +634,7 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             if keys is None
             else [e for e in items if e.get("zotero_key") not in failed_keys]
         )
-        _incremental_units_only(conn, _units_items, ocr_root, vault=vault)
+        _incremental_units_only(conn, _units_items, ocr_root, vault=vault, scoped=(keys is not None))
 
         # 4e. Advance the global canonical hash LAST — ALL-SCOPE builds only,
         #     and NEVER on partial failure (#168 T7 P0-2): a full build with
@@ -653,8 +664,8 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             from paperforge.services.state_signal import bump_state_seq
 
             bump_state_seq(vault, reason="memory.build", changed_keys=successful_keys)
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 — best-effort UI notification signal
+            logger.debug("state_seq bump after incremental build skipped: %s", exc)
         return {
             "papers_indexed": papers_count,
             "db_path": str(db_path),
@@ -869,8 +880,23 @@ def _resolve_ocr_result_hash(paper_dir: Path) -> str:
     return published_identity_hash(paper_dir)
 
 
-def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None:
-    """Insert or replace body unit rows, then refresh the FTS index."""
+def _upsert_body_units(
+    conn: sqlite3.Connection,
+    body_units: list[dict],
+    *,
+    force_fts_rebuild: bool = False,
+) -> None:
+    """Insert or replace body unit rows, keeping external-content FTS5 in sync."""
+    if not body_units:
+        return
+    # Remove prior external-content FTS5 entries BEFORE INSERT OR REPLACE alters rowids
+    paper_ids = list({u["paper_id"] for u in body_units})
+    needs_fts_rebuild = bool(force_fts_rebuild)
+    if not needs_fts_rebuild:
+        for pid in paper_ids:
+            if not safe_delete_body_units_fts(conn, pid):
+                needs_fts_rebuild = True
+
     for unit in body_units:
         conn.execute(
             """INSERT OR REPLACE INTO body_units
@@ -900,20 +926,19 @@ def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None
             ),
         )
     # Refresh FTS for all body units of the affected papers
-    paper_ids = list({u["paper_id"] for u in body_units})
-    for pid in paper_ids:
-        # ponytail: FTS5 external content table raises DatabaseError on DELETE
-        # when the index is empty (first build). Wrap to handle both cases.
+    if needs_fts_rebuild:
+        rebuild_fts_indexes(conn, ("body_units_fts",))
+    else:
         try:
-            conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (pid,))
+            for pid in paper_ids:
+                conn.execute(
+                    """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
+                       SELECT rowid, unit_id, paper_id, section_path, unit_text
+                       FROM body_units WHERE paper_id = ? AND indexable = 1""",
+                    (pid,),
+                )
         except sqlite3.DatabaseError:
-            pass
-        conn.execute(
-            """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
-               SELECT rowid, unit_id, paper_id, section_path, unit_text
-               FROM body_units WHERE paper_id = ? AND indexable = 1""",
-            (pid,),
-        )
+            rebuild_fts_indexes(conn, ("body_units_fts",))
 
 
 def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> None:
@@ -947,15 +972,59 @@ def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> 
         )
 
 
-def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_root: Path, vault: Path | None = None) -> None:
+def _incremental_units_only(
+    conn: sqlite3.Connection,
+    items: list[dict],
+    ocr_root: Path,
+    vault: Path | None = None,
+    *,
+    scoped: bool = False,
+) -> None:
     """Incremental: rebuild only body/object units for papers whose OCR hash changed.
 
-    When OCR artifacts are missing but the paper has stored units, the units
-    are deleted (invalidated) rather than left stale.
+    When OCR artifacts are missing for a single/small set of papers, their units
+    and vectors are invalidated. A mass-invalidation circuit breaker protects
+    stored ``body_units`` and Tier-0 vectors when >=20 papers and >=50% of stored
+    papers lack local OCR artifacts (e.g., partial/multi-device clone).
     """
+    from paperforge.worker.ocr_hash import has_result_hash_pending
+
+    manifest_rows = dict(
+        conn.execute("SELECT substr(key, 10), value FROM meta WHERE key LIKE 'manifest:%'").fetchall()
+    )
+    unit_paper_ids = {
+        str(r[0]) for r in conn.execute("SELECT DISTINCT paper_id FROM body_units").fetchall()
+    }
+    total_stored_unit_papers = max(len(unit_paper_ids), len(manifest_rows))
+
+    missing_with_state: set[str] = set()
+    for entry in items:
+        key = entry.get("zotero_key", "")
+        if not key:
+            continue
+        paper_dir = ocr_root / key
+        tree_path = paper_dir / "index" / "structure-tree.json"
+        blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
+        if (not tree_path.exists() or not blocks_path.exists()) and not has_result_hash_pending(paper_dir):
+            if key in manifest_rows or key in unit_paper_ids:
+                missing_with_state.add(key)
+
+    skip_missing_invalidation = (
+        not scoped
+        and len(missing_with_state) >= 20
+        and len(missing_with_state) * 2 >= max(1, total_stored_unit_papers)
+    )
+    if skip_missing_invalidation:
+        logger.warning(
+            "memory.build: mass-invalidation circuit breaker tripped (%d/%d papers missing local OCR artifacts) — preserving existing body_units & Tier-0 vectors",
+            len(missing_with_state),
+            total_stored_unit_papers,
+        )
+
     built_count = 0
     cleared_count = 0
     skipped_corrupt = 0
+    needs_fts_rebuild = False
     for entry in items:
         key = entry.get("zotero_key", "")
         if not key:
@@ -967,26 +1036,19 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         # #126: a pending publication marker means rebuild is mid-flight or
         # failed — never consume half-built artifacts, never clear this
         # paper's previous published state.
-        from paperforge.worker.ocr_hash import has_result_hash_pending
-
         if has_result_hash_pending(paper_dir):
             continue
 
-        # Check if paper has any stored derived state (manifest, units, vectors)
-        has_derived_state = conn.execute(
-            "SELECT 1 FROM meta WHERE key=? LIMIT 1", (f"manifest:{key}",)
-        ).fetchone() or conn.execute(
-            "SELECT 1 FROM body_units WHERE paper_id=? LIMIT 1", (key,)
-        ).fetchone()
         if not tree_path.exists() or not blocks_path.exists():
-            if has_derived_state:
+            if key in missing_with_state and not skip_missing_invalidation:
                 from paperforge.embedding.vectors import delete_paper_vectors_in_conn
                 try:
                     delete_paper_vectors_in_conn(conn, key)
                 except Exception:
                     for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
                         conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
-                conn.execute("DELETE FROM body_units_fts WHERE paper_id=?", (key,))
+                if not safe_delete_body_units_fts(conn, key):
+                    needs_fts_rebuild = True
                 conn.execute("DELETE FROM body_units WHERE paper_id=?", (key,))
                 conn.execute("DELETE FROM object_units WHERE paper_id=?", (key,))
                 # Only delete manifest — preserve paper_state_hash (metadata layer)
@@ -995,11 +1057,9 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
             continue
 
         current_hash = _resolve_ocr_result_hash(paper_dir)
-        row = conn.execute(
-            "SELECT value FROM meta WHERE key=?", (f"manifest:{key}",)
-        ).fetchone()
-        if row:
-            stored_manifest = json.loads(row[0])
+        raw_manifest = manifest_rows.get(key)
+        if raw_manifest:
+            stored_manifest = json.loads(raw_manifest)
             if (stored_manifest.get("ocr_result_hash") == current_hash
                 and stored_manifest.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
                 continue
@@ -1013,6 +1073,8 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
             # propagates (rollback + caller handles — test contract).
             logger.warning("memory.build: skip %s (corrupt artifacts: %s)", key, exc)
             skipped_corrupt += 1
+    if needs_fts_rebuild:
+        rebuild_fts_indexes(conn, ("body_units_fts",))
     if skipped_corrupt:
         logger.info("Incremental units: %d skipped (corrupt artifacts)", skipped_corrupt)
     if built_count or cleared_count:
@@ -1038,11 +1100,8 @@ def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
             for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
                 conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
 
-    # FTS before body — external-content FTS5 may fail if content is gone
-    try:
-        conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (key,))
-    except sqlite3.DatabaseError:
-        pass  # FTS5 external content may raise on empty index
+    # FTS before body — external-content FTS5 requires matching rows during delete
+    fts_ok = safe_delete_body_units_fts(conn, key)
     conn.execute("DELETE FROM body_units WHERE paper_id = ?", (key,))
     conn.execute("DELETE FROM object_units WHERE paper_id = ?", (key,))
     tree = read_json(tree_path)
@@ -1053,7 +1112,9 @@ def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
     object_units = build_object_units(
         tree=tree, structured_blocks=blocks, role_index=role_index
     )
-    _upsert_body_units(conn, body_units)
+    _upsert_body_units(conn, body_units, force_fts_rebuild=not fts_ok)
+    if not fts_ok and not body_units:
+        rebuild_fts_indexes(conn, ("body_units_fts",))
     _upsert_object_units(conn, object_units)
     current_hash = _resolve_ocr_result_hash(paper_dir)
     manifest = build_paper_manifest(
