@@ -362,3 +362,118 @@ def test_p5_doctor_single_subprocess_env_probe_and_ocr_doctor_ttl_cache(
     )
     assert r3["passed"] is True
     assert calls["post"] == 2
+
+
+def test_p12_hard_kill_subprocess_mid_write_recovers_cleanly(tmp_path: Path) -> None:
+    """Abrupt subprocess exit mid-uncommitted SQLite write rolls back cleanly via open_live_reader."""
+    import subprocess
+    from paperforge.memory.db import check_and_heal_fts, get_connection, open_live_reader
+    from paperforge.memory.schema import ensure_schema
+
+    vault = tmp_path / "vault_hardkill"
+    vault.mkdir(parents=True)
+    _assert_isolated(vault)
+    canonical_test_config(vault, system_dir=".paperforge")
+
+    db_path = vault / ".paperforge" / "indexes" / "paperforge.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    c = get_connection(db_path)
+    try:
+        ensure_schema(c)
+        c.execute(
+            "INSERT INTO papers(zotero_key, citation_key, title) VALUES (?, ?, ?)",
+            ("KILL0001", "kill2026", "Committed Paper"),
+        )
+        c.execute(
+            "INSERT INTO reading_log(id, paper_id, section, excerpt, usage, note, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("rl-kill-1", "KILL0001", "Results", "Committed Tier-0 log", "primary", "keep", "2026-11-28T00:00:00Z"),
+        )
+        c.commit()
+    finally:
+        c.close()
+
+    # Spawn a child process that enters an uncommitted WAL/journal write and calls os._exit(9)
+    child_code = (
+        "import os, sqlite3, sys; "
+        "c = sqlite3.connect(sys.argv[1]); "
+        "c.execute(\"INSERT INTO papers(zotero_key, citation_key, title) VALUES ('UNCOMM02', 'uncomm', 'Should Rollback')\"); "
+        "os._exit(9)"
+    )
+    proc = subprocess.run([sys.executable, "-c", child_code, str(db_path)], check=False)
+    assert proc.returncode == 9
+
+    with open_live_reader(vault, db_path=db_path) as ro:
+        assert ro.execute("SELECT COUNT(*) FROM papers").fetchone()[0] == 1
+        assert ro.execute("SELECT excerpt FROM reading_log").fetchone()[0] == "Committed Tier-0 log"
+
+    c2 = get_connection(db_path)
+    try:
+        heal = check_and_heal_fts(c2)
+        c2.commit()
+        assert heal["repaired"] == []
+        assert c2.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    finally:
+        c2.close()
+
+
+def test_p12_post_purge_backup_restore_independence(tmp_path: Path) -> None:
+    """After trash purge and backup retention pruning, newest upgrade backup still restores Tier-0 cleanly."""
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.services.vault_engine import prune_old_backups
+    from paperforge.services.vault_upgrade import execute_vault_upgrade, rollback_vault_upgrade
+    from paperforge.worker.trash import purge_trash
+
+    vault = tmp_path / "vault_backup_purge"
+    vault.mkdir(parents=True)
+    _assert_isolated(vault)
+    canonical_test_config(vault, system_dir="System")
+
+    old_pf = vault / "System" / "PaperForge"
+    (old_pf / "indexes").mkdir(parents=True)
+    (old_pf / "memory").mkdir(parents=True)
+    (old_pf / "ocr" / "BKUP0001" / "json").mkdir(parents=True)
+    (old_pf / "ocr" / "BKUP0001" / "json" / "result.json").write_text('{"pages":[]}', encoding="utf-8")
+
+    legacy_db = old_pf / "indexes" / "paperforge.db"
+    c = get_connection(legacy_db)
+    try:
+        ensure_schema(c)
+        c.execute(
+            "INSERT INTO papers(zotero_key, citation_key, title) VALUES (?, ?, ?)",
+            ("BKUP0001", "bkup2026", "Backup Sovereignty Paper"),
+        )
+        c.execute(
+            "INSERT INTO reading_log(id, paper_id, section, excerpt, usage, note, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("rl-bk-1", "BKUP0001", "Discussion", "Precious insight", "primary", "keep", "2026-11-28T00:00:00Z"),
+        )
+        c.commit()
+    finally:
+        c.close()
+
+    up = execute_vault_upgrade(vault, dry_run=False, fast_cutover=False)
+    assert up["applied"] is True
+    backup_dir = Path(up["backup_dir"])
+    assert backup_dir.is_dir()
+
+    # Simulate aged trash purge + backup retention cleanup
+    aged_trash = vault / ".paperforge" / "trash" / "20200101T000000Z"
+    aged_trash.mkdir(parents=True)
+    assert purge_trash(vault, older_than_days=30) == 1
+    prune_old_backups(vault, keep_latest=2, max_age_days=7)
+
+    # Simulate corruption in live DB after upgrade, then restore from preflight backup
+    live_db = vault / ".paperforge" / "indexes" / "paperforge.db"
+    assert live_db.is_file()
+    rb = rollback_vault_upgrade(vault, backup_dir=backup_dir)
+    assert rb["rolled_back"] is True
+    assert legacy_db.is_file()
+
+    chk = sqlite3.connect(f"file:{legacy_db.as_posix()}?mode=ro", uri=True)
+    try:
+        assert chk.execute("SELECT excerpt FROM reading_log").fetchone()[0] == "Precious insight"
+    finally:
+        chk.close()
+

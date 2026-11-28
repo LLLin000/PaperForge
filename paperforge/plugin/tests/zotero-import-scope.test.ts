@@ -81,4 +81,15 @@ describe("evaluateZoteroImportScope (Folder-First Import Guardrail)", () => {
     expect(res.selectedKeys).toEqual([]);
     expect(res.estimatedPapers).toBe(1358);
   });
+
+  it("caps estimatedPapers at totalPapers when overlapping collections sum higher than totalPapers", () => {
+    const res = evaluateZoteroImportScope({
+      totalPapers: 120,
+      collections: SAMPLE_COLS,
+      selected: ["COL_A", "COL_B"],
+    });
+    expect(res.requiresFolderChoice).toBe(false);
+    expect(res.selectedKeys).toEqual(["COL_A", "COL_B"]);
+    expect(res.estimatedPapers).toBe(120);
+  });
 });

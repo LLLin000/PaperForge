@@ -49,9 +49,11 @@ export function evaluateZoteroImportScope(args: {
   let estimatedPapers = totalPapers;
   if (!explicitAll && selectedKeys.length > 0) {
     const pickedSet = new Set(selectedKeys);
-    estimatedPapers = collections
+    const rawSum = collections
       .filter((c) => pickedSet.has(c.key))
       .reduce((acc, c) => acc + Math.max(0, Number(c.item_count || 0)), 0);
+    // An item can belong to multiple selected collections; never show an estimate above totalPapers.
+    estimatedPapers = totalPapers > 0 ? Math.min(totalPapers, rawSum) : rawSum;
   }
 
   return {
