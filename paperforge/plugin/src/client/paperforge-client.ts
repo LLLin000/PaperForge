@@ -2891,6 +2891,7 @@ export class PaperForgeClient {
     backfillOcr?: boolean;
     quarantineResiduals?: boolean;
     quarantineIds?: string[];
+    quarantineOnly?: boolean;
     noRebuildDb?: boolean;
     zoteroSourceMode?: "sqlite" | "bbt";
     zoteroSelectedCollections?: string[];
@@ -2903,6 +2904,7 @@ export class PaperForgeClient {
     if (opts?.quarantineIds?.length) {
       argv.push("--quarantine-ids", opts.quarantineIds.join(","));
     }
+    if (opts?.quarantineOnly) argv.push("--quarantine-only");
     if (opts?.noRebuildDb) argv.push("--no-rebuild-db");
     if (opts?.zoteroSourceMode) {
       argv.push("--zotero-source-mode", opts.zoteroSourceMode);

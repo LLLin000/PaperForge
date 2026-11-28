@@ -4,6 +4,17 @@ All notable changes to PaperForge.
 
 ---
 
+## [2.0.14] - 2026-11-28
+
+### Veteran Upgrade UX & Latency Hardening (Desktop Acceptance Fixes)
+
+- **Decoupled Foundation Probe (`settings.ts`)**: Separated fast `probe("installation")` (~1s) from full-vault `probeAll()`, ensuring slow or interrupted full-vault lineage scans no longer stall or falsely overwrite Foundation's ready badge with `installation.invalid_response`.
+- **Unified Veteran Upgrade Entry Points (`settings.ts`, `upgrade-modal.ts`, `i18n.ts`, `styles.css`)**: Redirected unmigrated veteran Settings → Library configuration actions (`_startSetupJourney(2)` / Change Zotero Dir) and pre-upgrade maintenance panels directly to `openUpgradeModal()`, preventing first-time wizard scope conflicts on legacy vaults.
+- **True ~3s Fast Cutover + Staged Modal Progress Bar (`vault_upgrade.py`, `upgrade-modal.ts`, `main.ts`)**: Deferred heavy synchronous `ensure_vault_reconciled` to background `upgrade.heal`, bounded `post_check` payloads, eliminated post-cutover modal-close await stalls, and added a 3-stage progress bar + elapsed timer inside `PaperForgeUpgradeModal`.
+- **Quarantine-Only Residual Cleanup & Windows Lock Resilience (`cli.py`, `commands/upgrade.py`, `vault_upgrade.py`, `storage_migration.py`, `paperforge-client.ts`)**: Added `--quarantine-only` so residual cleanup never silently invokes storage cutover (`fastCutover`), replaced whole-file `read_bytes()` comparisons on GB-scale `paperforge.db` with streaming 1 MiB SHA-256 comparison, and added Windows `PermissionError`/`WinError 32` move retries.
+
+---
+
 ## [2.0.13] - 2026-11-28
 
 ### Lifecycle Contract Final Closure: Backend Sync Authorization, Atomic Veteran Cutover & Recovery

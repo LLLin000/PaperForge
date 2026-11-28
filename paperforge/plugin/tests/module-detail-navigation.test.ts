@@ -698,6 +698,35 @@ it.each(["rejected", "malformed"])(
     );
   }
 );
+it("re-renders after probeAll rejects so Hero settles out of checking", async () => {
+  const tab = makeTab();
+  let rejectAll!: (err: Error) => void;
+  const probeAllDeferred = new Promise((_, reject) => {
+    rejectAll = reject;
+  });
+  const displaySpy = vi.spyOn(tab, "display");
+  (tab as any)._client = {
+    invalidateCache: vi.fn(),
+    probe: vi.fn().mockRejectedValue(new Error("missing-python")),
+    probeAll: vi.fn().mockReturnValue(probeAllDeferred),
+  };
+
+  (tab as any)._refreshAllReadModels();
+  await vi.waitFor(() =>
+    expect((tab as any)._capabilityState.installation?.reason.code).toBe(
+      "installation.invalid_response"
+    )
+  );
+  // While probeAll is still pending, other modules remain in _probing ("checking").
+  expect((tab as any)._probing.size).toBeGreaterThan(0);
+  const callsBeforeProbeAllReject = displaySpy.mock.calls.length;
+
+  rejectAll(new Error("probeAll failed"));
+  await vi.waitFor(() => expect((tab as any)._probing.size).toBe(0));
+  expect(displaySpy.mock.calls.length).toBeGreaterThan(
+    callsBeforeProbeAllReject
+  );
+});
 it("offers Setup instead of spawning probes when no runtime is published", () => {
   const tab = makeTab();
   const client = {
@@ -2186,5 +2215,51 @@ describe("settings robustness fixes (Commit 1C)", () => {
     const paths = resolveVaultPaths("/vault");
     expect(paths.systemDir).toBe("/vault/.paperforge");
     expect(paths.ocrDir).toBe("/vault/.paperforge/ocr");
+  });
+
+  it("decouples installation probe from slow/failing probeAll and redirects veteran Library/Stage-2 actions to openUpgradeModal", async () => {
+    const tab = makeTab();
+    const openUpgradeModal = vi.fn().mockResolvedValue(undefined);
+    (tab as any).plugin.getUpgradePlanCache = () => ({
+      provenance: { state: "veteran_legacy", needs_upgrade: true },
+    });
+    (tab as any).plugin.openUpgradeModal = openUpgradeModal;
+
+    // 1. Stage-2 setup & Library detail CTA must redirect to Upgrade Modal when needs_upgrade=true
+    (tab as any)._startSetupJourney(2);
+    expect(openUpgradeModal).toHaveBeenCalledTimes(1);
+
+    const libEl = dom.window.document.createElement("div");
+    (tab as any)._renderLibraryDetail(libEl);
+    expect(
+      libEl.querySelector('[data-pf-testid="library-veteran-upgrade-gate"]')
+    ).not.toBeNull();
+    const changeBtn = libEl.querySelector(
+      ".pf-module-facts + button, .pf-config-row button, .pf-library-upgrade-gate button"
+    ) as HTMLButtonElement | null;
+    changeBtn?.click();
+    expect(openUpgradeModal).toHaveBeenCalledTimes(2);
+
+    // 2. Decoupled _refreshAllModules keeps installation ready even if probeAll rejects
+    const client = (tab as any).getClient();
+    client.probe = vi.fn().mockResolvedValue({
+      ...createUnknownEnvelope("installation"),
+      capability_state: "ready",
+      severity: "ok",
+      user_state: "ready",
+      reason: { code: "installation.ready", text: "ok" },
+      action: { primary: null },
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 3600,
+    });
+    client.probeAll = vi
+      .fn()
+      .mockRejectedValue(new Error("probeAll timed out"));
+
+    (tab as any)._refreshAllModules();
+    await new Promise((r) => setTimeout(r, 20));
+    expect((tab as any)._capabilityState.installation.user_state).toBe("ready");
+    expect((tab as any)._probing.has("installation")).toBe(false);
+    expect((tab as any)._probing.has("library")).toBe(false);
   });
 });

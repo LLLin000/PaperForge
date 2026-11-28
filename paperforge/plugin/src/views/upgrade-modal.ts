@@ -73,6 +73,7 @@ export class PaperForgeUpgradeModal extends Modal {
   private _zoteroPreselection: VeteranZoteroPreselection | null = null;
   private _zoteroSectionEl: HTMLElement | null = null;
   private _statusSlotEl: HTMLElement | null = null;
+  private _progressTimer: ReturnType<typeof setInterval> | null = null;
   private _closed = false;
 
   constructor(
@@ -107,9 +108,17 @@ export class PaperForgeUpgradeModal extends Modal {
 
   onClose(): void {
     this._closed = true;
+    this._clearProgressTimer();
     this._zoteroSectionEl = null;
     this._statusSlotEl = null;
     this.contentEl.empty();
+  }
+
+  private _clearProgressTimer(): void {
+    if (this._progressTimer !== null) {
+      clearInterval(this._progressTimer);
+      this._progressTimer = null;
+    }
   }
 
   private async _loadZoteroCollections(): Promise<void> {
@@ -658,10 +667,49 @@ export class PaperForgeUpgradeModal extends Modal {
     deferBtn.disabled = true;
     applyBtn.setText(t("upgrade_btn_applying"));
     statusSlot.empty();
-    statusSlot.createSpan({
-      cls: "pf-upgrade-running-hint",
-      text: t("upgrade_status_applying"),
+
+    const progressWrap = statusSlot.createDiv({
+      cls: "pf-upgrade-progress-wrap",
+      attr: { "data-pf-testid": "upgrade-progress-wrap" },
     });
+    const progressHeader = progressWrap.createDiv({
+      cls: "pf-upgrade-progress-header",
+    });
+    const stageLabelEl = progressHeader.createSpan({
+      cls: "pf-upgrade-progress-stage",
+      text: t("upgrade_progress_phase1"),
+      attr: { "data-pf-testid": "upgrade-progress-stage" },
+    });
+    const elapsedEl = progressHeader.createSpan({
+      cls: "pf-upgrade-progress-elapsed",
+      text: "0:00",
+      attr: { "data-pf-testid": "upgrade-progress-elapsed" },
+    });
+    const barTrack = progressWrap.createDiv({ cls: "pf-upgrade-progress-bar" });
+    const barFill = barTrack.createDiv({ cls: "pf-upgrade-progress-fill" });
+    let pct = 25;
+    barFill.style.width = `${pct}%`;
+    progressWrap.createDiv({
+      cls: "pf-upgrade-progress-hint",
+      text: t("upgrade_progress_wait_hint"),
+    });
+
+    const startedAt = Date.now();
+    this._clearProgressTimer();
+    this._progressTimer = setInterval(() => {
+      if (this._closed) {
+        this._clearProgressTimer();
+        return;
+      }
+      const sec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+      const mm = Math.floor(sec / 60);
+      const ss = String(sec % 60).padStart(2, "0");
+      elapsedEl.setText(`${mm}:${ss}`);
+      if (pct < 55) {
+        pct = Math.min(55, pct + 3);
+        barFill.style.width = `${pct}%`;
+      }
+    }, 600);
 
     try {
       const applyOpts: {
@@ -685,6 +733,7 @@ export class PaperForgeUpgradeModal extends Modal {
       }
       const res = await this._client.vaultUpgradeApply(applyOpts);
       if (!res.applied || (res.errors && res.errors.length > 0)) {
+        this._clearProgressTimer();
         const msg =
           res.errors?.map((e) => formatHumanError(e.error)).join("; ") ||
           t("upgrade_err_incomplete");
@@ -700,6 +749,10 @@ export class PaperForgeUpgradeModal extends Modal {
         return;
       }
 
+      pct = 75;
+      barFill.style.width = "75%";
+      stageLabelEl.setText(t("upgrade_progress_phase2"));
+
       if (zctx?.onCommitZoteroConfig) {
         await zctx.onCommitZoteroConfig({
           zoteroSourceMode: this._zoteroMode,
@@ -709,6 +762,10 @@ export class PaperForgeUpgradeModal extends Modal {
             this._zoteroDetectData?.zotero_dir || zctx.zoteroDataDir,
         });
       }
+
+      pct = 90;
+      barFill.style.width = "90%";
+      stageLabelEl.setText(t("upgrade_progress_phase3"));
 
       // Hand off progressive workspace normalization & zero-cost OCR salvage to ControlDaemon
       const sub = await this._client
@@ -720,6 +777,8 @@ export class PaperForgeUpgradeModal extends Modal {
           .catch(() => undefined);
       }
 
+      this._clearProgressTimer();
+      barFill.style.width = "100%";
       statusSlot.empty();
       const doneRow = statusSlot.createDiv({
         cls: "pf-upgrade-done-row",
@@ -737,6 +796,7 @@ export class PaperForgeUpgradeModal extends Modal {
       new Notice(t("upgrade_notice_done"));
       this.close();
     } catch (err: unknown) {
+      this._clearProgressTimer();
       statusSlot.empty();
       statusSlot.createDiv({
         cls: "pf-upgrade-error-msg",
@@ -811,7 +871,8 @@ export function renderStorageMigrationMaintenanceSection(
   app: App,
   client: PaperForgeClient,
   plan: VaultUpgradePlanDto | null,
-  onUpdated: () => void
+  onUpdated: () => void,
+  onOpenUpgrade?: () => void
 ): void {
   if (!plan) return;
   const hasCandidates = (plan.cleanup_candidates?.length ?? 0) > 0;
@@ -827,6 +888,24 @@ export function renderStorageMigrationMaintenanceSection(
     cls: "pf-upgrade-maint-heading",
     text: t("upgrade_maint_heading"),
   });
+
+  if (needsUpgrade) {
+    section.createEl("p", {
+      cls: "setting-item-description",
+      text: t("upgrade_maint_pending_upgrade_desc"),
+    });
+    if (onOpenUpgrade) {
+      const openUpgradeBtn = section.createEl("button", {
+        cls: "pf-action-btn mod-cta",
+        type: "button",
+        text: t("upgrade_maint_open_upgrade_btn"),
+        attr: { "data-pf-testid": "maint-open-upgrade-btn" },
+      });
+      openUpgradeBtn.addEventListener("click", onOpenUpgrade);
+    }
+    return;
+  }
+
   section.createEl("p", {
     cls: "setting-item-description",
     text: t("upgrade_maint_desc"),
@@ -881,7 +960,7 @@ export function renderStorageMigrationMaintenanceSection(
         statusMsg.empty();
         try {
           const res = await client.vaultUpgradeApply({
-            fastCutover: true,
+            quarantineOnly: true,
             quarantineIds: ids,
             noRebuildDb: true,
           });

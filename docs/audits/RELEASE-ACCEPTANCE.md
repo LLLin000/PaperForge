@@ -1,7 +1,7 @@
 # PaperForge 2.0 Release Acceptance Gate (RAGate) & Audit Ledger
 
-> **Target Candidate**: Release `2.0.13` (`release/2.0.13-lifecycle-contract` -> `master`) — see the live GitHub Checks attached to the PR HEAD commit and the release tag run at publish time.
-> **Current Verdict**: **CONDITIONAL GO (Pre-release `2.0.13`)** — Automated Python, Rust daemon, Obsidian Plugin, PBAF v2.1 `--strict`, and Real-Clone Veteran Rehearsal Gate (isolated clone of real 1,358-paper / 971-OCR veteran vault) all pass cleanly; Multi-OS CI & Draft-first Release Gate run on PR/tag while live paid OCR/LLM key smoke & subjective desktop UI walk-through remain for Owner pre-Stable sign-off.
+> **Target Candidate**: Release `2.0.14` (`release/2.0.14-veteran-ux-hardening` -> `master`) — see the live GitHub Checks attached to the PR HEAD commit and the release tag run at publish time.
+> **Current Verdict**: **CONDITIONAL GO (Pre-release `2.0.14`)** — Automated Python, Rust daemon, Obsidian Plugin, PBAF v2.1 `--strict`, and Real-Clone Veteran Rehearsal Gate (isolated clone of real 1,358-paper / 971-OCR veteran vault) all pass cleanly; Multi-OS CI & Draft-first Release Gate run on PR/tag while live paid OCR/LLM key smoke & subjective desktop UI walk-through remain for Owner pre-Stable sign-off.
 
 ---
 
@@ -10,12 +10,12 @@
 | Tier | Status | Notes |
 | --- | --- | --- |
 | **Engineering Ready** | **PASS** | Plugin (`57/58` files, `777/778` tests, 1 skipped, `npm run build` + `typecheck`), Rust daemon (`22/22`), PBAF v2.1 `--strict` (`14/14` gates, `0 FAIL, 0 WARN`), Python sync/upgrade/auth/probe/e2e/chaos/journey/audit/harness (`270` + `25` + `158` passed, `0 FAIL`), and Real-Clone Veteran Rehearsal Gate (1,358-paper veteran vault clone: pre-upgrade `vault.upgrade_required` zero-write block -> atomic cutover + Zotero commit -> `vault.healing_in_progress` lock -> progressive heal -> controlled first sync -> rollback preserving post-cutover note edits + `annotations.jsonl`). |
-| **Product Ready** | **CONDITIONAL PASS** | Veteran cutover, BBT→SQLite folder scope guardrails, daemon hot-swap reconnect cleanup, Settings container width fix (`styles.css`), and multi-vault isolation verified in Vitest + real CLI rehearsal. Subjective real Obsidian desktop visual UX walk-through and live paid OCR/LLM keys await Owner `2.0.13` Pre-release sign-off on clean isolated 2.0.13 test vault. |
-| **Distribution Ready** | **PASS (Pending PR Merge & Tag `2.0.13`)** | Chaos 4-cell gate, Cross-OS Desktop gate (`ci-cross-os-desktop.yml`), and Draft-first unified SHA-256 verification (`publish.yml`) govern `2.0.13` Pre-release publication. |
+| **Product Ready** | **CONDITIONAL PASS** | Veteran cutover, BBT→SQLite folder scope guardrails, daemon hot-swap reconnect cleanup, Settings container width fix (`styles.css`), decoupled Foundation probe, unified veteran Settings/Setup entry, and ~3s fast cutover verified in Vitest + real CLI rehearsal. Subjective real Obsidian desktop visual UX walk-through and live paid OCR/LLM keys await Owner `2.0.14` Pre-release sign-off on clean isolated 2.0.14 test vault. |
+| **Distribution Ready** | **PASS (Pending PR Merge & Tag `2.0.14`)** | Chaos 4-cell gate, Cross-OS Desktop gate (`ci-cross-os-desktop.yml`), and Draft-first unified SHA-256 verification (`publish.yml`) govern `2.0.14` Pre-release publication. |
 
 ---
 
-## 2. Pre-Release Audit Findings Resolution (`PF-R01` .. `PF-R05` + `2.0.13` Closure)
+## 2. Pre-Release Audit Findings Resolution (`PF-R01` .. `PF-R05` + `2.0.14` Closure)
 
 | ID | Severity | Finding Summary | Resolution & Verification |
 | --- | --- | --- | --- |
@@ -25,7 +25,7 @@
 | `PF-R04` | **P1** | Desktop GUI (`H1`/`H2`) and CLI-host acceptance (`P`) previously ran on Windows only. | Added `.github/workflows/ci-cross-os-desktop.yml` (`ubuntu-latest` + `macos-latest` × `H1`/`H2`/POSIX `P` stop; triggered on `master` push, weekly schedule, `workflow_call`, and `publish.yml`), resolving real macOS/Linux `PATH`-shadowing in `node-transport.ts`, POSIX `recorder.py` stdin close, and LF fixture `result-hash.txt` restamping. |
 | `PF-R05` | **P1** | `perf-pdf-runtime.test.ts` strict budgets (`PF_PERF_ENFORCE_BUDGETS=1`) were opt-in only. | Enabled `PF_PERF_ENFORCE_BUDGETS=1` in `.github/workflows/ci.yml` (`L3`) and `.github/workflows/publish.yml` (`Gate 2`). |
 | `ZOT-DEDUPE` | **P2** | Multi-collection `estimatedPapers` could exceed `totalPapers`. | Capped `estimatedPapers` at `totalPapers` upper bound in `zotero-import-scope.ts`; backend `zotero_sqlite.py` deduplicates by `itemID` / `zotero_key` during sync. |
-| `REL-VER` | **Info** | Tag/Pre-release `2.0.12` is published (`2026-11-28`). | Bumped `2.0.12` -> `2.0.13` with backend sync authorization (`vault.upgrade_required`, `zotero.scope_required`, `zotero.scope_invalid`, `VaultOperationLock`), atomic cutover+Zotero commit, multi-vault heal isolation, Settings width fix, and Real-Clone Veteran Rehearsal Gate. |
+| `REL-VER` | **Info** | Tag/Pre-release `2.0.13` was tested on a 1,358-paper veteran vault clone (`2026-11-28`). | Bumped `2.0.13` -> `2.0.14` fixing 4 desktop-acceptance gaps: decoupled `probe("installation")` from slow `probeAll()`, unified Settings → Library/Setup veteran upgrade redirection, deferred `ensure_vault_reconciled` to background `upgrade.heal` with a 3-stage modal progress bar + immediate close, and added `--quarantine-only` plus streaming SHA-256 / Windows move retries. |
 
 ---
 
@@ -38,11 +38,11 @@
 | **G2** | Selective FTS5 Parity, Transactional Upsert, Tier-0 Sovereignty, Veteran Auth & Rollback | `tests/unit/test_backend_sync_authorization_and_recovery.py`, `tests/test_migration_sovereignty_and_healing.py`, `tests/chaos/test_backend_chaos_and_recovery.py` | **AUTOMATED PASS + REAL-CLONE VERIFIED** |
 | **G3** | Cross-OS Chaos & Concurrency (Linux py3.11 + py3.12, Windows py3.11, macOS py3.11) | `.github/workflows/ci-chaos.yml` (`L6`) — required by `publish.yml` | **CI GATE ON PR / TAG** |
 | **G4** | Native Rust Daemon Build & Health Protocol (`--version`, `--stdio`, MCP unmigrated guard) | `ci.yml` (`L1c`), `cargo test` (`22/22` local) & `publish.yml` (`build-native-daemon`) | **PASS (local + Windows/Linux/macOS CI)** |
-| **G5** | Obsidian Plugin Unit, Protocol Conformance, Typecheck, Build & PDF Runtime Budgets (`PF-R05`) | `npm run build && npm test && npm run typecheck` (`57/58` files, `777/778` local), `ci.yml` (`L3`), `publish.yml` (`Gate 2`) | **AUTOMATED PASS** |
+| **G5** | Obsidian Plugin Unit, Protocol Conformance, Typecheck, Build & PDF Runtime Budgets (`PF-R05`) | `npm run build && npm test && npm run typecheck` | **AUTOMATED PASS** |
 | **G6** | Real Obsidian App Integration (`H1` E2E, `H2` Settings/Migration, `P` CLI Acceptance + POSIX Stop) | `ci.yml` (`H1`/`H2`/`P` Windows) + `ci-cross-os-desktop.yml` (`H1`/`H2`/POSIX `P` macOS & Linux) | **CI GATE ON PR / TAG** |
-| **G7** | Unified Draft-First Atomic Release Packaging & Remote SHA-256 Byte Verification (`PF-R03`) | `.github/workflows/publish.yml` (`Gate 4`) | **GOVERNED AT `2.0.13` PUBLISH** |
-| **G8** | Manual Large-Library Ergonomic & Visual Walk-Through + Small-Scale Paid OCR/LLM End-to-End Check | Real-Clone Veteran Rehearsal passed (`1,358` papers / `971` OCR dirs); Owner Obsidian Settings/UX sign-off on clean isolated 2.0.13 test vault | **REHEARSAL PASS / MANUAL UI PENDING OWNER** |
-| **G9** | Clean Version Bump (`2.0.13`) & Pre-release Cut | Branch `release/2.0.13-lifecycle-contract` PR -> `master` merge -> `2.0.13` Pre-release | **IN PROGRESS** |
+| **G7** | Unified Draft-First Atomic Release Packaging & Remote SHA-256 Byte Verification (`PF-R03`) | `.github/workflows/publish.yml` (`Gate 4`) | **GOVERNED AT `2.0.14` PUBLISH** |
+| **G8** | Manual Large-Library Ergonomic & Visual Walk-Through + Small-Scale Paid OCR/LLM End-to-End Check | Real-Clone Veteran Rehearsal passed (`1,358` papers / `971` OCR dirs); Owner Obsidian Settings/UX sign-off on clean isolated 2.0.14 test vault | **REHEARSAL PASS / MANUAL UI PENDING OWNER** |
+| **G9** | Clean Version Bump (`2.0.14`) & Pre-release Cut | Branch `release/2.0.14-veteran-ux-hardening` PR -> `master` merge -> `2.0.14` Pre-release | **IN PROGRESS** |
 
 ---
 

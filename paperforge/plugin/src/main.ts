@@ -887,16 +887,23 @@ export default class PaperForgePlugin extends Plugin {
       onDismissForSession: () => this.dismissUpgradeBannerForSession(),
       zoteroContext,
       onUpgraded: async (meta) => {
-        const refreshed = await this.refreshUpgradePlan();
-        await this.refreshBaseSnapshot().catch(() => undefined);
-        this._settingTab?.display();
-        if (vaultBase && refreshed?.provenance?.needs_upgrade !== true) {
+        if (this._upgradePlanCache?.provenance) {
+          this._upgradePlanCache.provenance.needs_upgrade = false;
+        }
+        if (vaultBase) {
           if (meta?.healSubmitted || this.isHealing()) {
             this._syncAfterHealVault = vaultBase;
           } else {
             this._autoSync(vaultBase);
           }
         }
+        this._settingTab?.display();
+        void this.refreshUpgradePlan()
+          .then(() => {
+            this._settingTab?.display();
+          })
+          .catch(() => undefined);
+        void this.refreshBaseSnapshot().catch(() => undefined);
       },
     }).open();
   }

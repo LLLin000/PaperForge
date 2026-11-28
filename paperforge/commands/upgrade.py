@@ -24,6 +24,7 @@ def run(args: argparse.Namespace) -> int:
     quarantine_residuals = bool(getattr(args, "quarantine_residuals", False))
     quarantine_ids_raw = str(getattr(args, "quarantine_ids", "") or "").strip()
     quarantine_ids = [x.strip() for x in quarantine_ids_raw.split(",") if x.strip()] if quarantine_ids_raw else None
+    quarantine_only = bool(getattr(args, "quarantine_only", False))
     rebuild_db = not bool(getattr(args, "no_rebuild_db", False))
     priority_key = str(getattr(args, "priority_key", "") or "").strip() or None
     heal_limit = getattr(args, "limit", None)
@@ -70,6 +71,7 @@ def run(args: argparse.Namespace) -> int:
                 backfill_ocr=backfill_ocr,
                 quarantine_residuals=quarantine_residuals,
                 quarantine_ids=quarantine_ids,
+                quarantine_only=quarantine_only,
                 rebuild_db=rebuild_db,
                 zotero_source_mode=zotero_source_mode,
                 zotero_selected_collections=zotero_selected_collections,

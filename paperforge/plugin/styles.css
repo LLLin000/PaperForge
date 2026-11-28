@@ -13379,6 +13379,78 @@ body.pf-no-glass
   color: var(--pf-text-muted);
 }
 
+.pf-upgrade-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--pf-radius-panel);
+  background: var(--pf-elevated);
+  border: 1px solid var(--pf-border);
+}
+
+.pf-upgrade-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.pf-upgrade-progress-stage {
+  font-weight: 500;
+  color: var(--pf-text);
+}
+
+.pf-upgrade-progress-elapsed {
+  font-size: 12px;
+  color: var(--pf-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-upgrade-progress-bar {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+}
+
+.pf-upgrade-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--interactive-accent);
+  transition: width 0.25s ease;
+}
+
+.pf-upgrade-progress-hint {
+  font-size: 11.5px;
+  color: var(--pf-text-muted);
+}
+
+.pf-library-upgrade-gate {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--pf-radius-panel);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-library-upgrade-gate-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--pf-text);
+}
+
+.pf-library-upgrade-gate-desc {
+  font-size: 12.5px;
+  color: var(--pf-text-muted);
+  line-height: 1.45;
+}
+
 .pf-upgrade-error-msg {
   color: var(--pf-danger);
 }

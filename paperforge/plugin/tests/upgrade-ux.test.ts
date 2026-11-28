@@ -351,7 +351,7 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
     expect(list?.textContent).toContain("OCR_API_KEY");
   });
 
-  it("renders selective trash quarantine checkboxes and 1-click rollback in Settings maintenance", async () => {
+  it("renders selective trash quarantine checkboxes and 1-click rollback in Settings maintenance (and hides cleanup before upgrade)", async () => {
     const vaultUpgradeApply = vi
       .fn()
       .mockResolvedValue({ applied: true, errors: [] });
@@ -359,13 +359,43 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
       .fn()
       .mockResolvedValue({ rolled_back: true });
     const onUpdated = vi.fn();
-    const host = document.createElement("div");
+    const onOpenUpgrade = vi.fn();
 
+    // Before upgrade completes (needs_upgrade=true): no cleanup checkboxes, unified CTA only
+    const preHost = document.createElement("div");
+    renderStorageMigrationMaintenanceSection(
+      preHost,
+      {} as never,
+      { vaultUpgradeApply, vaultUpgradeRollback } as never,
+      sampleVeteranPlan({ rollback_available: true }),
+      onUpdated,
+      onOpenUpgrade
+    );
+    expect(
+      preHost.querySelector('[data-pf-testid="cleanup-quarantine-btn"]')
+    ).toBeNull();
+    const openUpgradeBtn = preHost.querySelector(
+      '[data-pf-testid="maint-open-upgrade-btn"]'
+    ) as HTMLButtonElement;
+    expect(openUpgradeBtn).not.toBeNull();
+    openUpgradeBtn.click();
+    expect(onOpenUpgrade).toHaveBeenCalledTimes(1);
+
+    // After upgrade completes (needs_upgrade=false): uses quarantineOnly=true, NEVER fastCutover=true
+    const host = document.createElement("div");
     renderStorageMigrationMaintenanceSection(
       host,
       {} as never,
       { vaultUpgradeApply, vaultUpgradeRollback } as never,
-      sampleVeteranPlan({ rollback_available: true }),
+      sampleVeteranPlan({
+        provenance: {
+          state: "standard_current",
+          needs_upgrade: false,
+          confidence: "high",
+          signals: [".paperforge/vault-manifest.json"],
+        },
+        rollback_available: true,
+      }),
       onUpdated
     );
 
@@ -376,7 +406,7 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
 
     await vi.waitFor(() => expect(vaultUpgradeApply).toHaveBeenCalledTimes(1));
     expect(vaultUpgradeApply).toHaveBeenCalledWith({
-      fastCutover: true,
+      quarantineOnly: true,
       quarantineIds: ["cleanup.venv_corrupt"],
       noRebuildDb: true,
     });
@@ -403,13 +433,22 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
       ],
     });
     const onUpdated = vi.fn();
+    const postUpgradePlan = sampleVeteranPlan({
+      provenance: {
+        state: "standard_current",
+        needs_upgrade: false,
+        confidence: "high",
+        signals: [".paperforge/vault-manifest.json"],
+      },
+      rollback_available: false,
+    });
     const host = document.createElement("div");
 
     renderStorageMigrationMaintenanceSection(
       host,
       {} as never,
       { vaultUpgradeApply } as never,
-      sampleVeteranPlan({ rollback_available: false }),
+      postUpgradePlan,
       onUpdated
     );
 
@@ -438,7 +477,7 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
       hostEn,
       {} as never,
       { vaultUpgradeApply } as never,
-      sampleVeteranPlan({ rollback_available: false }),
+      postUpgradePlan,
       onUpdated
     );
     const btnEn = hostEn.querySelector(
@@ -664,5 +703,50 @@ describe("ADR-018: Iceberg Non-Blocking Vault Upgrade UX", () => {
         zoteroDataDir: "/zotero",
       })
     );
+  });
+
+  it("shows staged progress bar + elapsed timer while fast cutover runs in PaperForgeUpgradeModal", async () => {
+    let resolveApply!: (val: { applied: boolean; errors: unknown[] }) => void;
+    const vaultUpgradeApply = vi.fn(
+      () =>
+        new Promise<{ applied: boolean; errors: unknown[] }>((res) => {
+          resolveApply = res;
+        })
+    );
+    const daemonSubmitJob = vi.fn().mockResolvedValue({ accepted: true });
+    const onUpgraded = vi.fn();
+
+    const modal = new PaperForgeUpgradeModal(
+      {} as never,
+      { vaultUpgradeApply, daemonSubmitJob } as never,
+      sampleVeteranPlan(),
+      { onUpgraded }
+    );
+    modal.open();
+
+    const applyBtn = modal.contentEl.querySelector(
+      '[data-pf-testid="upgrade-apply-btn"]'
+    ) as HTMLButtonElement;
+    applyBtn.click();
+
+    await vi.waitFor(() =>
+      expect(
+        modal.contentEl.querySelector(
+          '[data-pf-testid="upgrade-progress-wrap"]'
+        )
+      ).not.toBeNull()
+    );
+    expect(
+      modal.contentEl.querySelector('[data-pf-testid="upgrade-progress-stage"]')
+        ?.textContent
+    ).toMatch(/1\/3/);
+    expect(
+      modal.contentEl.querySelector(
+        '[data-pf-testid="upgrade-progress-elapsed"]'
+      )?.textContent
+    ).toBe("0:00");
+
+    resolveApply({ applied: true, errors: [] });
+    await vi.waitFor(() => expect(onUpgraded).toHaveBeenCalledTimes(1));
   });
 });

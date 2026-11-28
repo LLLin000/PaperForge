@@ -395,3 +395,59 @@ def test_rollback_restores_pre_upgrade_config_and_preserves_post_cutover_user_da
     # User note edit + sidecar annotations MUST remain 100% intact
     assert note_path.read_text(encoding="utf-8") == edited_note
     assert ann_path.read_text(encoding="utf-8") == ann_content
+
+
+def test_fast_cutover_skips_sync_reconcile_and_quarantine_only_never_triggers_cutover(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """v2.0.14 regression:
+    1. `fast_cutover=True` leaves `ensure_vault_reconciled` to background `upgrade.heal` (keeps cutover O(1)).
+    2. `quarantine_only=True` moves ONLY selected residuals to `.paperforge/trash/` without running storage cutover.
+    """
+    from paperforge.services.storage_migration import _files_same_content
+    from paperforge.services.vault_upgrade import detect_vault_provenance, execute_vault_upgrade
+
+    vault = tmp_path / "veteran"
+    (vault / "System" / "PaperForge" / "indexes").mkdir(parents=True)
+    skill_dir = vault / ".agents" / "skills" / "paperforge"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("# Old skill copy\n", encoding="utf-8")
+    canonical_test_config(vault, system_dir="System")
+
+    # 1. quarantine_only=True must quarantine ONLY the chosen candidate without cutting over System/PaperForge
+    plan = inspect_vault_upgrade(vault, fast_summary=False)
+    skill_cands = [c for c in plan["cleanup_candidates"] if "skill" in c["id"]]
+    assert skill_cands, "Expected vault-local skill copy as cleanup candidate"
+
+    q_res = execute_vault_upgrade(
+        vault,
+        dry_run=False,
+        quarantine_only=True,
+        quarantine_ids=[skill_cands[0]["id"]],
+    )
+    assert q_res["applied"] is True
+    assert q_res["mode"] == "quarantine_only"
+    assert q_res["executed_steps"] == [{"step": "quarantine_residuals", "quarantined": 1}]
+    assert not skill_dir.exists()
+    assert (vault / "System" / "PaperForge").is_dir()
+    assert detect_vault_provenance(vault)["needs_upgrade"] is True
+
+    # 2. fast_cutover=True must NOT invoke heavy synchronous ensure_vault_reconciled
+    called_reconcile = []
+    monkeypatch.setattr(
+        "paperforge.services.upgrade_reconcile.ensure_vault_reconciled",
+        lambda *_args, **_kwargs: called_reconcile.append(True) or {},
+    )
+    up_res = execute_vault_upgrade(vault, dry_run=False, fast_cutover=True)
+    assert up_res["applied"] is True
+    assert called_reconcile == []
+
+    # 3. Streaming content compare distinguishes equal vs different files without loading whole files
+    fa = tmp_path / "a.bin"
+    fb = tmp_path / "b.bin"
+    fc = tmp_path / "c.bin"
+    fa.write_bytes(b"hello-paperforge" * 1024)
+    fb.write_bytes(b"hello-paperforge" * 1024)
+    fc.write_bytes(b"hello-different" * 1024)
+    assert _files_same_content(fa, fb, chunk_bytes=128) is True
+    assert _files_same_content(fa, fc, chunk_bytes=128) is False
