@@ -191,6 +191,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_sync.add_argument("--prune", action="store_true", help="Preview orphan cleanup (dry-run)")
     p_sync.add_argument("--prune-force", action="store_true", help="Execute orphan cleanup")
+    p_sync.add_argument(
+        "--all-collections",
+        action="store_true",
+        help="Explicitly authorize syncing the entire Zotero SQLite library",
+    )
 
     # selection-sync (backward compat)
     sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
@@ -924,6 +929,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_upgrade.add_argument("--quarantine-residuals", action="store_true", help="Move all confirmed leftover candidates into .paperforge/trash/")
     p_upgrade.add_argument("--quarantine-ids", metavar="IDS", help="Comma-separated cleanup candidate IDs to quarantine")
     p_upgrade.add_argument("--no-rebuild-db", action="store_true", help="Skip SQLite workspace_registry/ocr_catalog sync")
+    p_upgrade.add_argument(
+        "--zotero-source-mode",
+        choices=["sqlite", "bbt"],
+        default=None,
+        help="Atomically commit Zotero source mode alongside vault cutover",
+    )
+    p_upgrade.add_argument(
+        "--zotero-selected-collections",
+        metavar="JSON",
+        default=None,
+        help="JSON list of Zotero collection keys (or '[\"*\"]') to commit alongside cutover",
+    )
+    p_upgrade.add_argument(
+        "--zotero-data-dir",
+        metavar="PATH",
+        default=None,
+        help="Zotero data directory path to commit alongside cutover",
+    )
     p_upgrade.add_argument("--json", action="store_true", help="Output JSON")
 
     p_engine = sub.add_parser(

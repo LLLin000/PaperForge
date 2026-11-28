@@ -732,6 +732,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
             "target_version": PF_VERSION,
             "provenance": provenance,
             "manifest_present": False,
+            "manifest_state": {"heal_pending": False, "post_upgrade_sync_pending": False},
             "file_contract_conflicts": contract_conflicts,
             "file_contract_count": contract_count,
             "census": {
@@ -1367,6 +1368,12 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
 
     backups_root = vault_root / ".paperforge" / "backups"
     rollback_available = safe_is_dir(backups_root) and any(backups_root.glob("upgrade-*"))
+    manifest_state = {
+        "heal_pending": bool(manifest.get("heal_pending")) if isinstance(manifest, dict) else False,
+        "post_upgrade_sync_pending": bool(manifest.get("post_upgrade_sync_pending"))
+        if isinstance(manifest, dict)
+        else False,
+    }
 
     return {
         "schema_version": 2,
@@ -1374,6 +1381,7 @@ def inspect_vault_upgrade(vault: Path, *, fast_summary: bool = False) -> dict[st
         "target_version": PF_VERSION,
         "provenance": provenance,
         "manifest_present": manifest is not None,
+        "manifest_state": manifest_state,
         "rollback_available": rollback_available,
         "file_contract_conflicts": contract_conflicts,
         "file_contract_count": contract_count,
@@ -1830,13 +1838,60 @@ def heal_vault_progressive(
     from paperforge.materialization.ocr import assess_ocr_bundle_atoms
     from paperforge.services.identity_resolver import scan_vault_identities
     from paperforge.services.storage_migration import rewrite_visual_embeds_for_key
-    from paperforge.services.vault_engine import quarantine_move, sync_ocr_catalog, sync_workspace_registry
+    from paperforge.services.vault_engine import (
+        VaultOperationLock,
+        quarantine_move,
+        read_vault_manifest,
+        sync_ocr_catalog,
+        sync_workspace_registry,
+        write_vault_manifest,
+    )
     from paperforge.worker.asset_index import (
         cleanup_or_preserve_workspace_fulltext,
         sync_workspace_visual_assets,
     )
 
     vault_root = Path(vault).expanduser().resolve()
+    with VaultOperationLock(vault_root, operation="upgrade.heal", timeout=0.0, create_dir=True):
+        return _heal_vault_progressive_locked(
+            vault_root,
+            limit=limit,
+            priority_key=priority_key,
+            backfill_ocr=backfill_ocr,
+            scan=scan,
+            run_reconcile=run_reconcile,
+            run_verify=run_verify,
+            out_scan=out_scan,
+        )
+
+
+def _heal_vault_progressive_locked(
+    vault_root: Path,
+    *,
+    limit: int | None = None,
+    priority_key: str | None = None,
+    backfill_ocr: bool = False,
+    scan: Any | None = None,
+    run_reconcile: bool = True,
+    run_verify: bool = True,
+    out_scan: list[Any] | None = None,
+) -> dict[str, Any]:
+    from paperforge.config import ConfigError, load_config, resolve_paths
+    from paperforge.materialization.ocr import assess_ocr_bundle_atoms
+    from paperforge.services.identity_resolver import scan_vault_identities
+    from paperforge.services.storage_migration import rewrite_visual_embeds_for_key
+    from paperforge.services.vault_engine import (
+        quarantine_move,
+        read_vault_manifest,
+        sync_ocr_catalog,
+        sync_workspace_registry,
+        write_vault_manifest,
+    )
+    from paperforge.worker.asset_index import (
+        cleanup_or_preserve_workspace_fulltext,
+        sync_workspace_visual_assets,
+    )
+
     configured_sys = ""
     try:
         snap = load_config(vault_root)
@@ -2007,6 +2062,9 @@ def heal_vault_progressive(
             epoch_reconcile = ensure_vault_reconciled(vault_root, force=True, scan=final_scan)
         except Exception as exc:  # noqa: BLE001
             skipped_isolated.append({"key": "_reconcile_epoch", "reason": str(exc)})
+    if (limit is None or limit <= 0) and read_vault_manifest(vault_root) is not None:
+        with contextlib.suppress(Exception):
+            write_vault_manifest(vault_root, heal_pending=False)
     verify_res = (
         verify_vault_upgrade(
             vault_root,
@@ -2043,6 +2101,9 @@ def execute_vault_upgrade(
     quarantine_residuals: bool = False,
     quarantine_ids: list[str] | None = None,
     rebuild_db: bool = True,
+    zotero_source_mode: str | None = None,
+    zotero_selected_collections: str | None = None,
+    zotero_data_dir: str | None = None,
 ) -> dict[str, Any]:
     """Execute safe vault upgrade (`fast_cutover=True` for <3s UI cutover, or full pass)."""
     from paperforge.config import ConfigError, load_config, migrate_config, resolve_paths, set_config, validate_config
@@ -2052,7 +2113,7 @@ def execute_vault_upgrade(
         migrate_vault_storage,
         quiesce_sqlite_wal,
     )
-    from paperforge.services.vault_engine import quarantine_move, write_vault_manifest
+    from paperforge.services.vault_engine import VaultOperationLock, quarantine_move, write_vault_manifest
     from paperforge.worker import load_domain_config
     from paperforge.worker.base_views import ensure_base_views
 
@@ -2071,6 +2132,47 @@ def execute_vault_upgrade(
             "errors": [],
             "fsm": fsm.to_dict(),
         }
+
+    with VaultOperationLock(vault_root, operation="upgrade.cutover", timeout=0.0, create_dir=True):
+        return _execute_vault_upgrade_locked(
+            vault_root,
+            fsm=fsm,
+            plan=plan,
+            fast_cutover=fast_cutover,
+            backfill_ocr=backfill_ocr,
+            quarantine_residuals=quarantine_residuals,
+            quarantine_ids=quarantine_ids,
+            rebuild_db=rebuild_db,
+            zotero_source_mode=zotero_source_mode,
+            zotero_selected_collections=zotero_selected_collections,
+            zotero_data_dir=zotero_data_dir,
+        )
+
+
+def _execute_vault_upgrade_locked(
+    vault_root: Path,
+    *,
+    fsm: Any,
+    plan: dict[str, Any],
+    fast_cutover: bool,
+    backfill_ocr: bool,
+    quarantine_residuals: bool,
+    quarantine_ids: list[str] | None,
+    rebuild_db: bool,
+    zotero_source_mode: str | None = None,
+    zotero_selected_collections: str | None = None,
+    zotero_data_dir: str | None = None,
+) -> dict[str, Any]:
+    from paperforge.config import ConfigError, load_config, migrate_config, resolve_paths, set_config, validate_config
+    from paperforge.services.migration_contract import UpgradePhase
+    from paperforge.services.storage_migration import (
+        _move_tree_entries,
+        migrate_vault_storage,
+        quiesce_sqlite_wal,
+    )
+    from paperforge.services.vault_engine import quarantine_move, write_vault_manifest
+    from paperforge.worker import load_domain_config
+    from paperforge.worker.base_views import ensure_base_views
 
     fsm.transition(UpgradePhase.PREFLIGHT_AUDIT, gate="G0_preflight")
     blocking_ids = {"config.corrupt_json", "db.file_locked"}
@@ -2402,33 +2504,69 @@ def execute_vault_upgrade(
     except Exception as exc:  # noqa: BLE001
         logger.debug("best-effort skill sync skipped: %s", exc)
 
-    # 7. Stamp `.paperforge/vault-manifest.json` with rollback reference
-    try:
-        manifest_path = write_vault_manifest(
-            vault_root,
-            migration_entry={
-                "timestamp": _utcnow_compact(),
-                "mode": "fast_cutover" if fast_cutover else "full",
-                "status": "partial_success" if errors else "completed",
-                "backup_dir": str(backup_dir),
-                "steps": [s["step"] for s in executed_steps],
-                "error_count": len(errors),
-            },
-        )
-        executed_steps.append({"step": "write_vault_manifest", "path": str(manifest_path)})
-    except Exception as exc:  # noqa: BLE001
-        errors.append({"step": "write_vault_manifest", "error": str(exc)})
+    # 7. Atomically commit confirmed Zotero configuration (if supplied) BEFORE stamping manifest
+    zotero_commit_failed = False
+    if not cutover_failed and (
+        zotero_source_mode is not None
+        or zotero_selected_collections is not None
+        or zotero_data_dir is not None
+    ):
+        try:
+            if zotero_data_dir is not None and zotero_data_dir.strip():
+                set_config(vault_root, "zotero_data_dir", zotero_data_dir.strip())
+            if zotero_source_mode is not None and zotero_source_mode.strip():
+                set_config(vault_root, "zotero_source_mode", zotero_source_mode.strip())
+            if zotero_selected_collections is not None:
+                set_config(vault_root, "zotero_selected_collections", zotero_selected_collections)
+            executed_steps.append(
+                {
+                    "step": "zotero_config_commit",
+                    "mode": zotero_source_mode,
+                    "selected_collections": zotero_selected_collections,
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            zotero_commit_failed = True
+            errors.append({"step": "zotero_config_commit", "error": str(exc)})
 
-    # 8. Stamp reconcile_epoch once (in fast_cutover here; in full mode inside progressive_heal on final workspaces)
+    # 8. Stamp `.paperforge/vault-manifest.json` with rollback reference
+    manifest_written = False
+    if not zotero_commit_failed and not cutover_failed:
+        try:
+            sync_pending = bool(
+                fast_cutover
+                or zotero_source_mode is not None
+                or zotero_selected_collections is not None
+            )
+            manifest_path = write_vault_manifest(
+                vault_root,
+                migration_entry={
+                    "timestamp": _utcnow_compact(),
+                    "mode": "fast_cutover" if fast_cutover else "full",
+                    "status": "partial_success" if errors else "completed",
+                    "backup_dir": str(backup_dir),
+                    "steps": [s["step"] for s in executed_steps],
+                    "error_count": len(errors),
+                },
+                heal_pending=bool(fast_cutover),
+                post_upgrade_sync_pending=sync_pending,
+            )
+            manifest_written = True
+            executed_steps.append({"step": "write_vault_manifest", "path": str(manifest_path)})
+        except Exception as exc:  # noqa: BLE001
+            errors.append({"step": "write_vault_manifest", "error": str(exc)})
+
+    # 9. Stamp reconcile_epoch once (in fast_cutover here; in full mode inside progressive_heal on final workspaces)
     heal_scan_box: list[Any] = []
     if fast_cutover:
-        try:
-            from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
+        if manifest_written and not cutover_failed and not zotero_commit_failed:
+            try:
+                from paperforge.services.upgrade_reconcile import ensure_vault_reconciled
 
-            rec_res = ensure_vault_reconciled(vault_root, force=True)
-            executed_steps.append({"step": "upgrade_reconcile", "result": rec_res})
-        except Exception as exc:  # noqa: BLE001
-            errors.append({"step": "upgrade_reconcile", "error": str(exc)})
+                rec_res = ensure_vault_reconciled(vault_root, force=True)
+                executed_steps.append({"step": "upgrade_reconcile", "result": rec_res})
+            except Exception as exc:  # noqa: BLE001
+                errors.append({"step": "upgrade_reconcile", "error": str(exc)})
     else:
         # 4. Progressive healing (immediate in full mode; deferred to background daemon in fast_cutover mode)
         fsm.transition(UpgradePhase.PER_WORKSPACE_PROGRESSIVE_HEAL, gate="G3_progressive_heal")
@@ -2525,9 +2663,23 @@ def rollback_vault_upgrade(vault: Path, *, backup_dir: Path | None = None) -> di
         _validate_vault_contained_path,
         rollback_incomplete_migration,
     )
-    from paperforge.services.vault_engine import vault_manifest_path
+    from paperforge.services.vault_engine import VaultOperationLock, vault_manifest_path
 
     vault_root = Path(vault).expanduser().resolve()
+    with VaultOperationLock(vault_root, operation="upgrade.rollback", timeout=0.0, create_dir=False):
+        return _rollback_vault_upgrade_locked(vault_root, backup_dir=backup_dir)
+
+
+def _rollback_vault_upgrade_locked(vault_root: Path, *, backup_dir: Path | None = None) -> dict[str, Any]:
+    from paperforge.services.storage_migration import (
+        _load_rewritten_notes_for_rollback,
+        _move_tree_entries,
+        _rollback_mutations,
+        _validate_vault_contained_path,
+        rollback_incomplete_migration,
+    )
+    from paperforge.services.vault_engine import vault_manifest_path
+
     backups_root = vault_root / ".paperforge" / "backups"
     target_snap = backup_dir
     if target_snap is None and backups_root.is_dir():

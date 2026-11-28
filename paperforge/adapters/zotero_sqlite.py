@@ -28,6 +28,14 @@ logger = logging.getLogger(__name__)
 _NON_DOCUMENT_TYPES = frozenset({"attachment", "note", "annotation"})
 
 
+class ZoteroScopeRequiredError(ValueError):
+    """Raised when SQLite Zotero sync has no authorized collection scope."""
+
+
+class ZoteroScopeInvalidError(ValueError):
+    """Raised when selected Zotero collection keys do not match active Zotero collections."""
+
+
 def _parse_prefs_js(prefs_path: Path) -> dict[str, str]:
     """Extract relevant Zotero string preferences from Firefox-style prefs.js."""
     out: dict[str, str] = {}
@@ -463,6 +471,7 @@ def build_bbt_export_documents_from_sqlite(
     selected_collections: list[str] | None = None,
     domain_mode: str = "per_collection",
     unified_domain: str = "Literature",
+    allow_all: bool = False,
 ) -> dict[str, dict]:
     """Read zotero.sqlite and return ``{DomainName: <BBT-JSON-compatible doc>}``.
 
@@ -729,24 +738,35 @@ def build_bbt_export_documents_from_sqlite(
             return f"{parent_p}/{node['name']}" if parent_p else node["name"]
         return node["name"]
 
-    sel = [s.strip() for s in (selected_collections or []) if str(s or "").strip()]
-    use_all = not sel or sel == ["*"]
+    sel = [str(s).strip() for s in (selected_collections or []) if str(s or "").strip()]
+    use_all = bool(allow_all) or (sel == ["*"])
+
+    if not use_all and not sel:
+        raise ZoteroScopeRequiredError(
+            "Zotero sync scope is not configured; choose collections or explicitly authorize ['*'] / --all-collections."
+        )
 
     # Resolve selected collection IDs (accept collection key, name, or full path)
     resolved_root_cids: list[int] = []
     if not use_all:
         name_to_cid = {node["name"]: cid for cid, node in cols_by_id.items()}
         path_to_cid = {_collection_full_path(cid): cid for cid in cols_by_id}
+        missing_tokens: list[str] = []
         for token in sel:
+            if token == "*":
+                continue
             if token in key_to_cid:
                 resolved_root_cids.append(key_to_cid[token])
             elif token in path_to_cid:
                 resolved_root_cids.append(path_to_cid[token])
             elif token in name_to_cid:
                 resolved_root_cids.append(name_to_cid[token])
-        if not resolved_root_cids:
-            raise ValueError(
-                f"Configured zotero_selected_collections matched no active Zotero collections: {sel}"
+            else:
+                missing_tokens.append(token)
+        if missing_tokens or not resolved_root_cids:
+            bad = missing_tokens or sel
+            raise ZoteroScopeInvalidError(
+                f"Configured zotero_selected_collections matched no active Zotero collections: {bad}"
             )
 
     docs_out: dict[str, dict] = {}
@@ -823,19 +843,21 @@ def materialize_zotero_sqlite_exports(
     selected_collections: list[str] | None = None,
     domain_mode: str = "per_collection",
     unified_domain: str = "Literature",
+    allow_all: bool = False,
 ) -> list[Path]:
     """Write canonical materialized export files into ``exports_dir`` from ``zotero.sqlite``.
 
     Leaves manually exported user BBT JSON files untouched; only creates/updates/prunes
     files marked ``"__managed_by": "zotero_sqlite"``.
     """
-    exports_dir.mkdir(parents=True, exist_ok=True)
     docs = build_bbt_export_documents_from_sqlite(
         zotero_dir,
         selected_collections=selected_collections,
         domain_mode=domain_mode,
         unified_domain=unified_domain,
+        allow_all=allow_all,
     )
+    exports_dir.mkdir(parents=True, exist_ok=True)
     target_names = {f"{dom}.json": doc for dom, doc in docs.items()}
 
     # Prune stale sqlite-managed export JSONs that are no longer selected

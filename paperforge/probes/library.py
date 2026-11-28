@@ -87,6 +87,41 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             ttl_seconds=TTL_LIBRARY,
         )
 
+    # ── Explicit Zotero scope authorization check when SQLite DB is present ──
+    zotero_mode = str(
+        vault_cfg.get("zotero_source_mode") or data.get("zotero_source_mode") or "sqlite"
+    ).strip().lower()
+    if zotero_mode == "sqlite" and (zotero_path / "zotero.sqlite").is_file():
+        import json as _json
+
+        raw_sel = vault_cfg.get("zotero_selected_collections")
+        if raw_sel is None:
+            raw_sel = data.get("zotero_selected_collections")
+        has_scope = False
+        if isinstance(raw_sel, list):
+            has_scope = any(str(x).strip() for x in raw_sel)
+        elif isinstance(raw_sel, str):
+            raw_str = raw_sel.strip()
+            if raw_str.startswith("["):
+                try:
+                    parsed = _json.loads(raw_str)
+                    has_scope = isinstance(parsed, list) and any(str(x).strip() for x in parsed)
+                except ValueError:
+                    has_scope = False
+            elif raw_str and raw_str.lower() not in ("null", "none"):
+                has_scope = any(s.strip() for s in raw_str.split(","))
+        if not has_scope:
+            return build_envelope(
+                module="library", capability_state="missing_input", severity="warning",
+                reason_code="library.zotero_scope_required",
+                reason_text="Zotero directory is connected, but no collection scope or full-library authorization is selected",
+                user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+                action_primary=build_action_primary(
+                    action_id="library.configure", verb="set_config", label="Select Zotero folders",
+                ),
+                ttl_seconds=TTL_LIBRARY,
+            )
+
     # ── Canonical index check via paperforge_paths ──
     from paperforge.config import paperforge_paths
     from paperforge.memory.db import get_memory_db_path
