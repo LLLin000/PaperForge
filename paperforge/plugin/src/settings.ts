@@ -6646,14 +6646,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ...engineOpt,
       })
       .then((data) => {
-        this._probing.clear();
+        for (const mod of CAPABILITY_MODULES) {
+          if (mod !== "installation") {
+            this._probing.delete(mod);
+          }
+        }
         this._silentRevalidating = false;
         const modules = data.modules ?? {};
+        let appliedAny = false;
         for (const [mod, env] of Object.entries(modules)) {
           if (mod === "installation") {
             continue;
           }
-          applyModuleEnvelope(mod as CapabilityModule, env as ProbeEnvelope);
+          if (
+            applyModuleEnvelope(mod as CapabilityModule, env as ProbeEnvelope)
+          ) {
+            appliedAny = true;
+          }
         }
         if (silent) {
           this._persistCapabilityState();
@@ -6662,6 +6671,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (changed && !this._displayInProgress) {
             this.display();
           }
+        } else if (!appliedAny && !this._displayInProgress) {
+          this.display();
         }
         // #78: the library sync-failure exit code is forwarded into the
         // library probe (probe all carries no exit-code context).
@@ -6693,6 +6704,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         }
         this._silentRevalidating = false;
+        if (!silent && !this._displayInProgress) {
+          this.display();
+        }
       });
   }
 
