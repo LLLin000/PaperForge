@@ -190,6 +190,38 @@ def rebuild_fts_indexes(
     return rebuilt
 
 
+def _recreate_external_fts_table(conn: sqlite3.Connection, tbl: str) -> None:
+    """Recover an external-content FTS5 virtual table whose shadow metadata is corrupt."""
+    from paperforge.memory.schema import (
+        CREATE_BODY_UNITS_FTS,
+        CREATE_PAPER_FTS,
+        FTS_TRIGGERS,
+    )
+
+    try:
+        conn.execute(f"DROP TABLE IF EXISTS {tbl}")
+    except sqlite3.DatabaseError:
+        for suffix in ("_data", "_idx", "_docsize", "_config", "_content"):
+            try:
+                conn.execute(f"DROP TABLE IF EXISTS {tbl}{suffix}")
+            except sqlite3.DatabaseError as exc:
+                logger.debug("ignoring shadow drop error for %s%s: %s", tbl, suffix, exc)
+        conn.execute("PRAGMA writable_schema=ON")
+        try:
+            conn.execute("DELETE FROM sqlite_master WHERE type='table' AND name=?", (tbl,))
+        finally:
+            conn.execute("PRAGMA writable_schema=RESET")
+
+    if tbl == "paper_fts":
+        conn.execute(CREATE_PAPER_FTS)
+        for trig_sql in FTS_TRIGGERS:
+            conn.execute(trig_sql)
+    elif tbl == "body_units_fts":
+        conn.execute(CREATE_BODY_UNITS_FTS)
+    else:
+        raise ValueError(f"Unsupported FTS5 virtual table for recreation: {tbl}")
+
+
 def check_and_heal_fts(
     conn: sqlite3.Connection,
     tables: tuple[str, ...] = ("paper_fts", "body_units_fts"),
@@ -212,7 +244,11 @@ def check_and_heal_fts(
         try:
             conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('integrity-check')")
         except sqlite3.DatabaseError:
-            conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+            try:
+                conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
+            except sqlite3.DatabaseError:
+                _recreate_external_fts_table(conn, tbl)
+                conn.execute(f"INSERT INTO {tbl}({tbl}) VALUES('rebuild')")
             repaired.append(tbl)
     return {"checked": checked, "repaired": repaired}
 
