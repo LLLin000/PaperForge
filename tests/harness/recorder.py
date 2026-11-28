@@ -297,10 +297,12 @@ class CliHost:
             watchdog.cancel()
             if stop_timer is not None:
                 stop_timer.cancel()
-            try:
-                proc.stdin.close()
-            except OSError:
-                pass
+            if proc.stdin is not None:
+                try:
+                    proc.stdin.close()
+                except OSError:
+                    pass
+                proc.stdin = None
         stderr = ""
         try:
             _, stderr = proc.communicate(timeout=10)
