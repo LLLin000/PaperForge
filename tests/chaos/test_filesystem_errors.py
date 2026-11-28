@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.chaos.conftest import assert_vault_in_temp
+
 pytestmark = pytest.mark.chaos
 
 
@@ -23,7 +25,7 @@ pytestmark = pytest.mark.chaos
 def test_pdf_directory_deleted(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """FE-01: PDF storage directory deleted after sync -> graceful 'not found', no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # Find and delete the Zotero storage directory containing PDFs
     storage_dir = chaos_vault_standard / "System" / "Zotero" / "storage"
@@ -51,7 +53,7 @@ def test_pdf_directory_deleted(chaos_vault_standard: Path, chaos_cli_invoker: ca
 def test_ocr_directory_deleted(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """FE-02: OCR directory deleted -> graceful handling (re-creates or non-fatal warning), no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # Delete the OCR directory
     ocr_dir = chaos_vault_standard / "System" / "PaperForge" / "ocr"
@@ -72,7 +74,7 @@ def test_ocr_directory_deleted(chaos_vault_standard: Path, chaos_cli_invoker: ca
 def test_formal_note_deleted_out_of_band(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """FE-03: Formal note deleted but entry in canonical index -> repair detects divergence."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # The "standard" vault level has no pre-created formal notes, so create one
     lit_dir = chaos_vault_standard / "Resources" / "Literature" / "orthopedic"
@@ -120,7 +122,7 @@ def test_formal_note_deleted_out_of_band(chaos_vault_standard: Path, chaos_cli_i
 def test_exports_permission_denied(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """FE-05: Exports directory permission denied -> graceful error, no crash. (POSIX only)"""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     exports_dir = chaos_vault_standard / "System" / "PaperForge" / "exports"
     assert exports_dir.exists(), "Exports directory not found"

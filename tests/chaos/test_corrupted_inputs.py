@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from tests.chaos.conftest import (
+    assert_vault_in_temp,
     corrupt_json,
     corrupt_pdf,
     create_broken_meta_json,
@@ -29,7 +30,7 @@ pytestmark = pytest.mark.chaos
 def test_malformed_bbt_json(chaos_vault: Path, chaos_cli_invoker: callable) -> None:
     """CI-01: Place malformed JSON (truncated) in exports/ -> graceful error, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault)
 
     # Setup: copy a valid export and corrupt it
     setup_vault_from_export(chaos_vault, "orthopedic.json")
@@ -58,7 +59,7 @@ def test_malformed_bbt_json(chaos_vault: Path, chaos_cli_invoker: callable) -> N
 def test_empty_bbt_json(chaos_vault: Path, chaos_cli_invoker: callable) -> None:
     """CI-02: Place an empty JSON file in exports/ -> graceful handling, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault)
 
     # Write empty BBT export ({"items": []} is the proper empty format)
     exports_dir = chaos_vault / "System" / "PaperForge" / "exports"
@@ -79,7 +80,7 @@ def test_empty_bbt_json(chaos_vault: Path, chaos_cli_invoker: callable) -> None:
 def test_bbt_json_missing_citation_key(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """CI-03: BBT JSON with items missing citationKey -> graceful skip, continues processing."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # Find the export JSON and remove citationKey from one item
     exports_dir = chaos_vault_standard / "System" / "PaperForge" / "exports"
@@ -109,7 +110,7 @@ def test_bbt_json_missing_citation_key(chaos_vault_standard: Path, chaos_cli_inv
 def test_corrupt_pdf(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """CI-04: Corrupt PDF (binary garbage) in Zotero storage -> graceful handling, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # Find and corrupt a PDF in the vault's Zotero storage
     storage_dir = chaos_vault_standard / "System" / "Zotero"
@@ -130,7 +131,7 @@ def test_corrupt_pdf(chaos_vault_standard: Path, chaos_cli_invoker: callable) ->
 def test_broken_meta_json(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """CI-05: Broken meta.json (invalid JSON) in OCR dir -> graceful handling, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # Create OCR directory with broken meta.json
     ocr_dir = chaos_vault_standard / "System" / "PaperForge" / "ocr" / "FIXT0001"
@@ -158,7 +159,7 @@ def test_broken_meta_json(chaos_vault_standard: Path, chaos_cli_invoker: callabl
 def test_missing_frontmatter_field(chaos_vault_standard: Path, chaos_cli_invoker: callable) -> None:
     """CI-06: Formal note missing zotero_key in frontmatter -> graceful handling, no crash."""
     # Isolation guard
-    assert any(x in str(chaos_vault_standard).lower() for x in ("tmp", "temp"))
+    assert_vault_in_temp(chaos_vault_standard)
 
     # Create a formal note with missing zotero_key
     domain_dir = chaos_vault_standard / "Resources" / "Literature" / "orthopedic"

@@ -18,13 +18,16 @@ from pathlib import Path
 import pytest
 
 
-def _assert_vault_in_temp(vault: Path) -> None:
+def assert_vault_in_temp(vault: Path) -> None:
     resolved = vault.resolve()
     tmp_root = Path(tempfile.gettempdir()).resolve()
     vault_lower = str(resolved).lower()
     assert resolved.is_relative_to(tmp_root) or any(x in vault_lower for x in ("tmp", "temp")), (
         f"Isolation VIOLATION: vault path {vault} does not reside under temp dir {tmp_root}"
     )
+
+
+_assert_vault_in_temp = assert_vault_in_temp
 
 
 # ---------------------------------------------------------------------------
