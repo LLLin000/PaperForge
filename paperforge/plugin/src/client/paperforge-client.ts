@@ -2876,11 +2876,10 @@ export class PaperForgeClient {
   // ── 9. Unified Vault Upgrade & Low-Memory ControlDaemon (ADR-018) ────────
 
   async vaultUpgradePlan(): Promise<VaultUpgradePlanDto> {
-    return this._executePfResult<VaultUpgradePlanDto>([
-      "upgrade",
-      "--plan",
-      "--json",
-    ]);
+    return this._executePfResult<VaultUpgradePlanDto>(
+      ["upgrade", "--plan", "--json"],
+      { timeoutMs: 120000 }
+    );
   }
 
   async vaultUpgradeApply(opts?: {

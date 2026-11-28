@@ -25,6 +25,10 @@ import {
   matchEmbeddingPresetId,
   renderDomainModePreview,
 } from "./views/domain-preview";
+import {
+  evaluateZoteroImportScope,
+  type ZoteroScopeEvaluation,
+} from "./services/zotero-import-scope";
 
 interface InlineRenderOpts {
   inline?: boolean;
@@ -6784,6 +6788,157 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return (raw || "Literature").replace(/\/+$/, "");
   }
 
+  private _renderZoteroFolderScopeBox(
+    parentEl: HTMLElement,
+    opts: {
+      isZh: boolean;
+      totalPapers: number;
+      collections: Array<{
+        key: string;
+        name: string;
+        item_count: number;
+        top_level?: boolean;
+      }>;
+      settings: PaperForgeSettings;
+      onScopeChange: () => void;
+    }
+  ): { boxEl: HTMLElement } {
+    const { isZh, totalPapers, collections, settings, onScopeChange } = opts;
+    const boxEl = parentEl.createDiv({ cls: "pf-zotero-scope-box" });
+    boxEl.dataset.pfTestid = "zotero-folder-scope-box";
+
+    const headRow = boxEl.createDiv({ cls: "pf-zotero-scope-head" });
+    const titleRow = headRow.createDiv({ cls: "pf-zotero-scope-title-row" });
+    titleRow.createEl("strong", {
+      text: isZh
+        ? "选择要导入的 Zotero 文件夹"
+        : "Choose Zotero Folders to Import",
+    });
+    const pillEl = titleRow.createEl("span", { cls: "pf-express-pill" });
+
+    const actRow = headRow.createDiv({ cls: "pf-zotero-scope-actions" });
+    const selectAllBtn = actRow.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: isZh ? "全选文件夹" : "Select All",
+      attr: { type: "button", "data-pf-testid": "zotero-scope-select-all" },
+    });
+    const clearBtn = actRow.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: isZh ? "清空" : "Clear",
+      attr: { type: "button", "data-pf-testid": "zotero-scope-clear" },
+    });
+
+    const isLarge = totalPapers > 200;
+    const warnEl = boxEl.createEl("p", {
+      cls: "pf-setup-warn",
+      text: isZh
+        ? isLarge
+          ? `你的 Zotero 共有 ${totalPapers} 篇文献。建议先勾选 1–3 个常用课题文件夹分批导入，体验更流畅；随时可在设置中追加其他文件夹。`
+          : `你的 Zotero 共有 ${totalPapers} 篇文献。请先勾选要导入的课题文件夹（或勾选下方「导入整个 Zotero 文库」），随时可在设置中增减。`
+        : isLarge
+          ? `Your Zotero library has ${totalPapers} papers. Starting with 1–3 active folders is faster and safer; you can add more anytime in Settings.`
+          : `Your Zotero library has ${totalPapers} papers. Choose which folders to import below (or check "Import entire library"); you can change this anytime in Settings.`,
+    });
+
+    const colGrid = boxEl.createDiv({ cls: "pf-zotero-col-grid" });
+    const colInputs: Array<{ key: string; cb: HTMLInputElement }> = [];
+    for (const col of collections) {
+      const label = colGrid.createEl("label", { cls: "pf-zotero-col-item" });
+      const cb = label.createEl("input", {
+        attr: { type: "checkbox" },
+      }) as HTMLInputElement;
+      colInputs.push({ key: col.key, cb });
+      label.createSpan({ text: col.name });
+      label.createEl("span", {
+        cls: "pf-zotero-col-cnt",
+        text: `${col.item_count}`,
+      });
+    }
+
+    const allLabel = boxEl.createEl("label", {
+      cls: "pf-zotero-scope-all-toggle",
+    });
+    const allCb = allLabel.createEl("input", {
+      attr: { type: "checkbox", "data-pf-testid": "zotero-scope-import-all" },
+    }) as HTMLInputElement;
+    allLabel.createSpan({
+      text: isZh
+        ? `导入整个 Zotero 文库（含未归类条目${totalPapers > 0 ? `，共 ${totalPapers} 篇` : ""}）`
+        : `Import entire Zotero library (including unfiled items${totalPapers > 0 ? `, ${totalPapers} total` : ""})`,
+    });
+
+    const syncUi = () => {
+      const sc = evaluateZoteroImportScope({
+        totalPapers,
+        collections,
+        selected: settings.zotero_selected_collections,
+      });
+      const pickedSet = new Set(sc.selectedKeys);
+      for (const item of colInputs) {
+        item.cb.checked = pickedSet.has(item.key);
+        item.cb.disabled = sc.explicitAll;
+      }
+      allCb.checked = sc.explicitAll;
+      boxEl.classList.toggle("is-attention", sc.requiresFolderChoice);
+      warnEl.style.display = sc.requiresFolderChoice ? "" : "none";
+
+      if (sc.explicitAll) {
+        pillEl.className = "pf-express-pill is-ok";
+        pillEl.textContent = isZh
+          ? `全部文库 · 共 ${sc.estimatedPapers} 篇`
+          : `All · ${sc.estimatedPapers}`;
+      } else if (sc.selectedKeys.length > 0) {
+        pillEl.className = "pf-express-pill is-ok";
+        pillEl.textContent = isZh
+          ? `已选 ${sc.selectedKeys.length} 个文件夹 · 约 ${sc.estimatedPapers} 篇`
+          : `${sc.selectedKeys.length} folders · ~${sc.estimatedPapers}`;
+      } else if (sc.requiresFolderChoice) {
+        pillEl.className = "pf-express-pill is-warn";
+        pillEl.textContent = isZh ? "请勾选文件夹" : "Pick folders";
+      } else {
+        pillEl.className = "pf-express-pill is-ok";
+        pillEl.textContent = isZh
+          ? `全部文库 · 共 ${sc.estimatedPapers} 篇`
+          : `All · ${sc.estimatedPapers}`;
+      }
+    };
+
+    const commitSelection = (next: string[]) => {
+      settings.zotero_selected_collections = next;
+      void this.plugin.saveSettings();
+      syncUi();
+      onScopeChange();
+    };
+
+    for (const item of colInputs) {
+      item.cb.addEventListener("change", () => {
+        const cur = new Set(
+          Array.isArray(settings.zotero_selected_collections)
+            ? settings.zotero_selected_collections.filter((k) => k !== "*")
+            : []
+        );
+        if (item.cb.checked) cur.add(item.key);
+        else cur.delete(item.key);
+        commitSelection(Array.from(cur));
+      });
+    }
+
+    allCb.addEventListener("change", () => {
+      commitSelection(allCb.checked ? ["*"] : []);
+    });
+
+    selectAllBtn.addEventListener("click", () => {
+      commitSelection(collections.map((c) => c.key));
+    });
+
+    clearBtn.addEventListener("click", () => {
+      commitSelection([]);
+    });
+
+    syncUi();
+    return { boxEl };
+  }
+
   /** Express 1-page beginner flow inspired by Linear / Cherry Studio / VS Code Walkthrough. */
   private _renderExpressSetup(wrapper: HTMLElement, isZh: boolean): void {
     this._refreshRuntimeStatus();
@@ -6994,46 +7149,178 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const curMode =
       settings.domain_mode === "unified" ? "unified" : "per_collection";
     const litTargetDir = this._resolveSetupLiteratureDir();
-    const paperCnt = this._zoteroDetectData?.total_papers;
+    const paperCnt = this._zoteroDetectData?.total_papers ?? 0;
+    const allCols = this._zoteroDetectData?.collections ?? [];
+    const topCols = allCols.filter((c) => c.top_level !== false);
+    const listCols = topCols.length > 0 ? topCols : allCols;
     const summaryEl = c1.createEl("div", {
       cls: "pf-express-default-summary",
     });
+    const computeScope = (): ZoteroScopeEvaluation =>
+      evaluateZoteroImportScope({
+        totalPapers: paperCnt,
+        collections: listCols,
+        selected: settings.zotero_selected_collections,
+      });
+
+    let footerSummaryEl: HTMLElement | null = null;
+    let primaryBtnEl: HTMLElement | null = null;
+    let ctaBusy = false;
+    let expressRuntimeInProgress = false;
+    let daemonUpdating = false;
+    let rtChecking = false;
+    let isImporting = false;
+    let rtStepTag = "";
+    let syncStepTag = "";
+
+    const formatScopeCtaLabel = (sc: ZoteroScopeEvaluation): string => {
+      if (sc.requiresFolderChoice) {
+        if (!rtReady) {
+          return action === "update"
+            ? isZh
+              ? "更新引擎并挑选要导入的文件夹"
+              : "Update Engine & Pick Folders"
+            : isZh
+              ? "安装引擎并挑选要导入的文件夹"
+              : "Install Engine & Pick Folders";
+        }
+        return isZh
+          ? "请先在上方勾选要导入的文件夹"
+          : "Select Folders Above First";
+      }
+      const scopeNoun =
+        sc.selectedKeys.length > 0
+          ? isZh
+            ? `已选 ${sc.selectedKeys.length} 个文件夹（约 ${sc.estimatedPapers} 篇）`
+            : `${sc.selectedKeys.length} Folders (~${sc.estimatedPapers})`
+          : sc.estimatedPapers > 0
+            ? isZh
+              ? ` ${sc.estimatedPapers} 篇文献`
+              : ` ${sc.estimatedPapers} Papers`
+            : isZh
+              ? "文献"
+              : " Papers";
+      if (!rtReady) {
+        return action === "update"
+          ? isZh
+            ? `更新引擎并导入${scopeNoun}`
+            : `Update Engine & Import${scopeNoun}`
+          : isZh
+            ? `安装引擎并导入${scopeNoun}`
+            : `Install Engine & Import${scopeNoun}`;
+      }
+      return isZh
+        ? `立即导入${scopeNoun}并开始使用`
+        : `Import${scopeNoun} & Start`;
+    };
+
     const updateReadySummary = () => {
       const targetDir = this._resolveSetupLiteratureDir();
       const activeMode =
         settings.domain_mode === "unified" ? "unified" : "per_collection";
-      summaryEl.textContent = zoteroReady
-        ? isZh
-          ? `✓ 已自动就绪：只读读取 Zotero 原库，并在 Vault 的 ${targetDir}/ 目录生成${paperCnt ? ` ${paperCnt} 篇` : ""}文献笔记（${activeMode === "unified" ? "全部统一放进目录并在总表筛选" : "按 Zotero 顶级文件夹分专题归类"}）。`
-          : `✓ Ready: reads your Zotero DB read-only and creates${paperCnt ? ` ${paperCnt}` : ""} notes inside ${targetDir}/ (${activeMode === "unified" ? "unified folder + Base filters" : "grouped by your top Zotero folders"}).`
-        : isZh
+      const sc = computeScope();
+      if (!zoteroReady) {
+        summaryEl.textContent = isZh
           ? `未自动找到 Zotero 默认目录，请在下方选择或粘贴你的 Zotero 数据目录（导入后将写入 Vault 的 ${targetDir}/）。`
           : `Zotero default folder was not detected automatically. Browse or paste your Zotero directory below (notes will be created in ${targetDir}/).`;
+      } else if (sc.requiresFolderChoice) {
+        summaryEl.textContent = isZh
+          ? sc.isLargeLibrary
+            ? `✓ 已读取 Zotero（共 ${sc.estimatedPapers} 篇）。文库较大，请在下方勾选需要导入的课题文件夹（建议先选 1–3 个），将写入 ${targetDir}/。`
+            : `✓ 已读取 Zotero（共 ${sc.estimatedPapers} 篇）。请在下方勾选需要导入的课题文件夹（或勾选导入整个文库），将写入 ${targetDir}/。`
+          : sc.isLargeLibrary
+            ? `✓ Detected Zotero (${sc.estimatedPapers} papers). Large library: pick the specific folders below to import into ${targetDir}/.`
+            : `✓ Detected Zotero (${sc.estimatedPapers} papers). Pick the folders below (or choose entire library) to import into ${targetDir}/.`;
+      } else {
+        const countStr =
+          sc.selectedKeys.length > 0
+            ? isZh
+              ? `已选 ${sc.selectedKeys.length} 个文件夹 · 约 ${sc.estimatedPapers} 篇`
+              : `${sc.selectedKeys.length} selected folders · ~${sc.estimatedPapers}`
+            : sc.estimatedPapers > 0
+              ? ` ${sc.estimatedPapers} 篇`
+              : "";
+        summaryEl.textContent = isZh
+          ? `✓ 已自动就绪：只读读取 Zotero 原库，并在 Vault 的 ${targetDir}/ 目录生成${countStr}文献笔记（${activeMode === "unified" ? "全部统一放进目录并在总表筛选" : "按 Zotero 顶级文件夹分专题归类"}）。`
+          : `✓ Ready: reads your Zotero DB read-only and creates${countStr ? ` ${countStr}` : ""} notes inside ${targetDir}/ (${activeMode === "unified" ? "unified folder + Base filters" : "grouped by your top Zotero folders"}).`;
+      }
+      if (footerSummaryEl) {
+        if (!zoteroReady) {
+          footerSummaryEl.textContent = isZh
+            ? "先在上一步确认 Zotero 目录即可开始导入"
+            : "Confirm your Zotero folder above to start importing";
+        } else if (sc.requiresFolderChoice) {
+          footerSummaryEl.textContent = isZh
+            ? `请先勾选要导入的 Zotero 文件夹 → ${targetDir}/`
+            : `Select folders to import → ${targetDir}/`;
+        } else {
+          const tail =
+            sc.selectedKeys.length > 0
+              ? isZh
+                ? `已选 ${sc.selectedKeys.length} 个文件夹（约 ${sc.estimatedPapers} 篇）`
+                : `${sc.selectedKeys.length} folders (~${sc.estimatedPapers} papers)`
+              : sc.estimatedPapers > 0
+                ? isZh
+                  ? `全部 ${sc.estimatedPapers} 篇文献`
+                  : `all ${sc.estimatedPapers} papers`
+                : isZh
+                  ? "文献"
+                  : "papers";
+          footerSummaryEl.textContent = isZh
+            ? `只读导入${tail} → ${targetDir}/ · 免费功能立即生效`
+            : `Read-only import (${tail}) → ${targetDir}/ · Free features ready right away`;
+        }
+      }
+      if (
+        primaryBtnEl &&
+        !daemonUpdating &&
+        !rtChecking &&
+        !expressRuntimeInProgress &&
+        !isImporting
+      ) {
+        primaryBtnEl.textContent = formatScopeCtaLabel(sc);
+      }
     };
     updateReadySummary();
 
+    let scopeBoxEl: HTMLElement | null = null;
+    let redrawPreviewRef: (() => void) | null = null;
+    if (zoteroReady && listCols.length > 0) {
+      const picker = this._renderZoteroFolderScopeBox(c1, {
+        isZh,
+        totalPapers: paperCnt,
+        collections: listCols,
+        settings,
+        onScopeChange: () => {
+          updateReadySummary();
+          redrawPreviewRef?.();
+        },
+      });
+      scopeBoxEl = picker.boxEl;
+    }
+
     // Seamless Engine Auto-Pipeline notice/progress inside Card 1
-    const daemonUpdating = Boolean(this.plugin?.isDaemonUpdating?.());
+    daemonUpdating = Boolean(this.plugin?.isDaemonUpdating?.());
     const liveRuntime = this.plugin?.getLiveTaskSummary?.("runtime") ?? null;
     const liveSync = this.plugin?.getLiveTaskSummary?.("sync") ?? null;
-    const expressRuntimeInProgress =
+    expressRuntimeInProgress =
       !rtReady &&
       (this._syncRuntimePollFromBackground() ||
         Boolean(this._runtimePollTimer) ||
         Boolean(this.plugin?.isRuntimeUpdating?.()) ||
         Boolean(this._pendingRuntimeRestartAfterDaemonSwap));
-    const rtChecking =
+    rtChecking =
       !rtReady &&
       !this._runtimeStatusError &&
       !daemonUpdating &&
       !expressRuntimeInProgress &&
       (this._runtimeStatusLoading ||
         (Boolean(pointer) && this._runtimeStatus === null));
-    const isImporting =
+    isImporting =
       this._setupOperation === "running" &&
       !expressRuntimeInProgress &&
       !daemonUpdating;
-    const ctaBusy =
+    ctaBusy =
       daemonUpdating || rtChecking || expressRuntimeInProgress || isImporting;
 
     if (daemonUpdating) {
@@ -7138,8 +7425,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     customizeDet.createEl("summary", {
       text: isZh
-        ? "调整 Zotero 位置、目录归档方式或筛选特定文件夹 ▾"
-        : "Customize Zotero path, folder layout or collections ▾",
+        ? "调整 Zotero 位置或 Vault 写入目录 ▾"
+        : "Customize Zotero path or output folder ▾",
       attr: { "data-pf-testid": "express-customize-toggle" },
     });
     const customBody = customizeDet.createDiv({
@@ -7204,22 +7491,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     targetDirIn.value = litTargetDir;
 
     const previewHost = customBody.createDiv();
-    const allCols = this._zoteroDetectData?.collections ?? [];
-    const topCols = allCols.filter((c) => c.top_level !== false);
-    const curSel = new Set(
-      Array.isArray(settings.zotero_selected_collections)
-        ? settings.zotero_selected_collections
-        : []
-    );
     const redrawPreview = () => {
+      const sc = computeScope();
       const pickedCols =
-        curSel.size > 0
-          ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
-              curSel.has(c.key)
-            )
-          : topCols.length > 0
-            ? topCols
-            : allCols;
+        sc.selectedKeys.length > 0
+          ? listCols.filter((c) => sc.selectedKeys.includes(c.key))
+          : listCols;
       renderDomainModePreview(previewHost, {
         domainMode:
           settings.domain_mode === "unified" ? "unified" : "per_collection",
@@ -7229,6 +7506,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       updateReadySummary();
     };
+    redrawPreviewRef = redrawPreview;
     targetDirIn.addEventListener("change", () => {
       const cleaned =
         targetDirIn.value.trim().replace(/^\/+|\/+$/g, "") || "Literature";
@@ -7277,37 +7555,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
     redrawPreview();
-
-    if (allCols.length > 0) {
-      const colDet = customBody.createEl("details", {
-        cls: "pf-adv-inline-details",
-      });
-      colDet.createEl("summary", {
-        text: isZh
-          ? `挑选只同步哪些 Zotero 文件夹（当前：${curSel.size > 0 ? `已选 ${curSel.size} 个` : "全部文库"}）`
-          : `Filter specific Zotero folders (${curSel.size > 0 ? `${curSel.size} selected` : "All papers"})`,
-      });
-      const colGrid = colDet.createDiv({ cls: "pf-zotero-col-grid" });
-      for (const col of topCols.length > 0 ? topCols : allCols) {
-        const label = colGrid.createEl("label", { cls: "pf-zotero-col-item" });
-        const cb = label.createEl("input", {
-          attr: { type: "checkbox" },
-        }) as HTMLInputElement;
-        cb.checked = curSel.has(col.key);
-        cb.addEventListener("change", () => {
-          if (cb.checked) curSel.add(col.key);
-          else curSel.delete(col.key);
-          settings.zotero_selected_collections = Array.from(curSel);
-          void this.plugin.saveSettings();
-          redrawPreview();
-        });
-        label.createEl("span", { text: col.name });
-        label.createEl("span", {
-          cls: "pf-zotero-col-cnt",
-          text: `${col.item_count}`,
-        });
-      }
-    }
 
     // ── Section C: Card 2 — 进阶功能（全部可选，以后用到再开） ──
     const c2 = wrapper.createDiv({
@@ -7977,15 +8224,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── Sticky Action Bar (Linear / Raycast style) ──
     const footer = wrapper.createDiv({ cls: "pf-express-footer" });
-    footer.createEl("span", {
+    footerSummaryEl = footer.createEl("span", {
       cls: "pf-express-footer-summary",
-      text: zoteroReady
-        ? isZh
-          ? `只读导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献 → ${litTargetDir}/ · 免费功能立即生效`
-          : `Read-only import → ${litTargetDir}/ · Free features ready right away`
-        : isZh
-          ? "先在上一步确认 Zotero 目录即可开始导入"
-          : "Confirm your Zotero folder above to start importing",
+      text: "",
     });
     const fActions = footer.createDiv({ cls: "pf-express-footer-actions" });
     renderActionButton(fActions, {
@@ -7997,11 +8238,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         isImporting,
       onClick: () => this._goHome(),
     });
-    const rtStepTag =
+    rtStepTag =
       liveRuntime && liveRuntime.total > 0 && liveRuntime.current > 0
         ? ` (${liveRuntime.current}/${liveRuntime.total})`
         : "";
-    const syncStepTag =
+    syncStepTag =
       liveSync && liveSync.total > 0 && liveSync.current > 0
         ? ` (${liveSync.current}/${liveSync.total})`
         : "";
@@ -8027,26 +8268,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : isZh
             ? `正在导入文献库${syncStepTag}…`
             : `Importing library${syncStepTag}…`;
-    } else if (!rtReady) {
-      if (action === "update") {
-        primaryLabel = isZh
-          ? `更新引擎并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
-          : `Update Engine & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`;
-      } else {
-        primaryLabel = isZh
-          ? `安装引擎并导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献`
-          : `Install Engine & Import${paperCnt ? ` ${paperCnt}` : ""} Papers`;
-      }
     } else {
-      primaryLabel = isZh
-        ? `立即导入${paperCnt ? ` ${paperCnt} 篇` : ""}文献并开始使用`
-        : `Import${paperCnt ? ` ${paperCnt}` : ""} Papers & Start`;
+      primaryLabel = formatScopeCtaLabel(computeScope());
     }
-    renderActionButton(fActions, {
+    primaryBtnEl = renderActionButton(fActions, {
       label: primaryLabel,
       disabled: ctaBusy,
       onClick: () => {
         if (ctaBusy) return;
+        const sc = computeScope();
+        if (sc.requiresFolderChoice) {
+          if (scopeBoxEl) {
+            scopeBoxEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            scopeBoxEl.classList.add("pf-zotero-scope-pulse");
+            window.setTimeout(
+              () => scopeBoxEl?.classList.remove("pf-zotero-scope-pulse"),
+              1500
+            );
+          }
+          new Notice(
+            isZh
+              ? sc.isLargeLibrary
+                ? `你的 Zotero 共有 ${paperCnt} 篇文献：请先勾选要导入的文件夹（或勾选“导入整个 Zotero 文库”）`
+                : `请先勾选要导入的 Zotero 文件夹（或勾选“导入整个 Zotero 文库”）`
+              : sc.isLargeLibrary
+                ? `Large library (${paperCnt} papers): please select at least one Zotero folder above (or check "Import entire library").`
+                : `Please select at least one Zotero folder above (or check "Import entire library").`,
+            4500
+          );
+          return;
+        }
         if (!rtReady) {
           void this.plugin.saveSettings();
           this._launchRuntimeInstaller(action, { autoContinueSetup: true });
@@ -8055,6 +8306,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._applyLibraryConfiguration({ autoCompleteOnSuccess: true });
       },
     });
+    updateReadySummary();
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {
@@ -8483,23 +8735,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const previewHost = body.createDiv();
         const allCols = this._zoteroDetectData?.collections ?? [];
         const topCols = allCols.filter((c) => c.top_level !== false);
-        const curSel = new Set(
-          Array.isArray(settings.zotero_selected_collections)
-            ? settings.zotero_selected_collections
-            : []
-        );
+        const listToShow = topCols.length > 0 ? topCols : allCols;
+        const paperCnt = this._zoteroDetectData?.total_papers ?? 0;
         const curMode =
           settings.domain_mode === "unified" ? "unified" : "per_collection";
 
         const redrawPreview = () => {
+          const sc = evaluateZoteroImportScope({
+            totalPapers: paperCnt,
+            collections: listToShow,
+            selected: settings.zotero_selected_collections,
+          });
           const pickedCols =
-            curSel.size > 0
-              ? (topCols.length > 0 ? topCols : allCols).filter((c) =>
-                  curSel.has(c.key)
-                )
-              : topCols.length > 0
-                ? topCols
-                : allCols;
+            sc.selectedKeys.length > 0
+              ? listToShow.filter((c) => sc.selectedKeys.includes(c.key))
+              : listToShow;
           renderDomainModePreview(previewHost, {
             domainMode:
               settings.domain_mode === "unified" ? "unified" : "per_collection",
@@ -8513,33 +8763,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           body.createEl("p", {
             cls: "caption",
             text: isZh
-              ? "1) 选择需要同步到 Obsidian 的 Zotero 文件夹（不勾选则默认同步整个 Zotero 文库）："
-              : "1) Check Zotero collections to sync (leave unchecked to sync your entire Zotero library):",
+              ? "1) 选择需要导入到 Obsidian 的 Zotero 文件夹（也可在底部勾选「导入整个 Zotero 文库」）："
+              : '1) Choose Zotero folders to import (or check "Import entire library" at the bottom):',
           });
-          if (allCols.length > 0) {
-            const colGrid = body.createDiv({ cls: "pf-zotero-col-grid" });
-            const listToShow = topCols.length > 0 ? topCols : allCols;
-            for (const col of listToShow) {
-              const label = colGrid.createEl("label", {
-                cls: "pf-zotero-col-item",
-              });
-              const cb = label.createEl("input", {
-                attr: { type: "checkbox" },
-              }) as HTMLInputElement;
-              cb.checked = curSel.has(col.key);
-              cb.addEventListener("change", () => {
-                if (cb.checked) curSel.add(col.key);
-                else curSel.delete(col.key);
-                settings.zotero_selected_collections = Array.from(curSel);
-                void this.plugin.saveSettings();
-                redrawPreview();
-              });
-              label.createSpan({ text: col.name });
-              label.createEl("span", {
-                cls: "pf-zotero-col-cnt",
-                text: `${col.item_count}`,
-              });
-            }
+          if (listToShow.length > 0) {
+            this._renderZoteroFolderScopeBox(body, {
+              isZh,
+              totalPapers: paperCnt,
+              collections: listToShow,
+              settings,
+              onScopeChange: redrawPreview,
+            });
           } else {
             body.createEl("p", {
               cls: "setting-item-description",
