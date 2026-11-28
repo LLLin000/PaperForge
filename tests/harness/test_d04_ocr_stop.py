@@ -86,4 +86,4 @@ def test_stop_is_cooperative_and_the_terminal_is_honest(ocr_cli, vault, case, oc
         json.dumps(stub.counts),
     )
 
-    case.artifact("ocr-dir", vault / "System" / "PaperForge" / "ocr" / "FIXT0001")
+    case.artifact("ocr-dir", vault / ".paperforge" / "ocr" / "FIXT0001")

@@ -17,6 +17,9 @@
  */
 
 import "obsidian-test-mocks/jest-setup";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import { describe, it, expect, beforeEach, beforeAll, vi } from "vitest";
 import { MockTransport } from "./mock-transport";
 import type { PaperForgeClient } from "../../src/client/paperforge-client";
@@ -303,5 +306,262 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
     await plugin.loadSettings();
     expect(plugin.settings._setup_complete).toBe(true);
     expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears zombie sync jobs on daemon.disconnected and reconcileDaemonJobs, and fails closed until veteran upgrade plan resolves", async () => {
+    const plugin = makePlugin(client) as ReturnType<typeof makePlugin> & {
+      _daemonJobs: Map<string, Record<string, unknown>>;
+      _upgradePlanLoaded: boolean;
+      _daemonUpdating: boolean;
+      _emitStateChanged: () => void;
+      _refreshSettingTabIfOpen: () => void;
+      _handleDaemonPushEvent: (ev: {
+        event: string;
+        data?: Record<string, unknown>;
+      }) => void;
+      reconcileDaemonJobs: () => Promise<void>;
+      refreshUpgradePlan: () => Promise<unknown>;
+      _maybeAutoSync: (vp: string) => void;
+    };
+    plugin._daemonJobs = new Map();
+    plugin._daemonUpdating = false;
+    plugin._emitStateChanged = vi.fn();
+    plugin._refreshSettingTabIfOpen = vi.fn();
+
+    // 1) Zombie cli_sync job cleared immediately on daemon.disconnected
+    plugin._handleDaemonPushEvent({
+      event: "task.updated",
+      data: {
+        job_id: "cli_sync_1234",
+        kind: "sync",
+        status: "running",
+        current: 3,
+        total: 5,
+        phase: "build_index",
+      },
+    });
+    expect(plugin.isSyncing()).toBe(true);
+    plugin._handleDaemonPushEvent({ event: "daemon.disconnected", data: {} });
+    expect(plugin.isSyncing()).toBe(false);
+    expect(plugin._daemonJobs.size).toBe(0);
+
+    // 2) Stale cli_sync job also pruned by reconcileDaemonJobs when daemonHealth active_jobs=[]
+    plugin._handleDaemonPushEvent({
+      event: "task.updated",
+      data: {
+        job_id: "cli_sync_5678",
+        kind: "sync",
+        status: "running",
+        current: 3,
+        total: 5,
+        phase: "build_index",
+      },
+    });
+    plugin.getClient = () =>
+      ({
+        ...client,
+        daemonHealth: vi.fn(async () => ({ ok: true, active_jobs: [] })),
+      }) as unknown as PaperForgeClient;
+    await plugin.reconcileDaemonJobs();
+    expect(plugin.isSyncing()).toBe(false);
+    expect(plugin._daemonJobs.size).toBe(0);
+
+    // 2b) Bidirectional reconcileDaemonJobs restores live backend jobs after reconnect even from empty cache
+    plugin.getClient = () =>
+      ({
+        ...client,
+        daemonHealth: vi.fn(async () => ({
+          ok: true,
+          active_jobs: [
+            {
+              job_id: "job_live_heal_1",
+              kind: "upgrade.heal",
+              status: "running",
+              current: 1,
+              total: 4,
+              phase: "heal",
+            },
+          ],
+        })),
+      }) as unknown as PaperForgeClient;
+    await plugin.reconcileDaemonJobs();
+    expect(plugin.isHealing()).toBe(true);
+    expect(plugin._daemonJobs.has("job_live_heal_1")).toBe(true);
+
+    // 2c) Auto-sync stays paused while upgrade.heal is running, and fires after heal succeeds when queued
+    plugin.getClient = () => client;
+    transport.executeHandler = (argv) =>
+      argv[0] === "sync" ? JSON.stringify(SYNC_RESULT) : "{}";
+    (
+      plugin as unknown as { _syncAfterHealVault: string | null }
+    )._syncAfterHealVault = "/vault";
+    plugin._upgradePlanLoaded = true;
+    plugin._autoSync("/vault");
+    expect(transport.calls.filter((c) => c.argv[0] === "sync")).toHaveLength(0);
+    plugin._handleDaemonPushEvent({
+      event: "task.updated",
+      data: {
+        job_id: "job_live_heal_1",
+        kind: "upgrade.heal",
+        status: "succeeded",
+      },
+    });
+    expect(plugin.isHealing()).toBe(false);
+    await vi.waitFor(() => {
+      expect(transport.calls.filter((c) => c.argv[0] === "sync")).toHaveLength(
+        1
+      );
+    });
+    transport.calls.length = 0;
+
+    // 3) runtime.update succeeded refreshes upgrade plan
+    const refreshSpy = vi.fn(async () => null);
+    plugin.refreshUpgradePlan = refreshSpy;
+    plugin.refreshBaseSnapshot = vi.fn(async () => null);
+    plugin._handleDaemonPushEvent({
+      event: "task.updated",
+      data: {
+        job_id: "rt_up_1",
+        kind: "runtime.update",
+        status: "succeeded",
+      },
+    });
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+
+    // 4) Fail-closed auto-sync when _upgradePlanLoaded===false or legacy System/PaperForge exists unmigrated
+    plugin.getClient = () => client;
+    plugin._upgradePlanLoaded = false;
+    plugin._autoSync("/vault");
+    expect(transport.calls.filter((c) => c.argv[0] === "sync")).toHaveLength(0);
+
+    const legacyDir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-legacy-gate-"));
+    try {
+      fs.mkdirSync(path.join(legacyDir, "System", "PaperForge"), {
+        recursive: true,
+      });
+      plugin._upgradePlanLoaded = true;
+      plugin._autoSync(legacyDir);
+      expect(transport.calls.filter((c) => c.argv[0] === "sync")).toHaveLength(
+        0
+      );
+    } finally {
+      fs.rmSync(legacyDir, { recursive: true, force: true });
+    }
+  });
+
+  it("isolates upgrade.heal completion by vault path and resumes pending heal/sync from manifest_state", async () => {
+    const tmpVault = fs.mkdtempSync(path.join(os.tmpdir(), "pf-multivault-"));
+    try {
+      const dotPf = path.join(tmpVault, ".paperforge");
+      fs.mkdirSync(dotPf, { recursive: true });
+      fs.writeFileSync(
+        path.join(dotPf, "vault-manifest.json"),
+        JSON.stringify({ schema_version: 1, layout_version: 2 }),
+        "utf-8"
+      );
+
+      const plugin = makePlugin(client) as ReturnType<typeof makePlugin> & {
+        app: { vault: { adapter: { basePath: string } } };
+        _syncAfterHealVault: string | null;
+        _upgradePlanLoaded: boolean;
+        _upgradePlanCache: Record<string, unknown> | null;
+        _handleDaemonPushEvent: (ev: {
+          event: string;
+          data?: Record<string, unknown>;
+        }) => void;
+        refreshUpgradePlan: () => Promise<Record<string, unknown> | null>;
+        _healResumeAttempted: boolean;
+        _postUpgradeSyncAttempted: boolean;
+      };
+      plugin.app = { vault: { adapter: { basePath: tmpVault } } };
+      plugin._upgradePlanLoaded = true;
+      plugin._upgradePlanCache = {
+        provenance: { state: "standard_current", needs_upgrade: false },
+        manifest_state: {
+          heal_pending: false,
+          post_upgrade_sync_pending: false,
+        },
+      };
+      plugin._syncAfterHealVault = tmpVault;
+      transport.calls.length = 0;
+
+      // 1) Heal finished event belonging to a DIFFERENT vault must NOT trigger or clear current vault sync
+      plugin._handleDaemonPushEvent({
+        event: "task.updated",
+        data: {
+          job_id: "other_vault_heal",
+          kind: "upgrade.heal",
+          vault: path.join(os.tmpdir(), "unrelated-other-vault"),
+          status: "succeeded",
+        },
+      });
+      await Promise.resolve();
+      expect(plugin._syncAfterHealVault).toBe(tmpVault);
+      expect(transport.calls.filter((c) => c.argv[0] === "sync")).toHaveLength(
+        0
+      );
+
+      // 2) Heal finished event matching current vault clears state and triggers sync
+      plugin._handleDaemonPushEvent({
+        event: "task.updated",
+        data: {
+          job_id: "this_vault_heal",
+          kind: "upgrade.heal",
+          vault: tmpVault,
+          status: "succeeded",
+        },
+      });
+      await vi.waitFor(() => {
+        expect(
+          transport.calls.filter((c) => c.argv[0] === "sync")
+        ).toHaveLength(1);
+      });
+      expect(plugin._syncAfterHealVault).toBeNull();
+      await vi.waitFor(() => expect(plugin._autoSyncRunning).toBe(false));
+
+      // 3) Restart recovery: refreshUpgradePlan sees manifest_state.heal_pending=true -> auto-submits upgrade.heal
+      plugin._healResumeAttempted = false;
+      const submitSpy = vi.fn().mockResolvedValue({ accepted: true });
+      const origPlan = {
+        vault: tmpVault,
+        provenance: { state: "standard_current", needs_upgrade: false },
+        manifest_state: { heal_pending: true, post_upgrade_sync_pending: true },
+        census: {},
+        manifest: {},
+        rollback_available: true,
+        category_a_auto: [],
+        category_b_reconfig: [],
+        category_c_tamper: [],
+        cleanup_candidates: [],
+        summary: {
+          auto_count: 0,
+          reconfig_critical_count: 0,
+          reconfig_minor_count: 0,
+          tamper_count: 0,
+          cleanup_candidate_count: 0,
+          ocr_atoms: {
+            total: 0,
+            current: 0,
+            rebuild_derived_local: 0,
+            backfill_from_result_json: 0,
+            re_ocr_needed: 0,
+          },
+        },
+      };
+      plugin.getClient = () =>
+        ({
+          vaultUpgradePlan: async () => origPlan,
+          daemonSubmitJob: submitSpy,
+          sync: () => client.sync(),
+        }) as unknown as typeof client;
+
+      await plugin.refreshUpgradePlan();
+      expect(submitSpy).toHaveBeenCalledWith("upgrade.heal", {
+        backfillOcr: true,
+      });
+      expect(plugin._syncAfterHealVault).toBe(tmpVault);
+    } finally {
+      fs.rmSync(tmpVault, { recursive: true, force: true });
+    }
   });
 });

@@ -91,7 +91,7 @@ def test_new_user_onboarding(
     note_path = note_files[0]
     fm = _read_frontmatter(note_path)
     paper_key = fm["zotero_key"]
-    ocr_dir = vault / "System" / "PaperForge" / "ocr" / paper_key
+    ocr_dir = vault / ".paperforge" / "ocr" / paper_key
 
     # -----------------------------------------------------------------------
     # Step 3: Enable OCR — set do_ocr: true

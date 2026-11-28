@@ -27,7 +27,7 @@ HOST_SPEC_CASE = "stops a running vector build without corrupting the substrate"
 
 def test_stop_leaves_the_substrate_intact(retrieval, case) -> None:
     cli, stub = retrieval.cli, retrieval.stub
-    indexes = cli.vault / "System" / "PaperForge" / "indexes"
+    indexes = cli.vault / ".paperforge" / "indexes"
 
     built = cli.json("memory", "build")
     case.check("memory build exits 0", built.returncode == 0, built.tail())

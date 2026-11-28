@@ -73,7 +73,7 @@ def _restore_canonical_fulltext() -> None:
     valid baseline — and, verified below, a sync fixed point.
     """
     canonical = (OCR_FIXTURE / "fulltext.md").read_text(encoding="utf-8")
-    target = VAULT / "System" / "PaperForge" / "ocr" / KEY / "fulltext.md"
+    target = VAULT / ".paperforge" / "ocr" / KEY / "fulltext.md"
     target.write_text(canonical, encoding="utf-8")
 
     import json as _json  # noqa: PLC0415
@@ -108,7 +108,7 @@ def _restamp_provenance() -> None:
         compute_pdf_fingerprint,
     )
 
-    paper_root = VAULT / "System" / "PaperForge" / "ocr" / KEY
+    paper_root = VAULT / ".paperforge" / "ocr" / KEY
     meta_path = paper_root / "meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     raw_version = meta.setdefault("raw_version", {})
@@ -124,7 +124,7 @@ def _restamp_provenance() -> None:
             "sha256:" + _hashlib.sha256(result_json.read_bytes()).hexdigest()
         )
     fingerprint = compute_pdf_fingerprint(
-        VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
+        VAULT / ".paperforge" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
     )
     if fingerprint != "unknown":
         raw_version["pdf_fingerprint"] = fingerprint
@@ -158,7 +158,7 @@ def _assert_ocr_invariant() -> None:
     from paperforge.config import resolve_paths  # noqa: PLC0415
     from paperforge.worker.ocr import validate_ocr_meta  # noqa: PLC0415
 
-    meta_path = VAULT / "System" / "PaperForge" / "ocr" / KEY / "meta.json"
+    meta_path = VAULT / ".paperforge" / "ocr" / KEY / "meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     status, reason = validate_ocr_meta(resolve_paths(VAULT), meta)
     if status != "done":
@@ -210,8 +210,8 @@ def _assert_ocr_invariant() -> None:
         raise SystemExit(
             f"e2e fixture provenance violated for {KEY}: {provenance}\n"
             f"  canonical PDF resolved to: {canonical_pdf}\n"
-            f"  vault PDF: {VAULT / 'System' / 'Zotero' / 'storage' / 'TSTONE001' / 'TSTONE001.pdf'}"
-            f" (exists={(VAULT / 'System' / 'Zotero' / 'storage' / 'TSTONE001' / 'TSTONE001.pdf').exists()})\n"
+            f"  vault PDF: {VAULT / '.paperforge' / 'Zotero' / 'storage' / 'TSTONE001' / 'TSTONE001.pdf'}"
+            f" (exists={(VAULT / '.paperforge' / 'Zotero' / 'storage' / 'TSTONE001' / 'TSTONE001.pdf').exists()})\n"
             f"  recorded fingerprint: "
             f"{(meta.get('raw_version') or {}).get('pdf_fingerprint')!r} — "
             f"re-stamp it with the sha256 of {PDF_FIXTURE} "
@@ -260,10 +260,11 @@ def build() -> None:
 
     sys.path.insert(0, str(REPO_ROOT))
     from paperforge.config import bootstrap_config, set_config  # noqa: PLC0415
+    from paperforge.services.vault_engine import ensure_current_vault_manifest  # noqa: PLC0415
 
     bootstrap_config(VAULT)
     for key, value in {
-        "system_dir": "System",
+        "system_dir": ".paperforge",
         "resources_dir": "Resources",
         "literature_dir": "Literature",
         "control_dir": "LiteratureControl",
@@ -271,12 +272,13 @@ def build() -> None:
         "skill_dir": ".opencode/skills",
     }.items():
         set_config(VAULT, key, value)
+    ensure_current_vault_manifest(VAULT)
 
-    exports_dir = VAULT / "System" / "PaperForge" / "exports"
+    exports_dir = VAULT / ".paperforge" / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(EXPORT_FIXTURE, exports_dir / EXPORT_FIXTURE.name)
 
-    ocr_target = VAULT / "System" / "PaperForge" / "ocr" / KEY
+    ocr_target = VAULT / ".paperforge" / "ocr" / KEY
     shutil.copytree(OCR_FIXTURE, ocr_target, dirs_exist_ok=True)
 
     # Ship the PDF the canonical index advertises. Only the OCR specs used to
@@ -286,9 +288,13 @@ def build() -> None:
     # Computed from the CURRENT VAULT at call time: the X13 fixture reloads
     # this module with builder.VAULT overridden, so a module-level path would
     # copy the PDF (and later check it) in the wrong vault.
-    vault_pdf = VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
+    vault_pdf = VAULT / ".paperforge" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
     vault_pdf.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(PDF_FIXTURE, vault_pdf)
+    # Also place at legacy source_pdf location referenced by TSTONE001 fixture meta.json
+    legacy_pdf = VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
+    legacy_pdf.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(PDF_FIXTURE, legacy_pdf)
 
     # REAL sync: selection → index → workspace migration. On this first pass
     # the legacy backfill rewrites the canonical fulltext (see #219).
@@ -296,7 +302,7 @@ def build() -> None:
 
     # Version authority reads the OCR root (System/PaperForge/ocr/<key>/),
     # so seed the version artifacts there — not in the workspace.
-    paper_root = VAULT / "System" / "PaperForge" / "ocr" / KEY
+    paper_root = VAULT / ".paperforge" / "ocr" / KEY
     (paper_root / "render").mkdir(parents=True, exist_ok=True)
     (paper_root / "render" / "fulltext.md").write_text(
         "# Current render\n\ncurrent body\n", encoding="utf-8"

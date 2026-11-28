@@ -48,7 +48,7 @@ def test_rebuild_derived_is_local(ocr_cli, vault, case, ocr_stub) -> None:
         str(meta.get("ocr_status", "<no meta>")),
     )
 
-    ocr_dir = vault / "System" / "PaperForge" / "ocr" / "FIXT0001"
+    ocr_dir = vault / ".paperforge" / "ocr" / "FIXT0001"
     case.artifact("ocr-artifacts", ocr_dir)
 
     stub.reset_counts()

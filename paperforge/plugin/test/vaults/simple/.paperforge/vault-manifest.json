@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "layout_version": 2,
+  "engine_ssot": "sqlite",
+  "default_system_dir": ".paperforge"
+}

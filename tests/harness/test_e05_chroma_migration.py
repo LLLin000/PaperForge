@@ -48,8 +48,8 @@ def _vec_row_count(db: str) -> int:
 
 
 def test_legacy_chroma_migrates(cli, vault, case) -> None:
-    vectors = vault / "System" / "PaperForge" / "indexes" / "vectors"
-    db = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    vectors = vault / ".paperforge" / "indexes" / "vectors"
+    db = vault / ".paperforge" / "indexes" / "paperforge.db"
 
     case.check("the legacy fixture exists", FIXTURE.is_dir(), str(FIXTURE))
     if not FIXTURE.is_dir():
@@ -82,4 +82,4 @@ def test_legacy_chroma_migrates(cli, vault, case) -> None:
         f"vec*_rowids rows = {rows} (reported migrated={cases})",
     )
 
-    case.artifact("indexes", vault / "System" / "PaperForge" / "indexes")
+    case.artifact("indexes", vault / ".paperforge" / "indexes")

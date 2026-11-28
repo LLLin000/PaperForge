@@ -52,7 +52,7 @@ def test_initial_sync_materializes_notes_and_index(cli, vault, case) -> None:
         ]
         case.check(f"frontmatter complete in {note.name}", not missing, f"missing {missing}")
 
-    index = vault / "System" / "PaperForge" / "indexes" / "formal-library.json"
+    index = vault / ".paperforge" / "indexes" / "formal-library.json"
     case.check("canonical index written", index.is_file(), str(index))
     if index.is_file():
         index_payload = json.loads(index.read_text(encoding="utf-8"))

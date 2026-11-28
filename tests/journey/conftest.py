@@ -137,10 +137,10 @@ def journey_established_vault(tmp_path: Path) -> tuple[Path, object]:
 
     sports_export = fixtures_root / "zotero" / "sports_medicine.json"
     if sports_export.exists():
-        shutil.copy2(sports_export, vault / "System" / "PaperForge" / "exports" / "sports_medicine.json")
+        shutil.copy2(sports_export, vault / ".paperforge" / "exports" / "sports_medicine.json")
 
     # Update canonical index to reflect both domains
-    index_path = vault / "System" / "PaperForge" / "indexes" / "formal-library.json"
+    index_path = vault / ".paperforge" / "indexes" / "formal-library.json"
     index = {"items": [], "collections": {}, "generated_at": "2026-05-09T00:00:00+00:00"}
     index["items"] = [
         {

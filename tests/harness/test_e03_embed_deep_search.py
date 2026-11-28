@@ -31,7 +31,7 @@ def test_substrate_builds_and_serves_search(retrieval, case) -> None:
 
     memory = cli.json("memory", "build")
     case.check("memory build exits 0", memory.returncode == 0, memory.tail())
-    db = cli.vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    db = cli.vault / ".paperforge" / "indexes" / "paperforge.db"
     case.check("the memory database was written", db.is_file(), str(db))
     case.check(
         "the canonical index was indexed into memory",

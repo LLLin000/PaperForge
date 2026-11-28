@@ -33,7 +33,7 @@ def test_partial_batch_settles_per_paper(ocr_cli, vault, case, ocr_stub) -> None
     for key in (HEALTHY, FAILING):
         ocr_cli.set_note_flag(key, "do_ocr", True)
 
-    bystander_dir = vault / "System" / "PaperForge" / "ocr" / BYSTANDER
+    bystander_dir = vault / ".paperforge" / "ocr" / BYSTANDER
 
     run = ocr_cli.action_stream("ocr.run", (HEALTHY, FAILING), confirm="ocr.run", timeout_s=300)
     terminal = run.terminal or {}
@@ -107,4 +107,4 @@ def test_partial_batch_settles_per_paper(ocr_cli, vault, case, ocr_stub) -> None
         json.dumps(submitted),
     )
 
-    case.artifact("ocr-dir-healthy", vault / "System" / "PaperForge" / "ocr" / HEALTHY)
+    case.artifact("ocr-dir-healthy", vault / ".paperforge" / "ocr" / HEALTHY)

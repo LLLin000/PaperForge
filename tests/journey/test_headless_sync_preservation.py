@@ -53,8 +53,7 @@ def test_headless_sync_preserves_obsidian_dir(test_vault: Path) -> None:
     # Sync actually ran and produced the index...
     idx = (
         test_vault
-        / "99_System"
-        / "PaperForge"
+        / ".paperforge"
         / "indexes"
         / "formal-library.json"
     )
@@ -151,6 +150,7 @@ def test_sync_fastpath_invalidates_on_workspace_note_edit_and_pdf_download(tmp_p
         zotero_data_dir=str(zdir),
         zotero_source_mode="sqlite",
         domain_mode="per_collection",
+        zotero_selected_collections='["*"]',
     )
 
     svc = SyncService(vault)

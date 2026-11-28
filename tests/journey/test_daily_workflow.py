@@ -79,7 +79,7 @@ def test_existing_user_adds_paper(
     # -----------------------------------------------------------------------
     # Step 2: Add a new BBT export with a unique key that won't conflict
     # -----------------------------------------------------------------------
-    exports_dir = vault / "System" / "PaperForge" / "exports"
+    exports_dir = vault / ".paperforge" / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
 
     new_key = "JOURNEY003"

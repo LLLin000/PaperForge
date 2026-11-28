@@ -27,7 +27,7 @@ def test_full_sync_pipeline(e2e_cli_invoker: tuple) -> None:
     assert len(note_files) >= 1, f"No formal notes found in {ortho_dir}"
 
     # Canonical index exists
-    index_path = vault / "System" / "PaperForge" / "indexes" / "formal-library.json"
+    index_path = vault / ".paperforge" / "indexes" / "formal-library.json"
     assert index_path.exists(), f"Canonical index not found: {index_path}"
 
     # Parse index and verify structure

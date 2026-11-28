@@ -43,7 +43,7 @@ def test_missing_memory_schema_is_detected_and_repaired(cli, vault, case) -> Non
     cli.json("sync")
     built = cli.json("memory", "build")
     case.check("memory build exits 0", built.returncode == 0, built.tail())
-    db = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    db = vault / ".paperforge" / "indexes" / "paperforge.db"
     case.check("the database exists before the damage", db.is_file(), str(db))
 
     db.unlink()
@@ -98,4 +98,4 @@ def test_missing_memory_schema_is_detected_and_repaired(cli, vault, case) -> Non
         f"{after_state} {after_code}",
     )
 
-    case.artifact("indexes", vault / "System" / "PaperForge" / "indexes")
+    case.artifact("indexes", vault / ".paperforge" / "indexes")

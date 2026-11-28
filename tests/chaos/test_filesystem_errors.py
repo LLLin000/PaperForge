@@ -56,7 +56,7 @@ def test_ocr_directory_deleted(chaos_vault_standard: Path, chaos_cli_invoker: ca
     assert_vault_in_temp(chaos_vault_standard)
 
     # Delete the OCR directory
-    ocr_dir = chaos_vault_standard / "System" / "PaperForge" / "ocr"
+    ocr_dir = chaos_vault_standard / ".paperforge" / "ocr"
     if ocr_dir.exists():
         import shutil
         shutil.rmtree(str(ocr_dir))
@@ -124,7 +124,7 @@ def test_exports_permission_denied(chaos_vault_standard: Path, chaos_cli_invoker
     # Isolation guard
     assert_vault_in_temp(chaos_vault_standard)
 
-    exports_dir = chaos_vault_standard / "System" / "PaperForge" / "exports"
+    exports_dir = chaos_vault_standard / ".paperforge" / "exports"
     assert exports_dir.exists(), "Exports directory not found"
 
     # Remove read permission

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "vault_config": {
-    "system_dir": "System",
+    "system_dir": ".paperforge",
     "resources_dir": "Resources",
     "literature_dir": "Literature",
     "control_dir": "LiteratureControl",

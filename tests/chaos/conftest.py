@@ -94,7 +94,7 @@ def setup_vault_from_export(vault: Path, fixture_name: str) -> None:
     src = FIXTURES_DIR / "zotero" / fixture_name
     if not src.exists():
         raise FileNotFoundError(f"Fixture not found: {src}")
-    dst = vault / "System" / "PaperForge" / "exports" / fixture_name
+    dst = vault / ".paperforge" / "exports" / fixture_name
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
 

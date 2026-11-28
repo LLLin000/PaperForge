@@ -34,7 +34,7 @@ def test_malformed_bbt_json(chaos_vault: Path, chaos_cli_invoker: callable) -> N
 
     # Setup: copy a valid export and corrupt it
     setup_vault_from_export(chaos_vault, "orthopedic.json")
-    export_path = chaos_vault / "System" / "PaperForge" / "exports" / "orthopedic.json"
+    export_path = chaos_vault / ".paperforge" / "exports" / "orthopedic.json"
     assert export_path.exists(), "Export fixture not copied"
 
     corrupt_json(export_path)
@@ -62,7 +62,7 @@ def test_empty_bbt_json(chaos_vault: Path, chaos_cli_invoker: callable) -> None:
     assert_vault_in_temp(chaos_vault)
 
     # Write empty BBT export ({"items": []} is the proper empty format)
-    exports_dir = chaos_vault / "System" / "PaperForge" / "exports"
+    exports_dir = chaos_vault / ".paperforge" / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
     (exports_dir / "empty.json").write_text('{"items": []}', encoding="utf-8")
 
@@ -83,7 +83,7 @@ def test_bbt_json_missing_citation_key(chaos_vault_standard: Path, chaos_cli_inv
     assert_vault_in_temp(chaos_vault_standard)
 
     # Find the export JSON and remove citationKey from one item
-    exports_dir = chaos_vault_standard / "System" / "PaperForge" / "exports"
+    exports_dir = chaos_vault_standard / ".paperforge" / "exports"
     export_files = list(exports_dir.glob("*.json"))
     assert len(export_files) >= 1, "No export files in standard vault"
 
@@ -134,7 +134,7 @@ def test_broken_meta_json(chaos_vault_standard: Path, chaos_cli_invoker: callabl
     assert_vault_in_temp(chaos_vault_standard)
 
     # Create OCR directory with broken meta.json
-    ocr_dir = chaos_vault_standard / "System" / "PaperForge" / "ocr" / "FIXT0001"
+    ocr_dir = chaos_vault_standard / ".paperforge" / "ocr" / "FIXT0001"
     ocr_dir.mkdir(parents=True, exist_ok=True)
     create_broken_meta_json(ocr_dir / "meta.json")
 
